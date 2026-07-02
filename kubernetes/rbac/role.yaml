@@ -1,0 +1,20 @@
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: osvision-deployer
+  namespace: home-assistant
+rules:
+  # accès aux pods (Home Assistant)
+  - apiGroups: [""]
+    resources: ["pods"]
+    verbs: ["get", "list", "exec"]
+
+  # exec dans le pod (tar + reload)
+  - apiGroups: [""]
+    resources: ["pods/exec"]
+    verbs: ["create"]
+
+  # lecture logs (debug CI)
+  - apiGroups: [""]
+    resources: ["pods/log"]
+    verbs: ["get", "list"]
