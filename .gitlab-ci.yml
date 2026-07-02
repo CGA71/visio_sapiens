@@ -43,8 +43,11 @@ deploy:
   image: bitnami/kubectl:latest
   script:
     - echo "🔍 Resolving Home Assistant Pod Name..."
-    # On récupère dynamiquement le nom du pod qui tourne dans le namespace
-    - HA_POD=$(kubectl -n $HA_NAMESPACE get pods -l app.kubernetes.io/name=homeassistant -o jsonpath='{.items[0].metadata.name}')
+    # Cette commande liste les pods et filtre dynamiquement sur ceux dont le nom commence par homeassistant
+    - HA_POD=$(kubectl -n $HA_NAMESPACE get pods --field-selector=status.phase=Running -o jsonpath='{.items[?(@.metadata.name)]..name}' | tr ' ' '\n' | grep '^homeassistant-' | head -n 1)
+    
+    # Sécurité : Si aucun pod n'est trouvé, on arrête le script proprement
+    - if [ -z "$HA_POD" ]; then echo "❌ Error: Home Assistant Pod not found !"; exit 1; fi
     - echo "🎯 Target pod found -> $HA_POD"
 
     - echo "🚀 Deploying to Kubernetes Home Assistant..."
