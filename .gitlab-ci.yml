@@ -42,6 +42,9 @@ build:
 deploy:
   stage: deploy
   image: bitnami/kubectl:latest
+  variables:
+    # On force l'utilisation du ServiceAccount existant qui possède les droits
+    KUBERNETES_SERVICE_ACCOUNT: gitlab-ci-sa
   script:
     - echo "🚀 Deploying to Kubernetes Home Assistant..."
 
