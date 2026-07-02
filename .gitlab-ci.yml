@@ -84,6 +84,5 @@ release:
 
   script:
     - echo "🚀 Creating release for tag $CI_COMMIT_TAG"
-
     - echo "Version: $CI_COMMIT_TAG" > release.txt
     - echo "OSVision V2 Release created"
