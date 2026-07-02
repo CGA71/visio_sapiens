@@ -1,5 +1,6 @@
 {
   "name": "OSVision V2",
-  "domains": ["frontend"],
-  "homeassistant": "2026.1.0"
+  "content_in_root": true,
+  "domains": ["theme"],
+  "country": "FR"
 }
