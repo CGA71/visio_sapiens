@@ -9,47 +9,47 @@ variables:
   HA_CONTAINER: home-assistant
 
 # =========================
-# VALIDATION
+# 1. VALIDATION
 # =========================
 validate:
   stage: validate
   image: alpine:latest
   script:
-    - echo "🔍 Validate OSVision structure"
-    - test -d home-assistant
-    - test -d kubernetes
-    - test -d scripts
-    - echo "OK"
+    - echo "🔍 Checking OSVision V2 structure..."
+    - test -d home-assistant/themes
+    - test -d home-assistant/www
+    - test -d home-assistant/dashboards
+    - echo "✅ Structure OK"
 
 # =========================
-# BUILD
+# 2. BUILD PACKAGE
 # =========================
 build:
   stage: build
   image: alpine:latest
   script:
-    - apk add --no-cache tar
+    - echo "📦 Preparing OSVision V2 package..."
     - mkdir -p build
-    - cp -r home-assistant build/
+    - cp -r home-assistant/* build/
     - tar -czf osvision-v2.tar.gz -C build .
   artifacts:
     paths:
       - osvision-v2.tar.gz
 
 # =========================
-# DEPLOY
+# 3. DEPLOY TO KUBERNETES
 # =========================
 deploy:
   stage: deploy
   image: bitnami/kubectl:latest
   script:
-    - echo "🚀 Deploy OSVision V2 to Home Assistant"
+    - echo "🚀 Deploying to Kubernetes Home Assistant..."
 
-    # copy artifact
+    # copy package into pod
     - kubectl -n $HA_NAMESPACE cp osvision-v2.tar.gz $HA_POD:/config/osvision-v2.tar.gz -c $HA_CONTAINER
 
-    # extract
+    # extract inside container
     - kubectl -n $HA_NAMESPACE exec $HA_POD -c $HA_CONTAINER -- tar -xzf /config/osvision-v2.tar.gz -C /config/
 
-    # reload HA
+    # restart home assistant (safe reload)
     - kubectl -n $HA_NAMESPACE exec $HA_POD -c $HA_CONTAINER -- ha core reload

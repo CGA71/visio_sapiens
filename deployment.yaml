@@ -1,0 +1,31 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gitlab-runner
+  namespace: ci
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gitlab-runner
+  template:
+    metadata:
+      labels:
+        app: gitlab-runner
+    spec:
+      serviceAccountName: gitlab-ci-sa
+      containers:
+        - name: gitlab-runner
+          image: gitlab/gitlab-runner:latest
+          args: ["run"]
+          env:
+            - name: CI_SERVER_URL
+              value: "http://192.168.1.11:10000"
+          volumeMounts:
+            - name: config
+              mountPath: /etc/gitlab-runner
+      volumes:
+        - name: config
+          hostPath:
+            path: /srv/gitlab-runner/config
+            type: DirectoryOrCreate
