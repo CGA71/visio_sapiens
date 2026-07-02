@@ -4,9 +4,8 @@ stages:
   - deploy
 
 variables:
-  HA_NAMESPACE: home-assistant
-  HA_POD: home-assistant-0
-  HA_CONTAINER: home-assistant
+  HA_NAMESPACE: homeassistant   # <--- Corrigé (sans tiret)
+  HA_CONTAINER: homeassistant
 
 # =========================
 # 1. VALIDATION
@@ -42,12 +41,13 @@ build:
 deploy:
   stage: deploy
   image: bitnami/kubectl:latest
-  variables:
-    # On force l'utilisation du ServiceAccount existant qui possède les droits
-    KUBERNETES_SERVICE_ACCOUNT: gitlab-ci-sa
   script:
-    - echo "🚀 Deploying to Kubernetes Home Assistant..."
+    - echo "🔍 Resolving Home Assistant Pod Name..."
+    # On récupère dynamiquement le nom du pod qui tourne dans le namespace
+    - HA_POD=$(kubectl -n $HA_NAMESPACE get pods -l app.kubernetes.io/name=homeassistant -o jsonpath='{.items[0].metadata.name}')
+    - echo "🎯 Target pod found -> $HA_POD"
 
+    - echo "🚀 Deploying to Kubernetes Home Assistant..."
     # copy package into pod
     - kubectl -n $HA_NAMESPACE cp osvision-v2.tar.gz $HA_POD:/config/osvision-v2.tar.gz -c $HA_CONTAINER
 
