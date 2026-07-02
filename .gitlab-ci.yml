@@ -16,9 +16,12 @@ validate:
   image: alpine:latest
   script:
     - echo "🔍 Validate OSVision V2"
+    - test -d themes
     - test -d home-assistant/themes
     - test -d home-assistant/dashboards
     - test -f themes/osvision_v2.yaml
+    - test -f hacs.json
+    - test -f repository.yaml
     - echo "✅ OK"
 
 # =========================
@@ -64,15 +67,16 @@ package:
     - mkdir -p dist
     - cp -r themes dist/
     - cp hacs.json dist/
+    - cp repository.yaml dist/
     - cp README.md dist/
     - cp CHANGELOG.md dist/
     - cp VERSION dist/
 
-    - tar -czf $PACKAGE_NAME-$CI_COMMIT_TAG.tar.gz -C dist .
+#    - tar -czf $PACKAGE_NAME-$CI_COMMIT_TAG.tar.gz -C dist .
   artifacts:
     paths:
-      - $PACKAGE_NAME-$CI_COMMIT_TAG.tar.gz
-
+#     - $PACKAGE_NAME-$CI_COMMIT_TAG.tar.gz
+      - dist/
 # =========================
 # RELEASE (TAG ONLY)
 # =========================
