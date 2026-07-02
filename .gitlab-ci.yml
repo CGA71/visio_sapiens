@@ -56,5 +56,5 @@ deploy:
     # extract inside container
     - kubectl -n $HA_NAMESPACE exec $HA_POD -c $HA_CONTAINER -- tar -xzf /config/osvision-v2.tar.gz -C /config/
     
-    # Recharge proprement la configuration Core de Home Assistant
-    - kubectl -n $HA_NAMESPACE exec $HA_POD -c $HA_CONTAINER -- hass --script check_config
+   # Vérifie la configuration dans le bon dossier (/config)
+    - kubectl -n $HA_NAMESPACE exec $HA_POD -c $HA_CONTAINER -- hass --script check_config -c /config
