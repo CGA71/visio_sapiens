@@ -2,59 +2,88 @@ stages:
   - validate
   - build
   - deploy
+  - package
+  - release
 
 variables:
-  HA_NAMESPACE: homeassistant   # <--- Corrigé (sans tiret)
-  HA_CONTAINER: homeassistant
+  PACKAGE_NAME: osvision-v2
 
 # =========================
-# 1. VALIDATION
+# VALIDATE (TOUJOURS)
 # =========================
 validate:
   stage: validate
   image: alpine:latest
   script:
-    - echo "🔍 Checking OSVision V2 structure..."
+    - echo "🔍 Validate OSVision V2"
     - test -d home-assistant/themes
-    - test -d home-assistant/www
     - test -d home-assistant/dashboards
-    - echo "✅ Structure OK"
+    - test -f themes/osvision_v2.yaml
+    - echo "✅ OK"
 
 # =========================
-# 2. BUILD PACKAGE
+# BUILD (BRANCH ONLY)
 # =========================
 build:
   stage: build
   image: alpine:latest
+  rules:
+    - if: $CI_COMMIT_TAG == null
   script:
-    - echo "📦 Preparing OSVision V2 package..."
+    - echo "📦 Build dev package"
     - mkdir -p build
     - cp -r home-assistant/* build/
-    - tar -czf osvision-v2.tar.gz -C build .
+    - tar -czf $PACKAGE_NAME.tar.gz -C build .
   artifacts:
     paths:
-      - osvision-v2.tar.gz
+      - $PACKAGE_NAME.tar.gz
 
 # =========================
-# 3. DEPLOY TO KUBERNETES
+# DEPLOY (BRANCH ONLY)
 # =========================
 deploy:
   stage: deploy
-  image: bitnami/kubectl:latest
+  image: alpine:latest
+  rules:
+    - if: $CI_COMMIT_TAG == null
   script:
-    - echo "🔍 Resolving Home Assistant Pod Name..."
-    - HA_POD="homeassistant-5b9978cc55-2k5vj"
-    
-    # Sécurité : Si aucun pod n'est trouvé, on arrête le script proprement
-    - 'if [ -z "$HA_POD" ]; then echo "❌ Error: Home Assistant Pod not found !"; exit 1; fi'
-    - echo "🎯 Target pod found -> $HA_POD"
+    - echo "🚀 Deploy DEV (optionnel)"
+    - echo "Skip deploy prod for tags"
 
-    - echo "🚀 Deploying to Kubernetes Home Assistant..."
-    # copy package into pod
-    - kubectl -n $HA_NAMESPACE cp osvision-v2.tar.gz $HA_POD:/config/osvision-v2.tar.gz -c $HA_CONTAINER
+# =========================
+# PACKAGE (TAG ONLY)
+# =========================
+package:
+  stage: package
+  image: alpine:latest
+  rules:
+    - if: $CI_COMMIT_TAG
+  script:
+    - echo "📦 Packaging release version $CI_COMMIT_TAG"
 
-    # extract inside container
-    - kubectl -n $HA_NAMESPACE exec $HA_POD -c $HA_CONTAINER -- tar -xzf /config/osvision-v2.tar.gz -C /config/
-    
-   # Vérifie la configuration dans le bon dossier (/config)
-    - kubectl -n $HA_NAMESPACE exec $HA_POD -c $HA_CONTAINER -- hass --script check_config -c /config
+    - mkdir -p dist
+    - cp -r themes dist/
+    - cp hacs.json dist/
+    - cp README.md dist/
+    - cp CHANGELOG.md dist/
+    - cp VERSION dist/
+
+    - tar -czf $PACKAGE_NAME-$CI_COMMIT_TAG.tar.gz -C dist .
+  artifacts:
+    paths:
+      - $PACKAGE_NAME-$CI_COMMIT_TAG.tar.gz
+
+# =========================
+# RELEASE (TAG ONLY)
+# =========================
+release:
+  stage: release
+  image: alpine:latest
+  rules:
+    - if: $CI_COMMIT_TAG
+
+  script:
+    - echo "🚀 Creating release for tag $CI_COMMIT_TAG"
+
+    - echo "Version: $CI_COMMIT_TAG" > release.txt
+    - echo "OSVision V2 Release created"
