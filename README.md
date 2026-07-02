@@ -1,6 +1,30 @@
-# osvision-v2
+# OSVision V2 — Neural Home Interface
 
+Futuristic Home Assistant UI inspired by OSVision, designed for tablet dashboards.
 
+## Concept
+
+Each room becomes a SYSTEM MODULE:
+- CORE (Home)
+- LIVING MODULE
+- SLEEP MODULES
+- DATA CENTER
+- ENGINE ROOM
+- AI CORE
+- BIO MODULE
+- POWER GRID
+
+## Stack
+
+- Home Assistant
+- Lovelace UI
+- card-mod
+- custom themes
+- CSS glassmorphism
+
+## Status
+
+🚧 In active development
 
 ## Getting started
 

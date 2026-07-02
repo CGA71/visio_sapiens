@@ -1,0 +1,96 @@
+title: CORE
+path: core
+panel: true
+theme: osvision_v2
+
+views:
+  - title: CORE
+    path: core
+    icon: mdi:alpha-c-box
+
+    cards:
+
+      # =========================
+      # BACKGROUND LAYER (visuel)
+      # =========================
+      - type: picture-elements
+        image: /local/osvision_v2/backgrounds/core.png
+        elements: []
+
+      # =========================
+      # HUD TOP BAR
+      # =========================
+      - type: horizontal-stack
+        cards:
+
+          - type: markdown
+            content: |
+              ## OSVision V2
+              **NEURAL CORE ACTIVE**
+
+          - type: markdown
+            content: |
+              **SYSTEM STATUS**
+              🟢 ONLINE
+
+          - type: markdown
+            content: |
+              **TIME**
+              {{ now().strftime('%H:%M') }}
+
+      # =========================
+      # CENTRAL HUD (CORE)
+      # =========================
+      - type: grid
+        columns: 3
+        square: false
+        cards:
+
+          - type: gauge
+            entity: sensor.temperatur_living_room
+            name: CORE TEMP
+            min: 0
+            max: 40
+
+          - type: gauge
+            entity: sensor.humidity_living_room
+            name: CORE HUMIDITY
+            min: 0
+            max: 100
+
+          - type: entity
+            entity: sensor.power_consumption
+            name: POWER GRID
+
+      # =========================
+      # MAIN CONTROL MODULES
+      # =========================
+      - type: grid
+        columns: 2
+        square: false
+        cards:
+
+          - type: entities
+            title: LIVING MODULE
+            entities:
+              - light.living_room
+              - switch.tv
+              - media_player.living_room
+
+          - type: entities
+            title: SECURITY CORE
+            entities:
+              - alarm_control_panel.home
+              - binary_sensor.door_sensor
+              - camera.front_door
+
+      # =========================
+      # SYSTEM STATUS (BOTTOM)
+      # =========================
+      - type: glance
+        title: SYSTEM STATUS
+        entities:
+          - entity: sensor.cpu_usage
+          - entity: sensor.ram_usage
+          - entity: sensor.network_download
+          - entity: sensor.network_upload

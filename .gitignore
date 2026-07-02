@@ -1,0 +1,4 @@
+# Home Assistant
+*.db
+*.log
+.storage/
