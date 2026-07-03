@@ -46,12 +46,44 @@ build:
 # =========================
 deploy:
   stage: deploy
-  image: alpine:latest
+  image: bitnami/kubectl:latest
+
   rules:
-    - if: $CI_COMMIT_TAG == null
+    - if: '$CI_COMMIT_TAG == null'
+
   script:
-    - echo "🚀 Deploy DEV (optionnel)"
-    - echo "Skip deploy prod for tags"
+    - echo "🚀 Deploying OSVision V2 to Home Assistant..."
+
+    # Recherche automatiquement le pod Home Assistant
+    - export HA_POD=$(kubectl get pod -n homeassistant -l app=homeassistant -o jsonpath='{.items[0].metadata.name}')
+
+    # Si aucun label n'existe, on utilise le premier pod trouvé
+    - |
+      if [ -z "$HA_POD" ]; then
+        HA_POD=$(kubectl get pods -n homeassistant -o jsonpath='{.items[0].metadata.name}')
+      fi
+
+    - echo "Home Assistant Pod : $HA_POD"
+
+    # Nettoyage de l'ancien contenu
+    - kubectl exec -n homeassistant $HA_POD -c homeassistant -- rm -rf /config/dashboards
+    - kubectl exec -n homeassistant $HA_POD -c homeassistant -- rm -rf /config/themes
+    - kubectl exec -n homeassistant $HA_POD -c homeassistant -- mkdir -p /config/dashboards
+    - kubectl exec -n homeassistant $HA_POD -c homeassistant -- mkdir -p /config/themes
+
+    # Copie des dashboards
+    - kubectl cp home-assistant/dashboards homeassistant/$HA_POD:/config/ -c homeassistant
+
+    # Copie des thèmes
+    - kubectl cp home-assistant/themes homeassistant/$HA_POD:/config/ -c homeassistant
+
+    # Copie des ressources web
+    - kubectl cp home-assistant/www homeassistant/$HA_POD:/config/ -c homeassistant
+
+    # Vérification de la configuration
+    - kubectl exec -n homeassistant $HA_POD -c homeassistant -- hass --script check_config -c /config
+
+    - echo "✅ Deployment finished"
 
 # =========================
 # PACKAGE (TAG ONLY)
