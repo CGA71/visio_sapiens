@@ -1,0 +1,31 @@
+OSVision V2:
+  primary-color: "#00E5FF"
+  accent-color: "#00FFD5"
+
+  app-header-background-color: "#09131D"
+
+  background-color: "#050B12"
+
+  primary-background-color: "#050B12"
+
+  secondary-background-color: "#101B27"
+
+  card-background-color: "#13202E"
+
+  text-primary-color: "#FFFFFF"
+
+  text-secondary-color: "#9FC6D8"
+
+  divider-color: "#1D3146"
+
+  paper-item-icon-color: "#00E5FF"
+
+  paper-item-icon-active-color: "#00FFD5"
+
+  paper-slider-active-color: "#00FFD5"
+
+  paper-toggle-button-checked-button-color: "#00FFD5"
+
+  paper-toggle-button-checked-bar-color: "#00E5FF"
+
+  lovelace-background: center / cover no-repeat fixed
