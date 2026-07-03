@@ -63,7 +63,7 @@ deploy:
         HA_POD=$(kubectl get pods -n homeassistant -o jsonpath='{.items[0].metadata.name}')
       fi
 
-    - echo "Home Assistant Pod : $HA_POD"
+    - "echo Home Assistant Pod : $HA_POD"
 
     # Nettoyage de l'ancien contenu
     - kubectl exec -n homeassistant $HA_POD -c homeassistant -- rm -rf /config/dashboards
