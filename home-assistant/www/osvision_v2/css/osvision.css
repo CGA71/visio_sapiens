@@ -1,20 +1,30 @@
+/* OSVision V2 CORE UI */
+
+:root {
+  --osv-primary: #00e5ff;
+  --osv-accent: #00ffd5;
+  --osv-bg: #050b12;
+}
+
+/* Background global */
 body {
-  background: #020611 !important;
+  background: var(--osv-bg);
 }
 
-/* GLASS SYSTEM */
-ha-card {
-  background: rgba(10, 20, 35, 0.58) !important;
-  backdrop-filter: blur(18px);
-  -webkit-backdrop-filter: blur(18px);
-
-  border-radius: 16px;
-  border: 1px solid rgba(0, 244, 255, 0.15);
-
-  box-shadow: 0 0 20px rgba(0, 244, 255, 0.08);
-  transition: 0.25s ease;
+/* HUD futuriste base */
+.osv-hud {
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(0, 229, 255, 0.2);
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.15);
 }
 
-ha-card:hover {
-  box-shadow: 0 0 30px rgba(0, 244, 255, 0.25);
+/* Animation légère glow */
+@keyframes osvGlow {
+  0% { box-shadow: 0 0 5px var(--osv-primary); }
+  50% { box-shadow: 0 0 20px var(--osv-accent); }
+  100% { box-shadow: 0 0 5px var(--osv-primary); }
+}
+
+.osv-glow {
+  animation: osvGlow 3s infinite;
 }
