@@ -1,0 +1,53 @@
+########################################################################
+# OSVision V2 — Decluttering-card Templates
+# Included from every dashboard via:
+#   decluttering_templates: !include templates/decluttering_templates.yaml
+########################################################################
+
+# ---------------------------------------------------------------------
+# osvision_gauge
+# Neon radial gauge built on apexcharts-card. One template, N reuses,
+# so adding/removing a metric (Storage, Network...) is a one-line change.
+#
+# Usage:
+#   type: custom:decluttering-card
+#   template: osvision_gauge
+#   variables:
+#     - entity: sensor.192_168_1_11_cpu_load
+#     - name: CPU
+#     - color: "#00E5FF"
+#     - max: 100
+# ---------------------------------------------------------------------
+osvision_gauge:
+  default:
+    - color: "#00E5FF"
+    - max: 100
+  card:
+    type: custom:apexcharts-card
+    card_mod:
+      style: |
+        ha-card { background: transparent !important; box-shadow: none !important; border: none !important; }
+    header:
+      show: false
+    chart_type: radialBar
+    apex_config:
+      chart:
+        height: 140
+      plotOptions:
+        radialBar:
+          hollow:
+            size: 55%
+          dataLabels:
+            value:
+              fontSize: 20px
+              color: "#FFFFFF"
+              formatter: |
+                EVAL:function(v){ return Math.round(v) + '%'; }
+            name:
+              show: false
+      colors:
+        - '[[color]]'
+    series:
+      - entity: '[[entity]]'
+        name: '[[name]]'
+        max: '[[max]]'
