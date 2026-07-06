@@ -18,6 +18,7 @@ le socle doit se reposer sur :
 L'objectif est que Home Assistant ne soit plus qu'un moteur de données. Toute l'interface est pilotée par OSVision.
 
 Architecture
+```
 OSVision V2
 
 ├── CORE
@@ -50,6 +51,7 @@ OSVision V2
 ├── JS Engine
 │
 └── Theme Engine
+```
 
 Le dashboard HOME ne sera plus un assemblage de cartes
 
@@ -80,7 +82,7 @@ L'interface est composée de :
 * composants réutilisables
 
 # structure repository
-
+```
 home-assistant/
 ├── docs
 │      project.md
@@ -127,6 +129,7 @@ home-assistant/
 		├── images/
         ├── icons/
         └── fonts/
+```
 
 # Ressource lovelace ajouté
 * button-card
