@@ -1,17 +1,36 @@
 :root{
 
---osv-bg:#030813;
---osv-card:#08121c;
+--osv-bg:#02050B;
+
+--osv-panel:#09131D;
+
+--osv-card:#111D29;
+
 --osv-cyan:#00E5FF;
---osv-blue:#0099ff;
+
 --osv-green:#00FFC3;
---osv-red:#FF4A70;
+
+--osv-blue:#3AA7FF;
+
+--osv-red:#FF3D71;
+
+--osv-orange:#FF9800;
+
+--osv-radius:22px;
 
 }
 
 body{
 
-background:#030813;
+background:
+
+radial-gradient(circle at center,
+
+#06131F 0%,
+
+#02050B 70%);
+
+overflow:hidden;
 
 }
 
@@ -19,9 +38,9 @@ ha-card{
 
 background:rgba(8,18,28,.72)!important;
 
-backdrop-filter:blur(15px);
+border-radius:22px!important;
 
-border-radius:18px!important;
+backdrop-filter:blur(14px);
 
 border:1px solid rgba(0,229,255,.22);
 
@@ -29,30 +48,44 @@ box-shadow:
 
 0 0 20px rgba(0,229,255,.12);
 
-transition:.3s;
+transition:.35s;
 
 }
 
 ha-card:hover{
 
-transform:translateY(-2px);
+transform:translateY(-3px);
 
 box-shadow:
 
-0 0 35px rgba(0,229,255,.25);
+0 0 40px rgba(0,229,255,.35);
 
 }
 
-h1,h2,h3{
+.glow{
 
-color:#00E5FF;
-
-letter-spacing:2px;
+animation:glow 3s infinite;
 
 }
 
-.state{
+@keyframes glow{
 
-color:white;
+0%{
+
+box-shadow:0 0 10px cyan;
+
+}
+
+50%{
+
+box-shadow:0 0 25px cyan;
+
+}
+
+100%{
+
+box-shadow:0 0 10px cyan;
+
+}
 
 }
