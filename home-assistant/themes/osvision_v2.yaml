@@ -6,26 +6,24 @@ OSVision V2:
 
   primary-background-color: "#030813"
 
-  secondary-background-color: "#08121C"
+  secondary-background-color: "#07131D"
 
-  card-background-color: "rgba(8,18,28,.75)"
-
-  text-primary-color: "#FFFFFF"
+  card-background-color: "rgba(10,18,28,.75)"
 
   primary-text-color: "#FFFFFF"
 
-  secondary-text-color: "#9BEAFF"
+  secondary-text-color: "#7EC9FF"
 
-  divider-color: "#0E3345"
+  divider-color: "#0F2738"
 
   paper-item-icon-color: "#00E5FF"
 
   paper-item-icon-active-color: "#00FFC3"
 
-  app-header-background-color: "#08121C"
+  app-header-background-color: "#050C15"
 
   app-header-text-color: "#00E5FF"
 
   state-icon-color: "#00E5FF"
 
-  ha-card-border-radius: "20px"
+  ha-card-border-radius: "22px"
