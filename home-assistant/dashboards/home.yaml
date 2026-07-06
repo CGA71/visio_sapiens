@@ -90,7 +90,7 @@ views:
       - type: glance
         title: SYSTEM STATUS
         entities:
-          - entity: sensor.cpu_usage
-          - entity: sensor.ram_usage
-          - entity: sensor.network_download
-          - entity: sensor.network_upload
+          - entity: sensor.192_168_1_11_cpu_load
+          - entity: sensor.192_168_1_11_memoire_utilisee
+          - entity: sensor.192_168_1_11_enp12s0_rx
+          - entity: sensor.192_168_1_11_enp12s0_tx
