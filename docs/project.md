@@ -59,7 +59,7 @@ Il deviendra une interface unique.
 
 Par exemple :
 
-![Texte alternatif](docs/osvision.png)
+![dashboard-osvision](osvision.png)
 
 # Framework OsVision V2
 
