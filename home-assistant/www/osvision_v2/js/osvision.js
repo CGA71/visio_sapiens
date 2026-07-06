@@ -1,11 +1,27 @@
-// OSVision V2 CORE ENGINE
+console.log("OSVision V2");
 
-console.log("OSVision V2 UI Engine loaded");
+class OSVision{
 
-// futur: radar animation, HUD updates, AI layer
+constructor(){
 
-function osvInit() {
-  console.log("Initializing OSVision UI...");
+this.clock();
+
+setInterval(()=>{
+
+this.clock();
+
+},1000);
+
 }
 
-document.addEventListener("DOMContentLoaded", osvInit);
+clock(){
+
+const d=new Date();
+
+console.log(d.toLocaleTimeString());
+
+}
+
+}
+
+window.osvision=new OSVision();
