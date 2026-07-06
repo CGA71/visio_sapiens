@@ -84,13 +84,94 @@ views:
               - binary_sensor.door_sensor
               - camera.front_door
 
-      # =========================
-      # SYSTEM STATUS (BOTTOM)
-      # =========================
-      - type: glance
-        title: SYSTEM STATUS
-        entities:
-          - entity: sensor.192_168_1_11_cpu_load
-          - entity: sensor.192_168_1_11_memoire_utilisee
-          - entity: sensor.192_168_1_11_enp12s0_rx
-          - entity: sensor.192_168_1_11_enp12s0_tx
+# ==========================================================
+# SYSTEM STATUS
+# ==========================================================
+- type: vertical-stack
+  cards:
+
+    - type: markdown
+      content: |
+        # SYSTEM STATUS
+        ### Neural Core Telemetry
+
+    - type: grid
+      columns: 3
+      square: false
+      cards:
+
+        ###################################################
+        # CPU
+        ###################################################
+
+        - type: gauge
+          entity: sensor.192_168_1_11_cpu_load
+          name: CPU
+          min: 0
+          max: 100
+          severity:
+            green: 0
+            yellow: 60
+            red: 85
+
+        ###################################################
+        # GPU
+        ###################################################
+
+        - type: gauge
+          entity: sensor.192_168_1_11_gpu_load
+          name: GPU
+          min: 0
+          max: 100
+          severity:
+            green: 0
+            yellow: 60
+            red: 85
+
+        ###################################################
+        # RAM
+        ###################################################
+
+        - type: gauge
+          entity: sensor.192_168_1_11_memoire_utilisee
+          name: RAM
+          min: 0
+          max: 100
+          severity:
+            green: 0
+            yellow: 70
+            red: 90
+
+        ###################################################
+        # DOWNLOAD
+        ###################################################
+
+        - type: gauge
+          entity: sensor.192_168_1_11_enp12s0_rx
+          name: DOWNLOAD
+          min: 0
+          max: 1000
+
+        ###################################################
+        # UPLOAD
+        ###################################################
+
+        - type: gauge
+          entity: sensor.192_168_1_11_enp12s0_tx
+          name: UPLOAD
+          min: 0
+          max: 1000
+
+        ###################################################
+        # TEMP
+        ###################################################
+
+        - type: gauge
+          entity: sensor.192_168_1_11_cpu_temperature
+          name: CPU TEMP
+          min: 20
+          max: 90
+          severity:
+            green: 20
+            yellow: 60
+            red: 80
