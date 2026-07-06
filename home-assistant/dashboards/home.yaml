@@ -1,54 +1,334 @@
-# OSVision V2 - HOME Dashboard (Skeleton v1)
-title: CORE
-path: core
-theme: osvision_v2
+########################################################################
+# OSVision V2 — CORE Dashboard (Phase 1)
+#
+# Vues:
+#   /osvision-v2/home    -> HUD, radar/IA core, metrics, alerts, quick actions
+#   /osvision-v2/rooms   -> hub des modules pièces (placeholders, itération 2)
+#   /osvision-v2/system  -> module SYSTEM (placeholder, itération 2)
+#   /osvision-v2/energy  -> module ENERGY (placeholder, itération 2)
+#
+# Dépendances lovelace (à installer via HACS + déclarer en resources) :
+#   button-card, card-mod, layout-card, custom:stack-in-card,
+#   apexcharts-card, config-template-card, decluttering-card, browser_mod
+########################################################################
+
+title: OSVision V2
+path: osvision-v2
+theme: OSVision V2
+
+button_card_templates: !include ../templates/button_card_templates.yaml
+decluttering_templates: !include ../templates/decluttering_templates.yaml
+
 views:
+  # =====================================================================
+  # HOME
+  # =====================================================================
   - title: HOME
     path: home
-    panel: true
+    type: custom:grid-layout
+    layout:
+      grid-template-columns: 1fr 1.4fr 1fr
+      grid-template-rows: auto auto 1fr auto auto
+      grid-template-areas: |
+        "header header header"
+        "nav nav nav"
+        "metrics radar alerts"
+        "quick quick quick"
+        "footer footer footer"
+      margin: 12px
+      grid-gap: 14px 14px
     cards:
-      - type: vertical-stack
+      # --- HUD header -------------------------------------------------
+      - type: custom:button-card
+        template: osvision_title
+        name: OSVISION V2 — NEURAL CORE ACTIVE
+        view_layout:
+          grid-area: header
+
+      # --- Navigation bar ----------------------------------------------
+      - type: horizontal-stack
+        view_layout:
+          grid-area: nav
         cards:
-          - type: markdown
-            content: |
-              # OSVision V2
-              ## NEURAL CORE ACTIVE
-          - type: horizontal-stack
-            cards:
-              - type: custom:button-card
-                template: osvision_panel
-                name: HOME
-              - type: custom:button-card
-                template: osvision_panel
-                name: ROOMS
-              - type: custom:button-card
-                template: osvision_panel
-                name: SYSTEM
-              - type: custom:button-card
-                template: osvision_panel
-                name: ENERGY
-          - type: grid
-            columns: 3
-            cards:
-              - type: gauge
-                entity: sensor.192_168_1_11_cpu_load
-                name: CPU
-              - type: gauge
-                entity: sensor.192_168_1_11_gpu_load
-                name: GPU
-              - type: gauge
-                entity: sensor.192_168_1_11_memoire_utilisee
-                name: RAM
-              - type: gauge
-                entity: sensor.192_168_1_11_cpu_temperature
-                name: CPU TEMP
-              - type: gauge
-                entity: sensor.192_168_1_11_enp12s0_rx
-                name: DOWNLOAD
-              - type: gauge
-                entity: sensor.192_168_1_11_enp12s0_tx
-                name: UPLOAD
-          - type: markdown
-            content: |
-              ## IA CORE
-              Radar et moteur IA seront ajoutés dans les prochaines phases.
+          - type: custom:button-card
+            template: osvision_nav_button
+            icon: mdi:view-dashboard
+            name: HOME
+            variables:
+              active: true
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-v2/home
+          - type: custom:button-card
+            template: osvision_nav_button
+            icon: mdi:sofa
+            name: ROOMS
+            variables:
+              active: false
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-v2/rooms
+          - type: custom:button-card
+            template: osvision_nav_button
+            icon: mdi:server
+            name: SYSTEM
+            variables:
+              active: false
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-v2/system
+          - type: custom:button-card
+            template: osvision_nav_button
+            icon: mdi:lightning-bolt
+            name: ENERGY
+            variables:
+              active: false
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-v2/energy
+
+      # --- Metrics column (jauges néon) ---------------------------------
+      # NB: adaptez les entity_id à vos capteurs réels (ceux ci-dessous
+      # existent déjà dans votre configuration d'après le squelette initial).
+      # Le capteur "Storage" est un exemple à remplacer par votre entité.
+      - type: grid
+        columns: 2
+        square: false
+        view_layout:
+          grid-area: metrics
+        cards:
+          - type: custom:decluttering-card
+            template: osvision_gauge
+            variables:
+              - entity: sensor.192_168_1_11_cpu_load
+              - name: CPU
+              - color: "#00E5FF"
+          - type: custom:decluttering-card
+            template: osvision_gauge
+            variables:
+              - entity: sensor.192_168_1_11_gpu_load
+              - name: GPU
+              - color: "#00FFC3"
+          - type: custom:decluttering-card
+            template: osvision_gauge
+            variables:
+              - entity: sensor.192_168_1_11_memoire_utilisee
+              - name: RAM
+              - color: "#3AA7FF"
+          - type: custom:decluttering-card
+            template: osvision_gauge
+            variables:
+              - entity: sensor.192_168_1_11_cpu_temperature
+              - name: TEMP
+              - color: "#FF9800"
+              - max: 100
+          - type: custom:decluttering-card
+            template: osvision_gauge
+            variables:
+              - entity: sensor.192_168_1_11_enp12s0_rx
+              - name: DOWN
+              - color: "#B084FF"
+          - type: custom:decluttering-card
+            template: osvision_gauge
+            variables:
+              - entity: sensor.192_168_1_11_enp12s0_tx
+              - name: UP
+              - color: "#B084FF"
+
+      # --- Radar central / IA Core --------------------------------------
+      - type: custom:osv-radar-card
+        title: IA CORE
+        view_layout:
+          grid-area: radar
+
+      # --- Alerts column ---------------------------------------------------
+      # Placeholder statique. En itération 2: générer dynamiquement via
+      # auto-entities / template à partir d'un capteur de notifications HA.
+      - type: vertical-stack
+        view_layout:
+          grid-area: alerts
+        cards:
+          - type: custom:button-card
+            template: osvision_alert
+            icon: mdi:check-circle
+            name: Tous les systèmes sont nominaux
+            variables:
+              level: ok
+          - type: custom:button-card
+            template: osvision_alert
+            icon: mdi:information
+            name: "Mise à jour OSVision V2 déployée"
+            variables:
+              level: info
+
+      # --- Quick actions -----------------------------------------------
+      # Remplacez les entity_id / services par vos scènes et scripts réels.
+      - type: horizontal-stack
+        view_layout:
+          grid-area: quick
+        cards:
+          - type: custom:button-card
+            template: osvision_quick_action
+            icon: mdi:weather-night
+            name: GOOD NIGHT
+            tap_action:
+              action: call-service
+              service: script.turn_on
+              service_data:
+                entity_id: script.good_night
+          - type: custom:button-card
+            template: osvision_quick_action
+            icon: mdi:movie-open
+            name: MOVIE MODE
+            tap_action:
+              action: call-service
+              service: scene.turn_on
+              service_data:
+                entity_id: scene.movie_mode
+          - type: custom:button-card
+            template: osvision_quick_action
+            icon: mdi:lightbulb-off
+            name: ALL OFF
+            tap_action:
+              action: call-service
+              service: light.turn_off
+              service_data:
+                entity_id: all
+          - type: custom:button-card
+            template: osvision_quick_action
+            icon: mdi:lock
+            name: LOCK ALL
+            tap_action:
+              action: call-service
+              service: lock.lock
+              service_data:
+                entity_id: all
+
+      # --- Footer --------------------------------------------------------
+      - type: custom:osv-footer-card
+        label: OSVISION V2 // CORE SYSTEM
+        view_layout:
+          grid-area: footer
+
+    card_mod:
+      style: |
+        hui-view {
+          background: center / cover no-repeat fixed url("/local/osvision_v2/backgrounds/home.png");
+        }
+
+  # =====================================================================
+  # ROOMS (hub — placeholder, itération 2)
+  # =====================================================================
+  - title: ROOMS
+    path: rooms
+    type: custom:grid-layout
+    layout:
+      grid-template-columns: repeat(4, 1fr)
+      grid-template-rows: auto repeat(2, auto)
+      margin: 20px
+      grid-gap: 14px
+    cards:
+      - type: custom:button-card
+        template: osvision_title
+        name: ROOM ENGINE
+        view_layout:
+          grid-column: 1 / 5
+
+      - type: custom:button-card
+        template: osvision_room_card
+        icon: mdi:sofa
+        name: LIVING
+        tap_action: &soon
+          action: perform-action
+          perform_action: browser_mod.popup
+          target:
+            entity_id: all
+          data:
+            title: Bientôt disponible
+            content: Ce module sera activé en itération 2.
+      - type: custom:button-card
+        template: osvision_room_card
+        icon: mdi:bed
+        name: BEDROOM 1
+        tap_action: *soon
+      - type: custom:button-card
+        template: osvision_room_card
+        icon: mdi:bed-king
+        name: BEDROOM 2
+        tap_action: *soon
+      - type: custom:button-card
+        template: osvision_room_card
+        icon: mdi:shower
+        name: BATHROOM
+        tap_action: *soon
+      - type: custom:button-card
+        template: osvision_room_card
+        icon: mdi:desktop-tower-monitor
+        name: COMPUTER
+        tap_action: *soon
+      - type: custom:button-card
+        template: osvision_room_card
+        icon: mdi:toolbox
+        name: TECHNICAL
+        tap_action: *soon
+      - type: custom:button-card
+        template: osvision_room_card
+        icon: mdi:eye-off
+        name: SECRET
+        tap_action: *soon
+      - type: custom:button-card
+        template: osvision_room_card
+        icon: mdi:flower
+        name: GARDEN
+        tap_action: *soon
+    card_mod:
+      style: |
+        hui-view {
+          background: center / cover no-repeat fixed url("/local/osvision_v2/backgrounds/core.png");
+        }
+
+  # =====================================================================
+  # SYSTEM (placeholder, itération 2)
+  # =====================================================================
+  - title: SYSTEM
+    path: system
+    cards:
+      - type: custom:button-card
+        template: osvision_title
+        name: SYSTEM MODULE
+      - type: custom:button-card
+        template: osvision_panel
+        name: MODULE EN CONSTRUCTION
+        show_name: true
+        styles:
+          name:
+            - color: "#8FB6C9"
+            - font-size: 16px
+    card_mod:
+      style: |
+        hui-view {
+          background: center / cover no-repeat fixed url("/local/osvision_v2/backgrounds/core.png");
+        }
+
+  # =====================================================================
+  # ENERGY (placeholder, itération 2)
+  # =====================================================================
+  - title: ENERGY
+    path: energy
+    cards:
+      - type: custom:button-card
+        template: osvision_title
+        name: ENERGY MODULE
+      - type: custom:button-card
+        template: osvision_panel
+        name: MODULE EN CONSTRUCTION
+        show_name: true
+        styles:
+          name:
+            - color: "#8FB6C9"
+            - font-size: 16px
+    card_mod:
+      style: |
+        hui-view {
+          background: center / cover no-repeat fixed url("/local/osvision_v2/backgrounds/core.png");
+        }
