@@ -1,178 +1,22 @@
-title: CORE
-path: core
-panel: true
-theme: osvision_v2
+title: OSVision V2
 
 views:
-  - title: CORE
-    path: core
-    icon: mdi:alpha-c-box
+
+  - title: HOME
+
+    path: home
+
+    panel: true
 
     cards:
 
-      # =========================
-      # BACKGROUND LAYER (visuel)
-      # =========================
-      - type: picture-elements
+      - type: markdown
+        content: |
+
+          # OSVision V2
+
+          Core Loaded
+
+      - type: picture
+
         image: /local/osvision_v2/backgrounds/core.png
-        elements: []
-
-      # =========================
-      # HUD TOP BAR
-      # =========================
-      - type: horizontal-stack
-        cards:
-
-          - type: markdown
-            content: |
-              ## OSVision V2
-              **NEURAL CORE ACTIVE**
-
-          - type: markdown
-            content: |
-              **SYSTEM STATUS**
-              🟢 ONLINE
-
-          - type: markdown
-            content: |
-              **TIME**
-              {{ now().strftime('%H:%M') }}
-
-      # =========================
-      # CENTRAL HUD (CORE)
-      # =========================
-      - type: grid
-        columns: 3
-        square: false
-        cards:
-
-          - type: gauge
-            entity: sensor.temperatur_living_room
-            name: CORE TEMP
-            min: 0
-            max: 40
-
-          - type: gauge
-            entity: sensor.humidity_living_room
-            name: CORE HUMIDITY
-            min: 0
-            max: 100
-
-          - type: entity
-            entity: sensor.power_consumption
-            name: POWER GRID
-
-      # =========================
-      # MAIN CONTROL MODULES
-      # =========================
-      - type: grid
-        columns: 2
-        square: false
-        cards:
-
-          - type: entities
-            title: LIVING MODULE
-            entities:
-              - light.living_room
-              - switch.tv
-              - media_player.living_room
-
-          - type: entities
-            title: SECURITY CORE
-            entities:
-              - alarm_control_panel.home
-              - binary_sensor.door_sensor
-              - camera.front_door
-
-# ==========================================================
-# SYSTEM STATUS
-# ==========================================================
-      - type: vertical-stack
-        cards:
-
-          - type: markdown
-            content: |
-        
-          # SYSTEM STATUS
-          ### Neural Core Telemetry
-
-          - type: grid
-            columns: 3
-            square: false
-            cards:
-
-        ###################################################
-        # CPU
-        ###################################################
-
-          - type: gauge
-            entity: sensor.192_168_1_11_cpu_load
-            name: CPU
-            min: 0
-            max: 100
-            severity:
-              green: 0
-              yellow: 60
-              red: 85
-
-        ###################################################
-        # GPU
-        ###################################################
-
-          - type: gauge
-            entity: sensor.192_168_1_11_gpu_load
-            name: GPU
-            min: 0
-            max: 100
-            severity:
-              green: 0
-              yellow: 60
-              red: 85
-
-        ###################################################
-        # RAM
-        ###################################################
-
-          - type: gauge
-            entity: sensor.192_168_1_11_memoire_utilisee
-            name: RAM
-            min: 0
-            max: 100
-            severity:
-              green: 0
-              yellow: 70
-              red: 90
-
-        ###################################################
-        # DOWNLOAD
-        ###################################################
-
-          - type: gauge
-            entity: sensor.192_168_1_11_enp12s0_rx
-            name: DOWNLOAD
-            min: 0
-            max: 1000
-
-        ###################################################
-        # UPLOAD
-        ###################################################
-
-          - type: gauge
-            entity: sensor.192_168_1_11_enp12s0_tx
-            name: UPLOAD
-            min: 0
-            max: 1000
-
-        ###################################################
-        # TEMP
-        ###################################################
-
-          - type: gauge
-            entity: sensor.192_168_1_11_cpu_temperature
-            name: CPU TEMP
-            min: 20
-            max: 90
-            severity:
-              green: 20
-              yellow: 60
-              red: 80
