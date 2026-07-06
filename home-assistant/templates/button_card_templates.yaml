@@ -1,0 +1,45 @@
+osvision_panel:
+
+  show_icon: false
+  show_name: false
+
+  styles:
+
+    card:
+      - background: rgba(8,18,28,0.75)
+      - border-radius: 20px
+      - border: 1px solid rgba(0,229,255,0.35)
+      - backdrop-filter: blur(12px)
+      - box-shadow: |
+          0 0 18px rgba(0,229,255,.18)
+      - padding: 18px
+
+osvision_title:
+
+  styles:
+
+    name:
+      - color: "#00E5FF"
+      - font-size: 28px
+      - font-weight: 700
+      - letter-spacing: 2px
+
+osvision_metric:
+
+  show_icon: false
+
+  styles:
+
+    card:
+      - background: rgba(0,0,0,.25)
+      - border-radius: 18px
+      - border: 1px solid rgba(0,229,255,.25)
+
+    name:
+      - color: cyan
+      - font-size: 18px
+
+    state:
+      - color: white
+      - font-size: 34px
+      - font-weight: bold
