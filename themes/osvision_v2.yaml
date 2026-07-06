@@ -9,10 +9,9 @@ OSVision V2:
   card-background-color: "rgba(16,27,39,0.85)"
 
   text-primary-color: "#FFFFFF"
-  text-secondary-color: "#B8E8F5"
+  secondary-text-color: "#B8E8F5"
 
   primary-text-color: "#FFFFFF"
-  secondary-text-color: "#B8E8F5"
 
   app-header-background-color: "#08121C"
   app-header-text-color: "#00E5FF"
@@ -25,3 +24,17 @@ OSVision V2:
   state-icon-color: "#00E5FF"
 
   ha-card-border-radius: "18px"
+  ha-card-border-width: "1px"
+  ha-card-background: "rgba(16,27,39,0.85)"
+
+  # browser_mod popup dialogs
+  mdc-dialog-scrim-color: "rgba(2,5,11,0.75)"
+  ha-dialog-border-radius: "20px"
+
+  # sidebar
+  sidebar-background-color: "#050B12"
+  sidebar-text-color: "#B8E8F5"
+  sidebar-icon-color: "#00E5FF"
+  sidebar-selected-background-color: "rgba(0,229,255,0.10)"
+  sidebar-selected-text-color: "#00E5FF"
+  sidebar-selected-icon-color: "#00E5FF"
