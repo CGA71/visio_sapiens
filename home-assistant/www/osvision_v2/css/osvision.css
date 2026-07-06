@@ -1,30 +1,58 @@
-/* OSVision V2 CORE UI */
+:root{
 
-:root {
-  --osv-primary: #00e5ff;
-  --osv-accent: #00ffd5;
-  --osv-bg: #050b12;
+--osv-bg:#030813;
+--osv-card:#08121c;
+--osv-cyan:#00E5FF;
+--osv-blue:#0099ff;
+--osv-green:#00FFC3;
+--osv-red:#FF4A70;
+
 }
 
-/* Background global */
-body {
-  background: var(--osv-bg);
+body{
+
+background:#030813;
+
 }
 
-/* HUD futuriste base */
-.osv-hud {
-  backdrop-filter: blur(10px);
-  border: 1px solid rgba(0, 229, 255, 0.2);
-  box-shadow: 0 0 20px rgba(0, 229, 255, 0.15);
+ha-card{
+
+background:rgba(8,18,28,.72)!important;
+
+backdrop-filter:blur(15px);
+
+border-radius:18px!important;
+
+border:1px solid rgba(0,229,255,.22);
+
+box-shadow:
+
+0 0 20px rgba(0,229,255,.12);
+
+transition:.3s;
+
 }
 
-/* Animation légère glow */
-@keyframes osvGlow {
-  0% { box-shadow: 0 0 5px var(--osv-primary); }
-  50% { box-shadow: 0 0 20px var(--osv-accent); }
-  100% { box-shadow: 0 0 5px var(--osv-primary); }
+ha-card:hover{
+
+transform:translateY(-2px);
+
+box-shadow:
+
+0 0 35px rgba(0,229,255,.25);
+
 }
 
-.osv-glow {
-  animation: osvGlow 3s infinite;
+h1,h2,h3{
+
+color:#00E5FF;
+
+letter-spacing:2px;
+
+}
+
+.state{
+
+color:white;
+
 }
