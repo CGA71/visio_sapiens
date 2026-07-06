@@ -19,4 +19,4 @@ views:
 
       - type: picture
 
-        image: /local/osvision_v2/backgrounds/core.png
+        image: home-assistant/www/osvision_v2/backgrounds/core.png
