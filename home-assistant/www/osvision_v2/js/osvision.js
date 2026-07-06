@@ -1,24 +1,28 @@
-console.log("OSVision V2");
-
 class OSVision{
 
 constructor(){
 
-this.clock();
+this.version="2.0";
 
-setInterval(()=>{
-
-this.clock();
-
-},1000);
+this.init();
 
 }
 
-clock(){
+init(){
 
-const d=new Date();
+console.log("OSVision V2");
 
-console.log(d.toLocaleTimeString());
+this.startClock();
+
+}
+
+startClock(){
+
+setInterval(()=>{
+
+this.time=new Date();
+
+},1000);
 
 }
 
