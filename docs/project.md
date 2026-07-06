@@ -57,7 +57,7 @@ Le dashboard HOME ne sera plus un assemblage de cartes
 
 Il deviendra une interface unique.
 
-Par exemple :
+mon project OS Vsion V2 :
 
 ![dashboard-osvision](osvision.png)
 
