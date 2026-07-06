@@ -1,22 +1,54 @@
-title: OSVision V2
-
+# OSVision V2 - HOME Dashboard (Skeleton v1)
+title: CORE
+path: core
+theme: osvision_v2
 views:
-
   - title: HOME
-
     path: home
-
     panel: true
-
     cards:
-
-      - type: markdown
-        content: |
-
-          # OSVision V2
-
-          Core Loaded
-
-      - type: picture
-
-        image: /local/osvision_v2/backgrounds/core.png
+      - type: vertical-stack
+        cards:
+          - type: markdown
+            content: |
+              # OSVision V2
+              ## NEURAL CORE ACTIVE
+          - type: horizontal-stack
+            cards:
+              - type: custom:button-card
+                template: osvision_panel
+                name: HOME
+              - type: custom:button-card
+                template: osvision_panel
+                name: ROOMS
+              - type: custom:button-card
+                template: osvision_panel
+                name: SYSTEM
+              - type: custom:button-card
+                template: osvision_panel
+                name: ENERGY
+          - type: grid
+            columns: 3
+            cards:
+              - type: gauge
+                entity: sensor.192_168_1_11_cpu_load
+                name: CPU
+              - type: gauge
+                entity: sensor.192_168_1_11_gpu_load
+                name: GPU
+              - type: gauge
+                entity: sensor.192_168_1_11_memoire_utilisee
+                name: RAM
+              - type: gauge
+                entity: sensor.192_168_1_11_cpu_temperature
+                name: CPU TEMP
+              - type: gauge
+                entity: sensor.192_168_1_11_enp12s0_rx
+                name: DOWNLOAD
+              - type: gauge
+                entity: sensor.192_168_1_11_enp12s0_tx
+                name: UPLOAD
+          - type: markdown
+            content: |
+              ## IA CORE
+              Radar et moteur IA seront ajoutés dans les prochaines phases.
