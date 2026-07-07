@@ -1,0 +1,108 @@
+########################################################################
+# OSVision V2 — Configuration ADMIN
+# A inclure dans configuration.yaml, ex:
+#   input_text: !include osvision/osvision_admin_config_input_text.yaml
+# ou a fusionner directement dans configuration.yaml / scripts.yaml.
+#
+# Cree aussi le dossier de sauvegarde sur le pod :
+#   mkdir -p /config/osvision/backups
+########################################################################
+
+# --------------------------------------------------------------------
+# HELPERS (Parametres > Appareils et services > Aides, ou via ce YAML)
+# --------------------------------------------------------------------
+input_text:
+  osvision_admin_pin:
+    name: "OSVision — Code admin (reference)"
+    mode: password
+    max: 20
+  osvision_pin_entry:
+    name: "OSVision — Saisie du code"
+    mode: password
+    max: 20
+
+# --------------------------------------------------------------------
+# SHELL COMMANDS — executent les scripts Python sur le pod HA lui-meme
+# --------------------------------------------------------------------
+shell_command:
+  osvision_discovery: >-
+    python3 /config/osvision/osvision_discovery.py
+    --url http://localhost:8123
+    --token {{ states('input_text.osvision_ha_token') }}
+    --output /config/osvision/report.json
+  osvision_upgrade: >-
+    python3 /config/osvision/osvision_upgrade.py
+  osvision_backup_dashboard: >-
+    sh -c "mkdir -p /config/osvision/backups &&
+    cp /config/home-assistant/dashboards/home.yaml
+    /config/osvision/backups/home_$(date +%Y%m%d_%H%M%S).yaml"
+  osvision_delete_dashboard: >-
+    rm -f /config/home-assistant/dashboards/home.yaml
+
+# --------------------------------------------------------------------
+# SCRIPTS — la logique appelee par les 3 boutons du dashboard ADMIN
+# --------------------------------------------------------------------
+script:
+  osvision_run_discovery:
+    alias: "OSVision — Lancer la découverte"
+    sequence:
+      - service: shell_command.osvision_discovery
+      - service: persistent_notification.create
+        data:
+          title: "OSVision — Découverte terminée"
+          message: >
+            Rapport généré dans /config/osvision/report.json.
+            Consulte-le pour voir les nouvelles entités par pièce.
+
+  osvision_run_upgrade:
+    alias: "OSVision — Mettre à jour le dashboard"
+    sequence:
+      - service: shell_command.osvision_backup_dashboard
+      - service: shell_command.osvision_upgrade
+      - service: persistent_notification.create
+        data:
+          title: "OSVision — Mise à jour appliquée"
+          message: >
+            Le dashboard a été régénéré à partir des dernières entités
+            découvertes. Une sauvegarde de l'ancienne version a été
+            conservée dans /config/osvision/backups/.
+
+  osvision_delete_dashboard:
+    alias: "OSVision — Supprimer le dashboard (protégé par code)"
+    sequence:
+      - if:
+          - condition: template
+            value_template: >-
+              {{ states('input_text.osvision_pin_entry') not in ['', 'unknown', 'unavailable']
+                 and states('input_text.osvision_pin_entry') == states('input_text.osvision_admin_pin') }}
+        then:
+          - service: shell_command.osvision_backup_dashboard
+          - service: shell_command.osvision_delete_dashboard
+          - service: persistent_notification.create
+            data:
+              title: "OSVision — Dashboard supprimé"
+              message: >
+                Une sauvegarde a été conservée dans
+                /config/osvision/backups/ avant suppression.
+        else:
+          - service: persistent_notification.create
+            data:
+              title: "OSVision — Échec de suppression"
+              message: "Code incorrect. Aucune action effectuée."
+      # Toujours vider le champ de saisie, succes ou echec (hygiene de securite)
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.osvision_pin_entry
+        data:
+          value: ""
+
+  # A lancer UNE SEULE FOIS a la main pour definir ton code admin,
+  # puis supprime/desactive ce script pour eviter qu'il soit relance.
+  osvision_set_admin_pin:
+    alias: "OSVision — Définir le code admin (à usage unique)"
+    sequence:
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.osvision_admin_pin
+        data:
+          value: "CHANGE_MOI_1234"  # <-- remplace par ton vrai code avant de lancer
