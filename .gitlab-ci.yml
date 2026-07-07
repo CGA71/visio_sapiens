@@ -15,9 +15,10 @@ validate:
   stage: validate
   image: alpine:latest
   script:
-    - echo "🔍 Validate OSVision V2"
-    - test -d themes
-    - test -d home-assistant/themes
+    script:
+    - echo "🔍 Validation de OSVision V2"
+    - test -d themes || (echo "❌ Erreur : Le dossier 'themes' est obligatoire !" && exit 1)
+    - test -d home-assistant/themes || (echo "❌ Erreur : Le dossier 'home-assistant/themes' est obligatoire !" && exit 1)
     - test -d home-assistant/dashboards
     - test -f themes/osvision_v2.yaml
     - test -f hacs.json
