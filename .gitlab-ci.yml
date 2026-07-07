@@ -17,7 +17,7 @@ validate:
   script:
     - echo "🔍 Validation de OSVision V2"
     - 'test -d themes || { echo "❌ Erreur : Le dossier themes est obligatoire !"; exit 1; }'
-    - 'test -d home-assistant/dashboards || { echo "❌ Erreur : Le dossier home-assistant/themes est obligatoire !"; exit 1; }'
+    - 'test -d home-assistant/dashboards || { echo "❌ Erreur : Le dossier home-assistant/dashboards est obligatoire !"; exit 1; }'
     - 'test -f themes/osvision_v2.yaml || { echo "❌ Erreur : Le fichier osvision_v2.yaml est obligatoire !"; exit 1; }'
     - 'test -f hacs.json || { echo "❌ Erreur : Le fichier hacs.json est obligatoire !"; exit 1; }'
     - 'test -f repository.yaml || { echo "❌ Erreur : Le fichier repository.yaml est obligatoire !"; exit 1; }'
@@ -46,10 +46,8 @@ build:
 deploy:
   stage: deploy
   image: bitnami/kubectl:latest
-
   rules:
     - if: '$CI_COMMIT_TAG == null'
-
   script:
     - echo "🚀 Deploying OSVision V2 to Home Assistant..."
 
@@ -64,22 +62,23 @@ deploy:
 
     - "echo Home Assistant Pod : $HA_POD"
 
-    # Nettoyage de l'ancien contenu
+    # Nettoyage et préparation de l'ancien contenu
     - kubectl exec -n homeassistant $HA_POD -c homeassistant -- rm -rf /config/dashboards
     - kubectl exec -n homeassistant $HA_POD -c homeassistant -- rm -rf /config/themes
     - kubectl exec -n homeassistant $HA_POD -c homeassistant -- mkdir -p /config/dashboards
     - kubectl exec -n homeassistant $HA_POD -c homeassistant -- mkdir -p /config/themes
+    - kubectl exec -n homeassistant $HA_POD -c homeassistant -- mkdir -p /config/templates
 
-    # Copie des dashboards
-    - kubectl cp home-assistant/dashboards homeassistant/$HA_POD:/config/ -c homeassistant
+    # Copie du contenu des dashboards (inclus le sous-dossier templates automatiquement)
+    - kubectl cp home-assistant/dashboards/. homeassistant/$HA_POD:/config/dashboards/ -c homeassistant
 
-    # Copie des thèmes
-    - kubectl cp home-assistant/themes homeassistant/$HA_POD:/config/ -c homeassistant
+    # Copie sécurisée des thèmes (ne plante pas si le dossier est absent ou vide)
+    - 'if [ -d "home-assistant/themes" ]; then kubectl cp home-assistant/themes/. homeassistant/$HA_POD:/config/themes/ -c homeassistant; else echo "⚠ Pas de thèmes trouvés dans home-assistant/themes"; fi'
 
     # Copie des ressources web
-    - kubectl cp home-assistant/www homeassistant/$HA_POD:/config/ -c homeassistant
+    - 'if [ -d "home-assistant/www" ]; then kubectl cp home-assistant/www/. homeassistant/$HA_POD:/config/www/ -c homeassistant; fi'
 
-    # Vérification de la configuration
+    # Vérification de la configuration Home Assistant
     - kubectl exec -n homeassistant $HA_POD -c homeassistant -- hass --script check_config -c /config
 
     - echo "✅ Deployment finished"
@@ -94,7 +93,6 @@ package:
     - if: $CI_COMMIT_TAG
   script:
     - echo "📦 Packaging release version $CI_COMMIT_TAG"
-
     - mkdir -p dist
     - cp -r themes dist/
     - cp hacs.json dist/
@@ -102,12 +100,10 @@ package:
     - cp README.md dist/
     - cp CHANGELOG.md dist/
     - cp VERSION dist/
-
-#    - tar -czf $PACKAGE_NAME-$CI_COMMIT_TAG.tar.gz -C dist .
   artifacts:
     paths:
-#     - $PACKAGE_NAME-$CI_COMMIT_TAG.tar.gz
       - dist/
+
 # =========================
 # RELEASE (TAG ONLY)
 # =========================
@@ -116,7 +112,6 @@ release:
   image: alpine:latest
   rules:
     - if: $CI_COMMIT_TAG
-
   script:
     - echo "🚀 Creating release for tag $CI_COMMIT_TAG"
     - 'echo "Version: $CI_COMMIT_TAG" > release.txt'
