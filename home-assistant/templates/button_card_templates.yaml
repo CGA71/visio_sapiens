@@ -1,0 +1,272 @@
+########################################################################
+# OSVision V2 — Button-Card Templates Library
+# Included from every dashboard via:
+#   button_card_templates: !include templates/button_card_templates.yaml
+########################################################################
+
+# ---------------------------------------------------------------------
+# Base glass panel — generic container, no icon/name shown by default
+# ---------------------------------------------------------------------
+osvision_panel:
+  show_icon: false
+  show_name: false
+  styles:
+    card:
+      - background: rgba(8,18,28,0.75)
+      - border-radius: 20px
+      - border: 1px solid rgba(0,229,255,0.35)
+      - backdrop-filter: blur(12px)
+      - box-shadow: 0 0 18px rgba(0,229,255,.18)
+      - padding: 18px
+
+# ---------------------------------------------------------------------
+# Section title (used for HOME / ROOMS / SYSTEM headers)
+# ---------------------------------------------------------------------
+osvision_title:
+  show_icon: false
+  styles:
+    card:
+      - background: transparent
+      - box-shadow: none
+      - border: none
+    name:
+      - color: "#00E5FF"
+      - font-size: 26px
+      - font-weight: 700
+      - letter-spacing: 3px
+      - font-family: "Orbitron, sans-serif"
+      - justify-self: start
+      - padding-left: 4px
+
+# ---------------------------------------------------------------------
+# KPI / metric tile (label + big value), used when a numeric value
+# doesn't need a full apexcharts radial gauge
+# ---------------------------------------------------------------------
+osvision_metric:
+  show_icon: false
+  styles:
+    card:
+      - background: rgba(0,0,0,.25)
+      - border-radius: 18px
+      - border: 1px solid rgba(0,229,255,.25)
+      - padding: 10px
+    name:
+      - color: "#8FB6C9"
+      - font-size: 12px
+      - letter-spacing: 2px
+    state:
+      - color: white
+      - font-size: 30px
+      - font-weight: bold
+
+# ---------------------------------------------------------------------
+# Sidebar logo/brand block — top of the vertical nav (osv-sidebar).
+# Non interactive, purely decorative.
+#   template: osvision_sidebar_logo
+#   icon: mdi:hexagon-outline
+#   name: "OSVISION V2"
+#   label: "Smart Home OS"
+# ---------------------------------------------------------------------
+osvision_sidebar_logo:
+  show_state: false
+  show_label: true
+  styles:
+    grid:
+      - grid-template-areas: '"i n" "i l"'
+      - grid-template-columns: 34px 1fr
+      - grid-template-rows: min-content min-content
+      - column-gap: 12px
+      - row-gap: 2px
+      - justify-items: start
+      - align-items: center
+    card:
+      - background: transparent
+      - box-shadow: none
+      - border: none
+      - border-bottom: 1px solid rgba(0,229,255,0.15)
+      - border-radius: 0
+      - padding: 2px 8px 16px 8px
+      - margin-bottom: 10px
+      - cursor: default
+      - pointer-events: none
+    icon:
+      - color: "#00E5FF"
+      - "--mdc-icon-size": 30px
+      - filter: drop-shadow(0 0 6px rgba(0,229,255,.5))
+    name:
+      - color: "#FFFFFF"
+      - font-size: 16px
+      - font-weight: 700
+      - letter-spacing: 2px
+      - font-family: "Orbitron, sans-serif"
+      - justify-self: start
+    label:
+      - color: "#56707E"
+      - font-size: 10px
+      - letter-spacing: 1px
+      - justify-self: start
+
+# ---------------------------------------------------------------------
+# Sidebar navigation item (HOME / CORE / ROOMS / SYSTEM / ENERGY...)
+# Vertical layout: icon left, title + subtitle stacked right.
+# Variables `active` (true/false) must be passed per-instance:
+#   template: osvision_nav_button
+#   icon: mdi:view-dashboard
+#   name: HOME
+#   label: "Vue d'ensemble"
+#   variables:
+#     active: true
+# ---------------------------------------------------------------------
+osvision_nav_button:
+  show_state: false
+  show_label: true
+  styles:
+    grid:
+      - grid-template-areas: '"i n" "i l"'
+      - grid-template-columns: 28px 1fr
+      - grid-template-rows: min-content min-content
+      - column-gap: 12px
+      - row-gap: 2px
+      - justify-items: start
+      - align-items: center
+    card:
+      - class: '[[[ return "osv-nav-button" + (variables.active ? " active" : "") ]]]'
+      - background: '[[[ return variables.active ? "rgba(0,229,255,0.14)" : "transparent" ]]]'
+      - border-radius: 12px
+      - border: '[[[ return variables.active ? "1px solid rgba(0,229,255,0.40)" : "1px solid transparent" ]]]'
+      - padding: 10px 12px
+      - margin-bottom: 4px
+      - width: 100%
+      - justify-self: stretch
+      - text-align: left
+      - transition: all .2s ease
+    icon:
+      - color: '[[[ return variables.active ? "#00E5FF" : "#8FB6C9" ]]]'
+      - "--mdc-icon-size": 20px
+      - align-self: start
+      - margin-top: 2px
+    name:
+      - color: '[[[ return variables.active ? "#00E5FF" : "#FFFFFF" ]]]'
+      - font-size: 13px
+      - font-weight: 600
+      - letter-spacing: 0.5px
+      - justify-self: start
+    label:
+      - color: '[[[ return variables.active ? "#7fd8e8" : "#56707E" ]]]'
+      - font-size: 10px
+      - justify-self: start
+
+# ---------------------------------------------------------------------
+# Sidebar bottom branding block — placed as the LAST card of the nav
+# vertical-stack, pushed to the bottom of the sidebar (margin-top: auto).
+# Purely decorative, non interactive.
+#   template: osvision_sidebar_brand_footer
+#   icon: mdi:hexagon-outline
+#   name: "OSVISION V2"
+#   label: "SMART HOME OS"
+# ---------------------------------------------------------------------
+osvision_sidebar_brand_footer:
+  show_state: false
+  show_label: true
+  styles:
+    grid:
+      - grid-template-areas: '"i" "n" "l"'
+      - grid-template-rows: min-content min-content min-content
+      - justify-items: center
+      - row-gap: 4px
+    card:
+      - class: osv-sidebar-brand glow
+      - background: transparent
+      - box-shadow: none
+      - border: none
+      - border-top: 1px solid rgba(0,229,255,0.15)
+      - border-radius: 0
+      - padding: 18px 8px 6px 8px
+      - margin-top: auto
+      - cursor: default
+      - pointer-events: none
+      - text-align: center
+    icon:
+      - color: "#00E5FF"
+      - "--mdc-icon-size": 34px
+      - filter: drop-shadow(0 0 10px rgba(0,229,255,.6))
+    name:
+      - color: "#00E5FF"
+      - font-size: 14px
+      - font-weight: 700
+      - letter-spacing: 2px
+      - font-family: "Orbitron, sans-serif"
+      - justify-self: center
+      - text-shadow: 0 0 10px rgba(0,229,255,.5)
+    label:
+      - color: "#56707E"
+      - font-size: 9px
+      - letter-spacing: 2px
+      - justify-self: center
+
+# ---------------------------------------------------------------------
+# Quick action button (scenes, scripts, toggles)
+# ---------------------------------------------------------------------
+osvision_quick_action:
+  show_state: false
+  styles:
+    card:
+      - class: osv-quick-action
+      - background: rgba(8,18,28,0.72)
+      - border-radius: 16px
+      - border: 1px solid rgba(0,229,255,0.22)
+      - padding: 14px
+    icon:
+      - color: "#00E5FF"
+      - "--mdc-icon-size": 26px
+    name:
+      - color: "#B8E8F5"
+      - font-size: 12px
+      - letter-spacing: 1px
+
+# ---------------------------------------------------------------------
+# Alert banner. Pass a `level` variable: "critical" | "info" | "ok"
+# ---------------------------------------------------------------------
+osvision_alert:
+  show_icon: true
+  styles:
+    card:
+      - class: >
+          [[[
+            if (variables.level === 'critical') return 'osv-alert';
+            if (variables.level === 'info') return 'osv-alert info';
+            return 'osv-alert ok';
+          ]]]
+      - text-align: left
+      - justify-items: start
+    icon:
+      - color: >
+          [[[
+            if (variables.level === 'critical') return '#FF3D71';
+            if (variables.level === 'info') return '#3AA7FF';
+            return '#00FFC3';
+          ]]]
+    name:
+      - color: "#FFFFFF"
+      - font-size: 13px
+      - justify-self: start
+
+# ---------------------------------------------------------------------
+# Room card (used later for the ROOMS view — one tile per room)
+# ---------------------------------------------------------------------
+osvision_room_card:
+  show_state: false
+  styles:
+    card:
+      - background: rgba(10,20,32,0.68)
+      - border-radius: 20px
+      - border: 1px solid rgba(0,229,255,0.20)
+      - height: 110px
+      - transition: transform .2s ease, box-shadow .2s ease
+    icon:
+      - color: "#00E5FF"
+      - "--mdc-icon-size": 30px
+    name:
+      - color: "#FFFFFF"
+      - font-size: 14px
+      - letter-spacing: 1px
