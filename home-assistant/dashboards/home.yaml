@@ -33,11 +33,12 @@ views:
     type: custom:grid-layout
     layout:
       grid-template-columns: 240px 1fr 1.4fr 1fr
-      grid-template-rows: auto 1fr auto auto
+      grid-template-rows: auto 1fr auto auto auto
       grid-template-areas: |
         "nav header header header"
         "nav metrics radar alerts"
         "nav quick quick quick"
+        "nav energy energy energy"
         "nav footer footer footer"
       margin: 12px
       grid-gap: 14px 14px
@@ -355,6 +356,97 @@ views:
               service: lock.lock
               service_data:
                 entity_id: all
+
+      # --- Energy row (production solaire / consommation / événements / sécurité) ----
+      - type: horizontal-stack
+        view_layout:
+          grid-area: energy
+        cards:
+          # Cadre 1 — courbe production solaire vs consommation (carte native apexcharts)
+          - type: custom:apexcharts-card
+            header:
+              show: true
+              title: "PRODUCTION & CONSOMMATION"
+              show_states: false
+            graph_span: 24h
+            card_mod:
+              style: |
+                :host { flex: 1.8 1 0; }
+                ha-card { background: var(--osv-panel) !important; }
+            series:
+              - entity: sensor.solar_power_production  # TODO: remplacer par votre entité production solaire
+                name: Production
+                type: area
+                color: "#00FFC3"
+                stroke_width: 2
+                opacity: 0.15
+              - entity: sensor.home_power_consumption  # TODO: remplacer par votre entité consommation
+                name: Consommation
+                type: line
+                color: "#00E5FF"
+                stroke_width: 2
+
+          # Cadre 2 — synthèse kW production / consommation (squelette, entités à brancher)
+          - type: vertical-stack
+            card_mod:
+              style: |
+                :host { flex: 0.8 1 0; }
+            cards:
+              - type: custom:button-card
+                template: osvision_metric
+                show_icon: true
+                icon: mdi:solar-power
+                name: PRODUCTION
+                entity: sensor.solar_power_production  # TODO: remplacer par votre entité production solaire
+              - type: custom:button-card
+                template: osvision_metric
+                show_icon: true
+                icon: mdi:flash
+                name: CONSOMMATION
+                entity: sensor.home_power_consumption  # TODO: remplacer par votre entité consommation
+
+          # Cadre 3 — événements des appareils connectés (carte native Home Assistant)
+          - type: logbook
+            title: "Événements récents"
+            hours_to_show: 24
+            card_mod:
+              style: |
+                :host { flex: 1 1 0; }
+
+          # Cadre 4 — sécurité / alarme (squelette, entités à brancher)
+          - type: vertical-stack
+            card_mod:
+              style: |
+                :host { flex: 1 1 0; }
+            cards:
+              - type: custom:button-card
+                template: osvision_page_header
+                icon: mdi:shield-home
+                name: SÉCURITÉ
+                label: "Statut système"
+              - type: custom:button-card
+                template: osvision_security_badge
+                entity: alarm_control_panel.maison  # TODO: remplacer par votre entité alarme
+              - type: custom:button-card
+                template: osvision_security_row
+                icon: mdi:door
+                name: "Portes & Fenêtres"
+                entity: binary_sensor.doors_windows  # TODO: remplacer par votre entité
+              - type: custom:button-card
+                template: osvision_security_row
+                icon: mdi:cctv
+                name: "Caméras"
+                entity: binary_sensor.cameras_active  # TODO: remplacer par votre entité
+              - type: custom:button-card
+                template: osvision_security_row
+                icon: mdi:shield-lock
+                name: "Alarme"
+                entity: alarm_control_panel.maison  # TODO: remplacer par votre entité alarme
+              - type: custom:button-card
+                template: osvision_security_row
+                icon: mdi:motion-sensor
+                name: "Mouvements"
+                entity: binary_sensor.motion  # TODO: remplacer par votre entité
 
       # --- Footer --------------------------------------------------------
       - type: custom:osv-footer-card
