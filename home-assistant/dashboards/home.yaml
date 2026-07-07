@@ -1353,8 +1353,8 @@ views:
   # =====================================================================
   # COMPUTER (placeholder, itération 6)
   # =====================================================================
-  - title: BEDROOM 1
-    path: bedroom-1
+  - title: COMPUTER
+    path: computer-room
     type: custom:grid-layout
     layout:
       grid-template-columns: 1fr 1.4fr 1fr
