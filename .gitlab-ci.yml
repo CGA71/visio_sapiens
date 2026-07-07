@@ -76,16 +76,13 @@ deploy:
     # 2. Copie du contenu principal des dashboards
     - kubectl cp home-assistant/dashboards/. homeassistant/$HA_POD:/config/dashboards/ -c homeassistant
 
-    # 3. Copie CIBLÉE et sécurisée du fichier de template
+    # 3. Copie du dossier templates (button_card + decluttering, etc.)
     - |
-      if [ -f "home-assistant/dashboards/templates/button_card_templates.yaml" ]; then
-        kubectl cp home-assistant/dashboards/templates/button_card_templates.yaml homeassistant/$HA_POD:/config/dashboards/templates/button_card_templates.yaml -c homeassistant
-        echo "✅ Fichier button_card_templates.yaml copié avec succès !"
-      elif [ -f "home-assistant/dashboards/Templates/button_card_templates.yaml" ]; then
-        kubectl cp home-assistant/dashboards/Templates/button_card_templates.yaml homeassistant/$HA_POD:/config/dashboards/templates/button_card_templates.yaml -c homeassistant
-        echo "✅ Fichier copié depuis le dossier avec une MAJUSCULE (Templates) !"
+      if [ -d "home-assistant/templates" ]; then
+        kubectl cp home-assistant/templates/. homeassistant/$HA_POD:/config/dashboards/templates/ -c homeassistant
+        echo "✅ Dossier templates copié avec succès !"
       else
-        echo "❌ ERREUR CRITIQUE : Le fichier button_card_templates.yaml n'existe nulle part dans le dépôt Git."
+        echo "❌ ERREUR CRITIQUE : Le dossier home-assistant/templates n'existe pas dans le dépôt Git."
         exit 1
       fi
 
