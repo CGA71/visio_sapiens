@@ -61,22 +61,85 @@ views:
               navigation_path: /osvision-v2/home
           - type: custom:button-card
             template: osvision_nav_button
-            icon: mdi:sofa
-            name: ROOMS
+            icon: mdi:server
+            name: CORE
             variables:
               active: false
             tap_action:
               action: navigate
-              navigation_path: /osvision-v2/rooms
+              navigation_path: /osvision-v2/core
           - type: custom:button-card
             template: osvision_nav_button
-            icon: mdi:server
-            name: SYSTEM
+            icon: mdi:sofa
+            name: LIVING ROOM
             variables:
               active: false
             tap_action:
               action: navigate
-              navigation_path: /osvision-v2/system
+              navigation_path: /osvision-v2/livingroom
+          - type: custom:button-card
+            template: osvision_nav_button
+            icon: mdi:bed
+            name: BEDROOM-1
+            variables:
+              active: false
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-v2/bedroom1
+          - type: custom:button-card
+            template: osvision_nav_button
+            icon: mdi:bed
+            name: BEDROOM-2
+            variables:
+              active: false
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-v2/bedroom2
+          - type: custom:button-card
+            template: osvision_nav_button
+            icon: mdi:shower
+            name: BATHROOM
+            variables:
+              active: false
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-v2/bathroom
+          - type: custom:button-card
+            template: osvision_nav_button
+            icon: mdi:laptop
+            name: COMPUTER ROOM
+            variables:
+              active: false
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-v2/pcroom
+          - type: custom:button-card
+            template: osvision_nav_button
+            icon: mdi:factory
+            name: TECHNICAL ROOM
+            variables:
+              active: false
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-v2/technicalroom
+          - type: custom:button-card
+            template: osvision_nav_button
+            icon: mdi:security
+            name: SECRET ROOM
+            variables:
+              active: false
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-v2/secretroom
+          - type: custom:button-card
+            template: osvision_nav_button
+            icon: mdi:flower
+            name: GARDEN
+            variables:
+              active: false
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-v2/garden
           - type: custom:button-card
             template: osvision_nav_button
             icon: mdi:lightning-bolt
@@ -100,25 +163,25 @@ views:
           - type: custom:decluttering-card
             template: osvision_gauge
             variables:
-              - entity: sensor.192_168_1_11_cpu_load
+              - entity: sensor.192_168_1_11_utilisation_cpu
               - name: CPU
               - color: "#00E5FF"
           - type: custom:decluttering-card
             template: osvision_gauge
             variables:
-              - entity: sensor.192_168_1_11_gpu_load
+              - entity: sensor.computer_room_192_168_1_11_radeon_hd_7800_series_gpu_amd1_memory_usage
               - name: GPU
               - color: "#00FFC3"
           - type: custom:decluttering-card
             template: osvision_gauge
             variables:
-              - entity: sensor.192_168_1_11_memoire_utilisee
+              - entity: sensor.192_168_1_11_utilisation_de_la_memoire
               - name: RAM
               - color: "#3AA7FF"
           - type: custom:decluttering-card
             template: osvision_gauge
             variables:
-              - entity: sensor.192_168_1_11_cpu_temperature
+              - entity: sensor.192_168_1_11_edge_temperature
               - name: TEMP
               - color: "#FF9800"
               - max: 100
@@ -132,6 +195,12 @@ views:
             template: osvision_gauge
             variables:
               - entity: sensor.192_168_1_11_enp12s0_tx
+              - name: UP
+              - color: "#B084FF"
+          - type: custom:decluttering-card
+            template: osvision_gauge
+            variables:
+              - entity: sensor.192_168_1_11_espace_libre
               - name: UP
               - color: "#B084FF"
 
