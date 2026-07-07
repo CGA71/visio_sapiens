@@ -1,6 +1,8 @@
 /**
  * OSVision V2 — <osv-footer-card>
  * HUD footer: live clock, date, connection status dot.
+ * Self-contained: does NOT depend on window.osvision engine, to avoid
+ * breaking if that global object isn't loaded/available for any reason.
  *
  * Usage in a dashboard:
  *   - type: custom:osv-footer-card
@@ -10,6 +12,7 @@ class OSVFooterCard extends HTMLElement {
   setConfig(config) {
     this._config = {
       label: "OSVISION V2 // CORE SYSTEM",
+      locale: "fr-FR",
       ...config,
     };
     this._built = false;
@@ -33,6 +36,21 @@ class OSVFooterCard extends HTMLElement {
     if (this._clockInterval) clearInterval(this._clockInterval);
   }
 
+  _formatTime(date) {
+    return date.toLocaleTimeString(this._config.locale, {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+
+  _formatDate(date) {
+    return date.toLocaleDateString(this._config.locale, {
+      weekday: "long",
+      day: "2-digit",
+      month: "long",
+    });
+  }
+
   _build() {
     this.innerHTML = `
       <ha-card style="box-shadow:none;border:none;background:transparent !important;">
@@ -50,11 +68,11 @@ class OSVFooterCard extends HTMLElement {
 
   _startClock() {
     if (this._clockInterval) return;
-    const engine = window.osvision;
     const tick = () => {
       const clockEl = this.querySelector("#osv-clock");
-      if (clockEl && engine) {
-        clockEl.textContent = `${engine.formatTime()} — ${engine.formatDate()}`;
+      if (clockEl) {
+        const now = new Date();
+        clockEl.textContent = `${this._formatTime(now)} — ${this._formatDate(now)}`;
       }
     };
     tick();
