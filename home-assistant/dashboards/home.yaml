@@ -3203,3 +3203,105 @@ views:
         hui-view {
           background: center / cover no-repeat fixed url("/local/osvision_v2/backgrounds/home.png");
         }
+  # =====================================================================
+  # ADMIN (panneau caché — non lié dans la sidebar de navigation).
+  # Accessible uniquement via l'URL directe /osvision-v2/admin.
+  # Recommandé : restreindre la visibilité à ton seul utilisateur admin
+  # via la clé "visible" ci-dessous (remplace USER_ID_ADMIN).
+  # =====================================================================
+  - title: ADMIN
+    path: admin
+    visible:
+      - user: USER_ID_ADMIN  # TODO: remplace par ton user_id HA (Paramètres > Personnes)
+    type: custom:grid-layout
+    layout:
+      grid-template-columns: 1fr 1fr 1fr
+      grid-template-rows: auto auto auto
+      grid-template-areas: |
+        "header header header"
+        "discovery upgrade delete"
+        "footer footer footer"
+      margin: 24px
+      grid-gap: 18px 18px
+    cards:
+      - type: custom:button-card
+        template: osvision_title
+        name: OSVISION V2 — ADMIN
+        view_layout:
+          grid-area: header
+
+      # --- Discovery ------------------------------------------------------
+      - type: custom:button-card
+        template: osvision_admin_button
+        icon: mdi:magnify-scan
+        name: DISCOVERY
+        label: "Rechercher les entités par pièce (lecture seule)"
+        confirmation:
+          text: "Lancer une découverte des capteurs dans toutes les zones ?"
+        tap_action:
+          action: call-service
+          service: script.osvision_run_discovery
+        view_layout:
+          grid-area: discovery
+
+      # --- Upgrade ----------------------------------------------------------
+      - type: custom:button-card
+        template: osvision_admin_button
+        icon: mdi:rocket-launch
+        name: UPGRADE
+        label: "Comparer le dashboard aux entités découvertes"
+        confirmation:
+          text: "Analyser les écarts entre le dashboard actuel et les dernières entités découvertes ? Une sauvegarde sera créée par précaution."
+        tap_action:
+          action: call-service
+          service: script.osvision_run_upgrade
+        view_layout:
+          grid-area: upgrade
+
+      # --- Delete (protégé : code + confirmation + sauvegarde auto) -------
+      - type: vertical-stack
+        view_layout:
+          grid-area: delete
+        card_mod:
+          style: |
+            :host {
+              display: block;
+              border: 1px solid rgba(255,61,113,0.35);
+              border-radius: 18px;
+              padding: 4px;
+            }
+        cards:
+          - type: custom:button-card
+            template: osvision_admin_button
+            icon: mdi:delete-alert
+            name: DELETE DASHBOARD
+            label: "Zone dangereuse — code + confirmation requis"
+            variables:
+              danger: true
+
+          - type: entities
+            entities:
+              - entity: input_text.osvision_pin_entry
+                name: "Code de confirmation"
+
+          - type: custom:button-card
+            template: osvision_quick_action
+            icon: mdi:trash-can-outline
+            name: CONFIRMER LA SUPPRESSION
+            confirmation:
+              text: "Action IRRÉVERSIBLE sans restauration manuelle de la sauvegarde. Le code doit être correct. Continuer ?"
+            tap_action:
+              action: call-service
+              service: script.osvision_delete_dashboard
+
+      # --- Footer --------------------------------------------------------
+      - type: custom:osv-footer-card
+        label: OSVISION V2 // ADMIN PANEL
+        view_layout:
+          grid-area: footer
+
+    card_mod:
+      style: |
+        hui-view {
+          background: #02050B;
+        }
