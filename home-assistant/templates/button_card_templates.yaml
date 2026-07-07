@@ -467,6 +467,50 @@ osvision_security_row:
       - justify-self: start
 
 # ---------------------------------------------------------------------
+# Admin panel button (Discovery / Upgrade / Delete). Pass `danger: true`
+# for destructive actions (red theme instead of cyan).
+#   template: osvision_admin_button
+#   icon: mdi:magnify-scan
+#   name: DISCOVERY
+#   label: "Rechercher les nouvelles entités"
+#   variables:
+#     danger: false
+# ---------------------------------------------------------------------
+osvision_admin_button:
+  show_state: false
+  show_label: true
+  variables:
+    danger: false
+  styles:
+    grid:
+      - grid-template-areas: '"i n" "i l"'
+      - grid-template-columns: 30px 1fr
+      - grid-template-rows: min-content min-content
+      - column-gap: 12px
+      - justify-items: start
+      - align-items: center
+    card:
+      - background: rgba(8,18,28,0.72)
+      - border-radius: 16px
+      - border: >
+          [[[ return variables.danger ? "1px solid rgba(255,61,113,0.45)" : "1px solid rgba(0,229,255,0.25)" ]]]
+      - padding: 16px
+      - transition: all .2s ease
+    icon:
+      - color: '[[[ return variables.danger ? "#FF3D71" : "#00E5FF" ]]]'
+      - "--mdc-icon-size": 26px
+    name:
+      - color: "#FFFFFF"
+      - font-size: 14px
+      - font-weight: 700
+      - letter-spacing: 1px
+      - justify-self: start
+    label:
+      - color: "#8FB6C9"
+      - font-size: 11px
+      - justify-self: start
+
+# ---------------------------------------------------------------------
 # Quick action button (scenes, scripts, toggles)
 # ---------------------------------------------------------------------
 osvision_quick_action:
