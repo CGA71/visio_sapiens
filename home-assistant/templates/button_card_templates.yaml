@@ -60,6 +60,149 @@ osvision_metric:
       - font-weight: bold
 
 # ---------------------------------------------------------------------
+# HUD header — page title cell (chevron-back + title + description)
+#   template: osvision_page_header
+#   icon: mdi:chevron-left
+#   name: HOME
+#   label: "Vue d'ensemble de votre système"
+# ---------------------------------------------------------------------
+osvision_page_header:
+  show_state: false
+  show_label: true
+  styles:
+    grid:
+      - grid-template-areas: '"i n" "i l"'
+      - grid-template-columns: 26px 1fr
+      - grid-template-rows: min-content min-content
+      - column-gap: 12px
+      - justify-items: start
+      - align-items: center
+    card:
+      - background: transparent
+      - box-shadow: none
+      - border: none
+      - padding: 6px 10px
+      - justify-content: start
+    icon:
+      - color: "#8FB6C9"
+      - "--mdc-icon-size": 24px
+    name:
+      - color: "#FFFFFF"
+      - font-size: 20px
+      - font-weight: 700
+      - letter-spacing: 1px
+      - justify-self: start
+      - font-family: "Orbitron, sans-serif"
+    label:
+      - color: "#8FB6C9"
+      - font-size: 12px
+      - justify-self: start
+
+# ---------------------------------------------------------------------
+# HUD header — alarm status cell (SKELETON: bind `entity` to your
+# alarm_control_panel.* once it's decided; icon/color/label react to
+# entity.state automatically: disarmed / armed_home / armed_away /
+# arming / pending / triggered / unavailable).
+#   template: osvision_alarm_status
+#   entity: alarm_control_panel.maison
+#   name: MAISON
+# ---------------------------------------------------------------------
+osvision_alarm_status:
+  show_state: false
+  show_label: true
+  icon: >
+    [[[
+      if (!entity) return "mdi:shield-off-outline";
+      switch (entity.state) {
+        case "disarmed": return "mdi:shield-check";
+        case "triggered": return "mdi:shield-alert";
+        case "arming":
+        case "pending": return "mdi:shield-sync";
+        case "unavailable": return "mdi:shield-off-outline";
+        default: return "mdi:shield-lock"; // armed_home / armed_away / armed_night / armed_vacation
+      }
+    ]]]
+  label: >
+    [[[
+      if (!entity) return "Entité non configurée";
+      switch (entity.state) {
+        case "disarmed": return "Désarmée";
+        case "triggered": return "DÉCLENCHÉE";
+        case "armed_home": return "Armée — Maison";
+        case "armed_away": return "Armée — Absence";
+        case "armed_night": return "Armée — Nuit";
+        case "armed_vacation": return "Armée — Vacances";
+        case "arming": return "Activation…";
+        case "pending": return "Alerte en attente";
+        case "unavailable": return "Indisponible";
+        default: return entity.state;
+      }
+    ]]]
+  styles:
+    grid:
+      - grid-template-areas: '"i n" "i l"'
+      - grid-template-columns: 26px 1fr
+      - grid-template-rows: min-content min-content
+      - column-gap: 12px
+      - justify-items: start
+      - align-items: center
+    card:
+      - background: rgba(0,0,0,.25)
+      - border-radius: 18px
+      - border: 1px solid rgba(0,229,255,.25)
+      - padding: 10px 14px
+      - height: 100%
+    icon:
+      - color: >
+          [[[
+            if (!entity) return "#56707E";
+            if (entity.state === "disarmed") return "#00FFC3";
+            if (entity.state === "triggered") return "#FF3D71";
+            if (["arming","pending"].includes(entity.state)) return "#FF9800";
+            return "#00E5FF";
+          ]]]
+      - "--mdc-icon-size": 22px
+    name:
+      - color: "#FFFFFF"
+      - font-size: 13px
+      - font-weight: 700
+      - letter-spacing: 1px
+      - justify-self: start
+    label:
+      - color: "#8FB6C9"
+      - font-size: 11px
+      - justify-self: start
+
+# ---------------------------------------------------------------------
+# HUD header — circular "OS" avatar / logo (right end of the header bar)
+#   template: osvision_os_avatar
+#   name: "OS"
+# ---------------------------------------------------------------------
+osvision_os_avatar:
+  show_state: false
+  show_icon: false
+  styles:
+    card:
+      - width: 46px
+      - height: 46px
+      - min-width: 46px
+      - border-radius: 50%
+      - background: "radial-gradient(circle at 30% 30%, rgba(0,229,255,0.40), rgba(176,132,255,0.30) 55%, rgba(8,18,28,0.92) 100%)"
+      - border: 1px solid rgba(0,229,255,0.45)
+      - box-shadow: 0 0 14px rgba(0,229,255,.35)
+      - display: flex
+      - align-items: center
+      - justify-content: center
+      - padding: 0
+      - margin: 0 auto
+    name:
+      - color: "#FFFFFF"
+      - font-size: 13px
+      - font-weight: 700
+      - letter-spacing: 1px
+      - justify-self: center
+
+# ---------------------------------------------------------------------
 # Sidebar logo/brand block — top of the vertical nav (osv-sidebar).
 # Non interactive, purely decorative.
 #   template: osvision_sidebar_logo
