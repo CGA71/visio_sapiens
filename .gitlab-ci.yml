@@ -62,17 +62,16 @@ deploy:
 
     - "echo Home Assistant Pod : $HA_POD"
 
-    # Nettoyage et préparation de l'ancien contenu
+    # Nettoyage et préparation des dossiers cibles
     - kubectl exec -n homeassistant $HA_POD -c homeassistant -- rm -rf /config/dashboards
     - kubectl exec -n homeassistant $HA_POD -c homeassistant -- rm -rf /config/themes
     - kubectl exec -n homeassistant $HA_POD -c homeassistant -- mkdir -p /config/dashboards
     - kubectl exec -n homeassistant $HA_POD -c homeassistant -- mkdir -p /config/themes
-    - kubectl exec -n homeassistant $HA_POD -c homeassistant -- mkdir -p /config/templates
 
-    # Copie du contenu des dashboards (inclus le sous-dossier templates automatiquement)
+    # Copie du contenu des dashboards (Le sous-dossier templates est inclus dedans automatiquement)
     - kubectl cp home-assistant/dashboards/. homeassistant/$HA_POD:/config/dashboards/ -c homeassistant
 
-    # Copie sécurisée des thèmes (ne plante pas si le dossier est absent ou vide)
+    # Copie sécurisée des thèmes
     - 'if [ -d "home-assistant/themes" ]; then kubectl cp home-assistant/themes/. homeassistant/$HA_POD:/config/themes/ -c homeassistant; else echo "⚠ Pas de thèmes trouvés dans home-assistant/themes"; fi'
 
     # Copie des ressources web
