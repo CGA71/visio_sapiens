@@ -42,12 +42,56 @@ views:
       margin: 12px
       grid-gap: 14px 14px
     cards:
-      # --- HUD header -------------------------------------------------
-      - type: custom:button-card
-        template: osvision_title
-        name: OSVISION V2 — NEURAL CORE ACTIVE
+      # --- HUD header (bandeau horizontal) ------------------------------
+      - type: horizontal-stack
         view_layout:
           grid-area: header
+        cards:
+          # Case 1 — retour + titre + descriptif de la page
+          - type: custom:button-card
+            template: osvision_page_header
+            icon: mdi:chevron-left
+            name: HOME
+            label: "Vue d'ensemble de votre système"
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-v2/home
+            card_mod:
+              style: |
+                :host { flex: 1.6 1 0; }
+
+          # Case 2 — météo extérieure (carte native Home Assistant)
+          - type: weather-forecast
+            entity: weather.home  # TODO: remplacer par votre entité météo
+            show_current: true
+            show_forecast: false
+            card_mod:
+              style: |
+                :host { flex: 1 1 0; }
+
+          # Case 3 — date et heure en direct
+          - type: custom:osv-datetime-card
+            icon: mdi:calendar-clock
+            card_mod:
+              style: |
+                :host { flex: 1 1 0; }
+
+          # Case 4 — statut alarme maison (squelette, entité à brancher)
+          - type: custom:button-card
+            template: osvision_alarm_status
+            entity: alarm_control_panel.maison  # TODO: remplacer par votre entité alarme
+            name: MAISON
+            card_mod:
+              style: |
+                :host { flex: 1 1 0; }
+
+          # Case 5 — logo / avatar OS
+          - type: custom:button-card
+            template: osvision_os_avatar
+            name: "OS"
+            card_mod:
+              style: |
+                :host { flex: 0 0 56px; }
 
       # --- Navigation bar (sidebar verticale) ---------------------------
       - type: vertical-stack
@@ -341,12 +385,56 @@ views:
       margin: 12px
       grid-gap: 14px 14px
     cards:
-      # --- HUD header -------------------------------------------------
-      - type: custom:button-card
-        template: osvision_title
-        name: OSVISION V2 — NEURAL CORE ACTIVE
+      # --- HUD header (bandeau horizontal) ------------------------------
+      - type: horizontal-stack
         view_layout:
           grid-area: header
+        cards:
+          # Case 1 — retour + titre + descriptif de la page
+          - type: custom:button-card
+            template: osvision_page_header
+            icon: mdi:chevron-left
+            name: CORE
+            label: "Système central"
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-v2/home
+            card_mod:
+              style: |
+                :host { flex: 1.6 1 0; }
+
+          # Case 2 — météo extérieure (carte native Home Assistant)
+          - type: weather-forecast
+            entity: weather.home  # TODO: remplacer par votre entité météo
+            show_current: true
+            show_forecast: false
+            card_mod:
+              style: |
+                :host { flex: 1 1 0; }
+
+          # Case 3 — date et heure en direct
+          - type: custom:osv-datetime-card
+            icon: mdi:calendar-clock
+            card_mod:
+              style: |
+                :host { flex: 1 1 0; }
+
+          # Case 4 — statut alarme maison (squelette, entité à brancher)
+          - type: custom:button-card
+            template: osvision_alarm_status
+            entity: alarm_control_panel.maison  # TODO: remplacer par votre entité alarme
+            name: MAISON
+            card_mod:
+              style: |
+                :host { flex: 1 1 0; }
+
+          # Case 5 — logo / avatar OS
+          - type: custom:button-card
+            template: osvision_os_avatar
+            name: "OS"
+            card_mod:
+              style: |
+                :host { flex: 0 0 56px; }
 
       # --- Navigation bar (sidebar verticale) ---------------------------
       - type: vertical-stack
@@ -640,12 +728,56 @@ views:
       margin: 12px
       grid-gap: 14px 14px
     cards:
-      # --- HUD header -------------------------------------------------
-      - type: custom:button-card
-        template: osvision_title
-        name: OSVISION V2 — NEURAL CORE ACTIVE
+      # --- HUD header (bandeau horizontal) ------------------------------
+      - type: horizontal-stack
         view_layout:
           grid-area: header
+        cards:
+          # Case 1 — retour + titre + descriptif de la page
+          - type: custom:button-card
+            template: osvision_page_header
+            icon: mdi:chevron-left
+            name: BEDROOM 1
+            label: "Chambre principale"
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-v2/home
+            card_mod:
+              style: |
+                :host { flex: 1.6 1 0; }
+
+          # Case 2 — météo extérieure (carte native Home Assistant)
+          - type: weather-forecast
+            entity: weather.home  # TODO: remplacer par votre entité météo
+            show_current: true
+            show_forecast: false
+            card_mod:
+              style: |
+                :host { flex: 1 1 0; }
+
+          # Case 3 — date et heure en direct
+          - type: custom:osv-datetime-card
+            icon: mdi:calendar-clock
+            card_mod:
+              style: |
+                :host { flex: 1 1 0; }
+
+          # Case 4 — statut alarme maison (squelette, entité à brancher)
+          - type: custom:button-card
+            template: osvision_alarm_status
+            entity: alarm_control_panel.maison  # TODO: remplacer par votre entité alarme
+            name: MAISON
+            card_mod:
+              style: |
+                :host { flex: 1 1 0; }
+
+          # Case 5 — logo / avatar OS
+          - type: custom:button-card
+            template: osvision_os_avatar
+            name: "OS"
+            card_mod:
+              style: |
+                :host { flex: 0 0 56px; }
 
       # --- Navigation bar (sidebar verticale) ---------------------------
       - type: vertical-stack
@@ -939,12 +1071,56 @@ views:
       margin: 12px
       grid-gap: 14px 14px
     cards:
-      # --- HUD header -------------------------------------------------
-      - type: custom:button-card
-        template: osvision_title
-        name: OSVISION V2 — NEURAL CORE ACTIVE
+      # --- HUD header (bandeau horizontal) ------------------------------
+      - type: horizontal-stack
         view_layout:
           grid-area: header
+        cards:
+          # Case 1 — retour + titre + descriptif de la page
+          - type: custom:button-card
+            template: osvision_page_header
+            icon: mdi:chevron-left
+            name: BEDROOM 2
+            label: "Chambre 2"
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-v2/home
+            card_mod:
+              style: |
+                :host { flex: 1.6 1 0; }
+
+          # Case 2 — météo extérieure (carte native Home Assistant)
+          - type: weather-forecast
+            entity: weather.home  # TODO: remplacer par votre entité météo
+            show_current: true
+            show_forecast: false
+            card_mod:
+              style: |
+                :host { flex: 1 1 0; }
+
+          # Case 3 — date et heure en direct
+          - type: custom:osv-datetime-card
+            icon: mdi:calendar-clock
+            card_mod:
+              style: |
+                :host { flex: 1 1 0; }
+
+          # Case 4 — statut alarme maison (squelette, entité à brancher)
+          - type: custom:button-card
+            template: osvision_alarm_status
+            entity: alarm_control_panel.maison  # TODO: remplacer par votre entité alarme
+            name: MAISON
+            card_mod:
+              style: |
+                :host { flex: 1 1 0; }
+
+          # Case 5 — logo / avatar OS
+          - type: custom:button-card
+            template: osvision_os_avatar
+            name: "OS"
+            card_mod:
+              style: |
+                :host { flex: 0 0 56px; }
 
       # --- Navigation bar (sidebar verticale) ---------------------------
       - type: vertical-stack
@@ -1238,12 +1414,56 @@ views:
       margin: 12px
       grid-gap: 14px 14px
     cards:
-      # --- HUD header -------------------------------------------------
-      - type: custom:button-card
-        template: osvision_title
-        name: OSVISION V2 — NEURAL CORE ACTIVE
+      # --- HUD header (bandeau horizontal) ------------------------------
+      - type: horizontal-stack
         view_layout:
           grid-area: header
+        cards:
+          # Case 1 — retour + titre + descriptif de la page
+          - type: custom:button-card
+            template: osvision_page_header
+            icon: mdi:chevron-left
+            name: BATHROOM
+            label: "Salle de bain"
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-v2/home
+            card_mod:
+              style: |
+                :host { flex: 1.6 1 0; }
+
+          # Case 2 — météo extérieure (carte native Home Assistant)
+          - type: weather-forecast
+            entity: weather.home  # TODO: remplacer par votre entité météo
+            show_current: true
+            show_forecast: false
+            card_mod:
+              style: |
+                :host { flex: 1 1 0; }
+
+          # Case 3 — date et heure en direct
+          - type: custom:osv-datetime-card
+            icon: mdi:calendar-clock
+            card_mod:
+              style: |
+                :host { flex: 1 1 0; }
+
+          # Case 4 — statut alarme maison (squelette, entité à brancher)
+          - type: custom:button-card
+            template: osvision_alarm_status
+            entity: alarm_control_panel.maison  # TODO: remplacer par votre entité alarme
+            name: MAISON
+            card_mod:
+              style: |
+                :host { flex: 1 1 0; }
+
+          # Case 5 — logo / avatar OS
+          - type: custom:button-card
+            template: osvision_os_avatar
+            name: "OS"
+            card_mod:
+              style: |
+                :host { flex: 0 0 56px; }
 
       # --- Navigation bar (sidebar verticale) ---------------------------
       - type: vertical-stack
@@ -1537,12 +1757,56 @@ views:
       margin: 12px
       grid-gap: 14px 14px
     cards:
-      # --- HUD header -------------------------------------------------
-      - type: custom:button-card
-        template: osvision_title
-        name: OSVISION V2 — NEURAL CORE ACTIVE
+      # --- HUD header (bandeau horizontal) ------------------------------
+      - type: horizontal-stack
         view_layout:
           grid-area: header
+        cards:
+          # Case 1 — retour + titre + descriptif de la page
+          - type: custom:button-card
+            template: osvision_page_header
+            icon: mdi:chevron-left
+            name: COMPUTER
+            label: "Salle informatique"
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-v2/home
+            card_mod:
+              style: |
+                :host { flex: 1.6 1 0; }
+
+          # Case 2 — météo extérieure (carte native Home Assistant)
+          - type: weather-forecast
+            entity: weather.home  # TODO: remplacer par votre entité météo
+            show_current: true
+            show_forecast: false
+            card_mod:
+              style: |
+                :host { flex: 1 1 0; }
+
+          # Case 3 — date et heure en direct
+          - type: custom:osv-datetime-card
+            icon: mdi:calendar-clock
+            card_mod:
+              style: |
+                :host { flex: 1 1 0; }
+
+          # Case 4 — statut alarme maison (squelette, entité à brancher)
+          - type: custom:button-card
+            template: osvision_alarm_status
+            entity: alarm_control_panel.maison  # TODO: remplacer par votre entité alarme
+            name: MAISON
+            card_mod:
+              style: |
+                :host { flex: 1 1 0; }
+
+          # Case 5 — logo / avatar OS
+          - type: custom:button-card
+            template: osvision_os_avatar
+            name: "OS"
+            card_mod:
+              style: |
+                :host { flex: 0 0 56px; }
 
       # --- Navigation bar (sidebar verticale) ---------------------------
       - type: vertical-stack
@@ -1836,12 +2100,56 @@ views:
       margin: 12px
       grid-gap: 14px 14px
     cards:
-      # --- HUD header -------------------------------------------------
-      - type: custom:button-card
-        template: osvision_title
-        name: OSVISION V2 — NEURAL CORE ACTIVE
+      # --- HUD header (bandeau horizontal) ------------------------------
+      - type: horizontal-stack
         view_layout:
           grid-area: header
+        cards:
+          # Case 1 — retour + titre + descriptif de la page
+          - type: custom:button-card
+            template: osvision_page_header
+            icon: mdi:chevron-left
+            name: TECHNICAL ROOM
+            label: "Local technique"
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-v2/home
+            card_mod:
+              style: |
+                :host { flex: 1.6 1 0; }
+
+          # Case 2 — météo extérieure (carte native Home Assistant)
+          - type: weather-forecast
+            entity: weather.home  # TODO: remplacer par votre entité météo
+            show_current: true
+            show_forecast: false
+            card_mod:
+              style: |
+                :host { flex: 1 1 0; }
+
+          # Case 3 — date et heure en direct
+          - type: custom:osv-datetime-card
+            icon: mdi:calendar-clock
+            card_mod:
+              style: |
+                :host { flex: 1 1 0; }
+
+          # Case 4 — statut alarme maison (squelette, entité à brancher)
+          - type: custom:button-card
+            template: osvision_alarm_status
+            entity: alarm_control_panel.maison  # TODO: remplacer par votre entité alarme
+            name: MAISON
+            card_mod:
+              style: |
+                :host { flex: 1 1 0; }
+
+          # Case 5 — logo / avatar OS
+          - type: custom:button-card
+            template: osvision_os_avatar
+            name: "OS"
+            card_mod:
+              style: |
+                :host { flex: 0 0 56px; }
 
       # --- Navigation bar (sidebar verticale) ---------------------------
       - type: vertical-stack
@@ -2135,12 +2443,56 @@ views:
       margin: 12px
       grid-gap: 14px 14px
     cards:
-      # --- HUD header -------------------------------------------------
-      - type: custom:button-card
-        template: osvision_title
-        name: OSVISION V2 — NEURAL CORE ACTIVE
+      # --- HUD header (bandeau horizontal) ------------------------------
+      - type: horizontal-stack
         view_layout:
           grid-area: header
+        cards:
+          # Case 1 — retour + titre + descriptif de la page
+          - type: custom:button-card
+            template: osvision_page_header
+            icon: mdi:chevron-left
+            name: SECRET
+            label: "Pièce secrète"
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-v2/home
+            card_mod:
+              style: |
+                :host { flex: 1.6 1 0; }
+
+          # Case 2 — météo extérieure (carte native Home Assistant)
+          - type: weather-forecast
+            entity: weather.home  # TODO: remplacer par votre entité météo
+            show_current: true
+            show_forecast: false
+            card_mod:
+              style: |
+                :host { flex: 1 1 0; }
+
+          # Case 3 — date et heure en direct
+          - type: custom:osv-datetime-card
+            icon: mdi:calendar-clock
+            card_mod:
+              style: |
+                :host { flex: 1 1 0; }
+
+          # Case 4 — statut alarme maison (squelette, entité à brancher)
+          - type: custom:button-card
+            template: osvision_alarm_status
+            entity: alarm_control_panel.maison  # TODO: remplacer par votre entité alarme
+            name: MAISON
+            card_mod:
+              style: |
+                :host { flex: 1 1 0; }
+
+          # Case 5 — logo / avatar OS
+          - type: custom:button-card
+            template: osvision_os_avatar
+            name: "OS"
+            card_mod:
+              style: |
+                :host { flex: 0 0 56px; }
 
       # --- Navigation bar (sidebar verticale) ---------------------------
       - type: vertical-stack
@@ -2434,12 +2786,56 @@ views:
       margin: 12px
       grid-gap: 14px 14px
     cards:
-      # --- HUD header -------------------------------------------------
-      - type: custom:button-card
-        template: osvision_title
-        name: OSVISION V2 — NEURAL CORE ACTIVE
+      # --- HUD header (bandeau horizontal) ------------------------------
+      - type: horizontal-stack
         view_layout:
           grid-area: header
+        cards:
+          # Case 1 — retour + titre + descriptif de la page
+          - type: custom:button-card
+            template: osvision_page_header
+            icon: mdi:chevron-left
+            name: GARDEN
+            label: "Jardin"
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-v2/home
+            card_mod:
+              style: |
+                :host { flex: 1.6 1 0; }
+
+          # Case 2 — météo extérieure (carte native Home Assistant)
+          - type: weather-forecast
+            entity: weather.home  # TODO: remplacer par votre entité météo
+            show_current: true
+            show_forecast: false
+            card_mod:
+              style: |
+                :host { flex: 1 1 0; }
+
+          # Case 3 — date et heure en direct
+          - type: custom:osv-datetime-card
+            icon: mdi:calendar-clock
+            card_mod:
+              style: |
+                :host { flex: 1 1 0; }
+
+          # Case 4 — statut alarme maison (squelette, entité à brancher)
+          - type: custom:button-card
+            template: osvision_alarm_status
+            entity: alarm_control_panel.maison  # TODO: remplacer par votre entité alarme
+            name: MAISON
+            card_mod:
+              style: |
+                :host { flex: 1 1 0; }
+
+          # Case 5 — logo / avatar OS
+          - type: custom:button-card
+            template: osvision_os_avatar
+            name: "OS"
+            card_mod:
+              style: |
+                :host { flex: 0 0 56px; }
 
       # --- Navigation bar (sidebar verticale) ---------------------------
       - type: vertical-stack
