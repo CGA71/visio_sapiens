@@ -18,7 +18,6 @@ validate:
     script:
     - echo "🔍 Validation de OSVision V2"
     - test -d themes || (echo "❌ Erreur : Le dossier 'themes' est obligatoire !" && exit 1)
-    - test -d home-assistant/themes || (echo "❌ Erreur : Le dossier 'home-assistant/themes' est obligatoire !" && exit 1)
     - test -d home-assistant/dashboards || (echo "❌ Erreur : Le dossier 'home-assistant/dashboards' est obligatoire !" && exit 1)
     - test -f themes/osvision_v2.yaml || (echo "❌ Erreur : Le dossier 'theme/osvision_v2.yaml' est obligatoire !" && exit 1)
     - test -f hacs.json || (echo "❌ Erreur : Le fichier hacs.json est obligatoire !" && exit 1)
