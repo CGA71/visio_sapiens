@@ -16,8 +16,8 @@ title: OSVision V2
 path: osvision-v2
 theme: OSVision V2
 
-button_card_templates: !include /templates/button_card_templates.yaml
-decluttering_templates: !include /templates/decluttering_templates.yaml
+button_card_templates: !include templates/button_card_templates.yaml
+decluttering_templates: !include templates/decluttering_templates.yaml
 
 views:
   # =====================================================================
