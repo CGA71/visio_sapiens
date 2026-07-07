@@ -1,45 +1,3 @@
-stages:
-  - validate
-  - build
-  - deploy
-  - package
-  - release
-
-variables:
-  PACKAGE_NAME: osvision-v2
-
-# =========================
-# VALIDATE (TOUJOURS)
-# =========================
-validate:
-  stage: validate
-  image: alpine:latest
-  script:
-    - echo "🔍 Validation de OSVision V2"
-    - 'test -d themes || { echo "❌ Erreur : Le dossier themes est obligatoire !"; exit 1; }'
-    - 'test -d home-assistant/dashboards || { echo "❌ Erreur : Le dossier home-assistant/dashboards est obligatoire !"; exit 1; }'
-    - 'test -f themes/osvision_v2.yaml || { echo "❌ Erreur : Le fichier osvision_v2.yaml est obligatoire !"; exit 1; }'
-    - 'test -f hacs.json || { echo "❌ Erreur : Le fichier hacs.json est obligatoire !"; exit 1; }'
-    - 'test -f repository.yaml || { echo "❌ Erreur : Le fichier repository.yaml est obligatoire !"; exit 1; }'
-    - echo "✅ OK"
-
-# =========================
-# BUILD (BRANCH ONLY)
-# =========================
-build:
-  stage: build
-  image: alpine:latest
-  rules:
-    - if: $CI_COMMIT_TAG == null
-  script:
-    - echo "📦 Build dev package"
-    - mkdir -p build
-    - cp -r home-assistant/* build/
-    - tar -czf $PACKAGE_NAME.tar.gz -C build .
-  artifacts:
-    paths:
-      - $PACKAGE_NAME.tar.gz
-
 # =========================
 # DEPLOY (BRANCH ONLY)
 # =========================
@@ -66,10 +24,14 @@ deploy:
     - kubectl exec -n homeassistant $HA_POD -c homeassistant -- rm -rf /config/dashboards
     - kubectl exec -n homeassistant $HA_POD -c homeassistant -- rm -rf /config/themes
     - kubectl exec -n homeassistant $HA_POD -c homeassistant -- mkdir -p /config/dashboards
+    - kubectl exec -n homeassistant $HA_POD -c homeassistant -- mkdir -p /config/dashboards/templates
     - kubectl exec -n homeassistant $HA_POD -c homeassistant -- mkdir -p /config/themes
 
-    # Copie du contenu des dashboards (Le sous-dossier templates est inclus dedans automatiquement)
+    # 1. Copie du contenu principal des dashboards
     - kubectl cp home-assistant/dashboards/. homeassistant/$HA_POD:/config/dashboards/ -c homeassistant
+
+    # 2. FORCE la copie du dossier templates directement à sa place (/config/dashboards/templates/)
+    - 'if [ -d "home-assistant/dashboards/templates" ]; then kubectl cp home-assistant/dashboards/templates/. homeassistant/$HA_POD:/config/dashboards/templates/ -c homeassistant; else echo "❌ ATTENTION : Le dossier local home-assistant/dashboards/templates est INTROUVABLE sur le runner !"; fi'
 
     # Copie sécurisée des thèmes
     - 'if [ -d "home-assistant/themes" ]; then kubectl cp home-assistant/themes/. homeassistant/$HA_POD:/config/themes/ -c homeassistant; else echo "⚠ Pas de thèmes trouvés dans home-assistant/themes"; fi'
@@ -77,41 +39,11 @@ deploy:
     # Copie des ressources web
     - 'if [ -d "home-assistant/www" ]; then kubectl cp home-assistant/www/. homeassistant/$HA_POD:/config/www/ -c homeassistant; fi'
 
+    # Étape de debug : On liste ce qui est VRAIMENT dans le dossier pour comprendre
+    - echo "🔍 Contenu du dossier templates dans le Pod :"
+    - kubectl exec -n homeassistant $HA_POD -c homeassistant -- ls -la /config/dashboards/templates
+
     # Vérification de la configuration Home Assistant
     - kubectl exec -n homeassistant $HA_POD -c homeassistant -- hass --script check_config -c /config
 
     - echo "✅ Deployment finished"
-
-# =========================
-# PACKAGE (TAG ONLY)
-# =========================
-package:
-  stage: package
-  image: alpine:latest
-  rules:
-    - if: $CI_COMMIT_TAG
-  script:
-    - echo "📦 Packaging release version $CI_COMMIT_TAG"
-    - mkdir -p dist
-    - cp -r themes dist/
-    - cp hacs.json dist/
-    - cp repository.yaml dist/
-    - cp README.md dist/
-    - cp CHANGELOG.md dist/
-    - cp VERSION dist/
-  artifacts:
-    paths:
-      - dist/
-
-# =========================
-# RELEASE (TAG ONLY)
-# =========================
-release:
-  stage: release
-  image: alpine:latest
-  rules:
-    - if: $CI_COMMIT_TAG
-  script:
-    - echo "🚀 Creating release for tag $CI_COMMIT_TAG"
-    - 'echo "Version: $CI_COMMIT_TAG" > release.txt'
-    - echo "OSVision V2 Release created"
