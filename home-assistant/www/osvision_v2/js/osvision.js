@@ -6,17 +6,23 @@
  * This engine does NOT manipulate the dashboard DOM directly: each custom card
  * owns its own rendering. It only exposes small, dependency-free helpers so
  * every future OSVision component (rooms, widgets, alerts...) behaves consistently.
+ *
+ * NOTE: osv-card.js and osv-datetime-card.js no longer depend on this engine
+ * for time/date formatting (they compute it natively) after the bug where
+ * window.osvision.formatTime was found to be unavailable in some deployments.
+ * This engine is kept for the pub/sub bus and color/threshold helpers, which
+ * remain useful for future OSVision components (alerts, radar reactions...).
  */
 
 class OSVisionEngine {
   constructor() {
-    this.version = "2.0.0";
+    this.version = "2.0.1";
     this._listeners = {};
     console.info(`%cOSVision V2 Engine loaded (v${this.version})`, "color:#00E5FF;font-weight:bold;");
   }
 
   /* ---------------------------------------------------------------------
-   * Time helpers
+   * Time helpers (kept for backward compatibility / optional reuse)
    * ------------------------------------------------------------------- */
   now() {
     return new Date();
