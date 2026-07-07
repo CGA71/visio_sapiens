@@ -1,8 +1,8 @@
 /**
  * OSVision V2 — <osv-datetime-card>
  * HUD header widget: live clock + full date (jour, mois, année).
- * Distinct from <osv-footer-card> (which also shows connection status);
- * this one is a compact KPI-style cell for the header bar.
+ * Self-contained: does NOT depend on window.osvision engine, to avoid
+ * breaking if that global object isn't loaded/available for any reason.
  *
  * Usage in a dashboard:
  *   - type: custom:osv-datetime-card
@@ -12,6 +12,7 @@ class OSVDateTimeCard extends HTMLElement {
   setConfig(config) {
     this._config = {
       icon: "mdi:calendar-clock",
+      locale: "fr-FR",
       ...config,
     };
     this._built = false;
@@ -34,6 +35,22 @@ class OSVDateTimeCard extends HTMLElement {
     if (this._interval) clearInterval(this._interval);
   }
 
+  _formatTime(date) {
+    return date.toLocaleTimeString(this._config.locale, {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
+  }
+
+  _formatDate(date) {
+    return date.toLocaleDateString(this._config.locale, {
+      weekday: "long",
+      day: "2-digit",
+      month: "long",
+      year: "numeric",
+    });
+  }
+
   _build() {
     this.innerHTML = `
       <ha-card style="height:100%;">
@@ -50,14 +67,13 @@ class OSVDateTimeCard extends HTMLElement {
 
   _startClock() {
     if (this._interval) return;
-    const engine = window.osvision;
     const tick = () => {
       const timeEl = this.querySelector("#osv-dt-time");
       const dateEl = this.querySelector("#osv-dt-date");
-      if (timeEl && dateEl && engine) {
-        timeEl.textContent = engine.formatTime();
-        dateEl.textContent = engine.formatDate();
-      }
+      if (!timeEl || !dateEl) return;
+      const now = new Date();
+      timeEl.textContent = this._formatTime(now);
+      dateEl.textContent = this._formatDate(now);
     };
     tick();
     this._interval = setInterval(tick, 1000);
