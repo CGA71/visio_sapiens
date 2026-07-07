@@ -294,3 +294,32 @@ ha-card:hover{
 .osv-sidebar-brand{
   animation: osv-glow 3s infinite;
 }
+
+/* --------------------------------------------------------------------------
+   13. HUD HEADER — DATETIME WIDGET (used by <osv-datetime-card>)
+   -------------------------------------------------------------------------- */
+.osv-datetime{
+  display:flex;
+  align-items:center;
+  gap: 12px;
+  height:100%;
+  padding: 10px 14px;
+}
+.osv-datetime .osv-datetime-icon{
+  color: var(--osv-cyan);
+  --mdc-icon-size: 26px;
+  filter: drop-shadow(0 0 6px rgba(0,229,255,.4));
+}
+.osv-datetime .osv-datetime-time{
+  color: #FFFFFF;
+  font-family: var(--osv-font-mono);
+  font-size: 20px;
+  font-weight: 700;
+  line-height: 1.1;
+}
+.osv-datetime .osv-datetime-date{
+  color: var(--osv-text-dim);
+  font-size: 11px;
+  letter-spacing: .5px;
+  text-transform: capitalize;
+}
