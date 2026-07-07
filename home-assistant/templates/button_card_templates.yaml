@@ -50,6 +50,9 @@ osvision_metric:
       - border-radius: 18px
       - border: 1px solid rgba(0,229,255,.25)
       - padding: 10px
+    icon:
+      - color: "#00E5FF"
+      - "--mdc-icon-size": 20px
     name:
       - color: "#8FB6C9"
       - font-size: 12px
@@ -346,6 +349,122 @@ osvision_sidebar_brand_footer:
       - font-size: 9px
       - letter-spacing: 2px
       - justify-self: center
+
+# ---------------------------------------------------------------------
+# Security panel — central glowing badge (icon reacts to alarm entity).
+#   template: osvision_security_badge
+#   entity: alarm_control_panel.maison
+# ---------------------------------------------------------------------
+osvision_security_badge:
+  show_name: false
+  show_state: false
+  icon: >
+    [[[
+      if (!entity) return "mdi:shield-off-outline";
+      switch (entity.state) {
+        case "disarmed": return "mdi:shield-check";
+        case "triggered": return "mdi:shield-alert";
+        case "arming":
+        case "pending": return "mdi:shield-sync";
+        case "unavailable": return "mdi:shield-off-outline";
+        default: return "mdi:shield-lock";
+      }
+    ]]]
+  styles:
+    card:
+      - width: 84px
+      - height: 84px
+      - border-radius: 50%
+      - margin: 8px auto 14px auto
+      - display: flex
+      - align-items: center
+      - justify-content: center
+      - background: >
+          [[[
+            if (!entity || entity.state === "disarmed") return "radial-gradient(circle at 35% 30%, rgba(0,255,195,0.35), rgba(8,18,28,0.9) 75%)";
+            if (entity.state === "triggered") return "radial-gradient(circle at 35% 30%, rgba(255,61,113,0.40), rgba(8,18,28,0.9) 75%)";
+            return "radial-gradient(circle at 35% 30%, rgba(0,229,255,0.35), rgba(8,18,28,0.9) 75%)";
+          ]]]
+      - border: >
+          [[[
+            if (!entity || entity.state === "disarmed") return "1px solid rgba(0,255,195,0.5)";
+            if (entity.state === "triggered") return "1px solid rgba(255,61,113,0.5)";
+            return "1px solid rgba(0,229,255,0.5)";
+          ]]]
+      - box-shadow: >
+          [[[
+            if (!entity || entity.state === "disarmed") return "0 0 22px rgba(0,255,195,.35)";
+            if (entity.state === "triggered") return "0 0 22px rgba(255,61,113,.45)";
+            return "0 0 22px rgba(0,229,255,.35)";
+          ]]]
+    icon:
+      - color: >
+          [[[
+            if (!entity || entity.state === "disarmed") return "#00FFC3";
+            if (entity.state === "triggered") return "#FF3D71";
+            return "#00E5FF";
+          ]]]
+      - "--mdc-icon-size": 34px
+
+# ---------------------------------------------------------------------
+# Security panel — one status row (icon + label + dynamic state text).
+# Works with any entity domain (binary_sensor on/off, alarm_control_panel...).
+#   template: osvision_security_row
+#   icon: mdi:door
+#   name: "Portes & Fenêtres"
+#   entity: binary_sensor.doors_windows
+# ---------------------------------------------------------------------
+osvision_security_row:
+  show_state: false
+  show_label: true
+  label: >
+    [[[
+      if (!entity) return "Non configuré";
+      switch (entity.state) {
+        case "on": return "Actif";
+        case "off": return "Inactif";
+        case "unavailable": return "Indisponible";
+        case "disarmed": return "Désarmée";
+        case "armed_home": return "Armée — Maison";
+        case "armed_away": return "Armée — Absence";
+        case "triggered": return "Déclenchée";
+        default: return entity.state;
+      }
+    ]]]
+  styles:
+    grid:
+      - grid-template-areas: '"i n" "i l"'
+      - grid-template-columns: 26px 1fr
+      - grid-template-rows: min-content min-content
+      - column-gap: 12px
+      - justify-items: start
+      - align-items: center
+    card:
+      - background: transparent
+      - box-shadow: none
+      - border: none
+      - border-bottom: 1px solid rgba(0,229,255,0.10)
+      - border-radius: 0
+      - padding: 8px 4px
+      - cursor: default
+      - pointer-events: none
+    icon:
+      - color: >
+          [[[
+            if (!entity) return "#56707E";
+            if (["on","triggered"].includes(entity.state)) return "#00E5FF";
+            return "#8FB6C9";
+          ]]]
+      - "--mdc-icon-size": 20px
+    name:
+      - color: "#FFFFFF"
+      - font-size: 13px
+      - font-weight: 600
+      - justify-self: start
+    label:
+      - color: "#8FB6C9"
+      - font-size: 11px
+      - justify-self: start
 
 # ---------------------------------------------------------------------
 # Quick action button (scenes, scripts, toggles)
