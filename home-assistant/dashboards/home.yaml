@@ -424,6 +424,13 @@ views:
             card_mod:
               style: |
                 :host { flex: 1 1 0; }
+                ha-card {
+                  background: var(--osv-panel) !important;
+                  color: #B8E8F5 !important;
+                }
+                ha-card .card-header {
+                  color: #FFFFFF !important;
+                }
 
           # Cadre 4 — sécurité / alarme (squelette, entités à brancher)
           - type: vertical-stack
