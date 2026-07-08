@@ -95,89 +95,16 @@ ha-card:hover{
 
 /* --------------------------------------------------------------------------
    5. NAVIGATION SIDEBAR (vertical) — used by osvision_nav_button
+   NOTE: l'animation de survol (fond, bordure, glow, scan) est desormais geree
+   directement via card_mod dans le template osvision_nav_button
+   (button_card_templates.yaml), et non plus via une classe CSS externe —
+   la classe custom appliquee par button-card ne se propageait pas de facon
+   fiable au DOM reel. Seul le style de base (police/espacement) reste ici.
    -------------------------------------------------------------------------- */
 .osv-nav-button{
-  position: relative;
-  overflow: hidden;
   font-family: var(--osv-font-mono) !important;
   letter-spacing: 2px !important;
   cursor: pointer;
-  transition:
-    background .45s cubic-bezier(.4,0,.2,1),
-    border-color .45s cubic-bezier(.4,0,.2,1),
-    box-shadow .45s cubic-bezier(.4,0,.2,1),
-    filter .45s ease;
-}
-
-/* 1. Fond bleu qui "glisse" depuis la gauche au survol (wipe avec easing) */
-.osv-nav-button::before{
-  content:"";
-  position:absolute;
-  inset:0;
-  background: linear-gradient(90deg, rgba(0,229,255,0.20), rgba(0,229,255,0.04));
-  transform: scaleX(0);
-  transform-origin: left center;
-  transition: transform .45s cubic-bezier(.4,0,.2,1);
-  z-index:0;
-  pointer-events:none;
-}
-.osv-nav-button:hover::before{
-  transform: scaleX(1);
-}
-
-/* 5. Halo lumineux qui balaie le bouton une fois au survol (effet "scan") */
-.osv-nav-button::after{
-  content:"";
-  position:absolute;
-  top:0;
-  left:-40%;
-  width:40%;
-  height:100%;
-  background: linear-gradient(115deg, transparent 0%, rgba(0,229,255,0.35) 50%, transparent 100%);
-  transform: skewX(-15deg);
-  opacity:0;
-  pointer-events:none;
-  z-index:1;
-}
-.osv-nav-button:hover::after{
-  animation: osv-nav-scan .9s ease forwards;
-}
-@keyframes osv-nav-scan{
-  0%   { left:-40%; opacity:0; }
-  15%  { opacity:1; }
-  100% { left:120%; opacity:0; }
-}
-
-/* 2. Legere augmentation de luminosite + 3. bordure qui apparait progressivement
-   (geree par la transition border-color/box-shadow definie plus haut) */
-.osv-nav-button:hover{
-  border: 1px solid rgba(0,229,255,0.65) !important;
-  border-radius: 12px !important;
-  box-shadow: 0 0 18px rgba(0,229,255,.35);
-  filter: brightness(1.12);
-}
-
-/* Texte/icone au-dessus des pseudo-elements de fond, avec leur propre transition */
-.osv-nav-button .icon,
-.osv-nav-button ha-icon,
-.osv-nav-button .name,
-.osv-nav-button .label{
-  position: relative;
-  z-index: 2;
-  transition: color .4s ease, filter .4s ease;
-}
-
-/* 4. Icone cyan avec glow au survol */
-.osv-nav-button:hover .icon,
-.osv-nav-button:hover ha-icon{
-  color: #00E5FF !important;
-  filter: drop-shadow(0 0 8px rgba(0,229,255,.7));
-}
-.osv-nav-button:hover .name{
-  color: #00E5FF !important;
-}
-.osv-nav-button:hover .label{
-  color: #7fd8e8 !important;
 }
 
 /* --------------------------------------------------------------------------
