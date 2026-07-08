@@ -426,6 +426,8 @@ views:
                 :host { flex: 1 1 0; }
                 ha-card {
                   background: var(--osv-panel) !important;
+                }
+                ha-card, ha-card * {
                   color: #B8E8F5 !important;
                 }
                 ha-card .card-header {
