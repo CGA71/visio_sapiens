@@ -253,7 +253,7 @@ views:
             template: osvision_kpi_card
             icon: mdi:door-open
             name: PIÈCES ACTIVES
-            state: "3 / 10"  # TODO: remplacer par un template comptant les pièces avec activité détectée
+            state_display: "3 / 10"  # TODO: remplacer par un template comptant les pièces avec activité détectée
             label: "En activité"
             variables:
               icon_color: "#3AA7FF"
@@ -272,7 +272,7 @@ views:
             icon: mdi:shield-lock
             name: SÉCURITÉ
             entity: alarm_control_panel.maison  # TODO: remplacer par votre entité alarme
-            state: >
+            state_display: >
               [[[
                 if (!entity) return "Non configuré";
                 switch (entity.state) {
@@ -297,7 +297,7 @@ views:
             template: osvision_kpi_card
             icon: mdi:vector-polygon
             name: CONNEXIONS
-            state: "28"  # TODO: remplacer par ex. par le nombre d'appareils via un capteur/template
+            state_display: "28"  # TODO: remplacer par ex. par le nombre d'appareils via un capteur/template
             label: "Appareils connectés"
             variables:
               icon_color: "#B084FF"
