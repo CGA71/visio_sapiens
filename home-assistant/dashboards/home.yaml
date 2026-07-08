@@ -33,15 +33,15 @@ views:
     subview: true
     type: custom:grid-layout
     layout:
-      grid-template-columns: 240px 1fr 1.4fr 1fr
+      grid-template-columns: 240px 1fr
       grid-template-rows: auto auto 1fr auto auto auto
       grid-template-areas: |
-        "nav header header header"
-        "nav kpi kpi kpi"
-        "nav metrics radar alerts"
-        "nav quick quick quick"
-        "nav energy energy energy"
-        "nav footer footer footer"
+        "nav header header"
+        "nav kpi kpi"
+        "nav floorplan floorplan"
+        "nav quick quick"
+        "nav energy energy"
+        "nav footer footer"
       margin: 12px
       grid-gap: 14px 14px
     cards:
@@ -309,85 +309,184 @@ views:
               icon_color: "#B084FF"
               value_color: "#B084FF"
 
-      # --- Metrics column (jauges néon) ---------------------------------
-      # NB: adaptez les entity_id à vos capteurs réels (ceux ci-dessous
-      # existent déjà dans votre configuration d'après le squelette initial).
-      # Le capteur "Storage" est un exemple à remplacer par votre entité.
-      - type: grid
-        columns: 2
-        square: false
+      # --- Plan interactif de la maison (picture-elements) -----------------
+      # Image a deposer dans : /config/www/osvision_v2/images/floorplan.jpg
+      # Les overlays affichent la temperature par piece en temps reel.
+      # Remplace chaque entity_id sensor.xxx par ton vrai capteur.
+      - type: picture-elements
         view_layout:
-          grid-area: metrics
-        cards:
-          - type: custom:decluttering-card
-            template: osvision_gauge
-            variables:
-              - entity: sensor.192_168_1_11_utilisation_cpu
-              - name: CPU
-              - color: "#00E5FF"
-          - type: custom:decluttering-card
-            template: osvision_gauge
-            variables:
-              - entity: sensor.computer_room_192_168_1_11_radeon_hd_7800_series_gpu_amd1_memory_usage
-              - name: GPU
-              - color: "#00FFC3"
-          - type: custom:decluttering-card
-            template: osvision_gauge
-            variables:
-              - entity: sensor.192_168_1_11_utilisation_de_la_memoire
-              - name: RAM
-              - color: "#3AA7FF"
-          - type: custom:decluttering-card
-            template: osvision_gauge
-            variables:
-              - entity: sensor.192_168_1_11_edge_temperature
-              - name: TEMP
-              - color: "#FF9800"
-              - max: 100
-          - type: custom:decluttering-card
-            template: osvision_gauge
-            variables:
-              - entity: sensor.192_168_1_11_enp12s0_rx
-              - name: DOWN
-              - color: "#B084FF"
-          - type: custom:decluttering-card
-            template: osvision_gauge
-            variables:
-              - entity: sensor.192_168_1_11_enp12s0_tx
-              - name: UP
-              - color: "#B084FF"
-          - type: custom:decluttering-card
-            template: osvision_gauge
-            variables:
-              - entity: sensor.192_168_1_11_espace_libre
-              - name: UP
-              - color: "#B084FF"
+          grid-area: floorplan
+        image: /local/osvision_v2/images/floorplan.jpg
+        card_mod:
+          style: |
+            ha-card {
+              background: transparent !important;
+              border: none !important;
+              box-shadow: none !important;
+            }
+        elements:
+          # ---- GROUND FLOOR ----
+          - type: state-label
+            entity: sensor.secret_room_temperature  # TODO
+            prefix: "🌡 "
+            suffix: "°C"
+            style:
+              top: 4%
+              left: 24%
+              color: "#00E5FF"
+              font-size: 11px
+              font-weight: bold
+              background: rgba(0,229,255,0.12)
+              border: 1px solid rgba(0,229,255,0.4)
+              border-radius: 6px
+              padding: 2px 6px
+              white-space: nowrap
 
-      # --- Radar central / IA Core --------------------------------------
-      - type: custom:osv-radar-card
-        title: IA CORE
-        view_layout:
-          grid-area: radar
+          - type: state-label
+            entity: sensor.living_room_temperature  # TODO
+            prefix: "🌡 "
+            suffix: "°C"
+            style:
+              top: 22%
+              left: 28%
+              color: "#00E5FF"
+              font-size: 11px
+              font-weight: bold
+              background: rgba(0,229,255,0.12)
+              border: 1px solid rgba(0,229,255,0.4)
+              border-radius: 6px
+              padding: 2px 6px
+              white-space: nowrap
 
-      # --- Alerts column ---------------------------------------------------
-      # Placeholder statique. En itération 2: générer dynamiquement via
-      # auto-entities / template à partir d'un capteur de notifications HA.
-      - type: vertical-stack
-        view_layout:
-          grid-area: alerts
-        cards:
-          - type: custom:button-card
-            template: osvision_alert
-            icon: mdi:check-circle
-            name: Tous les systèmes sont nominaux
-            variables:
-              level: ok
-          - type: custom:button-card
-            template: osvision_alert
-            icon: mdi:information
-            name: "Mise à jour OSVision V2 déployée"
-            variables:
-              level: info
+          - type: state-label
+            entity: sensor.kitchen_temperature  # TODO
+            prefix: "🌡 "
+            suffix: "°C"
+            style:
+              top: 35%
+              left: 17%
+              color: "#00E5FF"
+              font-size: 11px
+              font-weight: bold
+              background: rgba(0,229,255,0.12)
+              border: 1px solid rgba(0,229,255,0.4)
+              border-radius: 6px
+              padding: 2px 6px
+              white-space: nowrap
+
+          - type: state-label
+            entity: sensor.technical_room_temperature  # TODO
+            prefix: "🌡 "
+            suffix: "°C"
+            style:
+              top: 62%
+              left: 10%
+              color: "#00E5FF"
+              font-size: 11px
+              font-weight: bold
+              background: rgba(0,229,255,0.12)
+              border: 1px solid rgba(0,229,255,0.4)
+              border-radius: 6px
+              padding: 2px 6px
+              white-space: nowrap
+
+          - type: state-label
+            entity: sensor.computer_room_temperature  # TODO
+            prefix: "🌡 "
+            suffix: "°C"
+            style:
+              top: 62%
+              left: 31%
+              color: "#00E5FF"
+              font-size: 11px
+              font-weight: bold
+              background: rgba(0,229,255,0.12)
+              border: 1px solid rgba(0,229,255,0.4)
+              border-radius: 6px
+              padding: 2px 6px
+              white-space: nowrap
+
+          - type: state-label
+            entity: sensor.spa_temperature  # TODO
+            prefix: "🌡 "
+            suffix: "°C"
+            style:
+              top: 52%
+              left: 44%
+              color: "#FF9800"
+              font-size: 11px
+              font-weight: bold
+              background: rgba(255,152,0,0.12)
+              border: 1px solid rgba(255,152,0,0.4)
+              border-radius: 6px
+              padding: 2px 6px
+              white-space: nowrap
+
+          # ---- FIRST FLOOR ----
+          - type: state-label
+            entity: sensor.bedroom1_temperature  # TODO
+            prefix: "🌡 "
+            suffix: "°C"
+            style:
+              top: 64%
+              left: 86%
+              color: "#00E5FF"
+              font-size: 11px
+              font-weight: bold
+              background: rgba(0,229,255,0.12)
+              border: 1px solid rgba(0,229,255,0.4)
+              border-radius: 6px
+              padding: 2px 6px
+              white-space: nowrap
+
+          - type: state-label
+            entity: sensor.bedroom2_temperature  # TODO
+            prefix: "🌡 "
+            suffix: "°C"
+            style:
+              top: 32%
+              left: 86%
+              color: "#00E5FF"
+              font-size: 11px
+              font-weight: bold
+              background: rgba(0,229,255,0.12)
+              border: 1px solid rgba(0,229,255,0.4)
+              border-radius: 6px
+              padding: 2px 6px
+              white-space: nowrap
+
+          - type: state-label
+            entity: sensor.bathroom_temperature  # TODO
+            prefix: "🌡 "
+            suffix: "°C"
+            style:
+              top: 61%
+              left: 68%
+              color: "#00E5FF"
+              font-size: 11px
+              font-weight: bold
+              background: rgba(0,229,255,0.12)
+              border: 1px solid rgba(0,229,255,0.4)
+              border-radius: 6px
+              padding: 2px 6px
+              white-space: nowrap
+
+          # ---- SOLAR PANELS ----
+          - type: state-label
+            entity: sensor.solar_power_production  # TODO
+            prefix: "☀ "
+            suffix: " kW"
+            style:
+              top: 9%
+              left: 75%
+              color: "#FFD700"
+              font-size: 11px
+              font-weight: bold
+              background: rgba(255,215,0,0.12)
+              border: 1px solid rgba(255,215,0,0.4)
+              border-radius: 6px
+              padding: 2px 6px
+              white-space: nowrap
 
       # --- Quick actions -----------------------------------------------
       # Remplacez les entity_id / services par vos scènes et scripts réels.
