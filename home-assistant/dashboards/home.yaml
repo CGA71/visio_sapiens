@@ -30,6 +30,7 @@ views:
   # =====================================================================
   - title: HOME
     path: home
+    subview: true
     type: custom:grid-layout
     layout:
       grid-template-columns: 240px 1fr 1.4fr 1fr
@@ -409,6 +410,17 @@ views:
           - type: logbook
             title: "Événements récents"
             hours_to_show: 24
+            target:
+              area_id:
+                - computer_room
+                - technical_room
+                - secret_room
+                - livingroom
+                - kitchen
+                - bedroom_1
+                - bedroom_2
+                - bathroom
+                - garden_1
             card_mod:
               style: |
                 :host { flex: 1 1 0; }
@@ -465,6 +477,7 @@ views:
   # =====================================================================
   - title: CORE
     path: core
+    subview: true
     type: custom:grid-layout
     layout:
       grid-template-columns: 240px 1fr 1.4fr 1fr
@@ -808,6 +821,7 @@ views:
   # =====================================================================
   - title: BEDROOM 1
     path: bedroom-1
+    subview: true
     type: custom:grid-layout
     layout:
       grid-template-columns: 240px 1fr 1.4fr 1fr
@@ -1151,6 +1165,7 @@ views:
   # =====================================================================
   - title: BEDROOM 2
     path: bedroom-2
+    subview: true
     type: custom:grid-layout
     layout:
       grid-template-columns: 240px 1fr 1.4fr 1fr
@@ -1494,6 +1509,7 @@ views:
   # =====================================================================
   - title: BATHROOM
     path: bathroom
+    subview: true
     type: custom:grid-layout
     layout:
       grid-template-columns: 240px 1fr 1.4fr 1fr
@@ -1837,6 +1853,7 @@ views:
   # =====================================================================
   - title: COMPUTER
     path: computer-room
+    subview: true
     type: custom:grid-layout
     layout:
       grid-template-columns: 240px 1fr 1.4fr 1fr
@@ -2180,6 +2197,7 @@ views:
   # =====================================================================
   - title: TECHNICAL ROOM
     path: technical-room
+    subview: true
     type: custom:grid-layout
     layout:
       grid-template-columns: 240px 1fr 1.4fr 1fr
@@ -2523,6 +2541,7 @@ views:
   # =====================================================================
   - title: SECRET
     path: secret-room
+    subview: true
     type: custom:grid-layout
     layout:
       grid-template-columns: 240px 1fr 1.4fr 1fr
@@ -2866,6 +2885,7 @@ views:
   # =====================================================================
   - title: GARDEN
     path: garden
+    subview: true
     type: custom:grid-layout
     layout:
       grid-template-columns: 240px 1fr 1.4fr 1fr
@@ -3211,6 +3231,7 @@ views:
   # =====================================================================
   - title: ADMIN
     path: admin
+    subview: true
     visible:
       - user: USER_ID_ADMIN  # TODO: remplace par ton user_id HA (Paramètres > Personnes)
     type: custom:grid-layout
