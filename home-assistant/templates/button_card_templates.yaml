@@ -276,10 +276,10 @@ osvision_nav_button:
       - justify-items: start
       - align-items: center
     card:
-      - class: '[[[ return "osv-nav-button" + (variables.active ? " active" : "") ]]]'
-      - background: '[[[ return variables.active ? "rgba(0,229,255,0.14)" : "transparent" ]]]'
+      - class: osv-nav-button
+      - background: transparent
       - border-radius: 12px
-      - border: '[[[ return variables.active ? "1px solid rgba(0,229,255,0.40)" : "1px solid transparent" ]]]'
+      - border: 1px solid transparent
       - padding: 10px 12px
       - margin-bottom: 4px
       - width: 100%
@@ -287,18 +287,18 @@ osvision_nav_button:
       - text-align: left
       - transition: all .2s ease
     icon:
-      - color: '[[[ return variables.active ? "#00E5FF" : "#8FB6C9" ]]]'
+      - color: "#8FB6C9"
       - "--mdc-icon-size": 20px
       - align-self: start
       - margin-top: 2px
     name:
-      - color: '[[[ return variables.active ? "#00E5FF" : "#FFFFFF" ]]]'
+      - color: "#FFFFFF"
       - font-size: 13px
       - font-weight: 600
       - letter-spacing: 0.5px
       - justify-self: start
     label:
-      - color: '[[[ return variables.active ? "#7fd8e8" : "#56707E" ]]]'
+      - color: "#56707E"
       - font-size: 10px
       - justify-self: start
 
