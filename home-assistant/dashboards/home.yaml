@@ -34,9 +34,10 @@ views:
     type: custom:grid-layout
     layout:
       grid-template-columns: 240px 1fr 1.4fr 1fr
-      grid-template-rows: auto 1fr auto auto auto
+      grid-template-rows: auto auto 1fr auto auto auto
       grid-template-areas: |
         "nav header header header"
+        "nav kpi kpi kpi"
         "nav metrics radar alerts"
         "nav quick quick quick"
         "nav energy energy energy"
@@ -234,6 +235,73 @@ views:
             icon: mdi:hexagon-outline
             name: "OSVISION V2"
             label: "SMART HOME OS"
+
+      # --- KPI row (System Status / Pièces actives / Energy Status / Sécurité / Connexions) ----
+      - type: horizontal-stack
+        view_layout:
+          grid-area: kpi
+        cards:
+          # Case 1 — System Status : voyant vert reflétant l'état des métriques du dashboard CORE
+          - type: custom:button-card
+            template: osvision_status_indicator
+            name: SYSTEM STATUS
+            label: "Statut métriques CORE"
+            entity: binary_sensor.osvision_core_health  # TODO: capteur agrégé à créer (ex: template sensor combinant CPU/GPU/RAM/etc.)
+
+          # Case 2 — Pièces actives
+          - type: custom:button-card
+            template: osvision_kpi_card
+            icon: mdi:door-open
+            name: PIÈCES ACTIVES
+            state: "3 / 10"  # TODO: remplacer par un template comptant les pièces avec activité détectée
+            label: "En activité"
+            variables:
+              icon_color: "#3AA7FF"
+              value_color: "#3AA7FF"
+
+          # Case 3 — Energy Status : voyant vert reflétant l'état des métriques du dashboard ENERGY
+          - type: custom:button-card
+            template: osvision_status_indicator
+            name: ENERGY STATUS
+            label: "Statut métriques ENERGY"
+            entity: binary_sensor.osvision_energy_health  # TODO: capteur agrégé à créer (ex: template sensor sur production/consommation)
+
+          # Case 4 — Sécurité / Alarme
+          - type: custom:button-card
+            template: osvision_kpi_card
+            icon: mdi:shield-lock
+            name: SÉCURITÉ
+            entity: alarm_control_panel.maison  # TODO: remplacer par votre entité alarme
+            state: >
+              [[[
+                if (!entity) return "Non configuré";
+                switch (entity.state) {
+                  case "disarmed": return "Parfait";
+                  case "triggered": return "ALERTE";
+                  case "armed_home": return "Armée";
+                  case "armed_away": return "Armée";
+                  default: return entity.state;
+                }
+              ]]]
+            label: >
+              [[[
+                if (!entity) return "Entité non configurée";
+                return entity.state === "triggered" ? "Intrusion détectée" : "Aucune alerte";
+              ]]]
+            variables:
+              icon_color: "#00FFC3"
+              value_color: "#00FFC3"
+
+          # Case 5 — Connexions (appareils connectés)
+          - type: custom:button-card
+            template: osvision_kpi_card
+            icon: mdi:vector-polygon
+            name: CONNEXIONS
+            state: "28"  # TODO: remplacer par ex. par le nombre d'appareils via un capteur/template
+            label: "Appareils connectés"
+            variables:
+              icon_color: "#B084FF"
+              value_color: "#B084FF"
 
       # --- Metrics column (jauges néon) ---------------------------------
       # NB: adaptez les entity_id à vos capteurs réels (ceux ci-dessous
