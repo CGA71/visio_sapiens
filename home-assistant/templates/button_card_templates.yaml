@@ -266,6 +266,85 @@ osvision_sidebar_logo:
 osvision_nav_button:
   show_state: false
   show_label: true
+  card_mod:
+    style: |
+      :host {
+        position: relative;
+        display: block;
+        overflow: hidden;
+        border-radius: 12px;
+      }
+      /* 1. Fond bleu qui glisse depuis la gauche au survol (wipe avec easing) */
+      :host::before{
+        content:"";
+        position:absolute;
+        inset:0;
+        background: linear-gradient(90deg, rgba(0,229,255,0.20), rgba(0,229,255,0.04));
+        transform: scaleX(0);
+        transform-origin: left center;
+        transition: transform .45s cubic-bezier(.4,0,.2,1);
+        z-index:0;
+        pointer-events:none;
+        border-radius: 12px;
+      }
+      :host(:hover)::before{
+        transform: scaleX(1);
+      }
+      /* 5. Halo lumineux qui balaie le bouton une fois au survol (effet "scan") */
+      :host::after{
+        content:"";
+        position:absolute;
+        top:0;
+        left:-40%;
+        width:40%;
+        height:100%;
+        background: linear-gradient(115deg, transparent 0%, rgba(0,229,255,0.35) 50%, transparent 100%);
+        transform: skewX(-15deg);
+        opacity:0;
+        pointer-events:none;
+        z-index:1;
+      }
+      :host(:hover)::after{
+        animation: osv-nav-scan .9s ease forwards;
+      }
+      @keyframes osv-nav-scan{
+        0%   { left:-40%; opacity:0; }
+        15%  { opacity:1; }
+        100% { left:120%; opacity:0; }
+      }
+      /* 2. Luminosite + 3. bordure progressive + halo exterieur */
+      :host {
+        transition: filter .45s ease;
+      }
+      ha-card {
+        transition:
+          border-color .45s cubic-bezier(.4,0,.2,1),
+          box-shadow .45s cubic-bezier(.4,0,.2,1) !important;
+      }
+      :host(:hover) {
+        filter: brightness(1.12);
+      }
+      :host(:hover) ha-card {
+        border: 1px solid rgba(0,229,255,0.65) !important;
+        box-shadow: 0 0 18px rgba(0,229,255,.35) !important;
+      }
+      /* 4. Icone + texte passent en cyan avec glow, au-dessus des pseudo-elements */
+      .icon, ha-icon, .name, .label {
+        position: relative;
+        z-index: 2;
+        transition: color .4s ease, filter .4s ease;
+      }
+      :host(:hover) .icon,
+      :host(:hover) ha-icon {
+        color: #00E5FF !important;
+        filter: drop-shadow(0 0 8px rgba(0,229,255,.7));
+      }
+      :host(:hover) .name {
+        color: #00E5FF !important;
+      }
+      :host(:hover) .label {
+        color: #7fd8e8 !important;
+      }
   styles:
     grid:
       - grid-template-areas: '"i n" "i l"'
@@ -276,7 +355,6 @@ osvision_nav_button:
       - justify-items: start
       - align-items: center
     card:
-      - class: '[[[ return "osv-nav-button" ]]]'
       - background: transparent
       - border-radius: 12px
       - border: 1px solid transparent
@@ -285,7 +363,6 @@ osvision_nav_button:
       - width: 100%
       - justify-self: stretch
       - text-align: left
-      - transition: all .2s ease
     icon:
       - color: "#8FB6C9"
       - "--mdc-icon-size": 20px
