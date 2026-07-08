@@ -276,7 +276,7 @@ osvision_nav_button:
       - justify-items: start
       - align-items: center
     card:
-      - class: osv-nav-button
+      - class: '[[[ return "osv-nav-button" ]]]'
       - background: transparent
       - border-radius: 12px
       - border: 1px solid transparent
