@@ -33,15 +33,13 @@ views:
     subview: true
     type: custom:grid-layout
     layout:
-      grid-template-columns: 240px 1fr
-      grid-template-rows: auto auto 1fr auto auto auto
+      grid-template-columns: 240px 1fr 1fr
+      grid-template-rows: auto auto 1fr auto
       grid-template-areas: |
-        "nav header header"
-        "nav kpi kpi"
-        "nav floorplan floorplan"
-        "nav quick quick"
-        "nav energy energy"
-        "nav footer footer"
+        "nav header header header"
+        "nav kpi kpi kpi"
+        "nav floorplan energy energy"
+        "nav footer footer footer"
       margin: 12px
       grid-gap: 14px 14px
     cards:
@@ -323,6 +321,8 @@ views:
               background: transparent !important;
               border: none !important;
               box-shadow: none !important;
+              max-height: calc(100vh - 280px);
+              overflow: hidden;
             }
         elements:
           # ---- GROUND FLOOR ----
@@ -488,51 +488,11 @@ views:
               padding: 2px 6px
               white-space: nowrap
 
-      # --- Quick actions -----------------------------------------------
-      # Remplacez les entity_id / services par vos scènes et scripts réels.
-      - type: horizontal-stack
-        view_layout:
-          grid-area: quick
-        cards:
-          - type: custom:button-card
-            template: osvision_quick_action
-            icon: mdi:weather-night
-            name: GOOD NIGHT
-            tap_action:
-              action: call-service
-              service: script.turn_on
-              service_data:
-                entity_id: script.good_night
-          - type: custom:button-card
-            template: osvision_quick_action
-            icon: mdi:movie-open
-            name: MOVIE MODE
-            tap_action:
-              action: call-service
-              service: scene.turn_on
-              service_data:
-                entity_id: scene.movie_mode
-          - type: custom:button-card
-            template: osvision_quick_action
-            icon: mdi:lightbulb-off
-            name: ALL OFF
-            tap_action:
-              action: call-service
-              service: light.turn_off
-              service_data:
-                entity_id: all
-          - type: custom:button-card
-            template: osvision_quick_action
-            icon: mdi:lock
-            name: LOCK ALL
-            tap_action:
-              action: call-service
-              service: lock.lock
-              service_data:
-                entity_id: all
-
-      # --- Energy row (production solaire / consommation / événements / sécurité) ----
-      - type: horizontal-stack
+        card_mod:
+          style: |
+            :host {
+              align-self: end;
+            }
         view_layout:
           grid-area: energy
         cards:
