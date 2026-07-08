@@ -33,7 +33,7 @@ views:
     subview: true
     type: custom:grid-layout
     layout:
-      grid-template-columns: 240px 1fr 1fr
+      grid-template-columns: 240px 1.2fr 1.8fr
       grid-template-rows: auto auto 1fr auto
       grid-template-areas: |
         "nav header header header"
@@ -76,6 +76,12 @@ views:
             card_mod:
               style: |
                 :host { flex: 1 1 0; }
+                ha-card {
+                  background: var(--osv-panel) !important;
+                  border: var(--osv-border) !important;
+                  border-radius: var(--osv-radius-md) !important;
+                  box-shadow: var(--osv-glow-cyan) !important;
+                }
 
           # Case 4 — statut alarme maison (squelette, entité à brancher)
           - type: custom:button-card
@@ -321,8 +327,17 @@ views:
               background: transparent !important;
               border: none !important;
               box-shadow: none !important;
-              max-height: calc(100vh - 280px);
+              max-height: calc(100vh - 220px);
+              height: calc(100vh - 220px);
               overflow: hidden;
+              display: flex;
+              align-items: flex-start;
+            }
+            img {
+              width: 100% !important;
+              height: 100% !important;
+              object-fit: contain;
+              object-position: left top;
             }
         elements:
           # ---- GROUND FLOOR ----
@@ -488,11 +503,7 @@ views:
               padding: 2px 6px
               white-space: nowrap
 
-        card_mod:
-          style: |
-            :host {
-              align-self: end;
-            }
+      - type: vertical-stack
         view_layout:
           grid-area: energy
         cards:
