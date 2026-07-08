@@ -426,9 +426,11 @@ views:
                 :host { flex: 1 1 0; }
                 ha-card {
                   background: var(--osv-panel) !important;
-                }
-                ha-card, ha-card * {
-                  color: #B8E8F5 !important;
+                  --primary-text-color: #B8E8F5 !important;
+                  --secondary-text-color: #8FB6C9 !important;
+                  --primary-color: #00E5FF !important;
+                  --text-primary-color: #FFFFFF !important;
+                  --card-background-color: var(--osv-panel) !important;
                 }
                 ha-card .card-header {
                   color: #FFFFFF !important;
