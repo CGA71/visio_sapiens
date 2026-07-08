@@ -102,21 +102,24 @@ ha-card:hover{
   cursor: pointer;
 }
 
-/* Hover highlight on EVERY item, active or not */
+/* Hover highlight on EVERY item — bordure bleue nette,
+   comme sur l'illustration de reference. Disparait automatiquement
+   des que la souris quitte l'item (aucun etat permanent). */
 .osv-nav-button:hover{
-  background: rgba(0,229,255,0.10) !important;
-  border-color: rgba(0,229,255,0.45) !important;
-  box-shadow: 0 0 16px rgba(0,229,255,.30);
-  transform: translateX(2px);
+  background: rgba(0,229,255,0.12) !important;
+  border: 1px solid rgba(0,229,255,0.65) !important;
+  border-radius: 12px !important;
+  box-shadow: 0 0 18px rgba(0,229,255,.35);
 }
-
-/* Active item keeps the strongest glow, even more pronounced on hover */
-.osv-nav-button.active{
-  box-shadow: var(--osv-glow-cyan-hi) !important;
-  border-color: var(--osv-cyan) !important;
+.osv-nav-button:hover .icon,
+.osv-nav-button:hover ha-icon{
+  color: #00E5FF !important;
 }
-.osv-nav-button.active:hover{
-  box-shadow: 0 0 40px rgba(0,229,255,.55) !important;
+.osv-nav-button:hover .name{
+  color: #00E5FF !important;
+}
+.osv-nav-button:hover .label{
+  color: #7fd8e8 !important;
 }
 
 /* --------------------------------------------------------------------------
