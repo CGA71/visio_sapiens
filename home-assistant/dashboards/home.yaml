@@ -253,7 +253,13 @@ views:
             template: osvision_kpi_card
             icon: mdi:door-open
             name: PIÈCES ACTIVES
-            state_display: "3 / 10"  # TODO: remplacer par un template comptant les pièces avec activité détectée
+            entity: sensor.osvision_active_rooms
+            state_display: >
+              [[[
+                const s = states['sensor.osvision_active_rooms'];
+                if (!s) return "- / -";
+                return s.state + " / " + (s.attributes.total_areas ?? "-");
+              ]]]
             label: "En activité"
             variables:
               icon_color: "#3AA7FF"
@@ -292,12 +298,12 @@ views:
               icon_color: "#00FFC3"
               value_color: "#00FFC3"
 
-          # Case 5 — Connexions (appareils connectés)
+          # Case 5 — Connexions (total appareils enregistrés dans HA)
           - type: custom:button-card
             template: osvision_kpi_card
             icon: mdi:vector-polygon
             name: CONNEXIONS
-            state_display: "28"  # TODO: remplacer par ex. par le nombre d'appareils via un capteur/template
+            entity: sensor.osvision_total_devices
             label: "Appareils connectés"
             variables:
               icon_color: "#B084FF"
