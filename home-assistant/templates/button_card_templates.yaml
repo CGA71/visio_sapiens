@@ -511,6 +511,106 @@ osvision_admin_button:
       - justify-self: start
 
 # ---------------------------------------------------------------------
+# KPI card (Pièces actives / Alarme / Connexions...) — icône + titre +
+# valeur colorée + sous-titre. Variables optionnelles :
+#   variables:
+#     value_color: "#3AA7FF"
+#     icon_color: "#3AA7FF"
+#   template: osvision_kpi_card
+#   icon: mdi:door-open
+#   name: PIÈCES ACTIVES
+#   state: 3 / 10   (peut aussi venir d'une entité via `entity:`)
+#   label: "En activité"
+# ---------------------------------------------------------------------
+osvision_kpi_card:
+  show_state: true
+  show_label: true
+  styles:
+    grid:
+      - grid-template-areas: '"i n" "i s" "i l"'
+      - grid-template-columns: 36px 1fr
+      - grid-template-rows: min-content min-content min-content
+      - column-gap: 14px
+      - row-gap: 2px
+      - justify-items: start
+      - align-items: start
+    card:
+      - background: rgba(8,18,28,0.72)
+      - border-radius: 18px
+      - border: 1px solid rgba(0,229,255,0.20)
+      - padding: 14px 18px
+      - height: 100%
+    icon:
+      - color: '[[[ return variables.icon_color || "#00E5FF" ]]]'
+      - "--mdc-icon-size": 26px
+      - margin-top: 2px
+    name:
+      - color: "#FFFFFF"
+      - font-size: 13px
+      - font-weight: 700
+      - letter-spacing: 0.5px
+      - justify-self: start
+    state:
+      - color: '[[[ return variables.value_color || "#FFFFFF" ]]]'
+      - font-size: 16px
+      - font-weight: 700
+      - justify-self: start
+    label:
+      - color: "#56707E"
+      - font-size: 11px
+      - justify-self: start
+
+# ---------------------------------------------------------------------
+# Status indicator card (System Status / Energy Status) — titre + voyant
+# rond coloré + sous-titre. Voyant vert par defaut ; passe au rouge si
+# l'entite liee (optionnelle) est dans un etat considere anormal.
+#   template: osvision_status_indicator
+#   name: SYSTEM STATUS
+#   label: "Statut métriques CORE"
+#   entity: binary_sensor.osvision_core_health   # optionnel, squelette
+# ---------------------------------------------------------------------
+osvision_status_indicator:
+  show_state: false
+  show_label: true
+  icon: mdi:circle
+  styles:
+    grid:
+      - grid-template-areas: '"n" "i" "l"'
+      - grid-template-rows: min-content min-content min-content
+      - row-gap: 10px
+      - justify-items: start
+    card:
+      - background: rgba(8,18,28,0.72)
+      - border-radius: 18px
+      - border: 1px solid rgba(0,229,255,0.20)
+      - padding: 14px 18px
+      - height: 100%
+    name:
+      - color: "#FFFFFF"
+      - font-size: 13px
+      - font-weight: 700
+      - letter-spacing: 0.5px
+      - justify-self: start
+    icon:
+      - color: >
+          [[[
+            if (!entity) return "#00FFC3";
+            return ["on","home","ok","true","problem_free"].includes(entity.state) ? "#00FFC3" : "#FF3D71";
+          ]]]
+      - "--mdc-icon-size": 20px
+      - justify-self: start
+      - filter: >
+          [[[
+            if (!entity || ["on","home","ok","true","problem_free"].includes(entity.state))
+              return "drop-shadow(0 0 8px rgba(0,255,195,.6))";
+            return "drop-shadow(0 0 8px rgba(255,61,113,.6))";
+          ]]]
+    label:
+      - color: "#56707E"
+      - font-size: 11px
+      - justify-self: start
+
+# ---------------------------------------------------------------------
 # Quick action button (scenes, scripts, toggles)
 # ---------------------------------------------------------------------
 osvision_quick_action:
