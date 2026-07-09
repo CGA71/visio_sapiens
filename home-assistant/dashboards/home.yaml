@@ -33,13 +33,13 @@ views:
     subview: true
     type: custom:grid-layout
     layout:
-      grid-template-columns: minmax(200px, auto) 1fr 1fr 1fr 1fr 1fr 565px
+      grid-template-columns: minmax(200px, auto) 1fr 1fr 1fr 1fr 1fr 1fr
       grid-template-rows: 105px 113px 444px 336px auto
       grid-template-areas: |
         "nav band1 band2 band3 band4 band5 band5"
         "nav kpi1 kpi2 kpi3 kpi4 kpi5 kpi5"
-        "nav floor floor floor floor right right"
-        "nav egy1 egy2 egy3 egy4 egy4 egy4"
+        "nav floor floor floor floor floor floor"
+        "nav egy1 egy2 egy3 egy4 inter audio"
         "nav footer footer footer footer footer footer"
       margin: 12px
       grid-gap: 14px 14px
@@ -580,6 +580,7 @@ views:
                 }
                 ha-card {
                   background: var(--osv-panel) !important;
+                  height: auto !important;
                   --primary-text-color: #B8E8F5 !important;
                   --secondary-text-color: #8FB6C9 !important;
                   --primary-color: #00E5FF !important;
@@ -611,6 +612,14 @@ views:
       - type: vertical-stack
         view_layout:
           grid-area: right
+        card_mod:
+          style: |
+            :host {
+              display: flex;
+              flex-direction: column;
+              height: 100%;
+              min-height: 0;
+            }
         cards:
           - type: custom:button-card
             template: osvision_panel
