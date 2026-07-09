@@ -33,7 +33,7 @@ views:
     subview: true
     type: custom:grid-layout
     layout:
-      grid-template-columns: 144px 1fr 1fr 1fr 1fr 1fr 565px
+      grid-template-columns: minmax(200px, auto) 1fr 1fr 1fr 1fr 1fr 565px
       grid-template-rows: 105px 113px 444px 336px auto
       grid-template-areas: |
         "nav band1 band2 band3 band4 band5 band5"
@@ -112,6 +112,8 @@ views:
               display: flex;
               flex-direction: column;
               height: 100%;
+              width: 100%;
+              min-width: 200px;
               background: rgba(5,11,18,0.85);
               border-radius: 20px;
               border: 1px solid rgba(0,229,255,0.18);
