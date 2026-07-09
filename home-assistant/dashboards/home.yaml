@@ -38,7 +38,7 @@ views:
       grid-template-areas: |
         "nav band1 band2 band3 band4 band5 band5"
         "nav kpi1 kpi2 kpi3 kpi4 kpi5 kpi5"
-        "nav floor floor floor floor floor right"
+        "nav floor floor floor floor right right"
         "nav egy1 egy2 egy3 egy4 egy5 egy6"
         "nav footer footer footer footer footer footer"
       margin: 12px
