@@ -33,20 +33,22 @@ views:
     subview: true
     type: custom:grid-layout
     layout:
-      grid-template-columns: 240px 1.2fr 1.8fr
-      grid-template-rows: auto auto 1fr auto
+      grid-template-columns: 144px 1fr 1fr 1fr 1fr 1fr 565px
+      grid-template-rows: 105px 113px 444px 336px auto
       grid-template-areas: |
-        "nav header header header"
-        "nav kpi kpi kpi"
-        "nav floorplan energy energy"
-        "nav footer footer footer"
+        "nav band1 band2 band3 band4 band5 band5"
+        "nav kpi1 kpi2 kpi3 kpi4 kpi5 kpi5"
+        "nav floor floor floor floor right right"
+        "nav egy1 egy2 egy3 egy4 egy4 egy4"
+        "nav footer footer footer footer footer footer"
       margin: 12px
       grid-gap: 14px 14px
     cards:
       # --- HUD header (bandeau horizontal) ------------------------------
       - type: horizontal-stack
         view_layout:
-          grid-area: header
+          grid-area: band1
+          grid-column: band1 / band5
         cards:
           # Case 1 — retour + titre + descriptif de la page
           - type: custom:button-card
@@ -243,7 +245,8 @@ views:
       # --- KPI row (System Status / Pièces actives / Energy Status / Sécurité / Connexions) ----
       - type: horizontal-stack
         view_layout:
-          grid-area: kpi
+          grid-area: kpi1
+          grid-column: kpi1 / kpi5
         cards:
           # Case 1 — System Status : voyant vert reflétant l'état des métriques du dashboard CORE
           - type: custom:button-card
@@ -319,7 +322,7 @@ views:
       # Remplace chaque entity_id sensor.xxx par ton vrai capteur.
       - type: picture-elements
         view_layout:
-          grid-area: floorplan
+          grid-area: floor
         image: /local/osvision_v2/images/floorplan.jpg
         card_mod:
           style: |
@@ -503,9 +506,10 @@ views:
               padding: 2px 6px
               white-space: nowrap
 
-      - type: vertical-stack
+      - type: horizontal-stack
         view_layout:
-          grid-area: energy
+          grid-area: egy1
+          grid-column: egy1 / egy4
         cards:
           # Cadre 1 — courbe production solaire vs consommation (carte native apexcharts)
           - type: custom:apexcharts-card
@@ -614,6 +618,64 @@ views:
                 icon: mdi:motion-sensor
                 name: "Mouvements"
                 entity: binary_sensor.motion  # TODO: remplacer par votre entité
+
+      # --- Zone droite (INTERPHONE + AUDIO STREAM) ----------------------
+      - type: vertical-stack
+        view_layout:
+          grid-area: right
+        cards:
+          - type: custom:button-card
+            template: osvision_panel
+            show_name: true
+            name: INTERPHONE
+            icon: mdi:doorbell-video
+            show_icon: true
+            styles:
+              card:
+                - height: 50%
+                - justify-content: center
+                - align-items: center
+              name:
+                - color: "#B8E8F5"
+                - font-size: 14px
+                - letter-spacing: 2px
+              icon:
+                - color: "#00E5FF"
+                - "--mdc-icon-size": 36px
+
+          - type: custom:button-card
+            template: osvision_panel
+            show_name: true
+            name: AUDIO STREAM
+            icon: mdi:music-note
+            show_icon: true
+            styles:
+              card:
+                - height: 50%
+                - justify-content: center
+                - align-items: center
+              name:
+                - color: "#B8E8F5"
+                - font-size: 14px
+                - letter-spacing: 2px
+              icon:
+                - color: "#00E5FF"
+                - "--mdc-icon-size": 36px
+
+      # --- Météo et prévisions (rangée énergie, col 4) ------------------
+      - type: weather-forecast
+        entity: weather.home  # TODO: remplacer par votre entité météo
+        show_current: true
+        show_forecast: true
+        forecast_type: daily
+        view_layout:
+          grid-area: egy4
+        card_mod:
+          style: |
+            ha-card {
+              background: var(--osv-panel) !important;
+              height: 100%;
+            }
 
       # --- Footer --------------------------------------------------------
       - type: custom:osv-footer-card
