@@ -576,13 +576,16 @@ views:
                 :host {
                   flex: 1 1 0;
                   align-self: stretch;
+                  overflow: hidden;
                 }
                 ha-card {
                   background: var(--osv-panel) !important;
                   height: 100%;
+                  max-height: 336px;
                   min-height: 0;
                   display: flex;
                   flex-direction: column;
+                  overflow: hidden;
                   --primary-text-color: #B8E8F5 !important;
                   --secondary-text-color: #8FB6C9 !important;
                   --primary-color: #00E5FF !important;
@@ -591,6 +594,11 @@ views:
                 }
                 ha-card .card-header {
                   color: #FFFFFF !important;
+                }
+                ha-logbook {
+                  flex: 1 1 0;
+                  min-height: 0;
+                  overflow-y: auto;
                 }
      
 
