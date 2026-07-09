@@ -63,11 +63,11 @@ views:
               style: |
                 :host { flex: 1.6 1 0; }
 
-          # Case 2 — météo extérieure (carte native Home Assistant)
-          - type: weather-forecast
-            entity: weather.home  # TODO: remplacer par votre entité météo
-            show_current: true
-            show_forecast: false
+          # Case 2 — statut alarme maison (squelette, entité à brancher)
+          - type: custom:button-card
+            template: osvision_alarm_status
+            entity: alarm_control_panel.maison  # TODO: remplacer par votre entité alarme
+            name: MAISON
             card_mod:
               style: |
                 :host { flex: 1 1 0; }
@@ -85,11 +85,11 @@ views:
                   box-shadow: var(--osv-glow-cyan) !important;
                 }
 
-          # Case 4 — statut alarme maison (squelette, entité à brancher)
-          - type: custom:button-card
-            template: osvision_alarm_status
-            entity: alarm_control_panel.maison  # TODO: remplacer par votre entité alarme
-            name: MAISON
+          # Case 4 — météo extérieure (carte native Home Assistant)
+          - type: weather-forecast
+            entity: weather.home  # TODO: remplacer par votre entité météo
+            show_current: true
+            show_forecast: false
             card_mod:
               style: |
                 :host { flex: 1 1 0; }
@@ -586,40 +586,16 @@ views:
                   color: #FFFFFF !important;
                 }
 
-          # Cadre 4 — sécurité / alarme (squelette, entités à brancher)
-          - type: vertical-stack
+          # Cadre 4 — Météo et prévisions (Enhanced Weather Chart Card)
+          - type: custom:weather-chart-card
+            entity: weather.home  # TODO: remplacer par votre entité météo
             card_mod:
               style: |
                 :host { flex: 1 1 0; }
-            cards:
-              - type: custom:button-card
-                template: osvision_page_header
-                icon: mdi:shield-home
-                name: SÉCURITÉ
-                label: "Statut système"
-              - type: custom:button-card
-                template: osvision_security_badge
-                entity: alarm_control_panel.maison  # TODO: remplacer par votre entité alarme
-              - type: custom:button-card
-                template: osvision_security_row
-                icon: mdi:door
-                name: "Portes & Fenêtres"
-                entity: binary_sensor.doors_windows  # TODO: remplacer par votre entité
-              - type: custom:button-card
-                template: osvision_security_row
-                icon: mdi:cctv
-                name: "Caméras"
-                entity: binary_sensor.cameras_active  # TODO: remplacer par votre entité
-              - type: custom:button-card
-                template: osvision_security_row
-                icon: mdi:shield-lock
-                name: "Alarme"
-                entity: alarm_control_panel.maison  # TODO: remplacer par votre entité alarme
-              - type: custom:button-card
-                template: osvision_security_row
-                icon: mdi:motion-sensor
-                name: "Mouvements"
-                entity: binary_sensor.motion  # TODO: remplacer par votre entité
+                ha-card {
+                  background: var(--osv-panel) !important;
+                  height: 100%;
+                }
 
       # --- Zone droite (INTERPHONE + AUDIO STREAM) ----------------------
       - type: vertical-stack
