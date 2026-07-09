@@ -573,7 +573,11 @@ views:
                 - garden_1
             card_mod:
               style: |
-                :host { flex: 1 1 0; }
+                :host {
+                  flex: 1 1 0;
+                  align-self: flex-start;
+                  width: 100%;
+                }
                 ha-card {
                   background: var(--osv-panel) !important;
                   --primary-text-color: #B8E8F5 !important;
