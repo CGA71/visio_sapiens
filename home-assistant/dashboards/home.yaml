@@ -646,11 +646,7 @@ views:
                 - color: "#00E5FF"
                 - "--mdc-icon-size": 36px
 
-      # --- Footer --------------------------------------------------------
-      - type: custom:osv-footer-card
-        label: OSVISION V2 // CORE SYSTEM
-        view_layout:
-          grid-area: footer
+
 
     card_mod:
       style: |
@@ -947,54 +943,7 @@ views:
             variables:
               level: info
 
-      # --- Quick actions -----------------------------------------------
-      # Remplacez les entity_id / services par vos scènes et scripts réels.
-      - type: horizontal-stack
-        view_layout:
-          grid-area: quick
-        cards:
-          - type: custom:button-card
-            template: osvision_quick_action
-            icon: mdi:weather-night
-            name: GOOD NIGHT
-            tap_action:
-              action: call-service
-              service: script.turn_on
-              service_data:
-                entity_id: script.good_night
-          - type: custom:button-card
-            template: osvision_quick_action
-            icon: mdi:movie-open
-            name: MOVIE MODE
-            tap_action:
-              action: call-service
-              service: scene.turn_on
-              service_data:
-                entity_id: scene.movie_mode
-          - type: custom:button-card
-            template: osvision_quick_action
-            icon: mdi:lightbulb-off
-            name: ALL OFF
-            tap_action:
-              action: call-service
-              service: light.turn_off
-              service_data:
-                entity_id: all
-          - type: custom:button-card
-            template: osvision_quick_action
-            icon: mdi:lock
-            name: LOCK ALL
-            tap_action:
-              action: call-service
-              service: lock.lock
-              service_data:
-                entity_id: all
 
-      # --- Footer --------------------------------------------------------
-      - type: custom:osv-footer-card
-        label: OSVISION V2 // CORE SYSTEM
-        view_layout:
-          grid-area: footer
 
     card_mod:
       style: |
@@ -1291,54 +1240,7 @@ views:
             variables:
               level: info
 
-      # --- Quick actions -----------------------------------------------
-      # Remplacez les entity_id / services par vos scènes et scripts réels.
-      - type: horizontal-stack
-        view_layout:
-          grid-area: quick
-        cards:
-          - type: custom:button-card
-            template: osvision_quick_action
-            icon: mdi:weather-night
-            name: GOOD NIGHT
-            tap_action:
-              action: call-service
-              service: script.turn_on
-              service_data:
-                entity_id: script.good_night
-          - type: custom:button-card
-            template: osvision_quick_action
-            icon: mdi:movie-open
-            name: MOVIE MODE
-            tap_action:
-              action: call-service
-              service: scene.turn_on
-              service_data:
-                entity_id: scene.movie_mode
-          - type: custom:button-card
-            template: osvision_quick_action
-            icon: mdi:lightbulb-off
-            name: ALL OFF
-            tap_action:
-              action: call-service
-              service: light.turn_off
-              service_data:
-                entity_id: all
-          - type: custom:button-card
-            template: osvision_quick_action
-            icon: mdi:lock
-            name: LOCK ALL
-            tap_action:
-              action: call-service
-              service: lock.lock
-              service_data:
-                entity_id: all
 
-      # --- Footer --------------------------------------------------------
-      - type: custom:osv-footer-card
-        label: OSVISION V2 // CORE SYSTEM
-        view_layout:
-          grid-area: footer
 
     card_mod:
       style: |
@@ -1635,54 +1537,7 @@ views:
             variables:
               level: info
 
-      # --- Quick actions -----------------------------------------------
-      # Remplacez les entity_id / services par vos scènes et scripts réels.
-      - type: horizontal-stack
-        view_layout:
-          grid-area: quick
-        cards:
-          - type: custom:button-card
-            template: osvision_quick_action
-            icon: mdi:weather-night
-            name: GOOD NIGHT
-            tap_action:
-              action: call-service
-              service: script.turn_on
-              service_data:
-                entity_id: script.good_night
-          - type: custom:button-card
-            template: osvision_quick_action
-            icon: mdi:movie-open
-            name: MOVIE MODE
-            tap_action:
-              action: call-service
-              service: scene.turn_on
-              service_data:
-                entity_id: scene.movie_mode
-          - type: custom:button-card
-            template: osvision_quick_action
-            icon: mdi:lightbulb-off
-            name: ALL OFF
-            tap_action:
-              action: call-service
-              service: light.turn_off
-              service_data:
-                entity_id: all
-          - type: custom:button-card
-            template: osvision_quick_action
-            icon: mdi:lock
-            name: LOCK ALL
-            tap_action:
-              action: call-service
-              service: lock.lock
-              service_data:
-                entity_id: all
 
-      # --- Footer --------------------------------------------------------
-      - type: custom:osv-footer-card
-        label: OSVISION V2 // CORE SYSTEM
-        view_layout:
-          grid-area: footer
 
     card_mod:
       style: |
@@ -1979,54 +1834,7 @@ views:
             variables:
               level: info
 
-      # --- Quick actions -----------------------------------------------
-      # Remplacez les entity_id / services par vos scènes et scripts réels.
-      - type: horizontal-stack
-        view_layout:
-          grid-area: quick
-        cards:
-          - type: custom:button-card
-            template: osvision_quick_action
-            icon: mdi:weather-night
-            name: GOOD NIGHT
-            tap_action:
-              action: call-service
-              service: script.turn_on
-              service_data:
-                entity_id: script.good_night
-          - type: custom:button-card
-            template: osvision_quick_action
-            icon: mdi:movie-open
-            name: MOVIE MODE
-            tap_action:
-              action: call-service
-              service: scene.turn_on
-              service_data:
-                entity_id: scene.movie_mode
-          - type: custom:button-card
-            template: osvision_quick_action
-            icon: mdi:lightbulb-off
-            name: ALL OFF
-            tap_action:
-              action: call-service
-              service: light.turn_off
-              service_data:
-                entity_id: all
-          - type: custom:button-card
-            template: osvision_quick_action
-            icon: mdi:lock
-            name: LOCK ALL
-            tap_action:
-              action: call-service
-              service: lock.lock
-              service_data:
-                entity_id: all
 
-      # --- Footer --------------------------------------------------------
-      - type: custom:osv-footer-card
-        label: OSVISION V2 // CORE SYSTEM
-        view_layout:
-          grid-area: footer
 
     card_mod:
       style: |
@@ -2323,54 +2131,7 @@ views:
             variables:
               level: info
 
-      # --- Quick actions -----------------------------------------------
-      # Remplacez les entity_id / services par vos scènes et scripts réels.
-      - type: horizontal-stack
-        view_layout:
-          grid-area: quick
-        cards:
-          - type: custom:button-card
-            template: osvision_quick_action
-            icon: mdi:weather-night
-            name: GOOD NIGHT
-            tap_action:
-              action: call-service
-              service: script.turn_on
-              service_data:
-                entity_id: script.good_night
-          - type: custom:button-card
-            template: osvision_quick_action
-            icon: mdi:movie-open
-            name: MOVIE MODE
-            tap_action:
-              action: call-service
-              service: scene.turn_on
-              service_data:
-                entity_id: scene.movie_mode
-          - type: custom:button-card
-            template: osvision_quick_action
-            icon: mdi:lightbulb-off
-            name: ALL OFF
-            tap_action:
-              action: call-service
-              service: light.turn_off
-              service_data:
-                entity_id: all
-          - type: custom:button-card
-            template: osvision_quick_action
-            icon: mdi:lock
-            name: LOCK ALL
-            tap_action:
-              action: call-service
-              service: lock.lock
-              service_data:
-                entity_id: all
 
-      # --- Footer --------------------------------------------------------
-      - type: custom:osv-footer-card
-        label: OSVISION V2 // CORE SYSTEM
-        view_layout:
-          grid-area: footer
 
     card_mod:
       style: |
@@ -2667,54 +2428,7 @@ views:
             variables:
               level: info
 
-      # --- Quick actions -----------------------------------------------
-      # Remplacez les entity_id / services par vos scènes et scripts réels.
-      - type: horizontal-stack
-        view_layout:
-          grid-area: quick
-        cards:
-          - type: custom:button-card
-            template: osvision_quick_action
-            icon: mdi:weather-night
-            name: GOOD NIGHT
-            tap_action:
-              action: call-service
-              service: script.turn_on
-              service_data:
-                entity_id: script.good_night
-          - type: custom:button-card
-            template: osvision_quick_action
-            icon: mdi:movie-open
-            name: MOVIE MODE
-            tap_action:
-              action: call-service
-              service: scene.turn_on
-              service_data:
-                entity_id: scene.movie_mode
-          - type: custom:button-card
-            template: osvision_quick_action
-            icon: mdi:lightbulb-off
-            name: ALL OFF
-            tap_action:
-              action: call-service
-              service: light.turn_off
-              service_data:
-                entity_id: all
-          - type: custom:button-card
-            template: osvision_quick_action
-            icon: mdi:lock
-            name: LOCK ALL
-            tap_action:
-              action: call-service
-              service: lock.lock
-              service_data:
-                entity_id: all
 
-      # --- Footer --------------------------------------------------------
-      - type: custom:osv-footer-card
-        label: OSVISION V2 // CORE SYSTEM
-        view_layout:
-          grid-area: footer
 
     card_mod:
       style: |
@@ -3011,54 +2725,7 @@ views:
             variables:
               level: info
 
-      # --- Quick actions -----------------------------------------------
-      # Remplacez les entity_id / services par vos scènes et scripts réels.
-      - type: horizontal-stack
-        view_layout:
-          grid-area: quick
-        cards:
-          - type: custom:button-card
-            template: osvision_quick_action
-            icon: mdi:weather-night
-            name: GOOD NIGHT
-            tap_action:
-              action: call-service
-              service: script.turn_on
-              service_data:
-                entity_id: script.good_night
-          - type: custom:button-card
-            template: osvision_quick_action
-            icon: mdi:movie-open
-            name: MOVIE MODE
-            tap_action:
-              action: call-service
-              service: scene.turn_on
-              service_data:
-                entity_id: scene.movie_mode
-          - type: custom:button-card
-            template: osvision_quick_action
-            icon: mdi:lightbulb-off
-            name: ALL OFF
-            tap_action:
-              action: call-service
-              service: light.turn_off
-              service_data:
-                entity_id: all
-          - type: custom:button-card
-            template: osvision_quick_action
-            icon: mdi:lock
-            name: LOCK ALL
-            tap_action:
-              action: call-service
-              service: lock.lock
-              service_data:
-                entity_id: all
 
-      # --- Footer --------------------------------------------------------
-      - type: custom:osv-footer-card
-        label: OSVISION V2 // CORE SYSTEM
-        view_layout:
-          grid-area: footer
 
     card_mod:
       style: |
@@ -3355,54 +3022,7 @@ views:
             variables:
               level: info
 
-      # --- Quick actions -----------------------------------------------
-      # Remplacez les entity_id / services par vos scènes et scripts réels.
-      - type: horizontal-stack
-        view_layout:
-          grid-area: quick
-        cards:
-          - type: custom:button-card
-            template: osvision_quick_action
-            icon: mdi:weather-night
-            name: GOOD NIGHT
-            tap_action:
-              action: call-service
-              service: script.turn_on
-              service_data:
-                entity_id: script.good_night
-          - type: custom:button-card
-            template: osvision_quick_action
-            icon: mdi:movie-open
-            name: MOVIE MODE
-            tap_action:
-              action: call-service
-              service: scene.turn_on
-              service_data:
-                entity_id: scene.movie_mode
-          - type: custom:button-card
-            template: osvision_quick_action
-            icon: mdi:lightbulb-off
-            name: ALL OFF
-            tap_action:
-              action: call-service
-              service: light.turn_off
-              service_data:
-                entity_id: all
-          - type: custom:button-card
-            template: osvision_quick_action
-            icon: mdi:lock
-            name: LOCK ALL
-            tap_action:
-              action: call-service
-              service: lock.lock
-              service_data:
-                entity_id: all
-
-      # --- Footer --------------------------------------------------------
-      - type: custom:osv-footer-card
-        label: OSVISION V2 // CORE SYSTEM
-        view_layout:
-          grid-area: footer
+     
 
     card_mod:
       style: |
