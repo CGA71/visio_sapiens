@@ -573,9 +573,16 @@ views:
                 - garden_1
             card_mod:
               style: |
-                :host { flex: 1 1 0; }
+                :host {
+                  flex: 1 1 0;
+                  align-self: stretch;
+                }
                 ha-card {
                   background: var(--osv-panel) !important;
+                  height: 100%;
+                  min-height: 0;
+                  display: flex;
+                  flex-direction: column;
                   --primary-text-color: #B8E8F5 !important;
                   --secondary-text-color: #8FB6C9 !important;
                   --primary-color: #00E5FF !important;
@@ -585,6 +592,7 @@ views:
                 ha-card .card-header {
                   color: #FFFFFF !important;
                 }
+     
 
           # Cadre 4 — Météo et prévisions (Enhanced Weather Chart Card)
           - type: custom:weather-chart-card
