@@ -640,21 +640,6 @@ views:
                 - color: "#00E5FF"
                 - "--mdc-icon-size": 36px
 
-      # --- Météo et prévisions (rangée énergie, col 4) ------------------
-      - type: weather-forecast
-        entity: weather.home  # TODO: remplacer par votre entité météo
-        show_current: true
-        show_forecast: true
-        forecast_type: daily
-        view_layout:
-          grid-area: egy4
-        card_mod:
-          style: |
-            ha-card {
-              background: var(--osv-panel) !important;
-              height: 100%;
-            }
-
       # --- Footer --------------------------------------------------------
       - type: custom:osv-footer-card
         label: OSVISION V2 // CORE SYSTEM
