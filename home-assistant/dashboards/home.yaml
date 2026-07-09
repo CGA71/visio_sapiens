@@ -591,10 +591,16 @@ views:
             entity: weather.home  # TODO: remplacer par votre entité météo
             card_mod:
               style: |
-                :host { flex: 1 1 0; }
+                :host {
+                  flex: 1 1 0;
+                  align-self: stretch;
+                }
                 ha-card {
                   background: var(--osv-panel) !important;
                   height: 100%;
+                  min-height: 0;
+                  display: flex;
+                  flex-direction: column;
                 }
 
       # --- Zone droite (INTERPHONE + AUDIO STREAM) ----------------------
