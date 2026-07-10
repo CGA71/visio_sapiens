@@ -449,7 +449,7 @@ views:
             suffix: "°C"
             style:
               top: 70%
-              left: 70%
+              left: 30%
               color: "#00E5FF"
               font-size: 11px
               font-weight: bold
