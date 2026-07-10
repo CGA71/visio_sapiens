@@ -346,13 +346,38 @@ views:
             }
         elements:
           # ---- GROUND FLOOR ----
+
+          - type: custom:button-card
+            name: "SECRET ROOM"
+            show_name: true
+            show_icon: false
+            tap_action:
+              action: none
+            style:
+              top: 7%
+              left: 80%
+            styles:
+              card:
+                - background: rgba(0,229,255,0.12)
+                - border: 1px solid rgba(0,229,255,0.4)
+                - border-radius: 6px
+                - padding: 2px 6px
+                - box-shadow: none
+                - pointer-events: none
+                - width: fit-content
+              name:
+                - color: "#00E5FF"
+                - font-size: 11px
+                - font-weight: bold
+                - white-space: nowrap
+
           - type: state-label
             entity: sensor.secret_room_temperature  # TODO
             prefix: "🌡 "
             suffix: "°C"
             style:
-              top: 4%
-              left: 24%
+              top: 13%
+              left: 80%
               color: "#00E5FF"
               font-size: 11px
               font-weight: bold
@@ -361,14 +386,38 @@ views:
               border-radius: 6px
               padding: 2px 6px
               white-space: nowrap
+          
+          - type: custom:button-card
+            name: "LIVING ROOM"
+            show_name: true
+            show_icon: false
+            tap_action:
+              action: none
+            style:
+              top: 30%
+              left: 80%
+            styles:
+              card:
+                - background: rgba(0,229,255,0.12)
+                - border: 1px solid rgba(0,229,255,0.4)
+                - border-radius: 6px
+                - padding: 2px 6px
+                - box-shadow: none
+                - pointer-events: none
+                - width: fit-content
+              name:
+                - color: "#00E5FF"
+                - font-size: 11px
+                - font-weight: bold
+                - white-space: nowrap
 
           - type: state-label
             entity: sensor.living_room_temperature  # TODO
             prefix: "🌡 "
             suffix: "°C"
             style:
-              top: 22%
-              left: 28%
+              top: 36%
+              left: 80%
               color: "#00E5FF"
               font-size: 11px
               font-weight: bold
