@@ -448,7 +448,7 @@ views:
             prefix: "🌡 "
             suffix: "°C"
             style:
-              top: 60%
+              top: 70%
               left: 70%
               color: "#00E5FF"
               font-size: 11px
