@@ -399,7 +399,7 @@ views:
             prefix: "🌡 "
             suffix: "°C"
             style:
-              top: 70%
+              top: 74%
               left: 16%
               color: "#00E5FF"
               font-size: 11px
@@ -415,7 +415,7 @@ views:
             prefix: "🌡 "
             suffix: "°C"
             style:
-              top: 70%
+              top: 74%
               left: 28%
               color: "#00E5FF"
               font-size: 11px
@@ -443,12 +443,36 @@ views:
               white-space: nowrap
 
           # ---- FIRST FLOOR ----
+          - type: custom:button-card
+            name: "BEDROOM 1"
+            show_name: true
+            show_icon: false
+            tap_action:
+              action: none
+            style:
+              top: 70%
+              left: 88%
+            styles:
+              card:
+                - background: rgba(0,229,255,0.12)
+                - border: 1px solid rgba(0,229,255,0.4)
+                - border-radius: 6px
+                - padding: 2px 6px
+                - box-shadow: none
+                - pointer-events: none
+                - width: fit-content
+              name:
+                - color: "#00E5FF"
+                - font-size: 11px
+                - font-weight: bold
+                - white-space: nowrap
+
           - type: state-label
             entity: sensor.bedroom1_temperature  # TODO
             prefix: "🌡 "
             suffix: "°C"
             style:
-              top: 70%
+              top: 74%
               left: 88%
               color: "#00E5FF"
               font-size: 11px
@@ -480,7 +504,7 @@ views:
             prefix: "🌡 "
             suffix: "°C"
             style:
-              top: 70%
+              top: 74%
               left: 59%
               color: "#00E5FF"
               font-size: 11px
