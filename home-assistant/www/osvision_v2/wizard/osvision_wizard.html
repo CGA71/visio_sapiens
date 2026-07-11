@@ -4,16 +4,20 @@
   <meta charset="UTF-8"/>
   <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
   <title>OSVision V2 — Discovery Wizard</title>
-  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    /* Polices système de secours — pas de dépendance internet */
+    @font-face { font-family: 'Orbitron'; src: local('Orbitron'); }
+    @font-face { font-family: 'Rajdhani'; src: local('Rajdhani'); }
+  </style>
   <style>
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    body{background:#02050B;color:#fff;font-family:'Rajdhani',system-ui,sans-serif;min-height:100vh}
+    body{background:#02050B;color:#fff;font-family:'Rajdhani','Segoe UI',system-ui,sans-serif;min-height:100vh}
     input,select,button,textarea{font-family:inherit}
     ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:rgba(0,229,255,.3);border-radius:2px}
     .page{max-width:960px;margin:0 auto;padding:24px}
     .header{display:flex;align-items:center;gap:16px;margin-bottom:32px}
     .logo{width:40px;height:40px;border-radius:50%;border:2px solid #00E5FF;display:flex;align-items:center;justify-content:center;color:#00E5FF;font-size:20px;flex-shrink:0}
-    .logo-text h1{font-family:'Orbitron',system-ui,sans-serif;color:#00E5FF;font-size:18px;letter-spacing:3px;margin:0}
+    .logo-text h1{font-family:'Orbitron','Courier New',monospace;color:#00E5FF;font-size:18px;letter-spacing:3px;margin:0}
     .logo-text p{color:#56707E;font-size:11px;letter-spacing:1px;margin:0}
     .ha-url{margin-left:auto;color:#56707E;font-size:11px}
 
@@ -23,13 +27,13 @@
     .step-bar{height:4px;border-radius:2px;background:rgba(0,229,255,.2);transition:background .3s}
     .step.active .step-bar{background:#00E5FF}
     .step.done .step-bar{background:#00FFC3}
-    .step-label{font-size:10px;font-family:'Orbitron',system-ui,sans-serif;letter-spacing:1px;margin-top:4px;color:#56707E}
+    .step-label{font-size:10px;font-family:'Orbitron','Courier New',monospace;letter-spacing:1px;margin-top:4px;color:#56707E}
     .step.active .step-label,.step.done .step-label{color:#00E5FF}
     .step.done .step-label{color:#00FFC3}
 
     /* Cards */
     .card{background:rgba(8,18,28,.85);border:1px solid rgba(0,229,255,.3);border-radius:16px;padding:24px;margin-bottom:16px;backdrop-filter:blur(12px)}
-    .card-title{font-family:'Orbitron',system-ui,sans-serif;color:#00E5FF;font-size:14px;letter-spacing:2px;margin-bottom:4px}
+    .card-title{font-family:'Orbitron','Courier New',monospace;color:#00E5FF;font-size:14px;letter-spacing:2px;margin-bottom:4px}
     .card-sub{color:#8FB6C9;font-size:13px;margin-bottom:16px}
 
     /* Form elements */
@@ -42,7 +46,7 @@
     select::-ms-expand{display:none}
 
     /* Buttons */
-    .btn{border-radius:10px;padding:10px 20px;font-family:'Orbitron',system-ui,sans-serif;font-size:12px;letter-spacing:1px;cursor:pointer;transition:all .2s;border:1px solid #00E5FF;background:rgba(0,229,255,.12);color:#00E5FF}
+    .btn{border-radius:10px;padding:10px 20px;font-family:'Orbitron','Courier New',monospace;font-size:12px;letter-spacing:1px;cursor:pointer;transition:all .2s;border:1px solid #00E5FF;background:rgba(0,229,255,.12);color:#00E5FF}
     .btn:disabled{opacity:.4;cursor:not-allowed}
     .btn:hover:not(:disabled){background:rgba(0,229,255,.22);box-shadow:0 0 12px rgba(0,229,255,.3)}
     .btn-danger{border-color:#FF3D71;background:rgba(255,61,113,.1);color:#FF3D71}
@@ -84,7 +88,7 @@
     .svg-preview{background:rgba(8,18,28,.9);border:1px solid rgba(0,229,255,.2);border-radius:12px;padding:8px;overflow:auto;max-height:400px}
 
     /* Domain section */
-    .domain-header{color:#00E5FF;font-family:'Orbitron',system-ui,sans-serif;font-size:11px;letter-spacing:1px;padding:8px 0 4px;border-top:1px solid rgba(0,229,255,.1);margin-top:12px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;user-select:none}
+    .domain-header{color:#00E5FF;font-family:'Orbitron','Courier New',monospace;font-size:11px;letter-spacing:1px;padding:8px 0 4px;border-top:1px solid rgba(0,229,255,.1);margin-top:12px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;user-select:none}
     .domain-header:hover{color:#fff}
     .domain-arrow{transition:transform .2s;font-size:10px;color:#56707E}
     .domain-arrow.open{transform:rotate(180deg)}
@@ -237,7 +241,7 @@ function renderPhase1(c) {
     html += `
     <div class="card">
       <div class="row">
-        <span style="color:#00E5FF;font-size:11px;font-family:'Orbitron',system-ui;white-space:nowrap">ÉTAGE ${fi+1}</span>
+        <span style="color:#00E5FF;font-size:11px;font-family:'Orbitron','Courier New',monospace;white-space:nowrap">ÉTAGE ${fi+1}</span>
         <input type="text" class="flex1" value="${esc(floor.name)}" oninput="updFloorName(${fi},this.value)" placeholder="Nom de l'étage"/>
         <button class="btn btn-sm btn-danger" onclick="delFloor(${fi})">✕</button>
       </div>
@@ -323,6 +327,9 @@ function renderPhase2(c) {
     <div class="card">
       <div class="card-title">PHASE 2 — DÉCOUVERTE DES APPAREILS</div>
       <div class="card-sub">Lancez le scan HA pour récupérer les appareils, puis assignez chacun à une pièce.</div>
+      <div class="status status-info" style="margin-bottom:16px">
+        💡 Assignez au moins un appareil à une pièce pour continuer. Les appareils non assignés seront ignorés lors de la génération du plan — vous pourrez les assigner plus tard via un nouveau scan.
+      </div>
       <button class="btn" onclick="runDiscoveryScan()" id="btn-scan">
         ⚡ Lancer le scan Home Assistant
       </button>
@@ -449,7 +456,7 @@ async function runDiscoveryScan() {
 function assignDevice(entity_id, room) {
   const dev = state.devices.find(d => d.entity_id === entity_id);
   if (dev) dev.room = room || null;
-  // Mettre à jour juste le compteur sans re-render complet
+  // Mettre à jour le compteur sans re-render complet
   const assigned = state.devices.filter(d=>d.room).length;
   const pct = Math.round(assigned / state.devices.length * 100);
   const progEl = document.querySelector(".progress-fill");
@@ -457,6 +464,9 @@ function assignDevice(entity_id, room) {
   const badges = document.querySelectorAll(".badge");
   if (badges[0]) badges[0].textContent = assigned + " assignés";
   if (badges[1]) badges[1].textContent = (state.devices.length - assigned) + " non assignés";
+  // Activer le bouton Suivant dès qu'au moins un appareil est assigné
+  const btnNext = document.querySelector(".actions-right .btn");
+  if (btnNext) btnNext.disabled = assigned === 0;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -469,7 +479,7 @@ function renderPhase3(c) {
   let summaryHtml = "";
   state.house.floors.forEach(f => {
     summaryHtml += `<div style="margin-bottom:8px">
-      <div style="color:#00E5FF;font-family:'Orbitron',system-ui;font-size:11px;letter-spacing:1px;margin-bottom:4px">${esc(f.name)}</div>`;
+      <div style="color:#00E5FF;font-family:'Orbitron','Courier New',monospace;font-size:11px;letter-spacing:1px;margin-bottom:4px">${esc(f.name)}</div>`;
     f.rooms.filter(r=>r.name).forEach(r => {
       const dc = state.devices.filter(d=>d.room===r.name).length;
       summaryHtml += `<div class="row" style="margin-left:16px;margin-bottom:4px">
@@ -482,7 +492,7 @@ function renderPhase3(c) {
   });
   if (state.house.exteriors.length > 0) {
     summaryHtml += `<div style="margin-bottom:8px">
-      <div style="color:#00FFC3;font-family:'Orbitron',system-ui;font-size:11px;letter-spacing:1px;margin-bottom:4px">EXTÉRIEURS</div>`;
+      <div style="color:#00FFC3;font-family:'Orbitron','Courier New',monospace;font-size:11px;letter-spacing:1px;margin-bottom:4px">EXTÉRIEURS</div>`;
     state.house.exteriors.forEach(e => {
       const dc = state.devices.filter(d=>d.room===e).length;
       summaryHtml += `<div class="row" style="margin-left:16px;margin-bottom:4px">
@@ -529,12 +539,12 @@ function buildSVG() {
   let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}">
 <defs>
 <style>
-  text{font-family:'Rajdhani',system-ui,sans-serif}
-  .fl{font-family:'Orbitron',system-ui,sans-serif;fill:#00E5FF;font-size:12px;letter-spacing:2px}
+  text{font-family:'Rajdhani','Segoe UI',system-ui,sans-serif}
+  .fl{font-family:'Orbitron','Courier New',monospace;fill:#00E5FF;font-size:12px;letter-spacing:2px}
   .rn{fill:#00E5FF;font-size:12px;font-weight:bold;letter-spacing:1px}
   .rd{fill:#8FB6C9;font-size:10px}
   .di{font-size:13px}
-  .el{font-family:'Orbitron',system-ui,sans-serif;fill:#00FFC3;font-size:12px;letter-spacing:2px}
+  .el{font-family:'Orbitron','Courier New',monospace;fill:#00FFC3;font-size:12px;letter-spacing:2px}
 </style>
 <filter id="g"><feGaussianBlur stdDeviation="2.5" result="b"/>
 <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
