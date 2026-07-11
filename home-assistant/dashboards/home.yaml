@@ -3219,18 +3219,32 @@ views:
           grid-area: header
 
       # --- Discovery ------------------------------------------------------
-      - type: custom:button-card
-        template: osvision_admin_button
-        icon: mdi:magnify-scan
-        name: DISCOVERY
-        label: "Rechercher les entités par pièce (lecture seule)"
-        confirmation:
-          text: "Lancer une découverte des capteurs dans toutes les zones ?"
-        tap_action:
-          action: call-service
-          service: script.osvision_run_discovery
+      - type: vertical-stack
         view_layout:
           grid-area: discovery
+        cards:
+          # Bouton 1 — Wizard (ouvre le formulaire dans un nouvel onglet)
+          - type: custom:button-card
+            template: osvision_admin_button
+            icon: mdi:magnify-scan
+            name: DISCOVERY WIZARD
+            label: "Définir les pièces et assigner les appareils"
+            tap_action:
+              action: url
+              url_path: /local/osvision_v2/wizard/oswizard.html
+              target: _blank
+
+          # Bouton 2 — Scan HA (génère report.json côté serveur)
+          - type: custom:button-card
+            template: osvision_admin_button
+            icon: mdi:radar
+            name: DISCOVERY SCAN
+            label: "Scanner les entités HA (génère report.json)"
+            confirmation:
+              text: "Lancer une découverte des capteurs dans toutes les zones ?"
+            tap_action:
+              action: call-service
+              service: script.osvision_run_discovery
 
       # --- Upgrade ----------------------------------------------------------
       - type: custom:button-card
