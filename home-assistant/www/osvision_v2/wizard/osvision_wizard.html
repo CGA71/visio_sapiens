@@ -34,10 +34,12 @@
 
     /* Form elements */
     label{color:#8FB6C9;font-size:12px;letter-spacing:1px;display:block;margin-bottom:4px}
-    input[type=text],input[type=password],select{background:rgba(0,229,255,.06);border:1px solid rgba(0,229,255,.3);border-radius:8px;padding:8px 12px;color:#fff;font-size:14px;outline:none;width:100%}
+    input[type=text],input[type=password],select{background:rgba(0,229,255,.06);border:1px solid rgba(0,229,255,.3);border-radius:8px;padding:8px 12px;color:#fff;font-size:14px;outline:none;width:100%;-webkit-appearance:none;appearance:none}
     input[type=text]:focus,input[type=password]:focus,select:focus{border-color:#00E5FF}
     input[type=color]{width:36px;height:36px;border:none;background:none;cursor:pointer;border-radius:6px;padding:0}
-    select option{background:#08121C;color:#fff}
+    select option{background:#08121C !important;color:#fff !important}
+    select option:hover,select option:checked,select option:focus{background:#00E5FF !important;color:#02050B !important}
+    select::-ms-expand{display:none}
 
     /* Buttons */
     .btn{border-radius:10px;padding:10px 20px;font-family:'Orbitron',system-ui,sans-serif;font-size:12px;letter-spacing:1px;cursor:pointer;transition:all .2s;border:1px solid #00E5FF;background:rgba(0,229,255,.12);color:#00E5FF}
@@ -82,7 +84,15 @@
     .svg-preview{background:rgba(8,18,28,.9);border:1px solid rgba(0,229,255,.2);border-radius:12px;padding:8px;overflow:auto;max-height:400px}
 
     /* Domain section */
-    .domain-header{color:#00E5FF;font-family:'Orbitron',system-ui,sans-serif;font-size:11px;letter-spacing:1px;padding:8px 0 4px;border-top:1px solid rgba(0,229,255,.1);margin-top:12px}
+    .domain-header{color:#00E5FF;font-family:'Orbitron',system-ui,sans-serif;font-size:11px;letter-spacing:1px;padding:8px 0 4px;border-top:1px solid rgba(0,229,255,.1);margin-top:12px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;user-select:none}
+    .domain-header:hover{color:#fff}
+    .domain-arrow{transition:transform .2s;font-size:10px;color:#56707E}
+    .domain-arrow.open{transform:rotate(180deg)}
+    .domain-content{overflow:hidden;transition:max-height .3s ease}
+    .domain-content.collapsed{max-height:0!important}
+    /* Sensor sections styled differently */
+    .domain-sensor .domain-header{color:#56707E;font-size:10px}
+    .domain-sensor .domain-header:hover{color:#8FB6C9}
 
     /* Progress */
     .progress-bar{height:4px;background:rgba(0,229,255,.1);border-radius:2px;overflow:hidden;margin:8px 0}
@@ -331,7 +341,8 @@ function renderPhase2(c) {
       <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
     </div>`;
 
-    // Grouper par domaine
+    // Grouper par domaine — appareils en premier, sensors en bas
+    const SENSOR_DOMAINS = ["sensor","binary_sensor"];
     const byDomain = {};
     state.devices.forEach(d => {
       const dom = d.entity_id.split(".")[0];
@@ -339,12 +350,28 @@ function renderPhase2(c) {
       byDomain[dom].push(d);
     });
 
+    // Trier : appareils physiques d'abord, puis sensors
+    const sortedEntries = Object.entries(byDomain).sort(([a],[b]) => {
+      const aIsSensor = SENSOR_DOMAINS.includes(a);
+      const bIsSensor = SENSOR_DOMAINS.includes(b);
+      if (aIsSensor && !bIsSensor) return 1;
+      if (!aIsSensor && bIsSensor) return -1;
+      return a.localeCompare(b);
+    });
+
     const roomOptions = `<option value="">— Non assigné —</option>` +
       allRooms.map(r => `<option value="${esc(r)}">${esc(r)}</option>`).join("");
 
-    Object.entries(byDomain).forEach(([dom, devs]) => {
-      html += `<div class="card">
-        <div class="domain-header">${DOMAIN_ICON[dom]||"📦"} ${dom.toUpperCase().replace("_"," ")} <span class="badge badge-cyan">${devs.length}</span></div>`;
+    sortedEntries.forEach(([dom, devs]) => {
+      const isSensor = SENSOR_DOMAINS.includes(dom);
+      const domId = `dom-${dom}`;
+      const isOpen = !isSensor; // appareils ouverts, sensors repliés
+      html += `<div class="card${isSensor?' domain-sensor':''}">
+        <div class="domain-header" onclick="toggleDomain('${domId}')">
+          <span>${DOMAIN_ICON[dom]||"📦"} ${dom.toUpperCase().replace("_"," ")} <span class="badge badge-${isSensor?'orange':'cyan'}">${devs.length}</span></span>
+          ${isSensor?`<span class="domain-arrow" id="arr-${domId}">▼</span>`:''}
+        </div>
+        <div class="domain-content${isSensor?' collapsed':''}" id="${domId}" style="max-height:${isOpen?'9999px':'0'}">`;
       devs.forEach(dev => {
         const sel = roomOptions.replace(
           `value="${esc(dev.room||'')}"`,
@@ -359,7 +386,7 @@ function renderPhase2(c) {
           <select class="device-select" onchange="assignDevice('${esc(dev.entity_id)}',this.value)">${sel}</select>
         </div>`;
       });
-      html += `</div>`;
+      html += `</div></div>`;
     });
   }
 
@@ -692,6 +719,22 @@ function getAllRooms() {
 
 function esc(str) {
   return String(str||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+// ─── Toggle domain section ───────────────────────────────────────────────
+function toggleDomain(id) {
+  const el = document.getElementById(id);
+  const arr = document.getElementById(`arr-${id}`);
+  if (!el) return;
+  if (el.classList.contains("collapsed")) {
+    el.classList.remove("collapsed");
+    el.style.maxHeight = "9999px";
+    if (arr) arr.classList.add("open");
+  } else {
+    el.classList.add("collapsed");
+    el.style.maxHeight = "0";
+    if (arr) arr.classList.remove("open");
+  }
 }
 
 // ─── Boot ─────────────────────────────────────────────────────────────────
