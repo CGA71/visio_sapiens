@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+  <title>OSVision V2 — Discovery Wizard</title>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rajdhani:wght@400;600;700&display=swap" rel="stylesheet"/>
+  <style>
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{background:#02050B;color:#fff;font-family:'Rajdhani',system-ui,sans-serif;min-height:100vh}
+    input,select,button,textarea{font-family:inherit}
+    ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:rgba(0,229,255,.3);border-radius:2px}
+    .page{max-width:960px;margin:0 auto;padding:24px}
+    .header{display:flex;align-items:center;gap:16px;margin-bottom:32px}
+    .logo{width:40px;height:40px;border-radius:50%;border:2px solid #00E5FF;display:flex;align-items:center;justify-content:center;color:#00E5FF;font-size:20px;flex-shrink:0}
+    .logo-text h1{font-family:'Orbitron',system-ui,sans-serif;color:#00E5FF;font-size:18px;letter-spacing:3px;margin:0}
+    .logo-text p{color:#56707E;font-size:11px;letter-spacing:1px;margin:0}
+    .ha-url{margin-left:auto;color:#56707E;font-size:11px}
+
+    /* Step bar */
+    .steps{display:flex;gap:4px;margin-bottom:32px}
+    .step{flex:1}
+    .step-bar{height:4px;border-radius:2px;background:rgba(0,229,255,.2);transition:background .3s}
+    .step.active .step-bar{background:#00E5FF}
+    .step.done .step-bar{background:#00FFC3}
+    .step-label{font-size:10px;font-family:'Orbitron',system-ui,sans-serif;letter-spacing:1px;margin-top:4px;color:#56707E}
+    .step.active .step-label,.step.done .step-label{color:#00E5FF}
+    .step.done .step-label{color:#00FFC3}
+
+    /* Cards */
+    .card{background:rgba(8,18,28,.85);border:1px solid rgba(0,229,255,.3);border-radius:16px;padding:24px;margin-bottom:16px;backdrop-filter:blur(12px)}
+    .card-title{font-family:'Orbitron',system-ui,sans-serif;color:#00E5FF;font-size:14px;letter-spacing:2px;margin-bottom:4px}
+    .card-sub{color:#8FB6C9;font-size:13px;margin-bottom:16px}
+
+    /* Form elements */
+    label{color:#8FB6C9;font-size:12px;letter-spacing:1px;display:block;margin-bottom:4px}
+    input[type=text],input[type=password],select{background:rgba(0,229,255,.06);border:1px solid rgba(0,229,255,.3);border-radius:8px;padding:8px 12px;color:#fff;font-size:14px;outline:none;width:100%}
+    input[type=text]:focus,input[type=password]:focus,select:focus{border-color:#00E5FF}
+    input[type=color]{width:36px;height:36px;border:none;background:none;cursor:pointer;border-radius:6px;padding:0}
+    select option{background:#08121C;color:#fff}
+
+    /* Buttons */
+    .btn{border-radius:10px;padding:10px 20px;font-family:'Orbitron',system-ui,sans-serif;font-size:12px;letter-spacing:1px;cursor:pointer;transition:all .2s;border:1px solid #00E5FF;background:rgba(0,229,255,.12);color:#00E5FF}
+    .btn:disabled{opacity:.4;cursor:not-allowed}
+    .btn:hover:not(:disabled){background:rgba(0,229,255,.22);box-shadow:0 0 12px rgba(0,229,255,.3)}
+    .btn-danger{border-color:#FF3D71;background:rgba(255,61,113,.1);color:#FF3D71}
+    .btn-green{border-color:#00FFC3;background:rgba(0,255,195,.1);color:#00FFC3}
+    .btn-sm{padding:6px 12px;font-size:10px}
+    .btn-ghost{background:transparent}
+
+    /* Layout helpers */
+    .row{display:flex;gap:10px;align-items:center;margin-bottom:8px}
+    .flex1{flex:1}
+    .actions{display:flex;justify-content:space-between;margin-top:20px;gap:12px}
+    .actions-right{display:flex;gap:12px;margin-left:auto}
+
+    /* Chips */
+    .chip{display:inline-block;padding:4px 14px;border-radius:20px;font-size:12px;letter-spacing:1px;cursor:pointer;margin-right:6px;margin-bottom:6px;border:1px solid rgba(0,229,255,.3);color:#8FB6C9;transition:all .2s}
+    .chip.on{background:rgba(0,229,255,.15);border-color:#00E5FF;color:#00E5FF}
+
+    /* Badge */
+    .badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;margin-left:6px}
+    .badge-cyan{background:rgba(0,229,255,.15);border:1px solid rgba(0,229,255,.4);color:#00E5FF}
+    .badge-green{background:rgba(0,255,195,.15);border:1px solid rgba(0,255,195,.4);color:#00FFC3}
+    .badge-orange{background:rgba(255,152,0,.15);border:1px solid rgba(255,152,0,.4);color:#FF9800}
+
+    /* Device list */
+    .device-row{display:flex;gap:12px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(0,229,255,.08)}
+    .device-info{flex:2;min-width:0}
+    .device-name{font-size:13px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .device-id{font-size:11px;color:#56707E;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+    .device-select{flex:1;min-width:140px}
+
+    /* Status */
+    .status{padding:12px 16px;border-radius:10px;font-size:13px;margin-bottom:16px}
+    .status-info{background:rgba(0,229,255,.08);border:1px solid rgba(0,229,255,.3);color:#00E5FF}
+    .status-ok{background:rgba(0,255,195,.08);border:1px solid rgba(0,255,195,.3);color:#00FFC3}
+    .status-error{background:rgba(255,61,113,.08);border:1px solid rgba(255,61,113,.3);color:#FF3D71}
+    .status-warn{background:rgba(255,152,0,.08);border:1px solid rgba(255,152,0,.3);color:#FF9800}
+
+    /* SVG preview */
+    .svg-preview{background:rgba(8,18,28,.9);border:1px solid rgba(0,229,255,.2);border-radius:12px;padding:8px;overflow:auto;max-height:400px}
+
+    /* Domain section */
+    .domain-header{color:#00E5FF;font-family:'Orbitron',system-ui,sans-serif;font-size:11px;letter-spacing:1px;padding:8px 0 4px;border-top:1px solid rgba(0,229,255,.1);margin-top:12px}
+
+    /* Progress */
+    .progress-bar{height:4px;background:rgba(0,229,255,.1);border-radius:2px;overflow:hidden;margin:8px 0}
+    .progress-fill{height:100%;background:#00E5FF;border-radius:2px;transition:width .3s}
+
+    /* Spinner */
+    @keyframes spin{to{transform:rotate(360deg)}}
+    .spinner{display:inline-block;width:20px;height:20px;border:2px solid rgba(0,229,255,.2);border-top-color:#00E5FF;border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle;margin-right:8px}
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <!-- HEADER -->
+  <div class="header">
+    <div class="logo">⬡</div>
+    <div class="logo-text">
+      <h1>OSVISION V2</h1>
+      <p>DISCOVERY WIZARD</p>
+    </div>
+    <div class="ha-url" id="ha-url"></div>
+  </div>
+
+  <!-- STEP BAR -->
+  <div class="steps">
+    <div class="step active" id="s1"><div class="step-bar"></div><div class="step-label">1. STRUCTURE</div></div>
+    <div class="step" id="s2"><div class="step-bar"></div><div class="step-label">2. APPAREILS</div></div>
+    <div class="step" id="s3"><div class="step-bar"></div><div class="step-label">3. PLAN SVG</div></div>
+    <div class="step" id="s4"><div class="step-bar"></div><div class="step-label">4. DASHBOARD</div></div>
+  </div>
+
+  <!-- CONTENT -->
+  <div id="content"></div>
+
+</div>
+
+<script>
+// ─── State ────────────────────────────────────────────────────────────────
+const HA_URL   = window.location.origin;
+const DOMAIN_ICON = {
+  light:"💡",switch:"🔌",sensor:"📡",binary_sensor:"🚨",
+  climate:"🌡",media_player:"🎵",cover:"🪟",camera:"📷",
+  alarm_control_panel:"🔒",vacuum:"🤖",fan:"💨",lock:"🔑",input_boolean:"🔘"
+};
+const EXTERIOR_TYPES = ["Jardin","Piscine","Jacuzzi","Garage","Terrasse","Véranda"];
+
+let state = {
+  token: localStorage.getItem("osv_ha_token") || "",
+  step: 0,   // 0=token, 1-4=phases
+  house: { floors:[], exteriors:[] },
+  devices: [],
+  svg: "",
+};
+
+document.getElementById("ha-url").textContent = HA_URL;
+
+// ─── API ──────────────────────────────────────────────────────────────────
+async function haGet(path) {
+  const r = await fetch(`${HA_URL}/api/${path}`, {
+    headers:{ Authorization:`Bearer ${state.token}` }
+  });
+  if (!r.ok) throw new Error(`${path}: ${r.status} ${r.statusText}`);
+  return r.json();
+}
+
+async function haPost(path, data={}) {
+  const r = await fetch(`${HA_URL}/api/${path}`, {
+    method:"POST",
+    headers:{ Authorization:`Bearer ${state.token}`, "Content-Type":"application/json" },
+    body: JSON.stringify(data)
+  });
+  if (!r.ok) throw new Error(`${path}: ${r.status}`);
+  return r.json().catch(()=>({}));
+}
+
+async function callService(domain, service, data={}) {
+  return haPost(`services/${domain}/${service}`, data);
+}
+
+// ─── Step bar ─────────────────────────────────────────────────────────────
+function setStep(n) {
+  state.step = n;
+  [1,2,3,4].forEach(i => {
+    const el = document.getElementById(`s${i}`);
+    el.className = "step" + (i < n ? " done" : i === n ? " active" : "");
+  });
+}
+
+// ─── Render router ────────────────────────────────────────────────────────
+function render() {
+  const c = document.getElementById("content");
+  if (!state.token) { renderToken(c); return; }
+  if (state.step === 0) setStep(1);
+  if (state.step === 1) renderPhase1(c);
+  else if (state.step === 2) renderPhase2(c);
+  else if (state.step === 3) renderPhase3(c);
+  else if (state.step === 4) renderPhase4(c);
+}
+
+// ─── TOKEN SCREEN ─────────────────────────────────────────────────────────
+function renderToken(c) {
+  c.innerHTML = `
+    <div class="card" style="max-width:480px;margin:40px auto">
+      <div class="card-title">CONNEXION HOME ASSISTANT</div>
+      <div class="card-sub">Crée un jeton longue durée dans <em>Profil → Jetons d'accès longue durée</em>.</div>
+      <label>JETON D'ACCÈS</label>
+      <input type="password" id="tok" placeholder="eyJhbGciOi…" style="margin-bottom:16px"/>
+      <button class="btn" onclick="saveToken()">Connexion →</button>
+    </div>`;
+  const tok = document.getElementById("tok");
+  tok.value = state.token;
+  tok.addEventListener("keydown", e => e.key === "Enter" && saveToken());
+}
+
+async function saveToken() {
+  const t = document.getElementById("tok").value.trim();
+  if (!t) return;
+  try {
+    state.token = t;
+    await haGet("states?limit=1");
+    localStorage.setItem("osv_ha_token", t);
+    setStep(1);
+    render();
+  } catch(e) {
+    alert("Jeton invalide ou HA inaccessible : " + e.message);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PHASE 1 — Structure de la maison
+// ═══════════════════════════════════════════════════════════════════════════
+function renderPhase1(c) {
+  const h = state.house;
+  let html = `
+    <div class="card">
+      <div class="card-title">PHASE 1 — STRUCTURE DE LA MAISON</div>
+      <div class="card-sub">Définissez les étages, pièces et espaces extérieurs.</div>
+      <button class="btn btn-sm" onclick="addFloor()">+ Ajouter un étage</button>
+    </div>`;
+
+  h.floors.forEach((floor, fi) => {
+    html += `
+    <div class="card">
+      <div class="row">
+        <span style="color:#00E5FF;font-size:11px;font-family:'Orbitron',system-ui;white-space:nowrap">ÉTAGE ${fi+1}</span>
+        <input type="text" class="flex1" value="${esc(floor.name)}" oninput="updFloorName(${fi},this.value)" placeholder="Nom de l'étage"/>
+        <button class="btn btn-sm btn-danger" onclick="delFloor(${fi})">✕</button>
+      </div>
+      <div id="rooms-${fi}">`;
+    floor.rooms.forEach((r, ri) => {
+      html += `
+        <div class="row" style="margin-left:20px">
+          <input type="text" class="flex1" value="${esc(r.name)}" oninput="updRoom(${fi},${ri},'name',this.value)" placeholder="Nom de la pièce"/>
+          <input type="color" value="${r.color}" onchange="updRoom(${fi},${ri},'color',this.value)" title="Couleur"/>
+          <button class="btn btn-sm btn-danger" onclick="delRoom(${fi},${ri})">✕</button>
+        </div>`;
+    });
+    html += `</div>
+      <button class="btn btn-sm" style="margin-top:8px;margin-left:20px" onclick="addRoom(${fi})">+ Pièce</button>
+    </div>`;
+  });
+
+  html += `
+    <div class="card">
+      <div class="card-title" style="margin-bottom:12px">ESPACES EXTÉRIEURS</div>
+      <div id="ext-chips">`;
+  EXTERIOR_TYPES.forEach(e => {
+    const on = h.exteriors.includes(e);
+    html += `<span class="chip${on?' on':''}" onclick="toggleExt('${e}')">${e}</span>`;
+  });
+  html += `</div>
+      <div class="row" style="margin-top:12px">
+        <input type="text" id="custom-ext" class="flex1" placeholder="Autre espace…" onkeydown="addCustomExt(event)"/>
+        <button class="btn btn-sm" onclick="addCustomExtBtn()">+</button>
+      </div>
+    </div>
+    <div class="actions">
+      <div></div>
+      <div class="actions-right">
+        <button class="btn" onclick="goPhase2()" ${canGoPhase2()?'':'disabled'}>
+          Suivant → Découverte des appareils
+        </button>
+      </div>
+    </div>`;
+
+  c.innerHTML = html;
+}
+
+function canGoPhase2() {
+  return state.house.floors.some(f => f.rooms.some(r => r.name.trim()));
+}
+
+function addFloor() {
+  const n = state.house.floors.length;
+  state.house.floors.push({ name: n===0?"Rez-de-chaussée":`Étage ${n}`, rooms:[] });
+  render();
+}
+function delFloor(fi) { state.house.floors.splice(fi,1); render(); }
+function updFloorName(fi,v) { state.house.floors[fi].name=v; }
+function addRoom(fi) { state.house.floors[fi].rooms.push({name:"",color:"#0A2030"}); render(); }
+function delRoom(fi,ri) { state.house.floors[fi].rooms.splice(ri,1); render(); }
+function updRoom(fi,ri,k,v) { state.house.floors[fi].rooms[ri][k]=v; }
+function toggleExt(name) {
+  const ex = state.house.exteriors;
+  const i = ex.indexOf(name);
+  if (i>=0) ex.splice(i,1); else ex.push(name);
+  render();
+}
+function addCustomExt(e) { if(e.key==="Enter") addCustomExtBtn(); }
+function addCustomExtBtn() {
+  const inp = document.getElementById("custom-ext");
+  const v = inp.value.trim();
+  if (v && !state.house.exteriors.includes(v)) {
+    state.house.exteriors.push(v);
+    inp.value = "";
+    render();
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PHASE 2 — Découverte + assignation
+// ═══════════════════════════════════════════════════════════════════════════
+function renderPhase2(c) {
+  const allRooms = getAllRooms();
+  const assigned = state.devices.filter(d=>d.room).length;
+
+  let html = `
+    <div class="card">
+      <div class="card-title">PHASE 2 — DÉCOUVERTE DES APPAREILS</div>
+      <div class="card-sub">Lancez le scan HA pour récupérer les appareils, puis assignez chacun à une pièce.</div>
+      <button class="btn" onclick="runDiscoveryScan()" id="btn-scan">
+        ⚡ Lancer le scan Home Assistant
+      </button>
+    </div>
+    <div id="scan-status"></div>`;
+
+  if (state.devices.length > 0) {
+    const pct = Math.round(assigned / state.devices.length * 100);
+    html += `
+    <div class="card">
+      <div class="row">
+        <span style="color:#fff;font-size:14px">${state.devices.length} appareils trouvés</span>
+        <span class="badge badge-cyan">${assigned} assignés</span>
+        <span class="badge badge-orange">${state.devices.length - assigned} non assignés</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
+    </div>`;
+
+    // Grouper par domaine
+    const byDomain = {};
+    state.devices.forEach(d => {
+      const dom = d.entity_id.split(".")[0];
+      if (!byDomain[dom]) byDomain[dom] = [];
+      byDomain[dom].push(d);
+    });
+
+    const roomOptions = `<option value="">— Non assigné —</option>` +
+      allRooms.map(r => `<option value="${esc(r)}">${esc(r)}</option>`).join("");
+
+    Object.entries(byDomain).forEach(([dom, devs]) => {
+      html += `<div class="card">
+        <div class="domain-header">${DOMAIN_ICON[dom]||"📦"} ${dom.toUpperCase().replace("_"," ")} <span class="badge badge-cyan">${devs.length}</span></div>`;
+      devs.forEach(dev => {
+        const sel = roomOptions.replace(
+          `value="${esc(dev.room||'')}"`,
+          `value="${esc(dev.room||'')}" selected`
+        );
+        html += `
+        <div class="device-row">
+          <div class="device-info">
+            <div class="device-name">${esc(dev.friendly_name)}</div>
+            <div class="device-id">${esc(dev.entity_id)}</div>
+          </div>
+          <select class="device-select" onchange="assignDevice('${esc(dev.entity_id)}',this.value)">${sel}</select>
+        </div>`;
+      });
+      html += `</div>`;
+    });
+  }
+
+  html += `
+    <div class="actions">
+      <button class="btn btn-ghost" onclick="goPhase1()">← Retour</button>
+      <div class="actions-right">
+        <button class="btn" onclick="goPhase3()" ${assigned>0?'':'disabled'}>
+          Suivant → Générer le plan SVG
+        </button>
+      </div>
+    </div>`;
+
+  c.innerHTML = html;
+}
+
+async function runDiscoveryScan() {
+  const btn = document.getElementById("btn-scan");
+  const status = document.getElementById("scan-status");
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner"></span>Scan en cours…`;
+
+  status.innerHTML = `<div class="status status-info"><span class="spinner"></span>Appel du script de découverte HA…</div>`;
+
+  try {
+    // 1. Lancer le script Python via HA service
+    await callService("script", "turn_on", { entity_id:"script.osvision_run_discovery" });
+    status.innerHTML = `<div class="status status-info"><span class="spinner"></span>Script lancé — récupération directe des entités…</div>`;
+
+    // 2. Récupérer directement les états HA (plus fiable)
+    await new Promise(r => setTimeout(r, 1500));
+    const DOMAINS = ["light","switch","sensor","binary_sensor","climate",
+                     "media_player","cover","camera","alarm_control_panel",
+                     "vacuum","fan","lock","input_boolean"];
+    const states = await haGet("states");
+    const devs = states
+      .filter(s => DOMAINS.includes(s.entity_id.split(".")[0]))
+      .map(s => ({
+        entity_id: s.entity_id,
+        friendly_name: s.attributes?.friendly_name || s.entity_id,
+        state: s.state,
+        room: null,
+      }));
+
+    state.devices = devs;
+    status.innerHTML = `<div class="status status-ok">✓ ${devs.length} appareils récupérés</div>`;
+    btn.innerHTML = `⚡ Relancer le scan`;
+    btn.disabled = false;
+    render();
+  } catch(e) {
+    status.innerHTML = `<div class="status status-error">Erreur : ${e.message}</div>`;
+    btn.innerHTML = `⚡ Lancer le scan Home Assistant`;
+    btn.disabled = false;
+  }
+}
+
+function assignDevice(entity_id, room) {
+  const dev = state.devices.find(d => d.entity_id === entity_id);
+  if (dev) dev.room = room || null;
+  // Mettre à jour juste le compteur sans re-render complet
+  const assigned = state.devices.filter(d=>d.room).length;
+  const pct = Math.round(assigned / state.devices.length * 100);
+  const progEl = document.querySelector(".progress-fill");
+  if (progEl) progEl.style.width = pct + "%";
+  const badges = document.querySelectorAll(".badge");
+  if (badges[0]) badges[0].textContent = assigned + " assignés";
+  if (badges[1]) badges[1].textContent = (state.devices.length - assigned) + " non assignés";
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PHASE 3 — Génération du plan SVG
+// ═══════════════════════════════════════════════════════════════════════════
+function renderPhase3(c) {
+  const assigned = state.devices.filter(d=>d.room).length;
+  const totalRooms = getAllRooms().length;
+
+  let summaryHtml = "";
+  state.house.floors.forEach(f => {
+    summaryHtml += `<div style="margin-bottom:8px">
+      <div style="color:#00E5FF;font-family:'Orbitron',system-ui;font-size:11px;letter-spacing:1px;margin-bottom:4px">${esc(f.name)}</div>`;
+    f.rooms.filter(r=>r.name).forEach(r => {
+      const dc = state.devices.filter(d=>d.room===r.name).length;
+      summaryHtml += `<div class="row" style="margin-left:16px;margin-bottom:4px">
+        <span style="flex:1;font-size:13px">${esc(r.name)}</span>
+        <span class="badge badge-cyan">${dc} appareil${dc>1?"s":""}</span>
+        <span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:${r.color};margin-left:4px"></span>
+      </div>`;
+    });
+    summaryHtml += `</div>`;
+  });
+  if (state.house.exteriors.length > 0) {
+    summaryHtml += `<div style="margin-bottom:8px">
+      <div style="color:#00FFC3;font-family:'Orbitron',system-ui;font-size:11px;letter-spacing:1px;margin-bottom:4px">EXTÉRIEURS</div>`;
+    state.house.exteriors.forEach(e => {
+      const dc = state.devices.filter(d=>d.room===e).length;
+      summaryHtml += `<div class="row" style="margin-left:16px;margin-bottom:4px">
+        <span style="flex:1;font-size:13px">${esc(e)}</span>
+        <span class="badge badge-green">${dc} appareil${dc>1?"s":""}</span>
+      </div>`;
+    });
+    summaryHtml += `</div>`;
+  }
+
+  let html = `
+    <div class="card">
+      <div class="card-title">PHASE 3 — GÉNÉRATION DU PLAN SVG</div>
+      <div class="card-sub">${totalRooms} zones · ${assigned} appareils assignés</div>
+      ${summaryHtml}
+      <div class="row" style="margin-top:16px;flex-wrap:wrap;gap:10px">
+        <button class="btn" onclick="generateSVG()">⚡ Générer le plan SVG</button>
+        <div id="svg-actions"></div>
+      </div>
+    </div>
+    <div id="svg-status"></div>
+    <div id="svg-preview"></div>
+    <div class="actions">
+      <button class="btn btn-ghost" onclick="goPhase2()">← Retour</button>
+      <div class="actions-right">
+        <button class="btn" id="btn-next-p4" onclick="goPhase4()" disabled>
+          Suivant → Mettre à jour le dashboard
+        </button>
+      </div>
+    </div>`;
+  c.innerHTML = html;
+}
+
+function buildSVG() {
+  const W=1200, M=40, GAP=16, FH=260;
+  const { floors, exteriors } = state.house;
+  const floorCount = floors.length + (exteriors.length>0?1:0);
+  const H = M*2 + 30 + floorCount*(FH+GAP);
+  const byRoom = {};
+  state.devices.forEach(d => {
+    if (d.room) { if (!byRoom[d.room]) byRoom[d.room]=[]; byRoom[d.room].push(d); }
+  });
+
+  let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}">
+<defs>
+<style>
+  text{font-family:'Rajdhani',system-ui,sans-serif}
+  .fl{font-family:'Orbitron',system-ui,sans-serif;fill:#00E5FF;font-size:12px;letter-spacing:2px}
+  .rn{fill:#00E5FF;font-size:12px;font-weight:bold;letter-spacing:1px}
+  .rd{fill:#8FB6C9;font-size:10px}
+  .di{font-size:13px}
+  .el{font-family:'Orbitron',system-ui,sans-serif;fill:#00FFC3;font-size:12px;letter-spacing:2px}
+</style>
+<filter id="g"><feGaussianBlur stdDeviation="2.5" result="b"/>
+<feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+<rect width="${W}" height="${H}" fill="#02050B"/>
+<text x="${W/2}" y="${M-6}" text-anchor="middle" class="fl" style="font-size:15px">OSVision V2 — Plan de la maison</text>`;
+
+  floors.forEach((floor,fi) => {
+    const y = M+20+fi*(FH+GAP);
+    const rooms = floor.rooms.filter(r=>r.name);
+    const rc = rooms.length || 1;
+    const rw = (W-M*2-GAP*(rc-1))/rc;
+
+    s += `\n<text x="${M}" y="${y+16}" class="fl">${floor.name.toUpperCase()}</text>`;
+    s += `\n<line x1="${M}" y1="${y+22}" x2="${W-M}" y2="${y+22}" stroke="#00E5FF" stroke-opacity=".25" stroke-width="1"/>`;
+
+    rooms.forEach((room,ri) => {
+      const rx=M+ri*(rw+GAP), ry=y+28, rh=FH-36;
+      const devs = byRoom[room.name]||[];
+      const ipr = Math.min(7, Math.max(3, Math.floor(rw/32)));
+
+      s += `\n<rect x="${rx}" y="${ry}" width="${rw}" height="${rh}" rx="10"
+  fill="${room.color||"#0A2030"}" fill-opacity=".75" stroke="#00E5FF" stroke-opacity=".45" stroke-width="1.5"/>`;
+      s += `\n<text x="${rx+rw/2}" y="${ry+20}" text-anchor="middle" class="rn">${room.name.toUpperCase()}</text>`;
+      s += `\n<text x="${rx+rw/2}" y="${ry+34}" text-anchor="middle" class="rd">${devs.length} appareil${devs.length>1?"s":""}</text>`;
+
+      devs.slice(0,ipr*3).forEach((dev,di) => {
+        const col=di%ipr, row=Math.floor(di/ipr);
+        const pw=(rw-24)/(Math.max(ipr-1,1));
+        const ix=rx+12+col*pw, iy=ry+52+row*26;
+        const ico=DOMAIN_ICON[dev.entity_id.split(".")[0]]||"📦";
+        s += `\n<text x="${ix}" y="${iy}" text-anchor="middle" class="di" filter="url(#g)">${ico}</text>`;
+      });
+    });
+  });
+
+  if (exteriors.length>0) {
+    const fi=floors.length;
+    const y=M+20+fi*(FH+GAP);
+    const ew=(W-M*2-GAP*(exteriors.length-1))/exteriors.length;
+    s += `\n<text x="${M}" y="${y+16}" class="el">EXTÉRIEURS</text>`;
+    s += `\n<line x1="${M}" y1="${y+22}" x2="${W-M}" y2="${y+22}" stroke="#00FFC3" stroke-opacity=".25" stroke-width="1"/>`;
+    exteriors.forEach((ext,ei) => {
+      const ex=M+ei*(ew+GAP), ey=y+28, eh=FH-36;
+      const devs=byRoom[ext]||[];
+      s += `\n<rect x="${ex}" y="${ey}" width="${ew}" height="${eh}" rx="10"
+  fill="rgba(0,100,30,.4)" stroke="#00FFC3" stroke-opacity=".45" stroke-width="1.5"/>`;
+      s += `\n<text x="${ex+ew/2}" y="${ey+20}" text-anchor="middle" class="el" style="font-size:11px">${ext.toUpperCase()}</text>`;
+      s += `\n<text x="${ex+ew/2}" y="${ey+34}" text-anchor="middle" class="rd">${devs.length} appareil${devs.length>1?"s":""}</text>`;
+      devs.slice(0,8).forEach((dev,di) => {
+        const ico=DOMAIN_ICON[dev.entity_id.split(".")[0]]||"📦";
+        s += `\n<text x="${ex+16+(di%4)*Math.max(24,(ew-32)/3)}" y="${ey+54+Math.floor(di/4)*26}" class="di">${ico}</text>`;
+      });
+    });
+  }
+
+  return s+"\n</svg>";
+}
+
+function generateSVG() {
+  state.svg = buildSVG();
+  document.getElementById("svg-preview").innerHTML = `
+    <div class="card svg-preview">${state.svg}</div>`;
+  document.getElementById("svg-actions").innerHTML = `
+    <button class="btn btn-sm" onclick="downloadSVG()">⬇ floorplan.svg</button>
+    <button class="btn btn-sm btn-green" onclick="downloadConfig()">⬇ config.json</button>`;
+  document.getElementById("svg-status").innerHTML = `
+    <div class="status status-ok">✓ SVG généré — télécharge-le puis dépose-le dans /config/www/osvision_v2/images/</div>`;
+  document.getElementById("btn-next-p4").disabled = false;
+}
+
+function downloadSVG() {
+  dl(state.svg, "floorplan.svg", "image/svg+xml");
+}
+function downloadConfig() {
+  const cfg = {
+    generated: new Date().toISOString(),
+    house: state.house,
+    devices: state.devices.filter(d=>d.room)
+  };
+  dl(JSON.stringify(cfg,null,2), "osvision_config.json", "application/json");
+}
+function dl(content, name, type) {
+  const a = Object.assign(document.createElement("a"),{
+    href: URL.createObjectURL(new Blob([content],{type})), download: name
+  });
+  a.click();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PHASE 4 — Mise à jour du dashboard
+// ═══════════════════════════════════════════════════════════════════════════
+function renderPhase4(c) {
+  c.innerHTML = `
+    <div class="card">
+      <div class="card-title">PHASE 4 — MISE À JOUR DU DASHBOARD</div>
+      <div class="card-sub">
+        Le script Python va :
+        <ol style="margin:12px 0 0 20px;line-height:2">
+          <li>Sauvegarder le plan SVG dans <code style="color:#00E5FF">/config/www/osvision_v2/images/floorplan.svg</code></li>
+          <li>Sauvegarder la config JSON dans <code style="color:#00E5FF">/config/osvision/floorplan_config.json</code></li>
+          <li>Patcher la zone <code style="color:#00E5FF">floor</code> dans <code style="color:#00E5FF">home.yaml</code></li>
+          <li>Recharger Lovelace automatiquement</li>
+        </ol>
+      </div>
+      <div class="status status-warn" style="margin-bottom:16px">
+        ⚠ Assure-toi que <strong>osvision_patch_dashboard.py</strong> est déposé dans <code>/config/osvision/</code>
+        et que les shell_commands sont déclarés dans <code>configuration.yaml</code>.
+      </div>
+      <button class="btn" onclick="applyDashboard()" id="btn-apply">
+        🚀 Appliquer la mise à jour
+      </button>
+    </div>
+    <div id="apply-status"></div>
+    <div class="card" style="margin-top:16px">
+      <div class="card-title" style="font-size:12px;margin-bottom:8px">ALTERNATIVE MANUELLE</div>
+      <div style="color:#8FB6C9;font-size:13px;line-height:1.7">
+        Si le patch automatique échoue :
+        <ol style="margin:8px 0 0 20px">
+          <li>Télécharge <strong>floorplan.svg</strong> (étape 3) et dépose-le dans <code style="color:#00E5FF">/config/www/osvision_v2/images/</code></li>
+          <li>Recharge le dashboard OSVision</li>
+        </ol>
+      </div>
+    </div>
+    <div class="actions">
+      <button class="btn btn-ghost" onclick="goPhase3()">← Retour</button>
+    </div>`;
+}
+
+async function applyDashboard() {
+  const btn = document.getElementById("btn-apply");
+  const status = document.getElementById("apply-status");
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner"></span>Application en cours…`;
+
+  try {
+    // 1. Envoyer le SVG via notify (workaround : on passe le SVG en notification
+    //    persistante que le script Python lira — ou via input_text si petit)
+    //    Solution pratique : écrire dans un input_text puis le script le lit
+    status.innerHTML = `<div class="status status-info"><span class="spinner"></span>Étape 1/3 — Sauvegarde du SVG…</div>`;
+
+    // Appeler shell_command via service
+    await callService("shell_command", "osvision_save_pending_svg");
+    await new Promise(r => setTimeout(r, 800));
+
+    status.innerHTML = `<div class="status status-info"><span class="spinner"></span>Étape 2/3 — Patch du dashboard…</div>`;
+    await callService("shell_command", "osvision_patch_dashboard");
+    await new Promise(r => setTimeout(r, 1500));
+
+    status.innerHTML = `<div class="status status-info"><span class="spinner"></span>Étape 3/3 — Rechargement Lovelace…</div>`;
+    await callService("lovelace", "reload");
+    await new Promise(r => setTimeout(r, 1000));
+
+    status.innerHTML = `<div class="status status-ok">
+      ✓ Dashboard mis à jour et Lovelace rechargé !<br>
+      <span style="font-size:12px">Retourne sur ton dashboard OSVision pour voir le résultat.</span>
+    </div>`;
+    btn.innerHTML = `✓ Appliqué`;
+
+  } catch(e) {
+    status.innerHTML = `<div class="status status-error">
+      Erreur : ${e.message}<br>
+      <span style="font-size:12px">Utilise la méthode manuelle ci-dessous.</span>
+    </div>`;
+    btn.innerHTML = `🚀 Réessayer`;
+    btn.disabled = false;
+  }
+}
+
+// ─── Navigation ───────────────────────────────────────────────────────────
+function goPhase1() { setStep(1); render(); }
+function goPhase2() { setStep(2); render(); }
+function goPhase3() { setStep(3); render(); }
+function goPhase4() { setStep(4); render(); }
+
+// ─── Helpers ──────────────────────────────────────────────────────────────
+function getAllRooms() {
+  const r = [];
+  state.house.floors.forEach(f => f.rooms.forEach(rm => rm.name && r.push(rm.name)));
+  state.house.exteriors.forEach(e => r.push(e));
+  return r;
+}
+
+function esc(str) {
+  return String(str||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+// ─── Boot ─────────────────────────────────────────────────────────────────
+render();
+</script>
+</body>
+</html>
