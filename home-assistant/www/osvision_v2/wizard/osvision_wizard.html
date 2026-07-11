@@ -391,9 +391,11 @@ async function runDiscoveryScan() {
 
     // 2. Récupérer directement les états HA (plus fiable)
     await new Promise(r => setTimeout(r, 1500));
-    const DOMAINS = ["light","switch","sensor","binary_sensor","climate",
-                     "media_player","cover","camera","alarm_control_panel",
-                     "vacuum","fan","lock","input_boolean"];
+    // Appareils physiques uniquement — on exclut sensor/binary_sensor
+    // (capteurs de mesure récupérés automatiquement par le dashboard)
+    const DOMAINS = ["light","switch","climate","media_player","cover",
+                     "camera","alarm_control_panel","vacuum","fan","lock",
+                     "input_boolean","scene","script","button","remote"];
     const states = await haGet("states");
     const devs = states
       .filter(s => DOMAINS.includes(s.entity_id.split(".")[0]))
