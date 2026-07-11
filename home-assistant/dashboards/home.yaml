@@ -3231,7 +3231,7 @@ views:
             label: "Définir les pièces et assigner les appareils"
             tap_action:
               action: url
-              url_path: /local/osvision_v2/wizard/oswizard.html
+              url_path: /local/osvision_v2/wizard/osvision_wizard.html
               target: _blank
 
           # Bouton 2 — Scan HA (génère report.json côté serveur)
