@@ -420,9 +420,10 @@ async function runDiscoveryScan() {
     await new Promise(r => setTimeout(r, 1500));
     // Appareils physiques uniquement — on exclut sensor/binary_sensor
     // (capteurs de mesure récupérés automatiquement par le dashboard)
+    // Appareils physiques uniquement
     const DOMAINS = ["light","switch","climate","media_player","cover",
                      "camera","alarm_control_panel","vacuum","fan","lock",
-                     "input_boolean","scene","script","button","remote"];
+                     "input_boolean","button","remote"];
     const states = await haGet("states");
     const devs = states
       .filter(s => DOMAINS.includes(s.entity_id.split(".")[0]))
@@ -555,8 +556,8 @@ function buildSVG() {
       const devs = byRoom[room.name]||[];
       const ipr = Math.min(7, Math.max(3, Math.floor(rw/32)));
 
-      s += `\n<rect x="${rx}" y="${ry}" width="${rw}" height="${rh}" rx="10"
-  fill="${room.color||"#0A2030"}" fill-opacity=".75" stroke="#00E5FF" stroke-opacity=".45" stroke-width="1.5"/>`;
+      const roomColor = room.color || '#0A2030';
+      s += `\n<rect x="${rx}" y="${ry}" width="${rw}" height="${rh}" rx="10" fill="${roomColor}" fill-opacity=".75" stroke="#00E5FF" stroke-opacity=".45" stroke-width="1.5"/>`;
       s += `\n<text x="${rx+rw/2}" y="${ry+20}" text-anchor="middle" class="rn">${room.name.toUpperCase()}</text>`;
       s += `\n<text x="${rx+rw/2}" y="${ry+34}" text-anchor="middle" class="rd">${devs.length} appareil${devs.length>1?"s":""}</text>`;
 
