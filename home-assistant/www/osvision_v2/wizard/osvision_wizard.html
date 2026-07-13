@@ -843,230 +843,197 @@ function esc(str) {
 // BADGES FLOTTANTS — lignes de connexion style OSVision
 // ═══════════════════════════════════════════════════════════════════════════
 
-// Positions par défaut des badges autour de l'image (% relatifs au wrapper)
-// Répartis : gauche, droite, haut, bas selon le nombre de pièces
-function getDefaultPositions(count) {
-  const positions = [];
-  const cols = [
-    { side:'left',   x:-180, yStart:10, yStep:60  },
-    { side:'right',  x:105,  yStart:10, yStep:60  },
-    { side:'bottom', x:10,   yStart:105, yStep:0, xStep:120 },
-  ];
-  let col = 0, row = 0;
-  for (let i = 0; i < count; i++) {
-    const c = cols[col % cols.length];
-    if (c.side === 'bottom') {
-      positions.push({ x: c.x + row * (c.xStep||120), y: c.yStart });
-    } else {
-      positions.push({ x: c.x, y: c.yStart + row * c.yStep });
-    }
-    col++;
-    if (col % cols.length === 0) row++;
-  }
-  return positions;
-}
+let badgeState = [];
 
-// Point d'ancrage sur l'image pour chaque badge (% de l'image)
-function getAnchorPoints(count) {
-  const anchors = [];
-  const leftCount  = Math.ceil(count / 2);
-  const rightCount = Math.floor(count / 2);
-  for (let i = 0; i < leftCount; i++) {
-    anchors.push({ x: 15, y: 15 + (70/(leftCount-1||1))*i });
+function getDefaultBadgePos(idx, total, imgW, imgH) {
+  const perSide = Math.ceil(total / 2);
+  if (idx < perSide) {
+    return { x: -185, y: 20 + idx * 65 };
+  } else {
+    return { x: imgW + 10, y: 20 + (idx - perSide) * 65 };
   }
-  for (let i = 0; i < rightCount; i++) {
-    anchors.push({ x: 85, y: 15 + (70/(rightCount-1||1))*i });
-  }
-  return anchors;
 }
-
-let badgeState = []; // { id, name, x, y, anchorX, anchorY, entity }
 
 function initBadges() {
   const rooms = getAllRooms();
-  const wrapper = document.getElementById('osv-img-wrapper');
-  if (!wrapper) return;
-  const wRect = wrapper.getBoundingClientRect();
-  const positions = getDefaultPositions(rooms.length);
-  const anchors   = getAnchorPoints(rooms.length);
-
-  badgeState = rooms.map((name, i) => ({
-    id: `badge-${i}`,
-    name,
-    x: positions[i]?.x ?? (i % 2 === 0 ? -170 : 105),
-    y: positions[i]?.y ?? 10 + Math.floor(i/2)*60,
-    anchorX: anchors[i]?.x ?? 50,
-    anchorY: anchors[i]?.y ?? 50,
-    entity: null,
-  }));
-
+  const img = document.getElementById('osv-3d-img');
+  if (!img) return;
+  const imgW = img.offsetWidth;
+  const imgH = img.offsetHeight;
+  badgeState = rooms.map(function(name, i) {
+    var pos = getDefaultBadgePos(i, rooms.length, imgW, imgH);
+    return {
+      id: 'badge-' + i,
+      name: name,
+      x: pos.x,
+      y: pos.y,
+      anchorX: i < Math.ceil(rooms.length/2) ? 10 : 90,
+      anchorY: 15 + Math.floor(i / Math.ceil(rooms.length/2)) * (70 / Math.max(Math.ceil(rooms.length/2)-1,1)),
+      entity: null
+    };
+  });
   renderBadges();
 }
 
-function renderBadges() {
-  const wrapper = document.getElementById('osv-img-wrapper');
-  const svg     = document.getElementById('osv-lines');
-  if (!wrapper || !svg) return;
-
-  // Supprimer anciens badges
-  wrapper.querySelectorAll('.osv-badge').forEach(b => b.remove());
-  svg.innerHTML = '';
-
-  const img = document.getElementById('osv-3d-img');
-  const imgW = img ? img.offsetWidth  : 700;
-  const imgH = img ? img.offsetHeight : 500;
-
-  badgeState.forEach((b, i) => {
-    // --- Badge DOM ---
-    const badge = document.createElement('div');
-    badge.className = 'osv-badge';
-    badge.id = b.id;
-    badge.style.cssText = `
-      position:absolute;
-      left:${b.x < 0 ? b.x : (b.x > 100 ? (imgW + b.x - 100) : imgW*b.x/100)}px;
-      top:${b.y > 100 ? (imgH + b.y - 100) : imgH*b.y/100}px;
-      background:rgba(8,18,28,0.92);
-      border:1px solid rgba(0,229,255,0.6);
-      border-radius:8px;
-      padding:6px 10px;
-      min-width:120px;
-      cursor:move;
-      user-select:none;
-      z-index:10;
-      box-shadow:0 0 12px rgba(0,229,255,0.25);
-      backdrop-filter:blur(8px);
-    `;
-    badge.innerHTML = `
-      <div style="color:#00E5FF;font-size:11px;font-weight:bold;letter-spacing:1px;margin-bottom:4px">${esc(b.name)}</div>
-      <select style="background:rgba(0,0,0,.5);border:1px solid rgba(0,229,255,.3);border-radius:4px;
-                     color:#B8E8F5;font-size:10px;padding:2px 4px;width:100%"
-              onchange="setBadgeEntity(${i},this.value)">
-        <option value="">— capteur temp. —</option>
-        ${getSensorOptions(b.entity)}
-      </select>
-    `;
-
-    // Drag
-    makeDraggable(badge, i, imgW, imgH);
-    wrapper.appendChild(badge);
-
-    // --- Ligne SVG ---
-    const bCenterX = parseFloat(badge.style.left) + 60;
-    const bCenterY = parseFloat(badge.style.top)  + 18;
-    const aX = imgW * b.anchorX / 100;
-    const aY = imgH * b.anchorY / 100;
-
-    // Courbe bezier
-    const mx = (bCenterX + aX) / 2;
-    const my = Math.min(bCenterY, aY) - 20;
-    const line = document.createElementNS('http://www.w3.org/2000/svg','path');
-    line.setAttribute('id', `line-${i}`);
-    line.setAttribute('d', `M ${bCenterX} ${bCenterY} Q ${mx} ${my} ${aX} ${aY}`);
-    line.setAttribute('stroke','rgba(0,229,255,0.5)');
-    line.setAttribute('stroke-width','1.5');
-    line.setAttribute('fill','none');
-    line.setAttribute('stroke-dasharray','4 3');
-    svg.appendChild(line);
-
-    // Point d'ancrage
-    const dot = document.createElementNS('http://www.w3.org/2000/svg','circle');
-    dot.setAttribute('cx', aX);
-    dot.setAttribute('cy', aY);
-    dot.setAttribute('r', '4');
-    dot.setAttribute('fill','#00E5FF');
-    dot.setAttribute('filter','url(#glow)');
-    svg.appendChild(dot);
-  });
-
-  // Filtre glow sur le SVG
-  svg.innerHTML = `<defs><filter id="glow">
-    <feGaussianBlur stdDeviation="2" result="blur"/>
-    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-  </filter></defs>` + svg.innerHTML;
-}
-
 function getSensorOptions(selected) {
-  // Récupère les capteurs température depuis state.devices (binary_sensor/sensor exclus du wizard mais disponibles via HA)
-  const opts = [
-    'sensor.secret_room_temperature',
-    'sensor.living_room_temperature',
-    'sensor.kitchen_temperature',
-    'sensor.bedroom1_temperature',
-    'sensor.bedroom2_temperature',
-    'sensor.bathroom_temperature',
-    'sensor.technical_room_temperature',
-    'sensor.computer_room_temperature',
-    'sensor.spa_temperature',
-    'sensor.solar_power_production',
-    'sensor.home_power_consumption',
+  var sensors = state.devices
+    .filter(function(d) { return d.entity_id.startsWith('sensor.'); })
+    .map(function(d) { return d.entity_id; });
+  // Ajouter capteurs par défaut si absents
+  var defaults = [
+    'sensor.secret_room_temperature','sensor.living_room_temperature',
+    'sensor.kitchen_temperature','sensor.bedroom1_temperature',
+    'sensor.bedroom2_temperature','sensor.bathroom_temperature',
+    'sensor.technical_room_temperature','sensor.computer_room_temperature',
+    'sensor.spa_temperature'
   ];
-  return opts.map(o =>
-    `<option value="${o}" ${selected===o?'selected':''}>${o.replace('sensor.','').replace(/_/g,' ')}</option>`
-  ).join('');
+  defaults.forEach(function(d) { if (!sensors.includes(d)) sensors.push(d); });
+  return sensors.map(function(s) {
+    var sel = selected === s ? ' selected' : '';
+    var label = s.replace('sensor.','').replace(/_/g,' ');
+    return '<option value="' + s + '"' + sel + '>' + label + '</option>';
+  }).join('');
 }
 
 function setBadgeEntity(idx, entity) {
   badgeState[idx].entity = entity || null;
 }
 
-function makeDraggable(el, idx, imgW, imgH) {
-  let startX, startY, startLeft, startTop;
+function renderBadges() {
+  var wrapper = document.getElementById('osv-img-wrapper');
+  var svg = document.getElementById('osv-lines');
+  if (!wrapper || !svg) return;
 
-  el.addEventListener('mousedown', e => {
+  wrapper.querySelectorAll('.osv-badge').forEach(function(b) { b.remove(); });
+  svg.innerHTML = '<defs><filter id="glow"><feGaussianBlur stdDeviation="2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>';
+
+  var img = document.getElementById('osv-3d-img');
+  var imgW = img ? img.offsetWidth : 700;
+  var imgH = img ? img.offsetHeight : 500;
+
+  badgeState.forEach(function(b, i) {
+    var badge = document.createElement('div');
+    badge.className = 'osv-badge';
+    badge.id = b.id;
+    badge.style.position = 'absolute';
+    badge.style.left = b.x + 'px';
+    badge.style.top = b.y + 'px';
+    badge.style.background = 'rgba(8,18,28,0.92)';
+    badge.style.border = '1px solid rgba(0,229,255,0.6)';
+    badge.style.borderRadius = '8px';
+    badge.style.padding = '6px 10px';
+    badge.style.minWidth = '130px';
+    badge.style.cursor = 'move';
+    badge.style.userSelect = 'none';
+    badge.style.zIndex = '10';
+    badge.style.boxShadow = '0 0 12px rgba(0,229,255,0.25)';
+    badge.style.backdropFilter = 'blur(8px)';
+
+    var title = document.createElement('div');
+    title.style.color = '#00E5FF';
+    title.style.fontSize = '11px';
+    title.style.fontWeight = 'bold';
+    title.style.letterSpacing = '1px';
+    title.style.marginBottom = '4px';
+    title.textContent = b.name;
+    badge.appendChild(title);
+
+    var sel = document.createElement('select');
+    sel.style.background = 'rgba(0,0,0,.5)';
+    sel.style.border = '1px solid rgba(0,229,255,.3)';
+    sel.style.borderRadius = '4px';
+    sel.style.color = '#B8E8F5';
+    sel.style.fontSize = '10px';
+    sel.style.padding = '2px 4px';
+    sel.style.width = '100%';
+    sel.innerHTML = '<option value="">— capteur —</option>' + getSensorOptions(b.entity);
+    sel.onchange = (function(idx) { return function() { setBadgeEntity(idx, this.value); }; })(i);
+    badge.appendChild(sel);
+
+    makeDraggable(badge, i);
+    wrapper.appendChild(badge);
+
+    // Ligne SVG
+    var bX = b.x + 65;
+    var bY = b.y + 18;
+    var aX = imgW * b.anchorX / 100;
+    var aY = imgH * b.anchorY / 100;
+    var mx = (bX + aX) / 2;
+    var my = Math.min(bY, aY) - 20;
+
+    var path = document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('id','line-'+i);
+    path.setAttribute('d','M '+bX+' '+bY+' Q '+mx+' '+my+' '+aX+' '+aY);
+    path.setAttribute('stroke','rgba(0,229,255,0.5)');
+    path.setAttribute('stroke-width','1.5');
+    path.setAttribute('fill','none');
+    path.setAttribute('stroke-dasharray','4 3');
+    svg.appendChild(path);
+
+    var dot = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    dot.setAttribute('cx', aX);
+    dot.setAttribute('cy', aY);
+    dot.setAttribute('r','4');
+    dot.setAttribute('fill','#00E5FF');
+    dot.setAttribute('filter','url(#glow)');
+    svg.appendChild(dot);
+  });
+}
+
+function makeDraggable(el, idx) {
+  var startX, startY, startLeft, startTop;
+  el.addEventListener('mousedown', function(e) {
     if (e.target.tagName === 'SELECT') return;
     e.preventDefault();
-    startX    = e.clientX;
-    startY    = e.clientY;
-    startLeft = parseFloat(el.style.left);
-    startTop  = parseFloat(el.style.top);
-
-    const onMove = e => {
-      const dx = e.clientX - startX;
-      const dy = e.clientY - startY;
+    startX = e.clientX; startY = e.clientY;
+    startLeft = parseFloat(el.style.left) || 0;
+    startTop  = parseFloat(el.style.top)  || 0;
+    function onMove(e) {
+      var dx = e.clientX - startX;
+      var dy = e.clientY - startY;
       el.style.left = (startLeft + dx) + 'px';
       el.style.top  = (startTop  + dy) + 'px';
       badgeState[idx].x = startLeft + dx;
       badgeState[idx].y = startTop  + dy;
-      updateLine(idx, imgW, imgH);
-    };
-    const onUp = () => {
+      updateLine(idx);
+    }
+    function onUp() {
       document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup',   onUp);
-    };
+      document.removeEventListener('mouseup', onUp);
+    }
     document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup',   onUp);
+    document.addEventListener('mouseup', onUp);
   });
 }
 
-function updateLine(idx, imgW, imgH) {
-  const line  = document.getElementById(`line-${idx}`);
-  const badge = document.getElementById(`badge-${idx}`);
-  if (!line || !badge) return;
-  const bCenterX = parseFloat(badge.style.left) + 60;
-  const bCenterY = parseFloat(badge.style.top)  + 18;
-  const aX = imgW * badgeState[idx].anchorX / 100;
-  const aY = imgH * badgeState[idx].anchorY / 100;
-  const mx = (bCenterX + aX) / 2;
-  const my = Math.min(bCenterY, aY) - 20;
-  line.setAttribute('d', `M ${bCenterX} ${bCenterY} Q ${mx} ${my} ${aX} ${aY}`);
+function updateLine(idx) {
+  var line  = document.getElementById('line-'+idx);
+  var badge = document.getElementById('badge-'+idx);
+  var img   = document.getElementById('osv-3d-img');
+  if (!line || !badge || !img) return;
+  var imgW = img.offsetWidth;
+  var imgH = img.offsetHeight;
+  var bX = parseFloat(badge.style.left) + 65;
+  var bY = parseFloat(badge.style.top)  + 18;
+  var aX = imgW * badgeState[idx].anchorX / 100;
+  var aY = imgH * badgeState[idx].anchorY / 100;
+  var mx = (bX + aX) / 2;
+  var my = Math.min(bY, aY) - 20;
+  line.setAttribute('d','M '+bX+' '+bY+' Q '+mx+' '+my+' '+aX+' '+aY);
 }
 
 function exportWithBadges() {
-  const config = {
+  var config = {
     generated: new Date().toISOString(),
     house: state.house,
-    badges: badgeState.map(b => ({
-      name: b.name,
-      entity: b.entity,
-      anchorX: b.anchorX,
-      anchorY: b.anchorY
-    }))
+    badges: badgeState.map(function(b) {
+      return { name: b.name, entity: b.entity, anchorX: b.anchorX, anchorY: b.anchorY };
+    })
   };
-  const blob = new Blob([JSON.stringify(config, null, 2)], {type:'application/json'});
-  const a = Object.assign(document.createElement('a'), {
-    href: URL.createObjectURL(blob),
-    download: 'osvision_badges_config.json'
-  });
+  var blob = new Blob([JSON.stringify(config,null,2)],{type:'application/json'});
+  var a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'osvision_badges_config.json';
   a.click();
 }
 
