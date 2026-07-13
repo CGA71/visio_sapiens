@@ -470,168 +470,263 @@ function assignDevice(entity_id, room) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// PHASE 3 — Génération du plan SVG
+// PHASE 3 — Génération IA (ComfyUI SDXL)
 // ═══════════════════════════════════════════════════════════════════════════
+
+const COMFY_URL = "http://192.168.1.15:8188";
+
+// Construit le prompt depuis la structure de la maison
+function buildPrompt(house, roomName, isExterior) {
+  const floors = house.floors.map(f => f.name).join(", ");
+  const rooms = house.floors.flatMap(f => f.rooms.map(r => r.name)).filter(Boolean);
+  const exteriors = house.exteriors;
+
+  if (isExterior) {
+    // Vue 3D extérieure principale
+    const extList = exteriors.length > 0 ? exteriors.join(", ") : "garden";
+    const roomList = rooms.slice(0,6).join(", ");
+    return {
+      positive: `isometric 3D architectural rendering of a modern smart home exterior, ${floors.length} floors, ${extList}, ${roomList}, futuristic neon cyan accent lights, dark night atmosphere, OSVision HUD style, ultra detailed, 8k, professional architectural visualization, photorealistic`,
+      negative: `blurry, low quality, distorted, flat, 2D, sketch, cartoon, people, cars, watermark, text`
+    };
+  } else {
+    // Vignette d'une pièce
+    const roomLower = roomName.toLowerCase();
+    return {
+      positive: `interior design of a ${roomLower}, futuristic smart home, neon cyan accent lighting, dark elegant atmosphere, ultra modern, 8k, photorealistic, OSVision style`,
+      negative: `blurry, low quality, distorted, people, watermark, text, ugly`
+    };
+  }
+}
+
+// Construit le workflow ComfyUI avec les paramètres voulus
+function buildWorkflow(positivePrompt, negativePrompt, width=1024, height=768, seed=null) {
+  return {
+    "4": {
+      "inputs": { "ckpt_name": "sd_xl_base_1.0.safetensors" },
+      "class_type": "CheckpointLoaderSimple"
+    },
+    "5": {
+      "inputs": { "text": positivePrompt, "clip": ["4", 1] },
+      "class_type": "CLIPTextEncode"
+    },
+    "10": {
+      "inputs": { "text": negativePrompt, "clip": ["4", 1] },
+      "class_type": "CLIPTextEncode"
+    },
+    "6": {
+      "inputs": { "width": width, "height": height, "batch_size": 1 },
+      "class_type": "EmptyLatentImage"
+    },
+    "7": {
+      "inputs": {
+        "seed": seed || Math.floor(Math.random() * 999999999999),
+        "steps": 20,
+        "cfg": 8,
+        "sampler_name": "euler",
+        "scheduler": "simple",
+        "denoise": 1,
+        "model": ["4", 0],
+        "positive": ["5", 0],
+        "negative": ["10", 0],
+        "latent_image": ["6", 0]
+      },
+      "class_type": "KSampler"
+    },
+    "8": {
+      "inputs": { "samples": ["7", 0], "vae": ["4", 2] },
+      "class_type": "VAEDecode"
+    },
+    "9": {
+      "inputs": { "filename_prefix": "OSVision", "images": ["8", 0] },
+      "class_type": "SaveImage"
+    }
+  };
+}
+
+// Soumet un workflow et poll jusqu'à l'image
+async function generateImage(positivePrompt, negativePrompt, width=1024, height=768) {
+  const workflow = buildWorkflow(positivePrompt, negativePrompt, width, height);
+  
+  // 1. Soumettre
+  const queueResp = await fetch(`${COMFY_URL}/prompt`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ prompt: workflow })
+  });
+  if (!queueResp.ok) throw new Error(`ComfyUI /prompt: ${queueResp.status}`);
+  const { prompt_id } = await queueResp.json();
+  
+  // 2. Poll jusqu'à completion (max 120s)
+  for (let i = 0; i < 60; i++) {
+    await new Promise(r => setTimeout(r, 2000));
+    const histResp = await fetch(`${COMFY_URL}/history/${prompt_id}`);
+    if (!histResp.ok) continue;
+    const hist = await histResp.json();
+    if (hist[prompt_id]?.status?.completed) {
+      // Récupérer l'image générée
+      const outputs = hist[prompt_id].outputs;
+      for (const nodeId in outputs) {
+        const imgs = outputs[nodeId].images;
+        if (imgs && imgs.length > 0) {
+          const img = imgs[0];
+          const imgUrl = `${COMFY_URL}/view?filename=${img.filename}&subfolder=${img.subfolder||''}&type=${img.type||'output'}`;
+          return imgUrl;
+        }
+      }
+    }
+  }
+  throw new Error("Timeout : génération trop longue (>120s)");
+}
+
 function renderPhase3(c) {
   const assigned = state.devices.filter(d=>d.room).length;
-  const totalRooms = getAllRooms().length;
+  const allRooms = getAllRooms();
+  const totalRooms = allRooms.length;
 
-  let summaryHtml = "";
-  state.house.floors.forEach(f => {
-    summaryHtml += `<div style="margin-bottom:8px">
-      <div style="color:#00E5FF;font-family:'Orbitron','Courier New',monospace;font-size:11px;letter-spacing:1px;margin-bottom:4px">${esc(f.name)}</div>`;
-    f.rooms.filter(r=>r.name).forEach(r => {
-      const dc = state.devices.filter(d=>d.room===r.name).length;
-      summaryHtml += `<div class="row" style="margin-left:16px;margin-bottom:4px">
-        <span style="flex:1;font-size:13px">${esc(r.name)}</span>
-        <span class="badge badge-cyan">${dc} appareil${dc>1?"s":""}</span>
-        <span style="display:inline-block;width:12px;height:12px;border-radius:3px;background:${r.color};margin-left:4px"></span>
-      </div>`;
-    });
-    summaryHtml += `</div>`;
-  });
-  if (state.house.exteriors.length > 0) {
-    summaryHtml += `<div style="margin-bottom:8px">
-      <div style="color:#00FFC3;font-family:'Orbitron','Courier New',monospace;font-size:11px;letter-spacing:1px;margin-bottom:4px">EXTÉRIEURS</div>`;
-    state.house.exteriors.forEach(e => {
-      const dc = state.devices.filter(d=>d.room===e).length;
-      summaryHtml += `<div class="row" style="margin-left:16px;margin-bottom:4px">
-        <span style="flex:1;font-size:13px">${esc(e)}</span>
-        <span class="badge badge-green">${dc} appareil${dc>1?"s":""}</span>
-      </div>`;
-    });
-    summaryHtml += `</div>`;
-  }
+  let roomButtons = allRooms.map(r => 
+    `<button class="btn btn-sm" style="margin:4px" onclick="generateVignette('${esc(r)}')" id="btn-vignette-${esc(r).replace(/[^a-z0-9]/gi,'_')}">
+      🏠 ${esc(r)}
+    </button>`
+  ).join('');
 
-  let html = `
+  c.innerHTML = `
     <div class="card">
-      <div class="card-title">PHASE 3 — GÉNÉRATION DU PLAN SVG</div>
-      <div class="card-sub">${totalRooms} zones · ${assigned} appareils assignés</div>
-      ${summaryHtml}
-      <div class="row" style="margin-top:16px;flex-wrap:wrap;gap:10px">
-        <button class="btn" onclick="generateSVG()">⚡ Générer le plan SVG</button>
-        <div id="svg-actions"></div>
+      <div class="card-title">PHASE 3 — GÉNÉRATION IA</div>
+      <div class="card-sub">ComfyUI SDXL · ${totalRooms} zones · ${assigned} appareils assignés</div>
+
+      <div class="card" style="background:rgba(0,229,255,.05);margin-bottom:0">
+        <div style="color:#8FB6C9;font-size:12px;letter-spacing:1px;margin-bottom:8px">PROMPT AUTO-GÉNÉRÉ</div>
+        <div id="prompt-preview" style="color:#00E5FF;font-size:11px;line-height:1.6;font-family:'Courier New',monospace;background:rgba(0,0,0,.3);padding:10px;border-radius:8px;white-space:pre-wrap"></div>
       </div>
     </div>
-    <div id="svg-status"></div>
-    <div id="svg-preview"></div>
+
+    <div class="card">
+      <div class="card-title" style="margin-bottom:12px">VUE 3D EXTÉRIEURE</div>
+      <div class="row" style="flex-wrap:wrap;gap:8px;margin-bottom:16px">
+        <button class="btn" onclick="generate3DView()" id="btn-3d">
+          ⚡ Générer la vue 3D principale
+        </button>
+        <button class="btn btn-sm btn-ghost" onclick="regenerate3DView()" id="btn-3d-regen" style="display:none">
+          🔄 Régénérer
+        </button>
+      </div>
+      <div id="img-3d-status"></div>
+      <div id="img-3d-container"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title" style="margin-bottom:8px">VIGNETTES PAR PIÈCE</div>
+      <div class="card-sub">Génère une ambiance visuelle pour chaque pièce</div>
+      <div style="margin-bottom:12px;flex-wrap:wrap;display:flex;gap:4px">
+        <button class="btn btn-sm" onclick="generateAllVignettes()" id="btn-all-vignettes">
+          ⚡ Tout générer
+        </button>
+        ${roomButtons}
+      </div>
+      <div id="vignettes-container" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-top:12px"></div>
+    </div>
+
     <div class="actions">
       <button class="btn btn-ghost" onclick="goPhase2()">← Retour</button>
       <div class="actions-right">
-        <button class="btn" id="btn-next-p4" onclick="goPhase4()" disabled>
+        <button class="btn" onclick="goPhase4()">
           Suivant → Mettre à jour le dashboard
         </button>
       </div>
     </div>`;
-  c.innerHTML = html;
+
+  // Afficher le prompt preview
+  const { positive } = buildPrompt(state.house, null, true);
+  document.getElementById("prompt-preview").textContent = positive;
 }
 
-function buildSVG() {
-  const W=1200, M=40, GAP=16, FH=260;
-  const { floors, exteriors } = state.house;
-  const floorCount = floors.length + (exteriors.length>0?1:0);
-  const H = M*2 + 30 + floorCount*(FH+GAP);
-  const byRoom = {};
-  state.devices.forEach(d => {
-    if (d.room) { if (!byRoom[d.room]) byRoom[d.room]=[]; byRoom[d.room].push(d); }
-  });
+async function generate3DView() {
+  const btn = document.getElementById("btn-3d");
+  const status = document.getElementById("img-3d-status");
+  const container = document.getElementById("img-3d-container");
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner"></span>Génération en cours… (~40s)`;
+  status.innerHTML = `<div class="status status-info"><span class="spinner"></span>Envoi à ComfyUI (${COMFY_URL})…</div>`;
 
-  let s = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}">
-<defs>
-<style>
-  text{font-family:'Rajdhani','Segoe UI',system-ui,sans-serif}
-  .fl{font-family:'Orbitron','Courier New',monospace;fill:#00E5FF;font-size:12px;letter-spacing:2px}
-  .rn{fill:#00E5FF;font-size:12px;font-weight:bold;letter-spacing:1px}
-  .rd{fill:#8FB6C9;font-size:10px}
-  .di{font-size:13px}
-  .el{font-family:'Orbitron','Courier New',monospace;fill:#00FFC3;font-size:12px;letter-spacing:2px}
-</style>
-<filter id="g"><feGaussianBlur stdDeviation="2.5" result="b"/>
-<feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
-</defs>
-<rect width="${W}" height="${H}" fill="#02050B"/>
-<text x="${W/2}" y="${M-6}" text-anchor="middle" class="fl" style="font-size:15px">OSVision V2 — Plan de la maison</text>`;
-
-  floors.forEach((floor,fi) => {
-    const y = M+20+fi*(FH+GAP);
-    const rooms = floor.rooms.filter(r=>r.name);
-    const rc = rooms.length || 1;
-    const rw = (W-M*2-GAP*(rc-1))/rc;
-
-    s += `\n<text x="${M}" y="${y+16}" class="fl">${floor.name.toUpperCase()}</text>`;
-    s += `\n<line x1="${M}" y1="${y+22}" x2="${W-M}" y2="${y+22}" stroke="#00E5FF" stroke-opacity=".25" stroke-width="1"/>`;
-
-    rooms.forEach((room,ri) => {
-      const rx=M+ri*(rw+GAP), ry=y+28, rh=FH-36;
-      const devs = byRoom[room.name]||[];
-      const ipr = Math.min(7, Math.max(3, Math.floor(rw/32)));
-
-      const roomColor = room.color || '#0A2030';
-      s += `\n<rect x="${rx}" y="${ry}" width="${rw}" height="${rh}" rx="10" fill="${roomColor}" fill-opacity=".75" stroke="#00E5FF" stroke-opacity=".45" stroke-width="1.5"/>`;
-      s += `\n<text x="${rx+rw/2}" y="${ry+20}" text-anchor="middle" class="rn">${room.name.toUpperCase()}</text>`;
-      s += `\n<text x="${rx+rw/2}" y="${ry+34}" text-anchor="middle" class="rd">${devs.length} appareil${devs.length>1?"s":""}</text>`;
-
-      devs.slice(0,ipr*3).forEach((dev,di) => {
-        const col=di%ipr, row=Math.floor(di/ipr);
-        const pw=(rw-24)/(Math.max(ipr-1,1));
-        const ix=rx+12+col*pw, iy=ry+52+row*26;
-        const ico=DOMAIN_ICON[dev.entity_id.split(".")[0]]||"📦";
-        s += `\n<text x="${ix}" y="${iy}" text-anchor="middle" class="di" filter="url(#g)">${ico}</text>`;
-      });
-    });
-  });
-
-  if (exteriors.length>0) {
-    const fi=floors.length;
-    const y=M+20+fi*(FH+GAP);
-    const ew=(W-M*2-GAP*(exteriors.length-1))/exteriors.length;
-    s += `\n<text x="${M}" y="${y+16}" class="el">EXTÉRIEURS</text>`;
-    s += `\n<line x1="${M}" y1="${y+22}" x2="${W-M}" y2="${y+22}" stroke="#00FFC3" stroke-opacity=".25" stroke-width="1"/>`;
-    exteriors.forEach((ext,ei) => {
-      const ex=M+ei*(ew+GAP), ey=y+28, eh=FH-36;
-      const devs=byRoom[ext]||[];
-      s += `\n<rect x="${ex}" y="${ey}" width="${ew}" height="${eh}" rx="10"
-  fill="rgba(0,100,30,.4)" stroke="#00FFC3" stroke-opacity=".45" stroke-width="1.5"/>`;
-      s += `\n<text x="${ex+ew/2}" y="${ey+20}" text-anchor="middle" class="el" style="font-size:11px">${ext.toUpperCase()}</text>`;
-      s += `\n<text x="${ex+ew/2}" y="${ey+34}" text-anchor="middle" class="rd">${devs.length} appareil${devs.length>1?"s":""}</text>`;
-      devs.slice(0,8).forEach((dev,di) => {
-        const ico=DOMAIN_ICON[dev.entity_id.split(".")[0]]||"📦";
-        s += `\n<text x="${ex+16+(di%4)*Math.max(24,(ew-32)/3)}" y="${ey+54+Math.floor(di/4)*26}" class="di">${ico}</text>`;
-      });
-    });
+  try {
+    const { positive, negative } = buildPrompt(state.house, null, true);
+    const imgUrl = await generateImage(positive, negative, 1024, 768);
+    
+    container.innerHTML = `
+      <img src="${imgUrl}" style="width:100%;border-radius:10px;border:1px solid rgba(0,229,255,.3);margin-top:8px" 
+           onerror="this.style.display='none'" alt="Vue 3D OSVision"/>
+      <div style="margin-top:8px;display:flex;gap:8px">
+        <a href="${imgUrl}" download="osvision_3d.png" class="btn btn-sm">⬇ Télécharger</a>
+      </div>`;
+    status.innerHTML = `<div class="status status-ok">✓ Image générée avec succès</div>`;
+    document.getElementById("btn-3d-regen").style.display = "inline-block";
+    btn.innerHTML = `✓ Généré`;
+  } catch(e) {
+    status.innerHTML = `<div class="status status-error">Erreur : ${e.message}</div>`;
+    btn.innerHTML = `⚡ Générer la vue 3D principale`;
+    btn.disabled = false;
   }
-
-  return s+"\n</svg>";
 }
 
-function generateSVG() {
-  state.svg = buildSVG();
-  document.getElementById("svg-preview").innerHTML = `
-    <div class="card svg-preview">${state.svg}</div>`;
-  document.getElementById("svg-actions").innerHTML = `
-    <button class="btn btn-sm" onclick="downloadSVG()">⬇ floorplan.svg</button>
-    <button class="btn btn-sm btn-green" onclick="downloadConfig()">⬇ config.json</button>`;
-  document.getElementById("svg-status").innerHTML = `
-    <div class="status status-ok">✓ SVG généré — télécharge-le puis dépose-le dans /config/www/osvision_v2/images/</div>`;
-  document.getElementById("btn-next-p4").disabled = false;
+function regenerate3DView() {
+  document.getElementById("btn-3d").disabled = false;
+  document.getElementById("btn-3d").innerHTML = `⚡ Générer la vue 3D principale`;
+  generate3DView();
 }
 
-function downloadSVG() {
-  dl(state.svg, "floorplan.svg", "image/svg+xml");
+async function generateVignette(roomName) {
+  const safeId = roomName.replace(/[^a-z0-9]/gi,'_');
+  const btn = document.getElementById(`btn-vignette-${safeId}`);
+  const container = document.getElementById("vignettes-container");
+  
+  // Placeholder
+  let card = document.getElementById(`vignette-card-${safeId}`);
+  if (!card) {
+    card = document.createElement('div');
+    card.id = `vignette-card-${safeId}`;
+    card.style.cssText = "background:rgba(0,229,255,.05);border:1px solid rgba(0,229,255,.2);border-radius:10px;overflow:hidden";
+    container.appendChild(card);
+  }
+  card.innerHTML = `
+    <div style="height:150px;display:flex;align-items:center;justify-content:center;color:#00E5FF">
+      <span class="spinner"></span>
+    </div>
+    <div style="padding:8px;font-size:11px;color:#8FB6C9;text-align:center">${esc(roomName)}</div>`;
+
+  if (btn) { btn.disabled = true; btn.innerHTML = `⟳ ${esc(roomName)}`; }
+
+  try {
+    const { positive, negative } = buildPrompt(state.house, roomName, false);
+    const imgUrl = await generateImage(positive, negative, 512, 512);
+    
+    card.innerHTML = `
+      <img src="${imgUrl}" style="width:100%;height:150px;object-fit:cover" alt="${esc(roomName)}"/>
+      <div style="padding:8px;display:flex;justify-content:space-between;align-items:center">
+        <span style="font-size:11px;color:#00E5FF;font-weight:bold">${esc(roomName)}</span>
+        <a href="${imgUrl}" download="osvision_${safeId}.png" style="color:#8FB6C9;font-size:18px;text-decoration:none">⬇</a>
+      </div>`;
+    if (btn) { btn.innerHTML = `✓ ${esc(roomName)}`; }
+  } catch(e) {
+    card.innerHTML = `
+      <div style="height:150px;display:flex;align-items:center;justify-content:center;color:#FF3D71;font-size:11px;padding:8px;text-align:center">
+        Erreur : ${e.message}
+      </div>
+      <div style="padding:8px;font-size:11px;color:#8FB6C9;text-align:center">${esc(roomName)}</div>`;
+    if (btn) { btn.disabled = false; btn.innerHTML = `🏠 ${esc(roomName)}`; }
+  }
 }
-function downloadConfig() {
-  const cfg = {
-    generated: new Date().toISOString(),
-    house: state.house,
-    devices: state.devices.filter(d=>d.room)
-  };
-  dl(JSON.stringify(cfg,null,2), "osvision_config.json", "application/json");
-}
-function dl(content, name, type) {
-  const a = Object.assign(document.createElement("a"),{
-    href: URL.createObjectURL(new Blob([content],{type})), download: name
-  });
-  a.click();
+
+async function generateAllVignettes() {
+  const btn = document.getElementById("btn-all-vignettes");
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner"></span>Génération séquentielle…`;
+  
+  const rooms = getAllRooms();
+  for (const room of rooms) {
+    await generateVignette(room);
+  }
+  btn.innerHTML = `✓ Tout généré`;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
