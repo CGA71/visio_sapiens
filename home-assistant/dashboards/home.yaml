@@ -239,6 +239,15 @@ views:
               navigation_path: /osvision-v2/energy
 
           - type: custom:button-card
+            template: osvision_nav_button
+            icon: mdi:shield-crown
+            name: ADMIN
+            label: "Panneau administration"
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-v2/admin
+
+          - type: custom:button-card
             template: osvision_sidebar_brand_footer
             icon: mdi:hexagon-outline
             name: "OSVISION V2"
@@ -1019,6 +1028,15 @@ views:
               navigation_path: /osvision-v2/energy
 
           - type: custom:button-card
+            template: osvision_nav_button
+            icon: mdi:shield-crown
+            name: ADMIN
+            label: "Panneau administration"
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-v2/admin
+
+          - type: custom:button-card
             template: osvision_sidebar_brand_footer
             icon: mdi:hexagon-outline
             name: "OSVISION V2"
@@ -1314,6 +1332,15 @@ views:
             tap_action:
               action: navigate
               navigation_path: /osvision-v2/energy
+
+          - type: custom:button-card
+            template: osvision_nav_button
+            icon: mdi:shield-crown
+            name: ADMIN
+            label: "Panneau administration"
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-v2/admin
 
           - type: custom:button-card
             template: osvision_sidebar_brand_footer
@@ -1613,6 +1640,15 @@ views:
               navigation_path: /osvision-v2/energy
 
           - type: custom:button-card
+            template: osvision_nav_button
+            icon: mdi:shield-crown
+            name: ADMIN
+            label: "Panneau administration"
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-v2/admin
+
+          - type: custom:button-card
             template: osvision_sidebar_brand_footer
             icon: mdi:hexagon-outline
             name: "OSVISION V2"
@@ -1908,6 +1944,15 @@ views:
             tap_action:
               action: navigate
               navigation_path: /osvision-v2/energy
+
+          - type: custom:button-card
+            template: osvision_nav_button
+            icon: mdi:shield-crown
+            name: ADMIN
+            label: "Panneau administration"
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-v2/admin
 
           - type: custom:button-card
             template: osvision_sidebar_brand_footer
@@ -2207,6 +2252,15 @@ views:
               navigation_path: /osvision-v2/energy
 
           - type: custom:button-card
+            template: osvision_nav_button
+            icon: mdi:shield-crown
+            name: ADMIN
+            label: "Panneau administration"
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-v2/admin
+
+          - type: custom:button-card
             template: osvision_sidebar_brand_footer
             icon: mdi:hexagon-outline
             name: "OSVISION V2"
@@ -2502,6 +2556,15 @@ views:
             tap_action:
               action: navigate
               navigation_path: /osvision-v2/energy
+
+          - type: custom:button-card
+            template: osvision_nav_button
+            icon: mdi:shield-crown
+            name: ADMIN
+            label: "Panneau administration"
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-v2/admin
 
           - type: custom:button-card
             template: osvision_sidebar_brand_footer
@@ -2801,6 +2864,15 @@ views:
               navigation_path: /osvision-v2/energy
 
           - type: custom:button-card
+            template: osvision_nav_button
+            icon: mdi:shield-crown
+            name: ADMIN
+            label: "Panneau administration"
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-v2/admin
+
+          - type: custom:button-card
             template: osvision_sidebar_brand_footer
             icon: mdi:hexagon-outline
             name: "OSVISION V2"
@@ -3096,6 +3168,15 @@ views:
             tap_action:
               action: navigate
               navigation_path: /osvision-v2/energy
+
+          - type: custom:button-card
+            template: osvision_nav_button
+            icon: mdi:shield-crown
+            name: ADMIN
+            label: "Panneau administration"
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-v2/admin
 
           - type: custom:button-card
             template: osvision_sidebar_brand_footer
