@@ -521,7 +521,7 @@ function buildWorkflow(positivePrompt, negativePrompt, width=1024, height=768, s
     "7": {
       "inputs": {
         "seed": seed || Math.floor(Math.random() * 999999999999),
-        "steps": 20,
+        "steps": 15,  // réduit pour accélérer
         "cfg": 8,
         "sampler_name": "euler",
         "scheduler": "simple",
@@ -557,9 +557,15 @@ async function generateImage(positivePrompt, negativePrompt, width=1024, height=
   if (!queueResp.ok) throw new Error(`ComfyUI /prompt: ${queueResp.status}`);
   const { prompt_id } = await queueResp.json();
   
-  // 2. Poll jusqu'à completion (max 120s)
-  for (let i = 0; i < 60; i++) {
+  // 2. Poll jusqu'à completion (max 300s)
+  for (let i = 0; i < 150; i++) {  // 300s max
     await new Promise(r => setTimeout(r, 2000));
+    // Mettre à jour le statut si présent
+    const progEl = document.getElementById('img-3d-status') || document.querySelector('.status-info');
+    if (progEl) {
+      const elapsed = Math.round((i+1)*2);
+      progEl.innerHTML = `<div class="status status-info"><span class="spinner"></span>Génération en cours… ${elapsed}s écoulées</div>`;
+    }
     const histResp = await fetch(`${COMFY_URL}/history/${prompt_id}`);
     if (!histResp.ok) continue;
     const hist = await histResp.json();
@@ -576,7 +582,7 @@ async function generateImage(positivePrompt, negativePrompt, width=1024, height=
       }
     }
   }
-  throw new Error("Timeout : génération trop longue (>120s)");
+  throw new Error("Timeout : génération trop longue (>300s) — vérifie que ComfyUI n'est pas surchargé");
 }
 
 function renderPhase3(c) {
@@ -646,12 +652,12 @@ async function generate3DView() {
   const status = document.getElementById("img-3d-status");
   const container = document.getElementById("img-3d-container");
   btn.disabled = true;
-  btn.innerHTML = `<span class="spinner"></span>Génération en cours… (~40s)`;
+  btn.innerHTML = `<span class="spinner"></span>Génération en cours… (60-120s selon GPU)`;
   status.innerHTML = `<div class="status status-info"><span class="spinner"></span>Envoi à ComfyUI (${COMFY_URL})…</div>`;
 
   try {
     const { positive, negative } = buildPrompt(state.house, null, true);
-    const imgUrl = await generateImage(positive, negative, 1024, 768);
+    const imgUrl = await generateImage(positive, negative, 768, 512);
     
     container.innerHTML = `
       <img src="${imgUrl}" style="width:100%;border-radius:10px;border:1px solid rgba(0,229,255,.3);margin-top:8px" 
