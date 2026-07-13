@@ -149,6 +149,7 @@ let state = {
   house: { floors:[], exteriors:[] },
   devices: [],
   svg: "",
+  houseStyle: "futuriste",  // futuriste | moderne | provencale
 };
 
 document.getElementById("ha-url").textContent = HA_URL;
@@ -481,19 +482,36 @@ function buildPrompt(house, roomName, isExterior) {
   const rooms = house.floors.flatMap(f => f.rooms.map(r => r.name)).filter(Boolean);
   const exteriors = house.exteriors;
 
+  // Styles de maison disponibles
+  const STYLES = {
+    futuriste: {
+      ext: "futuristic smart home, neon cyan accent lights, dark night atmosphere, OSVision HUD style, sci-fi architecture, glass and steel",
+      int: "futuristic smart home interior, neon cyan accent lighting, dark elegant atmosphere, ultra modern, high-tech"
+    },
+    moderne: {
+      ext: "modern contemporary house, clean lines, large windows, minimalist design, warm evening lighting, landscaped garden",
+      int: "modern contemporary interior design, clean minimalist style, natural materials, warm lighting, elegant furniture"
+    },
+    provencale: {
+      ext: "provencal french country house, stone walls, terracotta roof tiles, lavender garden, warm mediterranean sunlight, rustic charm, olive trees",
+      int: "provencal french country interior, rustic wooden beams, stone walls, warm terracotta tones, cozy mediterranean style"
+    }
+  };
+  const style = STYLES[state.houseStyle] || STYLES.futuriste;
+
   if (isExterior) {
     // Vue 3D extérieure principale
     const extList = exteriors.length > 0 ? exteriors.join(", ") : "garden";
     const roomList = rooms.slice(0,6).join(", ");
     return {
-      positive: `isometric 3D architectural rendering of a modern smart home exterior, ${floors.length} floors, ${extList}, ${roomList}, futuristic neon cyan accent lights, dark night atmosphere, OSVision HUD style, ultra detailed, 8k, professional architectural visualization, photorealistic`,
+      positive: `isometric 3D architectural rendering of a house exterior, ${floors.length} floors, ${extList}, ${roomList}, ${style.ext}, ultra detailed, 8k, professional architectural visualization, photorealistic`,
       negative: `blurry, low quality, distorted, flat, 2D, sketch, cartoon, people, cars, watermark, text`
     };
   } else {
     // Vignette d'une pièce
     const roomLower = roomName.toLowerCase();
     return {
-      positive: `interior design of a ${roomLower}, futuristic smart home, neon cyan accent lighting, dark elegant atmosphere, ultra modern, 8k, photorealistic, OSVision style`,
+      positive: `interior design of a ${roomLower}, ${style.int}, 8k, photorealistic`,
       negative: `blurry, low quality, distorted, people, watermark, text, ugly`
     };
   }
@@ -601,6 +619,15 @@ function renderPhase3(c) {
       <div class="card-title">PHASE 3 — GÉNÉRATION IA</div>
       <div class="card-sub">ComfyUI SDXL · ${totalRooms} zones · ${assigned} appareils assignés</div>
 
+      <div class="card" style="background:rgba(0,229,255,.05);margin-bottom:12px">
+        <div style="color:#8FB6C9;font-size:12px;letter-spacing:1px;margin-bottom:8px">STYLE DE LA MAISON</div>
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <span class="chip ${state.houseStyle==='futuriste'?'on':''}" onclick="setHouseStyle('futuriste')">🌃 Futuriste</span>
+          <span class="chip ${state.houseStyle==='moderne'?'on':''}" onclick="setHouseStyle('moderne')">🏠 Moderne</span>
+          <span class="chip ${state.houseStyle==='provencale'?'on':''}" onclick="setHouseStyle('provencale')">🌿 Provençale</span>
+        </div>
+      </div>
+
       <div class="card" style="background:rgba(0,229,255,.05);margin-bottom:0">
         <div style="color:#8FB6C9;font-size:12px;letter-spacing:1px;margin-bottom:8px">PROMPT AUTO-GÉNÉRÉ</div>
         <div id="prompt-preview" style="color:#00E5FF;font-size:11px;line-height:1.6;font-family:'Courier New',monospace;background:rgba(0,0,0,.3);padding:10px;border-radius:8px;white-space:pre-wrap"></div>
@@ -664,7 +691,7 @@ async function generate3DView() {
         <img id="osv-3d-img" src="${imgUrl}" style="width:100%;border-radius:10px;border:1px solid rgba(0,229,255,.3);display:block"
              onerror="this.style.display='none'" alt="Vue 3D OSVision"
              onload="initBadges('${imgUrl}')"/>
-        <svg id="osv-lines" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible"></svg>
+        <svg id="osv-lines" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible;z-index:5"></svg>
       </div>
       <div id="osv-badges-container" style="position:relative;margin-top:8px"></div>
       <div style="margin-top:8px;display:flex;gap:8px">
@@ -971,11 +998,15 @@ function renderBadges() {
     svg.appendChild(path);
 
     var dot = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    dot.setAttribute('id','dot-'+i);
     dot.setAttribute('cx', aX);
     dot.setAttribute('cy', aY);
-    dot.setAttribute('r','4');
+    dot.setAttribute('r','6');
     dot.setAttribute('fill','#00E5FF');
     dot.setAttribute('filter','url(#glow)');
+    dot.setAttribute('cursor','move');
+    dot.style.pointerEvents = 'all';
+    makeAnchorDraggable(dot, i);
     svg.appendChild(dot);
   });
 }
@@ -995,6 +1026,39 @@ function makeDraggable(el, idx) {
       el.style.top  = (startTop  + dy) + 'px';
       badgeState[idx].x = startLeft + dx;
       badgeState[idx].y = startTop  + dy;
+      updateLine(idx);
+    }
+    function onUp() {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+    }
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+  });
+}
+
+function makeAnchorDraggable(dot, idx) {
+  dot.addEventListener('mousedown', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    var img = document.getElementById('osv-3d-img');
+    if (!img) return;
+    var imgRect = img.getBoundingClientRect();
+
+    function onMove(ev) {
+      // Position relative à l'image en %
+      var relX = ((ev.clientX - imgRect.left) / imgRect.width) * 100;
+      var relY = ((ev.clientY - imgRect.top) / imgRect.height) * 100;
+      // Limiter dans l'image
+      relX = Math.max(0, Math.min(100, relX));
+      relY = Math.max(0, Math.min(100, relY));
+      badgeState[idx].anchorX = relX;
+      badgeState[idx].anchorY = relY;
+      // Déplacer le dot
+      var aX = imgRect.width * relX / 100;
+      var aY = imgRect.height * relY / 100;
+      dot.setAttribute('cx', aX);
+      dot.setAttribute('cy', aY);
       updateLine(idx);
     }
     function onUp() {
@@ -1035,6 +1099,15 @@ function exportWithBadges() {
   a.href = URL.createObjectURL(blob);
   a.download = 'osvision_badges_config.json';
   a.click();
+}
+
+// ─── Style de maison ───────────────────────────────────────────────────────
+function setHouseStyle(style) {
+  state.houseStyle = style;
+  // Re-render la phase 3 pour mettre à jour les chips + le prompt preview
+  if (state.step === 3) {
+    renderPhase3(document.getElementById('content'));
+  }
 }
 
 // ─── Toggle domain section ───────────────────────────────────────────────
