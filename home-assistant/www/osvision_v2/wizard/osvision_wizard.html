@@ -660,12 +660,18 @@ async function generate3DView() {
     const imgUrl = await generateImage(positive, negative, 768, 512);
     
     container.innerHTML = `
-      <img src="${imgUrl}" style="width:100%;border-radius:10px;border:1px solid rgba(0,229,255,.3);margin-top:8px" 
-           onerror="this.style.display='none'" alt="Vue 3D OSVision"/>
+      <div id="osv-img-wrapper" style="position:relative;display:inline-block;width:100%;margin-top:8px">
+        <img id="osv-3d-img" src="${imgUrl}" style="width:100%;border-radius:10px;border:1px solid rgba(0,229,255,.3);display:block"
+             onerror="this.style.display='none'" alt="Vue 3D OSVision"
+             onload="initBadges('${imgUrl}')"/>
+        <svg id="osv-lines" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible"></svg>
+      </div>
+      <div id="osv-badges-container" style="position:relative;margin-top:8px"></div>
       <div style="margin-top:8px;display:flex;gap:8px">
         <a href="${imgUrl}" download="osvision_3d.png" class="btn btn-sm">⬇ Télécharger</a>
+        <button class="btn btn-sm" onclick="exportWithBadges()">⬇ Exporter avec badges</button>
       </div>`;
-    status.innerHTML = `<div class="status status-ok">✓ Image générée avec succès</div>`;
+    status.innerHTML = `<div class="status status-ok">✓ Image générée — glisse les badges autour de l'image pour les positionner</div>`;
     document.getElementById("btn-3d-regen").style.display = "inline-block";
     btn.innerHTML = `✓ Généré`;
   } catch(e) {
@@ -833,7 +839,239 @@ function esc(str) {
   return String(str||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 }
 
-// ─── Toggle domain section ───────────────────────────────────────────────
+// ═══════════════════════════════════════════════════════════════════════════
+// BADGES FLOTTANTS — lignes de connexion style OSVision
+// ═══════════════════════════════════════════════════════════════════════════
+
+// Positions par défaut des badges autour de l'image (% relatifs au wrapper)
+// Répartis : gauche, droite, haut, bas selon le nombre de pièces
+function getDefaultPositions(count) {
+  const positions = [];
+  const cols = [
+    { side:'left',   x:-180, yStart:10, yStep:60  },
+    { side:'right',  x:105,  yStart:10, yStep:60  },
+    { side:'bottom', x:10,   yStart:105, yStep:0, xStep:120 },
+  ];
+  let col = 0, row = 0;
+  for (let i = 0; i < count; i++) {
+    const c = cols[col % cols.length];
+    if (c.side === 'bottom') {
+      positions.push({ x: c.x + row * (c.xStep||120), y: c.yStart });
+    } else {
+      positions.push({ x: c.x, y: c.yStart + row * c.yStep });
+    }
+    col++;
+    if (col % cols.length === 0) row++;
+  }
+  return positions;
+}
+
+// Point d'ancrage sur l'image pour chaque badge (% de l'image)
+function getAnchorPoints(count) {
+  const anchors = [];
+  const leftCount  = Math.ceil(count / 2);
+  const rightCount = Math.floor(count / 2);
+  for (let i = 0; i < leftCount; i++) {
+    anchors.push({ x: 15, y: 15 + (70/(leftCount-1||1))*i });
+  }
+  for (let i = 0; i < rightCount; i++) {
+    anchors.push({ x: 85, y: 15 + (70/(rightCount-1||1))*i });
+  }
+  return anchors;
+}
+
+let badgeState = []; // { id, name, x, y, anchorX, anchorY, entity }
+
+function initBadges() {
+  const rooms = getAllRooms();
+  const wrapper = document.getElementById('osv-img-wrapper');
+  if (!wrapper) return;
+  const wRect = wrapper.getBoundingClientRect();
+  const positions = getDefaultPositions(rooms.length);
+  const anchors   = getAnchorPoints(rooms.length);
+
+  badgeState = rooms.map((name, i) => ({
+    id: `badge-${i}`,
+    name,
+    x: positions[i]?.x ?? (i % 2 === 0 ? -170 : 105),
+    y: positions[i]?.y ?? 10 + Math.floor(i/2)*60,
+    anchorX: anchors[i]?.x ?? 50,
+    anchorY: anchors[i]?.y ?? 50,
+    entity: null,
+  }));
+
+  renderBadges();
+}
+
+function renderBadges() {
+  const wrapper = document.getElementById('osv-img-wrapper');
+  const svg     = document.getElementById('osv-lines');
+  if (!wrapper || !svg) return;
+
+  // Supprimer anciens badges
+  wrapper.querySelectorAll('.osv-badge').forEach(b => b.remove());
+  svg.innerHTML = '';
+
+  const img = document.getElementById('osv-3d-img');
+  const imgW = img ? img.offsetWidth  : 700;
+  const imgH = img ? img.offsetHeight : 500;
+
+  badgeState.forEach((b, i) => {
+    // --- Badge DOM ---
+    const badge = document.createElement('div');
+    badge.className = 'osv-badge';
+    badge.id = b.id;
+    badge.style.cssText = `
+      position:absolute;
+      left:${b.x < 0 ? b.x : (b.x > 100 ? (imgW + b.x - 100) : imgW*b.x/100)}px;
+      top:${b.y > 100 ? (imgH + b.y - 100) : imgH*b.y/100}px;
+      background:rgba(8,18,28,0.92);
+      border:1px solid rgba(0,229,255,0.6);
+      border-radius:8px;
+      padding:6px 10px;
+      min-width:120px;
+      cursor:move;
+      user-select:none;
+      z-index:10;
+      box-shadow:0 0 12px rgba(0,229,255,0.25);
+      backdrop-filter:blur(8px);
+    `;
+    badge.innerHTML = `
+      <div style="color:#00E5FF;font-size:11px;font-weight:bold;letter-spacing:1px;margin-bottom:4px">${esc(b.name)}</div>
+      <select style="background:rgba(0,0,0,.5);border:1px solid rgba(0,229,255,.3);border-radius:4px;
+                     color:#B8E8F5;font-size:10px;padding:2px 4px;width:100%"
+              onchange="setBadgeEntity(${i},this.value)">
+        <option value="">— capteur temp. —</option>
+        ${getSensorOptions(b.entity)}
+      </select>
+    `;
+
+    // Drag
+    makeDraggable(badge, i, imgW, imgH);
+    wrapper.appendChild(badge);
+
+    // --- Ligne SVG ---
+    const bCenterX = parseFloat(badge.style.left) + 60;
+    const bCenterY = parseFloat(badge.style.top)  + 18;
+    const aX = imgW * b.anchorX / 100;
+    const aY = imgH * b.anchorY / 100;
+
+    // Courbe bezier
+    const mx = (bCenterX + aX) / 2;
+    const my = Math.min(bCenterY, aY) - 20;
+    const line = document.createElementNS('http://www.w3.org/2000/svg','path');
+    line.setAttribute('id', `line-${i}`);
+    line.setAttribute('d', `M ${bCenterX} ${bCenterY} Q ${mx} ${my} ${aX} ${aY}`);
+    line.setAttribute('stroke','rgba(0,229,255,0.5)');
+    line.setAttribute('stroke-width','1.5');
+    line.setAttribute('fill','none');
+    line.setAttribute('stroke-dasharray','4 3');
+    svg.appendChild(line);
+
+    // Point d'ancrage
+    const dot = document.createElementNS('http://www.w3.org/2000/svg','circle');
+    dot.setAttribute('cx', aX);
+    dot.setAttribute('cy', aY);
+    dot.setAttribute('r', '4');
+    dot.setAttribute('fill','#00E5FF');
+    dot.setAttribute('filter','url(#glow)');
+    svg.appendChild(dot);
+  });
+
+  // Filtre glow sur le SVG
+  svg.innerHTML = `<defs><filter id="glow">
+    <feGaussianBlur stdDeviation="2" result="blur"/>
+    <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+  </filter></defs>` + svg.innerHTML;
+}
+
+function getSensorOptions(selected) {
+  // Récupère les capteurs température depuis state.devices (binary_sensor/sensor exclus du wizard mais disponibles via HA)
+  const opts = [
+    'sensor.secret_room_temperature',
+    'sensor.living_room_temperature',
+    'sensor.kitchen_temperature',
+    'sensor.bedroom1_temperature',
+    'sensor.bedroom2_temperature',
+    'sensor.bathroom_temperature',
+    'sensor.technical_room_temperature',
+    'sensor.computer_room_temperature',
+    'sensor.spa_temperature',
+    'sensor.solar_power_production',
+    'sensor.home_power_consumption',
+  ];
+  return opts.map(o =>
+    `<option value="${o}" ${selected===o?'selected':''}>${o.replace('sensor.','').replace(/_/g,' ')}</option>`
+  ).join('');
+}
+
+function setBadgeEntity(idx, entity) {
+  badgeState[idx].entity = entity || null;
+}
+
+function makeDraggable(el, idx, imgW, imgH) {
+  let startX, startY, startLeft, startTop;
+
+  el.addEventListener('mousedown', e => {
+    if (e.target.tagName === 'SELECT') return;
+    e.preventDefault();
+    startX    = e.clientX;
+    startY    = e.clientY;
+    startLeft = parseFloat(el.style.left);
+    startTop  = parseFloat(el.style.top);
+
+    const onMove = e => {
+      const dx = e.clientX - startX;
+      const dy = e.clientY - startY;
+      el.style.left = (startLeft + dx) + 'px';
+      el.style.top  = (startTop  + dy) + 'px';
+      badgeState[idx].x = startLeft + dx;
+      badgeState[idx].y = startTop  + dy;
+      updateLine(idx, imgW, imgH);
+    };
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup',   onUp);
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup',   onUp);
+  });
+}
+
+function updateLine(idx, imgW, imgH) {
+  const line  = document.getElementById(`line-${idx}`);
+  const badge = document.getElementById(`badge-${idx}`);
+  if (!line || !badge) return;
+  const bCenterX = parseFloat(badge.style.left) + 60;
+  const bCenterY = parseFloat(badge.style.top)  + 18;
+  const aX = imgW * badgeState[idx].anchorX / 100;
+  const aY = imgH * badgeState[idx].anchorY / 100;
+  const mx = (bCenterX + aX) / 2;
+  const my = Math.min(bCenterY, aY) - 20;
+  line.setAttribute('d', `M ${bCenterX} ${bCenterY} Q ${mx} ${my} ${aX} ${aY}`);
+}
+
+function exportWithBadges() {
+  const config = {
+    generated: new Date().toISOString(),
+    house: state.house,
+    badges: badgeState.map(b => ({
+      name: b.name,
+      entity: b.entity,
+      anchorX: b.anchorX,
+      anchorY: b.anchorY
+    }))
+  };
+  const blob = new Blob([JSON.stringify(config, null, 2)], {type:'application/json'});
+  const a = Object.assign(document.createElement('a'), {
+    href: URL.createObjectURL(blob),
+    download: 'osvision_badges_config.json'
+  });
+  a.click();
+}
+
+// ─── Toggle domain section
+ ───────────────────────────────────────────────
 function toggleDomain(id) {
   const el = document.getElementById(id);
   const arr = document.getElementById(`arr-${id}`);
