@@ -328,13 +328,13 @@ views:
               value_color: "#B084FF"
 
       # --- Plan interactif de la maison (picture-elements) -----------------
-      # Image a deposer dans : /config/www/osvision_v2/images/floorplan.png
+      # Image a deposer dans : /config/www/osvision_v2/images/floorplan.jpg
       # Les overlays affichent la temperature par piece en temps reel.
       # Remplace chaque entity_id sensor.xxx par ton vrai capteur.
       - type: picture-elements
         view_layout:
           grid-area: floor
-        image: /local/osvision_v2/images/floorplan.png
+        image: /local/osvision_v2/images/floorplan.jpg
         card_mod:
           style: |
             ha-card {
@@ -350,8 +350,8 @@ views:
             img {
               width: 100% !important;
               height: 100% !important;
-              object-fit: contain;
-              object-position: left top;
+              object-fit: cover;
+              object-position: center center;
             }
         elements:
           # ---- GROUND FLOOR ----
