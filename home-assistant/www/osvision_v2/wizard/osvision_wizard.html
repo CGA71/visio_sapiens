@@ -124,8 +124,9 @@
   <div class="steps">
     <div class="step active" id="s1"><div class="step-bar"></div><div class="step-label">1. STRUCTURE</div></div>
     <div class="step" id="s2"><div class="step-bar"></div><div class="step-label">2. APPAREILS</div></div>
-    <div class="step" id="s3"><div class="step-bar"></div><div class="step-label">3. PLAN SVG</div></div>
-    <div class="step" id="s4"><div class="step-bar"></div><div class="step-label">4. DASHBOARD</div></div>
+    <div class="step" id="s3"><div class="step-bar"></div><div class="step-label">3. GÉNÉRATION IA</div></div>
+    <div class="step" id="s4"><div class="step-bar"></div><div class="step-label">4. GIT PUSH</div></div>
+    <div class="step" id="s5"><div class="step-bar"></div><div class="step-label">5. DASHBOARD</div></div>
   </div>
 
   <!-- CONTENT -->
@@ -145,11 +146,18 @@ const EXTERIOR_TYPES = ["Jardin","Piscine","Jacuzzi","Garage","Terrasse","Véran
 
 let state = {
   token: localStorage.getItem("osv_ha_token") || "",
-  step: 0,   // 0=token, 1-4=phases
+  step: 0,   // 0=token, 1-5=phases
   house: { floors:[], exteriors:[] },
   devices: [],
   svg: "",
   houseStyle: "futuriste",  // futuriste | moderne | provencale
+  generatedImageUrl: null,  // URL ComfyUI de l'image générée
+  gitlab: {
+    url: localStorage.getItem("osv_gitlab_url") || "http://192.168.1.11:10000",
+    projectId: localStorage.getItem("osv_gitlab_project") || "",
+    token: localStorage.getItem("osv_gitlab_token") || "",
+    branch: localStorage.getItem("osv_gitlab_branch") || "main",
+  },
 };
 
 document.getElementById("ha-url").textContent = HA_URL;
@@ -180,9 +188,9 @@ async function callService(domain, service, data={}) {
 // ─── Step bar ─────────────────────────────────────────────────────────────
 function setStep(n) {
   state.step = n;
-  [1,2,3,4].forEach(i => {
+  [1,2,3,4,5].forEach(i => {
     const el = document.getElementById(`s${i}`);
-    el.className = "step" + (i < n ? " done" : i === n ? " active" : "");
+    if (el) el.className = "step" + (i < n ? " done" : i === n ? " active" : "");
   });
 }
 
@@ -194,7 +202,8 @@ function render() {
   if (state.step === 1) renderPhase1(c);
   else if (state.step === 2) renderPhase2(c);
   else if (state.step === 3) renderPhase3(c);
-  else if (state.step === 4) renderPhase4(c);
+  else if (state.step === 4) renderPhaseGit(c);
+  else if (state.step === 5) renderPhase4(c);
 }
 
 // ─── TOKEN SCREEN ─────────────────────────────────────────────────────────
@@ -663,8 +672,8 @@ function renderPhase3(c) {
     <div class="actions">
       <button class="btn btn-ghost" onclick="goPhase2()">← Retour</button>
       <div class="actions-right">
-        <button class="btn" onclick="goPhase4()">
-          Suivant → Mettre à jour le dashboard
+        <button class="btn" onclick="goPhaseGit()">
+          Suivant → Pousser vers GitLab
         </button>
       </div>
     </div>`;
@@ -685,6 +694,7 @@ async function generate3DView() {
   try {
     const { positive, negative } = buildPrompt(state.house, null, true);
     const imgUrl = await generateImage(positive, negative, 768, 512);
+    state.generatedImageUrl = imgUrl;
     
     container.innerHTML = `
       <div id="osv-img-wrapper" style="position:relative;display:inline-block;width:100%;margin-top:8px">
@@ -766,6 +776,134 @@ async function generateAllVignettes() {
     await generateVignette(room);
   }
   btn.innerHTML = `✓ Tout généré`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PHASE GIT — Push de l'image vers GitLab
+// ═══════════════════════════════════════════════════════════════════════════
+function renderPhaseGit(c) {
+  var g = state.gitlab;
+  var hasImage = !!state.generatedImageUrl;
+
+  c.innerHTML = '<div class="card">' +
+    '<div class="card-title">PHASE 4 — PUSH VERS GITLAB</div>' +
+    '<div class="card-sub">L\'image sera commitée dans le repo — ta chaîne CI la déploiera automatiquement.</div>' +
+    (hasImage ?
+      '<div class="status status-ok">✓ Image 3D générée, prête à être poussée</div>' :
+      '<div class="status status-warn">⚠ Aucune image générée — retourne en phase 3 pour en générer une</div>') +
+    '<div style="margin-top:16px">' +
+      '<label>URL GITLAB</label>' +
+      '<input type="text" id="gl-url" value="' + esc(g.url) + '" style="margin-bottom:12px"/>' +
+      '<label>ID DU PROJET (visible sous le nom du repo)</label>' +
+      '<input type="text" id="gl-project" value="' + esc(g.projectId) + '" placeholder="ex: 2" style="margin-bottom:12px"/>' +
+      '<label>TOKEN D\'ACCÈS (scope: api)</label>' +
+      '<input type="password" id="gl-token" value="' + esc(g.token) + '" placeholder="glpat-…" style="margin-bottom:12px"/>' +
+      '<label>BRANCHE</label>' +
+      '<input type="text" id="gl-branch" value="' + esc(g.branch) + '" style="margin-bottom:12px"/>' +
+      '<label>CHEMIN DANS LE REPO</label>' +
+      '<input type="text" id="gl-path" value="home-assistant/www/osvision_v2/images/floorplan.png" style="margin-bottom:16px"/>' +
+    '</div>' +
+    '<button class="btn" onclick="pushToGitLab()" id="btn-git-push"' + (hasImage ? '' : ' disabled') + '>' +
+      '🚀 Commit + Push l\'image' +
+    '</button>' +
+    '</div>' +
+    '<div id="git-status"></div>' +
+    '<div class="actions">' +
+      '<button class="btn btn-ghost" onclick="goPhase3()">← Retour</button>' +
+      '<div class="actions-right">' +
+        '<button class="btn" onclick="goPhase4()">Suivant → Dashboard</button>' +
+      '</div>' +
+    '</div>';
+}
+
+async function pushToGitLab() {
+  var btn = document.getElementById('btn-git-push');
+  var status = document.getElementById('git-status');
+
+  // Sauvegarder la config
+  state.gitlab.url = document.getElementById('gl-url').value.trim().replace(/\/$/, '');
+  state.gitlab.projectId = document.getElementById('gl-project').value.trim();
+  state.gitlab.token = document.getElementById('gl-token').value.trim();
+  state.gitlab.branch = document.getElementById('gl-branch').value.trim() || 'main';
+  var filePath = document.getElementById('gl-path').value.trim();
+
+  localStorage.setItem('osv_gitlab_url', state.gitlab.url);
+  localStorage.setItem('osv_gitlab_project', state.gitlab.projectId);
+  localStorage.setItem('osv_gitlab_token', state.gitlab.token);
+  localStorage.setItem('osv_gitlab_branch', state.gitlab.branch);
+
+  if (!state.gitlab.projectId || !state.gitlab.token) {
+    status.innerHTML = '<div class="status status-error">ID projet et token requis</div>';
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Push en cours…';
+  status.innerHTML = '<div class="status status-info"><span class="spinner"></span>Étape 1/3 — Téléchargement de l\'image depuis ComfyUI…</div>';
+
+  try {
+    // 1. Récupérer l'image en blob depuis ComfyUI
+    var imgResp = await fetch(state.generatedImageUrl);
+    if (!imgResp.ok) throw new Error('Image ComfyUI inaccessible: ' + imgResp.status);
+    var blob = await imgResp.blob();
+
+    // 2. Convertir en base64
+    status.innerHTML = '<div class="status status-info"><span class="spinner"></span>Étape 2/3 — Encodage base64…</div>';
+    var base64 = await new Promise(function(resolve, reject) {
+      var reader = new FileReader();
+      reader.onload = function() { resolve(reader.result.split(',')[1]); };
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+
+    // 3. Commit via l'API GitLab (create or update)
+    status.innerHTML = '<div class="status status-info"><span class="spinner"></span>Étape 3/3 — Commit dans GitLab…</div>';
+    var apiUrl = state.gitlab.url + '/api/v4/projects/' + encodeURIComponent(state.gitlab.projectId) +
+                 '/repository/files/' + encodeURIComponent(filePath);
+
+    var body = {
+      branch: state.gitlab.branch,
+      content: base64,
+      encoding: 'base64',
+      commit_message: 'feat(osvision): update floorplan image via Discovery Wizard'
+    };
+
+    // Essayer update (PUT) d'abord, sinon create (POST)
+    var resp = await fetch(apiUrl, {
+      method: 'PUT',
+      headers: {
+        'PRIVATE-TOKEN': state.gitlab.token,
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    });
+
+    if (resp.status === 400 || resp.status === 404) {
+      // Le fichier n'existe pas encore → POST (create)
+      resp = await fetch(apiUrl, {
+        method: 'POST',
+        headers: {
+          'PRIVATE-TOKEN': state.gitlab.token,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(body)
+      });
+    }
+
+    if (!resp.ok) {
+      var errText = await resp.text();
+      throw new Error('GitLab API ' + resp.status + ': ' + errText.slice(0, 200));
+    }
+
+    status.innerHTML = '<div class="status status-ok">' +
+      '✓ Image commitée dans <strong>' + esc(filePath) + '</strong> (branche ' + esc(state.gitlab.branch) + ')<br>' +
+      '<span style="font-size:12px">Ta chaîne CI va maintenant déployer l\'image automatiquement.</span></div>';
+    btn.innerHTML = '✓ Poussé';
+  } catch(e) {
+    status.innerHTML = '<div class="status status-error">Erreur : ' + esc(e.message) + '</div>';
+    btn.innerHTML = '🚀 Réessayer';
+    btn.disabled = false;
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -852,7 +990,8 @@ async function applyDashboard() {
 function goPhase1() { setStep(1); render(); }
 function goPhase2() { setStep(2); render(); }
 function goPhase3() { setStep(3); render(); }
-function goPhase4() { setStep(4); render(); }
+function goPhaseGit() { setStep(4); render(); }
+function goPhase4() { setStep(5); render(); }
 
 // ─── Helpers ──────────────────────────────────────────────────────────────
 function getAllRooms() {
