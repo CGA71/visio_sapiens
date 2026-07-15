@@ -48,7 +48,7 @@ views:
       - type: horizontal-stack
         view_layout:
           grid-area: band1
-          grid-column: band1 / band5
+          grid-column: band1 / band4
         cards:
           # Case 1 — retour + titre + descriptif de la page
           - type: custom:button-card
