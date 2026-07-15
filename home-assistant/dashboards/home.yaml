@@ -44,54 +44,71 @@ views:
       margin: 12px
       grid-gap: 14px 14px
     cards:
-      # --- HUD header (bandeau horizontal) ------------------------------
-      - type: horizontal-stack
+      # --- HUD header (bandeau horizontal, 4 zones indépendantes) -------
+
+      # Case band1 — retour + titre + descriptif de la page
+      - type: custom:button-card
+        template: osvision_page_header
+        icon: mdi:chevron-left
+        name: HOME
+        label: "Vue d'ensemble de votre système"
+        tap_action:
+          action: navigate
+          navigation_path: /osvision-v2/home
         view_layout:
           grid-area: band1
-          grid-column: band1 / band4
-        cards:
-          # Case 1 — retour + titre + descriptif de la page
-          - type: custom:button-card
-            template: osvision_page_header
-            icon: mdi:chevron-left
-            name: HOME
-            label: "Vue d'ensemble de votre système"
-            tap_action:
-              action: navigate
-              navigation_path: /osvision-v2/home
-            card_mod:
-              style: |
-                :host { flex: 1.6 1 0; }
 
-          # Case 2 — Bandeau publicitaire
-          - type: custom:button-card
-            template: osvision_alarm_status
-            entity: alarm_control_panel.maison  # TODO: remplacer par votre entité alarme
-            name: MAISON
-            card_mod:
-              style: |
-                :host { flex: 1 1 0; }
+      # Case band2 — Bandeau publicitaire défilant (gauche → droite)
+      # Remplacez les url par vos vrais liens d'affiliation/partenaires.
+      # Le champ "image" est optionnel : sans logo dispo, un badge texte
+      # stylé s'affiche automatiquement à la place.
+      - type: custom:osv-ad-banner-card
+        view_layout:
+          grid-area: band2
+        speed: 25
+        ads:
+          - name: HIKVISION
+            url: https://www.hikvision.com
+            image: /local/osvision_v2/images/ads/hikvision.png
+          - name: ECOWITT
+            url: https://www.ecowitt.com
+            image: /local/osvision_v2/images/ads/ecowitt.png
+          - name: PHILIPS HUE
+            url: https://www.philips-hue.com
+            image: /local/osvision_v2/images/ads/philips.png
+          - name: UBER EATS
+            url: https://www.ubereats.com
+            image: /local/osvision_v2/images/ads/ubereats.png
 
-          
-          # Case 4 — météo extérieure (carte native Home Assistant)
-          - type: weather-forecast
-            entity: weather-forecast  # TODO: remplacer par votre entité météo
-            show_current: true
-            show_forecast: false
-            show_time: true
-            show_date: true
-            forecast_type: daily
-            card_mod:
-              style: |
-                :host { flex: 1 1 0; }
+      # Case band3 — météo extérieure (carte native Home Assistant)
+      - type: weather-forecast
+        entity: weather-forecast
+        show_current: true
+        show_forecast: false
+        show_time: true
+        show_date: true
+        forecast_type: daily
+        view_layout:
+          grid-area: band3
+        card_mod:
+          style: |
+            ha-card {
+              background: var(--osv-panel) !important;
+              height: 100%;
+            }
 
-          # Case 5 — logo / avatar OS
-          - type: custom:button-card
-            template: osvision_os_avatar
-            name: "OS"
-            card_mod:
-              style: |
-                :host { flex: 0 0 56px; }
+      # Case band4 — Logo OSVISION
+      - type: custom:button-card
+        template: osvision_os_avatar
+        icon: mdi:hexagon-outline
+        name: "OSVISION V2"
+        show_name: true
+        view_layout:
+          grid-area: band4
+        styles:
+          name:
+            - font-size: 10px
+            - letter-spacing: 1px
 
       # --- Navigation bar (sidebar verticale) ---------------------------
       - type: vertical-stack
