@@ -36,7 +36,7 @@ views:
       grid-template-columns: minmax(200px, auto) 1fr 1fr 1fr 1fr 1fr 565px
       grid-template-rows: 105px 113px 444px 336px auto
       grid-template-areas: |
-        "nav band1 band2 band3 band4 band5 band5"
+        "nav band1 band2 band2 band2 band3 band4"
         "nav kpi1 kpi2 kpi3 kpi4 kpi5 kpi5"
         "nav floor floor floor floor floor right"
         "nav egy1 egy1 egy2 egy3 egy4 egy4"
@@ -63,7 +63,7 @@ views:
               style: |
                 :host { flex: 1.6 1 0; }
 
-          # Case 2 — statut alarme maison (squelette, entité à brancher)
+          # Case 2 — Bandeau publicitaire
           - type: custom:button-card
             template: osvision_alarm_status
             entity: alarm_control_panel.maison  # TODO: remplacer par votre entité alarme
@@ -72,24 +72,15 @@ views:
               style: |
                 :host { flex: 1 1 0; }
 
-          # Case 3 — date et heure en direct
-          - type: custom:osv-datetime-card
-            icon: mdi:calendar-clock
-            card_mod:
-              style: |
-                :host { flex: 1 1 0; }
-                ha-card {
-                  background: var(--osv-panel) !important;
-                  border: var(--osv-border) !important;
-                  border-radius: var(--osv-radius-md) !important;
-                  box-shadow: var(--osv-glow-cyan) !important;
-                }
-
+          
           # Case 4 — météo extérieure (carte native Home Assistant)
           - type: weather-forecast
-            entity: weather.home  # TODO: remplacer par votre entité météo
+            entity: weather-forecast  # TODO: remplacer par votre entité météo
             show_current: true
             show_forecast: false
+            show_time: true
+            show_date: true
+            forecast_type: daily
             card_mod:
               style: |
                 :host { flex: 1 1 0; }
