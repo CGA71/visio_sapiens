@@ -82,7 +82,7 @@ views:
 
       # Case band3 — météo extérieure (carte native Home Assistant)
       - type: custom:dynamic-weather-card
-        entity: weather.home
+        entity: weather.sausset_les_pins
         language: fr
         show_daily_forecast: true
         daily_forecast_days: 5
