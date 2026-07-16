@@ -82,7 +82,7 @@ views:
 
       # Case band3 — météo extérieure (carte native Home Assistant)
       - type: weather-forecast
-        entity: weather-forecast
+        entity: weather.forecast_maison
         show_current: true
         show_forecast: false
         show_time: true
