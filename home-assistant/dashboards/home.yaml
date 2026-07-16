@@ -81,14 +81,14 @@ views:
             image: /local/osvision_v2/images/ads/ubereats.png
 
       # Case band3 — météo extérieure (carte native Home Assistant)
-      - type: Meteo France
-        entity: weather.meteo_france_forecast_for_city_sausset_les_pins_provence_alpes_cote_d_azur_13_fr_sausset_les_pins
-        show_entity_picture: true
-        hide_state: false
-        vertical: false
-        features:
-          - type: temperature-forecast
-        features_position: bottom
+      - type: custom:dynamic-weather-card
+        entity: weather.home
+        language: fr
+        show_daily_forecast: true
+        daily_forecast_days: 5
+        show_clock: true
+        clock_position: top
+        clock_format: 24h
         view_layout:
           grid-area: band3
         card_mod:
