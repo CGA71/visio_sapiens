@@ -33,7 +33,7 @@ views:
     subview: true
     type: custom:grid-layout
     layout:
-      grid-template-columns: minmax(200px, auto) 1fr 1fr 1fr 1fr 1fr 565px
+      grid-template-columns: minmax(200px, auto) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) 565px
       grid-template-rows: 105px 113px 444px 336px auto
       grid-template-areas: |
         "nav band1 band2 band2 band2 band3 band4"
@@ -108,14 +108,22 @@ views:
         card_mod:
           style: |
             :host {
-              max-height: 105px;
-              overflow: hidden;
-              display: block;
+              height: 105px !important;
+              max-height: 105px !important;
+              min-height: 0 !important;
+              overflow: hidden !important;
+              display: block !important;
+            }
+            :host > * {
+              height: 105px !important;
+              max-height: 105px !important;
+              overflow: hidden !important;
             }
             ha-card {
               background: var(--osv-panel) !important;
               height: 105px !important;
               max-height: 105px !important;
+              min-height: 0 !important;
               overflow: hidden !important;
             }
 
@@ -698,6 +706,16 @@ views:
         view_layout:
           grid-area: egy1
           grid-column: egy1 / egy4
+        card_mod:
+          style: |
+            :host {
+              height: 336px;
+              display: block;
+            }
+            #root {
+              height: 100%;
+              align-items: stretch;
+            }
         cards:
           # Cadre 1 — courbe production solaire vs consommation (carte native apexcharts)
           - type: custom:apexcharts-card
@@ -708,8 +726,13 @@ views:
             graph_span: 24h
             card_mod:
               style: |
-                :host { flex: 1.8 1 0; }
-                ha-card { background: var(--osv-panel) !important; }
+                :host { flex: 1.8 1 0; align-self: stretch; }
+                ha-card {
+                  background: var(--osv-panel) !important;
+                  height: 100%;
+                  max-height: 336px;
+                  overflow: hidden;
+                }
             series:
               - entity: sensor.solar_power_production  # TODO: remplacer par votre entité production solaire
                 name: Production
@@ -727,7 +750,17 @@ views:
           - type: vertical-stack
             card_mod:
               style: |
-                :host { flex: 0.8 1 0; }
+                :host {
+                  flex: 0.8 1 0;
+                  align-self: stretch;
+                  height: 100%;
+                }
+                #root {
+                  height: 100%;
+                }
+                #root > * {
+                  flex: 1 1 0;
+                }
             cards:
               - type: custom:button-card
                 template: osvision_metric
@@ -796,13 +829,16 @@ views:
                 :host {
                   flex: 1 1 0;
                   align-self: stretch;
+                  overflow: hidden;
                 }
                 ha-card {
                   background: var(--osv-panel) !important;
                   height: 100%;
+                  max-height: 336px;
                   min-height: 0;
                   display: flex;
                   flex-direction: column;
+                  overflow: hidden;
                 }
 
       # --- Zone droite (INTERPHONE + AUDIO STREAM) ----------------------
@@ -3396,4 +3432,27 @@ views:
 
           - type: entities
             entities:
-              - entity: input_text.osvision
+              - entity: input_text.osvision_pin_entry
+                name: "Code de confirmation"
+
+          - type: custom:button-card
+            template: osvision_quick_action
+            icon: mdi:trash-can-outline
+            name: CONFIRMER LA SUPPRESSION
+            confirmation:
+              text: "Action IRRÉVERSIBLE sans restauration manuelle de la sauvegarde. Le code doit être correct. Continuer ?"
+            tap_action:
+              action: call-service
+              service: script.osvision_delete_dashboard
+
+      # --- Footer --------------------------------------------------------
+      - type: custom:osv-footer-card
+        label: OSVISION V2 // ADMIN PANEL
+        view_layout:
+          grid-area: footer
+
+    card_mod:
+      style: |
+        hui-view {
+          background: #02050B;
+        }
