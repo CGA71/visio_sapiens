@@ -794,7 +794,7 @@ views:
         card_mod:
           style: |
             :host {
-              height: 100%;
+              height: 105%;
               display: block;
               overflow: hidden;
             }
