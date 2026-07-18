@@ -176,8 +176,9 @@ views:
             variables:
               active: false
             tap_action:
-              action: navigate
-              navigation_path: http://192.168.1.11:8123/local/osvision_v2/core.html
+              action: url
+              url_path: /local/osvision_v2/core.html
+              target: _blank
           - type: custom:button-card
             template: osvision_nav_button
             icon: mdi:sofa
@@ -1017,8 +1018,9 @@ views:
             variables:
               active: false
             tap_action:
-              action: navigate
-              navigation_path: /osvision-v2/core
+              action: url
+              url_path: /local/osvision_v2/core.html
+              target: _blank
           - type: custom:button-card
             template: osvision_nav_button
             icon: mdi:sofa
@@ -1323,8 +1325,9 @@ views:
             variables:
               active: false
             tap_action:
-              action: navigate
-              navigation_path: /osvision-v2/core
+              action: url
+              url_path: /local/osvision_v2/core.html
+              target: _blank
           - type: custom:button-card
             template: osvision_nav_button
             icon: mdi:sofa
@@ -1629,8 +1632,9 @@ views:
             variables:
               active: false
             tap_action:
-              action: navigate
-              navigation_path: /osvision-v2/core
+              action: url
+              url_path: /local/osvision_v2/core.html
+              target: _blank
           - type: custom:button-card
             template: osvision_nav_button
             icon: mdi:sofa
@@ -1935,8 +1939,9 @@ views:
             variables:
               active: false
             tap_action:
-              action: navigate
-              navigation_path: /osvision-v2/core
+              action: url
+              url_path: /local/osvision_v2/core.html
+              target: _blank
           - type: custom:button-card
             template: osvision_nav_button
             icon: mdi:sofa
@@ -2241,8 +2246,9 @@ views:
             variables:
               active: false
             tap_action:
-              action: navigate
-              navigation_path: /osvision-v2/core
+              action: url
+              url_path: /local/osvision_v2/core.html
+              target: _blank
           - type: custom:button-card
             template: osvision_nav_button
             icon: mdi:sofa
@@ -2547,8 +2553,9 @@ views:
             variables:
               active: false
             tap_action:
-              action: navigate
-              navigation_path: /osvision-v2/core
+              action: url
+              url_path: /local/osvision_v2/core.html
+              target: _blank
           - type: custom:button-card
             template: osvision_nav_button
             icon: mdi:sofa
@@ -2853,8 +2860,9 @@ views:
             variables:
               active: false
             tap_action:
-              action: navigate
-              navigation_path: /osvision-v2/core
+              action: url
+              url_path: /local/osvision_v2/core.html
+              target: _blank
           - type: custom:button-card
             template: osvision_nav_button
             icon: mdi:sofa
@@ -3159,8 +3167,9 @@ views:
             variables:
               active: false
             tap_action:
-              action: navigate
-              navigation_path: /osvision-v2/core
+              action: url
+              url_path: /local/osvision_v2/core.html
+              target: _blank
           - type: custom:button-card
             template: osvision_nav_button
             icon: mdi:sofa
