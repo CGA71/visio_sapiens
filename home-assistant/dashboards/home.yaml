@@ -39,8 +39,8 @@ views:
         "nav band1 band2 band2 band2 band3 band4"
         "nav kpi1 kpi2 kpi3 kpi4 kpi5 kpi5"
         "nav floor floor floor floor floor right"
-        "nav egy1 egy1 egy2 egy3 egy4 egy4"
-        "nav footer footer footer footer footer footer"
+        "nav egy1 egy1 egy2 events meteo meteo"
+        "nav . . . events meteo meteo"
       margin: 12px
       grid-gap: 14px 14px
     cards:
@@ -80,29 +80,10 @@ views:
             url: https://www.ubereats.com
             image: /local/osvision_v2/images/ads/ubereats.png
 
-      # Case band3 — météo extérieure (carte native Home Assistant)
-      - type: custom:dynamic-weather-card
-        entity: weather.meteo_france_forecast_for_city_sausset_les_pins_provence_alpes_cote_d_azur_13_fr_sausset_les_pins
-        height: 100
-        show_feels_like: false
-        show_wind: false
-        show_wind_gust: false
-        show_wind_direction: false
-        show_humidity: false
-        show_min_temp: false
-        show_hourly_forecast: false
-        hourly_forecast_hours: 5
-        show_daily_forecast: false
-        daily_forecast_days: 5
-        show_sunrise_sunset: false
-        show_clock: true
-        clock_position: top
-        clock_format: 24h
-        overlay_opacity: 0.1
-        language: fr
-        wind_speed_unit: ms
-        sunrise_entity: ""
-        sunset_entity: ""
+      # Case band3 — météo extérieure
+      # Enveloppée dans mod-card : dynamic-weather-card ne rend pas de ha-card,
+      # donc card_mod direct était ignoré — le wrapper garantit la contrainte.
+      - type: custom:mod-card
         view_layout:
           grid-area: band3
         card_mod:
@@ -110,22 +91,40 @@ views:
             :host {
               height: 105px !important;
               max-height: 105px !important;
-              min-height: 0 !important;
+              min-width: 0 !important;
+              overflow: hidden !important;
+              display: block !important;
+              border-radius: 18px;
+            }
+            mod-card {
+              height: 105px !important;
+              max-height: 105px !important;
               overflow: hidden !important;
               display: block !important;
             }
-            :host > * {
-              height: 105px !important;
-              max-height: 105px !important;
-              overflow: hidden !important;
-            }
-            ha-card {
-              background: var(--osv-panel) !important;
-              height: 105px !important;
-              max-height: 105px !important;
-              min-height: 0 !important;
-              overflow: hidden !important;
-            }
+        card:
+          type: custom:dynamic-weather-card
+          entity: weather.meteo_france_forecast_for_city_sausset_les_pins_provence_alpes_cote_d_azur_13_fr_sausset_les_pins
+          height: 100
+          show_feels_like: false
+          show_wind: false
+          show_wind_gust: false
+          show_wind_direction: false
+          show_humidity: false
+          show_min_temp: false
+          show_hourly_forecast: false
+          hourly_forecast_hours: 5
+          show_daily_forecast: false
+          daily_forecast_days: 5
+          show_sunrise_sunset: false
+          show_clock: true
+          clock_position: top
+          clock_format: 24h
+          overlay_opacity: 0.1
+          language: fr
+          wind_speed_unit: ms
+          sunrise_entity: ""
+          sunset_entity: ""
 
       # Case band4 — Logo OSVISION
       - type: custom:button-card
@@ -705,7 +704,7 @@ views:
       - type: horizontal-stack
         view_layout:
           grid-area: egy1
-          grid-column: egy1 / egy4
+          grid-column: egy1 / egy2
         card_mod:
           style: |
             :host {
@@ -775,71 +774,72 @@ views:
                 name: CONSOMMATION
                 entity: sensor.home_power_consumption  # TODO: remplacer par votre entité consommation
 
-          # Cadre 3 — événements des appareils connectés (carte native Home Assistant)
-          - type: logbook
-            title: "Événements récents"
-            hours_to_show: 24
-            target:
-              area_id:
-                - computer_room
-                - technical_room
-                - secret_room
-                - livingroom
-                - kitchen
-                - bedroom_1
-                - bedroom_2
-                - bathroom
-                - garden_1
-            card_mod:
-              style: |
-                :host {
-                  flex: 1 1 0;
-                  align-self: stretch;
-                  overflow: hidden;
-                }
-                ha-card {
-                  background: var(--osv-panel) !important;
-                  height: 100%;
-                  max-height: 336px;
-                  min-height: 0;
-                  display: flex;
-                  flex-direction: column;
-                  overflow: hidden;
-                  --primary-text-color: #B8E8F5 !important;
-                  --secondary-text-color: #8FB6C9 !important;
-                  --primary-color: #00E5FF !important;
-                  --text-primary-color: #FFFFFF !important;
-                  --card-background-color: var(--osv-panel) !important;
-                }
-                ha-card .card-header {
-                  color: #FFFFFF !important;
-                }
-                ha-logbook {
-                  flex: 1 1 0;
-                  min-height: 0;
-                  overflow-y: auto;
-                }
-     
+      # --- Événements récents (aligné avec le bas de la sidebar) --------
+      - type: logbook
+        title: "Événements récents"
+        hours_to_show: 24
+        view_layout:
+          grid-area: events
+        target:
+          area_id:
+            - computer_room
+            - technical_room
+            - secret_room
+            - livingroom
+            - kitchen
+            - bedroom_1
+            - bedroom_2
+            - bathroom
+            - garden_1
+        card_mod:
+          style: |
+            :host {
+              height: 100%;
+              display: block;
+              overflow: hidden;
+            }
+            ha-card {
+              background: var(--osv-panel) !important;
+              height: 100% !important;
+              min-height: 0;
+              display: flex;
+              flex-direction: column;
+              overflow: hidden;
+              --primary-text-color: #B8E8F5 !important;
+              --secondary-text-color: #8FB6C9 !important;
+              --primary-color: #00E5FF !important;
+              --text-primary-color: #FFFFFF !important;
+              --card-background-color: var(--osv-panel) !important;
+            }
+            ha-card .card-header {
+              color: #FFFFFF !important;
+            }
+            ha-logbook {
+              flex: 1 1 0;
+              min-height: 0;
+              overflow-y: auto;
+            }
 
-          # Cadre 4 — Météo et prévisions (Enhanced Weather Chart Card)
-          - type: custom:weather-chart-card
-            entity: weather.home  # TODO: remplacer par votre entité météo
-            card_mod:
-              style: |
-                :host {
-                  flex: 1 1 0;
-                  align-self: stretch;
-                  overflow: hidden;
-                }
-                ha-card {
-                  background: var(--osv-panel) !important;
-                  height: 100%;
-                  max-height: 336px;
-                  min-height: 0;
-                  display: flex;
-                  flex-direction: column;
-                  overflow: hidden;
-                }
+      # --- Météo et prévisions (alignée avec le bas de la sidebar) ------
+      - type: custom:weather-chart-card
+        entity: weather.home  # TODO: remplacer par votre entité météo
+        view_layout:
+          grid-area: meteo
+        card_mod:
+          style: |
+            :host {
+              height: 100%;
+              display: block;
+              overflow: hidden;
+            }
+            ha-card {
+              background: var(--osv-panel) !important;
+              height: 100% !important;
+              min-height: 0;
+              display: flex;
+              flex-direction: column;
+              overflow: hidden;
+            }
 
       # --- Zone droite (INTERPHONE + AUDIO STREAM) ----------------------
       - type: vertical-stack
