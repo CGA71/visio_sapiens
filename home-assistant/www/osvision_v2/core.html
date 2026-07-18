@@ -34,9 +34,9 @@ body{background:#02050B;color:#fff;font-family:'Rajdhani','Segoe UI',system-ui,s
 
 /* Charts grid */
 .charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.chart-card{background:rgba(0,229,255,.04);border:1px solid rgba(0,229,255,.2);border-radius:14px;padding:16px;height:220px;max-height:220px;overflow:hidden}
+.chart-card{background:rgba(0,229,255,.04);border:1px solid rgba(0,229,255,.2);border-radius:14px;padding:16px;height:220px;max-height:220px;overflow:hidden;position:relative}
 .chart-title{color:#8FB6C9;font-size:12px;font-weight:600;letter-spacing:1px;margin-bottom:8px}
-.chart-canvas{width:100%;height:160px;max-height:160px}
+.chart-canvas{width:100% !important;height:160px !important;max-height:160px !important;display:block}
 
 /* Temperature table */
 .temp-table{width:100%;border-collapse:collapse}
@@ -209,10 +209,10 @@ body{background:#02050B;color:#fff;font-family:'Rajdhani','Segoe UI',system-ui,s
   <div class="section">
     <div class="section-title">HISTORIQUE (5 DERNIERS JOURS)</div>
     <div class="charts-grid">
-      <div class="chart-card"><div class="chart-title">Utilisation CPU (%)</div><canvas id="chart-cpu" class="chart-canvas"></canvas></div>
-      <div class="chart-card"><div class="chart-title">Utilisation RAM (%)</div><canvas id="chart-ram" class="chart-canvas"></canvas></div>
-      <div class="chart-card"><div class="chart-title">Utilisation Network (↑↓)</div><canvas id="chart-net" class="chart-canvas"></canvas></div>
-      <div class="chart-card"><div class="chart-title">Utilisation I/O (Disk) (io/s)</div><canvas id="chart-disk" class="chart-canvas"></canvas></div>
+      <div class="chart-card"><div class="chart-title">Utilisation CPU (%)</div><div style="position:relative;height:160px;width:100%"><canvas id="chart-cpu"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Utilisation RAM (%)</div><div style="position:relative;height:160px;width:100%"><canvas id="chart-ram"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Utilisation Network (↑↓)</div><div style="position:relative;height:160px;width:100%"><canvas id="chart-net"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title">Utilisation I/O (Disk) (io/s)</div><div style="position:relative;height:160px;width:100%"><canvas id="chart-disk"></canvas></div></div>
     </div>
   </div>
 
