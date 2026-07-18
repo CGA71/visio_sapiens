@@ -1,622 +1,567 @@
-<!DOCTYPE html>
-<html lang="fr">
-<head>
-<meta charset="UTF-8"/>
-<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-<title>OSVision V2 — Core : Système Central</title>
-<style>
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{background:#02050B;color:#fff;font-family:'Rajdhani','Segoe UI',system-ui,sans-serif;min-height:100vh;padding:20px}
-::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:rgba(0,229,255,.3);border-radius:2px}
+<!DOCTYPE html> -->
+<!-- <html lang="fr"> -->
+<!-- <head> -->
+<!-- <meta charset="UTF-8"/> -->
+<!-- <meta name="viewport" content="width=device-width,initial-scale=1.0"/> -->
+<!-- <title>OSVision V2 — Core : Système Central</title> -->
+<!-- <style> -->
+<!-- *,*::before,*::after{box-sizing:border-box;margin:0;padding:0} -->
+<!-- body{background:#02050B;color:#fff;font-family:'Rajdhani','Segoe UI',system-ui,sans-serif;min-height:100vh;padding:20px} -->
+<!-- ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:rgba(0,229,255,.3);border-radius:2px} -->
 
-.page{max-width:1400px;margin:0 auto}
+<!-- .page{max-width:1400px;margin:0 auto} -->
 
-/* Header */
-.header{display:flex;align-items:center;gap:16px;padding:16px 24px;background:rgba(8,18,28,.85);border:1px solid rgba(0,229,255,.22);border-radius:18px;margin-bottom:16px;flex-wrap:wrap}
-.header-logo{font-family:'Orbitron','Courier New',monospace;color:#00E5FF;font-size:20px;letter-spacing:3px}
-.header-sub{color:#56707E;font-size:11px;letter-spacing:1px}
-.header-info{display:flex;gap:24px;margin-left:auto;flex-wrap:wrap}
-.header-info-item{text-align:center}
-.header-info-label{color:#56707E;font-size:10px;letter-spacing:1px}
-.header-info-value{color:#B8E8F5;font-size:13px;font-weight:600}
+<!-- /* Header */ -->
+<!-- .header{display:flex;align-items:center;gap:16px;padding:16px 24px;background:rgba(8,18,28,.85);border:1px solid rgba(0,229,255,.22);border-radius:18px;margin-bottom:16px;flex-wrap:wrap} -->
+<!-- .header-logo{font-family:'Orbitron','Courier New',monospace;color:#00E5FF;font-size:20px;letter-spacing:3px} -->
+<!-- .header-sub{color:#56707E;font-size:11px;letter-spacing:1px} -->
+<!-- .header-info{display:flex;gap:24px;margin-left:auto;flex-wrap:wrap} -->
+<!-- .header-info-item{text-align:center} -->
+<!-- .header-info-label{color:#56707E;font-size:10px;letter-spacing:1px} -->
+<!-- .header-info-value{color:#B8E8F5;font-size:13px;font-weight:600} -->
 
-/* Section */
-.section{background:rgba(8,18,28,.85);border:1px solid rgba(0,229,255,.22);border-radius:18px;padding:20px;margin-bottom:16px;backdrop-filter:blur(14px)}
-.section-title{font-family:'Orbitron','Courier New',monospace;color:#00E5FF;font-size:13px;letter-spacing:2px;margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid rgba(0,229,255,.15)}
+<!-- /* Section */ -->
+<!-- .section{background:rgba(8,18,28,.85);border:1px solid rgba(0,229,255,.22);border-radius:18px;padding:20px;margin-bottom:16px;backdrop-filter:blur(14px)} -->
+<!-- .section-title{font-family:'Orbitron','Courier New',monospace;color:#00E5FF;font-size:13px;letter-spacing:2px;margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid rgba(0,229,255,.15)} -->
 
-/* Gauge grid */
-.gauge-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:16px}
-.gauge-card{background:rgba(0,229,255,.04);border:1px solid rgba(0,229,255,.2);border-radius:14px;padding:16px;text-align:center;position:relative;overflow:hidden}
-.gauge-card-title{font-family:'Orbitron','Courier New',monospace;color:#8FB6C9;font-size:11px;letter-spacing:1.5px;margin-bottom:8px}
-.gauge-svg{width:120px;height:120px;margin:0 auto 8px}
-.gauge-value{font-size:28px;font-weight:700;font-family:'Orbitron','Courier New',monospace}
-.gauge-sub{color:#56707E;font-size:11px;margin-top:4px}
+<!-- /* Gauge grid */ -->
+<!-- .gauge-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:16px} -->
+<!-- .gauge-card{background:rgba(0,229,255,.04);border:1px solid rgba(0,229,255,.2);border-radius:14px;padding:16px;text-align:center;position:relative;overflow:hidden} -->
+<!-- .gauge-card-title{font-family:'Orbitron','Courier New',monospace;color:#8FB6C9;font-size:11px;letter-spacing:1.5px;margin-bottom:8px} -->
+<!-- .gauge-svg{width:120px;height:120px;margin:0 auto 8px} -->
+<!-- .gauge-value{font-size:28px;font-weight:700;font-family:'Orbitron','Courier New',monospace} -->
+<!-- .gauge-sub{color:#56707E;font-size:11px;margin-top:4px} -->
 
-/* Charts grid */
-.charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
-.chart-card{background:rgba(0,229,255,.04);border:1px solid rgba(0,229,255,.2);border-radius:14px;padding:16px;height:220px;max-height:220px;overflow:hidden;position:relative}
-.chart-title{color:#8FB6C9;font-size:12px;font-weight:600;letter-spacing:1px;margin-bottom:8px}
-.chart-canvas{width:100% !important;height:160px !important;max-height:160px !important;display:block}
+<!-- /* Charts grid */ -->
+<!-- .charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px} -->
+<!-- .chart-card{background:rgba(0,229,255,.04);border:1px solid rgba(0,229,255,.2);border-radius:14px;padding:16px;height:220px;max-height:220px;overflow:hidden;position:relative} -->
+<!-- .chart-title{color:#8FB6C9;font-size:12px;font-weight:600;letter-spacing:1px;margin-bottom:8px} -->
+<!-- .chart-canvas{width:100% !important;height:160px !important;max-height:160px !important;display:block} -->
 
-/* Temperature table */
-.temp-table{width:100%;border-collapse:collapse}
-.temp-table th{color:#56707E;font-size:10px;letter-spacing:1px;text-align:left;padding:8px 10px;border-bottom:1px solid rgba(0,229,255,.15)}
-.temp-table td{color:#B8E8F5;font-size:13px;padding:8px 10px;border-bottom:1px solid rgba(0,229,255,.06)}
-.temp-bar{height:6px;border-radius:3px;background:rgba(0,229,255,.15);position:relative;min-width:80px}
-.temp-bar-fill{height:100%;border-radius:3px;transition:width .5s}
-.temp-ok{background:linear-gradient(90deg,#00FFC3,#3AA7FF)}
-.temp-warn{background:linear-gradient(90deg,#FF9800,#FF3D71)}
-.status-ok{color:#00FFC3;font-size:11px;font-weight:bold}
-.status-warn{color:#FF9800;font-size:11px;font-weight:bold}
-.status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;vertical-align:middle}
-.dot-ok{background:#00FFC3;box-shadow:0 0 6px #00FFC3}
-.dot-warn{background:#FF9800;box-shadow:0 0 6px #FF9800}
+<!-- /* Temperature table */ -->
+<!-- .temp-table{width:100%;border-collapse:collapse} -->
+<!-- .temp-table th{color:#56707E;font-size:10px;letter-spacing:1px;text-align:left;padding:8px 10px;border-bottom:1px solid rgba(0,229,255,.15)} -->
+<!-- .temp-table td{color:#B8E8F5;font-size:13px;padding:8px 10px;border-bottom:1px solid rgba(0,229,255,.06)} -->
+<!-- .temp-bar{height:6px;border-radius:3px;background:rgba(0,229,255,.15);position:relative;min-width:80px} -->
+<!-- .temp-bar-fill{height:100%;border-radius:3px;transition:width .5s} -->
+<!-- .temp-ok{background:linear-gradient(90deg,#00FFC3,#3AA7FF)} -->
+<!-- .temp-warn{background:linear-gradient(90deg,#FF9800,#FF3D71)} -->
+<!-- .status-ok{color:#00FFC3;font-size:11px;font-weight:bold} -->
+<!-- .status-warn{color:#FF9800;font-size:11px;font-weight:bold} -->
+<!-- .status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;vertical-align:middle} -->
+<!-- .dot-ok{background:#00FFC3;box-shadow:0 0 6px #00FFC3} -->
+<!-- .dot-warn{background:#FF9800;box-shadow:0 0 6px #FF9800} -->
 
-/* K3s section */
-.k3s-header{display:flex;align-items:center;gap:12px;margin-bottom:16px}
-.k3s-icon{font-size:28px}
-.k3s-kpi-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:16px}
-.k3s-kpi{background:rgba(0,229,255,.04);border:1px solid rgba(0,229,255,.2);border-radius:10px;padding:12px;text-align:center}
-.k3s-kpi-label{color:#56707E;font-size:10px;letter-spacing:1px}
-.k3s-kpi-value{color:#fff;font-size:20px;font-weight:700;font-family:'Orbitron','Courier New',monospace}
-.k3s-kpi-sub{color:#8FB6C9;font-size:10px}
-.k3s-tables{display:grid;grid-template-columns:1.5fr 1fr;gap:14px;margin-bottom:14px}
-.k3s-table{width:100%;border-collapse:collapse}
-.k3s-table th{color:#56707E;font-size:10px;letter-spacing:1px;text-align:left;padding:6px 8px;border-bottom:1px solid rgba(0,229,255,.15)}
-.k3s-table td{color:#B8E8F5;font-size:12px;padding:6px 8px;border-bottom:1px solid rgba(0,229,255,.06)}
-.k3s-bottom{display:grid;grid-template-columns:1fr 1fr 1.5fr;gap:14px}
+<!-- /* K3s section */ -->
+<!-- .k3s-header{display:flex;align-items:center;gap:12px;margin-bottom:16px} -->
+<!-- .k3s-icon{font-size:28px} -->
+<!-- .k3s-kpi-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:16px} -->
+<!-- .k3s-kpi{background:rgba(0,229,255,.04);border:1px solid rgba(0,229,255,.2);border-radius:10px;padding:12px;text-align:center} -->
+<!-- .k3s-kpi-label{color:#56707E;font-size:10px;letter-spacing:1px} -->
+<!-- .k3s-kpi-value{color:#fff;font-size:20px;font-weight:700;font-family:'Orbitron','Courier New',monospace} -->
+<!-- .k3s-kpi-sub{color:#8FB6C9;font-size:10px} -->
+<!-- .k3s-tables{display:grid;grid-template-columns:1.5fr 1fr;gap:14px;margin-bottom:14px} -->
+<!-- .k3s-table{width:100%;border-collapse:collapse} -->
+<!-- .k3s-table th{color:#56707E;font-size:10px;letter-spacing:1px;text-align:left;padding:6px 8px;border-bottom:1px solid rgba(0,229,255,.15)} -->
+<!-- .k3s-table td{color:#B8E8F5;font-size:12px;padding:6px 8px;border-bottom:1px solid rgba(0,229,255,.06)} -->
+<!-- .k3s-bottom{display:grid;grid-template-columns:1fr 1fr 1.5fr;gap:14px} -->
 
-/* Progress bars */
-.progress{height:8px;background:rgba(0,229,255,.1);border-radius:4px;overflow:hidden;min-width:40px;display:inline-block;vertical-align:middle;width:60px;margin-right:6px}
-.progress-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,#00FFC3,#3AA7FF)}
+<!-- /* Progress bars */ -->
+<!-- .progress{height:8px;background:rgba(0,229,255,.1);border-radius:4px;overflow:hidden;min-width:40px;display:inline-block;vertical-align:middle;width:60px;margin-right:6px} -->
+<!-- .progress-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,#00FFC3,#3AA7FF)} -->
 
-/* Status badges */
-.badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700}
-.badge-ok{background:rgba(0,255,195,.15);color:#00FFC3;border:1px solid rgba(0,255,195,.3)}
-.badge-warn{background:rgba(255,152,0,.15);color:#FF9800;border:1px solid rgba(255,152,0,.3)}
-.badge-error{background:rgba(255,61,113,.15);color:#FF3D71;border:1px solid rgba(255,61,113,.3)}
-.badge-info{background:rgba(0,229,255,.1);color:#00E5FF;border:1px solid rgba(0,229,255,.3)}
+<!-- /* Status badges */ -->
+<!-- .badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700} -->
+<!-- .badge-ok{background:rgba(0,255,195,.15);color:#00FFC3;border:1px solid rgba(0,255,195,.3)} -->
+<!-- .badge-warn{background:rgba(255,152,0,.15);color:#FF9800;border:1px solid rgba(255,152,0,.3)} -->
+<!-- .badge-error{background:rgba(255,61,113,.15);color:#FF3D71;border:1px solid rgba(255,61,113,.3)} -->
+<!-- .badge-info{background:rgba(0,229,255,.1);color:#00E5FF;border:1px solid rgba(0,229,255,.3)} -->
 
-/* Spinner */
-@keyframes spin{to{transform:rotate(360deg)}}
-.spinner{display:inline-block;width:18px;height:18px;border:2px solid rgba(0,229,255,.2);border-top-color:#00E5FF;border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle;margin-right:6px}
+<!-- /* Spinner */ -->
+<!-- @keyframes spin{to{transform:rotate(360deg)}} -->
+<!-- .spinner{display:inline-block;width:18px;height:18px;border:2px solid rgba(0,229,255,.2);border-top-color:#00E5FF;border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle;margin-right:6px} -->
 
-/* Sidebar nav */
-.layout{display:flex;min-height:100vh}
-.sidebar{width:220px;min-width:220px;background:rgba(5,11,18,.85);border-radius:20px;border:1px solid rgba(0,229,255,.18);padding:16px 10px;display:flex;flex-direction:column;margin-right:16px;position:sticky;top:20px;height:calc(100vh - 40px);overflow-y:auto}
-.sidebar-logo{text-align:center;margin-bottom:20px}
-.sidebar-logo-icon{color:#00E5FF;font-size:28px}
-.sidebar-logo-title{font-family:'Orbitron','Courier New',monospace;color:#00E5FF;font-size:14px;letter-spacing:2px}
-.sidebar-logo-sub{color:#56707E;font-size:10px;letter-spacing:1px}
-.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;border:1px solid transparent;margin-bottom:4px;text-decoration:none;color:#fff;transition:all .45s cubic-bezier(.4,0,.2,1);cursor:pointer;position:relative;overflow:hidden}
-.nav-item:hover{background:rgba(0,229,255,.12);border-color:rgba(0,229,255,.65);box-shadow:0 0 18px rgba(0,229,255,.35)}
-.nav-item:hover .nav-icon{color:#00E5FF;filter:drop-shadow(0 0 8px rgba(0,229,255,.7))}
-.nav-item:hover .nav-name{color:#00E5FF}
-.nav-item:hover .nav-label{color:#7fd8e8}
-.nav-item.active{background:rgba(0,229,255,.14);border-color:rgba(0,229,255,.4)}
-.nav-icon{color:#8FB6C9;font-size:18px;width:24px;text-align:center;transition:color .4s,filter .4s}
-.nav-text{display:flex;flex-direction:column}
-.nav-name{font-size:13px;font-weight:600;letter-spacing:.5px;transition:color .4s}
-.nav-label{font-size:10px;color:#56707E;transition:color .4s}
-.sidebar-brand{text-align:center;margin-top:auto;padding-top:16px}
-.sidebar-brand-icon{color:#00E5FF;font-size:24px;animation:osv-glow 3s infinite}
-.sidebar-brand-title{font-family:'Orbitron','Courier New',monospace;color:#00E5FF;font-size:11px;letter-spacing:2px;margin-top:4px}
-.sidebar-brand-sub{color:#56707E;font-size:9px;letter-spacing:1px}
-@keyframes osv-glow{0%,100%{filter:drop-shadow(0 0 6px #00E5FF)}50%{filter:drop-shadow(0 0 16px #00E5FF)}}
-.content{flex:1;min-width:0}
 
-/* Responsive */
-@media(max-width:900px){
-  .gauge-grid{grid-template-columns:repeat(3,1fr)}
-  .charts-grid,.k3s-tables{grid-template-columns:1fr}
-  .k3s-kpi-grid{grid-template-columns:repeat(3,1fr)}
-  .k3s-bottom{grid-template-columns:1fr}
-}
-</style>
-</head>
-<body>
-<div class="layout">
-  <!-- Sidebar Navigation -->
-  <nav class="sidebar">
-    <div class="sidebar-logo">
-      <div class="sidebar-logo-icon">⬡</div>
-      <div class="sidebar-logo-title">OSVISION V2</div>
-      <div class="sidebar-logo-sub">Smart Home OS</div>
-    </div>
 
-    <a class="nav-item" href="/osvision-v2/home">
-      <span class="nav-icon">🏠</span>
-      <span class="nav-text"><span class="nav-name">HOME</span><span class="nav-label">Vue d'ensemble</span></span>
-    </a>
-    <a class="nav-item active">
-      <span class="nav-icon">🖥</span>
-      <span class="nav-text"><span class="nav-name">CORE</span><span class="nav-label">Système central</span></span>
-    </a>
-    <a class="nav-item" href="/osvision-v2/livingroom">
-      <span class="nav-icon">🛋</span>
-      <span class="nav-text"><span class="nav-name">LIVING ROOM</span><span class="nav-label">Salon</span></span>
-    </a>
-    <a class="nav-item" href="/osvision-v2/bedroom-1">
-      <span class="nav-icon">🛏</span>
-      <span class="nav-text"><span class="nav-name">BEDROOM-1</span><span class="nav-label">Chambre principale</span></span>
-    </a>
-    <a class="nav-item" href="/osvision-v2/bedroom-2">
-      <span class="nav-icon">🛏</span>
-      <span class="nav-text"><span class="nav-name">BEDROOM-2</span><span class="nav-label">Chambre 2</span></span>
-    </a>
-    <a class="nav-item" href="/osvision-v2/bathroom">
-      <span class="nav-icon">🚿</span>
-      <span class="nav-text"><span class="nav-name">BATHROOM</span><span class="nav-label">Salle de bain</span></span>
-    </a>
-    <a class="nav-item" href="/osvision-v2/computer-room">
-      <span class="nav-icon">💻</span>
-      <span class="nav-text"><span class="nav-name">COMPUTER ROOM</span><span class="nav-label">Salle informatique</span></span>
-    </a>
-    <a class="nav-item" href="/osvision-v2/technical-room">
-      <span class="nav-icon">🔧</span>
-      <span class="nav-text"><span class="nav-name">TECHNICAL ROOM</span><span class="nav-label">Local technique</span></span>
-    </a>
-    <a class="nav-item" href="/osvision-v2/secret-room">
-      <span class="nav-icon">🔑</span>
-      <span class="nav-text"><span class="nav-name">SECRET ROOM</span><span class="nav-label">Pièce secrète</span></span>
-    </a>
-    <a class="nav-item" href="/osvision-v2/garden">
-      <span class="nav-icon">🌿</span>
-      <span class="nav-text"><span class="nav-name">GARDEN</span><span class="nav-label">Jardin</span></span>
-    </a>
-    <a class="nav-item" href="/osvision-v2/energy">
-      <span class="nav-icon">⚡</span>
-      <span class="nav-text"><span class="nav-name">ENERGY</span><span class="nav-label">Gestion énergie</span></span>
-    </a>
-    <a class="nav-item" href="/osvision-v2/admin">
-      <span class="nav-icon">🛡</span>
-      <span class="nav-text"><span class="nav-name">ADMIN</span><span class="nav-label">Panneau administration</span></span>
-    </a>
+<!-- /* Responsive */ -->
+<!-- @media(max-width:900px){ -->
+  <!-- .gauge-grid{grid-template-columns:repeat(3,1fr)} -->
+  <!-- .charts-grid,.k3s-tables{grid-template-columns:1fr} -->
+  <!-- .k3s-kpi-grid{grid-template-columns:repeat(3,1fr)} -->
+  <!-- .k3s-bottom{grid-template-columns:1fr} -->
+<!-- } -->
+<!-- </style> -->
+<!-- </head> -->
+<!-- <body> -->
+<!-- <div class="layout"> -->
+  Contenu principal
+  <!-- <div class="content"> -->
+<!-- <div class="page"> -->
+  <!-- <div class="header"> -->
+    <!-- <div> -->
+      <!-- <div class="header-logo">🐧 DASHBOARD SYSTÈME</div> -->
+      <!-- <div class="header-sub">Glances Monitoring</div> -->
+    <!-- </div> -->
+    <!-- <div class="header-info"> -->
+      <!-- <div class="header-info-item"><div class="header-info-label">Hostname</div><div class="header-info-value" id="hostname">--</div></div> -->
+      <!-- <div class="header-info-item"><div class="header-info-label">OS</div><div class="header-info-value" id="os-info">--</div></div> -->
+      <!-- <div class="header-info-item"><div class="header-info-label">Uptime</div><div class="header-info-value" id="uptime">--</div></div> -->
+      <!-- <div class="header-info-item"><div class="header-info-label">Dernière mise à jour</div><div class="header-info-value" id="last-update">--</div></div> -->
+    <!-- </div> -->
+  <!-- </div> -->
 
-    <div class="sidebar-brand">
-      <div class="sidebar-brand-icon">⬡</div>
-      <div class="sidebar-brand-title">OSVISION V2</div>
-      <div class="sidebar-brand-sub">SMART HOME OS</div>
-    </div>
-  </nav>
+  KPI Gauges
+  <!-- <div class="gauge-grid" id="gauges"> -->
+    <!-- <div class="gauge-card"><div class="gauge-card-title">CPU</div><div id="g-cpu"></div></div> -->
+    <!-- <div class="gauge-card"><div class="gauge-card-title">RAM</div><div id="g-ram"></div></div> -->
+    <!-- <div class="gauge-card"><div class="gauge-card-title">Load Average</div><div id="g-load"></div></div> -->
+    <!-- <div class="gauge-card"><div class="gauge-card-title">Swap</div><div id="g-swap"></div></div> -->
+    <!-- <div class="gauge-card"><div class="gauge-card-title">CPU Temp</div><div id="g-temp"></div></div> -->
+  <!-- </div> -->
 
-  <!-- Main content -->
-  <div class="content">
-<div class="page">
-  <div class="header">
-    <div>
-      <div class="header-logo">🐧 DASHBOARD SYSTÈME</div>
-      <div class="header-sub">Glances Monitoring</div>
-    </div>
-    <div class="header-info">
-      <div class="header-info-item"><div class="header-info-label">Hostname</div><div class="header-info-value" id="hostname">--</div></div>
-      <div class="header-info-item"><div class="header-info-label">OS</div><div class="header-info-value" id="os-info">--</div></div>
-      <div class="header-info-item"><div class="header-info-label">Uptime</div><div class="header-info-value" id="uptime">--</div></div>
-      <div class="header-info-item"><div class="header-info-label">Dernière mise à jour</div><div class="header-info-value" id="last-update">--</div></div>
-    </div>
-  </div>
+  Historical Charts
+  <!-- <div class="section"> -->
+    <!-- <div class="section-title">HISTORIQUE (5 DERNIERS JOURS)</div> -->
+    <!-- <div class="charts-grid"> -->
+      <!-- <div class="chart-card"><div class="chart-title">Utilisation CPU (%)</div><div style="position:relative;height:160px;width:100%"><canvas id="chart-cpu"></canvas></div></div> -->
+      <!-- <div class="chart-card"><div class="chart-title">Utilisation RAM (%)</div><div style="position:relative;height:160px;width:100%"><canvas id="chart-ram"></canvas></div></div> -->
+      <!-- <div class="chart-card"><div class="chart-title">Utilisation Network (↑↓)</div><div style="position:relative;height:160px;width:100%"><canvas id="chart-net"></canvas></div></div> -->
+      <!-- <div class="chart-card"><div class="chart-title">Utilisation I/O (Disk) (io/s)</div><div style="position:relative;height:160px;width:100%"><canvas id="chart-disk"></canvas></div></div> -->
+    <!-- </div> -->
+  <!-- </div> -->
 
-  <!-- KPI Gauges -->
-  <div class="gauge-grid" id="gauges">
-    <div class="gauge-card"><div class="gauge-card-title">CPU</div><div id="g-cpu"></div></div>
-    <div class="gauge-card"><div class="gauge-card-title">RAM</div><div id="g-ram"></div></div>
-    <div class="gauge-card"><div class="gauge-card-title">Load Average</div><div id="g-load"></div></div>
-    <div class="gauge-card"><div class="gauge-card-title">Swap</div><div id="g-swap"></div></div>
-    <div class="gauge-card"><div class="gauge-card-title">CPU Temp</div><div id="g-temp"></div></div>
-  </div>
+  Temperature Table
+  <!-- <div class="section"> -->
+    <!-- <div class="section-title">TEMPÉRATURE DES COMPOSANTS</div> -->
+    <!-- <table class="temp-table"> -->
+      <!-- <thead><tr><th>Composant</th><th>Capteur</th><th>Température</th><th></th><th>Min</th><th>Max</th><th>État</th></tr></thead> -->
+      <!-- <tbody id="temp-body"></tbody> -->
+    <!-- </table> -->
+  <!-- </div> -->
 
-  <!-- Historical Charts -->
-  <div class="section">
-    <div class="section-title">HISTORIQUE (5 DERNIERS JOURS)</div>
-    <div class="charts-grid">
-      <div class="chart-card"><div class="chart-title">Utilisation CPU (%)</div><div style="position:relative;height:160px;width:100%"><canvas id="chart-cpu"></canvas></div></div>
-      <div class="chart-card"><div class="chart-title">Utilisation RAM (%)</div><div style="position:relative;height:160px;width:100%"><canvas id="chart-ram"></canvas></div></div>
-      <div class="chart-card"><div class="chart-title">Utilisation Network (↑↓)</div><div style="position:relative;height:160px;width:100%"><canvas id="chart-net"></canvas></div></div>
-      <div class="chart-card"><div class="chart-title">Utilisation I/O (Disk) (io/s)</div><div style="position:relative;height:160px;width:100%"><canvas id="chart-disk"></canvas></div></div>
-    </div>
-  </div>
+  K3s Cluster
+  <!-- <div class="section"> -->
+    <!-- <div class="k3s-header"> -->
+      <!-- <span class="k3s-icon">☸</span> -->
+      <!-- <div> -->
+        <!-- <div style="font-family:'Orbitron','Courier New',monospace;color:#fff;font-size:16px;letter-spacing:2px">K3S CLUSTER DASHBOARD</div> -->
+      <!-- </div> -->
+    <!-- </div> -->
+    <!-- <div class="k3s-kpi-grid" id="k3s-kpis"></div> -->
+    <!-- <div class="k3s-tables"> -->
+      <!-- <div> -->
+        <!-- <div class="section-title" style="font-size:11px">NODES</div> -->
+        <!-- <table class="k3s-table" id="k3s-nodes"></table> -->
+      <!-- </div> -->
+      <!-- <div> -->
+        <!-- <div class="section-title" style="font-size:11px">RESSOURCES CLUSTER</div> -->
+        <!-- <table class="k3s-table" id="k3s-resources"></table> -->
+      <!-- </div> -->
+    <!-- </div> -->
+    <!-- <div class="k3s-bottom"> -->
+      <!-- <div> -->
+        <!-- <div class="section-title" style="font-size:11px">TOP NAMESPACES PAR PODS</div> -->
+        <!-- <table class="k3s-table" id="k3s-namespaces"></table> -->
+      <!-- </div> -->
+      <!-- <div> -->
+        <!-- <div class="section-title" style="font-size:11px">TOP DEPLOYMENTS</div> -->
+        <!-- <table class="k3s-table" id="k3s-deployments"></table> -->
+      <!-- </div> -->
+      <!-- <div> -->
+        <!-- <div class="section-title" style="font-size:11px">ÉVÉNEMENTS RÉCENTS</div> -->
+        <!-- <table class="k3s-table" id="k3s-events"></table> -->
+      <!-- </div> -->
+    <!-- </div> -->
+  <!-- </div> -->
+<!-- </div> -->
+<!-- </div><!-- .content --> -->
 
-  <!-- Temperature Table -->
-  <div class="section">
-    <div class="section-title">TEMPÉRATURE DES COMPOSANTS</div>
-    <table class="temp-table">
-      <thead><tr><th>Composant</th><th>Capteur</th><th>Température</th><th></th><th>Min</th><th>Max</th><th>État</th></tr></thead>
-      <tbody id="temp-body"></tbody>
-    </table>
-  </div>
+<!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script> -->
+<!-- <script> -->
+<!-- var HA_URL = window.location.origin; -->
+<!-- var TOKEN = localStorage.getItem('osv_ha_token') || ''; -->
+<!-- var chartInstances = {}; -->
 
-  <!-- K3s Cluster -->
-  <div class="section">
-    <div class="k3s-header">
-      <span class="k3s-icon">☸</span>
-      <div>
-        <div style="font-family:'Orbitron','Courier New',monospace;color:#fff;font-size:16px;letter-spacing:2px">K3S CLUSTER DASHBOARD</div>
-      </div>
-    </div>
-    <div class="k3s-kpi-grid" id="k3s-kpis"></div>
-    <div class="k3s-tables">
-      <div>
-        <div class="section-title" style="font-size:11px">NODES</div>
-        <table class="k3s-table" id="k3s-nodes"></table>
-      </div>
-      <div>
-        <div class="section-title" style="font-size:11px">RESSOURCES CLUSTER</div>
-        <table class="k3s-table" id="k3s-resources"></table>
-      </div>
-    </div>
-    <div class="k3s-bottom">
-      <div>
-        <div class="section-title" style="font-size:11px">TOP NAMESPACES PAR PODS</div>
-        <table class="k3s-table" id="k3s-namespaces"></table>
-      </div>
-      <div>
-        <div class="section-title" style="font-size:11px">TOP DEPLOYMENTS</div>
-        <table class="k3s-table" id="k3s-deployments"></table>
-      </div>
-      <div>
-        <div class="section-title" style="font-size:11px">ÉVÉNEMENTS RÉCENTS</div>
-        <table class="k3s-table" id="k3s-events"></table>
-      </div>
-    </div>
-  </div>
-</div>
-</div><!-- .content -->
-</div><!-- .layout -->
+<!-- async function haGet(path) { -->
+  <!-- var r = await fetch(HA_URL + '/api/' + path, { -->
+    <!-- headers: { Authorization: 'Bearer ' + TOKEN } -->
+  <!-- }); -->
+  <!-- if (!r.ok) throw new Error(path + ': ' + r.status); -->
+  <!-- return r.json(); -->
+<!-- } -->
 
-<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
-<script>
-var HA_URL = window.location.origin;
-var TOKEN = localStorage.getItem('osv_ha_token') || '';
-var chartInstances = {};
+<!-- async function haHistory(entityId, days) { -->
+  <!-- var end = new Date().toISOString(); -->
+  <!-- var start = new Date(Date.now() - days * 86400000).toISOString(); -->
+  <!-- var r = await fetch(HA_URL + '/api/history/period/' + start + '?filter_entity_id=' + entityId + '&end_time=' + end + '&minimal_response&no_attributes', { -->
+    <!-- headers: { Authorization: 'Bearer ' + TOKEN } -->
+  <!-- }); -->
+  <!-- if (!r.ok) return []; -->
+  <!-- var data = await r.json(); -->
+  <!-- return data[0] || []; -->
+<!-- } -->
 
-async function haGet(path) {
-  var r = await fetch(HA_URL + '/api/' + path, {
-    headers: { Authorization: 'Bearer ' + TOKEN }
-  });
-  if (!r.ok) throw new Error(path + ': ' + r.status);
-  return r.json();
-}
+<!-- function esc(s) { return String(s || '').replace(/</g, '&lt;'); } -->
 
-async function haHistory(entityId, days) {
-  var end = new Date().toISOString();
-  var start = new Date(Date.now() - days * 86400000).toISOString();
-  var r = await fetch(HA_URL + '/api/history/period/' + start + '?filter_entity_id=' + entityId + '&end_time=' + end + '&minimal_response&no_attributes', {
-    headers: { Authorization: 'Bearer ' + TOKEN }
-  });
-  if (!r.ok) return [];
-  var data = await r.json();
-  return data[0] || [];
-}
+<!-- // ─── SVG Gauge ──────────────────────────────────────────────────────────── -->
+<!-- function renderGauge(containerId, value, max, unit, color, sub) { -->
+  <!-- var pct = Math.min(value / max * 100, 100); -->
+  <!-- var angle = (pct / 100) * 270; -->
+  <!-- var r = 50, cx = 60, cy = 60; -->
+  <!-- var startAngle = -225; -->
+  <!-- var endAngle = startAngle + angle; -->
+  <!-- var bgEnd = startAngle + 270; -->
 
-function esc(s) { return String(s || '').replace(/</g, '&lt;'); }
+  <!-- function polarToXY(a) { -->
+    <!-- var rad = (a - 90) * Math.PI / 180; -->
+    <!-- return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) }; -->
+  <!-- } -->
 
-// ─── SVG Gauge ────────────────────────────────────────────────────────────
-function renderGauge(containerId, value, max, unit, color, sub) {
-  var pct = Math.min(value / max * 100, 100);
-  var angle = (pct / 100) * 270;
-  var r = 50, cx = 60, cy = 60;
-  var startAngle = -225;
-  var endAngle = startAngle + angle;
-  var bgEnd = startAngle + 270;
+  <!-- var bgStart = polarToXY(startAngle); -->
+  <!-- var bgEndPt = polarToXY(bgEnd); -->
+  <!-- var valStart = polarToXY(startAngle); -->
+  <!-- var valEnd = polarToXY(endAngle); -->
+  <!-- var largeArcBg = 270 > 180 ? 1 : 0; -->
+  <!-- var largeArc = angle > 180 ? 1 : 0; -->
 
-  function polarToXY(a) {
-    var rad = (a - 90) * Math.PI / 180;
-    return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
-  }
+  <!-- var gradId = 'grad-' + containerId; -->
+  <!-- var gaugeColor = pct > 80 ? '#FF3D71' : pct > 60 ? '#FF9800' : color || '#00FFC3'; -->
 
-  var bgStart = polarToXY(startAngle);
-  var bgEndPt = polarToXY(bgEnd);
-  var valStart = polarToXY(startAngle);
-  var valEnd = polarToXY(endAngle);
-  var largeArcBg = 270 > 180 ? 1 : 0;
-  var largeArc = angle > 180 ? 1 : 0;
+  <!-- var svg = '<svg viewBox="0 0 120 120" width="120" height="120">' + -->
+    <!-- '<defs><linearGradient id="' + gradId + '"><stop offset="0%" stop-color="' + gaugeColor + '"/><stop offset="100%" stop-color="' + gaugeColor + '88"/></linearGradient></defs>' + -->
+    <!-- '<path d="M ' + bgStart.x + ' ' + bgStart.y + ' A ' + r + ' ' + r + ' 0 ' + largeArcBg + ' 1 ' + bgEndPt.x + ' ' + bgEndPt.y + '" fill="none" stroke="rgba(0,229,255,.1)" stroke-width="10" stroke-linecap="round"/>' + -->
+    <!-- '<path d="M ' + valStart.x + ' ' + valStart.y + ' A ' + r + ' ' + r + ' 0 ' + largeArc + ' 1 ' + valEnd.x + ' ' + valEnd.y + '" fill="none" stroke="url(#' + gradId + ')" stroke-width="10" stroke-linecap="round" filter="drop-shadow(0 0 4px ' + gaugeColor + '66)"/>' + -->
+    <!-- '<text x="60" y="58" text-anchor="middle" fill="#fff" font-size="22" font-weight="700" font-family="Orbitron,Courier New,monospace">' + Math.round(value) + (unit || '') + '</text>' + -->
+    <!-- '<text x="60" y="76" text-anchor="middle" fill="#56707E" font-size="10">' + esc(sub || '') + '</text>' + -->
+    <!-- '</svg>'; -->
 
-  var gradId = 'grad-' + containerId;
-  var gaugeColor = pct > 80 ? '#FF3D71' : pct > 60 ? '#FF9800' : color || '#00FFC3';
+  <!-- document.getElementById(containerId).innerHTML = svg; -->
+<!-- } -->
 
-  var svg = '<svg viewBox="0 0 120 120" width="120" height="120">' +
-    '<defs><linearGradient id="' + gradId + '"><stop offset="0%" stop-color="' + gaugeColor + '"/><stop offset="100%" stop-color="' + gaugeColor + '88"/></linearGradient></defs>' +
-    '<path d="M ' + bgStart.x + ' ' + bgStart.y + ' A ' + r + ' ' + r + ' 0 ' + largeArcBg + ' 1 ' + bgEndPt.x + ' ' + bgEndPt.y + '" fill="none" stroke="rgba(0,229,255,.1)" stroke-width="10" stroke-linecap="round"/>' +
-    '<path d="M ' + valStart.x + ' ' + valStart.y + ' A ' + r + ' ' + r + ' 0 ' + largeArc + ' 1 ' + valEnd.x + ' ' + valEnd.y + '" fill="none" stroke="url(#' + gradId + ')" stroke-width="10" stroke-linecap="round" filter="drop-shadow(0 0 4px ' + gaugeColor + '66)"/>' +
-    '<text x="60" y="58" text-anchor="middle" fill="#fff" font-size="22" font-weight="700" font-family="Orbitron,Courier New,monospace">' + Math.round(value) + (unit || '') + '</text>' +
-    '<text x="60" y="76" text-anchor="middle" fill="#56707E" font-size="10">' + esc(sub || '') + '</text>' +
-    '</svg>';
+<!-- // ─── Chart.js helper ────────────────────────────────────────────────────── -->
+<!-- function createChart(canvasId, label, data, color, unit) { -->
+  <!-- var ctx = document.getElementById(canvasId); -->
+  <!-- if (!ctx) return; -->
+  <!-- if (chartInstances[canvasId]) { -->
+    <!-- chartInstances[canvasId].destroy(); -->
+    <!-- delete chartInstances[canvasId]; -->
+  <!-- } -->
+  <!-- chartInstances[canvasId] = new Chart(ctx, { -->
+    <!-- type: 'line', -->
+    <!-- data: { -->
+      <!-- labels: data.map(function(d) { return d.t; }), -->
+      <!-- datasets: [{ -->
+        <!-- label: label, -->
+        <!-- data: data.map(function(d) { return d.v; }), -->
+        <!-- borderColor: color, -->
+        <!-- backgroundColor: color + '22', -->
+        <!-- fill: true, -->
+        <!-- tension: 0.3, -->
+        <!-- pointRadius: 0, -->
+        <!-- borderWidth: 1.5 -->
+      <!-- }] -->
+    <!-- }, -->
+    <!-- options: { -->
+      <!-- responsive: true, -->
+      <!-- maintainAspectRatio: false, -->
+      <!-- plugins: { legend: { display: true, labels: { color: '#8FB6C9', font: { size: 10 } } } }, -->
+      <!-- scales: { -->
+        <!-- x: { ticks: { color: '#56707E', font: { size: 9 }, maxTicksLimit: 6 }, grid: { color: 'rgba(0,229,255,.06)' } }, -->
+        <!-- y: { ticks: { color: '#56707E', font: { size: 9 }, callback: function(v) { return v + (unit || ''); } }, grid: { color: 'rgba(0,229,255,.06)' } } -->
+      <!-- } -->
+    <!-- } -->
+  <!-- }); -->
+<!-- } -->
 
-  document.getElementById(containerId).innerHTML = svg;
-}
+<!-- // ─── Entity auto-discovery ──────────────────────────────────────────────── -->
+<!-- function findEntity(states, keywords, exclude) { -->
+  <!-- exclude = exclude || []; -->
+  <!-- return states.find(function(s) { -->
+    <!-- var id = s.entity_id.toLowerCase(); -->
+    <!-- var name = (s.attributes.friendly_name || '').toLowerCase(); -->
+    <!-- var combined = id + ' ' + name; -->
+    <!-- var matches = keywords.every(function(k) { return combined.includes(k.toLowerCase()); }); -->
+    <!-- var excluded = exclude.some(function(e) { return combined.includes(e.toLowerCase()); }); -->
+    <!-- return matches && !excluded; -->
+  <!-- }); -->
+<!-- } -->
 
-// ─── Chart.js helper ──────────────────────────────────────────────────────
-function createChart(canvasId, label, data, color, unit) {
-  var ctx = document.getElementById(canvasId);
-  if (!ctx) return;
-  if (chartInstances[canvasId]) {
-    chartInstances[canvasId].destroy();
-    delete chartInstances[canvasId];
-  }
-  chartInstances[canvasId] = new Chart(ctx, {
-    type: 'line',
-    data: {
-      labels: data.map(function(d) { return d.t; }),
-      datasets: [{
-        label: label,
-        data: data.map(function(d) { return d.v; }),
-        borderColor: color,
-        backgroundColor: color + '22',
-        fill: true,
-        tension: 0.3,
-        pointRadius: 0,
-        borderWidth: 1.5
-      }]
-    },
-    options: {
-      responsive: true,
-      maintainAspectRatio: false,
-      plugins: { legend: { display: true, labels: { color: '#8FB6C9', font: { size: 10 } } } },
-      scales: {
-        x: { ticks: { color: '#56707E', font: { size: 9 }, maxTicksLimit: 6 }, grid: { color: 'rgba(0,229,255,.06)' } },
-        y: { ticks: { color: '#56707E', font: { size: 9 }, callback: function(v) { return v + (unit || ''); } }, grid: { color: 'rgba(0,229,255,.06)' } }
-      }
-    }
-  });
-}
+<!-- function findEntities(states, keywords, exclude) { -->
+  <!-- exclude = exclude || []; -->
+  <!-- return states.filter(function(s) { -->
+    <!-- var id = s.entity_id.toLowerCase(); -->
+    <!-- var name = (s.attributes.friendly_name || '').toLowerCase(); -->
+    <!-- var combined = id + ' ' + name; -->
+    <!-- var matches = keywords.every(function(k) { return combined.includes(k.toLowerCase()); }); -->
+    <!-- var excluded = exclude.some(function(e) { return combined.includes(e.toLowerCase()); }); -->
+    <!-- return matches && !excluded; -->
+  <!-- }); -->
+<!-- } -->
 
-// ─── Entity auto-discovery ────────────────────────────────────────────────
-function findEntity(states, keywords, exclude) {
-  exclude = exclude || [];
-  return states.find(function(s) {
-    var id = s.entity_id.toLowerCase();
-    var name = (s.attributes.friendly_name || '').toLowerCase();
-    var combined = id + ' ' + name;
-    var matches = keywords.every(function(k) { return combined.includes(k.toLowerCase()); });
-    var excluded = exclude.some(function(e) { return combined.includes(e.toLowerCase()); });
-    return matches && !excluded;
-  });
-}
+<!-- // ─── Temperature table ──────────────────────────────────────────────────── -->
+<!-- function renderTemps(tempEntities) { -->
+  <!-- var tbody = document.getElementById('temp-body'); -->
+  <!-- if (!tempEntities.length) { -->
+    <!-- tbody.innerHTML = '<tr><td colspan="7" style="color:#56707E;text-align:center;padding:20px">Aucun capteur de température système trouvé</td></tr>'; -->
+    <!-- return; -->
+  <!-- } -->
+  <!-- tbody.innerHTML = tempEntities.map(function(s) { -->
+    <!-- var temp = parseFloat(s.state) || 0; -->
+    <!-- var name = s.attributes.friendly_name || s.entity_id; -->
+    <!-- var sensor = s.entity_id.split('.')[1] || ''; -->
+    <!-- var maxT = 85; -->
+    <!-- var pct = Math.min(temp / maxT * 100, 100); -->
+    <!-- var isWarn = temp > 70; -->
+    <!-- return '<tr>' + -->
+      <!-- '<td>' + esc(name) + '</td>' + -->
+      <!-- '<td style="color:#56707E;font-size:11px">' + esc(sensor) + '</td>' + -->
+      <!-- '<td style="color:' + (isWarn ? '#FF9800' : '#00FFC3') + ';font-weight:bold">' + temp + '°C</td>' + -->
+      <!-- '<td><div class="temp-bar"><div class="temp-bar-fill ' + (isWarn ? 'temp-warn' : 'temp-ok') + '" style="width:' + pct + '%"></div></div></td>' + -->
+      <!-- '<td style="color:#56707E">' + (s.attributes.min || '--') + '°C</td>' + -->
+      <!-- '<td style="color:#56707E">' + (s.attributes.max || '--') + '°C</td>' + -->
+      <!-- '<td><span class="status-dot ' + (isWarn ? 'dot-warn' : 'dot-ok') + '"></span><span class="' + (isWarn ? 'status-warn' : 'status-ok') + '">' + (isWarn ? 'WARN' : 'OK') + '</span></td>' + -->
+      <!-- '</tr>'; -->
+  <!-- }).join(''); -->
+<!-- } -->
 
-function findEntities(states, keywords, exclude) {
-  exclude = exclude || [];
-  return states.filter(function(s) {
-    var id = s.entity_id.toLowerCase();
-    var name = (s.attributes.friendly_name || '').toLowerCase();
-    var combined = id + ' ' + name;
-    var matches = keywords.every(function(k) { return combined.includes(k.toLowerCase()); });
-    var excluded = exclude.some(function(e) { return combined.includes(e.toLowerCase()); });
-    return matches && !excluded;
-  });
-}
+<!-- // ─── K3s Cluster ────────────────────────────────────────────────────────── -->
+<!-- function renderK3s(data) { -->
+  <!-- if (!data) { -->
+    <!-- document.getElementById('k3s-kpis').innerHTML = '<div style="color:#56707E;padding:20px;text-align:center">K3s stats non disponibles — vérifiez que le cron k3s_stats.sh tourne sur le host</div>'; -->
+    <!-- return; -->
+  <!-- } -->
 
-// ─── Temperature table ────────────────────────────────────────────────────
-function renderTemps(tempEntities) {
-  var tbody = document.getElementById('temp-body');
-  if (!tempEntities.length) {
-    tbody.innerHTML = '<tr><td colspan="7" style="color:#56707E;text-align:center;padding:20px">Aucun capteur de température système trouvé</td></tr>';
-    return;
-  }
-  tbody.innerHTML = tempEntities.map(function(s) {
-    var temp = parseFloat(s.state) || 0;
-    var name = s.attributes.friendly_name || s.entity_id;
-    var sensor = s.entity_id.split('.')[1] || '';
-    var maxT = 85;
-    var pct = Math.min(temp / maxT * 100, 100);
-    var isWarn = temp > 70;
-    return '<tr>' +
-      '<td>' + esc(name) + '</td>' +
-      '<td style="color:#56707E;font-size:11px">' + esc(sensor) + '</td>' +
-      '<td style="color:' + (isWarn ? '#FF9800' : '#00FFC3') + ';font-weight:bold">' + temp + '°C</td>' +
-      '<td><div class="temp-bar"><div class="temp-bar-fill ' + (isWarn ? 'temp-warn' : 'temp-ok') + '" style="width:' + pct + '%"></div></div></td>' +
-      '<td style="color:#56707E">' + (s.attributes.min || '--') + '°C</td>' +
-      '<td style="color:#56707E">' + (s.attributes.max || '--') + '°C</td>' +
-      '<td><span class="status-dot ' + (isWarn ? 'dot-warn' : 'dot-ok') + '"></span><span class="' + (isWarn ? 'status-warn' : 'status-ok') + '">' + (isWarn ? 'WARN' : 'OK') + '</span></td>' +
-      '</tr>';
-  }).join('');
-}
+  <!-- // KPIs -->
+  <!-- var kpis = [ -->
+    <!-- { label: 'Cluster Status', value: '✓', sub: 'Healthy', color: '#00FFC3' }, -->
+    <!-- { label: 'K3s Version', value: data.version || '--', sub: '', color: '#fff' }, -->
+    <!-- { label: 'Nodes', value: data.node_count || '--', sub: 'Ready: ' + (data.node_count || '--'), color: '#fff' }, -->
+    <!-- { label: 'Pods', value: data.pods_total || '--', sub: 'Running: ' + (data.pods_running || '--'), color: '#fff' }, -->
+    <!-- { label: 'Deployments', value: data.deployments || '--', sub: 'Up-to-date', color: '#fff' }, -->
+    <!-- { label: 'Services', value: data.services || '--', sub: 'Active', color: '#fff' }, -->
+  <!-- ]; -->
 
-// ─── K3s Cluster ──────────────────────────────────────────────────────────
-function renderK3s(states) {
-  // KPIs
-  var k3sVersion = findEntity(states, ['k3s', 'version']);
-  var pods = findEntity(states, ['pod', 'count'], ['namespace']);
-  var deployments = findEntity(states, ['deployment', 'count']);
-  var services = findEntity(states, ['service', 'count']);
-  var namespaces = findEntity(states, ['namespace', 'count']);
-  var nodes = findEntity(states, ['node', 'count']);
+  <!-- document.getElementById('k3s-kpis').innerHTML = kpis.map(function(k) { -->
+    <!-- return '<div class="k3s-kpi">' + -->
+      <!-- '<div class="k3s-kpi-label">' + k.label + '</div>' + -->
+      <!-- '<div class="k3s-kpi-value" style="color:' + k.color + '">' + k.value + '</div>' + -->
+      <!-- '<div class="k3s-kpi-sub">' + k.sub + '</div></div>'; -->
+  <!-- }).join(''); -->
 
-  var kpis = [
-    { label: 'Cluster Status', value: '✓', sub: 'Healthy', color: '#00FFC3' },
-    { label: 'K3s Version', value: k3sVersion ? k3sVersion.state : '--', sub: '', color: '#fff' },
-    { label: 'Nodes', value: nodes ? nodes.state : '3', sub: 'Ready', color: '#fff' },
-    { label: 'Pods', value: pods ? pods.state : '--', sub: 'Running', color: '#fff' },
-    { label: 'Deployments', value: deployments ? deployments.state : '--', sub: '', color: '#fff' },
-    { label: 'Services', value: services ? services.state : '--', sub: 'Active', color: '#fff' },
-  ];
+  <!-- // Nodes table -->
+  <!-- var nodes = data.nodes || []; -->
+  <!-- if (nodes.length > 0) { -->
+    <!-- var nodesHtml = '<thead><tr><th>Nom</th><th>Statut</th><th>Rôle</th><th>CPU</th><th>Mémoire</th><th>Pods</th></tr></thead><tbody>'; -->
+    <!-- nodes.forEach(function(n) { -->
+      <!-- var badge = n.status === 'Ready' ? 'badge-ok' : 'badge-error'; -->
+      <!-- nodesHtml += '<tr><td>' + esc(n.name) + '</td>' + -->
+        <!-- '<td><span class="badge ' + badge + '">' + esc(n.status) + '</span></td>' + -->
+        <!-- '<td>' + esc(n.role) + '</td>' + -->
+        <!-- '<td>' + esc(n.cpu_capacity || '--') + ' cores</td>' + -->
+        <!-- '<td>' + esc(n.memory_capacity || '--') + '</td>' + -->
+        <!-- '<td>' + esc(n.pods_capacity || '--') + '</td></tr>'; -->
+    <!-- }); -->
+    <!-- nodesHtml += '</tbody>'; -->
+    <!-- document.getElementById('k3s-nodes').innerHTML = nodesHtml; -->
+  <!-- } else { -->
+    <!-- document.getElementById('k3s-nodes').innerHTML = '<thead><tr><th>Nom</th><th>Statut</th><th>Rôle</th></tr></thead><tbody><tr><td colspan="3" style="color:#56707E">En attente du cron k3s_stats.sh…</td></tr></tbody>'; -->
+  <!-- } -->
 
-  document.getElementById('k3s-kpis').innerHTML = kpis.map(function(k) {
-    return '<div class="k3s-kpi">' +
-      '<div class="k3s-kpi-label">' + k.label + '</div>' +
-      '<div class="k3s-kpi-value" style="color:' + k.color + '">' + k.value + '</div>' +
-      '<div class="k3s-kpi-sub">' + k.sub + '</div></div>';
-  }).join('');
+  <!-- // Resources -->
+  <!-- document.getElementById('k3s-resources').innerHTML = -->
+    <!-- '<thead><tr><th>Ressource</th><th></th><th>Usage</th></tr></thead><tbody>' + -->
+    <!-- '<tr><td>Pods (Allocatable)</td><td><div class="progress" style="width:100px"><div class="progress-fill" style="width:' + Math.round((data.pods_total||0)/330*100) + '%"></div></div></td><td style="color:#8FB6C9">' + (data.pods_total||'--') + ' / 330</td></tr>' + -->
+    <!-- '<tr><td>Namespaces</td><td></td><td style="color:#8FB6C9">' + (data.namespaces||'--') + ' actifs</td></tr>' + -->
+    <!-- '</tbody>'; -->
 
-  // Nodes table
-  var nodeEntities = findEntities(states, ['node', 'status']);
-  if (nodeEntities.length === 0) {
-    // Fallback statique basé sur l'illustration
-    document.getElementById('k3s-nodes').innerHTML =
-      '<thead><tr><th>Nom</th><th>Statut</th><th>Rôle</th><th>CPU</th><th>RAM</th><th>Pods</th><th>Uptime</th></tr></thead>' +
-      '<tbody>' +
-      '<tr><td>linux-node-01</td><td><span class="badge badge-ok">Ready</span></td><td>Server</td><td><div class="progress"><div class="progress-fill" style="width:22%"></div></div>22%</td><td><div class="progress"><div class="progress-fill" style="width:55%"></div></div>55%</td><td>14</td><td>--</td></tr>' +
-      '<tr><td>linux-node-02</td><td><span class="badge badge-ok">Ready</span></td><td>Server</td><td><div class="progress"><div class="progress-fill" style="width:18%"></div></div>18%</td><td><div class="progress"><div class="progress-fill" style="width:49%"></div></div>49%</td><td>12</td><td>--</td></tr>' +
-      '<tr><td>linux-node-03</td><td><span class="badge badge-ok">Ready</span></td><td>Agent</td><td><div class="progress"><div class="progress-fill" style="width:16%"></div></div>16%</td><td><div class="progress"><div class="progress-fill" style="width:47%"></div></div>47%</td><td>12</td><td>--</td></tr>' +
-      '</tbody>';
-  }
+  <!-- // Top namespaces -->
+  <!-- var topNs = data.top_namespaces || []; -->
+  <!-- if (topNs.length > 0) { -->
+    <!-- var nsHtml = '<thead><tr><th>Namespace</th><th>Pods</th><th>Status</th></tr></thead><tbody>'; -->
+    <!-- topNs.forEach(function(n) { -->
+      <!-- nsHtml += '<tr><td>' + esc(n.ns) + '</td><td>' + n.count + '</td><td><span class="badge badge-ok">Running</span></td></tr>'; -->
+    <!-- }); -->
+    <!-- nsHtml += '</tbody>'; -->
+    <!-- document.getElementById('k3s-namespaces').innerHTML = nsHtml; -->
+  <!-- } -->
 
-  // Resources table
-  document.getElementById('k3s-resources').innerHTML =
-    '<thead><tr><th>Ressource</th><th></th><th>Usage</th></tr></thead>' +
-    '<tbody>' +
-    '<tr><td>CPU (Requests/Limits)</td><td><div class="progress" style="width:100px"><div class="progress-fill" style="width:20%"></div></div></td><td style="color:#8FB6C9">-- / -- cores</td></tr>' +
-    '<tr><td>Memory (Requests/Limits)</td><td><div class="progress" style="width:100px"><div class="progress-fill" style="width:15%"></div></div></td><td style="color:#8FB6C9">-- / -- GiB</td></tr>' +
-    '<tr><td>Pods (Allocatable)</td><td><div class="progress" style="width:100px"><div class="progress-fill" style="width:11%"></div></div></td><td style="color:#8FB6C9">-- / 330</td></tr>' +
-    '</tbody>';
+  <!-- // Top deployments -->
+  <!-- var topDep = data.top_deployments || []; -->
+  <!-- if (topDep.length > 0) { -->
+    <!-- var depHtml = '<thead><tr><th>Deployment</th><th>Ready</th><th>Status</th></tr></thead><tbody>'; -->
+    <!-- topDep.forEach(function(d) { -->
+      <!-- depHtml += '<tr><td>' + esc(d.name) + '</td><td>' + esc(d.ready) + '</td><td><span class="badge badge-ok">✓</span></td></tr>'; -->
+    <!-- }); -->
+    <!-- depHtml += '</tbody>'; -->
+    <!-- document.getElementById('k3s-deployments').innerHTML = depHtml; -->
+  <!-- } -->
 
-  // Bottom tables (static fallback)
-  document.getElementById('k3s-namespaces').innerHTML =
-    '<thead><tr><th>Namespace</th><th>Pods</th><th>Status</th></tr></thead>' +
-    '<tbody>' +
-    '<tr><td>kube-system</td><td>12</td><td><span class="badge badge-ok">Running</span></td></tr>' +
-    '<tr><td>monitoring</td><td>6</td><td><span class="badge badge-ok">Running</span></td></tr>' +
-    '<tr><td>default</td><td>5</td><td><span class="badge badge-ok">Running</span></td></tr>' +
-    '<tr><td>homeassistant</td><td>3</td><td><span class="badge badge-ok">Running</span></td></tr>' +
-    '</tbody>';
+  <!-- // Events -->
+  <!-- var events = data.events || []; -->
+  <!-- if (events.length > 0) { -->
+    <!-- var evHtml = '<thead><tr><th>Heure</th><th>Type</th><th>Objet</th><th>Message</th></tr></thead><tbody>'; -->
+    <!-- events.forEach(function(e) { -->
+      <!-- var typeBadge = e.type === 'Warning' ? 'badge-warn' : 'badge-info'; -->
+      <!-- evHtml += '<tr><td style="white-space:nowrap">' + esc(e.time) + '</td><td><span class="badge ' + typeBadge + '">' + esc(e.type) + '</span></td><td style="color:#00E5FF">' + esc(e.object) + '</td><td>' + esc(e.message) + '</td></tr>'; -->
+    <!-- }); -->
+    <!-- evHtml += '</tbody>'; -->
+    <!-- document.getElementById('k3s-events').innerHTML = evHtml; -->
+  <!-- } else { -->
+    <!-- document.getElementById('k3s-events').innerHTML = '<thead><tr><th>Heure</th><th>Type</th><th>Objet</th><th>Message</th></tr></thead><tbody><tr><td colspan="4" style="color:#56707E;text-align:center">Aucun événement récent</td></tr></tbody>'; -->
+  <!-- } -->
 
-  document.getElementById('k3s-deployments').innerHTML =
-    '<thead><tr><th>Deployment</th><th>Pods</th><th>Status</th></tr></thead>' +
-    '<tbody>' +
-    '<tr><td>nginx-ingress</td><td>3/3</td><td><span class="badge badge-ok">✓</span></td></tr>' +
-    '<tr><td>metrics-server</td><td>1/1</td><td><span class="badge badge-ok">✓</span></td></tr>' +
-    '<tr><td>coredns</td><td>2/2</td><td><span class="badge badge-ok">✓</span></td></tr>' +
-    '<tr><td>grafana</td><td>1/1</td><td><span class="badge badge-ok">✓</span></td></tr>' +
-    '</tbody>';
+  <!-- // Timestamp dernière collecte -->
+  <!-- if (data.timestamp) { -->
+    <!-- var ts = new Date(data.timestamp).toLocaleString('fr-FR'); -->
+    <!-- document.querySelector('.k3s-header').innerHTML += '<div style="margin-left:auto;color:#56707E;font-size:10px">Dernière collecte: ' + ts + '</div>'; -->
+  <!-- } -->
+<!-- } -->
 
-  document.getElementById('k3s-events').innerHTML =
-    '<thead><tr><th>Heure</th><th>Type</th><th>Objet</th><th>Message</th></tr></thead>' +
-    '<tbody id="k3s-events-body"><tr><td colspan="4" style="color:#56707E;text-align:center">Chargement...</td></tr></tbody>';
-}
+<!-- // ─── Main ───────────────────────────────────────────────────────────────── -->
+<!-- async function init() { -->
+  <!-- if (!TOKEN) { -->
+    <!-- document.querySelector('.page').innerHTML = '<div class="section" style="max-width:400px;margin:80px auto"><div class="section-title">CONNEXION</div><p style="color:#8FB6C9;margin-bottom:12px">Jeton HA requis (même jeton que le wizard)</p><input type="password" id="tok" placeholder="eyJhbGciOi…" style="width:100%;padding:8px;background:rgba(0,229,255,.06);border:1px solid rgba(0,229,255,.3);border-radius:8px;color:#fff;margin-bottom:12px"/><button onclick="saveToken()" style="padding:8px 20px;background:rgba(0,229,255,.12);border:1px solid #00E5FF;border-radius:8px;color:#00E5FF;cursor:pointer;font-family:Orbitron,monospace;font-size:12px">Connexion</button></div>'; -->
+    <!-- return; -->
+  <!-- } -->
 
-// ─── Main ─────────────────────────────────────────────────────────────────
-async function init() {
-  if (!TOKEN) {
-    document.querySelector('.page').innerHTML = '<div class="section" style="max-width:400px;margin:80px auto"><div class="section-title">CONNEXION</div><p style="color:#8FB6C9;margin-bottom:12px">Jeton HA requis (même jeton que le wizard)</p><input type="password" id="tok" placeholder="eyJhbGciOi…" style="width:100%;padding:8px;background:rgba(0,229,255,.06);border:1px solid rgba(0,229,255,.3);border-radius:8px;color:#fff;margin-bottom:12px"/><button onclick="saveToken()" style="padding:8px 20px;background:rgba(0,229,255,.12);border:1px solid #00E5FF;border-radius:8px;color:#00E5FF;cursor:pointer;font-family:Orbitron,monospace;font-size:12px">Connexion</button></div>';
-    return;
-  }
+  <!-- try { -->
+    <!-- var states = await haGet('states'); -->
 
-  try {
-    var states = await haGet('states');
+    <!-- // Header info -->
+    <!-- var hostname = findEntity(states, ['hostname']); -->
+    <!-- var uptime = findEntity(states, ['uptime'], ['update']); -->
+    <!-- if (hostname) document.getElementById('hostname').textContent = hostname.state; -->
+    <!-- if (uptime) document.getElementById('uptime').textContent = uptime.state; -->
+    <!-- document.getElementById('last-update').textContent = new Date().toLocaleTimeString('fr-FR'); -->
 
-    // Header info
-    var hostname = findEntity(states, ['hostname']);
-    var uptime = findEntity(states, ['uptime'], ['update']);
-    if (hostname) document.getElementById('hostname').textContent = hostname.state;
-    if (uptime) document.getElementById('uptime').textContent = uptime.state;
-    document.getElementById('last-update').textContent = new Date().toLocaleTimeString('fr-FR');
+    <!-- // CPU gauge -->
+    <!-- var cpu = findEntity(states, ['cpu', 'use'], ['core', 'temp', 'temperature']); -->
+    <!-- if (!cpu) cpu = findEntity(states, ['cpu_percent']); -->
+    <!-- if (!cpu) cpu = findEntity(states, ['utilisation', 'cpu'], ['core', 'temp']); -->
+    <!-- var cpuVal = cpu ? parseFloat(cpu.state) : 0; -->
+    <!-- renderGauge('g-cpu', cpuVal, 100, '%', '#00FFC3', cpu ? (cpu.attributes.friendly_name || '').substring(0, 25) : ''); -->
 
-    // CPU gauge
-    var cpu = findEntity(states, ['cpu', 'use'], ['core', 'temp', 'temperature']);
-    if (!cpu) cpu = findEntity(states, ['cpu_percent']);
-    if (!cpu) cpu = findEntity(states, ['utilisation', 'cpu'], ['core', 'temp']);
-    var cpuVal = cpu ? parseFloat(cpu.state) : 0;
-    renderGauge('g-cpu', cpuVal, 100, '%', '#00FFC3', cpu ? (cpu.attributes.friendly_name || '').substring(0, 25) : '');
+    <!-- // RAM gauge -->
+    <!-- var ram = findEntity(states, ['ram', 'use'], ['swap']); -->
+    <!-- if (!ram) ram = findEntity(states, ['memory', 'use'], ['swap', 'gpu']); -->
+    <!-- if (!ram) ram = findEntity(states, ['utilisation', 'mémoire'], ['swap']); -->
+    <!-- if (!ram) ram = findEntity(states, ['utilisation', 'memoire'], ['swap']); -->
+    <!-- var ramVal = ram ? parseFloat(ram.state) : 0; -->
+    <!-- renderGauge('g-ram', ramVal, 100, '%', '#3AA7FF', ram ? (ram.attributes.friendly_name || '').substring(0, 25) : ''); -->
 
-    // RAM gauge
-    var ram = findEntity(states, ['ram', 'use'], ['swap']);
-    if (!ram) ram = findEntity(states, ['memory', 'use'], ['swap', 'gpu']);
-    if (!ram) ram = findEntity(states, ['utilisation', 'mémoire'], ['swap']);
-    if (!ram) ram = findEntity(states, ['utilisation', 'memoire'], ['swap']);
-    var ramVal = ram ? parseFloat(ram.state) : 0;
-    renderGauge('g-ram', ramVal, 100, '%', '#3AA7FF', ram ? (ram.attributes.friendly_name || '').substring(0, 25) : '');
+    <!-- // Load average -->
+    <!-- var load1 = findEntity(states, ['load', '1m']); -->
+    <!-- var load5 = findEntity(states, ['load', '5m']); -->
+    <!-- var load15 = findEntity(states, ['load', '15m']); -->
+    <!-- var loadHtml = '<div style="text-align:left;padding:10px">'; -->
+    <!-- loadHtml += '<div style="color:#8FB6C9;margin-bottom:6px">1m: <span style="color:#fff;font-weight:bold">' + (load1 ? load1.state : '--') + '</span></div>'; -->
+    <!-- loadHtml += '<div style="color:#8FB6C9;margin-bottom:6px">5m: <span style="color:#fff;font-weight:bold">' + (load5 ? load5.state : '--') + '</span></div>'; -->
+    <!-- loadHtml += '<div style="color:#8FB6C9">15m: <span style="color:#fff;font-weight:bold">' + (load15 ? load15.state : '--') + '</span></div>'; -->
+    <!-- loadHtml += '</div>'; -->
+    <!-- document.getElementById('g-load').innerHTML = loadHtml; -->
 
-    // Load average
-    var load1 = findEntity(states, ['load', '1m']);
-    var load5 = findEntity(states, ['load', '5m']);
-    var load15 = findEntity(states, ['load', '15m']);
-    var loadHtml = '<div style="text-align:left;padding:10px">';
-    loadHtml += '<div style="color:#8FB6C9;margin-bottom:6px">1m: <span style="color:#fff;font-weight:bold">' + (load1 ? load1.state : '--') + '</span></div>';
-    loadHtml += '<div style="color:#8FB6C9;margin-bottom:6px">5m: <span style="color:#fff;font-weight:bold">' + (load5 ? load5.state : '--') + '</span></div>';
-    loadHtml += '<div style="color:#8FB6C9">15m: <span style="color:#fff;font-weight:bold">' + (load15 ? load15.state : '--') + '</span></div>';
-    loadHtml += '</div>';
-    document.getElementById('g-load').innerHTML = loadHtml;
+    <!-- // Swap gauge -->
+    <!-- var swap = findEntity(states, ['swap', 'use']); -->
+    <!-- var swapVal = swap ? parseFloat(swap.state) : 0; -->
+    <!-- renderGauge('g-swap', swapVal, 100, '%', '#B084FF', swap ? (swap.attributes.friendly_name || '').substring(0, 25) : ''); -->
 
-    // Swap gauge
-    var swap = findEntity(states, ['swap', 'use']);
-    var swapVal = swap ? parseFloat(swap.state) : 0;
-    renderGauge('g-swap', swapVal, 100, '%', '#B084FF', swap ? (swap.attributes.friendly_name || '').substring(0, 25) : '');
+    <!-- // CPU Temp gauge -->
+    <!-- var cpuTemp = findEntity(states, ['cpu', 'temp']); -->
+    <!-- if (!cpuTemp) cpuTemp = findEntity(states, ['package', 'temp']); -->
+    <!-- if (!cpuTemp) cpuTemp = findEntity(states, ['edge', 'temp']); -->
+    <!-- var tempVal = cpuTemp ? parseFloat(cpuTemp.state) : 0; -->
+    <!-- renderGauge('g-temp', tempVal, 100, '°C', '#FF9800', 'Moyenne'); -->
 
-    // CPU Temp gauge
-    var cpuTemp = findEntity(states, ['cpu', 'temp']);
-    if (!cpuTemp) cpuTemp = findEntity(states, ['package', 'temp']);
-    if (!cpuTemp) cpuTemp = findEntity(states, ['edge', 'temp']);
-    var tempVal = cpuTemp ? parseFloat(cpuTemp.state) : 0;
-    renderGauge('g-temp', tempVal, 100, '°C', '#FF9800', 'Moyenne');
+    <!-- // Temperature table -->
+    <!-- var tempEntities = findEntities(states, ['temp'], ['weather', 'forecast', 'room', 'bedroom', 'bathroom', 'kitchen', 'living', 'garden', 'spa', 'secret', 'computer_room_temp', 'technical_room_temp']); -->
+    <!-- var systemTemps = tempEntities.filter(function(s) { -->
+      <!-- var id = s.entity_id.toLowerCase(); -->
+      <!-- return (id.includes('cpu') || id.includes('core') || id.includes('nvme') || id.includes('ssd') || id.includes('package') || id.includes('edge') || id.includes('carte') || id.includes('board') || id.includes('k10') || id.includes('it87')) && !isNaN(parseFloat(s.state)); -->
+    <!-- }); -->
+    <!-- renderTemps(systemTemps); -->
 
-    // Temperature table
-    var tempEntities = findEntities(states, ['temp'], ['weather', 'forecast', 'room', 'bedroom', 'bathroom', 'kitchen', 'living', 'garden', 'spa', 'secret', 'computer_room_temp', 'technical_room_temp']);
-    var systemTemps = tempEntities.filter(function(s) {
-      var id = s.entity_id.toLowerCase();
-      return (id.includes('cpu') || id.includes('core') || id.includes('nvme') || id.includes('ssd') || id.includes('package') || id.includes('edge') || id.includes('carte') || id.includes('board') || id.includes('k10') || id.includes('it87')) && !isNaN(parseFloat(s.state));
-    });
-    renderTemps(systemTemps);
+    <!-- // Historical charts (CPU) -->
+    <!-- if (cpu) { -->
+      <!-- var cpuHist = await haHistory(cpu.entity_id, 5); -->
+      <!-- var cpuData = cpuHist.filter(function(h) { return !isNaN(parseFloat(h.s || h.state)); }).map(function(h) { -->
+        <!-- return { t: new Date(h.lu || h.last_updated).toLocaleDateString('fr-FR', {day:'2-digit',month:'2-digit'}), v: parseFloat(h.s || h.state) }; -->
+      <!-- }); -->
+      <!-- // Downsample to ~200 points -->
+      <!-- var step = Math.max(1, Math.floor(cpuData.length / 200)); -->
+      <!-- cpuData = cpuData.filter(function(_, i) { return i % step === 0; }); -->
+      <!-- createChart('chart-cpu', 'CPU (%)', cpuData, '#3AA7FF', '%'); -->
+    <!-- } -->
 
-    // Historical charts (CPU)
-    if (cpu) {
-      var cpuHist = await haHistory(cpu.entity_id, 5);
-      var cpuData = cpuHist.filter(function(h) { return !isNaN(parseFloat(h.s || h.state)); }).map(function(h) {
-        return { t: new Date(h.lu || h.last_updated).toLocaleDateString('fr-FR', {day:'2-digit',month:'2-digit'}), v: parseFloat(h.s || h.state) };
-      });
-      // Downsample to ~200 points
-      var step = Math.max(1, Math.floor(cpuData.length / 200));
-      cpuData = cpuData.filter(function(_, i) { return i % step === 0; });
-      createChart('chart-cpu', 'CPU (%)', cpuData, '#3AA7FF', '%');
-    }
+    <!-- // Historical charts (RAM) -->
+    <!-- if (ram) { -->
+      <!-- var ramHist = await haHistory(ram.entity_id, 5); -->
+      <!-- var ramData = ramHist.filter(function(h) { return !isNaN(parseFloat(h.s || h.state)); }).map(function(h) { -->
+        <!-- return { t: new Date(h.lu || h.last_updated).toLocaleDateString('fr-FR', {day:'2-digit',month:'2-digit'}), v: parseFloat(h.s || h.state) }; -->
+      <!-- }); -->
+      <!-- var stepR = Math.max(1, Math.floor(ramData.length / 200)); -->
+      <!-- ramData = ramData.filter(function(_, i) { return i % stepR === 0; }); -->
+      <!-- createChart('chart-ram', 'RAM (%)', ramData, '#00FFC3', '%'); -->
+    <!-- } -->
 
-    // Historical charts (RAM)
-    if (ram) {
-      var ramHist = await haHistory(ram.entity_id, 5);
-      var ramData = ramHist.filter(function(h) { return !isNaN(parseFloat(h.s || h.state)); }).map(function(h) {
-        return { t: new Date(h.lu || h.last_updated).toLocaleDateString('fr-FR', {day:'2-digit',month:'2-digit'}), v: parseFloat(h.s || h.state) };
-      });
-      var stepR = Math.max(1, Math.floor(ramData.length / 200));
-      ramData = ramData.filter(function(_, i) { return i % stepR === 0; });
-      createChart('chart-ram', 'RAM (%)', ramData, '#00FFC3', '%');
-    }
+    <!-- // Historical charts (Network) -->
+    <!-- var netRx = findEntity(states, ['rx'], ['error']); -->
+    <!-- var netTx = findEntity(states, ['tx'], ['error']); -->
+    <!-- if (netRx) { -->
+      <!-- var netHist = await haHistory(netRx.entity_id, 5); -->
+      <!-- var netData = netHist.filter(function(h) { return !isNaN(parseFloat(h.s || h.state)); }).map(function(h) { -->
+        <!-- return { t: new Date(h.lu || h.last_updated).toLocaleDateString('fr-FR', {day:'2-digit',month:'2-digit'}), v: parseFloat(h.s || h.state) }; -->
+      <!-- }); -->
+      <!-- var stepN = Math.max(1, Math.floor(netData.length / 200)); -->
+      <!-- netData = netData.filter(function(_, i) { return i % stepN === 0; }); -->
+      <!-- createChart('chart-net', 'Network (Mb/s)', netData, '#B084FF', ' Mb/s'); -->
+    <!-- } -->
 
-    // Historical charts (Network)
-    var netRx = findEntity(states, ['rx'], ['error']);
-    var netTx = findEntity(states, ['tx'], ['error']);
-    if (netRx) {
-      var netHist = await haHistory(netRx.entity_id, 5);
-      var netData = netHist.filter(function(h) { return !isNaN(parseFloat(h.s || h.state)); }).map(function(h) {
-        return { t: new Date(h.lu || h.last_updated).toLocaleDateString('fr-FR', {day:'2-digit',month:'2-digit'}), v: parseFloat(h.s || h.state) };
-      });
-      var stepN = Math.max(1, Math.floor(netData.length / 200));
-      netData = netData.filter(function(_, i) { return i % stepN === 0; });
-      createChart('chart-net', 'Network (Mb/s)', netData, '#B084FF', ' Mb/s');
-    }
+    <!-- // Historical charts (Disk) -->
+    <!-- var diskIO = findEntity(states, ['disk', 'use'], ['swap']); -->
+    <!-- if (!diskIO) diskIO = findEntity(states, ['espace']); -->
+    <!-- if (diskIO) { -->
+      <!-- var diskHist = await haHistory(diskIO.entity_id, 5); -->
+      <!-- var diskData = diskHist.filter(function(h) { return !isNaN(parseFloat(h.s || h.state)); }).map(function(h) { -->
+        <!-- return { t: new Date(h.lu || h.last_updated).toLocaleDateString('fr-FR', {day:'2-digit',month:'2-digit'}), v: parseFloat(h.s || h.state) }; -->
+      <!-- }); -->
+      <!-- var stepD = Math.max(1, Math.floor(diskData.length / 200)); -->
+      <!-- diskData = diskData.filter(function(_, i) { return i % stepD === 0; }); -->
+      <!-- createChart('chart-disk', 'Disk', diskData, '#FF9800', ''); -->
+    <!-- } -->
 
-    // Historical charts (Disk)
-    var diskIO = findEntity(states, ['disk', 'use'], ['swap']);
-    if (!diskIO) diskIO = findEntity(states, ['espace']);
-    if (diskIO) {
-      var diskHist = await haHistory(diskIO.entity_id, 5);
-      var diskData = diskHist.filter(function(h) { return !isNaN(parseFloat(h.s || h.state)); }).map(function(h) {
-        return { t: new Date(h.lu || h.last_updated).toLocaleDateString('fr-FR', {day:'2-digit',month:'2-digit'}), v: parseFloat(h.s || h.state) };
-      });
-      var stepD = Math.max(1, Math.floor(diskData.length / 200));
-      diskData = diskData.filter(function(_, i) { return i % stepD === 0; });
-      createChart('chart-disk', 'Disk', diskData, '#FF9800', '');
-    }
+    <!-- // K3s — lecture du fichier JSON généré par le cron du host -->
+    <!-- try { -->
+      <!-- var k3sResp = await fetch(HA_URL + '/local/osvision_v2/k3s_stats.json?t=' + Date.now()); -->
+      <!-- if (k3sResp.ok) { -->
+        <!-- var k3sData = await k3sResp.json(); -->
+        <!-- renderK3s(k3sData); -->
+      <!-- } else { -->
+        <!-- renderK3s(null); -->
+      <!-- } -->
+    <!-- } catch(e) { -->
+      <!-- console.warn('K3s stats non disponibles:', e); -->
+      <!-- renderK3s(null); -->
+    <!-- } -->
 
-    // K3s
-    renderK3s(states);
+    <!-- // OS info -->
+    <!-- var osEntity = findEntity(states, ['os']); -->
+    <!-- if (osEntity) document.getElementById('os-info').textContent = osEntity.state; -->
 
-    // OS info
-    var osEntity = findEntity(states, ['os']);
-    if (osEntity) document.getElementById('os-info').textContent = osEntity.state;
+    <!-- // Auto-refresh every 30s -->
+    <!-- setTimeout(init, 30000); -->
 
-    // Auto-refresh every 30s
-    setTimeout(init, 30000);
+  <!-- } catch(e) { -->
+    <!-- console.error('Erreur:', e); -->
+    <!-- document.querySelector('.page').innerHTML += '<div class="section" style="border-color:#FF3D71"><div style="color:#FF3D71">Erreur: ' + esc(e.message) + '</div><p style="color:#8FB6C9;margin-top:8px">Vérifie ton jeton HA et que le serveur est accessible.</p></div>'; -->
+  <!-- } -->
+<!-- } -->
 
-  } catch(e) {
-    console.error('Erreur:', e);
-    document.querySelector('.page').innerHTML += '<div class="section" style="border-color:#FF3D71"><div style="color:#FF3D71">Erreur: ' + esc(e.message) + '</div><p style="color:#8FB6C9;margin-top:8px">Vérifie ton jeton HA et que le serveur est accessible.</p></div>';
-  }
-}
+<!-- function saveToken() { -->
+  <!-- var t = document.getElementById('tok').value.trim(); -->
+  <!-- if (t) { localStorage.setItem('osv_ha_token', t); TOKEN = t; init(); } -->
+<!-- } -->
 
-function saveToken() {
-  var t = document.getElementById('tok').value.trim();
-  if (t) { localStorage.setItem('osv_ha_token', t); TOKEN = t; init(); }
-}
-
-init();
-</script>
-</body>
-</html>
+<!-- init(); -->
+<!-- </script> -->
+<!-- </body> -->
+<!-- </html> -->
