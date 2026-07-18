@@ -81,6 +81,30 @@ body{background:#02050B;color:#fff;font-family:'Rajdhani','Segoe UI',system-ui,s
 @keyframes spin{to{transform:rotate(360deg)}}
 .spinner{display:inline-block;width:18px;height:18px;border:2px solid rgba(0,229,255,.2);border-top-color:#00E5FF;border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle;margin-right:6px}
 
+/* Sidebar nav */
+.layout{display:flex;min-height:100vh}
+.sidebar{width:220px;min-width:220px;background:rgba(5,11,18,.85);border-radius:20px;border:1px solid rgba(0,229,255,.18);padding:16px 10px;display:flex;flex-direction:column;margin-right:16px;position:sticky;top:20px;height:calc(100vh - 40px);overflow-y:auto}
+.sidebar-logo{text-align:center;margin-bottom:20px}
+.sidebar-logo-icon{color:#00E5FF;font-size:28px}
+.sidebar-logo-title{font-family:'Orbitron','Courier New',monospace;color:#00E5FF;font-size:14px;letter-spacing:2px}
+.sidebar-logo-sub{color:#56707E;font-size:10px;letter-spacing:1px}
+.nav-item{display:flex;align-items:center;gap:10px;padding:10px 12px;border-radius:12px;border:1px solid transparent;margin-bottom:4px;text-decoration:none;color:#fff;transition:all .45s cubic-bezier(.4,0,.2,1);cursor:pointer;position:relative;overflow:hidden}
+.nav-item:hover{background:rgba(0,229,255,.12);border-color:rgba(0,229,255,.65);box-shadow:0 0 18px rgba(0,229,255,.35)}
+.nav-item:hover .nav-icon{color:#00E5FF;filter:drop-shadow(0 0 8px rgba(0,229,255,.7))}
+.nav-item:hover .nav-name{color:#00E5FF}
+.nav-item:hover .nav-label{color:#7fd8e8}
+.nav-item.active{background:rgba(0,229,255,.14);border-color:rgba(0,229,255,.4)}
+.nav-icon{color:#8FB6C9;font-size:18px;width:24px;text-align:center;transition:color .4s,filter .4s}
+.nav-text{display:flex;flex-direction:column}
+.nav-name{font-size:13px;font-weight:600;letter-spacing:.5px;transition:color .4s}
+.nav-label{font-size:10px;color:#56707E;transition:color .4s}
+.sidebar-brand{text-align:center;margin-top:auto;padding-top:16px}
+.sidebar-brand-icon{color:#00E5FF;font-size:24px;animation:osv-glow 3s infinite}
+.sidebar-brand-title{font-family:'Orbitron','Courier New',monospace;color:#00E5FF;font-size:11px;letter-spacing:2px;margin-top:4px}
+.sidebar-brand-sub{color:#56707E;font-size:9px;letter-spacing:1px}
+@keyframes osv-glow{0%,100%{filter:drop-shadow(0 0 6px #00E5FF)}50%{filter:drop-shadow(0 0 16px #00E5FF)}}
+.content{flex:1;min-width:0}
+
 /* Responsive */
 @media(max-width:900px){
   .gauge-grid{grid-template-columns:repeat(3,1fr)}
@@ -91,6 +115,73 @@ body{background:#02050B;color:#fff;font-family:'Rajdhani','Segoe UI',system-ui,s
 </style>
 </head>
 <body>
+<div class="layout">
+  <!-- Sidebar Navigation -->
+  <nav class="sidebar">
+    <div class="sidebar-logo">
+      <div class="sidebar-logo-icon">⬡</div>
+      <div class="sidebar-logo-title">OSVISION V2</div>
+      <div class="sidebar-logo-sub">Smart Home OS</div>
+    </div>
+
+    <a class="nav-item" href="/osvision-v2/home">
+      <span class="nav-icon">🏠</span>
+      <span class="nav-text"><span class="nav-name">HOME</span><span class="nav-label">Vue d'ensemble</span></span>
+    </a>
+    <a class="nav-item active">
+      <span class="nav-icon">🖥</span>
+      <span class="nav-text"><span class="nav-name">CORE</span><span class="nav-label">Système central</span></span>
+    </a>
+    <a class="nav-item" href="/osvision-v2/livingroom">
+      <span class="nav-icon">🛋</span>
+      <span class="nav-text"><span class="nav-name">LIVING ROOM</span><span class="nav-label">Salon</span></span>
+    </a>
+    <a class="nav-item" href="/osvision-v2/bedroom-1">
+      <span class="nav-icon">🛏</span>
+      <span class="nav-text"><span class="nav-name">BEDROOM-1</span><span class="nav-label">Chambre principale</span></span>
+    </a>
+    <a class="nav-item" href="/osvision-v2/bedroom-2">
+      <span class="nav-icon">🛏</span>
+      <span class="nav-text"><span class="nav-name">BEDROOM-2</span><span class="nav-label">Chambre 2</span></span>
+    </a>
+    <a class="nav-item" href="/osvision-v2/bathroom">
+      <span class="nav-icon">🚿</span>
+      <span class="nav-text"><span class="nav-name">BATHROOM</span><span class="nav-label">Salle de bain</span></span>
+    </a>
+    <a class="nav-item" href="/osvision-v2/computer-room">
+      <span class="nav-icon">💻</span>
+      <span class="nav-text"><span class="nav-name">COMPUTER ROOM</span><span class="nav-label">Salle informatique</span></span>
+    </a>
+    <a class="nav-item" href="/osvision-v2/technical-room">
+      <span class="nav-icon">🔧</span>
+      <span class="nav-text"><span class="nav-name">TECHNICAL ROOM</span><span class="nav-label">Local technique</span></span>
+    </a>
+    <a class="nav-item" href="/osvision-v2/secret-room">
+      <span class="nav-icon">🔑</span>
+      <span class="nav-text"><span class="nav-name">SECRET ROOM</span><span class="nav-label">Pièce secrète</span></span>
+    </a>
+    <a class="nav-item" href="/osvision-v2/garden">
+      <span class="nav-icon">🌿</span>
+      <span class="nav-text"><span class="nav-name">GARDEN</span><span class="nav-label">Jardin</span></span>
+    </a>
+    <a class="nav-item" href="/osvision-v2/energy">
+      <span class="nav-icon">⚡</span>
+      <span class="nav-text"><span class="nav-name">ENERGY</span><span class="nav-label">Gestion énergie</span></span>
+    </a>
+    <a class="nav-item" href="/osvision-v2/admin">
+      <span class="nav-icon">🛡</span>
+      <span class="nav-text"><span class="nav-name">ADMIN</span><span class="nav-label">Panneau administration</span></span>
+    </a>
+
+    <div class="sidebar-brand">
+      <div class="sidebar-brand-icon">⬡</div>
+      <div class="sidebar-brand-title">OSVISION V2</div>
+      <div class="sidebar-brand-sub">SMART HOME OS</div>
+    </div>
+  </nav>
+
+  <!-- Main content -->
+  <div class="content">
 <div class="page">
   <div class="header">
     <div>
@@ -169,6 +260,8 @@ body{background:#02050B;color:#fff;font-family:'Rajdhani','Segoe UI',system-ui,s
     </div>
   </div>
 </div>
+</div><!-- .content -->
+</div><!-- .layout -->
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script>
