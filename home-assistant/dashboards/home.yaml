@@ -109,7 +109,7 @@ views:
           style: |
             ha-card {
               background: var(--osv-panel) !important;
-              height: 50%;
+              height: 100%;
             }
 
       # Case band4 — Logo OSVISION
