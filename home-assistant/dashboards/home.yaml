@@ -103,28 +103,22 @@ views:
               display: block !important;
             }
         card:
-          type: custom:dynamic-weather-card
-          entity: weather.meteo_france_forecast_for_city_sausset_les_pins_provence_alpes_cote_d_azur_13_fr_sausset_les_pins
-          height: 100
-          show_feels_like: false
-          show_wind: false
-          show_wind_gust: false
-          show_wind_direction: false
-          show_humidity: false
-          show_min_temp: false
-          show_hourly_forecast: false
-          hourly_forecast_hours: 5
-          show_daily_forecast: false
-          daily_forecast_days: 5
-          show_sunrise_sunset: false
-          show_clock: true
-          clock_position: top
-          clock_format: 24h
-          overlay_opacity: 0.1
-          language: fr
-          wind_speed_unit: ms
-          sunrise_entity: ""
-          sunset_entity: ""
+          type: custom:digital-clock
+          padding: 4px 20px
+          firstLineFormat: HH:mm
+          secondLineFormat: cccc d LLLL yyyy
+          firstLineLayout:
+            textAlign: left
+            lineHeight: 1.25em
+            fontSize: 2.8em
+            fontWeight: 300
+            color: blue
+          secondLineLayout:
+            textAlign: left
+            lineHeight: 1.25em
+            fontSize: 1.6em
+            fontWeight: 300
+            color: green
 
       # Case band4 — Logo OSVISION
       - type: custom:button-card
