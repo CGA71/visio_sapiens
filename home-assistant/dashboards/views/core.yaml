@@ -10,214 +10,221 @@
 # cartes natives dupliquées (gauges/charts/temps/k3s) ont été retirées.
 # On garde uniquement : la sidebar (nav) + la première ligne du bandeau
 # (header) + le footer HUD, comme demandé.
+#
+# IMPORTANT : ce fichier est chargé depuis home.yaml via :
+#   views:
+#     - !include views/core.yaml
+# Il doit donc contenir DIRECTEMENT la définition d'UNE vue (title/path/
+# type/layout/cards), sans wrapper "title: CORE / views: [...]" au-dessus.
+# C'est ce wrapper en trop qui cassait tous les custom:button-card
+# (nav, header, os avatar) et faisait apparaître "Erreur de configuration"
+# partout où un template button-card était utilisé.
 ########################################################################
 title: CORE
-views:
-  - title: CORE
-    path: core
-    subview: false
-    type: custom:grid-layout
-    layout:
-      grid-template-columns: minmax(200px, auto) 1fr 1fr 1fr 1fr 1fr
-      grid-template-rows: 105px 1fr auto
-      grid-template-areas: |
-        "nav header header header header header"
-        "nav content content content content content"
-        "nav footer footer footer footer footer"
-      margin: 12px
-      grid-gap: 14px 14px
+path: core
+subview: false
+type: custom:grid-layout
+layout:
+  grid-template-columns: minmax(200px, auto) 1fr 1fr 1fr 1fr 1fr
+  grid-template-rows: 105px 1fr auto
+  grid-template-areas: |
+    "nav header header header header header"
+    "nav content content content content content"
+    "nav footer footer footer footer footer"
+  margin: 12px
+  grid-gap: 14px 14px
+cards:
+  # ─── BANDEAU HEADER (case 1 uniquement, conservée telle quelle) ────
+  - type: horizontal-stack
+    view_layout:
+      grid-area: header
     cards:
-      # ─── BANDEAU HEADER (case 1 uniquement, conservée telle quelle) ────
-      - type: horizontal-stack
-        view_layout:
-          grid-area: header
-        cards:
-          - type: custom:button-card
-            template: osvision_page_header
-            icon: mdi:chevron-left
-            name: CORE
-            label: "Systeme central - Glances Monitoring"
-            tap_action:
-              action: navigate
-              navigation_path: /osvision-v2/home
-            card_mod:
-              style: |
-                :host { flex: 2 1 0; }
-          - type: custom:button-card
-            template: osvision_os_avatar
-            name: "OS"
-            card_mod:
-              style: |
-                :host { flex: 0 0 56px; }
-
-      # ─── SIDEBAR NAV (inchangée) ────────────────────────────────────────
-      - type: vertical-stack
-        view_layout:
-          grid-area: nav
+      - type: custom:button-card
+        template: osvision_page_header
+        icon: mdi:chevron-left
+        name: CORE
+        label: "Systeme central - Glances Monitoring"
+        tap_action:
+          action: navigate
+          navigation_path: /osvision-v2/home
         card_mod:
           style: |
-            :host {
-              display: flex;
-              flex-direction: column;
-              height: 100%;
-              width: 100%;
-              min-width: 200px;
-              background: rgba(5,11,18,0.85);
-              border-radius: 20px;
-              border: 1px solid rgba(0,229,255,0.18);
-              padding: 16px 10px;
-              box-shadow: 0 0 18px rgba(0,229,255,.12);
-            }
-        cards:
-          - type: custom:button-card
-            template: osvision_sidebar_logo
-            icon: mdi:hexagon-outline
-            name: "OSVISION V2"
-            label: "Smart Home OS"
-
-          - type: custom:button-card
-            template: osvision_nav_button
-            icon: mdi:view-dashboard
-            name: HOME
-            label: "Vue d'ensemble"
-            tap_action:
-              action: navigate
-              navigation_path: /osvision-v2/home
-
-          - type: custom:button-card
-            template: osvision_nav_button
-            icon: mdi:server
-            name: CORE
-            label: "Systeme central"
-            variables:
-              active: true
-            tap_action:
-              action: navigate
-              navigation_path: /osvision-core/core
-
-          - type: custom:button-card
-            template: osvision_nav_button
-            icon: mdi:sofa
-            name: LIVING ROOM
-            label: "Salon"
-            tap_action:
-              action: navigate
-              navigation_path: /osvision-livingroom/livingroom
-
-          - type: custom:button-card
-            template: osvision_nav_button
-            icon: mdi:bed
-            name: BEDROOM-1
-            label: "Chambre principale"
-            tap_action:
-              action: navigate
-              navigation_path: /osvision-bedroom1/bedroom1
-
-          - type: custom:button-card
-            template: osvision_nav_button
-            icon: mdi:bed-outline
-            name: BEDROOM-2
-            label: "Chambre 2"
-            tap_action:
-              action: navigate
-              navigation_path: /osvision-bedroom2/bedroom2
-
-          - type: custom:button-card
-            template: osvision_nav_button
-            icon: mdi:shower
-            name: BATHROOM
-            label: "Salle de bain"
-            tap_action:
-              action: navigate
-              navigation_path: /osvision-bathroom/bathroom
-
-          - type: custom:button-card
-            template: osvision_nav_button
-            icon: mdi:desktop-tower-monitor
-            name: COMPUTER ROOM
-            label: "Salle informatique"
-            tap_action:
-              action: navigate
-              navigation_path: /osvision-computer/computer
-
-          - type: custom:button-card
-            template: osvision_nav_button
-            icon: mdi:tools
-            name: TECHNICAL ROOM
-            label: "Local technique"
-            tap_action:
-              action: navigate
-              navigation_path: /osvision-technical/technical
-
-          - type: custom:button-card
-            template: osvision_nav_button
-            icon: mdi:key
-            name: SECRET ROOM
-            label: "Piece secrete"
-            tap_action:
-              action: navigate
-              navigation_path: /osvision-secret/secret
-
-          - type: custom:button-card
-            template: osvision_nav_button
-            icon: mdi:flower
-            name: GARDEN
-            label: "Jardin"
-            tap_action:
-              action: navigate
-              navigation_path: /osvision-garden/garden
-
-          - type: custom:button-card
-            template: osvision_nav_button
-            icon: mdi:lightning-bolt
-            name: ENERGY
-            label: "Gestion energie"
-            tap_action:
-              action: navigate
-              navigation_path: /osvision-energy/energy
-
-          - type: custom:button-card
-            template: osvision_nav_button
-            icon: mdi:shield-crown
-            name: ADMIN
-            label: "Panneau administration"
-            tap_action:
-              action: navigate
-              navigation_path: /osvision-v2/admin
-
-          - type: custom:button-card
-            template: osvision_sidebar_brand_footer
-            icon: mdi:hexagon-outline
-            name: "OSVISION V2"
-            label: "SMART HOME OS"
-
-      # ─── CONTENU CENTRAL = core.html (une seule fois, plein cadre) ─────
-      # Toutes les cartes natives (gauges, apexcharts-card, auto-entities,
-      # bouton K3S) ont été supprimées d'ici : core.html gère déjà lui-même
-      # son propre header, ses jauges, ses charts, la table des températures
-      # et le bloc K3S. Les garder en double = les "calques superposés"
-      # constatés dans les captures.
-      - type: iframe
-        url: /local/osvision_v2/core.html
-        view_layout:
-          grid-area: content
+            :host { flex: 2 1 0; }
+      - type: custom:button-card
+        template: osvision_os_avatar
+        name: "OS"
         card_mod:
           style: |
-            ha-card {
-              background: transparent !important;
-              border: none !important;
-              box-shadow: none !important;
-              overflow: hidden;
-              height: calc(100vh - 240px);
-            }
-            iframe {
-              width: 100%;
-              height: 105% !important;
-              border: none;
-            }
+            :host { flex: 0 0 56px; }
 
-      # ─── FOOTER (inchangé) ───────────────────────────────────────────
-      - type: custom:osv-footer-card
-        label: OSVISION V2 // CORE SYSTEM
-        view_layout:
-          grid-area: footer
+  # ─── SIDEBAR NAV (inchangée) ────────────────────────────────────────
+  - type: vertical-stack
+    view_layout:
+      grid-area: nav
+    card_mod:
+      style: |
+        :host {
+          display: flex;
+          flex-direction: column;
+          height: 100%;
+          width: 100%;
+          min-width: 200px;
+          background: rgba(5,11,18,0.85);
+          border-radius: 20px;
+          border: 1px solid rgba(0,229,255,0.18);
+          padding: 16px 10px;
+          box-shadow: 0 0 18px rgba(0,229,255,.12);
+        }
+    cards:
+      - type: custom:button-card
+        template: osvision_sidebar_logo
+        icon: mdi:hexagon-outline
+        name: "OSVISION V2"
+        label: "Smart Home OS"
+
+      - type: custom:button-card
+        template: osvision_nav_button
+        icon: mdi:view-dashboard
+        name: HOME
+        label: "Vue d'ensemble"
+        tap_action:
+          action: navigate
+          navigation_path: /osvision-v2/home
+
+      - type: custom:button-card
+        template: osvision_nav_button
+        icon: mdi:server
+        name: CORE
+        label: "Systeme central"
+        variables:
+          active: true
+        tap_action:
+          action: navigate
+          navigation_path: /osvision-core/core
+
+      - type: custom:button-card
+        template: osvision_nav_button
+        icon: mdi:sofa
+        name: LIVING ROOM
+        label: "Salon"
+        tap_action:
+          action: navigate
+          navigation_path: /osvision-livingroom/livingroom
+
+      - type: custom:button-card
+        template: osvision_nav_button
+        icon: mdi:bed
+        name: BEDROOM-1
+        label: "Chambre principale"
+        tap_action:
+          action: navigate
+          navigation_path: /osvision-bedroom1/bedroom1
+
+      - type: custom:button-card
+        template: osvision_nav_button
+        icon: mdi:bed-outline
+        name: BEDROOM-2
+        label: "Chambre 2"
+        tap_action:
+          action: navigate
+          navigation_path: /osvision-bedroom2/bedroom2
+
+      - type: custom:button-card
+        template: osvision_nav_button
+        icon: mdi:shower
+        name: BATHROOM
+        label: "Salle de bain"
+        tap_action:
+          action: navigate
+          navigation_path: /osvision-bathroom/bathroom
+
+      - type: custom:button-card
+        template: osvision_nav_button
+        icon: mdi:desktop-tower-monitor
+        name: COMPUTER ROOM
+        label: "Salle informatique"
+        tap_action:
+          action: navigate
+          navigation_path: /osvision-computer/computer
+
+      - type: custom:button-card
+        template: osvision_nav_button
+        icon: mdi:tools
+        name: TECHNICAL ROOM
+        label: "Local technique"
+        tap_action:
+          action: navigate
+          navigation_path: /osvision-technical/technical
+
+      - type: custom:button-card
+        template: osvision_nav_button
+        icon: mdi:key
+        name: SECRET ROOM
+        label: "Piece secrete"
+        tap_action:
+          action: navigate
+          navigation_path: /osvision-secret/secret
+
+      - type: custom:button-card
+        template: osvision_nav_button
+        icon: mdi:flower
+        name: GARDEN
+        label: "Jardin"
+        tap_action:
+          action: navigate
+          navigation_path: /osvision-garden/garden
+
+      - type: custom:button-card
+        template: osvision_nav_button
+        icon: mdi:lightning-bolt
+        name: ENERGY
+        label: "Gestion energie"
+        tap_action:
+          action: navigate
+          navigation_path: /osvision-energy/energy
+
+      - type: custom:button-card
+        template: osvision_nav_button
+        icon: mdi:shield-crown
+        name: ADMIN
+        label: "Panneau administration"
+        tap_action:
+          action: navigate
+          navigation_path: /osvision-v2/admin
+
+      - type: custom:button-card
+        template: osvision_sidebar_brand_footer
+        icon: mdi:hexagon-outline
+        name: "OSVISION V2"
+        label: "SMART HOME OS"
+
+  # ─── CONTENU CENTRAL = core.html (une seule fois, plein cadre) ─────
+  # Toutes les cartes natives (gauges, apexcharts-card, auto-entities,
+  # bouton K3S) ont été supprimées d'ici : core.html gère déjà lui-même
+  # son propre header, ses jauges, ses charts, la table des températures
+  # et le bloc K3S. Les garder en double = les "calques superposés"
+  # constatés dans les captures.
+  - type: iframe
+    url: /local/osvision_v2/core.html
+    view_layout:
+      grid-area: content
+    card_mod:
+      style: |
+        ha-card {
+          background: transparent !important;
+          border: none !important;
+          box-shadow: none !important;
+          overflow: hidden;
+          height: calc(100vh - 240px);
+        }
+        iframe {
+          width: 100%;
+          height: 100% !important;
+          border: none;
+        }
+
+  # ─── FOOTER (inchangé) ───────────────────────────────────────────
+  #- type: custom:osv-footer-card
+  #  label: OSVISION V2 // CORE SYSTEM
+  #  view_layout:
+  #    grid-area: footer
