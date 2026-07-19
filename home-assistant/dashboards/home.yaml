@@ -177,7 +177,7 @@ views:
               active: false
             tap_action:
               action: navigate
-              navigation_path: /osvision-v2/core
+              navigation_path: /osvision-core/core
           - type: custom:button-card
             template: osvision_nav_button
             icon: mdi:sofa
