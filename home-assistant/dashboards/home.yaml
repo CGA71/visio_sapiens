@@ -187,7 +187,7 @@ views:
               active: false
             tap_action:
               action: navigate
-              navigation_path: /osvision-v2/livingroom
+              navigation_path: /osvision-livingroom/livingroom
           - type: custom:button-card
             template: osvision_nav_button
             icon: mdi:bed
@@ -197,7 +197,7 @@ views:
               active: false
             tap_action:
               action: navigate
-              navigation_path: /osvision-v2/bedroom1
+              navigation_path: /osvision-bedroom1/bedroom1
           - type: custom:button-card
             template: osvision_nav_button
             icon: mdi:bed
@@ -207,7 +207,7 @@ views:
               active: false
             tap_action:
               action: navigate
-              navigation_path: /osvision-v2/bedroom2
+              navigation_path: /osvision-bedroom2/bedroom2
           - type: custom:button-card
             template: osvision_nav_button
             icon: mdi:shower
@@ -217,7 +217,7 @@ views:
               active: false
             tap_action:
               action: navigate
-              navigation_path: /osvision-v2/bathroom
+              navigation_path: /osvision-bathroom/bathroom
           - type: custom:button-card
             template: osvision_nav_button
             icon: mdi:laptop
@@ -227,7 +227,7 @@ views:
               active: false
             tap_action:
               action: navigate
-              navigation_path: /osvision-v2/pcroom
+              navigation_path: /osvision-computer/computer
           - type: custom:button-card
             template: osvision_nav_button
             icon: mdi:factory
@@ -237,7 +237,7 @@ views:
               active: false
             tap_action:
               action: navigate
-              navigation_path: /osvision-v2/technicalroom
+              navigation_path: /osvision-technical/technical
           - type: custom:button-card
             template: osvision_nav_button
             icon: mdi:security
@@ -247,7 +247,7 @@ views:
               active: false
             tap_action:
               action: navigate
-              navigation_path: /osvision-v2/secretroom
+              navigation_path: /osvision-secret/secret
           - type: custom:button-card
             template: osvision_nav_button
             icon: mdi:flower
@@ -257,7 +257,7 @@ views:
               active: false
             tap_action:
               action: navigate
-              navigation_path: /osvision-v2/garden
+              navigation_path: /osvision-garden/garden
           - type: custom:button-card
             template: osvision_nav_button
             icon: mdi:lightning-bolt
@@ -267,7 +267,7 @@ views:
               active: false
             tap_action:
               action: navigate
-              navigation_path: /osvision-v2/energy
+              navigation_path: /osvision-energy/energy
 
           - type: custom:button-card
             template: osvision_nav_button
