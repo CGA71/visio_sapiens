@@ -21,12 +21,14 @@
 # partout où un template button-card était utilisé.
 ########################################################################
 title: CORE
+      
+               
 path: core
 subview: false
 type: custom:grid-layout
 layout:
   grid-template-columns: minmax(200px, auto) 1fr 1fr 1fr 1fr 1fr
-  grid-template-rows: 105px auto auto
+  grid-template-rows: 105px 1fr auto
   grid-template-areas: |
     "nav header header header header header"
     "nav content content content content content"
@@ -39,6 +41,11 @@ cards:
     view_layout:
       grid-area: header
     cards:
+                                                                                          
+                              
+                    
+                           
+              
       - type: custom:button-card
         template: osvision_page_header
         icon: mdi:chevron-left
@@ -47,9 +54,35 @@ cards:
         tap_action:
           action: navigate
           navigation_path: /osvision-v2/home
+                     
+                      
+                                      
+                                    
+                                        
+                      
+                     
+                      
+                                         
+
+                                                                                                                                                                   
+                            
+                    
+                        
         card_mod:
           style: |
             :host { flex: 2 1 0; }
+                            
+                                     
+                           
+                          
+                               
+                                             
+                                  
+                                                     
+                                 
+                                                       
+             
+              
       - type: custom:button-card
         template: osvision_os_avatar
         name: "OS"
@@ -81,12 +114,17 @@ cards:
         icon: mdi:hexagon-outline
         name: "OSVISION V2"
         label: "Smart Home OS"
+                       
+                              
+                                                
 
       - type: custom:button-card
         template: osvision_nav_button
         icon: mdi:view-dashboard
         name: HOME
         label: "Vue d'ensemble"
+                      
+                          
         tap_action:
           action: navigate
           navigation_path: /osvision-v2/home
@@ -197,6 +235,25 @@ cards:
         icon: mdi:hexagon-outline
         name: "OSVISION V2"
         label: "SMART HOME OS"
+                                     
+                    
+                                         
+                    
+                            
+                 
+                  
+                     
+                                                 
+                                      
+                                          
+                               
+                                          
+             
+                    
+                          
+                                      
+                           
+             
 
   # ─── CONTENU CENTRAL = core.html (une seule fois, plein cadre) ─────
   # Toutes les cartes natives (gauges, apexcharts-card, auto-entities,
