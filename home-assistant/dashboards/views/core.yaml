@@ -1,20 +1,15 @@
 ########################################################################
-# OSVision V2 — CORE Dashboard (Phase 1)
+# OSVision V2 — CORE Dashboard (Phase 1) — CORRIGÉ
 #
-# Vues: 
-#   /osvision-v2/home    -> HUD, radar/IA core, metrics, alerts, quick actions - iteration 1
-#   /osvision-v2/core    -> HUD, radar/IA core, metrics, alerts, quick actions - iteration 2
-#   /osvision-v2/bedromm1-> HUD, radar/IA core, metrics, alerts, quick actions - iteration 3
-#   /osvision-v2/bedroom2-> HUD, radar/IA core, metrics, alerts, quick actions - iteration 4
-#   /osvision-v2/bathroom-> HUD, radar/IA core, metrics, alerts, quick actions - iteration 5
-#   /osvision-v2/computer-> HUD, radar/IA core, metrics, alerts, quick actions - iteration 6
-#   /osvision-v2/technical-> HUD, radar/IA core, metrics, alerts, quick actions - iteration 7
-#   /osvision-v2/secret  -> HUD, radar/IA core, metrics, alerts, quick actions - iteration 8
-#   /osvision-v2/garden  -> HUD, radar/IA core, metrics, alerts, quick actions - iteration 9
+# Correctif : la vue affichait deux versions superposées du même contenu
+# (jauges/charts/temperatures/K3S) :
+#   1) des cartes natives HA (gauge, apexcharts-card, auto-entities)
+#   2) une iframe vers core.html, qui recrée déjà TOUT ce contenu en JS
 #
-# Dépendances lovelace (à installer via HACS + déclarer en resources) :
-#   button-card, card-mod, layout-card, custom:stack-in-card,
-#   apexcharts-card, config-template-card, decluttering-card, browser_mod
+# La zone "content" ci-dessous ne contient plus QUE l'iframe. Toutes les
+# cartes natives dupliquées (gauges/charts/temps/k3s) ont été retirées.
+# On garde uniquement : la sidebar (nav) + la première ligne du bandeau
+# (header) + le footer HUD, comme demandé.
 ########################################################################
 title: CORE
 views:
@@ -24,18 +19,15 @@ views:
     type: custom:grid-layout
     layout:
       grid-template-columns: minmax(200px, auto) 1fr 1fr 1fr 1fr 1fr
-      grid-template-rows: 105px auto auto auto auto auto
+      grid-template-rows: 105px 1fr auto
       grid-template-areas: |
         "nav header header header header header"
-        "nav gauges gauges gauges gauges gauges"
-        "nav charts charts charts charts charts"
-        "nav temps temps temps temps temps"
-        "nav k3s k3s k3s k3s k3s"
+        "nav content content content content content"
         "nav footer footer footer footer footer"
       margin: 12px
       grid-gap: 14px 14px
     cards:
-      # ─── BANDEAU HEADER ────────────────────────────────────────────────
+      # ─── BANDEAU HEADER (case 1 uniquement, conservée telle quelle) ────
       - type: horizontal-stack
         view_layout:
           grid-area: header
@@ -58,7 +50,7 @@ views:
               style: |
                 :host { flex: 0 0 56px; }
 
-      # ─── SIDEBAR NAV ──────────────────────────────────────────────────
+      # ─── SIDEBAR NAV (inchangée) ────────────────────────────────────────
       - type: vertical-stack
         view_layout:
           grid-area: nav
@@ -199,250 +191,32 @@ views:
             name: "OSVISION V2"
             label: "SMART HOME OS"
 
-      # ─── JAUGES SYSTEME (CPU / RAM / Load / Swap / Temp) ──────────────
-      - type: horizontal-stack
+      # ─── CONTENU CENTRAL = core.html (une seule fois, plein cadre) ─────
+      # Toutes les cartes natives (gauges, apexcharts-card, auto-entities,
+      # bouton K3S) ont été supprimées d'ici : core.html gère déjà lui-même
+      # son propre header, ses jauges, ses charts, la table des températures
+      # et le bloc K3S. Les garder en double = les "calques superposés"
+      # constatés dans les captures.
+      - type: iframe
+        url: /local/osvision_v2/core.html
         view_layout:
-          grid-area: gauges
-        cards:
-          - type: gauge
-            entity: sensor.192_168_1_11_utilisation_cpu
-            name: CPU
-            unit: "%"
-            min: 0
-            max: 100
-            severity:
-              green: 0
-              yellow: 60
-              red: 80
-            card_mod:
-              style: |
-                ha-card { background: var(--osv-panel) !important; }
+          grid-area: content
+        card_mod:
+          style: |
+            ha-card {
+              background: transparent !important;
+              border: none !important;
+              box-shadow: none !important;
+              overflow: hidden;
+              height: calc(100vh - 240px);
+            }
+            iframe {
+              width: 100%;
+              height: 100% !important;
+              border: none;
+            }
 
-          - type: gauge
-            entity: sensor.192_168_1_11_utilisation_de_la_memoire
-            name: RAM
-            unit: "%"
-            min: 0
-            max: 100
-            severity:
-              green: 0
-              yellow: 60
-              red: 80
-            card_mod:
-              style: |
-                ha-card { background: var(--osv-panel) !important; }
-
-          - type: custom:button-card
-            template: osvision_panel
-            show_name: true
-            name: LOAD AVERAGE
-            show_state: false
-            show_icon: false
-            styles:
-              card:
-                - padding: 16px
-              name:
-                - color: "#8FB6C9"
-                - font-size: 11px
-                - letter-spacing: 1.5px
-                - margin-bottom: 8px
-            custom_fields:
-              load:
-                card:
-                  type: markdown
-                  content: >
-                    | | |
-                    |---|---|
-                    | 1m | **{{ states('sensor.192_168_1_11_charge_1m') }}** |
-                    | 5m | **{{ states('sensor.192_168_1_11_charge_5m') }}** |
-                    | 15m | **{{ states('sensor.192_168_1_11_charge_15m') }}** |
-                  card_mod:
-                    style: |
-                      ha-card { background: transparent !important; border: none !important; box-shadow: none !important; }
-                      ha-markdown { color: #B8E8F5 !important; }
-
-          - type: gauge
-            entity: sensor.192_168_1_11_utilisation_swap
-            name: SWAP
-            unit: "%"
-            min: 0
-            max: 100
-            severity:
-              green: 0
-              yellow: 30
-              red: 60
-            card_mod:
-              style: |
-                ha-card { background: var(--osv-panel) !important; }
-
-          - type: gauge
-            entity: sensor.192_168_1_11_edge_temperature
-            name: CPU TEMP
-            unit: "C"
-            min: 0
-            max: 100
-            severity:
-              green: 0
-              yellow: 60
-              red: 80
-            card_mod:
-              style: |
-                ha-card { background: var(--osv-panel) !important; }
-
-      # ─── HISTORIQUES (CPU / RAM / Network / Disk) ──────────────────────
-      - type: horizontal-stack
-        view_layout:
-          grid-area: charts
-        cards:
-          - type: custom:apexcharts-card
-            header:
-              show: true
-              title: "Utilisation CPU (%)"
-              show_states: false
-            graph_span: 5d
-            card_mod:
-              style: |
-                ha-card { background: var(--osv-panel) !important; max-height: 220px; overflow: hidden; }
-            series:
-              - entity: sensor.192_168_1_11_utilisation_cpu
-                name: CPU
-                type: area
-                color: "#3AA7FF"
-                stroke_width: 1.5
-                opacity: 0.15
-
-          - type: custom:apexcharts-card
-            header:
-              show: true
-              title: "Utilisation RAM (%)"
-              show_states: false
-            graph_span: 5d
-            card_mod:
-              style: |
-                ha-card { background: var(--osv-panel) !important; max-height: 220px; overflow: hidden; }
-            series:
-              - entity: sensor.192_168_1_11_utilisation_de_la_memoire
-                name: RAM
-                type: area
-                color: "#00FFC3"
-                stroke_width: 1.5
-                opacity: 0.15
-
-          - type: custom:apexcharts-card
-            header:
-              show: true
-              title: "Network (RX/TX)"
-              show_states: false
-            graph_span: 5d
-            card_mod:
-              style: |
-                ha-card { background: var(--osv-panel) !important; max-height: 220px; overflow: hidden; }
-            series:
-              - entity: sensor.192_168_1_11_enp12s0_rx
-                name: Download
-                type: area
-                color: "#B084FF"
-                stroke_width: 1.5
-                opacity: 0.15
-              - entity: sensor.192_168_1_11_enp12s0_tx
-                name: Upload
-                type: line
-                color: "#00FFC3"
-                stroke_width: 1.5
-
-          - type: custom:apexcharts-card
-            header:
-              show: true
-              title: "Disk I/O"
-              show_states: false
-            graph_span: 5d
-            card_mod:
-              style: |
-                ha-card { background: var(--osv-panel) !important; max-height: 220px; overflow: hidden; }
-            series:
-              - entity: sensor.192_168_1_11_espace_libre
-                name: Disk
-                type: area
-                color: "#FF9800"
-                stroke_width: 1.5
-                opacity: 0.15
-
-      # ─── TEMPERATURES DES COMPOSANTS ───────────────────────────────────
-      - type: vertical-stack
-        view_layout:
-          grid-area: temps
-        cards:
-          - type: custom:button-card
-            template: osvision_panel
-            show_name: true
-            name: "TEMPERATURE DES COMPOSANTS"
-            show_icon: false
-            styles:
-              card:
-                - padding: 12px 16px
-                - min-height: 0
-              name:
-                - color: "#00E5FF"
-                - font-family: "'Orbitron','Courier New',monospace"
-                - font-size: 13px
-                - letter-spacing: 2px
-
-          - type: custom:auto-entities
-            filter:
-              include:
-                - entity_id: "sensor.192_168_1_11_core_*_temperature"
-                - entity_id: "sensor.192_168_1_11_package*temperature"
-                - entity_id: "sensor.192_168_1_11_edge*temperature"
-              exclude: []
-            sort:
-              method: name
-            card:
-              type: entities
-              card_mod:
-                style: |
-                  ha-card {
-                    background: var(--osv-panel) !important;
-                    --primary-text-color: #B8E8F5 !important;
-                    --secondary-text-color: #8FB6C9 !important;
-                  }
-
-      # ─── K3S CLUSTER DASHBOARD ─────────────────────────────────────────
-      - type: vertical-stack
-        view_layout:
-          grid-area: k3s
-        cards:
-          - type: custom:button-card
-            template: osvision_panel
-            show_name: true
-            name: "K3S CLUSTER DASHBOARD"
-            icon: mdi:kubernetes
-            show_icon: true
-            styles:
-              card:
-                - padding: 12px 16px
-                - min-height: 0
-              name:
-                - color: "#fff"
-                - font-family: "'Orbitron','Courier New',monospace"
-                - font-size: 16px
-                - letter-spacing: 2px
-              icon:
-                - color: "#00E5FF"
-                - "--mdc-icon-size": 28px
-
-          - type: iframe
-            url: /local/osvision_v2/core.html
-            aspect_ratio: 60%
-            card_mod:
-              style: |
-                ha-card {
-                  background: transparent !important;
-                  border: none !important;
-                  box-shadow: none !important;
-                  overflow: hidden;
-                }
-
-      # ─── FOOTER ────────────────────────────────────────────────────────
+      # ─── FOOTER (inchangé) ───────────────────────────────────────────
       - type: custom:osv-footer-card
         label: OSVISION V2 // CORE SYSTEM
         view_layout:
