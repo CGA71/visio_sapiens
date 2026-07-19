@@ -30,7 +30,7 @@ layout:
   grid-template-areas: |
     "nav header header header header header"
     "nav content content content content content"
-    "nav footer footer footer footer footer"
+    "nav"
   margin: 12px
   grid-gap: 14px 14px
 cards:
