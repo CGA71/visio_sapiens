@@ -30,7 +30,7 @@ layout:
   grid-template-areas: |
     "nav header header header header header"
     "nav content content content content content"
-    "nav"
+    "nav footer footer footer footer footer"
   margin: 12px
   grid-gap: 14px 14px
 cards:
@@ -224,7 +224,7 @@ cards:
         }
 
   # ─── FOOTER (inchangé) ───────────────────────────────────────────
-  #- type: custom:osv-footer-card
-  #  label: OSVISION V2 // CORE SYSTEM
-  #  view_layout:
-  #    grid-area: footer
+  - type: custom:osv-footer-card
+    label: OSVISION V2 // CORE SYSTEM
+    view_layout:
+      grid-area: footer
