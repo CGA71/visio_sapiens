@@ -3,14 +3,14 @@
 #
 # Vues: 
 #   /osvision-v2/home    -> HUD, radar/IA core, metrics, alerts, quick actions - iteration 1
-#   /osvision-core/core    -> HUD, radar/IA core, metrics, alerts, quick actions - iteration 2
+#   /osvision-v2/core    -> HUD, radar/IA core, metrics, alerts, quick actions - iteration 2
 #   /osvision-v2/bedromm1-> HUD, radar/IA core, metrics, alerts, quick actions - iteration 3
 #   /osvision-v2/bedroom2-> HUD, radar/IA core, metrics, alerts, quick actions - iteration 4
-#   /osvision-bathroom/bathroom-> HUD, radar/IA core, metrics, alerts, quick actions - iteration 5
+#   /osvision-v2/bathroom-> HUD, radar/IA core, metrics, alerts, quick actions - iteration 5
 #   /osvision-v2/computer-> HUD, radar/IA core, metrics, alerts, quick actions - iteration 6
 #   /osvision-v2/technical-> HUD, radar/IA core, metrics, alerts, quick actions - iteration 7
 #   /osvision-v2/secret  -> HUD, radar/IA core, metrics, alerts, quick actions - iteration 8
-#   /osvision-garden/garden  -> HUD, radar/IA core, metrics, alerts, quick actions - iteration 9
+#   /osvision-v2/garden  -> HUD, radar/IA core, metrics, alerts, quick actions - iteration 9
 #
 # Dépendances lovelace (à installer via HACS + déclarer en resources) :
 #   button-card, card-mod, layout-card, custom:stack-in-card,
@@ -177,7 +177,7 @@ views:
               active: false
             tap_action:
               action: navigate
-              url_path: /osvision-v2/core
+              navigation_path: /osvision-v2/core
           - type: custom:button-card
             template: osvision_nav_button
             icon: mdi:sofa
@@ -187,7 +187,7 @@ views:
               active: false
             tap_action:
               action: navigate
-              navigation_path: /osvision-livingroom/livingroom
+              navigation_path: /osvision-v2/livingroom
           - type: custom:button-card
             template: osvision_nav_button
             icon: mdi:bed
@@ -217,7 +217,7 @@ views:
               active: false
             tap_action:
               action: navigate
-              navigation_path: /osvision-bathroom/bathroom
+              navigation_path: /osvision-v2/bathroom
           - type: custom:button-card
             template: osvision_nav_button
             icon: mdi:laptop
@@ -257,7 +257,7 @@ views:
               active: false
             tap_action:
               action: navigate
-              navigation_path: /osvision-garden/garden
+              navigation_path: /osvision-v2/garden
           - type: custom:button-card
             template: osvision_nav_button
             icon: mdi:lightning-bolt
@@ -267,7 +267,7 @@ views:
               active: false
             tap_action:
               action: navigate
-              navigation_path: /osvision-energy/energy
+              navigation_path: /osvision-v2/energy
 
           - type: custom:button-card
             template: osvision_nav_button
@@ -910,6 +910,21 @@ views:
   # =====================================================================
   # CORE (hub — placeholder, itération 2)
   # =====================================================================
+  # =====================================================================
+  # VUES INCLUSES DEPUIS DES FICHIERS SEPARES
+  # Chaque fichier contient une vue complete (sidebar + header + contenu)
+  # =====================================================================
+  - !include views/core.yaml
+  # - !include views/livingroom.yaml    # A creer
+  # - !include views/bedroom1.yaml      # A creer
+  # - !include views/bedroom2.yaml      # A creer
+  # - !include views/bathroom.yaml      # A creer
+  # - !include views/computer.yaml      # A creer
+  # - !include views/technical.yaml     # A creer
+  # - !include views/secret.yaml        # A creer
+  # - !include views/garden.yaml        # A creer
+  # - !include views/energy.yaml        # A creer
+
   # =====================================================================
   # ADMIN (panneau caché — non lié dans la sidebar de navigation).
   # Accessible uniquement via l'URL directe /osvision-v2/admin.
