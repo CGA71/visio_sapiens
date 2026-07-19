@@ -224,7 +224,7 @@ cards:
         }
 
   # ─── FOOTER (inchangé) ───────────────────────────────────────────
-  #- type: custom:osv-footer-card
-  #  label: OSVISION V2 // CORE SYSTEM
-  #  view_layout:
-  #    grid-area: footer
+  - type: custom:osv-footer-card
+    label: OSVISION V2 // CORE SYSTEM
+    view_layout:
+      grid-area: footer
