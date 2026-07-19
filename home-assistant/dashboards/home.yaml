@@ -176,9 +176,8 @@ views:
             variables:
               active: false
             tap_action:
-              action: url
-              url_path: /local/osvision_v2/core.html
-              target: _blank
+              action: navigate
+              url_path: /osvision-v2/core
           - type: custom:button-card
             template: osvision_nav_button
             icon: mdi:sofa
