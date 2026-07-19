@@ -26,7 +26,7 @@ subview: false
 type: custom:grid-layout
 layout:
   grid-template-columns: minmax(200px, auto) 1fr 1fr 1fr 1fr 1fr
-  grid-template-rows: 105px 1fr auto
+  grid-template-rows: 105px auto auto
   grid-template-areas: |
     "nav header header header header header"
     "nav content content content content content"
