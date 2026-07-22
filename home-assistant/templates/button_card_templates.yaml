@@ -682,3 +682,422 @@ osvision_room_card:
       - color: "#FFFFFF"
       - font-size: 14px
       - letter-spacing: 1px
+
+########################################################################
+# OSVision V2 — Templates ENERGY
+#
+# ⚠️  CE FICHIER N'EST PAS UN FICHIER À PART.
+#     Son contenu doit être AJOUTÉ À LA FIN de :
+#         home-assistant/templates/button_card_templates.yaml
+#
+#     Raison : Lovelace n'accepte qu'UN SEUL `button_card_templates:`
+#     par dashboard. Les templates osvision_* doivent donc tous vivre
+#     dans le même fichier partagé, comme pour core.yaml.
+#
+# Templates ajoutés :
+#   osvision_section_title       Titre de panneau (« Production Solaire »)
+#   osvision_energy_stat         Petit libellé + grande valeur colorée
+#   osvision_energy_kpi          Tuile KPI (icône encadrée + valeur + label)
+#   osvision_energy_tab          Onglet Jour / Mois / Année
+#   osvision_energy_device_row   Ligne « Consommation par appareil »
+#   osvision_energy_total_row    Ligne de total (pied de tableau)
+#   osvision_circuit_switch      Carte circuit du tableau électrique (Shelly)
+########################################################################
+
+# ---------------------------------------------------------------------
+# Titre de panneau — première ligne à l'intérieur d'un bloc verre.
+#   template: osvision_section_title
+#   name: "Production Solaire"
+# ---------------------------------------------------------------------
+osvision_section_title:
+  show_icon: false
+  show_state: false
+  show_label: false
+  styles:
+    card:
+      - background: transparent
+      - box-shadow: none
+      - border: none
+      - padding: 2px 2px 10px 2px
+      - justify-content: start
+      - cursor: default
+      - pointer-events: none
+    name:
+      - color: "#FFFFFF"
+      - font-size: 15px
+      - font-weight: 600
+      - letter-spacing: 1px
+      - justify-self: start
+      - font-family: "Orbitron, sans-serif"
+
+# ---------------------------------------------------------------------
+# Statistique simple : libellé discret au-dessus, valeur en gros dessous.
+# La couleur de la valeur est pilotée par `variables.accent`.
+#   template: osvision_energy_stat
+#   entity: sensor.solar_energy_today
+#   label: "Aujourd'hui"
+#   variables:
+#     accent: "#00FFC3"
+# ---------------------------------------------------------------------
+osvision_energy_stat:
+  show_icon: false
+  show_name: false
+  show_state: true
+  show_label: true
+  variables:
+    accent: "#00FFC3"
+    size: "20px"
+  styles:
+    grid:
+      - grid-template-areas: '"l" "s"'
+      - grid-template-rows: min-content min-content
+      - row-gap: 3px
+      - justify-items: start
+    card:
+      - background: transparent
+      - box-shadow: none
+      - border: none
+      - padding: 4px 2px
+      - cursor: default
+      - pointer-events: none
+    label:
+      - color: "#8FB6C9"
+      - font-size: 11px
+      - letter-spacing: 0.5px
+      - justify-self: start
+    state:
+      - color: "[[[ return variables.accent ]]]"
+      - font-size: "[[[ return variables.size ]]]"
+      - font-weight: 700
+      - justify-self: start
+
+# ---------------------------------------------------------------------
+# Tuile KPI : icône dans un carré arrondi à gauche, valeur + label à droite.
+#   template: osvision_energy_kpi
+#   entity: sensor.home_energy_today
+#   icon: mdi:chart-bar
+#   label: "Aujourd'hui"
+#   variables:
+#     accent: "#00E5FF"
+# ---------------------------------------------------------------------
+osvision_energy_kpi:
+  show_icon: true
+  show_name: false
+  show_state: true
+  show_label: true
+  variables:
+    accent: "#00E5FF"
+  styles:
+    grid:
+      - grid-template-areas: '"i s" "i l"'
+      - grid-template-columns: 54px 1fr
+      - grid-template-rows: min-content min-content
+      - column-gap: 14px
+      - justify-items: start
+      - align-items: center
+    card:
+      - background: rgba(0,0,0,.25)
+      - border-radius: 16px
+      - border: 1px solid rgba(0,229,255,.16)
+      - padding: 14px 16px
+      - cursor: default
+      - pointer-events: none
+    img_cell:
+      - background: "[[[ return variables.accent + '1F' ]]]"
+      - border-radius: 14px
+      - width: 46px
+      - height: 46px
+      - justify-self: start
+    icon:
+      - color: "[[[ return variables.accent ]]]"
+      - "--mdc-icon-size": 24px
+    state:
+      - color: "#FFFFFF"
+      - font-size: 22px
+      - font-weight: 700
+      - justify-self: start
+    label:
+      - color: "[[[ return variables.accent ]]]"
+      - font-size: 12px
+      - justify-self: start
+
+# ---------------------------------------------------------------------
+# Onglet de période (Jour / Mois / Année). L'état actif est déduit de
+# `entity` (un input_select) comparé à `variables.period`.
+# Le tap_action est déclaré CÔTÉ CARTE (dans energy.yaml), pas ici.
+#   template: osvision_energy_tab
+#   entity: input_select.osvision_energy_period
+#   name: Jour
+#   icon: mdi:weather-sunny
+#   variables:
+#     period: Jour
+# ---------------------------------------------------------------------
+osvision_energy_tab:
+  show_icon: true
+  show_name: true
+  show_state: false
+  show_label: false
+  variables:
+    period: Jour
+  styles:
+    grid:
+      - grid-template-areas: '"i n"'
+      - grid-template-columns: min-content min-content
+      - column-gap: 6px
+      - justify-items: center
+      - align-items: center
+    card:
+      - background: >
+          [[[
+            return (entity && entity.state === variables.period)
+              ? "rgba(0,229,255,0.22)" : "transparent";
+          ]]]
+      - border: >
+          [[[
+            return (entity && entity.state === variables.period)
+              ? "1px solid rgba(0,229,255,0.55)" : "1px solid rgba(255,255,255,0.08)";
+          ]]]
+      - box-shadow: >
+          [[[
+            return (entity && entity.state === variables.period)
+              ? "0 0 12px rgba(0,229,255,.28)" : "none";
+          ]]]
+      - border-radius: 10px
+      - padding: 7px 12px
+      - transition: all .25s ease
+    icon:
+      - color: >
+          [[[
+            return (entity && entity.state === variables.period) ? "#FFFFFF" : "#8FB6C9";
+          ]]]
+      - "--mdc-icon-size": 15px
+    name:
+      - color: >
+          [[[
+            return (entity && entity.state === variables.period) ? "#FFFFFF" : "#8FB6C9";
+          ]]]
+      - font-size: 12px
+      - font-weight: 600
+
+# ---------------------------------------------------------------------
+# Ligne « Consommation par appareil » :
+#   icône | nom + modèle | puissance instantanée | énergie du jour | chevron
+#
+#   template: osvision_energy_device_row
+#   entity: sensor.shelly_chauffe_eau_power
+#   name: "Chauffe-eau"
+#   icon: mdi:water-boiler
+#   variables:
+#     model: "Shelly 1PM"
+#     energy_entity: sensor.shelly_chauffe_eau_energy_today
+#     detail_entity: switch.shelly_chauffe_eau   # ouvert au tap
+# ---------------------------------------------------------------------
+osvision_energy_device_row:
+  show_icon: true
+  show_name: true
+  show_state: true
+  show_label: true
+  variables:
+    model: "Shelly Plus 1PM"
+    energy_entity: ""
+    detail_entity: ""
+  label: "[[[ return variables.model ]]]"
+  custom_fields:
+    energy: >
+      [[[
+        const e = states[variables.energy_entity];
+        if (!e || isNaN(Number(e.state)))
+          return '<span style="color:#56707E;font-size:13px">—</span>';
+        const v = Number(e.state).toLocaleString('fr-FR', { maximumFractionDigits: 1 });
+        const u = e.attributes.unit_of_measurement || 'kWh';
+        return '<span style="color:#B8E8F5;font-size:13px;font-weight:600">' + v + '</span>' +
+               '<span style="color:#56707E;font-size:11px"> ' + u + '</span>';
+      ]]]
+    arrow: >
+      <ha-icon icon="mdi:chevron-right"
+               style="--mdc-icon-size:16px;color:#56707E;"></ha-icon>
+  styles:
+    grid:
+      - grid-template-areas: '"i n s energy arrow" "i l s energy arrow"'
+      - grid-template-columns: 36px 1fr 84px 84px 18px
+      - grid-template-rows: min-content min-content
+      - column-gap: 8px
+      - justify-items: start
+      - align-items: center
+    card:
+      - background: transparent
+      - box-shadow: none
+      - border: none
+      - border-bottom: 1px solid rgba(0,229,255,0.08)
+      - border-radius: 0
+      - padding: 9px 4px
+      - transition: background .2s ease
+    img_cell:
+      - background: rgba(0,229,255,0.10)
+      - border-radius: 10px
+      - width: 30px
+      - height: 30px
+    icon:
+      - color: "#00E5FF"
+      - "--mdc-icon-size": 17px
+    name:
+      - color: "#FFFFFF"
+      - font-size: 13px
+      - font-weight: 600
+      - justify-self: start
+    label:
+      - color: "#56707E"
+      - font-size: 10px
+      - justify-self: start
+    state:
+      - color: "#B8E8F5"
+      - font-size: 13px
+      - font-weight: 600
+      - justify-self: end
+    custom_fields:
+      energy:
+        - justify-self: end
+      arrow:
+        - justify-self: end
+        - display: flex
+        - align-items: center
+  card_mod:
+    style: |
+      ha-card:hover {
+        background: rgba(0,229,255,0.06) !important;
+      }
+
+# ---------------------------------------------------------------------
+# Ligne de total (pied du tableau « Consommation par appareil »).
+#   template: osvision_energy_total_row
+#   entity: sensor.home_power_consumption
+#   name: "Consommation totale actuelle"
+# ---------------------------------------------------------------------
+osvision_energy_total_row:
+  show_icon: false
+  show_name: true
+  show_state: true
+  show_label: false
+  styles:
+    grid:
+      - grid-template-areas: '"n s"'
+      - grid-template-columns: 1fr auto
+      - justify-items: start
+      - align-items: center
+    card:
+      - background: transparent
+      - box-shadow: none
+      - border: none
+      - border-top: 1px solid rgba(0,229,255,0.18)
+      - border-radius: 0
+      - padding: 14px 4px 4px 4px
+      - cursor: default
+      - pointer-events: none
+    name:
+      - color: "#00E5FF"
+      - font-size: 13px
+      - font-weight: 600
+      - justify-self: start
+    state:
+      - color: "#00E5FF"
+      - font-size: 18px
+      - font-weight: 700
+      - justify-self: end
+
+# ---------------------------------------------------------------------
+# Carte circuit du tableau électrique (Shelly).
+# Ligne 1 : icône + nom | Ligne 2 : icône + modèle | Ligne 3 : calibre + toggle
+# Le tap bascule le circuit (tap_action: toggle).
+#
+#   template: osvision_circuit_switch
+#   entity: switch.shelly_chauffe_eau
+#   name: "Chauffe-eau"
+#   icon: mdi:water-boiler
+#   variables:
+#     model: "Shelly 1PM"
+#     amp: "25A"
+# ---------------------------------------------------------------------
+osvision_circuit_switch:
+  show_icon: true
+  show_name: true
+  show_state: false
+  show_label: true
+  variables:
+    model: "Shelly 1PM"
+    amp: "16A"
+  label: "[[[ return variables.model ]]]"
+  tap_action:
+    action: toggle
+  hold_action:
+    action: more-info
+  custom_fields:
+    amp: >
+      [[[
+        return '<span style="color:#00E5FF;font-size:14px;font-weight:700;' +
+               'font-family:Orbitron,sans-serif;">' + variables.amp + '</span>';
+      ]]]
+    sw: >
+      [[[
+        const on = entity && entity.state === 'on';
+        const bg   = on ? 'rgba(0,255,195,.85)' : 'rgba(255,255,255,.12)';
+        const brd  = on ? 'rgba(0,255,195,.90)' : 'rgba(255,255,255,.22)';
+        const glow = on ? '0 0 12px rgba(0,255,195,.45)' : 'none';
+        const knob = on ? '22px' : '2px';
+        return '<div style="width:44px;height:24px;border-radius:12px;background:' + bg +
+               ';border:1px solid ' + brd + ';box-shadow:' + glow +
+               ';position:relative;transition:all .25s ease;">' +
+               '<div style="position:absolute;top:2px;left:' + knob +
+               ';width:18px;height:18px;border-radius:50%;background:#FFFFFF;' +
+               'transition:all .25s ease;"></div></div>';
+      ]]]
+  styles:
+    grid:
+      - grid-template-areas: '"i n" "i l" "amp sw"'
+      - grid-template-columns: 34px 1fr
+      - grid-template-rows: min-content min-content min-content
+      - column-gap: 10px
+      - row-gap: 2px
+      - justify-items: start
+      - align-items: center
+    card:
+      - background: rgba(0,0,0,.28)
+      - border-radius: 16px
+      - border: >
+          [[[
+            return (entity && entity.state === 'on')
+              ? "1px solid rgba(0,255,195,0.30)" : "1px solid rgba(0,229,255,0.14)";
+          ]]]
+      - padding: 14px
+      - transition: all .25s ease
+    img_cell:
+      - background: rgba(0,229,255,0.10)
+      - border-radius: 10px
+      - width: 30px
+      - height: 30px
+    icon:
+      - color: >
+          [[[ return (entity && entity.state === 'on') ? "#00FFC3" : "#8FB6C9"; ]]]
+      - "--mdc-icon-size": 17px
+    name:
+      - color: "#FFFFFF"
+      - font-size: 13px
+      - font-weight: 600
+      - justify-self: start
+    label:
+      - color: "#56707E"
+      - font-size: 10px
+      - justify-self: start
+    custom_fields:
+      amp:
+        - justify-self: start
+        - padding-top: 10px
+      sw:
+        - justify-self: end
+        - padding-top: 10px
+  card_mod:
+    style: |
+      ha-card:hover {
+        border-color: rgba(0,229,255,0.55) !important;
+        box-shadow: 0 0 18px rgba(0,229,255,.22) !important;
+      }
+
