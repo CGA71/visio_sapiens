@@ -1,0 +1,1197 @@
+########################################################################
+# OSVision V2 — ENERGY Dashboard
+#
+# Emplacement attendu dans le repo :
+#   home-assistant/dashboards/views/energy.yaml
+#
+# Même principe que core.yaml : dashboard Lovelace AUTONOME, déclaré dans
+# configuration.yaml sous `lovelace: dashboards:` avec url_path
+# "osvision-energy". Il garde donc le wrapper complet "title: / views: [...]"
+# au niveau racine — sans lui, Lovelace n'affiche plus aucune carte.
+#
+# Structure conservée à l'identique de core.yaml :
+#   - bandeau vertical (sidebar nav, grid-area "nav")
+#   - première ligne du bandeau header (page_header + avatar OS)
+# Seule la zone de contenu change : elle reprend la maquette énergie
+# (production solaire, consommation par appareil, consommation totale,
+# schéma de fonctionnement, excédent/revente EDF, tableau électrique).
+#
+# ── PRÉREQUIS ─────────────────────────────────────────────────────────
+# 1. Ajouter les templates du fichier
+#      button_card_templates_energy_append.yaml
+#    À LA FIN de templates/button_card_templates.yaml
+# 2. Créer les helpers + capteurs du fichier
+#      energy_config_snippets.yaml
+# 3. Remplacer toutes les entités marquées « # TODO » par les vôtres.
+#
+# Cartes HACS utilisées : button-card, card-mod, layout-card,
+# apexcharts-card, mini-graph-card, config-template-card.
+########################################################################
+title: ENERGY
+theme: OSVision V2
+
+# Indispensable : sans ces includes, chaque custom:button-card affiche
+# « Erreur de configuration ». Chemin relatif à dashboards/views/.
+button_card_templates: !include ../templates/button_card_templates.yaml
+decluttering_templates: !include ../templates/decluttering_templates.yaml
+
+views:
+  - title: ENERGY
+    path: energy
+    subview: false
+    type: custom:grid-layout
+    layout:
+      grid-template-columns: minmax(200px, auto) 1fr 1fr 1fr 1fr 1fr
+      grid-template-rows: 105px 418px 236px auto
+      grid-template-areas: |
+        "nav header header header header header"
+        "nav solar solar devices devices total"
+        "nav flow flow flow edf edf"
+        "nav board board board board board"
+      margin: 12px
+      grid-gap: 14px 14px
+    cards:
+      # ═══════════════════════════════════════════════════════════════
+      # BANDEAU HEADER — identique à core.yaml (case 1 + avatar OS)
+      # ═══════════════════════════════════════════════════════════════
+      - type: horizontal-stack
+        view_layout:
+          grid-area: header
+        cards:
+          - type: custom:button-card
+            template: osvision_page_header
+            icon: mdi:chevron-left
+            name: ENERGY
+            label: "Gestion energie - Production solaire, consommation & circuits"
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-v2/home
+            card_mod:
+              style: |
+                :host { flex: 2 1 0; }
+          - type: custom:button-card
+            template: osvision_os_avatar
+            name: "OS"
+            card_mod:
+              style: |
+                :host { flex: 0 0 56px; }
+
+      # ═══════════════════════════════════════════════════════════════
+      # SIDEBAR NAV — identique à core.yaml, ENERGY passe en actif
+      # ═══════════════════════════════════════════════════════════════
+      - type: vertical-stack
+        view_layout:
+          grid-area: nav
+        card_mod:
+          style: |
+            :host {
+              display: flex;
+              flex-direction: column;
+              height: 100%;
+              width: 100%;
+              min-width: 200px;
+              background: rgba(5,11,18,0.85);
+              border-radius: 20px;
+              border: 1px solid rgba(0,229,255,0.18);
+              padding: 16px 10px;
+              box-shadow: 0 0 18px rgba(0,229,255,.12);
+            }
+        cards:
+          - type: custom:button-card
+            template: osvision_sidebar_logo
+            icon: mdi:hexagon-outline
+            name: "OSVISION V2"
+            label: "Smart Home OS"
+
+          - type: custom:button-card
+            template: osvision_nav_button
+            icon: mdi:view-dashboard
+            name: HOME
+            label: "Vue d'ensemble"
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-v2/home
+
+          - type: custom:button-card
+            template: osvision_nav_button
+            icon: mdi:server
+            name: CORE
+            label: "Systeme central"
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-core/core
+
+          - type: custom:button-card
+            template: osvision_nav_button
+            icon: mdi:sofa
+            name: LIVING ROOM
+            label: "Salon"
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-livingroom/livingroom
+
+          - type: custom:button-card
+            template: osvision_nav_button
+            icon: mdi:bed
+            name: BEDROOM-1
+            label: "Chambre principale"
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-bedroom1/bedroom1
+
+          - type: custom:button-card
+            template: osvision_nav_button
+            icon: mdi:bed-outline
+            name: BEDROOM-2
+            label: "Chambre 2"
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-bedroom2/bedroom2
+
+          - type: custom:button-card
+            template: osvision_nav_button
+            icon: mdi:shower
+            name: BATHROOM
+            label: "Salle de bain"
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-bathroom/bathroom
+
+          - type: custom:button-card
+            template: osvision_nav_button
+            icon: mdi:desktop-tower-monitor
+            name: COMPUTER ROOM
+            label: "Salle informatique"
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-computer/computer
+
+          - type: custom:button-card
+            template: osvision_nav_button
+            icon: mdi:tools
+            name: TECHNICAL ROOM
+            label: "Local technique"
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-technical/technical
+
+          - type: custom:button-card
+            template: osvision_nav_button
+            icon: mdi:key
+            name: SECRET ROOM
+            label: "Piece secrete"
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-secret/secret
+
+          - type: custom:button-card
+            template: osvision_nav_button
+            icon: mdi:flower
+            name: GARDEN
+            label: "Jardin"
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-garden/garden
+
+          - type: custom:button-card
+            template: osvision_nav_button
+            icon: mdi:lightning-bolt
+            name: ENERGY
+            label: "Gestion energie"
+            variables:
+              active: true
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-energy/energy
+
+          - type: custom:button-card
+            template: osvision_nav_button
+            icon: mdi:shield-crown
+            name: ADMIN
+            label: "Panneau administration"
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-v2/admin
+
+          - type: custom:button-card
+            template: osvision_sidebar_brand_footer
+            icon: mdi:hexagon-outline
+            name: "OSVISION V2"
+            label: "SMART HOME OS"
+
+      # ═══════════════════════════════════════════════════════════════
+      # PANNEAU 1 — PRODUCTION SOLAIRE
+      # ═══════════════════════════════════════════════════════════════
+      - type: vertical-stack
+        view_layout:
+          grid-area: solar
+        card_mod:
+          style: |
+            :host {
+              display: flex;
+              flex-direction: column;
+              height: 100%;
+              background: rgba(8,18,28,0.75);
+              border-radius: 20px;
+              border: 1px solid rgba(0,229,255,0.28);
+              backdrop-filter: blur(12px);
+              box-shadow: 0 0 18px rgba(0,229,255,.15);
+              padding: 16px 18px;
+              overflow: hidden;
+            }
+        cards:
+          - type: custom:button-card
+            template: osvision_section_title
+            name: "Production Solaire"
+
+          # ── Haut : capacité + illustration | jauge + cumuls ─────────
+          - type: horizontal-stack
+            cards:
+              - type: vertical-stack
+                card_mod:
+                  style: |
+                    :host { flex: 1 1 0; }
+                cards:
+                  - type: custom:button-card
+                    template: osvision_energy_stat
+                    entity: input_number.osvision_solar_capacity   # TODO helper (voir snippets)
+                    label: "Capacité maximale"
+                    variables:
+                      accent: "#00FFC3"
+                      size: "20px"
+                  - type: custom:button-card
+                    show_name: false
+                    show_state: false
+                    show_icon: true
+                    icon: mdi:solar-power-variant
+                    styles:
+                      card:
+                        - background: transparent
+                        - box-shadow: none
+                        - border: none
+                        - padding: 10px 0
+                        - cursor: default
+                        - pointer-events: none
+                      icon:
+                        - color: "#FFD700"
+                        - "--mdc-icon-size": 82px
+                        - filter: drop-shadow(0 0 18px rgba(255,215,0,.45))
+
+              # ── Jauge de production instantanée ────────────────────
+              - type: vertical-stack
+                card_mod:
+                  style: |
+                    :host { flex: 1 1 0; }
+                cards:
+                  - type: custom:apexcharts-card
+                    chart_type: radialBar
+                    header:
+                      show: false
+                    series:
+                      - entity: sensor.solar_power_production   # TODO
+                        name: "Production actuelle"
+                        min: 0
+                        max: 10                                  # TODO : puissance crête kW
+                    apex_config:
+                      chart:
+                        height: 168
+                      plotOptions:
+                        radialBar:
+                          startAngle: -110
+                          endAngle: 110
+                          hollow:
+                            size: "64%"
+                          track:
+                            background: "rgba(255,255,255,0.07)"
+                          dataLabels:
+                            name:
+                              show: false
+                            value:
+                              fontSize: "24px"
+                              fontWeight: 700
+                              color: "#FFFFFF"
+                              offsetY: 4
+                      colors: ["#00FFC3"]
+                      stroke:
+                        lineCap: round
+                    card_mod:
+                      style: |
+                        ha-card {
+                          background: transparent !important;
+                          border: none !important;
+                          box-shadow: none !important;
+                        }
+
+                  - type: horizontal-stack
+                    cards:
+                      - type: custom:button-card
+                        template: osvision_energy_stat
+                        entity: sensor.solar_energy_today        # TODO
+                        label: "Aujourd'hui"
+                        variables:
+                          accent: "#FFFFFF"
+                          size: "18px"
+                      - type: custom:button-card
+                        template: osvision_energy_stat
+                        entity: sensor.solar_energy_this_month   # TODO
+                        label: "Ce mois-ci"
+                        variables:
+                          accent: "#FFFFFF"
+                          size: "18px"
+
+                  - type: custom:button-card
+                    template: osvision_energy_stat
+                    entity: sensor.solar_energy_this_year        # TODO
+                    label: "Cette année"
+                    variables:
+                      accent: "#00FFC3"
+                      size: "18px"
+
+          # ── Bas : sous-panneau courbe de production ─────────────────
+          - type: vertical-stack
+            card_mod:
+              style: |
+                :host {
+                  display: block;
+                  margin-top: 10px;
+                  background: rgba(0,0,0,.25);
+                  border: 1px solid rgba(0,229,255,.14);
+                  border-radius: 16px;
+                  padding: 12px 14px;
+                }
+            cards:
+              - type: horizontal-stack
+                cards:
+                  - type: custom:button-card
+                    template: osvision_section_title
+                    name: "Production (kWh)"
+                    styles:
+                      name:
+                        - font-size: 12px
+                        - font-family: inherit
+                      card:
+                        - padding: 0
+                    card_mod:
+                      style: |
+                        :host { flex: 1.4 1 0; display: flex; align-items: center; }
+                  # Onglets Jour / Mois / Année (pilotent l'input_select)
+                  - type: custom:button-card
+                    template: osvision_energy_tab
+                    entity: input_select.osvision_energy_period
+                    name: Jour
+                    icon: mdi:weather-sunny
+                    variables:
+                      period: Jour
+                    tap_action:
+                      action: call-service
+                      service: input_select.select_option
+                      service_data:
+                        entity_id: input_select.osvision_energy_period
+                        option: Jour
+                  - type: custom:button-card
+                    template: osvision_energy_tab
+                    entity: input_select.osvision_energy_period
+                    name: Mois
+                    icon: mdi:calendar-month
+                    variables:
+                      period: Mois
+                    tap_action:
+                      action: call-service
+                      service: input_select.select_option
+                      service_data:
+                        entity_id: input_select.osvision_energy_period
+                        option: Mois
+                  - type: custom:button-card
+                    template: osvision_energy_tab
+                    entity: input_select.osvision_energy_period
+                    name: Année
+                    icon: mdi:calendar
+                    variables:
+                      period: Année
+                    tap_action:
+                      action: call-service
+                      service: input_select.select_option
+                      service_data:
+                        entity_id: input_select.osvision_energy_period
+                        option: Année
+
+              # Courbe : la période suit l'input_select via config-template-card
+              - type: custom:config-template-card
+                entities:
+                  - input_select.osvision_energy_period
+                card:
+                  type: custom:apexcharts-card
+                  header:
+                    show: false
+                  graph_span: >-
+                    ${ states['input_select.osvision_energy_period'].state === 'Jour' ? '24h'
+                       : states['input_select.osvision_energy_period'].state === 'Mois' ? '30d' : '365d' }
+                  span:
+                    start: >-
+                      ${ states['input_select.osvision_energy_period'].state === 'Jour' ? 'day'
+                         : states['input_select.osvision_energy_period'].state === 'Mois' ? 'month' : 'year' }
+                  series:
+                    - entity: sensor.solar_power_production   # TODO
+                      name: "Production solaire"
+                      type: column
+                      color: "#00FFC3"
+                      group_by:
+                        func: avg
+                        duration: >-
+                          ${ states['input_select.osvision_energy_period'].state === 'Jour' ? '30min'
+                             : states['input_select.osvision_energy_period'].state === 'Mois' ? '1d' : '30d' }
+                  apex_config:
+                    chart:
+                      height: 132
+                    legend:
+                      show: true
+                      position: top
+                      horizontalAlign: left
+                      labels:
+                        colors: "#8FB6C9"
+                    grid:
+                      borderColor: "rgba(255,255,255,0.06)"
+                    xaxis:
+                      labels:
+                        style:
+                          colors: "#56707E"
+                          fontSize: "10px"
+                    yaxis:
+                      labels:
+                        style:
+                          colors: "#56707E"
+                          fontSize: "10px"
+                    plotOptions:
+                      bar:
+                        columnWidth: "62%"
+                        borderRadius: 2
+                  card_mod:
+                    style: |
+                      ha-card {
+                        background: transparent !important;
+                        border: none !important;
+                        box-shadow: none !important;
+                      }
+
+              # Pied : capacité annuelle + % de l'objectif
+              - type: custom:button-card
+                show_icon: false
+                show_name: false
+                show_state: false
+                entity: sensor.solar_energy_this_year          # TODO
+                custom_fields:
+                  cap: |
+                    [[[
+                      const c = states['input_number.osvision_solar_capacity'];
+                      const cap = c ? Number(c.state) : 12500;
+                      return '<span style="color:#56707E;font-size:11px">Capacité annuelle : ' +
+                             cap.toLocaleString('fr-FR') + ' kWh</span>';
+                    ]]]
+                  goal: |
+                    [[[
+                      const c = states['input_number.osvision_solar_capacity'];
+                      const cap = c ? Number(c.state) : 12500;
+                      const y = entity && !isNaN(Number(entity.state)) ? Number(entity.state) : 0;
+                      const pct = cap > 0 ? (y / cap * 100) : 0;
+                      return '<span style="color:#00E5FF;font-size:11px;font-weight:600">' +
+                             pct.toLocaleString('fr-FR', { maximumFractionDigits: 1 }) +
+                             '% de l\'objectif annuel</span>';
+                    ]]]
+                styles:
+                  grid:
+                    - grid-template-areas: '"cap goal"'
+                    - grid-template-columns: 1fr auto
+                    - align-items: center
+                  card:
+                    - background: transparent
+                    - box-shadow: none
+                    - border: none
+                    - border-top: 1px solid rgba(0,229,255,0.10)
+                    - border-radius: 0
+                    - padding: 10px 0 0 0
+                    - cursor: default
+                    - pointer-events: none
+                  custom_fields:
+                    cap:
+                      - justify-self: start
+                    goal:
+                      - justify-self: end
+
+      # ═══════════════════════════════════════════════════════════════
+      # PANNEAU 2 — CONSOMMATION PAR APPAREIL
+      # ═══════════════════════════════════════════════════════════════
+      - type: vertical-stack
+        view_layout:
+          grid-area: devices
+        card_mod:
+          style: |
+            :host {
+              display: flex;
+              flex-direction: column;
+              height: 100%;
+              background: rgba(8,18,28,0.75);
+              border-radius: 20px;
+              border: 1px solid rgba(0,229,255,0.28);
+              backdrop-filter: blur(12px);
+              box-shadow: 0 0 18px rgba(0,229,255,.15);
+              padding: 16px 18px;
+              overflow: hidden;
+            }
+        cards:
+          - type: custom:button-card
+            template: osvision_section_title
+            name: "Consommation par appareil"
+
+          # ── En-têtes de colonnes ───────────────────────────────────
+          - type: custom:button-card
+            show_icon: false
+            show_name: false
+            show_state: false
+            custom_fields:
+              c1: '<span style="color:#56707E;font-size:11px">Appareil</span>'
+              c2: >
+                <span style="color:#8FB6C9;font-size:11px;display:block;text-align:right">Consommation<br>
+                <span style="color:#56707E;font-size:9px">(actuelle)</span></span>
+              c3: >
+                <span style="color:#8FB6C9;font-size:11px;display:block;text-align:right">Énergie<br>
+                <span style="color:#56707E;font-size:9px">(aujourd'hui)</span></span>
+            styles:
+              grid:
+                - grid-template-areas: '"c1 c2 c3 pad"'
+                - grid-template-columns: 1fr 84px 84px 18px
+                - column-gap: 8px
+                - align-items: center
+              card:
+                - background: rgba(0,0,0,.22)
+                - box-shadow: none
+                - border: none
+                - border-radius: 10px
+                - padding: 8px 10px
+                - margin-bottom: 4px
+                - cursor: default
+                - pointer-events: none
+              custom_fields:
+                c1:
+                  - justify-self: start
+                c2:
+                  - justify-self: end
+                c3:
+                  - justify-self: end
+
+          # ── Lignes appareils (8) ───────────────────────────────────
+          # TODO : adapter entity / energy_entity / model à vos Shelly
+          - type: custom:button-card
+            template: osvision_energy_device_row
+            entity: sensor.shelly_chauffe_eau_power
+            name: "Chauffe-eau"
+            icon: mdi:water-boiler
+            variables:
+              model: "Shelly 1PM"
+              energy_entity: sensor.shelly_chauffe_eau_energy_today
+            tap_action:
+              action: more-info
+
+          - type: custom:button-card
+            template: osvision_energy_device_row
+            entity: sensor.shelly_clim_salon_power
+            name: "Clim Salon"
+            icon: mdi:air-conditioner
+            variables:
+              model: "Shelly Plus 1PM"
+              energy_entity: sensor.shelly_clim_salon_energy_today
+            tap_action:
+              action: more-info
+
+          - type: custom:button-card
+            template: osvision_energy_device_row
+            entity: sensor.shelly_lave_linge_power
+            name: "Lave-linge"
+            icon: mdi:washing-machine
+            variables:
+              model: "Shelly Plus 1PM"
+              energy_entity: sensor.shelly_lave_linge_energy_today
+            tap_action:
+              action: more-info
+
+          - type: custom:button-card
+            template: osvision_energy_device_row
+            entity: sensor.shelly_four_power
+            name: "Four"
+            icon: mdi:toaster-oven
+            variables:
+              model: "Shelly Plus 1PM"
+              energy_entity: sensor.shelly_four_energy_today
+            tap_action:
+              action: more-info
+
+          - type: custom:button-card
+            template: osvision_energy_device_row
+            entity: sensor.shelly_lave_vaisselle_power
+            name: "Lave-vaisselle"
+            icon: mdi:dishwasher
+            variables:
+              model: "Shelly Plus 1PM"
+              energy_entity: sensor.shelly_lave_vaisselle_energy_today
+            tap_action:
+              action: more-info
+
+          - type: custom:button-card
+            template: osvision_energy_device_row
+            entity: sensor.shelly_refrigerateur_power
+            name: "Réfrigérateur"
+            icon: mdi:fridge
+            variables:
+              model: "Shelly Plus 1PM"
+              energy_entity: sensor.shelly_refrigerateur_energy_today
+            tap_action:
+              action: more-info
+
+          - type: custom:button-card
+            template: osvision_energy_device_row
+            entity: sensor.shelly_eclairage_salon_power
+            name: "Éclairage Salon"
+            icon: mdi:lightbulb-on-outline
+            variables:
+              model: "Shelly 1"
+              energy_entity: sensor.shelly_eclairage_salon_energy_today
+            tap_action:
+              action: more-info
+
+          - type: custom:button-card
+            template: osvision_energy_device_row
+            entity: sensor.shelly_bureau_power
+            name: "Bureau"
+            icon: mdi:desk-lamp
+            variables:
+              model: "Shelly Plug S"
+              energy_entity: sensor.shelly_bureau_energy_today
+            tap_action:
+              action: more-info
+
+          # ── Total ──────────────────────────────────────────────────
+          - type: custom:button-card
+            template: osvision_energy_total_row
+            entity: sensor.home_power_consumption           # TODO
+            name: "Consommation totale actuelle"
+
+      # ═══════════════════════════════════════════════════════════════
+      # PANNEAU 3 — CONSOMMATION TOTALE
+      # ═══════════════════════════════════════════════════════════════
+      - type: vertical-stack
+        view_layout:
+          grid-area: total
+        card_mod:
+          style: |
+            :host {
+              display: flex;
+              flex-direction: column;
+              height: 100%;
+              background: rgba(8,18,28,0.75);
+              border-radius: 20px;
+              border: 1px solid rgba(0,229,255,0.28);
+              backdrop-filter: blur(12px);
+              box-shadow: 0 0 18px rgba(0,229,255,.15);
+              padding: 16px 18px;
+              overflow: hidden;
+            }
+        cards:
+          - type: custom:button-card
+            template: osvision_section_title
+            name: "Consommation Totale"
+
+          # Onglets (partagent le même input_select que la production)
+          - type: horizontal-stack
+            cards:
+              - type: custom:button-card
+                template: osvision_energy_tab
+                entity: input_select.osvision_energy_period
+                name: Jour
+                icon: mdi:weather-sunny
+                variables:
+                  period: Jour
+                tap_action:
+                  action: call-service
+                  service: input_select.select_option
+                  service_data:
+                    entity_id: input_select.osvision_energy_period
+                    option: Jour
+              - type: custom:button-card
+                template: osvision_energy_tab
+                entity: input_select.osvision_energy_period
+                name: Mois
+                icon: mdi:calendar-month
+                variables:
+                  period: Mois
+                tap_action:
+                  action: call-service
+                  service: input_select.select_option
+                  service_data:
+                    entity_id: input_select.osvision_energy_period
+                    option: Mois
+              - type: custom:button-card
+                template: osvision_energy_tab
+                entity: input_select.osvision_energy_period
+                name: Année
+                icon: mdi:calendar
+                variables:
+                  period: Année
+                tap_action:
+                  action: call-service
+                  service: input_select.select_option
+                  service_data:
+                    entity_id: input_select.osvision_energy_period
+                    option: Année
+
+          - type: custom:button-card
+            template: osvision_energy_kpi
+            entity: sensor.home_energy_today                 # TODO
+            icon: mdi:chart-bar
+            label: "Aujourd'hui"
+            variables:
+              accent: "#00E5FF"
+
+          - type: custom:button-card
+            template: osvision_energy_kpi
+            entity: sensor.home_energy_this_month            # TODO
+            icon: mdi:calendar-month
+            label: "Ce mois-ci"
+            variables:
+              accent: "#00E5FF"
+
+          - type: custom:button-card
+            template: osvision_energy_kpi
+            entity: sensor.home_energy_this_year             # TODO
+            icon: mdi:calendar-star
+            label: "Cette année"
+            variables:
+              accent: "#00E5FF"
+
+          # Moyenne quotidienne + sparkline
+          - type: custom:mini-graph-card
+            entities:
+              - entity: sensor.home_energy_daily_average     # TODO
+                name: "Moyenne quotidienne"
+            name: "Moyenne quotidienne"
+            hours_to_show: 336
+            points_per_hour: 0.15
+            line_color: "#00E5FF"
+            line_width: 2
+            font_size: 70
+            animate: true
+            show:
+              icon: false
+              name: true
+              state: true
+              legend: false
+              fill: fade
+              extrema: false
+            card_mod:
+              style: |
+                ha-card {
+                  background: rgba(0,0,0,.25) !important;
+                  border: 1px solid rgba(0,229,255,.14) !important;
+                  border-radius: 16px !important;
+                  box-shadow: none !important;
+                  padding: 10px 12px;
+                  --primary-text-color: #FFFFFF;
+                  --secondary-text-color: #8FB6C9;
+                }
+
+      # ═══════════════════════════════════════════════════════════════
+      # PANNEAU 4 — SCHÉMA DE FONCTIONNEMENT (flux d'énergie)
+      # ═══════════════════════════════════════════════════════════════
+      - type: vertical-stack
+        view_layout:
+          grid-area: flow
+        card_mod:
+          style: |
+            :host {
+              display: flex;
+              flex-direction: column;
+              height: 100%;
+              background: rgba(8,18,28,0.75);
+              border-radius: 20px;
+              border: 1px solid rgba(0,229,255,0.28);
+              backdrop-filter: blur(12px);
+              box-shadow: 0 0 18px rgba(0,229,255,.15);
+              padding: 16px 18px;
+              overflow: hidden;
+            }
+        cards:
+          - type: custom:button-card
+            template: osvision_section_title
+            name: "Schéma de fonctionnement"
+
+          - type: custom:button-card
+            show_icon: false
+            show_name: false
+            show_state: false
+            triggers_update:
+              - sensor.solar_power_production
+              - sensor.home_power_consumption
+              - sensor.grid_export_power
+              - sensor.grid_import_power
+              - binary_sensor.solar_inverter_running
+            custom_fields:
+              diagram: |
+                [[[
+                  const val = (id, dec) => {
+                    const s = states[id];
+                    if (!s || isNaN(Number(s.state))) return '—';
+                    return Number(s.state).toLocaleString('fr-FR', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+                  };
+                  const node = (icon, title, sub, subColor, val, valColor) =>
+                    '<div style="display:flex;flex-direction:column;align-items:center;gap:6px;min-width:96px;">' +
+                      '<div style="color:#8FB6C9;font-size:11px;font-weight:600;letter-spacing:.5px;">' + title + '</div>' +
+                      '<div style="width:64px;height:64px;border-radius:16px;display:flex;align-items:center;justify-content:center;' +
+                        'background:rgba(0,229,255,0.07);border:1px solid rgba(0,229,255,0.20);">' +
+                        '<ha-icon icon="' + icon + '" style="--mdc-icon-size:34px;color:' + valColor + ';"></ha-icon>' +
+                      '</div>' +
+                      '<div style="color:#56707E;font-size:10px;">' + sub + '</div>' +
+                      '<div style="color:' + valColor + ';font-size:15px;font-weight:700;font-family:Orbitron,sans-serif;">' + val + '</div>' +
+                    '</div>';
+                  const arrow = (color) =>
+                    '<div style="flex:1;display:flex;align-items:center;justify-content:center;padding-top:34px;min-width:44px;">' +
+                      '<div style="height:2px;width:100%;background:linear-gradient(90deg,transparent,' + color + ');"></div>' +
+                      '<ha-icon icon="mdi:menu-right" style="--mdc-icon-size:20px;color:' + color + ';margin-left:-8px;"></ha-icon>' +
+                    '</div>';
+                  const inv = states['binary_sensor.solar_inverter_running'];
+                  const invTxt = !inv ? 'Statut inconnu' : (inv.state === 'on' ? 'En fonctionnement' : 'À l\'arrêt');
+                  const invCol = (inv && inv.state === 'on') ? '#00FFC3' : '#FF3D71';
+                  const exch =
+                    '<div style="flex:1.2;display:flex;flex-direction:column;justify-content:center;gap:10px;padding-top:22px;min-width:86px;">' +
+                      '<div style="text-align:center;color:#FFD700;font-size:10px;">Excédent<br>' +
+                        '<b style="font-size:13px;">' + val('sensor.grid_export_power', 2) + ' kW</b></div>' +
+                      '<div style="display:flex;align-items:center;">' +
+                        '<div style="height:2px;width:100%;background:linear-gradient(90deg,transparent,#FFD700);"></div>' +
+                        '<ha-icon icon="mdi:menu-right" style="--mdc-icon-size:18px;color:#FFD700;margin-left:-8px;"></ha-icon>' +
+                      '</div>' +
+                      '<div style="display:flex;align-items:center;">' +
+                        '<ha-icon icon="mdi:menu-left" style="--mdc-icon-size:18px;color:#FF9800;margin-right:-8px;"></ha-icon>' +
+                        '<div style="height:2px;width:100%;background:linear-gradient(90deg,#FF9800,transparent);"></div>' +
+                      '</div>' +
+                      '<div style="text-align:center;color:#FF9800;font-size:10px;">Import<br>' +
+                        '<b style="font-size:13px;">' + val('sensor.grid_import_power', 2) + ' kW</b></div>' +
+                    '</div>';
+                  const legend = (color, txt) =>
+                    '<div style="display:flex;align-items:center;gap:6px;">' +
+                      '<div style="width:16px;height:2px;background:' + color + ';"></div>' +
+                      '<span style="color:#8FB6C9;font-size:10px;">' + txt + '</span></div>';
+                  return '<div style="width:100%;">' +
+                    '<div style="display:flex;align-items:flex-start;justify-content:space-between;width:100%;gap:4px;">' +
+                      node('mdi:solar-panel-large', 'Panneaux Solaires', 'Production actuelle', '#56707E', val('sensor.solar_power_production', 2) + ' kW', '#00FFC3') +
+                      arrow('#00FFC3') +
+                      node('mdi:power-plug-battery', 'Onduleur', 'Statut', '#56707E', invTxt, invCol) +
+                      arrow('#00E5FF') +
+                      node('mdi:home-lightning-bolt', 'Maison', 'Consommation actuelle', '#56707E', val('sensor.home_power_consumption', 2) + ' kW', '#00E5FF') +
+                      exch +
+                      node('mdi:transmission-tower', 'Réseau EDF', '\u00A0', '#56707E', '\u00A0', '#8FB6C9') +
+                    '</div>' +
+                    '<div style="display:flex;gap:20px;justify-content:center;margin-top:12px;padding-top:10px;' +
+                      'border-top:1px solid rgba(0,229,255,0.10);">' +
+                      legend('#00FFC3', 'Production') + legend('#00E5FF', 'Consommation') +
+                      legend('#FFD700', 'Excédent') + legend('#FF9800', 'Import') +
+                    '</div></div>';
+                ]]]
+            styles:
+              grid:
+                - grid-template-areas: '"diagram"'
+              card:
+                - background: transparent
+                - box-shadow: none
+                - border: none
+                - padding: 0
+                - cursor: default
+                - pointer-events: none
+              custom_fields:
+                diagram:
+                  - width: 100%
+
+      # ═══════════════════════════════════════════════════════════════
+      # PANNEAU 5 — EXCÉDENT & REVENTE EDF
+      # ═══════════════════════════════════════════════════════════════
+      - type: vertical-stack
+        view_layout:
+          grid-area: edf
+        card_mod:
+          style: |
+            :host {
+              display: flex;
+              flex-direction: column;
+              height: 100%;
+              background: rgba(8,18,28,0.75);
+              border-radius: 20px;
+              border: 1px solid rgba(0,229,255,0.28);
+              backdrop-filter: blur(12px);
+              box-shadow: 0 0 18px rgba(0,229,255,.15);
+              padding: 16px 18px;
+              overflow: hidden;
+            }
+        cards:
+          - type: custom:button-card
+            template: osvision_section_title
+            name: "Excédent & Revente EDF"
+
+          - type: horizontal-stack
+            cards:
+              - type: custom:button-card
+                template: osvision_energy_stat
+                entity: sensor.grid_export_energy_today       # TODO
+                label: "Excédent aujourd'hui"
+                variables:
+                  accent: "#00FFC3"
+                  size: "22px"
+              - type: custom:button-card
+                template: osvision_energy_stat
+                entity: sensor.grid_export_energy_this_month  # TODO
+                label: "Excédent ce mois-ci"
+                variables:
+                  accent: "#00FFC3"
+                  size: "22px"
+
+          - type: custom:button-card
+            show_icon: false
+            show_name: false
+            show_state: true
+            show_label: true
+            entity: sensor.osvision_revente_mois              # TODO (template sensor)
+            label: "Estimation de revente"
+            custom_fields:
+              period: '<span style="color:#8FB6C9;font-size:12px;">Ce mois-ci</span>'
+              tarif: |
+                [[[
+                  const t = states['input_number.osvision_tarif_revente'];
+                  const v = t ? Number(t.state).toLocaleString('fr-FR', { minimumFractionDigits: 2 }) : '0,20';
+                  return '<span style="color:#00E5FF;font-size:11px;border:1px solid rgba(0,229,255,.35);' +
+                         'border-radius:8px;padding:4px 8px;background:rgba(0,229,255,.08);">' +
+                         v + ' \u20AC/kWh</span>';
+                ]]]
+            styles:
+              grid:
+                - grid-template-areas: '"l l" "s period" "s tarif"'
+                - grid-template-columns: auto 1fr
+                - column-gap: 12px
+                - row-gap: 2px
+                - justify-items: start
+                - align-items: center
+              card:
+                - background: transparent
+                - box-shadow: none
+                - border: none
+                - border-top: 1px solid rgba(0,229,255,0.10)
+                - border-radius: 0
+                - margin-top: 8px
+                - padding: 12px 2px 4px 2px
+                - cursor: default
+                - pointer-events: none
+              label:
+                - color: "#8FB6C9"
+                - font-size: 11px
+                - justify-self: start
+              state:
+                - color: "#00FFC3"
+                - font-size: 28px
+                - font-weight: 700
+                - justify-self: start
+              custom_fields:
+                period:
+                  - justify-self: start
+                tarif:
+                  - justify-self: end
+
+          - type: custom:button-card
+            show_icon: false
+            show_name: true
+            show_state: true
+            entity: sensor.osvision_revente_annee             # TODO (template sensor)
+            name: "Estimation cette année"
+            styles:
+              grid:
+                - grid-template-areas: '"n s"'
+                - grid-template-columns: 1fr auto
+                - align-items: center
+              card:
+                - background: transparent
+                - box-shadow: none
+                - border: none
+                - border-top: 1px solid rgba(0,229,255,0.10)
+                - border-radius: 0
+                - padding: 12px 2px 2px 2px
+                - margin-top: 6px
+                - cursor: default
+                - pointer-events: none
+              name:
+                - color: "#8FB6C9"
+                - font-size: 12px
+                - justify-self: start
+              state:
+                - color: "#FFFFFF"
+                - font-size: 22px
+                - font-weight: 700
+                - justify-self: end
+
+      # ═══════════════════════════════════════════════════════════════
+      # PANNEAU 6 — TABLEAU ÉLECTRIQUE (contrôle des circuits Shelly)
+      # ═══════════════════════════════════════════════════════════════
+      - type: vertical-stack
+        view_layout:
+          grid-area: board
+        card_mod:
+          style: |
+            :host {
+              display: flex;
+              flex-direction: column;
+              background: rgba(8,18,28,0.75);
+              border-radius: 20px;
+              border: 1px solid rgba(0,229,255,0.28);
+              backdrop-filter: blur(12px);
+              box-shadow: 0 0 18px rgba(0,229,255,.15);
+              padding: 16px 18px;
+            }
+        cards:
+          - type: custom:button-card
+            template: osvision_section_title
+            name: "Tableau Électrique — Contrôle des Circuits (Shelly)"
+
+          # ── Rangée 1 (6 circuits) ──────────────────────────────────
+          - type: horizontal-stack
+            cards:
+              - type: custom:button-card
+                template: osvision_circuit_switch
+                entity: switch.shelly_chauffe_eau            # TODO
+                name: "Chauffe-eau"
+                icon: mdi:water-boiler
+                variables:
+                  model: "Shelly 1PM"
+                  amp: "25A"
+              - type: custom:button-card
+                template: osvision_circuit_switch
+                entity: switch.shelly_clim_salon             # TODO
+                name: "Clim Salon"
+                icon: mdi:air-conditioner
+                variables:
+                  model: "Shelly Plus 1PM"
+                  amp: "20A"
+              - type: custom:button-card
+                template: osvision_circuit_switch
+                entity: switch.shelly_lave_linge             # TODO
+                name: "Lave-linge"
+                icon: mdi:washing-machine
+                variables:
+                  model: "Shelly Plus 1PM"
+                  amp: "16A"
+              - type: custom:button-card
+                template: osvision_circuit_switch
+                entity: switch.shelly_four                   # TODO
+                name: "Four"
+                icon: mdi:toaster-oven
+                variables:
+                  model: "Shelly Plus 1PM"
+                  amp: "20A"
+              - type: custom:button-card
+                template: osvision_circuit_switch
+                entity: switch.shelly_lave_vaisselle         # TODO
+                name: "Lave-vaisselle"
+                icon: mdi:dishwasher
+                variables:
+                  model: "Shelly Plus 1PM"
+                  amp: "16A"
+              - type: custom:button-card
+                template: osvision_circuit_switch
+                entity: switch.shelly_prises_cuisine         # TODO
+                name: "Prises Cuisine"
+                icon: mdi:power-socket-fr
+                variables:
+                  model: "Shelly Plug S"
+                  amp: "16A"
+
+          # ── Rangée 2 (6 circuits) ──────────────────────────────────
+          - type: horizontal-stack
+            cards:
+              - type: custom:button-card
+                template: osvision_circuit_switch
+                entity: switch.shelly_refrigerateur          # TODO
+                name: "Réfrigérateur"
+                icon: mdi:fridge
+                variables:
+                  model: "Shelly Plus 1PM"
+                  amp: "16A"
+              - type: custom:button-card
+                template: osvision_circuit_switch
+                entity: switch.shelly_eclairage_salon        # TODO
+                name: "Éclairage Salon"
+                icon: mdi:lightbulb-on-outline
+                variables:
+                  model: "Shelly 1"
+                  amp: "10A"
+              - type: custom:button-card
+                template: osvision_circuit_switch
+                entity: switch.shelly_eclairage_chambre      # TODO
+                name: "Éclairage Chambre"
+                icon: mdi:ceiling-light
+                variables:
+                  model: "Shelly 1"
+                  amp: "10A"
+              - type: custom:button-card
+                template: osvision_circuit_switch
+                entity: switch.shelly_prises_salon           # TODO
+                name: "Prises Salon"
+                icon: mdi:power-socket-fr
+                variables:
+                  model: "Shelly Plug S"
+                  amp: "16A"
+              - type: custom:button-card
+                template: osvision_circuit_switch
+                entity: switch.shelly_bureau                 # TODO
+                name: "Bureau"
+                icon: mdi:desk-lamp
+                variables:
+                  model: "Shelly Plug S"
+                  amp: "16A"
+              - type: custom:button-card
+                template: osvision_circuit_switch
+                entity: switch.shelly_piscine                # TODO
+                name: "Piscine"
+                icon: mdi:pool
+                variables:
+                  model: "Shelly 1PM"
+                  amp: "20A"
+
+          # ── Légende ────────────────────────────────────────────────
+          - type: custom:button-card
+            show_icon: false
+            show_name: false
+            show_state: false
+            custom_fields:
+              legend: >
+                <div style="display:flex;gap:24px;justify-content:center;padding-top:12px;">
+                  <div style="display:flex;align-items:center;gap:6px;">
+                    <div style="width:9px;height:9px;border-radius:50%;background:#00FFC3;
+                      box-shadow:0 0 8px rgba(0,255,195,.6);"></div>
+                    <span style="color:#8FB6C9;font-size:11px;">Allumé</span></div>
+                  <div style="display:flex;align-items:center;gap:6px;">
+                    <div style="width:9px;height:9px;border-radius:50%;background:#56707E;"></div>
+                    <span style="color:#8FB6C9;font-size:11px;">Éteint</span></div>
+                </div>
+            styles:
+              grid:
+                - grid-template-areas: '"legend"'
+              card:
+                - background: transparent
+                - box-shadow: none
+                - border: none
+                - padding: 0
+                - cursor: default
+                - pointer-events: none
+              custom_fields:
+                legend:
+                  - width: 100%
+
+    # ── Fond de vue (même principe que core.yaml) ────────────────────
+    # Déposez energy.png dans www/osvision_v2/backgrounds/, ou
+    # remplacez par core.png / home.png en attendant.
+    card_mod:
+      style: |
+        hui-view {
+          background: center / cover no-repeat fixed url("/local/osvision_v2/backgrounds/energy.png");
+        }
