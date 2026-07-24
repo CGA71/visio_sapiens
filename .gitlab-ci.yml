@@ -29,7 +29,7 @@ variables:
   HA_HOST: "192.168.1.42"
   HA_SSH_PORT: "22222"
   HA_SSH_USER: "root"
-  PROD_URL: "http://192.168.1.26:8123"
+  PROD_URL: "http://192.168.1.42:8123"
   PROD_RESTART_CORE: "true"
 
 # ============================================================================
@@ -98,10 +98,17 @@ validate:
     - echo "Validation structurelle"
     - test -d home-assistant/dashboards || { echo "[ERR] home-assistant/dashboards manquant"; exit 1; }
     - test -d home-assistant/templates  || { echo "[ERR] home-assistant/templates manquant"; exit 1; }
-    - test -f home-assistant/themes/osvision_v2.yaml || { echo "[ERR] theme manquant"; exit 1; }
+    - test -f themes/osvision_v2.yaml || { echo "[ERR] themes/osvision_v2.yaml manquant"; exit 1; }
     - test -d home-assistant/www/osvision_v2 || { echo "[ERR] www/osvision_v2 manquant"; exit 1; }
     - test -f hacs.json       || { echo "[ERR] hacs.json manquant"; exit 1; }
     - test -f repository.yaml || { echo "[ERR] repository.yaml manquant"; exit 1; }
+    # Source unique du theme : themes/ a la racine (impose par HACS)
+    - |
+      if [ -d home-assistant/themes ]; then
+        echo "[ERR] home-assistant/themes/ existe encore et cree une source dupliquee."
+        echo "      Supprime-le : git rm -r home-assistant/themes"
+        exit 1
+      fi
     - |
       python3 - <<'PY'
       import sys, glob, yaml
@@ -127,7 +134,7 @@ build:
     - mkdir -p dist/dashboards/templates dist/themes dist/www
     - cp -r home-assistant/dashboards/.  dist/dashboards/
     - cp -r home-assistant/templates/.   dist/dashboards/templates/
-    - cp -r home-assistant/themes/.      dist/themes/
+    - cp -r themes/.                     dist/themes/
     - cp -r home-assistant/www/.         dist/www/
     # Cache-busting automatique des ressources Lovelace
     - export VTOKEN=$(echo "$OSV_VERSION" | tr -c 'a-zA-Z0-9._-' '-')
