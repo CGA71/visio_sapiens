@@ -26,10 +26,10 @@ variables:
   STAGING_URL: "http://192.168.1.11:8123"
 
   # --- Cible PRODUCTION (HAOS) --------------------------------------------
-  HA_HOST: "192.168.1.42"
+  HA_HOST: "192.168.1.26"
   HA_SSH_PORT: "22222"
   HA_SSH_USER: "root"
-  PROD_URL: "http://192.168.1.42:8123"
+  PROD_URL: "http://192.168.1.26:8123"
   PROD_RESTART_CORE: "true"
 
 # ============================================================================
@@ -51,8 +51,26 @@ variables:
   before_script:
     - apk add --no-cache openssh-client curl tar jq >/dev/null
     - mkdir -p ~/.ssh && chmod 700 ~/.ssh
-    - cp "$HA_SSH_KEY" ~/.ssh/id_ed25519
-    - chmod 600 ~/.ssh/id_ed25519
+    - |
+      if [ -z "$HA_SSH_KEY" ]; then
+        echo "[ERR] Variable HA_SSH_KEY absente."
+        echo "      Settings > CI/CD > Variables : la creer avec le type File."
+        exit 1
+      fi
+      if [ -f "$HA_SSH_KEY" ]; then
+        cp "$HA_SSH_KEY" ~/.ssh/id_ed25519          # variable de type File
+      else
+        printf '%s\n' "$HA_SSH_KEY" > ~/.ssh/id_ed25519
+        echo "[avert] HA_SSH_KEY n'est pas de type File - repli sur le contenu brut."
+      fi
+      chmod 600 ~/.ssh/id_ed25519
+      if ! ssh-keygen -y -f ~/.ssh/id_ed25519 </dev/null >/dev/null 2>&1; then
+        echo "[ERR] Cle privee illisible."
+        echo "      Causes frequentes - type Variable au lieu de File,"
+        echo "      ligne vide finale absente, ou passphrase sur la cle."
+        exit 1
+      fi
+      echo "[OK] Cle privee valide"
     - |
       cat > ~/.ssh/config <<EOF
       Host ha
