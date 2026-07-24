@@ -72,14 +72,38 @@ variables:
   stage: test
   script:
     - apk add --no-cache curl jq >/dev/null
+    # Echec immediat et explicite si la variable de token n'existe pas
     - |
-      for i in $(seq 1 30); do
-        curl -sf -H "Authorization: Bearer $HA_TOKEN" "$TARGET_URL/api/" >/dev/null && break
-        echo "[..] attente de HA ($i/30)"; sleep 10
+      if [ -z "$HA_TOKEN" ]; then
+        echo "[ERR] Token vide."
+        echo "      Cree la variable CI/CD manquante (HA_TOKEN_STAGING ou HA_TOKEN_PROD)"
+        echo "      Jeton a generer dans HA : Profil > Jetons d'acces longue duree"
+        exit 1
+      fi
+    - echo "[i] Cible ->" "$TARGET_URL"
+    # Attente bornee a 60s, avec distinction reseau / authentification
+    - |
+      code=""
+      for i in $(seq 1 12); do
+        code=$(curl -s -o /tmp/resp -w '%{http_code}' -m 5 \
+               -H "Authorization: Bearer $HA_TOKEN" "$TARGET_URL/api/" || echo 000)
+        case "$code" in
+          200) echo "[OK] API HA joignable"; break ;;
+          401|403)
+            echo "[ERR] HTTP $code - token refuse par Home Assistant"
+            echo "      Le jeton est invalide, revoque, ou destine a l'autre instance."
+            exit 1 ;;
+          000) echo "[..] $TARGET_URL injoignable ($i/12)" ;;
+          *)   echo "[..] HTTP $code ($i/12)" ;;
+        esac
+        sleep 5
       done
-    - |
-      curl -sf -H "Authorization: Bearer $HA_TOKEN" "$TARGET_URL/api/" | jq -e '.message' >/dev/null
-    - echo "[OK] API HA joignable"
+      if [ "$code" != "200" ]; then
+        echo "[ERR] Abandon apres 60s - dernier code HTTP obtenu -> $code"
+        echo "      000 = aucune reponse reseau depuis le namespace ci."
+        echo "      Verifier l'URL, ou utiliser le service interne du cluster."
+        exit 1
+      fi
     - curl -sfI "$TARGET_URL/local/osvision_v2/js/osvision.js" >/dev/null && echo "[OK] JS Engine servi"
     - curl -sfI "$TARGET_URL/local/osvision_v2/css/osvision.css" >/dev/null && echo "[OK] CSS Engine servi"
     - |
