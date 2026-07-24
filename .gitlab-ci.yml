@@ -1,132 +1,349 @@
+# ============================================================================
+# OSVision V2 — Pipeline dual-cible
+#
+#   BRANCHES  →  k3s (namespace homeassistant)   = STAGING / tests
+#   TAGS      →  HAOS 18.1 sur mini PC via SSH   = PRODUCTION
+#
+# Le paquet est construit UNE SEULE FOIS et déployé tel quel sur les deux
+# cibles. Seul le canal de transport diffère (kubectl cp vs ssh).
+# ============================================================================
+
 stages:
   - validate
   - build
   - deploy
-  - package
+  - test
   - release
 
 variables:
   PACKAGE_NAME: osvision-v2
 
-# =========================
-# VALIDATE (TOUJOURS)
-# =========================
+  # --- Cible STAGING (k3s) -------------------------------------------------
+  K3S_NAMESPACE: "homeassistant"
+  K3S_CONTAINER: "homeassistant"
+  STAGING_URL: "http://192.168.1.11:8123"
+
+  # --- Cible PRODUCTION (HAOS) --------------------------------------------
+  HA_HOST: "192.168.1.42"          # IP fixe du mini PC
+  HA_SSH_PORT: "22222"             # port de l'add-on Advanced SSH
+  HA_SSH_USER: "root"
+  PROD_URL: "http://192.168.1.42:8123"
+  PROD_RESTART_CORE: "true"        # "false" = ha core reload (sans coupure)
+
+# ============================================================================
+# ANCRES RÉUTILISABLES
+# ============================================================================
+
+.rules_branch: &rules_branch
+  - if: $CI_COMMIT_TAG
+    when: never
+  - if: $CI_COMMIT_BRANCH
+
+.rules_tag: &rules_tag
+  - if: $CI_COMMIT_TAG
+
+.ssh_bootstrap: &ssh_bootstrap
+  - apk add --no-cache openssh-client curl tar jq >/dev/null
+  - mkdir -p ~/.ssh && chmod 700 ~/.ssh
+  - cp "$HA_SSH_KEY" ~/.ssh/id_ed25519          # variable CI de type "File"
+  - chmod 600 ~/.ssh/id_ed25519
+  - |
+    cat > ~/.ssh/config <<EOF
+    Host ha
+      HostName $HA_HOST
+      Port $HA_SSH_PORT
+      User $HA_SSH_USER
+      IdentityFile ~/.ssh/id_ed25519
+      StrictHostKeyChecking accept-new
+      ServerAliveInterval 15
+    EOF
+  - chmod 600 ~/.ssh/config
+  - ssh ha "echo '🔗 SSH OK' && ha core info --raw-json | jq -r '.data.version' | sed 's/^/HA Core: /'"
+
+# ============================================================================
+# 1. VALIDATE — branches ET tags
+# ============================================================================
 validate:
   stage: validate
   image: alpine:latest
   script:
-    - echo "🔍 Validation de OSVision V2"
-    - 'test -d themes || { echo "❌ Erreur : Le dossier themes est obligatoire !"; exit 1; }'
-    - 'test -d home-assistant/dashboards || { echo "❌ Erreur : Le dossier home-assistant/dashboards est obligatoire !"; exit 1; }'
-    - 'test -f themes/osvision_v2.yaml || { echo "❌ Erreur : Le fichier osvision_v2.yaml est obligatoire !"; exit 1; }'
-    - 'test -f hacs.json || { echo "❌ Erreur : Le fichier hacs.json est obligatoire !"; exit 1; }'
-    - 'test -f repository.yaml || { echo "❌ Erreur : Le fichier repository.yaml est obligatoire !"; exit 1; }'
-    - echo "✅ OK"
+    - apk add --no-cache python3 py3-yaml >/dev/null
+    - echo "🔍 Validation structurelle"
+    - test -d home-assistant/dashboards || { echo "❌ home-assistant/dashboards manquant"; exit 1; }
+    - test -d home-assistant/templates  || { echo "❌ home-assistant/templates manquant"; exit 1; }
+    - test -f home-assistant/themes/osvision_v2.yaml || { echo "❌ thème manquant"; exit 1; }
+    - test -d home-assistant/www/osvision_v2 || { echo "❌ www/osvision_v2 manquant"; exit 1; }
+    # Métadonnées HACS (distribution publique, indépendante du déploiement)
+    - test -f hacs.json       || { echo "❌ hacs.json manquant"; exit 1; }
+    - test -f repository.yaml || { echo "❌ repository.yaml manquant"; exit 1; }
+    - |
+      python3 - <<'PY'
+      import sys, glob, yaml
+      err = 0
+      for f in sorted(glob.glob('home-assistant/**/*.yaml', recursive=True)):
+          try:
+              yaml.safe_load(open(f, encoding='utf-8'))
+          except Exception as e:
+              print(f"❌ {f}\n   {e}"); err = 1
+      print("✅ YAML parsé sans erreur" if not err else "❌ Erreurs YAML")
+      sys.exit(err)
+      PY
 
-# =========================
-# BUILD (BRANCH ONLY)
-# =========================
+# ============================================================================
+# 2. BUILD — paquet unique, structure identique à /config
+#    Produit :  dashboards/  dashboards/templates/  themes/  www/  VERSION
+# ============================================================================
 build:
   stage: build
   image: alpine:latest
-  rules:
-    - if: $CI_COMMIT_TAG == null
   script:
-    - echo "📦 Build dev package"
-    - mkdir -p build
-    - cp -r home-assistant/* build/
-    - tar -czf $PACKAGE_NAME.tar.gz -C build .
+    # Version : le tag si présent, sinon un identifiant de dev
+    - export OSV_VERSION="${CI_COMMIT_TAG:-dev-${CI_COMMIT_SHORT_SHA}}"
+    - echo "📦 Build $OSV_VERSION"
+    - mkdir -p dist/dashboards/templates dist/themes dist/www
+
+    - cp -r home-assistant/dashboards/.  dist/dashboards/
+    - cp -r home-assistant/templates/.   dist/dashboards/templates/
+    - cp -r home-assistant/themes/.      dist/themes/
+    - cp -r home-assistant/www/.         dist/www/
+
+    # --- Cache-busting automatique des ressources Lovelace ---------------
+    # Remplace tous les ?v=X par ?v=<version> dans les YAML embarqués
+    - export VTOKEN=$(echo "$OSV_VERSION" | tr -c 'a-zA-Z0-9._-' '-')
+    - find dist -name '*.yaml' -exec sed -i "s|\(/local/osvision_v2/[^ \"']*\)?v=[0-9A-Za-z._-]*|\1?v=${VTOKEN}|g" {} +
+    - echo "🔖 Ressources taguées ?v=${VTOKEN}"
+
+    - |
+      cat > dist/OSVISION_VERSION <<EOF
+      version=$OSV_VERSION
+      commit=$CI_COMMIT_SHA
+      ref=$CI_COMMIT_REF_NAME
+      pipeline=$CI_PIPELINE_ID
+      built=$(date -u +%Y-%m-%dT%H:%M:%SZ)
+      EOF
+
+    - tar -czf $PACKAGE_NAME.tar.gz -C dist .
+    - echo "$OSV_VERSION" > .osv_version
+    - ls -lh $PACKAGE_NAME.tar.gz
   artifacts:
+    name: "$PACKAGE_NAME-$CI_COMMIT_REF_SLUG"
+    expire_in: 30 days
     paths:
       - $PACKAGE_NAME.tar.gz
+      - .osv_version
 
-# =========================
-# DEPLOY (BRANCH ONLY)
-# =========================
-deploy:
+# ============================================================================
+# 2bis. PACKAGE HACS — distribution publique, sur tags uniquement
+#       (reprise du job `package` de l'ancien pipeline)
+# ============================================================================
+package:hacs:
+  stage: build
+  image: alpine:latest
+  rules: *rules_tag
+  script:
+    - echo "📦 Paquet HACS $CI_COMMIT_TAG"
+    - mkdir -p dist
+    - cp -r home-assistant/themes dist/
+    - cp hacs.json repository.yaml README.md dist/
+    - cp CHANGELOG.md dist/ 2>/dev/null || echo "⚠ CHANGELOG.md absent"
+    - echo "$CI_COMMIT_TAG" > dist/VERSION
+    - tar -czf $PACKAGE_NAME-hacs-$CI_COMMIT_TAG.tar.gz -C dist .
+  artifacts:
+    name: "$PACKAGE_NAME-hacs-$CI_COMMIT_TAG"
+    expire_in: never
+    paths:
+      - dist/
+      - $PACKAGE_NAME-hacs-$CI_COMMIT_TAG.tar.gz
+
+# ============================================================================
+# 3a. DEPLOY STAGING — k3s, sur branches uniquement
+# ============================================================================
+deploy:staging:
   stage: deploy
   image: bitnami/kubectl:latest
-  rules:
-    - if: '$CI_COMMIT_TAG == null'
+  needs: ["build"]
+  rules: *rules_branch
+  environment:
+    name: staging
+    url: $STAGING_URL
   script:
-    - echo "🚀 Deploying OSVision V2 to Home Assistant..."
+    - export OSV_VERSION=$(cat .osv_version)
+    - echo "🧪 Déploiement STAGING (k3s) — $OSV_VERSION"
 
-    # Recherche automatiquement le pod Home Assistant
-    - export HA_POD=$(kubectl get pod -n homeassistant -l app=homeassistant -o jsonpath='{.items[0].metadata.name}')
+    - export HA_POD=$(kubectl get pod -n $K3S_NAMESPACE -l app=homeassistant -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+    - '[ -z "$HA_POD" ] && export HA_POD=$(kubectl get pods -n $K3S_NAMESPACE -o jsonpath="{.items[0].metadata.name}")'
+    - echo "Pod cible : $HA_POD"
 
-    # Si aucun label n'existe, on utilise le premier pod trouvé
+    # Envoi dans un staging, puis bascule atomique DANS le pod
+    - kubectl cp $PACKAGE_NAME.tar.gz $K3S_NAMESPACE/$HA_POD:/config/.osv.tar.gz -c $K3S_CONTAINER
     - |
-      if [ -z "$HA_POD" ]; then
-        HA_POD=$(kubectl get pods -n homeassistant -o jsonpath='{.items[0].metadata.name}')
-      fi
+      kubectl exec -n $K3S_NAMESPACE $HA_POD -c $K3S_CONTAINER -- sh -c '
+        set -e
+        rm -rf /config/.osv_stage && mkdir -p /config/.osv_stage
+        tar xzf /config/.osv.tar.gz -C /config/.osv_stage
+        for d in dashboards themes; do
+          rm -rf /config/$d.old
+          [ -d /config/$d ] && mv /config/$d /config/$d.old
+          mv /config/.osv_stage/$d /config/$d
+        done
+        rm -rf /config/www/osvision_v2
+        mkdir -p /config/www
+        mv /config/.osv_stage/www/osvision_v2 /config/www/osvision_v2
+        cp /config/.osv_stage/OSVISION_VERSION /config/OSVISION_VERSION
+        rm -rf /config/.osv_stage /config/.osv.tar.gz
+      '
 
-    - "echo Home Assistant Pod : $HA_POD"
-
-    # Nettoyage et préparation des dossiers cibles dans le Pod
-    - kubectl exec -n homeassistant $HA_POD -c homeassistant -- rm -rf /config/dashboards
-    - kubectl exec -n homeassistant $HA_POD -c homeassistant -- rm -rf /config/themes
-    - kubectl exec -n homeassistant $HA_POD -c homeassistant -- mkdir -p /config/dashboards
-    - kubectl exec -n homeassistant $HA_POD -c homeassistant -- mkdir -p /config/dashboards/templates
-    - kubectl exec -n homeassistant $HA_POD -c homeassistant -- mkdir -p /config/themes
-
-    # 1. Analyse locale pour comprendre où se trouve le fichier sur le runner (Debug)
-    - echo "🔍 Recherche locale du fichier button_card_templates sur le runner :"
-    - find . -name "button_card_templates.yaml"
-
-    # 2. Copie du contenu principal des dashboards
-    - kubectl cp home-assistant/dashboards/. homeassistant/$HA_POD:/config/dashboards/ -c homeassistant
-
-    # 3. Copie du dossier templates (button_card + decluttering, etc.)
+    # Validation par HA — rollback si la config est cassée
     - |
-      if [ -d "home-assistant/templates" ]; then
-        kubectl cp home-assistant/templates/. homeassistant/$HA_POD:/config/dashboards/templates/ -c homeassistant
-        echo "✅ Dossier templates copié avec succès !"
-      else
-        echo "❌ ERREUR CRITIQUE : Le dossier home-assistant/templates n'existe pas dans le dépôt Git."
+      if ! kubectl exec -n $K3S_NAMESPACE $HA_POD -c $K3S_CONTAINER -- hass --script check_config -c /config; then
+        echo "❌ Config invalide — rollback staging"
+        kubectl exec -n $K3S_NAMESPACE $HA_POD -c $K3S_CONTAINER -- sh -c '
+          for d in dashboards themes; do
+            [ -d /config/$d.old ] && rm -rf /config/$d && mv /config/$d.old /config/$d
+          done'
         exit 1
       fi
 
-    # 4. Copie sécurisée des thèmes
-    - 'if [ -d "home-assistant/themes" ]; then kubectl cp home-assistant/themes/. homeassistant/$HA_POD:/config/themes/ -c homeassistant; else echo "⚠ Pas de thèmes trouvés dans home-assistant/themes"; fi'
+    - kubectl exec -n $K3S_NAMESPACE $HA_POD -c $K3S_CONTAINER -- sh -c 'rm -rf /config/dashboards.old /config/themes.old'
+    - echo "✅ Staging à jour"
 
-    # 5. Copie des ressources web
-    - 'if [ -d "home-assistant/www" ]; then kubectl cp home-assistant/www/. homeassistant/$HA_POD:/config/www/ -c homeassistant; fi'
+# ============================================================================
+# 3b. DEPLOY PRODUCTION — HAOS 18.1, sur tags uniquement, avec gate manuelle
+# ============================================================================
+deploy:production:
+  stage: deploy
+  image: alpine:latest
+  needs: ["build"]
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: manual          # gate humaine : rien ne part en prod tout seul
+  allow_failure: false
+  environment:
+    name: production
+    url: $PROD_URL
+  before_script: *ssh_bootstrap
+  script:
+    - echo "🚀 Déploiement PRODUCTION (HAOS) — $CI_COMMIT_TAG"
 
-    # 6. Vérification de la configuration Home Assistant
-    - kubectl exec -n homeassistant $HA_POD -c homeassistant -- hass --script check_config -c /config
+    # HAOS 18.x : le dossier config est monté en /homeassistant dans l'add-on
+    # SSH récent, /config sur les plus anciens. On détecte.
+    - export HA_CFG=$(ssh ha '[ -d /homeassistant ] && echo /homeassistant || echo /config')
+    - echo "📂 Config HAOS : $HA_CFG"
 
-    - echo "✅ Deployment finished"
+    # Sauvegarde complète AVANT écriture — filet de sécurité réel sur HAOS
+    - ssh ha "ha backups new --name 'pre-$CI_COMMIT_TAG' --no-progress" || echo "⚠ backup non créé"
 
-# =========================
-# PACKAGE (TAG ONLY)
-# =========================
-package:
-  stage: package
+    # Transfert + bascule atomique
+    - cat $PACKAGE_NAME.tar.gz | ssh ha "rm -rf $HA_CFG/.osv_stage && mkdir -p $HA_CFG/.osv_stage && tar xzf - -C $HA_CFG/.osv_stage"
+    - |
+      ssh ha "set -e
+        for d in dashboards themes; do
+          rm -rf $HA_CFG/\$d.old
+          [ -d $HA_CFG/\$d ] && mv $HA_CFG/\$d $HA_CFG/\$d.old
+          mv $HA_CFG/.osv_stage/\$d $HA_CFG/\$d
+        done
+        rm -rf $HA_CFG/www/osvision_v2
+        mkdir -p $HA_CFG/www
+        mv $HA_CFG/.osv_stage/www/osvision_v2 $HA_CFG/www/osvision_v2
+        cp $HA_CFG/.osv_stage/OSVISION_VERSION $HA_CFG/OSVISION_VERSION
+        rm -rf $HA_CFG/.osv_stage"
+
+    # Validation par le Supervisor
+    - |
+      if ! ssh ha "ha core check"; then
+        echo "❌ Config invalide — rollback production"
+        ssh ha "for d in dashboards themes; do
+          [ -d $HA_CFG/\$d.old ] && rm -rf $HA_CFG/\$d && mv $HA_CFG/\$d.old $HA_CFG/\$d
+        done"
+        exit 1
+      fi
+
+    - |
+      if [ "$PROD_RESTART_CORE" = "true" ]; then
+        ssh ha "ha core restart"
+      else
+        ssh ha "ha core reload"
+      fi
+
+    - ssh ha "rm -rf $HA_CFG/dashboards.old $HA_CFG/themes.old"
+    - echo "✅ $CI_COMMIT_TAG en production"
+
+# ============================================================================
+# 4. TESTS DE FUMÉE — vérifient que la cible répond ET sert la bonne version
+# ============================================================================
+.smoke_template: &smoke_script
+  - apk add --no-cache curl jq >/dev/null
+  - |
+    for i in $(seq 1 30); do
+      curl -sf -H "Authorization: Bearer $HA_TOKEN" "$TARGET_URL/api/" >/dev/null && break
+      echo "⏳ attente de HA ($i/30)"; sleep 10
+    done
+  - curl -sf -H "Authorization: Bearer $HA_TOKEN" "$TARGET_URL/api/" | jq -e '.message' >/dev/null
+  - echo "✅ API HA joignable"
+  # Les ressources statiques OSVision sont bien servies
+  - curl -sfI "$TARGET_URL/local/osvision_v2/js/osvision.js" >/dev/null && echo "✅ JS Engine servi"
+  - curl -sfI "$TARGET_URL/local/osvision_v2/css/osvision.css" >/dev/null && echo "✅ CSS Engine servi"
+  # Aucune entité en état 'unavailable' massif après reload
+  - |
+    UNAVAIL=$(curl -sf -H "Authorization: Bearer $HA_TOKEN" "$TARGET_URL/api/states" \
+      | jq '[.[] | select(.state=="unavailable")] | length')
+    echo "ℹ️ Entités unavailable : $UNAVAIL"
+
+test:staging:
+  stage: test
+  image: alpine:latest
+  needs: ["deploy:staging"]
+  rules: *rules_branch
+  variables:
+    TARGET_URL: $STAGING_URL
+    HA_TOKEN: $HA_TOKEN_STAGING
+  script: *smoke_script
+
+test:production:
+  stage: test
+  image: alpine:latest
+  needs: ["deploy:production"]
+  rules: *rules_tag
+  variables:
+    TARGET_URL: $PROD_URL
+    HA_TOKEN: $HA_TOKEN_PROD
+  script: *smoke_script
+
+# ============================================================================
+# 5. ROLLBACK PRODUCTION — manuel, restaure la sauvegarde pré-déploiement
+# ============================================================================
+rollback:production:
+  stage: test
   image: alpine:latest
   rules:
     - if: $CI_COMMIT_TAG
+      when: manual
+  allow_failure: true
+  environment:
+    name: production
+    url: $PROD_URL
+  before_script: *ssh_bootstrap
   script:
-    - echo "📦 Packaging release version $CI_COMMIT_TAG"
-    - mkdir -p dist
-    - cp -r themes dist/
-    - cp hacs.json dist/
-    - cp repository.yaml dist/
-    - cp README.md dist/
-    - cp CHANGELOG.md dist/
-    - cp VERSION dist/
-  artifacts:
-    paths:
-      - dist/
+    - echo "⏪ Restauration de la sauvegarde pre-$CI_COMMIT_TAG"
+    - |
+      SLUG=$(ssh ha "ha backups --raw-json" \
+        | jq -r ".data.backups[] | select(.name==\"pre-$CI_COMMIT_TAG\") | .slug" | head -1)
+      if [ -z "$SLUG" ]; then echo "❌ Sauvegarde introuvable"; ssh ha "ha backups"; exit 1; fi
+      echo "Slug : $SLUG"
+      ssh ha "ha backups restore $SLUG --no-progress"
+    - echo "✅ Rollback effectué"
 
-# =========================
-# RELEASE (TAG ONLY)
-# =========================
+# ============================================================================
+# 6. RELEASE GitLab — sur tags
+# ============================================================================
 release:
   stage: release
-  image: alpine:latest
-  rules:
-    - if: $CI_COMMIT_TAG
+  image: registry.gitlab.com/gitlab-org/release-cli:latest
+  needs: ["deploy:production", "package:hacs"]
+  rules: *rules_tag
   script:
-    - echo "🚀 Creating release for tag $CI_COMMIT_TAG"
-    - 'echo "Version: $CI_COMMIT_TAG" > release.txt'
-    - echo "OSVision V2 Release created"
+    - echo "🏷️ Release $CI_COMMIT_TAG"
+  release:
+    tag_name: "$CI_COMMIT_TAG"
+    name: "OSVision V2 $CI_COMMIT_TAG"
+    description: "Déployé sur HAOS — commit $CI_COMMIT_SHA"
