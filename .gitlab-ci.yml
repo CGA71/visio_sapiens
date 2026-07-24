@@ -249,7 +249,7 @@ package:hacs:
   script:
     - echo "Paquet HACS $CI_COMMIT_TAG"
     - mkdir -p dist
-    - cp -r home-assistant/themes dist/
+    - cp -r themes dist/
     - cp hacs.json repository.yaml README.md dist/
     - cp CHANGELOG.md dist/ 2>/dev/null || echo "[avert] CHANGELOG.md absent"
     - echo "$CI_COMMIT_TAG" > dist/VERSION
