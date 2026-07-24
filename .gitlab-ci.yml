@@ -112,13 +112,31 @@ validate:
     - |
       python3 - <<'PY'
       import sys, glob, yaml
+
+      # Home Assistant utilise des tags YAML personnalises (!include, !secret,
+      # !include_dir_merge_list...). PyYAML ne les connait pas : on les accepte
+      # sans les interpreter, on ne valide ici que la syntaxe.
+      def _ha_tag(loader, suffix, node):
+          if isinstance(node, yaml.ScalarNode):
+              return loader.construct_scalar(node)
+          if isinstance(node, yaml.SequenceNode):
+              return loader.construct_sequence(node)
+          if isinstance(node, yaml.MappingNode):
+              return loader.construct_mapping(node)
+          return None
+      yaml.SafeLoader.add_multi_constructor('!', _ha_tag)
+
+      files = sorted(glob.glob('home-assistant/**/*.yaml', recursive=True))
+      files += sorted(glob.glob('themes/*.yaml'))
       err = 0
-      for f in sorted(glob.glob('home-assistant/**/*.yaml', recursive=True)):
+      for f in files:
           try:
-              yaml.safe_load(open(f, encoding='utf-8'))
+              with open(f, encoding='utf-8') as fh:
+                  yaml.safe_load(fh)
           except Exception as e:
-              print(f"[ERR] {f}\n   {e}"); err = 1
-      print("[OK] YAML parse sans erreur" if not err else "[ERR] Erreurs YAML")
+              print(f"[ERR] {f}"); print(f"      {e}"); err = 1
+      print(f"[i] {len(files)} fichiers analyses")
+      print("[OK] Syntaxe YAML valide" if not err else "[ERR] Erreurs de syntaxe")
       sys.exit(err)
       PY
 
@@ -129,6 +147,7 @@ build:
   stage: build
   image: alpine:latest
   script:
+    - apk add --no-cache python3 py3-yaml >/dev/null
     - export OSV_VERSION="${CI_COMMIT_TAG:-dev-${CI_COMMIT_SHORT_SHA}}"
     - echo "Build $OSV_VERSION"
     - mkdir -p dist/dashboards/templates dist/themes dist/www
@@ -148,6 +167,44 @@ build:
       pipeline=$CI_PIPELINE_ID
       built=$(date -u +%Y-%m-%dT%H:%M:%SZ)
       EOF
+    - |
+      cd dist && python3 - <<'PY'
+      import sys, os, glob, yaml
+
+      # Verifie que chaque !include pointe vers une cible existante, dans
+      # l'arborescence telle qu'elle sera dans /config (et non dans le depot).
+      missing = []
+      DIR_TAGS = ('include_dir_list', 'include_dir_merge_list',
+                  'include_dir_named', 'include_dir_merge_named')
+
+      def _ha_tag(loader, suffix, node):
+          if isinstance(node, yaml.ScalarNode):
+              val = loader.construct_scalar(node)
+              src = getattr(loader, 'name', '') or '.'
+              base = os.path.dirname(src)
+              if suffix == 'include' and not os.path.isfile(os.path.join(base, val)):
+                  missing.append((src, '!include', val))
+              elif suffix in DIR_TAGS and not os.path.isdir(os.path.join(base, val)):
+                  missing.append((src, '!' + suffix, val))
+              return val
+          if isinstance(node, yaml.SequenceNode):
+              return loader.construct_sequence(node)
+          if isinstance(node, yaml.MappingNode):
+              return loader.construct_mapping(node)
+          return None
+      yaml.SafeLoader.add_multi_constructor('!', _ha_tag)
+
+      for f in sorted(glob.glob('**/*.yaml', recursive=True)):
+          with open(f, encoding='utf-8') as fh:
+              yaml.safe_load(fh)
+
+      for src, tag, val in missing:
+          print(f"[ERR] {src}"); print(f"      {tag} {val} -> cible introuvable dans /config")
+      print("[OK] Toutes les references !include sont resolues"
+            if not missing else f"[ERR] {len(missing)} reference(s) cassee(s)")
+      sys.exit(1 if missing else 0)
+      PY
+    - cd "$CI_PROJECT_DIR"
     - tar -czf $PACKAGE_NAME.tar.gz -C dist .
     - echo "$OSV_VERSION" > .osv_version
     - ls -lh $PACKAGE_NAME.tar.gz
