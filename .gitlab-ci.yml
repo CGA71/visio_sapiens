@@ -27,7 +27,7 @@ variables:
   HA_HOST: "192.168.1.42"          # IP fixe du mini PC
   HA_SSH_PORT: "22222"             # port de l'add-on Advanced SSH
   HA_SSH_USER: "root"
-  PROD_URL: "http://192.168.1.42:8123"
+  PROD_URL: "http://192.168.1.26:8123"
   PROD_RESTART_CORE: "true"        # "false" = ha core reload (sans coupure)
 
 # ============================================================================
