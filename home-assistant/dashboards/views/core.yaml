@@ -40,10 +40,11 @@ views:
     type: custom:grid-layout
     layout:
       grid-template-columns: minmax(200px, auto) 1fr 1fr 1fr 1fr 1fr
-      # CORRECTION 1 : hauteur explicite (remplace "105px auto") pour que
-      # l'iframe en height:100% remplisse exactement la ligne et s'aligne
-      # avec le bas de la colonne nav. Ajuste 160px de ±56px si besoin.
-      grid-template-rows: 105px calc(100vh - 160px)
+      # PRINCIPE ENERGY : lignes en pixels FIXES -> le bas de la nav et le
+      # bas du cadre content coïncident par construction, quelle que soit
+      # la résolution (comme energy.yaml : 105px 418px 236px auto).
+      # core.html défile à l'intérieur de son cadre de 1100px.
+      grid-template-rows: 105px 1100px
       grid-template-areas: |
         "nav header header header header header"
         "nav content content content content content"
@@ -225,7 +226,7 @@ views:
           style: |
             :host {
               display: block;
-              height: calc(100vh - 160px);
+              height: 100%;
               background: rgba(8,18,28,0.75);
               border: 1px solid rgba(0,229,255,0.28);
               border-radius: 20px;
