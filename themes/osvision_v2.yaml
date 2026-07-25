@@ -38,3 +38,6 @@ OSVision V2:
   sidebar-selected-background-color: "rgba(0,229,255,0.10)"
   sidebar-selected-text-color: "#00E5FF"
   sidebar-selected-icon-color: "#00E5FF"
+
+  # transparence
+  bubble-default-backdrop-background-color: "transparent"
