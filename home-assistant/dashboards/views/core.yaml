@@ -82,7 +82,7 @@ views:
             :host {
               display: flex;
               flex-direction: column;
-              height: calc(100vh - 11px) !important;
+              height: calc(100vh + 40px) !important;
               width: 100%;
               min-width: 200px;
               background: rgba(5,11,18,0.85);
