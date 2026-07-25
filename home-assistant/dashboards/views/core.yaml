@@ -40,7 +40,10 @@ views:
     type: custom:grid-layout
     layout:
       grid-template-columns: minmax(200px, auto) 1fr 1fr 1fr 1fr 1fr
-      grid-template-rows: 105px auto
+      # CORRECTION 1 : hauteur explicite (remplace "105px auto") pour que
+      # l'iframe en height:100% remplisse exactement la ligne et s'aligne
+      # avec le bas de la colonne nav. Ajuste 160px de ±56px si besoin.
+      grid-template-rows: 105px calc(100vh - 160px)
       grid-template-areas: |
         "nav header header header header header"
         "nav content content content content content"
@@ -222,15 +225,17 @@ views:
         card_mod:
           style: |
             ha-card {
-              background: transparent !important;
-              border: none !important;
-              box-shadow: none !important;
+              background: rgba(8,18,28,0.75) !important;
+              border: 1px solid rgba(0,229,255,0.28) !important;
+              border-radius: 20px !important;
+              box-shadow: 0 0 18px rgba(0,229,255,.15) !important;
               overflow: hidden;
-              height: calc(100vh - 160px);
+              height: 100% !important;
             }
             iframe {
               width: 100%;
               height: 100% !important;
               border: none;
+              border-radius: 20px;
             }
 
