@@ -71,10 +71,9 @@ views:
                 :host { flex: 0 0 56px; }
 
       # ─── SIDEBAR NAV ────────────────────────────────────────────────────
-      # Alignement : le cadre content fait calc(100vh - 160px) et démarre
-      # 119px plus bas (header 105 + gap 14). La nav fait donc
-      # calc(100vh - 41px) = 119 + (100vh - 160) : les deux bas coïncident,
-      # à toute résolution ET à tout zoom (tout est dérivé du même viewport).
+      # Alignement avec le bas du cadre content. RÉGLAGE : le chiffre après
+      # le moins pilote le bas de la nav — le DIMINUER descend la nav
+      # (1px de moins = 1px plus bas), l'AUGMENTER la remonte.
       - type: vertical-stack
         view_layout:
           grid-area: nav
@@ -83,7 +82,7 @@ views:
             :host {
               display: flex;
               flex-direction: column;
-              height: calc(100vh - 41px) !important;
+              height: calc(100vh - 21px) !important;
               width: 100%;
               min-width: 200px;
               background: rgba(5,11,18,0.85);
