@@ -82,7 +82,7 @@ views:
             :host {
               display: flex;
               flex-direction: column;
-              height: calc(100vh - 41px) !important;
+              height: 100%;
               width: 100%;
               min-width: 200px;
               background: rgba(5,11,18,0.85);
@@ -90,7 +90,7 @@ views:
               border: 1px solid rgba(0,229,255,0.18);
               padding: 16px 10px;
               box-shadow: 0 0 18px rgba(0,229,255,.12);
-              overflow: hidden;
+              
             }
         cards:
           - type: custom:button-card
@@ -113,8 +113,8 @@ views:
             icon: mdi:server
             name: CORE
             label: "Systeme central"
-            variables:
-              active: true
+            
+            
             tap_action:
               action: navigate
               navigation_path: /osvision-core/core
@@ -196,6 +196,8 @@ views:
             icon: mdi:lightning-bolt
             name: ENERGY
             label: "Gestion energie"
+            variables:
+              active: true      
             tap_action:
               action: navigate
               navigation_path: /osvision-energy/energy
