@@ -214,28 +214,48 @@ views:
             name: "OSVISION V2"
             label: "SMART HOME OS"
 
-      # ─── CONTENU CENTRAL = core.html (une seule fois, plein cadre) ─────
-      # Occupe désormais aussi l'ancienne zone footer : core.html affiche
-      # déjà son propre footer HUD "OSVISION V2 // CORE SYSTEM" en bas de
-      # page, la carte osv-footer-card native faisait doublon.
-      - type: iframe
-        url: /local/osvision_v2/core.html
+      # ─── CONTENU CENTRAL = core.html (enveloppé dans mod-card) ────────
+      # card_mod direct sur une carte "iframe" était ignoré pour la bordure
+      # (même souci que la carte météo). Le wrapper mod-card porte donc
+      # l'encadrement ; l'iframe à l'intérieur reste transparente/sans bord.
+      - type: custom:mod-card
         view_layout:
           grid-area: content
         card_mod:
           style: |
-            ha-card {
-              background: rgba(8,18,28,0.75) !important;
-              border: 1px solid rgba(0,229,255,0.28) !important;
-              border-radius: 20px !important;
-              box-shadow: 0 0 18px rgba(0,229,255,.15) !important;
-              overflow: hidden;
-              height: 100% !important;
-            }
-            iframe {
-              width: 100%;
-              height: 100% !important;
-              border: none;
+            :host {
+              display: block;
+              height: calc(100vh - 160px);
+              background: rgba(8,18,28,0.75);
+              border: 1px solid rgba(0,229,255,0.28);
               border-radius: 20px;
+              box-shadow: 0 0 18px rgba(0,229,255,.15);
+              overflow: hidden;
             }
+            mod-card {
+              display: block;
+              height: 100%;
+              overflow: hidden;
+            }
+        card:
+          type: iframe
+          url: /local/osvision_v2/core.html
+          card_mod:
+            style: |
+              ha-card {
+                background: transparent !important;
+                border: none !important;
+                box-shadow: none !important;
+                height: 100% !important;
+              }
+              #root {
+                height: 100% !important;
+                padding-top: 0 !important;
+              }
+              iframe {
+                width: 100% !important;
+                height: 100% !important;
+                border: none;
+                border-radius: 20px;
+              }
 
