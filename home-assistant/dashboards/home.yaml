@@ -702,7 +702,7 @@ views:
         card_mod:
           style: |
             :host {
-              height: 336px;
+              height: 100%;
               display: block;
             }
             #root {
@@ -723,7 +723,7 @@ views:
                 ha-card {
                   background: var(--osv-panel) !important;
                   height: 100%;
-                  max-height: 336px;
+                  max-height: 100%;
                   overflow: hidden;
                 }
             series:
@@ -788,7 +788,7 @@ views:
         card_mod:
           style: |
             :host {
-              height: 105%;
+              height: 100%;
               display: block;
               overflow: hidden;
             }
