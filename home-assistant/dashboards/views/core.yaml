@@ -40,11 +40,10 @@ views:
     type: custom:grid-layout
     layout:
       grid-template-columns: minmax(200px, auto) 1fr 1fr 1fr 1fr 1fr
-      # PRINCIPE ENERGY : lignes en pixels FIXES -> le bas de la nav et le
-      # bas du cadre content coïncident par construction, quelle que soit
-      # la résolution (comme energy.yaml : 105px 418px 236px auto).
-      # core.html défile à l'intérieur de son cadre de 1100px.
-      grid-template-rows: 105px 1100px
+      # core.html mesure ~1750px de haut : la ligne fait cette hauteur, la
+      # page défile d'un bloc (nav + cadre ensemble) et leurs bas coïncident.
+      # C'est LE seul chiffre à ajuster pour changer la hauteur du cadre.
+      grid-template-rows: 105px 1750px
       grid-template-areas: |
         "nav header header header header header"
         "nav content content content content content"
@@ -241,16 +240,26 @@ views:
         card:
           type: iframe
           url: /local/osvision_v2/core.html
-          aspect_ratio: 100%
           card_mod:
             style: |
+              :host {
+                display: block;
+                height: 100%;
+              }
               ha-card {
                 background: transparent !important;
                 border: none !important;
                 box-shadow: none !important;
                 height: 100% !important;
               }
+              #root {
+                height: 100% !important;
+                padding-top: 0 !important;
+              }
               iframe {
+                position: absolute;
+                top: 0;
+                left: 0;
                 width: 100% !important;
                 height: 100% !important;
                 border: none;
