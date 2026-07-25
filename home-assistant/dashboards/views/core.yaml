@@ -40,10 +40,7 @@ views:
     type: custom:grid-layout
     layout:
       grid-template-columns: minmax(200px, auto) 1fr 1fr 1fr 1fr 1fr
-      # core.html mesure ~1750px de haut : la ligne fait cette hauteur, la
-      # page défile d'un bloc (nav + cadre ensemble) et leurs bas coïncident.
-      # C'est LE seul chiffre à ajuster pour changer la hauteur du cadre.
-      grid-template-rows: 105px 1750px
+      grid-template-rows: 105px auto
       grid-template-areas: |
         "nav header header header header header"
         "nav content content content content content"
@@ -73,7 +70,11 @@ views:
               style: |
                 :host { flex: 0 0 56px; }
 
-      # ─── SIDEBAR NAV (inchangée) ────────────────────────────────────────
+      # ─── SIDEBAR NAV ────────────────────────────────────────────────────
+      # Alignement : le cadre content fait calc(100vh - 160px) et démarre
+      # 119px plus bas (header 105 + gap 14). La nav fait donc
+      # calc(100vh - 41px) = 119 + (100vh - 160) : les deux bas coïncident,
+      # à toute résolution ET à tout zoom (tout est dérivé du même viewport).
       - type: vertical-stack
         view_layout:
           grid-area: nav
@@ -82,7 +83,7 @@ views:
             :host {
               display: flex;
               flex-direction: column;
-              height: 100%;
+              height: calc(100vh - 41px) !important;
               width: 100%;
               min-width: 200px;
               background: rgba(5,11,18,0.85);
@@ -90,6 +91,7 @@ views:
               border: 1px solid rgba(0,229,255,0.18);
               padding: 16px 10px;
               box-shadow: 0 0 18px rgba(0,229,255,.12);
+              overflow: hidden;
             }
         cards:
           - type: custom:button-card
@@ -214,55 +216,28 @@ views:
             name: "OSVISION V2"
             label: "SMART HOME OS"
 
-      # ─── CONTENU CENTRAL = core.html (enveloppé dans mod-card) ────────
-      # card_mod direct sur une carte "iframe" était ignoré pour la bordure
-      # (même souci que la carte météo). Le wrapper mod-card porte donc
-      # l'encadrement ; l'iframe à l'intérieur reste transparente/sans bord.
-      - type: custom:mod-card
+      # ─── CONTENU CENTRAL = core.html (structure d'origine, fiable) ─────
+      # L'ENCADREMENT n'est PAS ici : la carte iframe ignore les bordures
+      # card_mod. Il est dessiné DANS core.html (règle body::before fixe).
+      # Ici : uniquement la hauteur (calc 100vh-160px) ; core.html défile
+      # à l'intérieur, comme à l'origine.
+      - type: iframe
+        url: /local/osvision_v2/core.html
         view_layout:
           grid-area: content
         card_mod:
           style: |
-            :host {
-              display: block;
-              height: 100%;
-              background: rgba(8,18,28,0.75);
-              border: 1px solid rgba(0,229,255,0.28);
+            ha-card {
+              background: transparent !important;
+              border: none !important;
+              box-shadow: none !important;
+              overflow: hidden;
+              height: calc(100vh - 160px);
               border-radius: 20px;
-              box-shadow: 0 0 18px rgba(0,229,255,.15);
-              overflow: hidden;
             }
-            mod-card {
-              display: block;
-              height: 100%;
-              overflow: hidden;
+            iframe {
+              width: 100%;
+              height: 100% !important;
+              border: none;
             }
-        card:
-          type: iframe
-          url: /local/osvision_v2/core.html
-          card_mod:
-            style: |
-              :host {
-                display: block;
-                height: 100%;
-              }
-              ha-card {
-                background: transparent !important;
-                border: none !important;
-                box-shadow: none !important;
-                height: 100% !important;
-              }
-              #root {
-                height: 100% !important;
-                padding-top: 0 !important;
-              }
-              iframe {
-                position: absolute;
-                top: 0;
-                left: 0;
-                width: 100% !important;
-                height: 100% !important;
-                border: none;
-                border-radius: 20px;
-              }
 
