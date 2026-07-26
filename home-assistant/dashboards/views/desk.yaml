@@ -1,0 +1,744 @@
+########################################################################
+# OSVision V2 — DESK Dashboard (Bureau / Salle informatique)
+#
+# Emplacement attendu dans le repo :
+#   home-assistant/dashboards/views/desk.yaml
+#
+# Même principe que core.yaml / energy.yaml : dashboard Lovelace
+# AUTONOME, déclaré dans configuration.yaml sous `lovelace: dashboards:`
+# avec url_path "osvision-desk". Il garde donc le wrapper complet
+# "title: / views: [...]" au niveau racine — sans lui, Lovelace n'affiche
+# plus aucune carte.
+#
+# Structure conservée à l'identique de energy.yaml :
+#   - bandeau vertical (sidebar nav, grid-area "nav")
+#   - bandeau header (page_header + avatar OS, grid-area "header")
+# Seule la zone de contenu change : elle devient une carte
+# picture-elements plein cadre utilisant desk.png comme plan, avec des
+# "bulles" (custom:button-card positionnées en %) pour interagir avec
+# chaque appareil de la pièce.
+#
+# ── PRÉREQUIS ─────────────────────────────────────────────────────────
+# 1. Déposer l'image fournie dans :
+#      home-assistant/www/osvision_v2/images/desk.png
+#    (accessible ensuite via /local/osvision_v2/images/desk.png)
+# 2. Remplacer toutes les entités marquées « # TODO » par les vôtres.
+# 3. Les bulles utilisent le composant natif "custom:button-card" +
+#    positionnement "style: {top, left}" — aucun template supplémentaire
+#    n'est requis (mêmes bases que le floorplan de home.yaml).
+#
+# Cartes HACS utilisées : button-card, card-mod, layout-card,
+# picture-elements (natif Lovelace).
+########################################################################
+title: DESK
+theme: OSVision V2
+
+# Indispensable : sans ces includes, chaque custom:button-card affiche
+# « Erreur de configuration ». Chemin relatif à dashboards/views/.
+button_card_templates: !include ../templates/button_card_templates.yaml
+decluttering_templates: !include ../templates/decluttering_templates.yaml
+
+views:
+  - title: DESK
+    path: desk
+    subview: false
+    type: custom:grid-layout
+    layout:
+      grid-template-columns: minmax(200px, auto) 1fr
+      grid-template-rows: 105px 1fr
+      grid-template-areas: |
+        "nav header"
+        "nav main"
+      margin: 12px
+      grid-gap: 14px 14px
+    cards:
+      # ═══════════════════════════════════════════════════════════════
+      # BANDEAU HEADER — identique à energy.yaml (case 1 + avatar OS)
+      # ═══════════════════════════════════════════════════════════════
+      - type: horizontal-stack
+        view_layout:
+          grid-area: header
+        cards:
+          - type: custom:button-card
+            template: osvision_page_header
+            icon: mdi:chevron-left
+            name: DESK
+            label: "Bureau & salle informatique — plan interactif"
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-v2/home
+            card_mod:
+              style: |
+                :host { flex: 2 1 0; }
+          - type: custom:button-card
+            template: osvision_os_avatar
+            name: "OS"
+            card_mod:
+              style: |
+                :host { flex: 0 0 56px; }
+
+      # ═══════════════════════════════════════════════════════════════
+      # SIDEBAR NAV — identique à energy.yaml, DESK / COMPUTER ROOM actif
+      # ═══════════════════════════════════════════════════════════════
+      - type: vertical-stack
+        view_layout:
+          grid-area: nav
+        card_mod:
+          style: |
+            :host {
+              display: flex;
+              flex-direction: column;
+              height: 100%;
+              width: 100%;
+              min-width: 200px;
+              background: rgba(5,11,18,0.85);
+              border-radius: 20px;
+              border: 1px solid rgba(0,229,255,0.18);
+              padding: 16px 10px;
+              box-shadow: 0 0 18px rgba(0,229,255,.12);
+            }
+        cards:
+          - type: custom:button-card
+            template: osvision_sidebar_logo
+            icon: mdi:hexagon-outline
+            name: "OSVISION V2"
+            label: "Smart Home OS"
+
+          - type: custom:button-card
+            template: osvision_nav_button
+            icon: mdi:view-dashboard
+            name: HOME
+            label: "Vue d'ensemble"
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-v2/home
+
+          - type: custom:button-card
+            template: osvision_nav_button
+            icon: mdi:server
+            name: CORE
+            label: "Systeme central"
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-core/core
+
+          - type: custom:button-card
+            template: osvision_nav_button
+            icon: mdi:sofa
+            name: LIVING ROOM
+            label: "Salon"
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-livingroom/livingroom
+
+          - type: custom:button-card
+            template: osvision_nav_button
+            icon: mdi:bed
+            name: BEDROOM-1
+            label: "Chambre principale"
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-bedroom1/bedroom1
+
+          - type: custom:button-card
+            template: osvision_nav_button
+            icon: mdi:bed-outline
+            name: BEDROOM-2
+            label: "Chambre 2"
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-bedroom2/bedroom2
+
+          - type: custom:button-card
+            template: osvision_nav_button
+            icon: mdi:shower
+            name: BATHROOM
+            label: "Salle de bain"
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-bathroom/bathroom
+
+          - type: custom:button-card
+            template: osvision_nav_button
+            icon: mdi:desktop-tower-monitor
+            name: COMPUTER ROOM
+            label: "Salle informatique"
+            variables:
+              active: true
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-desk/desk
+
+          - type: custom:button-card
+            template: osvision_nav_button
+            icon: mdi:tools
+            name: TECHNICAL ROOM
+            label: "Local technique"
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-technical/technical
+
+          - type: custom:button-card
+            template: osvision_nav_button
+            icon: mdi:key
+            name: SECRET ROOM
+            label: "Piece secrete"
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-secret/secret
+
+          - type: custom:button-card
+            template: osvision_nav_button
+            icon: mdi:flower
+            name: GARDEN
+            label: "Jardin"
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-garden/garden
+
+          - type: custom:button-card
+            template: osvision_nav_button
+            icon: mdi:lightning-bolt
+            name: ENERGY
+            label: "Gestion energie"
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-energy/energy
+
+          - type: custom:button-card
+            template: osvision_sidebar_brand_footer
+            icon: mdi:hexagon-outline
+            name: "OSVISION V2"
+            label: "SMART HOME OS"
+
+      # ═══════════════════════════════════════════════════════════════
+      # PLAN INTERACTIF — picture-elements sur desk.png + bulles
+      # ═══════════════════════════════════════════════════════════════
+      - type: picture-elements
+        view_layout:
+          grid-area: main
+        image: /local/osvision_v2/images/desk.png
+        card_mod:
+          style: |
+            :host { height: 100%; display: block; }
+            ha-card {
+              background: rgba(8,18,28,0.55) !important;
+              border: 1px solid rgba(0,229,255,0.28) !important;
+              border-radius: 20px !important;
+              box-shadow: 0 0 24px rgba(0,229,255,.12) !important;
+              height: 100% !important;
+              width: 100% !important;
+              overflow: hidden;
+            }
+            img {
+              width: 100% !important;
+              height: 100% !important;
+              object-fit: contain;
+              object-position: center center;
+            }
+        elements:
+
+          # ───────────────────────── MÉTÉO DU JOUR ─────────────────────
+          - type: custom:button-card
+            entity: weather.home                                # TODO
+            show_name: false
+            show_state: false
+            show_icon: true
+            icon: mdi:weather-night
+            tap_action:
+              action: more-info
+            style:
+              top: 8%
+              left: 91%
+              "--mdc-icon-size": 22px
+            styles:
+              card:
+                - width: 46px
+                - height: 46px
+                - border-radius: 50%
+                - background: rgba(16,27,39,0.85)
+                - border: 1px solid rgba(0,229,255,0.4)
+                - box-shadow: 0 0 14px rgba(0,229,255,.35)
+              icon:
+                - color: "#00E5FF"
+
+          - type: state-label
+            entity: sensor.osvision_meteo_temperature_exterieure  # TODO
+            prefix: "🌤 "
+            suffix: "°C"
+            style:
+              top: 15%
+              left: 91%
+              transform: translateX(-50%)
+              color: "#00E5FF"
+              font-size: 11px
+              font-weight: bold
+              background: rgba(0,229,255,0.12)
+              border: 1px solid rgba(0,229,255,0.4)
+              border-radius: 6px
+              padding: 2px 6px
+              white-space: nowrap
+
+          # ─────────────────── TEMPÉRATURE / HUMIDITÉ BUREAU ───────────
+          - type: custom:button-card
+            entity: sensor.bureau_temperature                    # TODO
+            show_name: false
+            show_state: false
+            show_icon: true
+            icon: mdi:thermometer
+            tap_action:
+              action: more-info
+            style:
+              top: 6%
+              left: 4%
+              "--mdc-icon-size": 20px
+            styles:
+              card:
+                - width: 42px
+                - height: 42px
+                - border-radius: 50%
+                - background: rgba(16,27,39,0.85)
+                - border: 1px solid rgba(0,229,255,0.4)
+                - box-shadow: 0 0 12px rgba(0,229,255,.3)
+              icon:
+                - color: "#00E5FF"
+
+          - type: state-label
+            entity: sensor.bureau_temperature                    # TODO
+            suffix: "°C"
+            style:
+              top: 13%
+              left: 4%
+              transform: translateX(-50%)
+              color: "#00E5FF"
+              font-size: 11px
+              font-weight: bold
+              background: rgba(0,229,255,0.12)
+              border: 1px solid rgba(0,229,255,0.4)
+              border-radius: 6px
+              padding: 2px 6px
+              white-space: nowrap
+
+          - type: state-label
+            entity: sensor.bureau_humidite                       # TODO
+            prefix: "💧 "
+            suffix: "%"
+            style:
+              top: 19.5%
+              left: 4%
+              transform: translateX(-50%)
+              color: "#00E5FF"
+              font-size: 11px
+              font-weight: bold
+              background: rgba(0,229,255,0.12)
+              border: 1px solid rgba(0,229,255,0.4)
+              border-radius: 6px
+              padding: 2px 6px
+              white-space: nowrap
+
+          # ───────────────────────── DESK LIGHT 1 ──────────────────────
+          - type: custom:button-card
+            entity: light.desk_light_1                           # TODO (Hue)
+            show_name: false
+            show_state: false
+            show_icon: true
+            icon: mdi:desk-lamp
+            tap_action:
+              action: toggle
+            hold_action:
+              action: more-info
+            style:
+              top: 12%
+              left: 9%
+              "--mdc-icon-size": 22px
+            styles:
+              card:
+                - width: 46px
+                - height: 46px
+                - border-radius: 50%
+                - background: >
+                    [[[ return entity.state === 'on'
+                        ? 'rgba(255,193,7,0.18)' : 'rgba(16,27,39,0.85)' ]]]
+                - border: >
+                    [[[ return entity.state === 'on'
+                        ? '1px solid rgba(255,193,7,0.7)' : '1px solid rgba(0,229,255,0.3)' ]]]
+                - box-shadow: >
+                    [[[ return entity.state === 'on'
+                        ? '0 0 16px rgba(255,193,7,.55)' : 'none' ]]]
+              icon:
+                - color: >
+                    [[[ return entity.state === 'on' ? '#FFC94A' : '#56707E' ]]]
+
+          - type: state-label
+            entity: light.desk_light_1                           # TODO
+            style:
+              top: 19%
+              left: 9%
+              transform: translateX(-50%)
+              color: "#FFFFFF"
+              font-size: 10px
+              font-weight: 600
+              background: rgba(16,27,39,0.85)
+              border: 1px solid rgba(0,229,255,0.25)
+              border-radius: 6px
+              padding: 2px 6px
+              white-space: nowrap
+
+          # ───────────────────────── DESK LIGHT 2 ──────────────────────
+          - type: custom:button-card
+            entity: light.desk_light_2                           # TODO (Hue)
+            show_name: false
+            show_state: false
+            show_icon: true
+            icon: mdi:desk-lamp
+            tap_action:
+              action: toggle
+            hold_action:
+              action: more-info
+            style:
+              top: 10%
+              left: 16%
+              "--mdc-icon-size": 22px
+            styles:
+              card:
+                - width: 46px
+                - height: 46px
+                - border-radius: 50%
+                - background: >
+                    [[[ return entity.state === 'on'
+                        ? 'rgba(255,193,7,0.18)' : 'rgba(16,27,39,0.85)' ]]]
+                - border: >
+                    [[[ return entity.state === 'on'
+                        ? '1px solid rgba(255,193,7,0.7)' : '1px solid rgba(0,229,255,0.3)' ]]]
+                - box-shadow: >
+                    [[[ return entity.state === 'on'
+                        ? '0 0 16px rgba(255,193,7,.55)' : 'none' ]]]
+              icon:
+                - color: >
+                    [[[ return entity.state === 'on' ? '#FFC94A' : '#56707E' ]]]
+
+          - type: state-label
+            entity: light.desk_light_2                           # TODO
+            style:
+              top: 17%
+              left: 16%
+              transform: translateX(-50%)
+              color: "#FFFFFF"
+              font-size: 10px
+              font-weight: 600
+              background: rgba(16,27,39,0.85)
+              border: 1px solid rgba(0,229,255,0.25)
+              border-radius: 6px
+              padding: 2px 6px
+              white-space: nowrap
+
+          # ───────────────────────── DESK LIGHT 3 ──────────────────────
+          - type: custom:button-card
+            entity: light.desk_light_3                           # TODO (Hue)
+            show_name: false
+            show_state: false
+            show_icon: true
+            icon: mdi:desk-lamp
+            tap_action:
+              action: toggle
+            hold_action:
+              action: more-info
+            style:
+              top: 12%
+              left: 23%
+              "--mdc-icon-size": 22px
+            styles:
+              card:
+                - width: 46px
+                - height: 46px
+                - border-radius: 50%
+                - background: >
+                    [[[ return entity.state === 'on'
+                        ? 'rgba(255,193,7,0.18)' : 'rgba(16,27,39,0.85)' ]]]
+                - border: >
+                    [[[ return entity.state === 'on'
+                        ? '1px solid rgba(255,193,7,0.7)' : '1px solid rgba(0,229,255,0.3)' ]]]
+                - box-shadow: >
+                    [[[ return entity.state === 'on'
+                        ? '0 0 16px rgba(255,193,7,.55)' : 'none' ]]]
+              icon:
+                - color: >
+                    [[[ return entity.state === 'on' ? '#FFC94A' : '#56707E' ]]]
+
+          - type: state-label
+            entity: light.desk_light_3                           # TODO
+            style:
+              top: 19%
+              left: 23%
+              transform: translateX(-50%)
+              color: "#FFFFFF"
+              font-size: 10px
+              font-weight: 600
+              background: rgba(16,27,39,0.85)
+              border: 1px solid rgba(0,229,255,0.25)
+              border-radius: 6px
+              padding: 2px 6px
+              white-space: nowrap
+
+          # ───────────────────────── VOLET ROULANT ─────────────────────
+          - type: custom:button-card
+            entity: cover.volet_bureau                           # TODO
+            show_name: false
+            show_state: false
+            show_icon: true
+            icon: mdi:window-shutter
+            tap_action:
+              action: toggle
+            hold_action:
+              action: more-info
+            style:
+              top: 22%
+              left: 43%
+              "--mdc-icon-size": 22px
+            styles:
+              card:
+                - width: 46px
+                - height: 46px
+                - border-radius: 50%
+                - background: rgba(16,27,39,0.85)
+                - border: 1px solid rgba(0,229,255,0.4)
+                - box-shadow: 0 0 14px rgba(0,229,255,.3)
+              icon:
+                - color: >
+                    [[[ return entity.state === 'closed' ? '#56707E' : '#00E5FF' ]]]
+
+          - type: state-label
+            entity: cover.volet_bureau                           # TODO
+            style:
+              top: 29%
+              left: 43%
+              transform: translateX(-50%)
+              color: "#FFFFFF"
+              font-size: 10px
+              font-weight: 600
+              background: rgba(16,27,39,0.85)
+              border: 1px solid rgba(0,229,255,0.25)
+              border-radius: 6px
+              padding: 2px 6px
+              white-space: nowrap
+
+          # ───────────────────────── IMPRIMANTE HP ─────────────────────
+          - type: custom:button-card
+            entity: sensor.imprimante_hp_statut                  # TODO (HP LAN 192.168.1.83)
+            show_name: false
+            show_state: false
+            show_icon: true
+            icon: mdi:printer
+            tap_action:
+              action: more-info
+            style:
+              top: 64%
+              left: 44%
+              "--mdc-icon-size": 22px
+            styles:
+              card:
+                - width: 46px
+                - height: 46px
+                - border-radius: 50%
+                - background: rgba(16,27,39,0.85)
+                - border: 1px solid rgba(0,229,255,0.4)
+                - box-shadow: 0 0 14px rgba(0,229,255,.3)
+              icon:
+                - color: "#00E5FF"
+
+          - type: state-label
+            entity: sensor.imprimante_hp_statut                  # TODO
+            style:
+              top: 71%
+              left: 44%
+              transform: translateX(-50%)
+              color: "#FFFFFF"
+              font-size: 10px
+              font-weight: 600
+              background: rgba(16,27,39,0.85)
+              border: 1px solid rgba(0,229,255,0.25)
+              border-radius: 6px
+              padding: 2px 6px
+              white-space: nowrap
+
+          # ───────────────────────── AMPLI DENON (AVR) ─────────────────
+          - type: custom:button-card
+            entity: media_player.denon_avr                      # TODO (Denon LAN 192.168.1.27)
+            show_name: false
+            show_state: false
+            show_icon: true
+            icon: mdi:amplifier
+            tap_action:
+              action: toggle
+            hold_action:
+              action: more-info
+            style:
+              top: 55%
+              left: 34%
+              "--mdc-icon-size": 22px
+            styles:
+              card:
+                - width: 46px
+                - height: 46px
+                - border-radius: 50%
+                - background: >
+                    [[[ return entity.state === 'on' || entity.state === 'playing'
+                        ? 'rgba(0,229,255,0.18)' : 'rgba(16,27,39,0.85)' ]]]
+                - border: 1px solid rgba(0,229,255,0.4)
+                - box-shadow: >
+                    [[[ return entity.state === 'on' || entity.state === 'playing'
+                        ? '0 0 16px rgba(0,229,255,.5)' : 'none' ]]]
+              icon:
+                - color: >
+                    [[[ return (entity.state === 'on' || entity.state === 'playing')
+                        ? '#00E5FF' : '#56707E' ]]]
+
+          - type: state-label
+            entity: media_player.denon_avr                      # TODO
+            style:
+              top: 62%
+              left: 34%
+              transform: translateX(-50%)
+              color: "#FFFFFF"
+              font-size: 10px
+              font-weight: 600
+              background: rgba(16,27,39,0.85)
+              border: 1px solid rgba(0,229,255,0.25)
+              border-radius: 6px
+              padding: 2px 6px
+              white-space: nowrap
+
+          # ───────────────────────── CLIMATISATION TOSHIBA ─────────────
+          - type: custom:button-card
+            entity: climate.toshiba_bureau                       # TODO
+            show_name: false
+            show_state: false
+            show_icon: true
+            icon: mdi:air-conditioner
+            tap_action:
+              action: more-info
+            style:
+              top: 5%
+              left: 52%
+              "--mdc-icon-size": 22px
+            styles:
+              card:
+                - width: 46px
+                - height: 46px
+                - border-radius: 50%
+                - background: >
+                    [[[ return entity.state !== 'off'
+                        ? 'rgba(0,229,255,0.18)' : 'rgba(16,27,39,0.85)' ]]]
+                - border: 1px solid rgba(0,229,255,0.4)
+                - box-shadow: >
+                    [[[ return entity.state !== 'off'
+                        ? '0 0 16px rgba(0,229,255,.5)' : 'none' ]]]
+              icon:
+                - color: >
+                    [[[ return entity.state !== 'off' ? '#00E5FF' : '#56707E' ]]]
+
+          - type: state-label
+            entity: climate.toshiba_bureau                       # TODO
+            attribute: temperature
+            suffix: "°C"
+            style:
+              top: 12%
+              left: 52%
+              transform: translateX(-50%)
+              color: "#FFFFFF"
+              font-size: 10px
+              font-weight: 600
+              background: rgba(16,27,39,0.85)
+              border: 1px solid rgba(0,229,255,0.25)
+              border-radius: 6px
+              padding: 2px 6px
+              white-space: nowrap
+
+          # ───────────────────────── MUSIC — HEOS BY DENON ─────────────
+          - type: custom:button-card
+            entity: media_player.heos_bureau                     # TODO
+            show_name: false
+            show_state: false
+            show_icon: true
+            icon: mdi:cast-audio
+            tap_action:
+              action: more-info
+            style:
+              top: 47%
+              left: 62%
+              "--mdc-icon-size": 24px
+            styles:
+              card:
+                - width: 50px
+                - height: 50px
+                - border-radius: 50%
+                - background: >
+                    [[[ return entity.state === 'playing'
+                        ? 'rgba(0,255,213,0.18)' : 'rgba(16,27,39,0.85)' ]]]
+                - border: 1px solid rgba(0,255,213,0.5)
+                - box-shadow: >
+                    [[[ return entity.state === 'playing'
+                        ? '0 0 18px rgba(0,255,213,.55)' : 'none' ]]]
+              icon:
+                - color: >
+                    [[[ return entity.state === 'playing' ? '#00FFD5' : '#56707E' ]]]
+
+          - type: state-label
+            entity: media_player.heos_bureau                     # TODO
+            attribute: media_title
+            style:
+              top: 55%
+              left: 62%
+              transform: translateX(-50%)
+              max-width: 140px
+              overflow: hidden
+              text-overflow: ellipsis
+              white-space: nowrap
+              color: "#FFFFFF"
+              font-size: 10px
+              font-weight: 600
+              background: rgba(16,27,39,0.85)
+              border: 1px solid rgba(0,255,213,0.35)
+              border-radius: 6px
+              padding: 2px 6px
+
+          # ─────────────────── LÉGENDE (bas de plan) ───────────────────
+          - type: custom:button-card
+            show_icon: false
+            show_name: false
+            show_state: false
+            custom_fields:
+              legend: >
+                <div style="display:flex;gap:18px;justify-content:center;
+                  align-items:center;padding:6px 14px;white-space:nowrap;">
+                  <div style="display:flex;align-items:center;gap:6px;">
+                    <div style="width:8px;height:8px;border-radius:50%;background:#00FFC3;
+                      box-shadow:0 0 8px rgba(0,255,195,.6);"></div>
+                    <span style="color:#8FB6C9;font-size:10px;">Tap = action rapide</span>
+                  </div>
+                  <div style="display:flex;align-items:center;gap:6px;">
+                    <div style="width:8px;height:8px;border-radius:50%;background:#00E5FF;
+                      box-shadow:0 0 8px rgba(0,229,255,.6);"></div>
+                    <span style="color:#8FB6C9;font-size:10px;">Appui long = détails</span>
+                  </div>
+                </div>
+            style:
+              top: 97%
+              left: 50%
+              transform: translate(-50%, -50%)
+            styles:
+              card:
+                - background: rgba(8,18,28,0.75)
+                - border: 1px solid rgba(0,229,255,0.2)
+                - border-radius: 20px
+                - box-shadow: none
+                - width: fit-content
+                - cursor: default
+                - pointer-events: none
+
+    # ── Fond de vue (même principe que energy.yaml) ──────────────────
+    card_mod:
+      style: |
+        hui-view {
+          background: center / cover no-repeat fixed url("/local/osvision_v2/images/desk.png");
+        }
