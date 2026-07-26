@@ -539,7 +539,7 @@ views:
                 - border-radius: 50%
                 - box-shadow: none
                 - background: >
-                    [[[ return entity.state === 'on' ? '#00FFC3' : '#FF5470' ]]]
+                    [[[ return (entity && entity.state === 'on') ? '#00FFC3' : '#FF5470' ]]]
 
           - type: custom:button-card
             entity: binary_sensor.desk_light_1_connectivity         # TODO
@@ -554,7 +554,7 @@ views:
                 - border-radius: 50%
                 - box-shadow: none
                 - background: >
-                    [[[ return entity.state === 'on' ? '#00FFC3' : '#FF5470' ]]]
+                    [[[ return (entity && entity.state === 'on') ? '#00FFC3' : '#FF5470' ]]]
 
           - type: custom:button-card
             entity: binary_sensor.desk_light_2_connectivity         # TODO
@@ -569,7 +569,7 @@ views:
                 - border-radius: 50%
                 - box-shadow: none
                 - background: >
-                    [[[ return entity.state === 'on' ? '#00FFC3' : '#FF5470' ]]]
+                    [[[ return (entity && entity.state === 'on') ? '#00FFC3' : '#FF5470' ]]]
 
           - type: custom:button-card
             entity: binary_sensor.desk_light_3_connectivity         # TODO
@@ -584,7 +584,7 @@ views:
                 - border-radius: 50%
                 - box-shadow: none
                 - background: >
-                    [[[ return entity.state === 'on' ? '#00FFC3' : '#FF5470' ]]]
+                    [[[ return (entity && entity.state === 'on') ? '#00FFC3' : '#FF5470' ]]]
 
           - type: custom:button-card
             entity: binary_sensor.imprimante_hp_connectivity        # TODO
@@ -599,7 +599,7 @@ views:
                 - border-radius: 50%
                 - box-shadow: none
                 - background: >
-                    [[[ return entity.state === 'on' ? '#00FFC3' : '#FF5470' ]]]
+                    [[[ return (entity && entity.state === 'on') ? '#00FFC3' : '#FF5470' ]]]
 
           - type: custom:button-card
             entity: binary_sensor.denon_avr_connectivity            # TODO
@@ -614,7 +614,7 @@ views:
                 - border-radius: 50%
                 - box-shadow: none
                 - background: >
-                    [[[ return entity.state === 'on' ? '#00FFC3' : '#FF5470' ]]]
+                    [[[ return (entity && entity.state === 'on') ? '#00FFC3' : '#FF5470' ]]]
 
           - type: custom:button-card
             entity: binary_sensor.toshiba_clim_connectivity         # TODO
@@ -629,7 +629,7 @@ views:
                 - border-radius: 50%
                 - box-shadow: none
                 - background: >
-                    [[[ return entity.state === 'on' ? '#00FFC3' : '#FF5470' ]]]
+                    [[[ return (entity && entity.state === 'on') ? '#00FFC3' : '#FF5470' ]]]
 
           - type: custom:button-card
             entity: binary_sensor.volet_bureau_connectivity         # TODO
@@ -644,7 +644,7 @@ views:
                 - border-radius: 50%
                 - box-shadow: none
                 - background: >
-                    [[[ return entity.state === 'on' ? '#00FFC3' : '#FF5470' ]]]
+                    [[[ return (entity && entity.state === 'on') ? '#00FFC3' : '#FF5470' ]]]
 
           # ── Légende ────────────────────────────────────────────────
           - type: custom:button-card
