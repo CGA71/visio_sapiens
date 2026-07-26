@@ -26,7 +26,7 @@
 #    selon vos capteurs réels (ping, disponibilité HA, etc.).
 #
 # Cartes HACS utilisées : button-card, card-mod, layout-card,
-# picture-elements + grid (natifs Lovelace), simple-weather-card.
+# picture-elements + grid (natifs Lovelace), platinum-weather-card.
 ########################################################################
 title: DESK
 theme: OSVision V2
@@ -71,14 +71,13 @@ views:
               style: |
                 :host { flex: 1.4 1 0; }
 
-          # ── Case 2 : météo du jour (simple-weather-card) ──────────
-          - type: custom:simple-weather-card
+          # ── Case 2 : météo du jour (platinum-weather-card) ─────────
+          # NOTE : "simple-weather-card" n'apparaît pas dans tes ressources
+          # installées (console) — remplacé par "platinum-weather-card",
+          # confirmé chargé (PLATINUM-WEATHER-CARD v1.0.5).
+          - type: custom:platinum-weather-card
             entity: weather.home                                 # TODO
             name: "Météo du jour"
-            forecast: false
-            current: true
-            details: true
-            hourly_forecast: false
             card_mod:
               style: |
                 :host { flex: 1 1 0; }
@@ -688,7 +687,7 @@ views:
           grid-area: devices
         cards:
           - type: custom:button-card
-            template: osvision_section_title
+            template: osvision_title
             name: "Appareils connectés — Interactions"
 
           - type: grid
