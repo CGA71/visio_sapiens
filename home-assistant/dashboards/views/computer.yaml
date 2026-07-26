@@ -2,7 +2,7 @@
 # OSVision V2 — DESK Dashboard (Bureau / Salle informatique)
 #
 # Emplacement attendu dans le repo :
-#   home-assistant/dashboards/views/desk.yaml
+#   home-assistant/dashboards/views/computer.yaml
 #
 # Structure en 3 LIGNES (grid-template-rows) :
 #
@@ -36,7 +36,7 @@ decluttering_templates: !include ../templates/decluttering_templates.yaml
 
 views:
   - title: DESK
-    path: desk
+    path: computer
     subview: false
     type: custom:grid-layout
     layout:
@@ -220,7 +220,7 @@ views:
               active: true
             tap_action:
               action: navigate
-              navigation_path: /osvision-desk/desk
+              navigation_path: /osvision-computer/computer
 
           - type: custom:button-card
             template: osvision_nav_button
