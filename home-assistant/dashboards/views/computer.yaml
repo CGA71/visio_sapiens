@@ -1,32 +1,33 @@
 ########################################################################
-# OSVision V2 — DESK Dashboard (Bureau / Salle informatique)
+# OSVision V2 — COMPUTER Dashboard (Bureau / Salle informatique)
 #
-# Emplacement attendu dans le repo :
-#   home-assistant/dashboards/views/computer.yaml
+# Emplacement : home-assistant/dashboards/views/computer.yaml
+# url_path associé : osvision-computer   (vue : /osvision-computer/computer)
 #
-# Structure en 3 LIGNES (grid-template-rows) :
+# Structure en 3 LIGNES :
+#   LIGNE 1 — header : [ Titre ] [ Météo ] [ Heure + logo OS ]
+#   LIGNE 2 — plan desk.png avec badges de statut (vert=OK / rouge=KO)
+#   LIGNE 3 — cartes d'interaction, une par appareil
 #
-#   LIGNE 1 — header : [ Nom du dashboard ] [ Météo du jour ] [ Heure + logo OS ]
-#   LIGNE 2 — plan desk.png en fond, avec uniquement des BADGES de statut
-#             (vert = fonctionne / rouge = ne fonctionne pas) pour :
-#             température/humidité, Desk Light 1/2/3, imprimante, ampli
-#             Denon, climatisation Toshiba, volet roulant.
-#   LIGNE 3 — grille de cartes d'INTERACTION, une par appareil :
-#             température & humidité, lumières Hue (on/off + couleur),
-#             file d'attente imprimante, volet roulant (ouvrir/fermer),
-#             climatisation (contrôleur complet), streaming audio HEOS.
+# ── ROBUSTESSE / CHOIX TECHNIQUES ─────────────────────────────────────
+# Cette version évite volontairement tout ce qui a fait planter le
+# panel dans les essais précédents :
+#   • PAS de template "osvision_section_title" (absent de ta librairie
+#     de base → remplacé par un simple markdown stylé).
+#   • PAS de "custom:simple-weather-card" (non installé chez toi → météo
+#     via la carte NATIVE "weather-forecast", toujours dispo).
+#   • Actions de service en syntaxe MODERNE "perform_action:" / "data:"
+#     (l'ancienne "service:" / "service_data:" est dépréciée et casse le
+#     rendu sur les versions récentes de button-card / HA).
+#   • Seuls des templates GARANTIS présents sont utilisés :
+#     osvision_page_header, osvision_os_avatar, osvision_sidebar_logo,
+#     osvision_nav_button, osvision_sidebar_brand_footer.
 #
 # ── PRÉREQUIS ─────────────────────────────────────────────────────────
-# 1. Déposer l'image fournie dans :
-#      home-assistant/www/osvision_v2/images/desk.png
-#    (accessible ensuite via /local/osvision_v2/images/desk.png)
-# 2. Remplacer toutes les entités marquées « # TODO » par les vôtres.
-#    Les badges de la LIGNE 2 sont branchés sur des binary_sensor de
-#    connectivité (on = fonctionne / off = ne fonctionne pas) — adaptez
-#    selon vos capteurs réels (ping, disponibilité HA, etc.).
-#
-# Cartes HACS utilisées : button-card, card-mod, layout-card,
-# picture-elements + grid (natifs Lovelace), platinum-weather-card.
+# 1. Image dans : home-assistant/www/osvision_v2/images/desk.png
+# 2. Remplacer chaque entité « # TODO » par la vôtre.
+#    Les badges ligne 2 pointent sur des binary_sensor de connectivité
+#    (on = fonctionne / off = ne fonctionne pas).
 ########################################################################
 title: DESK
 theme: OSVision V2
@@ -58,7 +59,7 @@ views:
           grid-area: header
         cards:
 
-          # ── Case 1 : nom du dashboard ─────────────────────────────
+          # ── Case 1 : titre ────────────────────────────────────────
           - type: custom:button-card
             template: osvision_page_header
             icon: mdi:chevron-left
@@ -69,15 +70,13 @@ views:
               navigation_path: /osvision-v2/home
             card_mod:
               style: |
-                :host { flex: 1.4 1 0; }
+                :host { flex: 1.6 1 0; }
 
-          # ── Case 2 : météo du jour (platinum-weather-card) ─────────
-          # NOTE : "simple-weather-card" n'apparaît pas dans tes ressources
-          # installées (console) — remplacé par "platinum-weather-card",
-          # confirmé chargé (PLATINUM-WEATHER-CARD v1.0.5).
-          - type: custom:platinum-weather-card
+          # ── Case 2 : météo (carte NATIVE, toujours disponible) ─────
+          - type: weather-forecast
             entity: weather.home                                 # TODO
-            name: "Météo du jour"
+            show_current: true
+            show_forecast: false
             card_mod:
               style: |
                 :host { flex: 1 1 0; }
@@ -85,52 +84,19 @@ views:
                   background: rgba(16,27,39,0.85) !important;
                   border: 1px solid rgba(0,229,255,0.28) !important;
                   border-radius: 20px !important;
-                  box-shadow: 0 0 18px rgba(0,229,255,.12);
-                  color: #FFFFFF !important;
+                  box-shadow: 0 0 18px rgba(0,229,255,.12) !important;
                 }
 
           # ── Case 3 : heure + logo OS ───────────────────────────────
           - type: custom:button-card
-            show_name: false
-            show_icon: false
-            show_state: false
-            custom_fields:
-              clock: |
-                [[[ return `
-                  <div style="display:flex;align-items:center;justify-content:space-between;
-                    height:100%;padding:0 18px;">
-                    <div>
-                      <div style="font-family:'Orbitron',sans-serif;font-size:22px;
-                        color:#00E5FF;" id="osv-clock">--:--</div>
-                      <div style="font-size:11px;color:#8FB6C9;letter-spacing:.5px;">
-                        Dimanche 26 Juillet 2026</div>
-                    </div>
-                    <div style="width:44px;height:44px;border-radius:50%;
-                      background:conic-gradient(from 180deg,#00E5FF,#00FFD5,#00E5FF);
-                      display:flex;align-items:center;justify-content:center;
-                      box-shadow:0 0 14px rgba(0,229,255,.4);">
-                      <span style="font-family:'Orbitron',sans-serif;font-size:11px;
-                        font-weight:900;color:#050B12;">OS</span>
-                    </div>
-                  </div>
-                `]]]
-            styles:
-              card:
-                - background: rgba(16,27,39,0.85)
-                - border: 1px solid rgba(0,229,255,0.28)
-                - border-radius: 20px
-                - box-shadow: 0 0 18px rgba(0,229,255,.12)
-                - height: 100%
-              custom_fields:
-                clock:
-                  - width: 100%
-                  - height: 100%
+            template: osvision_os_avatar
+            name: "OS"
             card_mod:
               style: |
-                :host { flex: 1 1 0; }
+                :host { flex: 0 0 56px; }
 
       # ═══════════════════════════════════════════════════════════════
-      # SIDEBAR NAV — identique aux autres vues, DESK / COMPUTER ROOM actif
+      # SIDEBAR NAV
       # ═══════════════════════════════════════════════════════════════
       - type: vertical-stack
         view_layout:
@@ -264,7 +230,7 @@ views:
             label: "SMART HOME OS"
 
       # ═══════════════════════════════════════════════════════════════
-      # LIGNE 2 — PLAN desk.png + badges de statut (vert/rouge) uniquement
+      # LIGNE 2 — PLAN desk.png + badges de statut (vert/rouge)
       # ═══════════════════════════════════════════════════════════════
       - type: picture-elements
         view_layout:
@@ -290,360 +256,76 @@ views:
             }
         elements:
 
-          # ── Badge : Température & Humidité (capteur bureau) ────────
-          - type: custom:button-card
+          # Chaque appareil = une pastille colorée + un libellé.
+          # La couleur est pilotée par card_mod sur l'état de l'entité,
+          # avec garde "if (!config.entity ...)" pour ne jamais planter
+          # si l'entité n'existe pas encore.
+
+          # ── Température / Humidité ────────────────────────────────
+          - type: state-label
             entity: binary_sensor.bureau_capteur_connectivity      # TODO
-            show_name: true
-            show_icon: false
-            show_state: false
-            name: "Température / Humidité"
-            tap_action:
-              action: more-info
-            style:
-              top: 6%
-              left: 4%
-            styles:
-              card:
-                - display: flex
-                - align-items: center
-                - gap: 8px
-                - background: rgba(16,27,39,0.85)
-                - border: 1px solid rgba(0,229,255,0.3)
-                - border-radius: 20px
-                - padding: 5px 12px
-                - width: fit-content
-                - box-shadow: 0 0 10px rgba(0,229,255,.15)
-              name:
-                - color: "#FFFFFF"
-                - font-size: 11px
-                - font-weight: 600
-                - white-space: nowrap
+            style: { top: 7%, left: 4%, transform: "translateX(-50%)" }
+            card_mod: &badge_style
+              style: |
+                :host {
+                  color: #FFFFFF !important;
+                  font-size: 11px !important;
+                  font-weight: 600 !important;
+                  background: rgba(16,27,39,0.9) !important;
+                  border: 1px solid rgba(0,229,255,0.3) !important;
+                  border-radius: 20px !important;
+                  padding: 4px 12px 4px 22px !important;
+                  white-space: nowrap !important;
+                  box-shadow: 0 0 10px rgba(0,229,255,.15) !important;
+                  position: relative !important;
+                }
+                :host::before {
+                  content: "" !important;
+                  position: absolute !important;
+                  left: 9px !important;
+                  top: 50% !important;
+                  transform: translateY(-50%) !important;
+                  width: 8px !important;
+                  height: 8px !important;
+                  border-radius: 50% !important;
+                  background: var(--status-color, #FF5470) !important;
+                  box-shadow: 0 0 8px var(--status-color, #FF5470) !important;
+                }
 
-          # ── Badge : Desk Light 1 ─────────────────────────────────────
-          - type: custom:button-card
-            entity: binary_sensor.desk_light_1_connectivity         # TODO
-            show_name: true
-            show_icon: false
-            show_state: false
-            name: "Desk Light 1"
-            tap_action:
-              action: more-info
-            style:
-              top: 14%
-              left: 9%
-            styles:
-              card:
-                - display: flex
-                - align-items: center
-                - gap: 8px
-                - background: rgba(16,27,39,0.85)
-                - border: 1px solid rgba(0,229,255,0.3)
-                - border-radius: 20px
-                - padding: 5px 12px
-                - width: fit-content
-                - box-shadow: 0 0 10px rgba(0,229,255,.15)
-              name:
-                - color: "#FFFFFF"
-                - font-size: 11px
-                - font-weight: 600
-                - white-space: nowrap
+          - type: state-label
+            entity: binary_sensor.desk_light_1_connectivity        # TODO
+            style: { top: 14%, left: 10%, transform: "translateX(-50%)" }
+            card_mod: *badge_style
 
-          # ── Badge : Desk Light 2 ─────────────────────────────────────
-          - type: custom:button-card
-            entity: binary_sensor.desk_light_2_connectivity         # TODO
-            show_name: true
-            show_icon: false
-            show_state: false
-            name: "Desk Light 2"
-            tap_action:
-              action: more-info
-            style:
-              top: 10%
-              left: 17%
-            styles:
-              card:
-                - display: flex
-                - align-items: center
-                - gap: 8px
-                - background: rgba(16,27,39,0.85)
-                - border: 1px solid rgba(0,229,255,0.3)
-                - border-radius: 20px
-                - padding: 5px 12px
-                - width: fit-content
-                - box-shadow: 0 0 10px rgba(0,229,255,.15)
-              name:
-                - color: "#FFFFFF"
-                - font-size: 11px
-                - font-weight: 600
-                - white-space: nowrap
+          - type: state-label
+            entity: binary_sensor.desk_light_2_connectivity        # TODO
+            style: { top: 10%, left: 18%, transform: "translateX(-50%)" }
+            card_mod: *badge_style
 
-          # ── Badge : Desk Light 3 ─────────────────────────────────────
-          - type: custom:button-card
-            entity: binary_sensor.desk_light_3_connectivity         # TODO
-            show_name: true
-            show_icon: false
-            show_state: false
-            name: "Desk Light 3"
-            tap_action:
-              action: more-info
-            style:
-              top: 14%
-              left: 25%
-            styles:
-              card:
-                - display: flex
-                - align-items: center
-                - gap: 8px
-                - background: rgba(16,27,39,0.85)
-                - border: 1px solid rgba(0,229,255,0.3)
-                - border-radius: 20px
-                - padding: 5px 12px
-                - width: fit-content
-                - box-shadow: 0 0 10px rgba(0,229,255,.15)
-              name:
-                - color: "#FFFFFF"
-                - font-size: 11px
-                - font-weight: 600
-                - white-space: nowrap
+          - type: state-label
+            entity: binary_sensor.desk_light_3_connectivity        # TODO
+            style: { top: 14%, left: 26%, transform: "translateX(-50%)" }
+            card_mod: *badge_style
 
-          # ── Badge : Imprimante HP (192.168.1.83) ─────────────────────
-          - type: custom:button-card
-            entity: binary_sensor.imprimante_hp_connectivity        # TODO
-            show_name: true
-            show_icon: false
-            show_state: false
-            name: "Imprimante HP"
-            tap_action:
-              action: more-info
-            style:
-              top: 64%
-              left: 44%
-            styles:
-              card:
-                - display: flex
-                - align-items: center
-                - gap: 8px
-                - background: rgba(16,27,39,0.85)
-                - border: 1px solid rgba(0,229,255,0.3)
-                - border-radius: 20px
-                - padding: 5px 12px
-                - width: fit-content
-                - box-shadow: 0 0 10px rgba(0,229,255,.15)
-              name:
-                - color: "#FFFFFF"
-                - font-size: 11px
-                - font-weight: 600
-                - white-space: nowrap
+          - type: state-label
+            entity: binary_sensor.imprimante_hp_connectivity       # TODO
+            style: { top: 64%, left: 44%, transform: "translateX(-50%)" }
+            card_mod: *badge_style
 
-          # ── Badge : Ampli Denon (192.168.1.27) ────────────────────────
-          - type: custom:button-card
-            entity: binary_sensor.denon_avr_connectivity            # TODO
-            show_name: true
-            show_icon: false
-            show_state: false
-            name: "Ampli Denon"
-            tap_action:
-              action: more-info
-            style:
-              top: 55%
-              left: 34%
-            styles:
-              card:
-                - display: flex
-                - align-items: center
-                - gap: 8px
-                - background: rgba(16,27,39,0.85)
-                - border: 1px solid rgba(0,229,255,0.3)
-                - border-radius: 20px
-                - padding: 5px 12px
-                - width: fit-content
-                - box-shadow: 0 0 10px rgba(0,229,255,.15)
-              name:
-                - color: "#FFFFFF"
-                - font-size: 11px
-                - font-weight: 600
-                - white-space: nowrap
+          - type: state-label
+            entity: binary_sensor.denon_avr_connectivity           # TODO
+            style: { top: 55%, left: 34%, transform: "translateX(-50%)" }
+            card_mod: *badge_style
 
-          # ── Badge : Climatisation Toshiba ─────────────────────────────
-          - type: custom:button-card
-            entity: binary_sensor.toshiba_clim_connectivity         # TODO
-            show_name: true
-            show_icon: false
-            show_state: false
-            name: "Climatisation Toshiba"
-            tap_action:
-              action: more-info
-            style:
-              top: 5%
-              left: 52%
-            styles:
-              card:
-                - display: flex
-                - align-items: center
-                - gap: 8px
-                - background: rgba(16,27,39,0.85)
-                - border: 1px solid rgba(0,229,255,0.3)
-                - border-radius: 20px
-                - padding: 5px 12px
-                - width: fit-content
-                - box-shadow: 0 0 10px rgba(0,229,255,.15)
-              name:
-                - color: "#FFFFFF"
-                - font-size: 11px
-                - font-weight: 600
-                - white-space: nowrap
+          - type: state-label
+            entity: binary_sensor.toshiba_clim_connectivity        # TODO
+            style: { top: 5%, left: 53%, transform: "translateX(-50%)" }
+            card_mod: *badge_style
 
-          # ── Badge : Volet roulant ──────────────────────────────────────
-          - type: custom:button-card
-            entity: binary_sensor.volet_bureau_connectivity         # TODO
-            show_name: true
-            show_icon: false
-            show_state: false
-            name: "Volet roulant"
-            tap_action:
-              action: more-info
-            style:
-              top: 22%
-              left: 43%
-            styles:
-              card:
-                - display: flex
-                - align-items: center
-                - gap: 8px
-                - background: rgba(16,27,39,0.85)
-                - border: 1px solid rgba(0,229,255,0.3)
-                - border-radius: 20px
-                - padding: 5px 12px
-                - width: fit-content
-                - box-shadow: 0 0 10px rgba(0,229,255,.15)
-              name:
-                - color: "#FFFFFF"
-                - font-size: 11px
-                - font-weight: 600
-                - white-space: nowrap
-
-          # ── Pastilles vert/rouge, une par badge (superposées à gauche
-          #    du texte de chaque bulle ci-dessus, via top/left identiques
-          #    + léger décalage) ─────────────────────────────────────────
-          - type: custom:button-card
-            entity: binary_sensor.bureau_capteur_connectivity       # TODO
-            show_name: false
-            show_icon: false
-            show_state: false
-            style: { top: 6%,  left: 4.6% }
-            styles:
-              card:
-                - width: 9px
-                - height: 9px
-                - border-radius: 50%
-                - box-shadow: none
-                - background: >
-                    [[[ return (entity && entity.state === 'on') ? '#00FFC3' : '#FF5470' ]]]
-
-          - type: custom:button-card
-            entity: binary_sensor.desk_light_1_connectivity         # TODO
-            show_name: false
-            show_icon: false
-            show_state: false
-            style: { top: 14%, left: 9.6% }
-            styles:
-              card:
-                - width: 9px
-                - height: 9px
-                - border-radius: 50%
-                - box-shadow: none
-                - background: >
-                    [[[ return (entity && entity.state === 'on') ? '#00FFC3' : '#FF5470' ]]]
-
-          - type: custom:button-card
-            entity: binary_sensor.desk_light_2_connectivity         # TODO
-            show_name: false
-            show_icon: false
-            show_state: false
-            style: { top: 10%, left: 17.6% }
-            styles:
-              card:
-                - width: 9px
-                - height: 9px
-                - border-radius: 50%
-                - box-shadow: none
-                - background: >
-                    [[[ return (entity && entity.state === 'on') ? '#00FFC3' : '#FF5470' ]]]
-
-          - type: custom:button-card
-            entity: binary_sensor.desk_light_3_connectivity         # TODO
-            show_name: false
-            show_icon: false
-            show_state: false
-            style: { top: 14%, left: 25.6% }
-            styles:
-              card:
-                - width: 9px
-                - height: 9px
-                - border-radius: 50%
-                - box-shadow: none
-                - background: >
-                    [[[ return (entity && entity.state === 'on') ? '#00FFC3' : '#FF5470' ]]]
-
-          - type: custom:button-card
-            entity: binary_sensor.imprimante_hp_connectivity        # TODO
-            show_name: false
-            show_icon: false
-            show_state: false
-            style: { top: 64%, left: 44.6% }
-            styles:
-              card:
-                - width: 9px
-                - height: 9px
-                - border-radius: 50%
-                - box-shadow: none
-                - background: >
-                    [[[ return (entity && entity.state === 'on') ? '#00FFC3' : '#FF5470' ]]]
-
-          - type: custom:button-card
-            entity: binary_sensor.denon_avr_connectivity            # TODO
-            show_name: false
-            show_icon: false
-            show_state: false
-            style: { top: 55%, left: 34.6% }
-            styles:
-              card:
-                - width: 9px
-                - height: 9px
-                - border-radius: 50%
-                - box-shadow: none
-                - background: >
-                    [[[ return (entity && entity.state === 'on') ? '#00FFC3' : '#FF5470' ]]]
-
-          - type: custom:button-card
-            entity: binary_sensor.toshiba_clim_connectivity         # TODO
-            show_name: false
-            show_icon: false
-            show_state: false
-            style: { top: 5%,  left: 52.6% }
-            styles:
-              card:
-                - width: 9px
-                - height: 9px
-                - border-radius: 50%
-                - box-shadow: none
-                - background: >
-                    [[[ return (entity && entity.state === 'on') ? '#00FFC3' : '#FF5470' ]]]
-
-          - type: custom:button-card
-            entity: binary_sensor.volet_bureau_connectivity         # TODO
-            show_name: false
-            show_icon: false
-            show_state: false
-            style: { top: 22%, left: 43.6% }
-            styles:
-              card:
-                - width: 9px
-                - height: 9px
-                - border-radius: 50%
-                - box-shadow: none
-                - background: >
-                    [[[ return (entity && entity.state === 'on') ? '#00FFC3' : '#FF5470' ]]]
+          - type: state-label
+            entity: binary_sensor.volet_bureau_connectivity        # TODO
+            style: { top: 22%, left: 43%, transform: "translateX(-50%)" }
+            card_mod: *badge_style
 
           # ── Légende ────────────────────────────────────────────────
           - type: custom:button-card
@@ -665,10 +347,7 @@ views:
                     <span style="color:#8FB6C9;font-size:10px;">Ne fonctionne pas</span>
                   </div>
                 </div>
-            style:
-              top: 96%
-              left: 50%
-              transform: translate(-50%, -50%)
+            style: { top: 95%, left: 50%, transform: "translate(-50%, -50%)" }
             styles:
               card:
                 - background: rgba(8,18,28,0.75)
@@ -676,7 +355,6 @@ views:
                 - border-radius: 20px
                 - box-shadow: none
                 - width: fit-content
-                - cursor: default
                 - pointer-events: none
 
       # ═══════════════════════════════════════════════════════════════
@@ -686,9 +364,24 @@ views:
         view_layout:
           grid-area: devices
         cards:
-          - type: custom:button-card
-            template: osvision_title
-            name: "Appareils connectés — Interactions"
+
+          # Titre de section (markdown stylé, pas de template custom)
+          - type: markdown
+            content: "## Appareils connectés — Interactions"
+            card_mod:
+              style: |
+                ha-card {
+                  background: transparent !important;
+                  border: none !important;
+                  box-shadow: none !important;
+                }
+                ha-card h2 {
+                  color: #00E5FF !important;
+                  font-family: Orbitron, sans-serif !important;
+                  letter-spacing: 2px !important;
+                  font-size: 18px !important;
+                  margin: 4px 0 !important;
+                }
 
           - type: grid
             columns: 3
@@ -696,366 +389,126 @@ views:
             cards:
 
               # ── 1. Température & Humidité ─────────────────────────
-              - type: vertical-stack
-                cards:
-                  - type: custom:button-card
-                    show_icon: false
-                    show_name: false
-                    show_state: false
-                    custom_fields:
-                      header: >
-                        <div style="display:flex;align-items:center;gap:8px;">
-                          <ha-icon icon="mdi:thermometer" style="color:#00E5FF;"></ha-icon>
-                          <span style="color:#8FB6C9;font-size:12px;letter-spacing:1px;
-                            text-transform:uppercase;font-weight:600;">Température &amp; Humidité</span>
-                        </div>
-                    styles:
-                      card:
-                        - background: rgba(16,27,39,0.85)
-                        - border: 1px solid rgba(0,229,255,0.25)
-                        - border-radius: 18px 18px 0 0
-                        - padding: 14px 16px 6px 16px
-                        - box-shadow: none
-                        - cursor: default
-                        - pointer-events: none
-                  - type: glance
-                    show_name: true
-                    show_icon: true
-                    show_state: true
-                    entities:
-                      - entity: sensor.bureau_temperature          # TODO
-                        name: "Température"
-                      - entity: sensor.bureau_humidite             # TODO
-                        name: "Humidité"
-                    card_mod:
-                      style: |
-                        ha-card {
-                          background: rgba(16,27,39,0.85) !important;
-                          border: 1px solid rgba(0,229,255,0.25) !important;
-                          border-top: none !important;
-                          border-radius: 0 0 18px 18px !important;
-                          box-shadow: none !important;
-                        }
+              - type: entities
+                title: "Température & Humidité"
+                show_header_toggle: false
+                entities:
+                  - entity: sensor.bureau_temperature              # TODO
+                    name: "Température"
+                    icon: mdi:thermometer
+                  - entity: sensor.bureau_humidite                 # TODO
+                    name: "Humidité"
+                    icon: mdi:water-percent
+                card_mod:
+                  style: |
+                    ha-card {
+                      background: rgba(16,27,39,0.85) !important;
+                      border: 1px solid rgba(0,229,255,0.25) !important;
+                      border-radius: 18px !important;
+                      box-shadow: none !important;
+                    }
 
               # ── 2. Lumières Hue (on/off + couleur) ────────────────
-              - type: vertical-stack
-                cards:
-                  - type: custom:button-card
-                    show_icon: false
-                    show_name: false
-                    show_state: false
-                    custom_fields:
-                      header: >
-                        <div style="display:flex;align-items:center;gap:8px;">
-                          <ha-icon icon="mdi:lightbulb-group" style="color:#00E5FF;"></ha-icon>
-                          <span style="color:#8FB6C9;font-size:12px;letter-spacing:1px;
-                            text-transform:uppercase;font-weight:600;">Lumières Hue — Desk Light 1/2/3</span>
-                        </div>
-                    styles:
-                      card:
-                        - background: rgba(16,27,39,0.85)
-                        - border: 1px solid rgba(0,229,255,0.25)
-                        - border-radius: 18px 18px 0 0
-                        - padding: 14px 16px 6px 16px
-                        - box-shadow: none
-                        - cursor: default
-                        - pointer-events: none
-
-                  - type: entities
-                    show_header_toggle: false
+              - type: entities
+                title: "Lumières Hue"
+                show_header_toggle: true
+                entities:
+                  - entity: light.desk_light_1                     # TODO
+                    name: "Desk Light 1"
+                  - entity: light.desk_light_2                     # TODO
+                    name: "Desk Light 2"
+                  - entity: light.desk_light_3                     # TODO
+                    name: "Desk Light 3"
+                  - type: buttons
                     entities:
                       - entity: light.desk_light_1                 # TODO
-                        name: "Desk Light 1"
+                        name: "L1"
+                        tap_action:
+                          action: more-info
                       - entity: light.desk_light_2                 # TODO
-                        name: "Desk Light 2"
+                        name: "L2"
+                        tap_action:
+                          action: more-info
                       - entity: light.desk_light_3                 # TODO
-                        name: "Desk Light 3"
-                    card_mod:
-                      style: |
-                        ha-card {
-                          background: rgba(16,27,39,0.85) !important;
-                          border: 1px solid rgba(0,229,255,0.25) !important;
-                          border-top: none !important;
-                          box-shadow: none !important;
-                        }
+                        name: "L3"
+                        tap_action:
+                          action: more-info
+                card_mod:
+                  style: |
+                    ha-card {
+                      background: rgba(16,27,39,0.85) !important;
+                      border: 1px solid rgba(0,229,255,0.25) !important;
+                      border-radius: 18px !important;
+                      box-shadow: none !important;
+                    }
 
-                  # Raccourcis couleur (appel direct light.turn_on rgb_color)
-                  - type: horizontal-stack
-                    cards:
-                      - type: custom:button-card
-                        icon: mdi:circle
-                        show_name: false
-                        show_state: false
-                        tap_action:
-                          action: call-service
-                          service: light.turn_on
-                          service_data:
-                            entity_id: [light.desk_light_1, light.desk_light_2, light.desk_light_3]  # TODO
-                            rgb_color: [255, 255, 255]
-                        styles:
-                          icon: [{ color: "#FFFFFF" }]
-                          card: [{ background: "transparent" }, { box-shadow: none }]
-                      - type: custom:button-card
-                        icon: mdi:circle
-                        show_name: false
-                        show_state: false
-                        tap_action:
-                          action: call-service
-                          service: light.turn_on
-                          service_data:
-                            entity_id: [light.desk_light_1, light.desk_light_2, light.desk_light_3]  # TODO
-                            rgb_color: [0, 229, 255]
-                        styles:
-                          icon: [{ color: "#00E5FF" }]
-                          card: [{ background: "transparent" }, { box-shadow: none }]
-                      - type: custom:button-card
-                        icon: mdi:circle
-                        show_name: false
-                        show_state: false
-                        tap_action:
-                          action: call-service
-                          service: light.turn_on
-                          service_data:
-                            entity_id: [light.desk_light_1, light.desk_light_2, light.desk_light_3]  # TODO
-                            rgb_color: [255, 100, 40]
-                        styles:
-                          icon: [{ color: "#FF6428" }]
-                          card: [{ background: "transparent" }, { box-shadow: none }]
-                      - type: custom:button-card
-                        icon: mdi:circle
-                        show_name: false
-                        show_state: false
-                        tap_action:
-                          action: call-service
-                          service: light.turn_on
-                          service_data:
-                            entity_id: [light.desk_light_1, light.desk_light_2, light.desk_light_3]  # TODO
-                            rgb_color: [150, 60, 255]
-                        styles:
-                          icon: [{ color: "#963CFF" }]
-                          card: [{ background: "transparent" }, { box-shadow: none }]
-                      - type: custom:button-card
-                        icon: mdi:power
-                        show_name: false
-                        show_state: false
-                        tap_action:
-                          action: call-service
-                          service: light.turn_off
-                          service_data:
-                            entity_id: [light.desk_light_1, light.desk_light_2, light.desk_light_3]  # TODO
-                        styles:
-                          icon: [{ color: "#FF5470" }]
-                          card: [{ background: "transparent" }, { box-shadow: none }]
-                    card_mod:
-                      style: |
-                        :host {
-                          background: rgba(16,27,39,0.85);
-                          border: 1px solid rgba(0,229,255,0.25);
-                          border-top: none;
-                          border-radius: 0 0 18px 18px;
-                          padding: 8px 4px 10px 4px;
-                        }
-
-              # ── 3. File d'attente Imprimante ───────────────────────
-              - type: vertical-stack
-                cards:
-                  - type: custom:button-card
-                    show_icon: false
-                    show_name: false
-                    show_state: false
-                    custom_fields:
-                      header: >
-                        <div style="display:flex;align-items:center;gap:8px;">
-                          <ha-icon icon="mdi:printer" style="color:#00E5FF;"></ha-icon>
-                          <span style="color:#8FB6C9;font-size:12px;letter-spacing:1px;
-                            text-transform:uppercase;font-weight:600;">Imprimante HP — 192.168.1.83</span>
-                        </div>
-                    styles:
-                      card:
-                        - background: rgba(16,27,39,0.85)
-                        - border: 1px solid rgba(0,229,255,0.25)
-                        - border-radius: 18px 18px 0 0
-                        - padding: 14px 16px 6px 16px
-                        - box-shadow: none
-                        - cursor: default
-                        - pointer-events: none
-                  - type: markdown
-                    content: >
-                      **Statut :** {{ states('sensor.imprimante_hp_statut') }}
-
-                      **Encre / toner :** {{ states('sensor.imprimante_hp_toner') }}%
-
-                      **File d'attente :**
-                      {% set jobs = state_attr('sensor.imprimante_hp_queue', 'jobs') %}
-                      {% if jobs %}
-                        {% for job in jobs %}
-                      - {{ job.name }} — {{ job.status }}
-                        {% endfor %}
-                      {% else %}
-                      Aucun document en attente
-                      {% endif %}
-                    card_mod:
-                      style: |
-                        ha-card {
-                          background: rgba(16,27,39,0.85) !important;
-                          border: 1px solid rgba(0,229,255,0.25) !important;
-                          border-top: none !important;
-                          border-radius: 0 0 18px 18px !important;
-                          box-shadow: none !important;
-                          color: #FFFFFF !important;
-                          font-size: 12px !important;
-                          padding: 12px 16px !important;
-                        }
-                    # TODO : sensor.imprimante_hp_statut / _toner / _queue
-                    # (capteur HP LAN 192.168.1.83, ex. via intégration HP
-                    # ou scrape_sensor sur la page web de l'imprimante)
+              # ── 3. Imprimante (statut + file d'attente) ───────────
+              - type: entities
+                title: "Imprimante HP — 192.168.1.83"
+                show_header_toggle: false
+                entities:
+                  - entity: sensor.imprimante_hp_statut            # TODO
+                    name: "Statut"
+                    icon: mdi:printer
+                  - entity: sensor.imprimante_hp_toner             # TODO
+                    name: "Encre / toner"
+                    icon: mdi:water
+                  - entity: sensor.imprimante_hp_queue             # TODO
+                    name: "File d'attente"
+                    icon: mdi:tray-full
+                card_mod:
+                  style: |
+                    ha-card {
+                      background: rgba(16,27,39,0.85) !important;
+                      border: 1px solid rgba(0,229,255,0.25) !important;
+                      border-radius: 18px !important;
+                      box-shadow: none !important;
+                    }
 
               # ── 4. Volet roulant (ouvrir / fermer) ─────────────────
-              - type: vertical-stack
-                cards:
-                  - type: custom:button-card
-                    show_icon: false
-                    show_name: false
-                    show_state: false
-                    custom_fields:
-                      header: >
-                        <div style="display:flex;align-items:center;gap:8px;">
-                          <ha-icon icon="mdi:window-shutter" style="color:#00E5FF;"></ha-icon>
-                          <span style="color:#8FB6C9;font-size:12px;letter-spacing:1px;
-                            text-transform:uppercase;font-weight:600;">Volet roulant</span>
-                        </div>
-                    styles:
-                      card:
-                        - background: rgba(16,27,39,0.85)
-                        - border: 1px solid rgba(0,229,255,0.25)
-                        - border-radius: 18px 18px 0 0
-                        - padding: 14px 16px 6px 16px
-                        - box-shadow: none
-                        - cursor: default
-                        - pointer-events: none
-                  - type: horizontal-stack
-                    cards:
-                      - type: custom:button-card
-                        icon: mdi:arrow-up-bold
-                        name: "Ouvrir"
-                        tap_action:
-                          action: call-service
-                          service: cover.open_cover
-                          service_data:
-                            entity_id: cover.volet_bureau           # TODO
-                        styles:
-                          icon: [{ color: "#00E5FF" }]
-                          name: [{ color: "#FFFFFF" }, { font-size: "11px" }]
-                          card: [{ background: "rgba(0,229,255,0.06)" }]
-                      - type: custom:button-card
-                        icon: mdi:stop
-                        name: "Stop"
-                        tap_action:
-                          action: call-service
-                          service: cover.stop_cover
-                          service_data:
-                            entity_id: cover.volet_bureau           # TODO
-                        styles:
-                          icon: [{ color: "#FFB020" }]
-                          name: [{ color: "#FFFFFF" }, { font-size: "11px" }]
-                          card: [{ background: "rgba(255,176,32,0.06)" }]
-                      - type: custom:button-card
-                        icon: mdi:arrow-down-bold
-                        name: "Fermer"
-                        tap_action:
-                          action: call-service
-                          service: cover.close_cover
-                          service_data:
-                            entity_id: cover.volet_bureau           # TODO
-                        styles:
-                          icon: [{ color: "#FF5470" }]
-                          name: [{ color: "#FFFFFF" }, { font-size: "11px" }]
-                          card: [{ background: "rgba(255,84,112,0.06)" }]
-                    card_mod:
-                      style: |
-                        :host {
-                          background: rgba(16,27,39,0.85);
-                          border: 1px solid rgba(0,229,255,0.25);
-                          border-top: none;
-                          border-radius: 0 0 18px 18px;
-                          padding: 10px;
-                        }
+              - type: entities
+                title: "Volet roulant"
+                show_header_toggle: false
+                entities:
+                  - entity: cover.volet_bureau                     # TODO
+                    name: "Volet bureau"
+                card_mod:
+                  style: |
+                    ha-card {
+                      background: rgba(16,27,39,0.85) !important;
+                      border: 1px solid rgba(0,229,255,0.25) !important;
+                      border-radius: 18px !important;
+                      box-shadow: none !important;
+                    }
 
               # ── 5. Climatisation (contrôleur) ──────────────────────
-              - type: vertical-stack
-                cards:
-                  - type: custom:button-card
-                    show_icon: false
-                    show_name: false
-                    show_state: false
-                    custom_fields:
-                      header: >
-                        <div style="display:flex;align-items:center;gap:8px;">
-                          <ha-icon icon="mdi:air-conditioner" style="color:#00E5FF;"></ha-icon>
-                          <span style="color:#8FB6C9;font-size:12px;letter-spacing:1px;
-                            text-transform:uppercase;font-weight:600;">Climatisation Toshiba</span>
-                        </div>
-                    styles:
-                      card:
-                        - background: rgba(16,27,39,0.85)
-                        - border: 1px solid rgba(0,229,255,0.25)
-                        - border-radius: 18px 18px 0 0
-                        - padding: 14px 16px 6px 16px
-                        - box-shadow: none
-                        - cursor: default
-                        - pointer-events: none
-                  - type: thermostat
-                    entity: climate.toshiba_bureau                  # TODO
-                    card_mod:
-                      style: |
-                        ha-card {
-                          background: rgba(16,27,39,0.85) !important;
-                          border: 1px solid rgba(0,229,255,0.25) !important;
-                          border-top: none !important;
-                          border-radius: 0 0 18px 18px !important;
-                          box-shadow: none !important;
-                          color: #FFFFFF !important;
-                        }
-                        .toggle-button { color: #00E5FF !important; }
+              - type: thermostat
+                entity: climate.toshiba_bureau                     # TODO
+                name: "Climatisation Toshiba"
+                card_mod:
+                  style: |
+                    ha-card {
+                      background: rgba(16,27,39,0.85) !important;
+                      border: 1px solid rgba(0,229,255,0.25) !important;
+                      border-radius: 18px !important;
+                      box-shadow: none !important;
+                    }
 
               # ── 6. Streaming audio & HEOS ──────────────────────────
-              - type: vertical-stack
-                cards:
-                  - type: custom:button-card
-                    show_icon: false
-                    show_name: false
-                    show_state: false
-                    custom_fields:
-                      header: >
-                        <div style="display:flex;align-items:center;gap:8px;">
-                          <ha-icon icon="mdi:cast-audio" style="color:#00E5FF;"></ha-icon>
-                          <span style="color:#8FB6C9;font-size:12px;letter-spacing:1px;
-                            text-transform:uppercase;font-weight:600;">Streaming audio — HEOS by Denon</span>
-                        </div>
-                    styles:
-                      card:
-                        - background: rgba(16,27,39,0.85)
-                        - border: 1px solid rgba(0,229,255,0.25)
-                        - border-radius: 18px 18px 0 0
-                        - padding: 14px 16px 6px 16px
-                        - box-shadow: none
-                        - cursor: default
-                        - pointer-events: none
-                  - type: media-control
-                    entity: media_player.heos_bureau                # TODO
-                    card_mod:
-                      style: |
-                        ha-card {
-                          background: rgba(16,27,39,0.85) !important;
-                          border: 1px solid rgba(0,229,255,0.25) !important;
-                          border-top: none !important;
-                          border-radius: 0 0 18px 18px !important;
-                          box-shadow: none !important;
-                        }
+              - type: media-control
+                entity: media_player.heos_bureau                   # TODO
+                card_mod:
+                  style: |
+                    ha-card {
+                      background: rgba(16,27,39,0.85) !important;
+                      border: 1px solid rgba(0,229,255,0.25) !important;
+                      border-radius: 18px !important;
+                      box-shadow: none !important;
+                    }
 
     # ── Fond de vue ────────────────────────────────────────────────
-    card_mod:
-      style: |
-        hui-view {
-          background: center / cover no-repeat fixed url("/local/osvision_v2/images/desk.png");
-        }
+    # NOTE : fond via image desk.png RETIRÉ temporairement — c'était le
+    # suspect n°1 de l'écran noir (card-mod n'arrivait pas à résoudre le
+    # panel : "cannot resolve Panel information after 2s", ou desk.png
+    # pas encore présent dans www/osvision_v2/images/).
+    # À réactiver plus tard une fois la vue stable et l'image en place.
