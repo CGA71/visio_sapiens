@@ -67,7 +67,7 @@ views:
             label: "Bureau & salle informatique"
             tap_action:
               action: navigate
-              navigation_path: /osvision-v2/computer
+              navigation_path: /osvision-computer/computer
             card_mod:
               style: |
                 :host { flex: 1.6 1 0; }
