@@ -456,7 +456,27 @@ views:
                       border: 1px solid rgba(0,229,255,0.25) !important;
                       border-radius: 18px !important;
                       box-shadow: none !important;
+                      color: #FFFFFF !important;
+                      --primary-text-color: #FFFFFF !important;
+                      --secondary-text-color: #8FB6C9 !important;
+                      --ha-card-header-color: #00E5FF !important;
                     }
+                    .card-header,
+                    .card-header .name {
+                      color: #00E5FF !important;
+                      font-family: Orbitron, sans-serif !important;
+                      letter-spacing: 1px !important;
+                      font-size: 15px !important;
+                    }
+                    .card-content { color: #FFFFFF !important; }
+                    .entity .info,
+                    .entity .info > *,
+                    hui-generic-entity-row .info,
+                    hui-generic-entity-row .info .primary,
+                    .info.pointer .primary,
+                    .name { color: #FFFFFF !important; }
+                    hui-generic-entity-row .info .secondary,
+                    .secondary { color: #8FB6C9 !important; }
 
               # ── 2. Lumières Hue (on/off + couleur) ────────────────
               - type: entities
@@ -490,7 +510,27 @@ views:
                       border: 1px solid rgba(0,229,255,0.25) !important;
                       border-radius: 18px !important;
                       box-shadow: none !important;
+                      color: #FFFFFF !important;
+                      --primary-text-color: #FFFFFF !important;
+                      --secondary-text-color: #8FB6C9 !important;
+                      --ha-card-header-color: #00E5FF !important;
                     }
+                    .card-header,
+                    .card-header .name {
+                      color: #00E5FF !important;
+                      font-family: Orbitron, sans-serif !important;
+                      letter-spacing: 1px !important;
+                      font-size: 15px !important;
+                    }
+                    .card-content { color: #FFFFFF !important; }
+                    .entity .info,
+                    .entity .info > *,
+                    hui-generic-entity-row .info,
+                    hui-generic-entity-row .info .primary,
+                    .info.pointer .primary,
+                    .name { color: #FFFFFF !important; }
+                    hui-generic-entity-row .info .secondary,
+                    .secondary { color: #8FB6C9 !important; }
 
               # ── 3. Imprimante (statut + file d'attente) ───────────
               - type: entities
@@ -522,7 +562,27 @@ views:
                       border: 1px solid rgba(0,229,255,0.25) !important;
                       border-radius: 18px !important;
                       box-shadow: none !important;
+                      color: #FFFFFF !important;
+                      --primary-text-color: #FFFFFF !important;
+                      --secondary-text-color: #8FB6C9 !important;
+                      --ha-card-header-color: #00E5FF !important;
                     }
+                    .card-header,
+                    .card-header .name {
+                      color: #00E5FF !important;
+                      font-family: Orbitron, sans-serif !important;
+                      letter-spacing: 1px !important;
+                      font-size: 15px !important;
+                    }
+                    .card-content { color: #FFFFFF !important; }
+                    .entity .info,
+                    .entity .info > *,
+                    hui-generic-entity-row .info,
+                    hui-generic-entity-row .info .primary,
+                    .info.pointer .primary,
+                    .name { color: #FFFFFF !important; }
+                    hui-generic-entity-row .info .secondary,
+                    .secondary { color: #8FB6C9 !important; }
 
               # ── 4. Volet roulant (ouvrir / fermer) ─────────────────
               - type: entities
@@ -538,7 +598,27 @@ views:
                       border: 1px solid rgba(0,229,255,0.25) !important;
                       border-radius: 18px !important;
                       box-shadow: none !important;
+                      color: #FFFFFF !important;
+                      --primary-text-color: #FFFFFF !important;
+                      --secondary-text-color: #8FB6C9 !important;
+                      --ha-card-header-color: #00E5FF !important;
                     }
+                    .card-header,
+                    .card-header .name {
+                      color: #00E5FF !important;
+                      font-family: Orbitron, sans-serif !important;
+                      letter-spacing: 1px !important;
+                      font-size: 15px !important;
+                    }
+                    .card-content { color: #FFFFFF !important; }
+                    .entity .info,
+                    .entity .info > *,
+                    hui-generic-entity-row .info,
+                    hui-generic-entity-row .info .primary,
+                    .info.pointer .primary,
+                    .name { color: #FFFFFF !important; }
+                    hui-generic-entity-row .info .secondary,
+                    .secondary { color: #8FB6C9 !important; }
 
               # ── 5. Climatisation (contrôleur) ──────────────────────
               - type: thermostat
@@ -551,7 +631,27 @@ views:
                       border: 1px solid rgba(0,229,255,0.25) !important;
                       border-radius: 18px !important;
                       box-shadow: none !important;
+                      color: #FFFFFF !important;
+                      --primary-text-color: #FFFFFF !important;
+                      --secondary-text-color: #8FB6C9 !important;
+                      --ha-card-header-color: #00E5FF !important;
                     }
+                    .card-header,
+                    .card-header .name {
+                      color: #00E5FF !important;
+                      font-family: Orbitron, sans-serif !important;
+                      letter-spacing: 1px !important;
+                      font-size: 15px !important;
+                    }
+                    .card-content { color: #FFFFFF !important; }
+                    .entity .info,
+                    .entity .info > *,
+                    hui-generic-entity-row .info,
+                    hui-generic-entity-row .info .primary,
+                    .info.pointer .primary,
+                    .name { color: #FFFFFF !important; }
+                    hui-generic-entity-row .info .secondary,
+                    .secondary { color: #8FB6C9 !important; }
 
               # ── 6. Streaming audio & HEOS ──────────────────────────
               - type: media-control
@@ -563,7 +663,27 @@ views:
                       border: 1px solid rgba(0,229,255,0.25) !important;
                       border-radius: 18px !important;
                       box-shadow: none !important;
+                      color: #FFFFFF !important;
+                      --primary-text-color: #FFFFFF !important;
+                      --secondary-text-color: #8FB6C9 !important;
+                      --ha-card-header-color: #00E5FF !important;
                     }
+                    .card-header,
+                    .card-header .name {
+                      color: #00E5FF !important;
+                      font-family: Orbitron, sans-serif !important;
+                      letter-spacing: 1px !important;
+                      font-size: 15px !important;
+                    }
+                    .card-content { color: #FFFFFF !important; }
+                    .entity .info,
+                    .entity .info > *,
+                    hui-generic-entity-row .info,
+                    hui-generic-entity-row .info .primary,
+                    .info.pointer .primary,
+                    .name { color: #FFFFFF !important; }
+                    hui-generic-entity-row .info .secondary,
+                    .secondary { color: #8FB6C9 !important; }
 
     # ── Fond de vue ────────────────────────────────────────────────
     # NOTE : fond via image desk.png RETIRÉ temporairement — c'était le
