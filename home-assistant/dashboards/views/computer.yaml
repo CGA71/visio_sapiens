@@ -29,14 +29,14 @@
 #    Les badges ligne 2 pointent sur des binary_sensor de connectivité
 #    (on = fonctionne / off = ne fonctionne pas).
 ########################################################################
-title: COMPUTER ROOM
+title: DESK
 theme: OSVision V2
 
 button_card_templates: !include ../templates/button_card_templates.yaml
 decluttering_templates: !include ../templates/decluttering_templates.yaml
 
 views:
-  - title: COMPUTER ROOM
+  - title: DESK
     path: computer
     subview: false
     type: custom:grid-layout
@@ -67,7 +67,7 @@ views:
             label: "Bureau & salle informatique"
             tap_action:
               action: navigate
-              navigation_path: /osvision-computer/computer
+              navigation_path: /osvision-v2/home
             card_mod:
               style: |
                 :host { flex: 1.6 1 0; }
@@ -87,7 +87,23 @@ views:
                   box-shadow: 0 0 18px rgba(0,229,255,.12) !important;
                 }
 
-          # ── Case 3 : heure + logo OS ───────────────────────────────
+          # ── Case 3 : heure (advanced-digital-clock, installée) ─────
+          - type: custom:advanced-digital-clock
+            card_mod:
+              style: |
+                :host { flex: 1 1 0; }
+                ha-card {
+                  background: rgba(16,27,39,0.85) !important;
+                  border: 1px solid rgba(0,229,255,0.28) !important;
+                  border-radius: 20px !important;
+                  box-shadow: 0 0 18px rgba(0,229,255,.12) !important;
+                  color: #00E5FF !important;
+                  display: flex !important;
+                  align-items: center !important;
+                  justify-content: center !important;
+                }
+
+          # ── Case 4 : logo OS ───────────────────────────────────────
           - type: custom:button-card
             template: osvision_os_avatar
             name: "OS"
