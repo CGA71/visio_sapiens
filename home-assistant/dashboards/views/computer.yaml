@@ -313,7 +313,7 @@ views:
 
           # ── Température / Humidité ────────────────────────────────
           - type: state-label
-            entity: binary_sensor.bureau_capteur_connectivity      # TODO
+            entity: sensor.gw3000a_temperature_1      # TODO
             style: { top: 7%, left: 4%, transform: "translateX(-50%)" }
             card_mod: &badge_style
               style: |
@@ -440,15 +440,21 @@ views:
 
               # ── 1. Température & Humidité ─────────────────────────
               - type: entities
-                title: "Température & Humidité"
+                title: "Status Capteur Weather"
                 show_header_toggle: false
                 entities:
-                  - entity: sensor.bureau_temperature              # TODO
-                    name: "Température"
+                  - entity: sensor.gw3000a_temperature_1              # TODO
+                    name: "Temperature"
                     icon: mdi:thermometer
-                  - entity: sensor.bureau_humidite                 # TODO
-                    name: "Humidité"
+                  - entity: sensor.gw3000a_humidity_1                 # TODO
+                    name: "Humidity"
                     icon: mdi:water-percent
+                  - entity: sensor.gw3000a_dewpoint_1                 # TODO
+                    name: "Condensation"
+                    icon: mdi:water-percent
+                  - entity: binary_sensor.gw3000a_battery_1                 # TODO
+                    name: "Battery"
+                    icon: mdi:battery
                 card_mod:
                   style: |
                     ha-card {
