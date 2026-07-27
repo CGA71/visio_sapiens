@@ -73,10 +73,12 @@ views:
                 :host { flex: 1.6 1 0; }
 
           # ── Case 2 : météo (carte NATIVE, toujours disponible) ─────
-          - type: custom:simple-weather-card
-            entity: weather.home                                 # TODO
+          - type: weather-forecast
+            entity: eather.meteo_france_forecast_for_city_sausset_les_pins_provence_alpes_cote_d_azur_13_fr_sausset_les_pins                                 # TODO
             show_current: true
             show_forecast: false
+            forecast_type: daily
+            forecast_slots: 1
             card_mod:
               style: |
                 :host { flex: 1 1 0; }
@@ -324,37 +326,37 @@ views:
                   box-shadow: 0 0 8px var(--status-color, #FF5470) !important;
                 }
 
-          - type: state-label
+          - type: state-badge
             entity: light.hue_color_candle_1        # TODO
             style: { top: 14%, left: 10%, transform: "translateX(-50%)" }
             card_mod: *badge_style
 
-          - type: state-label
+          - type: state-badge
             entity: light.hue_color_candle_1_2        # TODO
             style: { top: 10%, left: 18%, transform: "translateX(-50%)" }
             card_mod: *badge_style
 
-          - type: state-label
+          - type: state-badge
             entity: light.hue_color_candle_1_3        # TODO
             style: { top: 14%, left: 26%, transform: "translateX(-50%)" }
             card_mod: *badge_style
 
-          - type: state-label
+          - type: state-badge
             entity: sensor.hp_color_laserjet_mfp_m477fdn       # TODO
             style: { top: 64%, left: 44%, transform: "translateX(-50%)" }
             card_mod: *badge_style
 
-          - type: state-label
+          - type: state-badge
             entity: media_player.cinehome_denon           # TODO
             style: { top: 55%, left: 34%, transform: "translateX(-50%)" }
             card_mod: *badge_style
 
-          - type: state-label
+          - type: state-badge
             entity: binary_sensor.toshiba_clim_connectivity        # TODO
             style: { top: 5%, left: 53%, transform: "translateX(-50%)" }
             card_mod: *badge_style
 
-          - type: state-label
+          - type: state-badge
             entity: binary_sensor.volet_bureau_connectivity        # TODO
             style: { top: 22%, left: 43%, transform: "translateX(-50%)" }
             card_mod: *badge_style
