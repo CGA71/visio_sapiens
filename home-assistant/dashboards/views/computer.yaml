@@ -29,7 +29,7 @@
 #    Les badges ligne 2 pointent sur des binary_sensor de connectivité
 #    (on = fonctionne / off = ne fonctionne pas).
 ########################################################################
-title: DESK
+title: COMPUTER ROOM
 theme: OSVision V2
 
 button_card_templates: !include ../templates/button_card_templates.yaml
