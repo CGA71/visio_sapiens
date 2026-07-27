@@ -73,7 +73,7 @@ views:
                 :host { flex: 1.6 1 0; }
 
           # ── Case 2 : météo (carte NATIVE, toujours disponible) ─────
-          - type: weather-forecast
+          - type: custom:simple-weather-card
             entity: weather.home                                 # TODO
             show_current: true
             show_forecast: false
