@@ -325,27 +325,27 @@ views:
                 }
 
           - type: state-label
-            entity: binary_sensor.desk_light_1_connectivity        # TODO
+            entity: light.hue_color_candle_1        # TODO
             style: { top: 14%, left: 10%, transform: "translateX(-50%)" }
             card_mod: *badge_style
 
           - type: state-label
-            entity: binary_sensor.desk_light_2_connectivity        # TODO
+            entity: light.hue_color_candle_1_2        # TODO
             style: { top: 10%, left: 18%, transform: "translateX(-50%)" }
             card_mod: *badge_style
 
           - type: state-label
-            entity: binary_sensor.desk_light_3_connectivity        # TODO
+            entity: light.hue_color_candle_1_3        # TODO
             style: { top: 14%, left: 26%, transform: "translateX(-50%)" }
             card_mod: *badge_style
 
           - type: state-label
-            entity: binary_sensor.imprimante_hp_connectivity       # TODO
+            entity: sensor.hp_color_laserjet_mfp_m477fdn       # TODO
             style: { top: 64%, left: 44%, transform: "translateX(-50%)" }
             card_mod: *badge_style
 
           - type: state-label
-            entity: binary_sensor.denon_avr_connectivity           # TODO
+            entity: media_player.cinehome_denon           # TODO
             style: { top: 55%, left: 34%, transform: "translateX(-50%)" }
             card_mod: *badge_style
 
@@ -445,23 +445,23 @@ views:
                 title: "Lumières Hue"
                 show_header_toggle: true
                 entities:
-                  - entity: light.desk_light_1                     # TODO
+                  - entity: light.hue_color_candle_1                     # TODO
                     name: "Desk Light 1"
-                  - entity: light.desk_light_2                     # TODO
+                  - entity: light.hue_color_candle_1_2                     # TODO
                     name: "Desk Light 2"
-                  - entity: light.desk_light_3                     # TODO
+                  - entity: light.hue_color_candle_1_3                     # TODO
                     name: "Desk Light 3"
                   - type: buttons
                     entities:
-                      - entity: light.desk_light_1                 # TODO
+                      - entity: light.hue_color_candle_1                 # TODO
                         name: "L1"
                         tap_action:
                           action: more-info
-                      - entity: light.desk_light_2                 # TODO
+                      - entity: light.hue_color_candle_1_2                 # TODO
                         name: "L2"
                         tap_action:
                           action: more-info
-                      - entity: light.desk_light_3                 # TODO
+                      - entity: light.hue_color_candle_1_3                 # TODO
                         name: "L3"
                         tap_action:
                           action: more-info
@@ -479,13 +479,22 @@ views:
                 title: "Imprimante HP — 192.168.1.83"
                 show_header_toggle: false
                 entities:
-                  - entity: sensor.imprimante_hp_statut            # TODO
+                  - entity: sensor.hp_color_laserjet_mfp_m477fdn            # TODO
                     name: "Statut"
                     icon: mdi:printer
-                  - entity: sensor.imprimante_hp_toner             # TODO
-                    name: "Encre / toner"
+                  - entity: sensor.hp_color_laserjet_mfp_m477fdn_black_cartridge_hp_cf410a             # TODO
+                    name: "Encre / Black"
                     icon: mdi:water
-                  - entity: sensor.imprimante_hp_queue             # TODO
+                  - entity: sensor.hp_color_laserjet_mfp_m477fdn_cyan_cartridge_hp_cf411a             # TODO
+                    name: "Encre / Cyan"
+                    icon: mdi:water
+                  - entity: sensor.hp_color_laserjet_mfp_m477fdn_magenta_cartridge_hp_cf413a             # TODO
+                    name: "Encre / Magenta"
+                    icon: mdi:water
+                  - entity: sensor.hp_color_laserjet_mfp_m477fdn_yellow_cartridge_hp_cf412a             # TODO
+                    name: "Encre / Yellow"
+                    icon: mdi:water
+                  - entity: sensor.hp_color_laserjet_mfp_m477fdn_queue             # TODO
                     name: "File d'attente"
                     icon: mdi:tray-full
                 card_mod:
