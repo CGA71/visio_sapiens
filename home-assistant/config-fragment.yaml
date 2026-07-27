@@ -1,0 +1,78 @@
+# ============================================================================
+# OSVision V2 — Fragment de configuration (ÉTAT DÉSIRÉ)
+#
+# Ce fichier ne contient QUE les clés de configuration.yaml qu'OSVision gère.
+# Il est fusionné dans le configuration.yaml de destination par le script
+# osvision_apply_config.py, de façon idempotente : il POSE/MET À JOUR ses
+# propres entrées et ne touche à RIEN d'autre dans le fichier cible.
+#
+# Règles de fusion appliquées par le script (voir osvision_apply_config.py) :
+#   • lovelace.dashboards : merge par sous-clé — seules les clés listées ici
+#     (préfixe osvision-*) sont écrites ; les autres dashboards de l'utilisateur
+#     sont préservés.
+#   • lovelace.resources : merge par 'url' — dédupliqué ; les ressources non
+#     listées ici sont préservées.
+#   • input_text / shell_command / template : merge par clé (préfixe osvision_).
+#
+# ⇒ Pour ajouter/modifier/supprimer une ligne de config OSVision, on édite CE
+#   fichier. Le patcher se charge de refléter l'état dans la prod.
+#
+# NB : les tags HA (!include, etc.) sont préservés tels quels par ruamel.
+# ============================================================================
+
+lovelace:
+  dashboards:
+    osvision-v2:
+      mode: yaml
+      title: OSVision V2
+      icon: mdi:hexagon-outline
+      show_in_sidebar: true
+      filename: dashboards/home.yaml
+    osvision-core:
+      mode: yaml
+      title: Core System
+      icon: mdi:server
+      show_in_sidebar: false
+      filename: dashboards/views/core.yaml
+    osvision-computer:
+      mode: yaml
+      title: Computer Room
+      icon: mdi:desktop-tower-monitor
+      show_in_sidebar: false
+      filename: dashboards/views/computer.yaml
+    osvision-energy:
+      mode: yaml
+      title: Energy Management
+      icon: mdi:lightning-bolt
+      show_in_sidebar: false
+      filename: dashboards/views/energy.yaml
+
+  resources:
+    - url: /hacsfiles/button-card/button-card.js
+      type: module
+    - url: /hacsfiles/lovelace-card-mod/card-mod.js
+      type: module
+    - url: /hacsfiles/lovelace-layout-card/layout-card.js
+      type: module
+    - url: /hacsfiles/lovelace-hui-element/stack-in-card.js
+      type: module
+    - url: /hacsfiles/apexcharts-card/apexcharts-card.js
+      type: module
+    - url: /hacsfiles/mini-graph-card/mini-graph-card-bundle.js
+      type: module
+    - url: /hacsfiles/lovelace-config-template-card/config-template-card.js
+      type: module
+    - url: /hacsfiles/lovelace-decluttering-card/decluttering-card.js
+      type: module
+    - url: /local/osvision_v2/css/osvision.css?v=__VTOKEN__
+      type: css
+    - url: /local/osvision_v2/js/osvision.js?v=__VTOKEN__
+      type: module
+    - url: /local/osvision_v2/components/osv-core.js?v=__VTOKEN__
+      type: module
+    - url: /local/osvision_v2/components/osv-card.js?v=__VTOKEN__
+      type: module
+    - url: /local/osvision_v2/components/osv-datetime-card.js?v=__VTOKEN__
+      type: module
+    - url: /local/osvision_v2/components/osv-ad-banner-card.js?v=__VTOKEN__
+      type: module
