@@ -70,7 +70,13 @@ views:
               navigation_path: /osvision-v2/home
             card_mod:
               style: |
-                :host { flex: 1.6 1 0; }
+                :host { flex: 1 1 0; }
+                ha-card {
+                  background: rgba(16,27,39,0.85) !important;
+                  border: 1px solid rgba(0,229,255,0.28) !important;
+                  border-radius: 20px !important;
+                  box-shadow: 0 0 18px rgba(0,229,255,.12) !important;
+                }
 
           # ── Case 2 : météo (carte NATIVE, toujours disponible) ─────
           - type: custom:dynamic-weather-card
