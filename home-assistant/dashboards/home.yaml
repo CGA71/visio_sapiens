@@ -43,19 +43,33 @@ views:
       margin: 12px
       grid-gap: 14px 14px
     cards:
-      # --- HUD header (bandeau horizontal, 4 zones indépendantes) -------
-
-      # Case band1 — retour + titre + descriptif de la page
-      - type: custom:button-card
-        template: osvision_page_header
-        icon: mdi:chevron-left
-        name: HOME
-        label: "Vue d'ensemble de votre système"
-        tap_action:
-          action: navigate
-          navigation_path: /osvision-v2/home
+     # ═══════════════════════════════════════════════════════════════
+      # LIGNE 1 — HEADER : titre / météo / heure + logo
+      # ═══════════════════════════════════════════════════════════════
+      - type: horizontal-stack
         view_layout:
-          grid-area: band1
+          grid-area: header
+        cards:
+
+          # ── Case 1 : titre ────────────────────────────────────────
+          - type: custom:button-card
+            template: osvision_page_header
+            icon: mdi:chevron-left
+            name: HOME
+            label: "Home Sweet Home"
+            tap_action:
+              action: navigate
+              navigation_path: /osvision-v2/home
+            card_mod:
+              style: |
+                :host { flex: 1 1 0; }
+                ha-card {
+                  background: rgba(16,27,39,0.85) !important;
+                  border: 1px solid rgba(0,229,255,0.28) !important;
+                  border-radius: 20px !important;
+                  box-shadow: 0 0 18px rgba(0,229,255,.12) !important;
+                  height: 100px
+                }
 
       # Case band2 — Bandeau publicitaire défilant (gauche → droite)
       # Remplacez les url par vos vrais liens d'affiliation/partenaires.
@@ -79,58 +93,73 @@ views:
             url: https://www.ubereats.com
             image: /local/osvision_v2/images/ads/ubereats.png
 
-      # Case band3 — météo extérieure
-      # Enveloppée dans mod-card : dynamic-weather-card ne rend pas de ha-card,
-      # donc card_mod direct était ignoré — le wrapper garantit la contrainte.
-      - type: custom:mod-card
-        view_layout:
-          grid-area: band3
-        card_mod:
-          style: |
-            :host {
-              height: 105px !important;
-              max-height: 105px !important;
-              min-width: 0 !important;
-              overflow: hidden !important;
-              display: block !important;
-              border-radius: 18px;
-            }
-            mod-card {
-              height: 105px !important;
-              max-height: 105px !important;
-              overflow: hidden !important;
-              display: block !important;
-            }
-        card:
-          type: custom:digital-clock
-          padding: 4px 20px
-          firstLineFormat: HH:mm
-          secondLineFormat: cccc d LLLL yyyy
-          firstLineLayout:
-            textAlign: left
-            lineHeight: 1.25em
-            fontSize: 2.8em
-            fontWeight: 300
-            color: blue
-          secondLineLayout:
-            textAlign: left
-            lineHeight: 1.25em
-            fontSize: 1.6em
-            fontWeight: 300
-            color: green
+       # ── Case 2 : météo (carte NATIVE, toujours disponible) ─────
+          - type: custom:simple-weather-card
+            entity: weather.home                                 # TODO
+            card_mod:
+              style: |
+                :host { flex: 1 1 0; }
+                ha-card {
+                  background: rgba(16,27,39,0.85) !important;
+                  border: 1px solid rgba(0,229,255,0.28) !important;
+                  border-radius: 20px !important;
+                  box-shadow: 0 0 18px rgba(0,229,255,.12) !important;
+                  height: 100px
+                }
 
-      # Case band4 — Logo OSVISION
-      - type: custom:button-card
-        template: osvision_os_avatar
-        icon: mdi:hexagon-outline
-        name: "OSVISION V2"
-        show_name: true
-        view_layout:
-          grid-area: band4
-        styles:
-          name:
-            - font-size: 10px
-            - letter-spacing: 1px
+      # ── Case 3 : heure (button-card autonome, sans dépendance) ─
+          - type: custom:button-card
+            entity: sensor.time                                  # sensor.time (intégration "time_date")
+            show_name: false
+            show_icon: false
+            show_state: false
+            show_label: true
+            label: |
+              [[[
+                const d = new Date();
+                const h = String(d.getHours()).padStart(2,'0');
+                const m = String(d.getMinutes()).padStart(2,'0');
+                const jours = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+                const mois = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+                return `<div style="font-family:Orbitron,sans-serif;font-size:24px;color:#00E5FF;line-height:1;">${h}:${m}</div>
+                        <div style="font-size:11px;color:#8FB6C9;letter-spacing:.5px;margin-top:4px;">
+                          ${jours[d.getDay()]} ${d.getDate()} ${mois[d.getMonth()]} ${d.getFullYear()}</div>`;
+              ]]]
+            styles:
+              card:
+                - background: rgba(16,27,39,0.85)
+                - border: 1px solid rgba(0,229,255,0.28)
+                - border-radius: 20px
+                - box-shadow: 0 0 18px rgba(0,229,255,.12)
+                - padding: 0 20px
+              label:
+                - justify-self: start
+                - text-align: left
+            card_mod:
+              style: |
+                :host { flex: 1 1 0; }
+                ha-card {
+                  background: rgba(16,27,39,0.85) !important;
+                  border: 1px solid rgba(0,229,255,0.28) !important;
+                  border-radius: 20px !important;
+                  box-shadow: 0 0 18px rgba(0,229,255,.12) !important;
+                  height: 100px
+                }
+
+          # ── Case 4 : logo OS ───────────────────────────────────────
+          - type: custom:button-card
+            template: osvision_os_avatar
+            name: "OS"
+            card_mod:
+              style: |
+                :host { flex: 1 1 0; }
+                ha-card {
+                  background: rgba(16,27,39,0.85) !important;
+                  border: 1px solid rgba(0,229,255,0.28) !important;
+                  border-radius: 20px !important;
+                  box-shadow: 0 0 18px rgba(0,229,255,.12) !important;
+                  height: 100px
+                }
 
       # --- Navigation bar (sidebar verticale) ---------------------------
       - type: vertical-stack
