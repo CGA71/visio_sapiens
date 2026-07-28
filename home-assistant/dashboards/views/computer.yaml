@@ -82,7 +82,6 @@ views:
           # ── Case 2 : météo (carte NATIVE, toujours disponible) ─────
           - type: custom:dynamic-weather-card
             entity: weather.meteo_france_forecast_for_city_sausset_les_pins_provence_alpes_cote_d_azur_13_fr_sausset_les_pins                                 # TODO
-            height: 100
             show_feels_like: false
             show_wind: false
             show_wind_gust: false
@@ -110,6 +109,7 @@ views:
                   border: 1px solid rgba(0,229,255,0.28) !important;
                   border-radius: 20px !important;
                   box-shadow: 0 0 18px rgba(0,229,255,.12) !important;
+                  height: 100px
                 }
 
           # ── Case 3 : heure (button-card autonome, sans dépendance) ─
@@ -143,6 +143,13 @@ views:
             card_mod:
               style: |
                 :host { flex: 1 1 0; }
+                ha-card {
+                  background: rgba(16,27,39,0.85) !important;
+                  border: 1px solid rgba(0,229,255,0.28) !important;
+                  border-radius: 20px !important;
+                  box-shadow: 0 0 18px rgba(0,229,255,.12) !important;
+                  height: 100px
+                }
 
           # ── Case 4 : logo OS ───────────────────────────────────────
           - type: custom:button-card
@@ -150,7 +157,14 @@ views:
             name: "OS"
             card_mod:
               style: |
-                :host { flex: 0 0 56px; }
+                :host { flex: 1 1 0; }
+                ha-card {
+                  background: rgba(16,27,39,0.85) !important;
+                  border: 1px solid rgba(0,229,255,0.28) !important;
+                  border-radius: 20px !important;
+                  box-shadow: 0 0 18px rgba(0,229,255,.12) !important;
+                  height: 100px
+                }
 
       # ═══════════════════════════════════════════════════════════════
       # SIDEBAR NAV
@@ -163,7 +177,7 @@ views:
             :host {
               display: flex;
               flex-direction: column;
-              height: 100%;
+              min-height: 100%;
               width: 100%;
               min-width: 200px;
               background: rgba(5,11,18,0.85);
@@ -301,13 +315,13 @@ views:
               border: 1px solid rgba(0,229,255,0.28) !important;
               border-radius: 20px !important;
               box-shadow: 0 0 24px rgba(0,229,255,.12) !important;
-              height: 100% !important;
+              min-height: 100% !important;
               width: 100% !important;
               overflow: hidden;
             }
             img {
               width: 100% !important;
-              height: 100% !important;
+              min-height: 100% !important;
               object-fit: cover !important;
               object-position: center center !important;
             }
