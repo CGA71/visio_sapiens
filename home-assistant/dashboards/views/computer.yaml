@@ -81,7 +81,7 @@ views:
 
           # ── Case 2 : météo (carte NATIVE, toujours disponible) ─────
           - type: custom:simple-weather-card
-            entity: weather.sausset_les_pins                                 # TODO
+            entity: weather.home                                 # TODO
             card_mod:
               style: |
                 :host { flex: 1 1 0; }
