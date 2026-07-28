@@ -36,7 +36,7 @@ views:
       grid-template-columns: minmax(200px, auto) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) 565px
       grid-template-rows: 105px 113px 444px 400px
       grid-template-areas: |
-        "nav header"
+        "nav header1 header2 header3 header4 header5 header6"
         "nav kpi1 kpi2 kpi3 kpi4 kpi5 kpi5"
         "nav floor floor floor floor floor right"
         "nav egy1 egy1 egy2 events events meteo"
@@ -46,23 +46,20 @@ views:
      # ═══════════════════════════════════════════════════════════════
       # LIGNE 1 — HEADER : titre / météo / heure + logo
       # ═══════════════════════════════════════════════════════════════
-      - type: horizontal-stack
+      # ── Case 1 : titre ────────────────────────────────────────
+      - type: custom:button-card
+        template: osvision_page_header
         view_layout:
-          grid-area: header
-        cards:
-
-          # ── Case 1 : titre ────────────────────────────────────────
-          - type: custom:button-card
-            template: osvision_page_header
-            icon: mdi:chevron-left
-            name: HOME
-            label: "Home Sweet Home"
-            tap_action:
-              action: navigate
-              navigation_path: /osvision-v2/home
-            card_mod:
-              style: |
-                :host { flex: 1 1 0; }
+          grid-area: header1
+        icon: mdi:chevron-left
+        name: HOME
+        label: "Home Sweet Home"
+        tap_action:
+          action: navigate
+          navigation_path: /osvision-v2/home
+        card_mod:
+          style: |
+            :host { flex: 1 1 0; }
                 ha-card {
                   background: rgba(16,27,39,0.85) !important;
                   border: 1px solid rgba(0,229,255,0.28) !important;
@@ -77,6 +74,7 @@ views:
       # stylé s'affiche automatiquement à la place.
       - type: custom:osv-ad-banner-card
         view_layout:
+          grid-area: header2
         speed: 25
         ads:
           - name: HIKVISION
@@ -94,6 +92,8 @@ views:
 
        # ── Case 2 : météo (carte NATIVE, toujours disponible) ─────
           - type: custom:simple-weather-card
+            view-layout:
+              grid-area: header3
             entity: weather.home                                 # TODO
             card_mod:
               style: |
@@ -108,6 +108,8 @@ views:
 
       # ── Case 3 : heure (button-card autonome, sans dépendance) ─
           - type: custom:button-card
+            view_laout:
+              grid-area: header4
             entity: sensor.time                                  # sensor.time (intégration "time_date")
             show_name: false
             show_icon: false
@@ -147,6 +149,8 @@ views:
 
           # ── Case 4 : logo OS ───────────────────────────────────────
           - type: custom:button-card
+            view-layout:
+              grid-area: header5
             template: osvision_os_avatar
             name: "OS"
             card_mod:
