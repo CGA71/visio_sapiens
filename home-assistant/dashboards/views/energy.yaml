@@ -52,29 +52,100 @@ views:
       grid-gap: 14px 14px
     cards:
       # ═══════════════════════════════════════════════════════════════
-      # BANDEAU HEADER — identique à core.yaml (case 1 + avatar OS)
+      # LIGNE 1 — HEADER : titre / météo / heure + logo
       # ═══════════════════════════════════════════════════════════════
       - type: horizontal-stack
         view_layout:
           grid-area: header
         cards:
+
+          # ── Case 1 : titre ────────────────────────────────────────
           - type: custom:button-card
             template: osvision_page_header
             icon: mdi:chevron-left
             name: ENERGY
-            label: "Gestion energie - Production solaire, consommation & circuits"
+            label: "Energy Management"
             tap_action:
               action: navigate
-              navigation_path: /osvision-v2/home
+              navigation_path: /osvision-energy/energy
             card_mod:
               style: |
-                :host { flex: 2 1 0; }
+                :host { flex: 1 1 0; }
+                ha-card {
+                  background: rgba(16,27,39,0.85) !important;
+                  border: 1px solid rgba(0,229,255,0.28) !important;
+                  border-radius: 20px !important;
+                  box-shadow: 0 0 18px rgba(0,229,255,.12) !important;
+                  height: 100px
+                }
+
+          # ── Case 2 : météo (carte NATIVE, toujours disponible) ─────
+          - type: custom:simple-weather-card
+            entity: weather.home                                 # TODO
+            card_mod:
+              style: |
+                :host { flex: 1 1 0; }
+                ha-card {
+                  background: rgba(16,27,39,0.85) !important;
+                  border: 1px solid rgba(0,229,255,0.28) !important;
+                  border-radius: 20px !important;
+                  box-shadow: 0 0 18px rgba(0,229,255,.12) !important;
+                  height: 100px
+                }
+
+          # ── Case 3 : heure (button-card autonome, sans dépendance) ─
+          - type: custom:button-card
+            entity: sensor.time                                  # sensor.time (intégration "time_date")
+            show_name: false
+            show_icon: false
+            show_state: false
+            show_label: true
+            label: |
+              [[[
+                const d = new Date();
+                const h = String(d.getHours()).padStart(2,'0');
+                const m = String(d.getMinutes()).padStart(2,'0');
+                const jours = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+                const mois = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+                return `<div style="font-family:Orbitron,sans-serif;font-size:24px;color:#00E5FF;line-height:1;">${h}:${m}</div>
+                        <div style="font-size:11px;color:#8FB6C9;letter-spacing:.5px;margin-top:4px;">
+                          ${jours[d.getDay()]} ${d.getDate()} ${mois[d.getMonth()]} ${d.getFullYear()}</div>`;
+              ]]]
+            styles:
+              card:
+                - background: rgba(16,27,39,0.85)
+                - border: 1px solid rgba(0,229,255,0.28)
+                - border-radius: 20px
+                - box-shadow: 0 0 18px rgba(0,229,255,.12)
+                - padding: 0 20px
+              label:
+                - justify-self: start
+                - text-align: left
+            card_mod:
+              style: |
+                :host { flex: 1 1 0; }
+                ha-card {
+                  background: rgba(16,27,39,0.85) !important;
+                  border: 1px solid rgba(0,229,255,0.28) !important;
+                  border-radius: 20px !important;
+                  box-shadow: 0 0 18px rgba(0,229,255,.12) !important;
+                  height: 100px
+                }
+
+          # ── Case 4 : logo OS ───────────────────────────────────────
           - type: custom:button-card
             template: osvision_os_avatar
             name: "OS"
             card_mod:
               style: |
-                :host { flex: 0 0 56px; }
+                :host { flex: 1 1 0; }
+                ha-card {
+                  background: rgba(16,27,39,0.85) !important;
+                  border: 1px solid rgba(0,229,255,0.28) !important;
+                  border-radius: 20px !important;
+                  box-shadow: 0 0 18px rgba(0,229,255,.12) !important;
+                  height: 100px
+                }
 
       # ═══════════════════════════════════════════════════════════════
       # SIDEBAR NAV — identique à core.yaml, ENERGY passe en actif
