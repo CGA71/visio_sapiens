@@ -128,21 +128,6 @@ views:
                   height: 100px
                 }
 
-          # ── Case 4 : logo OS ───────────────────────────────────────
-          - type: custom:button-card
-            template: osvision_os_avatar
-            name: "OS"
-            card_mod:
-              style: |
-                :host { flex: 1 1 0; }
-                ha-card {
-                  background: rgba(16,27,39,0.85) !important;
-                  border: 1px solid rgba(0,229,255,0.28) !important;
-                  border-radius: 20px !important;
-                  box-shadow: 0 0 18px rgba(0,229,255,.12) !important;
-                  height: 100px
-                }
-
       # ─── SIDEBAR NAV ────────────────────────────────────────────────────
       # Alignement avec le bas du cadre content. RÉGLAGE : le chiffre après
       # le moins pilote le bas de la nav — le DIMINUER descend la nav
@@ -169,7 +154,7 @@ views:
           - type: custom:button-card
             template: osvision_sidebar_logo
             icon: mdi:hexagon-outline
-            name: "OSVISION V2"
+            name: "VISIO SAPIENS"
             label: "Smart Home OS"
 
           - type: custom:button-card
@@ -285,10 +270,34 @@ views:
               navigation_path: /osvision-v2/admin
 
           - type: custom:button-card
-            template: osvision_sidebar_brand_footer
-            icon: mdi:hexagon-outline
-            name: "OSVISION V2"
-            label: "SMART HOME OS"
+            show_icon: false
+            show_name: false
+            show_label: false
+            tap_action:
+              action: none
+            custom_fields:
+              logo: >
+                <img src="/local/osvision_v2/images/logo_VS-Sapiens.png"
+                     style="width:100%;max-width:160px;display:block;margin:0 auto;filter:drop-shadow(0 0 10px rgba(0,229,255,.35));" />
+            styles:
+              card:
+                - background: transparent
+                - border: none
+                - box-shadow: none
+                - padding: 12px 6px 4px 6px
+              grid:
+                - grid-template-areas: '"logo"'
+              custom_fields:
+                logo:
+                  - width: 100%
+            card_mod:
+              style: |
+                :host { margin-top: auto; }
+                ha-card {
+                  background: transparent !important;
+                  border: none !important;
+                  box-shadow: none !important;
+                }
 
       # ─── CONTENU CENTRAL = core.html (structure d'origine, fiable) ─────
       # L'ENCADREMENT n'est PAS ici : la carte iframe ignore les bordures
