@@ -18,16 +18,16 @@
     font-family:'Rajdhani',system-ui,sans-serif;color:var(--ink);}
   #stage{position:fixed;inset:0;
     background:
-      radial-gradient(120% 120% at 50% 42%, #0a1730 0%, #050b18 42%, #02030a 78%);}
+      radial-gradient(120% 120% at 50% 42%, #07101f 0%, #030810 45%, #010209 80%);}
   canvas{display:block;position:fixed;inset:0;width:100%;height:100%}
 
   /* holographic scanlines + vignette overlays */
-  #scan{position:fixed;inset:0;pointer-events:none;mix-blend-mode:screen;opacity:.35;
+  #scan{position:fixed;inset:0;pointer-events:none;mix-blend-mode:screen;opacity:.16;
     background:repeating-linear-gradient(to bottom, rgba(120,210,255,.05) 0 1px, transparent 1px 3px);
     animation:drift 8s linear infinite;}
   @keyframes drift{from{background-position:0 0}to{background-position:0 3px}}
   #vig{position:fixed;inset:0;pointer-events:none;
-    background:radial-gradient(130% 100% at 50% 50%, transparent 55%, rgba(0,0,0,.55) 100%);}
+    background:radial-gradient(125% 100% at 50% 50%, transparent 42%, rgba(0,0,0,.72) 100%);}
 
   /* loader */
   #loader{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;
@@ -147,7 +147,7 @@ function init(){
   renderer.setSize(innerWidth, innerHeight);
   renderer.setClearColor(0x02030a, 1);
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
-  renderer.toneMappingExposure = 0.95;
+  renderer.toneMappingExposure = 0.9;
   stage.appendChild(renderer.domElement);
 
   scene = new THREE.Scene();
@@ -172,7 +172,7 @@ function init(){
   // post-processing: bloom drives the neon / holographic glow
   composer = new EffectComposer(renderer);
   composer.addPass(new RenderPass(scene, camera));
-  bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.72, 0.5, 0.30);
+  bloom = new UnrealBloomPass(new THREE.Vector2(innerWidth, innerHeight), 0.5, 0.45, 0.45);
   composer.addPass(bloom);
   composer.addPass(new OutputPass());
 
@@ -202,10 +202,10 @@ function buildBackdrop(){
       varying vec3 vPos;
       void main(){
         float h = normalize(vPos).y*0.5+0.5;
-        vec3 bot = vec3(0.006,0.010,0.030);
-        vec3 top = vec3(0.020,0.045,0.095);
+        vec3 bot = vec3(0.004,0.007,0.020);
+        vec3 top = vec3(0.012,0.028,0.062);
         vec3 col = mix(bot, top, smoothstep(0.15,0.95,h));
-        col += vec3(0.0,0.05,0.11) * pow(1.0-abs(h-0.5)*2.0, 3.0)*0.5;
+        col += vec3(0.0,0.035,0.08) * pow(1.0-abs(h-0.5)*2.0, 3.0)*0.5;
         gl_FragColor = vec4(col,1.0);
       }`
   });
@@ -214,7 +214,7 @@ function buildBackdrop(){
 
 /* soft luminous energy core behind the sphere */
 function buildCoreGlow(){
-  const tex = radialTexture(['rgba(70,170,255,0.75)','rgba(35,110,220,0.28)','rgba(15,60,170,0)']);
+  const tex = radialTexture(['rgba(55,150,240,0.6)','rgba(30,95,200,0.22)','rgba(12,50,150,0)']);
   const mk = (scale, opacity)=>{
     const s = new THREE.Sprite(new THREE.SpriteMaterial({
       map:tex, transparent:true, blending:THREE.AdditiveBlending,
@@ -223,7 +223,7 @@ function buildCoreGlow(){
     s.scale.set(scale,scale,1); s.position.set(0,0,-0.4); s.renderOrder=-1;
     scene.add(s); return s;
   };
-  mk(10, 0.30); mk(3.6, 0.5);
+  mk(8.5, 0.16); mk(3.0, 0.28);
 }
 
 /* ------------------------------------------------------------------ *
@@ -236,7 +236,7 @@ function buildSphere(){
     new THREE.IcosahedronGeometry(R_S, 12),
     new THREE.ShaderMaterial({
       transparent:true, blending:THREE.AdditiveBlending, depthWrite:false, side:THREE.DoubleSide,
-      uniforms:{ uColor:{value:new THREE.Color(0x39b8ff)}, uPower:{value:2.6}, uTime:{value:0} },
+      uniforms:{ uColor:{value:new THREE.Color(0x2c86d6)}, uPower:{value:3.8}, uTime:{value:0} },
       vertexShader:`
         varying vec3 vN; varying vec3 vV;
         void main(){
@@ -251,7 +251,7 @@ function buildSphere(){
         void main(){
           float f = pow(1.0 - abs(dot(normalize(vN), normalize(vV))), uPower);
           float pulse = 0.82 + 0.18*sin(uTime*1.5708); // 4s pulse -> loops
-          gl_FragColor = vec4(uColor*f*pulse, f*0.9);
+          gl_FragColor = vec4(uColor*f*pulse*0.7, f*0.6);
         }`
     })
   );
@@ -260,7 +260,7 @@ function buildSphere(){
   // latitude / longitude hologram grid
   gridSphere = new THREE.LineSegments(
     new THREE.WireframeGeometry(new THREE.SphereGeometry(R_S*0.995, 30, 18)),
-    new THREE.LineBasicMaterial({ color:0x2f9fe6, transparent:true, opacity:0.10,
+    new THREE.LineBasicMaterial({ color:0x2688cc, transparent:true, opacity:0.055,
       blending:THREE.AdditiveBlending, depthWrite:false })
   );
   scene.add(gridSphere);
@@ -268,7 +268,7 @@ function buildSphere(){
   // faceted inner icosahedron
   icosa = new THREE.LineSegments(
     new THREE.WireframeGeometry(new THREE.IcosahedronGeometry(R_S*0.9, 1)),
-    new THREE.LineBasicMaterial({ color:0x63d2ff, transparent:true, opacity:0.28,
+    new THREE.LineBasicMaterial({ color:0x4aa6dd, transparent:true, opacity:0.16,
       blending:THREE.AdditiveBlending, depthWrite:false })
   );
   scene.add(icosa);
@@ -282,9 +282,9 @@ function buildRings(){
     const m = new THREE.Mesh(
       new THREE.TorusGeometry(rad, tube, 20, 260),
       new THREE.MeshStandardMaterial({
-        color, metalness:1.0, roughness:0.16,
-        envMap:scene.environment, envMapIntensity:1.4,
-        emissive:new THREE.Color(color).multiplyScalar(0.15)
+        color, metalness:1.0, roughness:0.22,
+        envMap:scene.environment, envMapIntensity:0.85,
+        emissive:new THREE.Color(color).multiplyScalar(0.07)
       })
     );
     m.rotation.copy(tilt);
@@ -298,60 +298,72 @@ function buildRings(){
  *  CENTRAL WORDMARK
  * ------------------------------------------------------------------ */
 function buildWordmark(){
-  const cw = 2048, ch = 620;
+  const cw = 2560, ch = 560;
   const c = document.createElement('canvas'); c.width=cw; c.height=ch;
   const x = c.getContext('2d');
-  const cx = cw/2, cy = ch/2 - 6;
+  const cx = cw/2, cy = ch/2 - 4;
 
-  // neon accent hairlines with end brackets
-  const half = 720;
-  x.strokeStyle = 'rgba(120,210,255,.75)'; x.lineWidth = 3;
-  x.shadowColor = 'rgba(80,200,255,.9)'; x.shadowBlur = 14;
-  for(const dy of [-150, 150]){
+  const text = 'VISIO SAPIENS';
+  const track = 18;
+
+  // auto-fit: shrink the size until the tracked text fits inside the canvas
+  let size = 176, widths = [], total = 0;
+  const measure = ()=>{
+    x.font = `900 ${size}px Orbitron, system-ui, sans-serif`;
+    widths = [...text].map(chr => x.measureText(chr).width);
+    total = widths.reduce((a,b)=>a+b,0) + track*(text.length-1);
+  };
+  const maxW = cw * 0.86;
+  measure();
+  while(total > maxW && size > 60){ size -= 2; measure(); }
+
+  // adaptive neon accent hairlines (gap sized to the actual text width)
+  const gap = total/2 + 80;
+  const marginX = cw * 0.05;
+  const dy = Math.round(size * 0.62);
+  x.strokeStyle = 'rgba(110,195,255,.7)'; x.lineWidth = 3;
+  x.shadowColor = 'rgba(70,180,255,.85)'; x.shadowBlur = 12;
+  for(const s of [-1, 1]){
+    const yy = cy + s*dy;
     x.beginPath();
-    x.moveTo(cx-half, cy+dy); x.lineTo(cx-90, cy+dy);
-    x.moveTo(cx+90, cy+dy); x.lineTo(cx+half, cy+dy);
+    x.moveTo(marginX, yy);        x.lineTo(cx - gap, yy);
+    x.moveTo(cx + gap, yy);       x.lineTo(cw - marginX, yy);
     x.stroke();
   }
-  // bracket ticks
-  [[-half,-1],[half,1]].forEach(([px,dir])=>{
+  // small end ticks
+  for(const ex of [marginX, cw - marginX]){
     x.beginPath();
-    x.moveTo(cx+px, cy-150); x.lineTo(cx+px+dir*0, cy-150);
-    x.moveTo(cx+px, cy-165); x.lineTo(cx+px, cy-135);
-    x.moveTo(cx+px, cy+135); x.lineTo(cx+px, cy+165);
+    x.moveTo(ex, cy - dy - 14); x.lineTo(ex, cy - dy + 14);
+    x.moveTo(ex, cy + dy - 14); x.lineTo(ex, cy + dy + 14);
     x.stroke();
-  });
+  }
   x.shadowBlur = 0;
 
   // wordmark text
-  const font = weight => `${weight} 150px Orbitron, system-ui, sans-serif`;
-  const text = 'VISIO SAPIENS';
   x.textBaseline = 'middle';
-  x.font = font(900);
-  const track = 26;
 
   // glow layers
   x.shadowColor = 'rgba(50,160,255,.85)';
   for(const b of [40, 24, 12]){
     x.shadowBlur = b;
     x.fillStyle = 'rgba(70,170,255,.45)';
-    drawTracked(x, text, cx, cy, track, 150);
+    drawTracked(x, text, cx, cy, track, size);
   }
   x.shadowBlur = 0;
 
   // crisp gradient face
-  const g = x.createLinearGradient(0, cy-90, 0, cy+90);
+  const g = x.createLinearGradient(0, cy-size*0.6, 0, cy+size*0.6);
   g.addColorStop(0, '#cfeeff');
   g.addColorStop(0.5, '#8fd2ff');
   g.addColorStop(1, '#4aa6ff');
   x.fillStyle = g;
-  drawTracked(x, text, cx, cy, track, 150);
+  drawTracked(x, text, cx, cy, track, size);
 
   const tex = new THREE.CanvasTexture(c);
   tex.colorSpace = THREE.SRGBColorSpace;
   tex.anisotropy = renderer.capabilities.getMaxAnisotropy();
 
-  const h = 1.15, w = h * cw/ch;
+  const h = 1.05, w = h * cw/ch;
   wordmark = new THREE.Mesh(
     new THREE.PlaneGeometry(w, h),
     new THREE.MeshBasicMaterial({ map:tex, transparent:true, depthWrite:false, toneMapped:true })
@@ -362,6 +374,7 @@ function buildWordmark(){
 
 function drawTracked(ctx, str, centerX, y, track, size){
   ctx.font = `900 ${size}px Orbitron, system-ui, sans-serif`;
+  ctx.textAlign = 'center';
   const widths = [...str].map(ch => ctx.measureText(ch).width);
   const total = widths.reduce((a,b)=>a+b,0) + track*(str.length-1);
   let cxp = centerX - total/2;
@@ -553,7 +566,7 @@ function drawGlyph(x, type, cx, cy, s){
  *  FLOATING PARTICLES
  * ------------------------------------------------------------------ */
 function buildParticles(){
-  const COUNT = 2400;
+  const COUNT = 1500;
   const pos = new Float32Array(COUNT*3);
   const phase = new Float32Array(COUNT);
   const scale = new Float32Array(COUNT);
@@ -566,7 +579,7 @@ function buildParticles(){
     pos[i*3+1] = r*Math.cos(ph)*0.75;
     pos[i*3+2] = r*Math.sin(ph)*Math.sin(th);
     phase[i] = Math.random()*Math.PI*2;
-    scale[i] = 12 + Math.random()*26;
+    scale[i] = 8 + Math.random()*18;
   }
   const geo = new THREE.BufferGeometry();
   geo.setAttribute('position', new THREE.BufferAttribute(pos,3));
@@ -583,7 +596,7 @@ function buildParticles(){
         vec4 mv = modelViewMatrix * vec4(position,1.0);
         float tw = 0.45 + 0.55*sin(uTime*0.7853981634 + aPhase); // 8s twinkle -> loops
         vTw = tw;
-        gl_PointSize = aScale * tw * uPix * (14.0 / -mv.z);
+        gl_PointSize = aScale * tw * uPix * (11.0 / -mv.z);
         gl_Position = projectionMatrix * mv;
       }`,
     fragmentShader:`
@@ -593,7 +606,7 @@ function buildParticles(){
         float d = length(uv);
         float a = smoothstep(0.5, 0.0, d);
         vec3 col = mix(vec3(0.30,0.60,1.0), vec3(0.55,0.82,1.0), vTw);
-        gl_FragColor = vec4(col, a*vTw*uIntro);
+        gl_FragColor = vec4(col, a*vTw*uIntro*0.65);
       }`
   });
   points = new THREE.Points(geo, pointsMat);
@@ -604,10 +617,10 @@ function buildParticles(){
  *  LIGHTS
  * ------------------------------------------------------------------ */
 function buildLights(){
-  scene.add(new THREE.AmbientLight(0x243f60, 0.5));
-  const key = new THREE.PointLight(0x4aa6ff, 1.7, 40); key.position.set(5,4,6); scene.add(key);
-  const rim = new THREE.PointLight(0x2f5bff, 1.4, 40); rim.position.set(-6,-3,-4); scene.add(rim);
-  const warm= new THREE.PointLight(0xffcfa0, 0.28, 30); warm.position.set(-3,5,4); scene.add(warm);
+  scene.add(new THREE.AmbientLight(0x1c3350, 0.4));
+  const key = new THREE.PointLight(0x4098ee, 1.3, 40); key.position.set(5,4,6); scene.add(key);
+  const rim = new THREE.PointLight(0x2a52e0, 1.1, 40); rim.position.set(-6,-3,-4); scene.add(rim);
+  const warm= new THREE.PointLight(0xffcfa0, 0.22, 30); warm.position.set(-3,5,4); scene.add(warm);
 }
 
 /* ------------------------------------------------------------------ *
