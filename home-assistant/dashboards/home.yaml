@@ -17,7 +17,7 @@
 #   apexcharts-card, config-template-card, decluttering-card, browser_mod
 ########################################################################
 
-title: OSVision V2
+title: Visio Sapiens
 path: osvision-v2
 theme: OSVision V2
 
@@ -147,23 +147,6 @@ views:
                   height: 100px
                 }
 
-          # ── Case 4 : logo OS ───────────────────────────────────────
-          - type: custom:button-card
-            view-layout:
-              grid-area: header5
-            template: osvision_os_avatar
-            name: "OS"
-            card_mod:
-              style: |
-                :host { flex: 1 1 0; }
-                ha-card {
-                  background: rgba(16,27,39,0.85) !important;
-                  border: 1px solid rgba(0,229,255,0.28) !important;
-                  border-radius: 20px !important;
-                  box-shadow: 0 0 18px rgba(0,229,255,.12) !important;
-                  height: 100px
-                }
-
       # --- Navigation bar (sidebar verticale) ---------------------------
       - type: vertical-stack
         view_layout:
@@ -186,7 +169,7 @@ views:
           - type: custom:button-card
             template: osvision_sidebar_logo
             icon: mdi:hexagon-outline
-            name: "OSVISION V2"
+            name: "VISIO SAPIENS"
             label: "Smart Home OS"
 
           - type: custom:button-card
@@ -310,10 +293,34 @@ views:
               navigation_path: /osvision-v2/admin
 
           - type: custom:button-card
-            template: osvision_sidebar_brand_footer
-            icon: mdi:hexagon-outline
-            name: "OSVISION V2"
-            label: "SMART HOME OS"
+            show_icon: false
+            show_name: false
+            show_label: false
+            tap_action:
+              action: none
+            custom_fields:
+              logo: >
+                <img src="/local/osvision_v2/images/logo_VS-Sapiens.png"
+                     style="width:100%;max-width:160px;display:block;margin:0 auto;filter:drop-shadow(0 0 10px rgba(0,229,255,.35));" />
+            styles:
+              card:
+                - background: transparent
+                - border: none
+                - box-shadow: none
+                - padding: 12px 6px 4px 6px
+              grid:
+                - grid-template-areas: '"logo"'
+              custom_fields:
+                logo:
+                  - width: 100%
+            card_mod:
+              style: |
+                :host { margin-top: auto; }
+                ha-card {
+                  background: transparent !important;
+                  border: none !important;
+                  box-shadow: none !important;
+                }
 
       # --- KPI row (System Status / Pièces actives / Energy Status / Sécurité / Connexions) ----
       - type: horizontal-stack
@@ -389,342 +396,27 @@ views:
               icon_color: "#B084FF"
               value_color: "#B084FF"
 
-      # --- Plan interactif de la maison (picture-elements) -----------------
-      # Image a deposer dans : /config/www/osvision_v2/images/floorplan.png
-      # Les overlays affichent la temperature par piece en temps reel.
-      # Remplace chaque entity_id sensor.xxx par ton vrai capteur.
-      - type: picture-elements
+      # --- Animation centrale VISIO SAPIENS (remplace le floorplan) -------
+      # Fichier a deposer dans : /config/www/osvision_v2/vs-sp.html
+      - type: iframe
+        url: /local/osvision_v2/vs-sp.html
         view_layout:
           grid-area: floor
-        image: /local/osvision_v2/images/floorplan.png
         card_mod:
           style: |
-            :host {
-              height: 100%;
-              display: block;
-            }
             ha-card {
               background: transparent !important;
-              border: none !important;
-              box-shadow: none !important;
-              height: 100% !important;
-              width: 100% !important;
+              border: 1px solid rgba(0,229,255,0.28) !important;
+              box-shadow: 0 0 24px rgba(0,229,255,.12) !important;
               overflow: hidden;
-            }
-            img {
-              width: 100% !important;
               height: 100% !important;
-              object-fit: cover;
-              object-position: center center;
+              border-radius: 20px;
             }
-        elements:
-          # ---- GROUND FLOOR ----
-
-          - type: custom:button-card
-            name: "SECRET ROOM"
-            show_name: true
-            show_icon: false
-            tap_action:
-              action: none
-            style:
-              top: 7%
-              left: 26%
-            styles:
-              card:
-                - background: rgba(0,229,255,0.12)
-                - border: 1px solid rgba(0,229,255,0.4)
-                - border-radius: 6px
-                - padding: 2px 6px
-                - box-shadow: none
-                - pointer-events: none
-                - width: fit-content
-              name:
-                - color: "#00E5FF"
-                - font-size: 11px
-                - font-weight: bold
-                - white-space: nowrap
-
-          - type: state-label
-            entity: sensor.secret_room_temperature  # TODO
-            prefix: "🌡 "
-            suffix: "°C"
-            style:
-              top: 13%
-              left: 26%
-              color: "#00E5FF"
-              font-size: 11px
-              font-weight: bold
-              background: rgba(0,229,255,0.12)
-              border: 1px solid rgba(0,229,255,0.4)
-              border-radius: 6px
-              padding: 2px 6px
-              white-space: nowrap
-          
-          - type: custom:button-card
-            name: "LIVING ROOM"
-            show_name: true
-            show_icon: false
-            tap_action:
-              action: none
-            style:
-              top: 34%
-              left: 26%
-            styles:
-              card:
-                - background: rgba(0,229,255,0.12)
-                - border: 1px solid rgba(0,229,255,0.4)
-                - border-radius: 6px
-                - padding: 2px 6px
-                - box-shadow: none
-                - pointer-events: none
-                - width: fit-content
-              name:
-                - color: "#00E5FF"
-                - font-size: 11px
-                - font-weight: bold
-                - white-space: nowrap
-
-          - type: state-label
-            entity: sensor.living_room_temperature  # TODO
-            prefix: "🌡 "
-            suffix: "°C"
-            style:
-              top: 40%
-              left: 26%
-              color: "#00E5FF"
-              font-size: 11px
-              font-weight: bold
-              background: rgba(0,229,255,0.12)
-              border: 1px solid rgba(0,229,255,0.4)
-              border-radius: 6px
-              padding: 2px 6px
-              white-space: nowrap
-
-          - type: custom:button-card
-            name: "KITCHEN"
-            show_name: true
-            show_icon: false
-            tap_action:
-              action: none
-            style:
-              top: 34%
-              left: 26%
-            styles:
-              card:
-                - background: rgba(0,229,255,0.12)
-                - border: 1px solid rgba(0,229,255,0.4)
-                - border-radius: 6px
-                - padding: 2px 6px
-                - box-shadow: none
-                - pointer-events: none
-                - width: fit-content
-              name:
-                - color: "#00E5FF"
-                - font-size: 11px
-                - font-weight: bold
-                - white-space: nowrap
-          
-          - type: state-label
-            entity: sensor.kitchen_temperature  # TODO
-            prefix: "🌡 "
-            suffix: "°C"
-            style:
-              top: 35%
-              left: 15%
-              color: "#00E5FF"
-              font-size: 11px
-              font-weight: bold
-              background: rgba(0,229,255,0.12)
-              border: 1px solid rgba(0,229,255,0.4)
-              border-radius: 6px
-              padding: 2px 6px
-              white-space: nowrap
-
-          - type: state-label
-            entity: sensor.technical_room_temperature  # TODO
-            prefix: "🌡 "
-            suffix: "°C"
-            style:
-              top: 74%
-              left: 16%
-              color: "#00E5FF"
-              font-size: 11px
-              font-weight: bold
-              background: rgba(0,229,255,0.12)
-              border: 1px solid rgba(0,229,255,0.4)
-              border-radius: 6px
-              padding: 2px 6px
-              white-space: nowrap
-
-          - type: state-label
-            entity: sensor.computer_room_temperature  # TODO
-            prefix: "🌡 "
-            suffix: "°C"
-            style:
-              top: 74%
-              left: 28%
-              color: "#00E5FF"
-              font-size: 11px
-              font-weight: bold
-              background: rgba(0,229,255,0.12)
-              border: 1px solid rgba(0,229,255,0.4)
-              border-radius: 6px
-              padding: 2px 6px
-              white-space: nowrap
-
-          - type: state-label
-            entity: sensor.spa_temperature  # TODO
-            prefix: "🌡 "
-            suffix: "°C"
-            style:
-              top: 52%
-              left: 44%
-              color: "#FF9800"
-              font-size: 11px
-              font-weight: bold
-              background: rgba(255,152,0,0.12)
-              border: 1px solid rgba(255,152,0,0.4)
-              border-radius: 6px
-              padding: 2px 6px
-              white-space: nowrap
-
-          # ---- FIRST FLOOR ----
-          - type: custom:button-card
-            name: "BEDROOM 1"
-            show_name: true
-            show_icon: false
-            tap_action:
-              action: none
-            style:
-              top: 70%
-              left: 88%
-            styles:
-              card:
-                - background: rgba(0,229,255,0.12)
-                - border: 1px solid rgba(0,229,255,0.4)
-                - border-radius: 6px
-                - padding: 2px 6px
-                - box-shadow: none
-                - pointer-events: none
-                - width: fit-content
-              name:
-                - color: "#00E5FF"
-                - font-size: 11px
-                - font-weight: bold
-                - white-space: nowrap
-
-          - type: state-label
-            entity: sensor.bedroom1_temperature  # TODO
-            prefix: "🌡 "
-            suffix: "°C"
-            style:
-              top: 76%
-              left: 88%
-              color: "#00E5FF"
-              font-size: 11px
-              font-weight: bold
-              background: rgba(0,229,255,0.12)
-              border: 1px solid rgba(0,229,255,0.4)
-              border-radius: 6px
-              padding: 2px 6px
-              white-space: nowrap
-          
-          - type: custom:button-card
-            name: "BEDROOM 2"
-            show_name: true
-            show_icon: false
-            tap_action:
-              action: none
-            style:
-              top: 37%
-              left: 88%
-            styles:
-              card:
-                - background: rgba(0,229,255,0.12)
-                - border: 1px solid rgba(0,229,255,0.4)
-                - border-radius: 6px
-                - padding: 2px 6px
-                - box-shadow: none
-                - pointer-events: none
-                - width: fit-content
-              name:
-                - color: "#00E5FF"
-                - font-size: 11px
-                - font-weight: bold
-                - white-space: nowrap
-
-          - type: state-label
-            entity: sensor.bedroom2_temperature  # TODO
-            prefix: "🌡 "
-            suffix: "°C"
-            style:
-              top: 43%
-              left: 88%
-              color: "#00E5FF"
-              font-size: 11px
-              font-weight: bold
-              background: rgba(0,229,255,0.12)
-              border: 1px solid rgba(0,229,255,0.4)
-              border-radius: 6px
-              padding: 2px 6px
-              white-space: nowrap
-          
-          - type: custom:button-card
-            name: "BATHROOM"
-            show_name: true
-            show_icon: false
-            tap_action:
-              action: none
-            style:
-              top: 70%
-              left: 59%
-            styles:
-              card:
-                - background: rgba(0,229,255,0.12)
-                - border: 1px solid rgba(0,229,255,0.4)
-                - border-radius: 6px
-                - padding: 2px 6px
-                - box-shadow: none
-                - pointer-events: none
-                - width: fit-content
-              name:
-                - color: "#00E5FF"
-                - font-size: 11px
-                - font-weight: bold
-                - white-space: nowrap
-
-          - type: state-label
-            entity: sensor.bathroom_temperature  # TODO
-            prefix: "🌡 "
-            suffix: "°C"
-            style:
-              top: 76%
-              left: 59%
-              color: "#00E5FF"
-              font-size: 11px
-              font-weight: bold
-              background: rgba(0,229,255,0.12)
-              border: 1px solid rgba(0,229,255,0.4)
-              border-radius: 6px
-              padding: 2px 6px
-              white-space: nowrap
-
-          # ---- SOLAR PANELS ----
-          - type: state-label
-            entity: sensor.solar_power_production  # TODO
-            prefix: "☀ "
-            suffix: " kW"
-            style:
-              top: 9%
-              left: 75%
-              color: "#FFD700"
-              font-size: 11px
-              font-weight: bold
-              background: rgba(255,215,0,0.12)
-              border: 1px solid rgba(255,215,0,0.4)
-              border-radius: 6px
-              padding: 2px 6px
-              white-space: nowrap
+            iframe {
+              width: 100%;
+              height: 100% !important;
+              border: none;
+            }
 
       - type: horizontal-stack
         view_layout:
@@ -980,7 +672,7 @@ views:
     cards:
       - type: custom:button-card
         template: osvision_title
-        name: OSVISION V2 — ADMIN
+        name: VISIO SAPIENS — ADMIN
         view_layout:
           grid-area: header
 
@@ -1064,7 +756,7 @@ views:
 
       # --- Footer --------------------------------------------------------
       - type: custom:osv-footer-card
-        label: OSVISION V2 // ADMIN PANEL
+        label: VISIO SAPIENS // ADMIN PANEL
         view_layout:
           grid-area: footer
 
