@@ -132,21 +132,6 @@ views:
                   height: 100px
                 }
 
-          # ── Case 4 : logo OS ───────────────────────────────────────
-          - type: custom:button-card
-            template: osvision_os_avatar
-            name: "OS"
-            card_mod:
-              style: |
-                :host { flex: 1 1 0; }
-                ha-card {
-                  background: rgba(16,27,39,0.85) !important;
-                  border: 1px solid rgba(0,229,255,0.28) !important;
-                  border-radius: 20px !important;
-                  box-shadow: 0 0 18px rgba(0,229,255,.12) !important;
-                  height: 100px
-                }
-
       # ═══════════════════════════════════════════════════════════════
       # SIDEBAR NAV
       # ═══════════════════════════════════════════════════════════════
@@ -171,7 +156,7 @@ views:
           - type: custom:button-card
             template: osvision_sidebar_logo
             icon: mdi:hexagon-outline
-            name: "OSVISION V2"
+            name: "VISIO SAPIENS"
             label: "Smart Home OS"
 
           - type: custom:button-card
@@ -276,138 +261,58 @@ views:
               navigation_path: /osvision-energy/energy
 
           - type: custom:button-card
-            template: osvision_sidebar_brand_footer
-            icon: mdi:hexagon-outline
-            name: "OSVISION V2"
-            label: "SMART HOME OS"
-
-      # ═══════════════════════════════════════════════════════════════
-      # LIGNE 2 — PLAN desk.png + badges de statut (vert/rouge)
-      # ═══════════════════════════════════════════════════════════════
-      - type: picture-elements
-        view_layout:
-          grid-area: image
-        image: /local/osvision_v2/images/desk.png
-        card_mod:
-          style: |
-            :host { height: 100%; display: block; }
-            ha-card {
-              background: rgba(8,18,28,0.55) !important;
-              border: 1px solid rgba(0,229,255,0.28) !important;
-              border-radius: 20px !important;
-              box-shadow: 0 0 24px rgba(0,229,255,.12) !important;
-              min-height: 100% !important;
-              width: 100% !important;
-              overflow: hidden;
-            }
-            img {
-              width: 100% !important;
-              min-height: 100% !important;
-              object-fit: cover !important;
-              object-position: center center !important;
-            }
-        elements:
-
-          # Chaque appareil = une pastille colorée + un libellé.
-          # La couleur est pilotée par card_mod sur l'état de l'entité,
-          # avec garde "if (!config.entity ...)" pour ne jamais planter
-          # si l'entité n'existe pas encore.
-
-          # ── Température / Humidité ────────────────────────────────
-          - type: state-label
-            entity: sensor.gw3000a_temperature_1      # TODO
-            style: { top: 7%, left: 4%, transform: "translateX(-50%)" }
-            card_mod: &badge_style
-              style: |
-                :host {
-                  color: #FFFFFF !important;
-                  font-size: 11px !important;
-                  font-weight: 600 !important;
-                  background: rgba(16,27,39,0.9) !important;
-                  border: 1px solid rgba(0,229,255,0.3) !important;
-                  border-radius: 20px !important;
-                  padding: 4px 12px 4px 22px !important;
-                  white-space: nowrap !important;
-                  box-shadow: 0 0 10px rgba(0,229,255,.15) !important;
-                  position: relative !important;
-                }
-                :host::before {
-                  content: "" !important;
-                  position: absolute !important;
-                  left: 9px !important;
-                  top: 50% !important;
-                  transform: translateY(-50%) !important;
-                  width: 8px !important;
-                  height: 8px !important;
-                  border-radius: 50% !important;
-                  background: var(--status-color, #FF5470) !important;
-                  box-shadow: 0 0 8px var(--status-color, #FF5470) !important;
-                }
-
-          - type: state-badge
-            entity: light.hue_color_candle_1        # TODO
-            style: { top: 14%, left: 10%, transform: "translateX(-50%)" }
-            card_mod: *badge_style
-
-          - type: state-badge
-            entity: light.hue_color_candle_1_2        # TODO
-            style: { top: 10%, left: 18%, transform: "translateX(-50%)" }
-            card_mod: *badge_style
-
-          - type: state-badge
-            entity: light.hue_color_candle_1_3        # TODO
-            style: { top: 14%, left: 26%, transform: "translateX(-50%)" }
-            card_mod: *badge_style
-
-          - type: state-badge
-            entity: sensor.hp_color_laserjet_mfp_m477fdn       # TODO
-            style: { top: 64%, left: 44%, transform: "translateX(-50%)" }
-            card_mod: *badge_style
-
-          - type: state-badge
-            entity: media_player.cinehome_denon           # TODO
-            style: { top: 55%, left: 34%, transform: "translateX(-50%)" }
-            card_mod: *badge_style
-
-          - type: state-badge
-            entity: binary_sensor.toshiba_clim_connectivity        # TODO
-            style: { top: 5%, left: 53%, transform: "translateX(-50%)" }
-            card_mod: *badge_style
-
-          - type: state-badge
-            entity: binary_sensor.volet_bureau_connectivity        # TODO
-            style: { top: 22%, left: 43%, transform: "translateX(-50%)" }
-            card_mod: *badge_style
-
-          # ── Légende ────────────────────────────────────────────────
-          - type: custom:button-card
             show_icon: false
             show_name: false
-            show_state: false
+            show_label: false
+            tap_action:
+              action: none
             custom_fields:
-              legend: >
-                <div style="display:flex;gap:18px;justify-content:center;
-                  align-items:center;padding:6px 14px;white-space:nowrap;">
-                  <div style="display:flex;align-items:center;gap:6px;">
-                    <div style="width:8px;height:8px;border-radius:50%;background:#00FFC3;
-                      box-shadow:0 0 8px rgba(0,255,195,.6);"></div>
-                    <span style="color:#8FB6C9;font-size:10px;">Fonctionne</span>
-                  </div>
-                  <div style="display:flex;align-items:center;gap:6px;">
-                    <div style="width:8px;height:8px;border-radius:50%;background:#FF5470;
-                      box-shadow:0 0 8px rgba(255,84,112,.6);"></div>
-                    <span style="color:#8FB6C9;font-size:10px;">Ne fonctionne pas</span>
-                  </div>
-                </div>
-            style: { top: 95%, left: 50%, transform: "translate(-50%, -50%)" }
+              logo: >
+                <img src="/local/osvision_v2/images/logo_VS-Sapiens.png"
+                     style="width:100%;max-width:160px;display:block;margin:0 auto;filter:drop-shadow(0 0 10px rgba(0,229,255,.35));" />
             styles:
               card:
-                - background: rgba(8,18,28,0.75)
-                - border: 1px solid rgba(0,229,255,0.2)
-                - border-radius: 20px
+                - background: transparent
+                - border: none
                 - box-shadow: none
-                - width: fit-content
-                - pointer-events: none
+                - padding: 12px 6px 4px 6px
+              grid:
+                - grid-template-areas: '"logo"'
+              custom_fields:
+                logo:
+                  - width: 100%
+            card_mod:
+              style: |
+                :host { margin-top: auto; }
+                ha-card {
+                  background: transparent !important;
+                  border: none !important;
+                  box-shadow: none !important;
+                }
+
+      # ═══════════════════════════════════════════════════════════════
+      # LIGNE 2 — Animation centrale VISIO SAPIENS (remplace desk.png)
+      # Fichier a deposer dans : /config/www/osvision_v2/vs-sp.html
+      # ═══════════════════════════════════════════════════════════════
+      - type: iframe
+        url: /local/osvision_v2/vs-sp.html
+        view_layout:
+          grid-area: image
+        card_mod:
+          style: |
+            ha-card {
+              background: transparent !important;
+              border: 1px solid rgba(0,229,255,0.28) !important;
+              box-shadow: 0 0 24px rgba(0,229,255,.12) !important;
+              overflow: hidden;
+              height: 100% !important;
+              border-radius: 20px;
+            }
+            iframe {
+              width: 100%;
+              height: 100% !important;
+              border: none;
+            }
 
       # ═══════════════════════════════════════════════════════════════
       # LIGNE 3 — APPAREILS CONNECTÉS & INTERACTIONS
