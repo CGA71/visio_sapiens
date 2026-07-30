@@ -1,4 +1,4 @@
-# OSVision V2 — Neural Home Interface
+# Visio Sapiens — Neural Home Interface
 
 Futuristic Home Assistant UI inspired by OSVision, designed for tablet dashboards.
 
