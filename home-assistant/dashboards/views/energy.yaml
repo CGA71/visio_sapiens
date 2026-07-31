@@ -278,7 +278,7 @@ views:
             custom_fields:
               logo: >
                 <img src="/local/osvision_v2/images/logo_VS-Sapiens.png"
-                     style="width:100%;max-width:160px;display:block;margin:0 auto;filter:drop-shadow(0 0 10px rgba(0,229,255,.35));" />
+                     style="width:100%;max-width:160px;display:block;margin:0 auto;mix-blend-mode:screen;filter:drop-shadow(0 0 8px rgba(0,229,255,.28));" />
             styles:
               card:
                 - background: transparent
