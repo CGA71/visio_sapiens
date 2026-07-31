@@ -301,7 +301,7 @@ views:
             custom_fields:
               logo: >
                 <img src="/local/osvision_v2/images/logo_VS-Sapiens.png"
-                     style="width:100%;max-width:160px;display:block;margin:0 auto;filter:drop-shadow(0 0 10px rgba(0,229,255,.35));" />
+                     style="width:100%;max-width:160px;display:block;margin:0 auto;mix-blend-mode:screen;filter:drop-shadow(0 0 8px rgba(0,229,255,.28));" />
             styles:
               card:
                 - background: transparent
@@ -396,27 +396,43 @@ views:
               icon_color: "#B084FF"
               value_color: "#B084FF"
 
-      # --- Animation centrale VISIO SAPIENS (remplace le floorplan) -------
-      # Fichier a deposer dans : /config/www/osvision_v2/vs-sp.html
-      - type: iframe
-        url: /local/osvision_v2/vs-sp.html
+      # --- Video centrale VISIO SAPIENS (remplace le floorplan) -----------
+      # Lecture auto, en boucle, sans son.
+      # Fichier a deposer dans : /config/www/osvision_v2/movies/vs-sp.mp4
+      - type: custom:button-card
         view_layout:
           grid-area: floor
+        show_icon: false
+        show_name: false
+        show_label: false
+        tap_action:
+          action: none
+        custom_fields:
+          video: >
+            <video autoplay muted loop playsinline
+              style="width:100%;height:100%;object-fit:cover;display:block;">
+              <source src="/local/osvision_v2/movies/vs-sp.mp4" type="video/mp4" />
+            </video>
+        styles:
+          card:
+            - padding: 0
+            - background: transparent
+            - border: 1px solid rgba(0,229,255,0.28)
+            - box-shadow: 0 0 24px rgba(0,229,255,.12)
+            - border-radius: 20px
+            - overflow: hidden
+            - height: 100%
+          grid:
+            - grid-template-areas: '"video"'
+            - height: 100%
+          custom_fields:
+            video:
+              - height: 100%
+              - width: 100%
         card_mod:
           style: |
-            ha-card {
-              background: transparent !important;
-              border: 1px solid rgba(0,229,255,0.28) !important;
-              box-shadow: 0 0 24px rgba(0,229,255,.12) !important;
-              overflow: hidden;
-              height: 100% !important;
-              border-radius: 20px;
-            }
-            iframe {
-              width: 100%;
-              height: 100% !important;
-              border: none;
-            }
+            :host { height: 100%; }
+            ha-card { height: 100% !important; overflow: hidden; border-radius: 20px; }
 
       - type: horizontal-stack
         view_layout:
