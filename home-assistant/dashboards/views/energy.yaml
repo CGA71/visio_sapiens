@@ -81,26 +81,7 @@ views:
 
           # ── Case 2 : météo (carte NATIVE, toujours disponible) ─────
           - type: custom:simple-weather-card
-            entity: weather.home
-            show_name: true
-            tap_action:
-              action: more-info
-            primary_info:
-              - extrema
-            secondary_info:
-              - precipitation
-              - precipitation_probability
-            state_content: state
-            forecast_type: daily
-            custom: []
-            show_forecast: false
-            backdrop:
-              day: "#45aaf2"
-              night: "#a55eea"
-              text: "#141414"
-              bg: false
-              fade: false
-            animated_icons: true
+              entity: weather.meteo_france_forecast_for_city_sausset_les_pins_provence_alpes_cote_d_azur_13_fr_sausset_les_pins
             card_mod:
               style: |
                 :host { flex: 1 1 0; }
