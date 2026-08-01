@@ -33,14 +33,30 @@ variables:
   PROD_RESTART_CORE: "true"
 
 # ============================================================================
+# WORKFLOW — quand un pipeline est-il CREE ?
+#   - Merge Request                         -> pipeline STAGING (validate,
+#                                              build, deploy:staging, test)
+#   - Tag                                   -> pipeline PRODUCTION
+#   - Push simple (fix/*, features/*, master) -> AUCUN pipeline
+#
+# => on peut committer autant qu'on veut sur une branche courte sans rien
+#    lancer ; la chaine ne part qu'a l'ouverture (ou la mise a jour) d'une MR.
+# ============================================================================
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_TAG
+    - when: never
+
+# ============================================================================
 # TEMPLATES (jobs caches, reutilises via `extends`)
 # ============================================================================
 
-.rules_branch:
+# Jobs STAGING : ne tournent QUE dans le pipeline d'une Merge Request.
+# (avant : tournaient a chaque push de branche via $CI_COMMIT_BRANCH)
+.rules_mr:
   rules:
-    - if: $CI_COMMIT_TAG
-      when: never
-    - if: $CI_COMMIT_BRANCH
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
 
 .rules_tag:
   rules:
@@ -292,7 +308,7 @@ package:hacs:
 # 3a. DEPLOY STAGING — k3s, sur branches uniquement
 # ============================================================================
 deploy:staging:
-  extends: .rules_branch
+  extends: .rules_mr
   stage: deploy
   image: bitnami/kubectl:latest
   needs: ["build"]
@@ -427,7 +443,7 @@ deploy:production:
 test:staging:
   extends:
     - .smoke_test
-    - .rules_branch
+    - .rules_mr
   needs: ["deploy:staging"]
   variables:
     TARGET_URL: $STAGING_URL
