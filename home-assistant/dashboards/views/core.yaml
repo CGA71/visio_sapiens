@@ -129,10 +129,13 @@ views:
                 - background: rgba(16,27,39,0.85)
                 - border: 1px solid rgba(0,229,255,0.28)
                 - border-radius: 20px
-                - box-shadow: 0 0 18px rgba(0,229,255,.12) 
+                - box-shadow: 0 0 18px rgba(0,229,255,.12)
+                - padding: 6px 20px          # 6px en haut, comme le page_header
               grid:
-                - align-items: center          # était "start" -> centre verticalement
-                - justify-items: center        # centre horizontalement le bloc
+                - grid-template-areas: '"l"'
+                - grid-template-rows: min-content   # la ligne ne prend que la hauteur du texte
+                - align-content: start              # <- LE réglage clé : colle la grille en haut
+                - justify-items: center
               label:
                 - justify-self: center
                 - text-align: center
