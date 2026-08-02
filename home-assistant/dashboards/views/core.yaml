@@ -85,18 +85,16 @@ views:
               - extrema
             secondary_info:
               - precipitation
-              - precipitation_probability
             state_content: state
             forecast_type: daily
             custom: []
-            show_forecast: false
-            backdrop:
-              day: "#45aaf2"
-              night: "#a55eea"
-              text: "#141414"
-              bg: false
-              fade: false
             animated_icons: true
+            backdrop:
+              day: "#7cbfee"
+              night: "#a6aae8"
+              text: "#ffffff"
+              bg: true
+              fade: false
             card_mod:
               style: |
                 :host { flex: 1 1 0; }

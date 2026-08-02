@@ -82,6 +82,23 @@ views:
           # ── Case 2 : météo (carte NATIVE, toujours disponible) ─────
           - type: custom:simple-weather-card
             entity: weather.maison
+            show_name: true
+            tap_action:
+              action: more-info
+            primary_info:
+              - extrema
+            secondary_info:
+              - precipitation
+            state_content: state
+            forecast_type: daily
+            custom: []
+            animated_icons: true
+            backdrop:
+              day: "#7cbfee"
+              night: "#a6aae8"
+              text: "#ffffff"
+              bg: true
+              fade: false
             card_mod:
               style: |
                 :host { flex: 1 1 0; }
