@@ -130,9 +130,10 @@ views:
                 - border: 1px solid rgba(0,229,255,0.28)
                 - border-radius: 20px
                 - box-shadow: 0 0 18px rgba(0,229,255,.12)
-                - padding: 8px 20px 0px 20px
+                - padding: 0px 20px            # haut/bas à 0 -> plus de décalage vertical
               grid:
-                - align-items: start
+                - align-items: center          # était "start" -> centre verticalement
+                - justify-items: center        # centre horizontalement le bloc
               label:
                 - justify-self: center
                 - text-align: center
