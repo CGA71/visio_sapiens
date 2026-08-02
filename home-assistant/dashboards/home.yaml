@@ -92,7 +92,7 @@ views:
 
        # ── Case 2 : météo (carte NATIVE, toujours disponible) ─────
           - type: custom:simple-weather-card
-            entity: weather.home
+            entity: weather.maison
             show_name: true
             tap_action:
               action: more-info
