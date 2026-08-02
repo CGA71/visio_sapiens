@@ -129,7 +129,7 @@ views:
                 - background: rgba(16,27,39,0.85)
                 - border: 1px solid rgba(0,229,255,0.28)
                 - border-radius: 20px
-                - box-shadow: 0 0 18px rgba(0,229,255,.12) 
+                - box-shadow: 0 0 18px rgba(0,229,255,.12)
               grid:
                 - align-items: center          # était "start" -> centre verticalement
                 - justify-items: center        # centre horizontalement le bloc
