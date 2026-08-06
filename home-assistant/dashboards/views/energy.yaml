@@ -701,12 +701,12 @@ views:
 
           - type: custom:button-card
             template: osvision_energy_device_row
-            entity: sensor.shelly_lave_linge_power
+            entity: sensor.technical_room_lavelinge_puissance
             name: "Lave-linge"
             icon: mdi:washing-machine
             variables:
-              model: "Shelly Plus 1PM"
-              energy_entity: sensor.shelly_lave_linge_energy_today
+              model: "Shelly Power Strip 4 Gen 4"
+              energy_entity: sensor.technical_room_lavelinge_energie
             tap_action:
               action: more-info
 
