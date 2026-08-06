@@ -621,27 +621,20 @@ views:
         view_layout:
           grid-area: devices
         card_mod:
-          style:
-            .: |
-              :host {
-                display: block;
-                height: 100%;
-                box-sizing: border-box;
-                background: rgba(8,18,28,0.75);
-                border-radius: 20px;
-                border: 1px solid rgba(0,229,255,0.28);
-                backdrop-filter: blur(12px);
-                box-shadow: 0 0 18px rgba(0,229,255,.15);
-                padding: 16px 18px;
-                overflow: hidden;
-              }
-            $: |
-              #root {
-                display: flex;
-                flex-direction: column;
-                height: 100%;
-                min-height: 0;
-              }
+          style: |
+            :host {
+              display: flex;
+              flex-direction: column;
+              height: 100%;
+              box-sizing: border-box;
+              background: rgba(8,18,28,0.75);
+              border-radius: 20px;
+              border: 1px solid rgba(0,229,255,0.28);
+              backdrop-filter: blur(12px);
+              box-shadow: 0 0 18px rgba(0,229,255,.15);
+              padding: 16px 18px;
+              overflow: hidden;
+            }
         cards:
           - type: custom:button-card
             template: osvision_section_title
@@ -687,14 +680,17 @@ views:
                   - justify-self: end
 
           # ── Liste des appareils (défilante) ────────────────────────
+          # NOTE : la hauteur est fixe (panneau de 418px − titre − en-tête
+          # − ligne total). Ajustez `height` ci-dessous si vous modifiez
+          # la hauteur de la rangée dans grid-template-rows.
           - type: vertical-stack
             card_mod:
               style: |
                 :host {
                   display: block;
-                  flex: 1 1 auto;
-                  min-height: 0;
+                  height: 250px;
                   overflow-y: auto;
+                  overflow-x: hidden;
                   padding-right: 6px;
                   scrollbar-width: thin;
                   scrollbar-color: rgba(0,229,255,0.35) rgba(0,229,255,0.06);
