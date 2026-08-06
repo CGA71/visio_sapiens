@@ -679,23 +679,23 @@ views:
           # TODO : adapter entity / energy_entity / model à vos Shelly
           - type: custom:button-card
             template: osvision_energy_device_row
-            entity: sensor.shelly_chauffe_eau_power
-            name: "Chauffe-eau"
-            icon: mdi:water-boiler
+            entity: sensor.technical_room_aspirateur_puissance
+            name: "Aspirateur"
+            icon: mdi:vacuum
             variables:
-              model: "Shelly 1PM"
-              energy_entity: sensor.shelly_chauffe_eau_energy_today
+              model: "Shelly Power Strip 4 Gen 4"
+              energy_entity: sensor.technical_room_aspirateur_energie
             tap_action:
               action: more-info
 
           - type: custom:button-card
             template: osvision_energy_device_row
-            entity: sensor.shelly_clim_salon_power
-            name: "Clim Salon"
-            icon: mdi:air-conditioner
+            entity: sensor.technical_room_congelateur_puissance
+            name: "Congelateur"
+            icon: mdi:freezer
             variables:
-              model: "Shelly Plus 1PM"
-              energy_entity: sensor.shelly_clim_salon_energy_today
+              model: "Shelly Power Strip 4 Gen 4"
+              energy_entity: sensor.technical_room_congelateur_energie
             tap_action:
               action: more-info
 
@@ -723,45 +723,45 @@ views:
 
           - type: custom:button-card
             template: osvision_energy_device_row
-            entity: sensor.shelly_four_power
-            name: "Four"
-            icon: mdi:toaster-oven
+            entity: sensor.technical_room_alarme_verisure_puissance
+            name: "Alarme"
+            icon: mdi:alarm
             variables:
-              model: "Shelly Plus 1PM"
-              energy_entity: sensor.shelly_four_energy_today
+              model: "Shelly Power Strip 4 Gen 4"
+              energy_entity: sensor.technical_room_alarme_verisure_energie
             tap_action:
               action: more-info
 
           - type: custom:button-card
             template: osvision_energy_device_row
-            entity: sensor.shelly_lave_vaisselle_power
-            name: "Lave-vaisselle"
-            icon: mdi:dishwasher
+            entity: sensor.technical_room_livebox_puissance
+            name: "Provider"
+            icon: mdi:web
             variables:
-              model: "Shelly Plus 1PM"
-              energy_entity: sensor.shelly_lave_vaisselle_energy_today
+              model: "Shelly Power Strip 4 Gen 4"
+              energy_entity: sensor.technical_room_livebox_energie
             tap_action:
               action: more-info
 
           - type: custom:button-card
             template: osvision_energy_device_row
-            entity: sensor.shelly_refrigerateur_power
-            name: "Réfrigérateur"
-            icon: mdi:fridge
+            entity: sensor.technical_room_netgear_commutateur_puissance
+            name: "Netgear-commutateur"
+            icon: mdi:lan
             variables:
-              model: "Shelly Plus 1PM"
-              energy_entity: sensor.shelly_refrigerateur_energy_today
+              model: "Shelly Power Strip 4 Gen 4"
+              energy_entity: sensor.technical_room_netgear_commutateur_energie
             tap_action:
               action: more-info
 
           - type: custom:button-card
             template: osvision_energy_device_row
-            entity: sensor.shelly_eclairage_salon_power
-            name: "Éclairage Salon"
-            icon: mdi:lightbulb-on-outline
+            entity: sensor.technical_room_synology_puissance
+            name: "Synology"
+            icon: mdi:nas
             variables:
-              model: "Shelly 1"
-              energy_entity: sensor.shelly_eclairage_salon_energy_today
+              model: "Shelly Power Strip 4 Gen 4"
+              energy_entity: sensor.technical_room_synology_energie
             tap_action:
               action: more-info
 
