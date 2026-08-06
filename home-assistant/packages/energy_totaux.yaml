@@ -1,0 +1,84 @@
+# ══════════════════════════════════════════════════════════════════════
+#  CONSOMMATION TOTALE — capteurs à fusionner dans configuration.yaml
+#
+#  Remplit les 4 entités attendues par le panneau « Consommation Totale »
+#  de energy.yaml :
+#     sensor.home_energy_today
+#     sensor.home_energy_this_month
+#     sensor.home_energy_this_year
+#     sensor.home_energy_daily_average
+#
+#  Principe :
+#   1) sensor.home_energy_total  = SCAN : somme dynamique de tous les
+#      compteurs cumulatifs *_energie (kWh depuis toujours). Tout nouvel
+#      appareil dont le capteur finit par « _energie » entre tout seul.
+#   2) utility_meter (jour/mois/année) découpe ce total en périodes et
+#      gère les remises à zéro automatiquement.
+#   3) daily_average = total du mois / jour du mois.
+#
+#  ⚠ Le scan ne doit additionner QUE des compteurs cumulatifs (lifetime).
+#    N'y mets jamais un capteur « _energy_today » déjà remis à zéro chaque
+#    jour : tu mélangerais des kWh de vie et des kWh du jour. Voir la note
+#    sur le Bureau tout en bas.
+# ══════════════════════════════════════════════════════════════════════
+
+
+# ─── 1) LE SCAN : somme de tous les *_energie ────────────────────────
+# Si ta configuration.yaml a déjà une clé « template: », ajoute seulement
+# le bloc « - sensor: » ci-dessous à la liste existante (pas deux « template: »).
+template:
+  - sensor:
+      - name: "Home Energy Total"
+        unique_id: home_energy_total
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+        state: >
+          {% set ns = namespace(total=0.0) %}
+          {% for s in states.sensor if s.entity_id.endswith('_energie') %}
+            {% set ns.total = ns.total + (s.state | float(0)) %}
+          {% endfor %}
+          {{ ns.total | round(3) }}
+
+      # ─── 3) Moyenne quotidienne (mois en cours) ──────────────────────
+      - name: "Home Energy Daily Average"
+        unique_id: home_energy_daily_average
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state: >
+          {{ (states('sensor.home_energy_this_month') | float(0) / now().day)
+             | round(2) }}
+
+
+# ─── 2) LES PÉRIODES : découpage jour / mois / année ─────────────────
+# Idem : si « utility_meter: » existe déjà, ajoute juste les 3 entrées.
+utility_meter:
+  home_energy_today:
+    source: sensor.home_energy_total
+    cycle: daily
+  home_energy_this_month:
+    source: sensor.home_energy_total
+    cycle: monthly
+  home_energy_this_year:
+    source: sensor.home_energy_total
+    cycle: yearly
+
+
+# ══════════════════════════════════════════════════════════════════════
+#  NOTE — le Bureau
+#  Dans energy.yaml le Bureau utilise « sensor.shelly_bureau_energy_today »,
+#  un capteur DÉJÀ journalier : il ne finit pas par « _energie » et n'entre
+#  donc PAS dans le scan (c'est voulu — sinon on mélangerait les unités).
+#  Le Shelly Plug S expose aussi un compteur cumulatif (souvent
+#  « sensor.shelly_bureau_energy »). Pour inclure le Bureau dans les totaux,
+#  crée-lui un alias finissant par « _energie », p.ex. via un template :
+#
+#     - name: "Shelly Bureau Energie"
+#       unique_id: shelly_bureau_energie
+#       unit_of_measurement: "kWh"
+#       device_class: energy
+#       state_class: total_increasing
+#       state: "{{ states('sensor.shelly_bureau_energy') | float(0) }}"
+#
+#  Il sera alors capté automatiquement par le scan.
+# ══════════════════════════════════════════════════════════════════════
