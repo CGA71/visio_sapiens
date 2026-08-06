@@ -166,6 +166,8 @@ validate:
     # Patch configuration.yaml : fragment + patcher présents dans le repo
     - test -f home-assistant/config-fragment.yaml || { echo "[ERR] home-assistant/config-fragment.yaml manquant"; exit 1; }
     - test -f osvision/osvision_apply_config.py    || { echo "[ERR] osvision/osvision_apply_config.py manquant"; exit 1; }
+    - test -f osvision/osvision_ensure_packages.py || { echo "[ERR] osvision/osvision_ensure_packages.py manquant"; exit 1; }
+    - test -f osvision/osvision_sanitize_resources.py || { echo "[ERR] osvision/osvision_sanitize_resources.py manquant"; exit 1; }
     # Source unique du theme : themes/ a la racine (impose par HACS)
     - |
       if [ -d home-assistant/themes ]; then
@@ -227,6 +229,8 @@ build:
     - cp home-assistant/config-fragment.yaml dist/config-fragment.yaml
     - mkdir -p dist/osvision
     - cp osvision/osvision_apply_config.py dist/osvision/
+    - cp osvision/osvision_ensure_packages.py dist/osvision/
+    - cp osvision/osvision_sanitize_resources.py dist/osvision/
     # Cache-busting automatique des ressources Lovelace
     # NB : on EXCLUT config-fragment.yaml — il utilise le placeholder __VTOKEN__
     #      remplace au moment du "apply" via --vtoken (et non ?v=X).
@@ -346,6 +350,8 @@ deploy:staging:
         # Deployer le patcher + le fragment a leur emplacement /config
         mkdir -p /config/osvision
         cp /config/.osv_stage/osvision/osvision_apply_config.py /config/osvision/
+        cp /config/.osv_stage/osvision/osvision_ensure_packages.py /config/osvision/
+        cp /config/.osv_stage/osvision/osvision_sanitize_resources.py /config/osvision/
         cp /config/.osv_stage/config-fragment.yaml /config/config-fragment.yaml
         # Packages (additif : n ecrase pas d eventuels packages non-OSVision)
         mkdir -p /config/packages
@@ -360,6 +366,14 @@ deploy:staging:
           --config   /config/configuration.yaml \
           --fragment /config/config-fragment.yaml \
           --vtoken   "'"$OSV_VERSION"'"
+        # Le patcher ne gere pas le domaine homeassistant : ce script pose
+        # (idempotent) la cle packages qui charge /config/packages/
+        python3 /config/osvision/osvision_ensure_packages.py \
+          --config /config/configuration.yaml
+        # Le patcher dedupe les ressources par URL complete : le ?v= changeant
+        # a chaque build, chaque deploiement AJOUTAIT 6 entrees. On assainit.
+        python3 /config/osvision/osvision_sanitize_resources.py \
+          --config /config/configuration.yaml
       '
     - |
       if ! kubectl exec -n $K3S_NAMESPACE $HA_POD -c $K3S_CONTAINER -- hass --script check_config -c /config; then
@@ -430,6 +444,14 @@ deploy:production:
         --config   /tmp/prod_configuration.yaml \
         --fragment /tmp/osv_pkg/config-fragment.yaml \
         --vtoken   "$CI_COMMIT_TAG" || { echo "[ERR] patch configuration.yaml echoue"; exit 1; }
+    # Le patcher ne gere pas le domaine homeassistant : poser la cle packages
+    - |
+      python3 /tmp/osv_pkg/osvision/osvision_ensure_packages.py \
+        --config /tmp/prod_configuration.yaml || { echo "[ERR] ensure packages echoue"; exit 1; }
+    # Dedup des ressources Lovelace (le patcher accumule les ?v= successifs)
+    - |
+      python3 /tmp/osv_pkg/osvision/osvision_sanitize_resources.py \
+        --config /tmp/prod_configuration.yaml || { echo "[ERR] sanitize resources echoue"; exit 1; }
     - scp /tmp/prod_configuration.yaml ha:$HA_CFG/configuration.yaml
     - |
       if ! ssh ha "ha core check"; then
