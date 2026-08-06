@@ -219,6 +219,10 @@ build:
     - cp -r home-assistant/templates/.   dist/dashboards/templates/
     - cp -r themes/.                     dist/themes/
     - cp -r home-assistant/www/.         dist/www/
+    # Packages HA multi-domaines (template, utility_meter...) charges via
+    # `homeassistant: packages: !include_dir_named packages` du fragment.
+    - mkdir -p dist/packages
+    - cp -r home-assistant/packages/.    dist/packages/
     # Patch configuration.yaml : fragment (a la racine de /config) + patcher
     - cp home-assistant/config-fragment.yaml dist/config-fragment.yaml
     - mkdir -p dist/osvision
@@ -343,6 +347,9 @@ deploy:staging:
         mkdir -p /config/osvision
         cp /config/.osv_stage/osvision/osvision_apply_config.py /config/osvision/
         cp /config/.osv_stage/config-fragment.yaml /config/config-fragment.yaml
+        # Packages (additif : n ecrase pas d eventuels packages non-OSVision)
+        mkdir -p /config/packages
+        cp -r /config/.osv_stage/packages/. /config/packages/
       '
     # --- PATCH configuration.yaml (idempotent, avec backup .bak) ---
     - |
@@ -404,6 +411,9 @@ deploy:production:
         mkdir -p $HA_CFG/osvision
         cp $HA_CFG/.osv_stage/osvision/osvision_apply_config.py $HA_CFG/osvision/
         cp $HA_CFG/.osv_stage/config-fragment.yaml $HA_CFG/config-fragment.yaml
+        # Packages (additif : n ecrase pas d eventuels packages non-OSVision)
+        mkdir -p $HA_CFG/packages
+        cp -r $HA_CFG/.osv_stage/packages/. $HA_CFG/packages/
         rm -rf $HA_CFG/.osv_stage"
     # --- PATCH configuration.yaml : execute dans le RUNNER (ruamel dispo),
     #     puis renvoye par scp. Plus fiable que d'installer ruamel dans HAOS.
