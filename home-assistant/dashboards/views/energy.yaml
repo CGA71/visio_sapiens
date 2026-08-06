@@ -707,6 +707,7 @@ views:
             variables:
               model: "Shelly Power Strip 4 Gen 4"
               energy_entity: sensor.technical_room_lavelinge_energie
+<<<<<<< HEAD
             tap_action:
               action: more-info
 
@@ -718,6 +719,8 @@ views:
             variables:
               model: "Shelly Power Strip 4 Gen 4"
               energy_entity: sensor.technical_room_sechelinge_energie
+=======
+>>>>>>> 1a5b308c11dd163a7265ba3eb3b381663dc610f6
             tap_action:
               action: more-info
 
