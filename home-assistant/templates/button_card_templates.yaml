@@ -881,7 +881,7 @@ osvision_energy_tab:
 
 # ---------------------------------------------------------------------
 # Ligne « Consommation par appareil » :
-#   icône | nom + modèle | puissance instantanée | énergie du jour | chevron
+#   icône | nom + modèle | pièce | puissance instantanée | énergie du jour | chevron
 #
 #   template: osvision_energy_device_row
 #   entity: sensor.shelly_chauffe_eau_power
@@ -889,6 +889,7 @@ osvision_energy_tab:
 #   icon: mdi:water-boiler
 #   variables:
 #     model: "Shelly 1PM"
+#     room: "Local technique"                    # pièce affichée (colonne « Pièce »)
 #     energy_entity: sensor.shelly_chauffe_eau_energy_today
 #     detail_entity: switch.shelly_chauffe_eau   # ouvert au tap
 # ---------------------------------------------------------------------
@@ -899,10 +900,17 @@ osvision_energy_device_row:
   show_label: true
   variables:
     model: "Shelly Plus 1PM"
+    room: ""
     energy_entity: ""
     detail_entity: ""
   label: "[[[ return variables.model ]]]"
   custom_fields:
+    room: >
+      [[[
+        if (!variables.room)
+          return '<span style="color:#56707E;font-size:12px">—</span>';
+        return '<span style="color:#8FB6C9;font-size:12px">' + variables.room + '</span>';
+      ]]]
     energy: >
       [[[
         const e = states[variables.energy_entity];
@@ -918,8 +926,8 @@ osvision_energy_device_row:
                style="--mdc-icon-size:16px;color:#56707E;"></ha-icon>
   styles:
     grid:
-      - grid-template-areas: '"i n s energy arrow" "i l s energy arrow"'
-      - grid-template-columns: 36px 1fr 84px 84px 18px
+      - grid-template-areas: '"i n room s energy arrow" "i l room s energy arrow"'
+      - grid-template-columns: 36px 1fr 96px 84px 84px 18px
       - grid-template-rows: min-content min-content
       - column-gap: 8px
       - justify-items: start
@@ -955,6 +963,9 @@ osvision_energy_device_row:
       - font-weight: 600
       - justify-self: end
     custom_fields:
+      room:
+        - justify-self: end
+        - text-align: right
       energy:
         - justify-self: end
       arrow:
