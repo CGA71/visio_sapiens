@@ -40,16 +40,6 @@ template:
           {% endfor %}
           {{ ns.total | round(3) }}
 
-      # ─── 3) Moyenne quotidienne (mois en cours) ──────────────────────
-      - name: "Home Energy Daily Average"
-        unique_id: home_energy_daily_average
-        unit_of_measurement: "kWh"
-        device_class: energy
-        state: >
-          {{ (states('sensor.home_energy_this_month') | float(0) / now().day)
-             | round(2) }}
-
-
 # ─── 2) LES PÉRIODES : découpage jour / mois / année ─────────────────
 # Idem : si « utility_meter: » existe déjà, ajoute juste les 3 entrées.
 utility_meter:
