@@ -655,6 +655,7 @@ views:
                 - border-radius: 0
                 - padding: 0
                 - cursor: default
+                - touch-action: pan-y
               custom_fields:
                 list:
                   - display: block
@@ -665,118 +666,138 @@ views:
                   - padding-right: 4px
                   - scrollbar-width: thin
                   - scrollbar-color: rgba(0,229,255,0.35) rgba(0,229,255,0.06)
+                  - touch-action: pan-y
+                  - "-webkit-overflow-scrolling": touch
             custom_fields:
               list:
                 card:
                   type: vertical-stack
                   cards:
-                    - type: custom:button-card
-                      template: osvision_energy_device_row
-                      entity: sensor.technical_room_aspirateur_puissance
-                      name: "Aspirateur"
-                      icon: mdi:vacuum
-                      variables:
-                        room: "Local technique"
-                        model: "Shelly Power Strip 4 Gen 4"
-                        energy_entity: sensor.technical_room_aspirateur_energie
-                      tap_action:
-                        action: more-info
+                    - type: horizontal-stack
+                      cards:
+                        - type: custom:button-card
+                          template: osvision_energy_device_row
+                          entity: sensor.technical_room_aspirateur_puissance
+                          name: "Aspirateur"
+                          icon: mdi:vacuum
+                          variables:
+                            room: "Local technique"
+                            model: "Shelly Power Strip 4 Gen 4"
+                            energy_entity: sensor.technical_room_aspirateur_energie
+                          tap_action:
+                            action: more-info
 
-                    - type: custom:button-card
-                      template: osvision_energy_device_row
-                      entity: sensor.technical_room_congelateur_puissance
-                      name: "Congelateur"
-                      icon: mdi:freezer
-                      variables:
-                        room: "Local technique"
-                        model: "Shelly Power Strip 4 Gen 4"
-                        energy_entity: sensor.technical_room_congelateur_energie
-                      tap_action:
-                        action: more-info
+                    - type: horizontal-stack
+                      cards:
+                        - type: custom:button-card
+                          template: osvision_energy_device_row
+                          entity: sensor.technical_room_congelateur_puissance
+                          name: "Congelateur"
+                          icon: mdi:freezer
+                          variables:
+                            room: "Local technique"
+                            model: "Shelly Power Strip 4 Gen 4"
+                            energy_entity: sensor.technical_room_congelateur_energie
+                          tap_action:
+                            action: more-info
 
-                    - type: custom:button-card
-                      template: osvision_energy_device_row
-                      entity: sensor.technical_room_lavelinge_puissance
-                      name: "Lave-linge"
-                      icon: mdi:washing-machine
-                      variables:
-                        room: "Local technique"
-                        model: "Shelly Power Strip 4 Gen 4"
-                        energy_entity: sensor.technical_room_lavelinge_energie
-                      tap_action:
-                        action: more-info
+                    - type: horizontal-stack
+                      cards:
+                        - type: custom:button-card
+                          template: osvision_energy_device_row
+                          entity: sensor.technical_room_lavelinge_puissance
+                          name: "Lave-linge"
+                          icon: mdi:washing-machine
+                          variables:
+                            room: "Local technique"
+                            model: "Shelly Power Strip 4 Gen 4"
+                            energy_entity: sensor.technical_room_lavelinge_energie
+                          tap_action:
+                            action: more-info
 
-                    - type: custom:button-card
-                      template: osvision_energy_device_row
-                      entity: sensor.technical_room_sechelinge_puissance
-                      name: "Seche-linge"
-                      icon: mdi:tumble-dryer
-                      variables:
-                        room: "Local technique"
-                        model: "Shelly Power Strip 4 Gen 4"
-                        energy_entity: sensor.technical_room_sechelinge_energie
-                      tap_action:
-                        action: more-info
+                    - type: horizontal-stack
+                      cards:
+                        - type: custom:button-card
+                          template: osvision_energy_device_row
+                          entity: sensor.technical_room_sechelinge_puissance
+                          name: "Seche-linge"
+                          icon: mdi:tumble-dryer
+                          variables:
+                            room: "Local technique"
+                            model: "Shelly Power Strip 4 Gen 4"
+                            energy_entity: sensor.technical_room_sechelinge_energie
+                          tap_action:
+                            action: more-info
 
-                    - type: custom:button-card
-                      template: osvision_energy_device_row
-                      entity: sensor.technical_room_alarme_verisure_puissance
-                      name: "Alarme"
-                      icon: mdi:alarm
-                      variables:
-                        room: "Local technique"
-                        model: "Shelly Power Strip 4 Gen 4"
-                        energy_entity: sensor.technical_room_alarme_verisure_energie
-                      tap_action:
-                        action: more-info
+                    - type: horizontal-stack
+                      cards:
+                        - type: custom:button-card
+                          template: osvision_energy_device_row
+                          entity: sensor.technical_room_alarme_verisure_puissance
+                          name: "Alarme"
+                          icon: mdi:alarm
+                          variables:
+                            room: "Local technique"
+                            model: "Shelly Power Strip 4 Gen 4"
+                            energy_entity: sensor.technical_room_alarme_verisure_energie
+                          tap_action:
+                            action: more-info
 
-                    - type: custom:button-card
-                      template: osvision_energy_device_row
-                      entity: sensor.technical_room_livebox_puissance
-                      name: "Provider"
-                      icon: mdi:web
-                      variables:
-                        room: "Local technique"
-                        model: "Shelly Power Strip 4 Gen 4"
-                        energy_entity: sensor.technical_room_livebox_energie
-                      tap_action:
-                        action: more-info
+                    - type: horizontal-stack
+                      cards:
+                        - type: custom:button-card
+                          template: osvision_energy_device_row
+                          entity: sensor.technical_room_livebox_puissance
+                          name: "Provider"
+                          icon: mdi:web
+                          variables:
+                            room: "Local technique"
+                            model: "Shelly Power Strip 4 Gen 4"
+                            energy_entity: sensor.technical_room_livebox_energie
+                          tap_action:
+                            action: more-info
 
-                    - type: custom:button-card
-                      template: osvision_energy_device_row
-                      entity: sensor.technical_room_netgear_commutateur_puissance
-                      name: "Netgear-commutateur"
-                      icon: mdi:lan
-                      variables:
-                        room: "Local technique"
-                        model: "Shelly Power Strip 4 Gen 4"
-                        energy_entity: sensor.technical_room_netgear_commutateur_energie
-                      tap_action:
-                        action: more-info
+                    - type: horizontal-stack
+                      cards:
+                        - type: custom:button-card
+                          template: osvision_energy_device_row
+                          entity: sensor.technical_room_netgear_commutateur_puissance
+                          name: "Netgear-commutateur"
+                          icon: mdi:lan
+                          variables:
+                            room: "Local technique"
+                            model: "Shelly Power Strip 4 Gen 4"
+                            energy_entity: sensor.technical_room_netgear_commutateur_energie
+                          tap_action:
+                            action: more-info
 
-                    - type: custom:button-card
-                      template: osvision_energy_device_row
-                      entity: sensor.technical_room_synology_puissance
-                      name: "Synology"
-                      icon: mdi:nas
-                      variables:
-                        room: "Local technique"
-                        model: "Shelly Power Strip 4 Gen 4"
-                        energy_entity: sensor.technical_room_synology_energie
-                      tap_action:
-                        action: more-info
+                    - type: horizontal-stack
+                      cards:
+                        - type: custom:button-card
+                          template: osvision_energy_device_row
+                          entity: sensor.technical_room_synology_puissance
+                          name: "Synology"
+                          icon: mdi:nas
+                          variables:
+                            room: "Local technique"
+                            model: "Shelly Power Strip 4 Gen 4"
+                            energy_entity: sensor.technical_room_synology_energie
+                          tap_action:
+                            action: more-info
 
-                    - type: custom:button-card
-                      template: osvision_energy_device_row
-                      entity: sensor.shelly_bureau_power
-                      name: "Bureau"
-                      icon: mdi:desk-lamp
-                      variables:
-                        room: "Bureau"
-                        model: "Shelly Plug S"
-                        energy_entity: sensor.shelly_bureau_energy_today
-                      tap_action:
-                        action: more-info
+                    - type: horizontal-stack
+                      cards:
+                        - type: custom:button-card
+                          template: osvision_energy_device_row
+                          entity: sensor.shelly_bureau_power
+                          name: "Bureau"
+                          icon: mdi:desk-lamp
+                          variables:
+                            room: "Bureau"
+                            model: "Shelly Plug S"
+                            energy_entity: sensor.shelly_bureau_energy_today
+                          tap_action:
+                            action: more-info
 
           # ── Total ──────────────────────────────────────────────────
           - type: custom:button-card
