@@ -1,0 +1,488 @@
+########################################################################
+# OSVision V2 — HOME Dashboard — VERSION MOBILE (iPhone 13 Pro Max)
+#
+# Emplacement attendu dans le repo :
+#   home-assistant/dashboards/home_mobile.yaml
+#
+# Dashboard Lovelace AUTONOME, à déclarer dans configuration.yaml :
+#
+#   lovelace:
+#     dashboards:
+#       osvision-v2-m:                       # version MOBILE (iPhone)
+#         mode: yaml
+#         title: HOME (Mobile)
+#         icon: mdi:cellphone
+#         show_in_sidebar: true
+#         filename: home-assistant/dashboards/home_mobile.yaml
+#
+# ── PRINCIPES D'ADAPTATION MOBILE ────────────────────────────────────
+# Cible : iPhone 13 Pro Max, viewport ≈ 428 px de large. Décliné sur le
+# même modèle qu'energy_mobile.yaml :
+#   • Colonne unique : tous les panneaux du home.yaml desktop sont
+#     empilés verticalement (header → nav → KPI → vidéo → énergie →
+#     événements → météo → interphone/audio).
+#   • La sidebar verticale devient une BARRE DE NAVIGATION HORIZONTALE
+#     défilante (chips), avec HOME en actif. touch-action:pan-x pour que
+#     le défilement au doigt fonctionne (button-card avale sinon le geste).
+#   • La rangée KPI (5 cases) passe en GRILLE 2 colonnes.
+#   • La courbe énergie + la synthèse passent en pleine largeur empilée.
+#   • Événements récents (logbook) et météo gardent une hauteur fixe.
+#
+# ── PRÉREQUIS (identiques au desktop home.yaml) ──────────────────────
+# 1. Templates dans templates/button_card_templates.yaml
+# 2. Composants JS déclarés en resources : osv-ad-banner-card,
+#    osv-footer-card, simple-weather-card, dynamic-weather-card,
+#    apexcharts-card, etc.
+# 3. Remplacer les entités marquées « # TODO » par les vôtres
+#    (mêmes entités que home.yaml — les deux dashboards les partagent).
+#
+# NOTE : ce fichier ne contient QUE la vue HOME. Les vues CORE et ADMIN
+# du home.yaml desktop restent servies par leurs dashboards respectifs.
+########################################################################
+title: Visio Sapiens Mobile
+theme: OSVision V2
+
+button_card_templates: !include templates/button_card_templates.yaml
+decluttering_templates: !include templates/decluttering_templates.yaml
+
+views:
+  - title: HOME
+    path: home
+    subview: false
+    type: custom:grid-layout
+    layout:
+      grid-template-columns: 1fr
+      grid-template-rows: auto
+      grid-template-areas: |
+        "header"
+        "nav"
+        "kpi"
+        "video"
+        "energy"
+        "events"
+        "meteo"
+        "right"
+      margin: 8px
+      grid-gap: 12px 0px
+    cards:
+
+      # ═══════════════════════════════════════════════════════════════
+      # HEADER COMPACT — titre + heure sur une seule carte
+      # ═══════════════════════════════════════════════════════════════
+      - type: custom:button-card
+        view_layout:
+          grid-area: header
+        entity: sensor.time                                  # intégration "time_date"
+        show_name: false
+        show_icon: false
+        show_state: false
+        show_label: true
+        tap_action:
+          action: navigate
+          navigation_path: /osvision-v2-m/home
+        label: |
+          [[[
+            const d = new Date();
+            const h = String(d.getHours()).padStart(2,'0');
+            const m = String(d.getMinutes()).padStart(2,'0');
+            const jours = ['Dim','Lun','Mar','Mer','Jeu','Ven','Sam'];
+            const mois = ['janv.','févr.','mars','avr.','mai','juin','juil.','août','sept.','oct.','nov.','déc.'];
+            return `
+              <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+                <div style="display:flex;align-items:center;gap:10px;">
+                  <ha-icon icon="mdi:view-dashboard"
+                    style="--mdc-icon-size:24px;color:#00E5FF;"></ha-icon>
+                  <div>
+                    <div style="font-family:Orbitron,sans-serif;font-size:17px;
+                      letter-spacing:2px;color:#FFFFFF;line-height:1;">HOME</div>
+                    <div style="font-size:10px;color:#8FB6C9;letter-spacing:.5px;
+                      margin-top:3px;">Visio Sapiens — Smart Home OS</div>
+                  </div>
+                </div>
+                <div style="text-align:right;">
+                  <div style="font-family:Orbitron,sans-serif;font-size:20px;
+                    color:#00E5FF;line-height:1;">${h}:${m}</div>
+                  <div style="font-size:10px;color:#8FB6C9;margin-top:3px;">
+                    ${jours[d.getDay()]} ${d.getDate()} ${mois[d.getMonth()]}</div>
+                </div>
+              </div>`;
+          ]]]
+        styles:
+          card:
+            - background: rgba(16,27,39,0.85)
+            - border: 1px solid rgba(0,229,255,0.28)
+            - border-radius: 18px
+            - box-shadow: 0 0 18px rgba(0,229,255,.12)
+            - padding: 14px 16px
+          label:
+            - width: 100%
+
+      # ═══════════════════════════════════════════════════════════════
+      # NAVIGATION HORIZONTALE DÉFILANTE (remplace la sidebar desktop)
+      # HOME est affiché comme actif. touch-action:pan-x aux deux niveaux
+      # pour débloquer le défilement tactile sur iPhone.
+      # ═══════════════════════════════════════════════════════════════
+      - type: custom:button-card
+        view_layout:
+          grid-area: nav
+        show_icon: false
+        show_name: false
+        show_state: false
+        tap_action:
+          action: none
+        custom_fields:
+          navbar: |
+            [[[
+              const items = [
+                { icon: 'mdi:view-dashboard',          txt: 'HOME',      url: '/osvision-v2-m/home', active: true },
+                { icon: 'mdi:server',                  txt: 'CORE',      url: '/osvision-core/core' },
+                { icon: 'mdi:lightning-bolt',          txt: 'ENERGY',    url: '/osvision-energy-m/energy' },
+                { icon: 'mdi:sofa',                    txt: 'SALON',     url: '/osvision-livingroom/livingroom' },
+                { icon: 'mdi:bed',                     txt: 'CH.1',      url: '/osvision-bedroom1/bedroom1' },
+                { icon: 'mdi:bed-outline',             txt: 'CH.2',      url: '/osvision-bedroom2/bedroom2' },
+                { icon: 'mdi:shower',                  txt: 'SDB',       url: '/osvision-bathroom/bathroom' },
+                { icon: 'mdi:laptop',                  txt: 'INFO',      url: '/osvision-computer/computer' },
+                { icon: 'mdi:factory',                 txt: 'TECH',      url: '/osvision-technical/technical' },
+                { icon: 'mdi:security',                txt: 'SECRET',    url: '/osvision-secret/secret' },
+                { icon: 'mdi:flower',                  txt: 'JARDIN',    url: '/osvision-garden/garden' },
+                { icon: 'mdi:shield-crown',            txt: 'ADMIN',     url: '/osvision-v2/admin' },
+              ];
+              const chip = (i) => `
+                <a href="${i.url}" style="text-decoration:none;flex:0 0 auto;">
+                  <div style="display:flex;align-items:center;gap:6px;
+                    padding:8px 14px;border-radius:14px;white-space:nowrap;
+                    background:${i.active ? 'rgba(0,229,255,0.14)' : 'rgba(16,27,39,0.85)'};
+                    border:1px solid ${i.active ? 'rgba(0,229,255,0.55)' : 'rgba(0,229,255,0.18)'};
+                    ${i.active ? 'box-shadow:0 0 12px rgba(0,229,255,.25);' : ''}">
+                    <ha-icon icon="${i.icon}" style="--mdc-icon-size:16px;
+                      color:${i.active ? '#00E5FF' : '#8FB6C9'};"></ha-icon>
+                    <span style="font-family:Orbitron,sans-serif;font-size:10px;
+                      letter-spacing:1px;color:${i.active ? '#00E5FF' : '#8FB6C9'};">
+                      ${i.txt}</span>
+                  </div>
+                </a>`;
+              return `
+                <div style="display:flex;gap:8px;overflow-x:auto;padding:2px 2px 6px 2px;
+                  touch-action:pan-x;-webkit-overflow-scrolling:touch;scrollbar-width:none;">
+                  ${items.map(chip).join('')}
+                </div>`;
+            ]]]
+        styles:
+          grid:
+            - grid-template-areas: '"navbar"'
+          card:
+            - background: transparent
+            - box-shadow: none
+            - border: none
+            - padding: 0
+            - touch-action: pan-x
+          custom_fields:
+            navbar:
+              - width: 100%
+              - touch-action: pan-x
+              - pointer-events: auto
+
+      # ═══════════════════════════════════════════════════════════════
+      # KPI — grille 2 colonnes (5 cases du desktop repliées)
+      # ═══════════════════════════════════════════════════════════════
+      - type: vertical-stack
+        view_layout:
+          grid-area: kpi
+        cards:
+          - type: horizontal-stack
+            cards:
+              # Case 1 — System Status
+              - type: custom:button-card
+                template: osvision_status_indicator
+                name: SYSTEM STATUS
+                label: "Statut métriques CORE"
+                entity: binary_sensor.osvision_core_health   # TODO
+              # Case 2 — Pièces actives
+              - type: custom:button-card
+                template: osvision_kpi_card
+                icon: mdi:door-open
+                name: PIÈCES ACTIVES
+                entity: sensor.osvision_pieces_actives
+                state_display: >
+                  [[[
+                    const s = states['sensor.osvision_pieces_actives'];
+                    if (!s) return "- / -";
+                    return s.state + " / " + (s.attributes.total_areas ?? "-");
+                  ]]]
+                label: "En activité"
+                variables:
+                  icon_color: "#3AA7FF"
+                  value_color: "#3AA7FF"
+
+          - type: horizontal-stack
+            cards:
+              # Case 3 — Energy Status
+              - type: custom:button-card
+                template: osvision_status_indicator
+                name: ENERGY STATUS
+                label: "Statut métriques ENERGY"
+                entity: binary_sensor.osvision_energy_health  # TODO
+              # Case 4 — Sécurité / Alarme
+              - type: custom:button-card
+                template: osvision_kpi_card
+                icon: mdi:shield-lock
+                name: SÉCURITÉ
+                entity: alarm_control_panel.maison            # TODO
+                state_display: >
+                  [[[
+                    if (!entity) return "Non configuré";
+                    switch (entity.state) {
+                      case "disarmed": return "Parfait";
+                      case "triggered": return "ALERTE";
+                      case "armed_home": return "Armée";
+                      case "armed_away": return "Armée";
+                      default: return entity.state;
+                    }
+                  ]]]
+                label: >
+                  [[[
+                    if (!entity) return "Entité non configurée";
+                    return entity.state === "triggered" ? "Intrusion détectée" : "Aucune alerte";
+                  ]]]
+                variables:
+                  icon_color: "#00FFC3"
+                  value_color: "#00FFC3"
+
+          # Case 5 — Connexions (pleine largeur)
+          - type: custom:button-card
+            template: osvision_kpi_card
+            icon: mdi:vector-polygon
+            name: CONNEXIONS
+            entity: sensor.osvision_total_appareils
+            label: "Appareils connectés"
+            variables:
+              icon_color: "#B084FF"
+              value_color: "#B084FF"
+
+      # ═══════════════════════════════════════════════════════════════
+      # VIDÉO CENTRALE VISIO SAPIENS (16:9)
+      # ═══════════════════════════════════════════════════════════════
+      - type: custom:button-card
+        view_layout:
+          grid-area: video
+        show_icon: false
+        show_name: false
+        show_label: false
+        tap_action:
+          action: none
+        custom_fields:
+          video: >
+            <video autoplay muted loop playsinline
+              style="width:100%;display:block;aspect-ratio:16/9;object-fit:cover;">
+              <source src="/local/osvision_v2/movies/vs-sp.mp4" type="video/mp4" />
+            </video>
+        styles:
+          card:
+            - padding: 0
+            - background: transparent
+            - border: 1px solid rgba(0,229,255,0.28)
+            - box-shadow: 0 0 24px rgba(0,229,255,.12)
+            - border-radius: 20px
+            - overflow: hidden
+          grid:
+            - grid-template-areas: '"video"'
+          custom_fields:
+            video:
+              - width: 100%
+        card_mod:
+          style: |
+            ha-card { overflow: hidden; border-radius: 20px; }
+
+      # ═══════════════════════════════════════════════════════════════
+      # ÉNERGIE — courbe production/consommation + synthèse (empilées)
+      # ═══════════════════════════════════════════════════════════════
+      - type: vertical-stack
+        view_layout:
+          grid-area: energy
+        cards:
+          # Courbe production solaire vs consommation
+          - type: custom:apexcharts-card
+            header:
+              show: true
+              title: "PRODUCTION & CONSOMMATION"
+              show_states: false
+            graph_span: 24h
+            card_mod:
+              style: |
+                ha-card {
+                  background: var(--osv-panel) !important;
+                  overflow: hidden;
+                }
+            apex_config:
+              chart:
+                height: 180
+            series:
+              - entity: sensor.solar_power_production          # TODO
+                name: Production
+                type: area
+                color: "#00FFC3"
+                stroke_width: 2
+                opacity: 0.15
+              - entity: sensor.home_power_consumption          # TODO
+                name: Consommation
+                type: line
+                color: "#00E5FF"
+                stroke_width: 2
+
+          # Synthèse kW production / consommation (côte à côte)
+          - type: horizontal-stack
+            cards:
+              - type: custom:button-card
+                template: osvision_metric
+                show_icon: true
+                icon: mdi:solar-power
+                name: PRODUCTION
+                entity: sensor.solar_power_production          # TODO
+              - type: custom:button-card
+                template: osvision_metric
+                show_icon: true
+                icon: mdi:flash
+                name: CONSOMMATION
+                entity: sensor.home_power_consumption          # TODO
+
+      # ═══════════════════════════════════════════════════════════════
+      # ÉVÉNEMENTS RÉCENTS (logbook, hauteur fixe défilante)
+      # ═══════════════════════════════════════════════════════════════
+      - type: logbook
+        title: "Événements récents"
+        hours_to_show: 24
+        view_layout:
+          grid-area: events
+        target:
+          area_id:
+            - computer_room
+            - technical_room
+            - secret_room
+            - livingroom
+            - kitchen
+            - bedroom_1
+            - bedroom_2
+            - bathroom
+            - garden_1
+        card_mod:
+          style: |
+            :host {
+              display: block;
+              overflow: hidden;
+            }
+            ha-card {
+              background: var(--osv-panel) !important;
+              height: 320px !important;
+              min-height: 0;
+              display: flex;
+              flex-direction: column;
+              overflow: hidden;
+              --primary-text-color: #B8E8F5 !important;
+              --secondary-text-color: #8FB6C9 !important;
+              --primary-color: #00E5FF !important;
+              --text-primary-color: #FFFFFF !important;
+              --card-background-color: var(--osv-panel) !important;
+            }
+            ha-card .card-header {
+              color: #FFFFFF !important;
+            }
+            ha-logbook {
+              flex: 1 1 0;
+              min-height: 0;
+              overflow-y: auto;
+              -webkit-overflow-scrolling: touch;
+            }
+
+      # ═══════════════════════════════════════════════════════════════
+      # MÉTÉO ET PRÉVISIONS
+      # ═══════════════════════════════════════════════════════════════
+      - type: custom:dynamic-weather-card
+        entity: weather.meteo_france_forecast_for_city_sausset_les_pins_provence_alpes_cote_d_azur_13_fr_sausset_les_pins
+        name: Sausset les Pins
+        height: 360
+        show_feels_like: true
+        show_wind: true
+        show_wind_gust: true
+        show_wind_direction: true
+        show_humidity: true
+        show_min_temp: true
+        show_hourly_forecast: false
+        hourly_forecast_hours: 5
+        show_daily_forecast: true
+        daily_forecast_days: 5
+        show_sunrise_sunset: false
+        show_clock: false
+        clock_position: top
+        clock_format: 24h
+        overlay_opacity: 0.1
+        language: fr
+        wind_speed_unit: ms
+        sunrise_entity: ""
+        sunset_entity: ""
+        view_layout:
+          grid-area: meteo
+        card_mod:
+          style: |
+            :host {
+              display: block;
+              overflow: hidden;
+            }
+            ha-card {
+              background: var(--osv-panel) !important;
+              min-height: 0;
+              display: flex;
+              flex-direction: column;
+              overflow: hidden;
+            }
+
+      # ═══════════════════════════════════════════════════════════════
+      # INTERPHONE + AUDIO STREAM (côte à côte)
+      # ═══════════════════════════════════════════════════════════════
+      - type: horizontal-stack
+        view_layout:
+          grid-area: right
+        cards:
+          - type: custom:button-card
+            template: osvision_panel
+            show_name: true
+            name: INTERPHONE
+            icon: mdi:doorbell-video
+            show_icon: true
+            styles:
+              card:
+                - height: 120px
+                - justify-content: center
+                - align-items: center
+              name:
+                - color: "#B8E8F5"
+                - font-size: 13px
+                - letter-spacing: 2px
+              icon:
+                - color: "#00E5FF"
+                - "--mdc-icon-size": 34px
+
+          - type: custom:button-card
+            template: osvision_panel
+            show_name: true
+            name: AUDIO STREAM
+            icon: mdi:music-note
+            show_icon: true
+            styles:
+              card:
+                - height: 120px
+                - justify-content: center
+                - align-items: center
+              name:
+                - color: "#B8E8F5"
+                - font-size: 13px
+                - letter-spacing: 2px
+              icon:
+                - color: "#00E5FF"
+                - "--mdc-icon-size": 34px
+
+    # ── Fond de vue (même image que la version desktop) ──────────────
+    card_mod:
+      style: |
+        hui-view {
+          background: center / cover no-repeat fixed url("/local/osvision_v2/backgrounds/home.png");
+        }
