@@ -31,31 +31,37 @@ homeassistant:
 
 lovelace:
   dashboards:
-    osvision-v2:
+    visio-sapiens:
       mode: yaml
-      title: OSVision V2
+      title: Visio-Sapiens
       icon: mdi:hexagon-outline
       show_in_sidebar: true
       filename: dashboards/home.yaml
-    osvision-core:
+    visio-sapiens-core:
       mode: yaml
       title: Core System
       icon: mdi:server
       show_in_sidebar: false
       filename: dashboards/views/core.yaml
-    osvision-computer:
+    visio-sapiens-computer:
       mode: yaml
       title: Computer Room
       icon: mdi:desktop-tower-monitor
       show_in_sidebar: false
       filename: dashboards/views/computer.yaml
-    osvision-energy:
+    visio-sapiens-energy:
       mode: yaml
       title: Energy Management
       icon: mdi:lightning-bolt
       show_in_sidebar: false
       filename: dashboards/views/energy.yaml
-    osvision-energy-mobile:
+    visio-sapiens-mobile:
+      mode: yaml
+      title: Visio-Sapiens
+      icon: mdi:hexagon-outline
+      show_in_sidebar: true
+      filename: dashboards/home_mobile.yaml
+    visio-sapiens-energy-mobile:
       mode: yaml
       title: Energy Management
       icon: mdi:lightning-bolt
