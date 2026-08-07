@@ -13,12 +13,21 @@
 #   • lovelace.resources : merge par 'url' — dédupliqué ; les ressources non
 #     listées ici sont préservées.
 #   • input_text / shell_command / template : merge par clé (préfixe osvision_).
+#   • homeassistant.packages : pose la clé de chargement du dossier packages/
+#     (utilisée pour les fragments multi-domaines : utility_meter, template…).
+#     ⚠ Nécessite que osvision_apply_config.py gère le domaine « homeassistant » ;
+#       sinon, poser cette ligne directement dans configuration.yaml.
 #
 # ⇒ Pour ajouter/modifier/supprimer une ligne de config OSVision, on édite CE
 #   fichier. Le patcher se charge de refléter l'état dans la prod.
 #
 # NB : les tags HA (!include, etc.) sont préservés tels quels par ruamel.
 # ============================================================================
+
+homeassistant:
+  # Charge tous les fichiers de config/packages/ (dont spvs_energy_totaux.yaml,
+  # qui alimente le panneau « Consommation Totale » du dashboard Energy).
+  packages: !include_dir_named packages
 
 lovelace:
   dashboards:
