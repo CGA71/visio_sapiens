@@ -1,5 +1,5 @@
 ########################################################################
-# OSVision V2 — COMPUTER Dashboard (Bureau / Salle informatique)
+# Visio Sapiens — COMPUTER Dashboard (Bureau / Salle informatique)
 #
 # Emplacement : home-assistant/dashboards/views/computer.yaml
 # url_path associé : osvision-computer   (vue : /osvision-computer/computer)
@@ -30,7 +30,7 @@
 #    (on = fonctionne / off = ne fonctionne pas).
 ########################################################################
 title: DESK
-theme: OSVision V2
+theme: Visio Sapiens
 
 button_card_templates: !include ../templates/button_card_templates.yaml
 decluttering_templates: !include ../templates/decluttering_templates.yaml
