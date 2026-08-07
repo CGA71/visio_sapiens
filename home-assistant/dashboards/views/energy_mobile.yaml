@@ -167,7 +167,7 @@ views:
                 </a>`;
               return `
                 <div style="display:flex;gap:8px;overflow-x:auto;padding:2px 2px 6px 2px;
-                  -webkit-overflow-scrolling:touch;scrollbar-width:none;">
+                  touch-action:pan-x;-webkit-overflow-scrolling:touch;scrollbar-width:none;">
                   ${items.map(chip).join('')}
                 </div>`;
             ]]]
@@ -179,9 +179,15 @@ views:
             - box-shadow: none
             - border: none
             - padding: 0
+            # button-card bloque les gestes tactiles par défaut
+            # (touch-action) : sans pan-x, impossible de faire défiler
+            # les chips au doigt sur iPhone.
+            - touch-action: pan-x
           custom_fields:
             navbar:
               - width: 100%
+              - touch-action: pan-x
+              - pointer-events: auto
 
       # ═══════════════════════════════════════════════════════════════
       # PANNEAU 1 — PRODUCTION SOLAIRE
@@ -208,44 +214,84 @@ views:
             name: "Production Solaire"
 
           # ── Jauge de production instantanée (pleine largeur) ───────
-          - type: custom:apexcharts-card
-            chart_type: radialBar
-            header:
-              show: false
-            series:
-              - entity: sensor.solar_power_production        # TODO
-                name: "Production actuelle"
-                min: 0
-                max: 10                                      # TODO : puissance crête kW
-            apex_config:
-              chart:
-                height: 175
-              plotOptions:
-                radialBar:
-                  startAngle: -110
-                  endAngle: 110
-                  hollow:
-                    size: "64%"
-                  track:
-                    background: "rgba(255,255,255,0.07)"
-                  dataLabels:
-                    name:
-                      show: false
-                    value:
-                      fontSize: "26px"
-                      fontWeight: 700
-                      color: "#FFFFFF"
-                      offsetY: 4
-              colors: ["#00FFC3"]
-              stroke:
-                lineCap: round
-            card_mod:
-              style: |
-                ha-card {
-                  background: transparent !important;
-                  border: none !important;
-                  box-shadow: none !important;
-                }
+          # Enveloppée dans une carte conditionnelle : tant que
+          # sensor.solar_power_production n'existe pas dans votre HA
+          # (entité encore marquée TODO), la jauge est masquée au lieu
+          # d'afficher l'erreur rouge « entity not available ».
+          # Remplacez l'entité ICI ET dans la condition par votre vrai
+          # capteur, ou créez-le via energy_config_snippets.yaml.
+          - type: conditional
+            conditions:
+              - condition: state
+                entity: sensor.solar_power_production        # TODO
+                state_not: unavailable
+            card:
+              type: custom:apexcharts-card
+              chart_type: radialBar
+              header:
+                show: false
+              series:
+                - entity: sensor.solar_power_production      # TODO
+                  name: "Production actuelle"
+                  min: 0
+                  max: 10                                    # TODO : puissance crête kW
+              apex_config:
+                chart:
+                  height: 175
+                plotOptions:
+                  radialBar:
+                    startAngle: -110
+                    endAngle: 110
+                    hollow:
+                      size: "64%"
+                    track:
+                      background: "rgba(255,255,255,0.07)"
+                    dataLabels:
+                      name:
+                        show: false
+                      value:
+                        fontSize: "26px"
+                        fontWeight: 700
+                        color: "#FFFFFF"
+                        offsetY: 4
+                colors: ["#00FFC3"]
+                stroke:
+                  lineCap: round
+              card_mod:
+                style: |
+                  ha-card {
+                    background: transparent !important;
+                    border: none !important;
+                    box-shadow: none !important;
+                  }
+
+          # Message visible uniquement tant que le capteur n'existe pas.
+          - type: custom:button-card
+            show_icon: false
+            show_name: false
+            show_state: false
+            show_label: true
+            tap_action:
+              action: none
+            label: |
+              [[[
+                if (states['sensor.solar_power_production']) return '';
+                return '<div style="text-align:center;color:#56707E;font-size:11px;padding:14px 6px;">'
+                  + '<ha-icon icon="mdi:solar-power-variant" style="--mdc-icon-size:22px;color:#56707E;"></ha-icon><br>'
+                  + 'Capteur solaire non configuré — remplacez les entités marquées TODO<br>'
+                  + '(sensor.solar_power_production, sensor.solar_energy_*)</div>';
+              ]]]
+            styles:
+              card:
+                - background: transparent
+                - box-shadow: none
+                - border: none
+                - padding: 0
+                - min-height: 0px
+                - cursor: default
+                - pointer-events: none
+              label:
+                - width: 100%
 
           # ── Cumuls : Aujourd'hui / Mois / Année sur une ligne ──────
           - type: horizontal-stack
@@ -361,58 +407,66 @@ views:
                         option: Année
 
               # Courbe : la période suit l'input_select
-              - type: custom:config-template-card
-                entities:
-                  - input_select.osvision_energy_period
+              # (même protection conditionnelle que la jauge : masquée
+              # tant que le capteur solaire n'existe pas)
+              - type: conditional
+                conditions:
+                  - condition: state
+                    entity: sensor.solar_power_production    # TODO
+                    state_not: unavailable
                 card:
-                  type: custom:apexcharts-card
-                  header:
-                    show: false
-                  graph_span: >-
-                    ${ states['input_select.osvision_energy_period'].state === 'Jour' ? '24h'
-                       : states['input_select.osvision_energy_period'].state === 'Mois' ? '30d' : '365d' }
-                  span:
-                    start: >-
-                      ${ states['input_select.osvision_energy_period'].state === 'Jour' ? 'day'
-                         : states['input_select.osvision_energy_period'].state === 'Mois' ? 'month' : 'year' }
-                  series:
-                    - entity: sensor.solar_power_production   # TODO
-                      name: "Production solaire"
-                      type: column
-                      color: "#00FFC3"
-                      group_by:
-                        func: avg
-                        duration: >-
-                          ${ states['input_select.osvision_energy_period'].state === 'Jour' ? '30min'
-                             : states['input_select.osvision_energy_period'].state === 'Mois' ? '1d' : '30d' }
-                  apex_config:
-                    chart:
-                      height: 120
-                    legend:
+                  type: custom:config-template-card
+                  entities:
+                    - input_select.osvision_energy_period
+                  card:
+                    type: custom:apexcharts-card
+                    header:
                       show: false
-                    grid:
-                      borderColor: "rgba(255,255,255,0.06)"
-                    xaxis:
-                      labels:
-                        style:
-                          colors: "#56707E"
-                          fontSize: "9px"
-                    yaxis:
-                      labels:
-                        style:
-                          colors: "#56707E"
-                          fontSize: "9px"
-                    plotOptions:
-                      bar:
-                        columnWidth: "62%"
-                        borderRadius: 2
-                  card_mod:
-                    style: |
-                      ha-card {
-                        background: transparent !important;
-                        border: none !important;
-                        box-shadow: none !important;
-                      }
+                    graph_span: >-
+                      ${ states['input_select.osvision_energy_period'].state === 'Jour' ? '24h'
+                         : states['input_select.osvision_energy_period'].state === 'Mois' ? '30d' : '365d' }
+                    span:
+                      start: >-
+                        ${ states['input_select.osvision_energy_period'].state === 'Jour' ? 'day'
+                           : states['input_select.osvision_energy_period'].state === 'Mois' ? 'month' : 'year' }
+                    series:
+                      - entity: sensor.solar_power_production   # TODO
+                        name: "Production solaire"
+                        type: column
+                        color: "#00FFC3"
+                        group_by:
+                          func: avg
+                          duration: >-
+                            ${ states['input_select.osvision_energy_period'].state === 'Jour' ? '30min'
+                               : states['input_select.osvision_energy_period'].state === 'Mois' ? '1d' : '30d' }
+                    apex_config:
+                      chart:
+                        height: 120
+                      legend:
+                        show: false
+                      grid:
+                        borderColor: "rgba(255,255,255,0.06)"
+                      xaxis:
+                        labels:
+                          style:
+                            colors: "#56707E"
+                            fontSize: "9px"
+                      yaxis:
+                        labels:
+                          style:
+                            colors: "#56707E"
+                            fontSize: "9px"
+                      plotOptions:
+                        bar:
+                          columnWidth: "62%"
+                          borderRadius: 2
+                    card_mod:
+                      style: |
+                        ha-card {
+                          background: transparent !important;
+                          border: none !important;
+                          box-shadow: none !important;
+                        }
 
               # Pied : capacité annuelle + % de l'objectif
               - type: custom:button-card
@@ -639,7 +693,7 @@ views:
                           ${num(d.e, 2)} kWh auj.</div>
                       </div>
                     </div>`;
-                  return '<div>' + devices.map(row).join('') + '</div>';
+                  return '<div style="touch-action:pan-y;">' + devices.map(row).join('') + '</div>';
                 ]]]
             styles:
               grid:
@@ -651,6 +705,11 @@ views:
                 - border-radius: 0
                 - padding: 0
                 - cursor: default
+                # Indispensable sur mobile : button-card neutralise les
+                # gestes tactiles (touch-action) — le mécanisme
+                # d'overflow est le même que dans energy.yaml, mais au
+                # doigt le geste vertical était avalé par la carte.
+                - touch-action: pan-y
               custom_fields:
                 list:
                   - display: block
@@ -661,6 +720,8 @@ views:
                   - padding-right: 4px
                   - scrollbar-width: thin
                   - scrollbar-color: rgba(0,229,255,0.35) rgba(0,229,255,0.06)
+                  - touch-action: pan-y
+                  - "-webkit-overflow-scrolling": touch
 
           # ── Total ──────────────────────────────────────────────────
           - type: custom:button-card
@@ -714,22 +775,25 @@ views:
                       { minimumFractionDigits: dec, maximumFractionDigits: dec });
                   };
                   const node = (icon, title, sub, v, color) => `
-                    <div style="display:flex;align-items:center;gap:12px;width:100%;
-                      padding:10px 12px;border-radius:14px;
+                    <div style="display:flex;align-items:center;gap:10px;width:100%;
+                      box-sizing:border-box;padding:8px 10px;border-radius:12px;
                       background:rgba(0,229,255,0.05);border:1px solid rgba(0,229,255,0.18);">
-                      <div style="width:44px;height:44px;flex:0 0 44px;border-radius:12px;
+                      <div style="width:36px;height:36px;flex:0 0 36px;border-radius:10px;
                         display:flex;align-items:center;justify-content:center;
                         background:rgba(0,229,255,0.07);border:1px solid rgba(0,229,255,0.20);">
                         <ha-icon icon="${icon}"
-                          style="--mdc-icon-size:26px;color:${color};"></ha-icon>
+                          style="--mdc-icon-size:20px;color:${color};"></ha-icon>
                       </div>
-                      <div style="flex:1;">
-                        <div style="color:#8FB6C9;font-size:11px;font-weight:600;
-                          letter-spacing:.5px;">${title}</div>
-                        <div style="color:#56707E;font-size:10px;">${sub}</div>
+                      <div style="flex:1 1 auto;min-width:0;">
+                        <div style="color:#8FB6C9;font-size:10px;font-weight:600;
+                          letter-spacing:.4px;white-space:nowrap;overflow:hidden;
+                          text-overflow:ellipsis;">${title}</div>
+                        <div style="color:#56707E;font-size:9px;white-space:nowrap;
+                          overflow:hidden;text-overflow:ellipsis;">${sub}</div>
                       </div>
-                      <div style="color:${color};font-size:14px;font-weight:700;
-                        font-family:Orbitron,sans-serif;text-align:right;">${v}</div>
+                      <div style="flex:0 1 auto;max-width:40%;color:${color};
+                        font-size:12px;font-weight:700;font-family:Orbitron,sans-serif;
+                        text-align:right;line-height:1.25;overflow-wrap:break-word;">${v}</div>
                     </div>`;
                   const arrow = (color) => `
                     <div style="display:flex;justify-content:center;padding:1px 0;">
@@ -745,21 +809,23 @@ views:
                     : (inv.state === 'on' ? 'En fonctionnement' : 'À l\'arrêt');
                   const invCol = (inv && inv.state === 'on') ? '#00FFC3' : '#FF3D71';
                   const exch = `
-                    <div style="display:flex;gap:10px;padding:6px 0;">
-                      <div style="flex:1;text-align:center;padding:8px;border-radius:12px;
+                    <div style="display:flex;gap:8px;padding:5px 0;">
+                      <div style="flex:1;min-width:0;text-align:center;padding:6px 4px;
+                        border-radius:10px;box-sizing:border-box;
                         background:rgba(255,215,0,0.06);border:1px solid rgba(255,215,0,0.25);">
-                        <div style="color:#FFD700;font-size:10px;">Excédent
+                        <div style="color:#FFD700;font-size:9px;">Excédent
                           <ha-icon icon="mdi:arrow-down-thin"
-                            style="--mdc-icon-size:13px;color:#FFD700;"></ha-icon></div>
-                        <div style="color:#FFD700;font-size:13px;font-weight:700;
+                            style="--mdc-icon-size:12px;color:#FFD700;"></ha-icon></div>
+                        <div style="color:#FFD700;font-size:12px;font-weight:700;
                           font-family:Orbitron,sans-serif;">${val('sensor.grid_export_power', 2)} kW</div>
                       </div>
-                      <div style="flex:1;text-align:center;padding:8px;border-radius:12px;
+                      <div style="flex:1;min-width:0;text-align:center;padding:6px 4px;
+                        border-radius:10px;box-sizing:border-box;
                         background:rgba(255,152,0,0.06);border:1px solid rgba(255,152,0,0.25);">
-                        <div style="color:#FF9800;font-size:10px;">Import
+                        <div style="color:#FF9800;font-size:9px;">Import
                           <ha-icon icon="mdi:arrow-up-thin"
-                            style="--mdc-icon-size:13px;color:#FF9800;"></ha-icon></div>
-                        <div style="color:#FF9800;font-size:13px;font-weight:700;
+                            style="--mdc-icon-size:12px;color:#FF9800;"></ha-icon></div>
+                        <div style="color:#FF9800;font-size:12px;font-weight:700;
                           font-family:Orbitron,sans-serif;">${val('sensor.grid_import_power', 2)} kW</div>
                       </div>
                     </div>`;
@@ -768,7 +834,8 @@ views:
                       <div style="width:14px;height:2px;background:${color};"></div>
                       <span style="color:#8FB6C9;font-size:9px;">${txt}</span></div>`;
                   return `
-                    <div style="width:100%;display:flex;flex-direction:column;">
+                    <div style="width:100%;max-width:100%;box-sizing:border-box;
+                      display:flex;flex-direction:column;overflow:hidden;">
                       ${node('mdi:solar-panel-large', 'Panneaux Solaires', 'Production actuelle',
                              val('sensor.solar_power_production', 2) + ' kW', '#00FFC3')}
                       ${arrow('#00FFC3')}
@@ -947,119 +1014,158 @@ views:
             template: osvision_section_title
             name: "Tableau Électrique — Circuits (Shelly)"
 
-          - type: horizontal-stack
-            cards:
-              - type: custom:button-card
-                template: osvision_circuit_switch
-                entity: switch.shelly_chauffe_eau            # TODO
-                name: "Chauffe-eau"
-                icon: mdi:water-boiler
-                variables:
-                  model: "Shelly 1PM"
-                  amp: "25A"
-              - type: custom:button-card
-                template: osvision_circuit_switch
-                entity: switch.shelly_clim_salon             # TODO
-                name: "Clim Salon"
-                icon: mdi:air-conditioner
-                variables:
-                  model: "Shelly Plus 1PM"
-                  amp: "20A"
+          # ── Liste des circuits (défilante) ─────────────────────────
+          # Même principe que la liste d'appareils de energy.yaml : les
+          # 6 rangées vivent DANS le champ custom d'un button-card dont
+          # la hauteur est fixe + overflow. touch-action pan-y débloque
+          # le geste tactile. Ajustez `height` (330px) si besoin.
+          - type: custom:button-card
+            show_icon: false
+            show_name: false
+            show_state: false
+            tap_action:
+              action: none
+            styles:
+              grid:
+                - grid-template-areas: '"circuits"'
+              card:
+                - background: transparent
+                - box-shadow: none
+                - border: none
+                - border-radius: 0
+                - padding: 0
+                - cursor: default
+                - touch-action: pan-y
+              custom_fields:
+                circuits:
+                  - display: block
+                  - width: 100%
+                  - height: 330px
+                  - overflow-y: auto
+                  - overflow-x: hidden
+                  - padding-right: 4px
+                  - scrollbar-width: thin
+                  - scrollbar-color: rgba(0,229,255,0.35) rgba(0,229,255,0.06)
+                  - touch-action: pan-y
+                  - "-webkit-overflow-scrolling": touch
+            custom_fields:
+              circuits:
+                card:
+                  type: vertical-stack
+                  cards:
+                    - type: horizontal-stack
+                      cards:
+                        - type: custom:button-card
+                          template: osvision_circuit_switch
+                          entity: switch.shelly_chauffe_eau            # TODO
+                          name: "Chauffe-eau"
+                          icon: mdi:water-boiler
+                          variables:
+                            model: "Shelly 1PM"
+                            amp: "25A"
+                        - type: custom:button-card
+                          template: osvision_circuit_switch
+                          entity: switch.shelly_clim_salon             # TODO
+                          name: "Clim Salon"
+                          icon: mdi:air-conditioner
+                          variables:
+                            model: "Shelly Plus 1PM"
+                            amp: "20A"
 
-          - type: horizontal-stack
-            cards:
-              - type: custom:button-card
-                template: osvision_circuit_switch
-                entity: switch.shelly_lave_linge             # TODO
-                name: "Lave-linge"
-                icon: mdi:washing-machine
-                variables:
-                  model: "Shelly Plus 1PM"
-                  amp: "16A"
-              - type: custom:button-card
-                template: osvision_circuit_switch
-                entity: switch.shelly_four                   # TODO
-                name: "Four"
-                icon: mdi:toaster-oven
-                variables:
-                  model: "Shelly Plus 1PM"
-                  amp: "20A"
+                    - type: horizontal-stack
+                      cards:
+                        - type: custom:button-card
+                          template: osvision_circuit_switch
+                          entity: switch.shelly_lave_linge             # TODO
+                          name: "Lave-linge"
+                          icon: mdi:washing-machine
+                          variables:
+                            model: "Shelly Plus 1PM"
+                            amp: "16A"
+                        - type: custom:button-card
+                          template: osvision_circuit_switch
+                          entity: switch.shelly_four                   # TODO
+                          name: "Four"
+                          icon: mdi:toaster-oven
+                          variables:
+                            model: "Shelly Plus 1PM"
+                            amp: "20A"
 
-          - type: horizontal-stack
-            cards:
-              - type: custom:button-card
-                template: osvision_circuit_switch
-                entity: switch.shelly_lave_vaisselle         # TODO
-                name: "Lave-vaisselle"
-                icon: mdi:dishwasher
-                variables:
-                  model: "Shelly Plus 1PM"
-                  amp: "16A"
-              - type: custom:button-card
-                template: osvision_circuit_switch
-                entity: switch.shelly_prises_cuisine         # TODO
-                name: "Prises Cuisine"
-                icon: mdi:power-socket-fr
-                variables:
-                  model: "Shelly Plug S"
-                  amp: "16A"
+                    - type: horizontal-stack
+                      cards:
+                        - type: custom:button-card
+                          template: osvision_circuit_switch
+                          entity: switch.shelly_lave_vaisselle         # TODO
+                          name: "Lave-vaisselle"
+                          icon: mdi:dishwasher
+                          variables:
+                            model: "Shelly Plus 1PM"
+                            amp: "16A"
+                        - type: custom:button-card
+                          template: osvision_circuit_switch
+                          entity: switch.shelly_prises_cuisine         # TODO
+                          name: "Prises Cuisine"
+                          icon: mdi:power-socket-fr
+                          variables:
+                            model: "Shelly Plug S"
+                            amp: "16A"
 
-          - type: horizontal-stack
-            cards:
-              - type: custom:button-card
-                template: osvision_circuit_switch
-                entity: switch.shelly_refrigerateur          # TODO
-                name: "Réfrigérateur"
-                icon: mdi:fridge
-                variables:
-                  model: "Shelly Plus 1PM"
-                  amp: "16A"
-              - type: custom:button-card
-                template: osvision_circuit_switch
-                entity: switch.shelly_eclairage_salon        # TODO
-                name: "Éclairage Salon"
-                icon: mdi:lightbulb-on-outline
-                variables:
-                  model: "Shelly 1"
-                  amp: "10A"
+                    - type: horizontal-stack
+                      cards:
+                        - type: custom:button-card
+                          template: osvision_circuit_switch
+                          entity: switch.shelly_refrigerateur          # TODO
+                          name: "Réfrigérateur"
+                          icon: mdi:fridge
+                          variables:
+                            model: "Shelly Plus 1PM"
+                            amp: "16A"
+                        - type: custom:button-card
+                          template: osvision_circuit_switch
+                          entity: switch.shelly_eclairage_salon        # TODO
+                          name: "Éclairage Salon"
+                          icon: mdi:lightbulb-on-outline
+                          variables:
+                            model: "Shelly 1"
+                            amp: "10A"
 
-          - type: horizontal-stack
-            cards:
-              - type: custom:button-card
-                template: osvision_circuit_switch
-                entity: switch.shelly_eclairage_chambre      # TODO
-                name: "Éclairage Chambre"
-                icon: mdi:ceiling-light
-                variables:
-                  model: "Shelly 1"
-                  amp: "10A"
-              - type: custom:button-card
-                template: osvision_circuit_switch
-                entity: switch.shelly_prises_salon           # TODO
-                name: "Prises Salon"
-                icon: mdi:power-socket-fr
-                variables:
-                  model: "Shelly Plug S"
-                  amp: "16A"
+                    - type: horizontal-stack
+                      cards:
+                        - type: custom:button-card
+                          template: osvision_circuit_switch
+                          entity: switch.shelly_eclairage_chambre      # TODO
+                          name: "Éclairage Chambre"
+                          icon: mdi:ceiling-light
+                          variables:
+                            model: "Shelly 1"
+                            amp: "10A"
+                        - type: custom:button-card
+                          template: osvision_circuit_switch
+                          entity: switch.shelly_prises_salon           # TODO
+                          name: "Prises Salon"
+                          icon: mdi:power-socket-fr
+                          variables:
+                            model: "Shelly Plug S"
+                            amp: "16A"
 
-          - type: horizontal-stack
-            cards:
-              - type: custom:button-card
-                template: osvision_circuit_switch
-                entity: switch.shelly_bureau                 # TODO
-                name: "Bureau"
-                icon: mdi:desk-lamp
-                variables:
-                  model: "Shelly Plug S"
-                  amp: "16A"
-              - type: custom:button-card
-                template: osvision_circuit_switch
-                entity: switch.shelly_piscine                # TODO
-                name: "Piscine"
-                icon: mdi:pool
-                variables:
-                  model: "Shelly 1PM"
-                  amp: "20A"
+                    - type: horizontal-stack
+                      cards:
+                        - type: custom:button-card
+                          template: osvision_circuit_switch
+                          entity: switch.shelly_bureau                 # TODO
+                          name: "Bureau"
+                          icon: mdi:desk-lamp
+                          variables:
+                            model: "Shelly Plug S"
+                            amp: "16A"
+                        - type: custom:button-card
+                          template: osvision_circuit_switch
+                          entity: switch.shelly_piscine                # TODO
+                          name: "Piscine"
+                          icon: mdi:pool
+                          variables:
+                            model: "Shelly 1PM"
+                            amp: "20A"
 
           # ── Légende ────────────────────────────────────────────────
           - type: custom:button-card
