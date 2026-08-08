@@ -183,7 +183,7 @@ views:
             label: "Vue d'ensemble"
             tap_action:
               action: navigate
-              navigation_path: /vssp/home
+              navigation_path: /visio-sapiens/home
 
           - type: custom:button-card
             template: vssp_nav_button
@@ -192,7 +192,7 @@ views:
             label: "Systeme central"
             tap_action:
               action: navigate
-              navigation_path: /vssp-core/core
+              navigation_path: /visio-sapiens-core/core
 
           - type: custom:button-card
             template: vssp_nav_button
@@ -201,7 +201,7 @@ views:
             label: "Salon"
             tap_action:
               action: navigate
-              navigation_path: /vssp-livingroom/livingroom
+              navigation_path: /visio-sapiens-livingroom/livingroom
 
           - type: custom:button-card
             template: vssp_nav_button
@@ -210,7 +210,7 @@ views:
             label: "Chambre principale"
             tap_action:
               action: navigate
-              navigation_path: /vssp-bedroom1/bedroom1
+              navigation_path: /visio-sapiens-bedroom1/bedroom1
 
           - type: custom:button-card
             template: vssp_nav_button
@@ -219,7 +219,7 @@ views:
             label: "Chambre 2"
             tap_action:
               action: navigate
-              navigation_path: /vssp-bedroom2/bedroom2
+              navigation_path: /visio-sapiens-bedroom2/bedroom2
 
           - type: custom:button-card
             template: vssp_nav_button
@@ -228,7 +228,7 @@ views:
             label: "Salle de bain"
             tap_action:
               action: navigate
-              navigation_path: /vssp-bathroom/bathroom
+              navigation_path: /visio-sapiens-bathroom/bathroom
 
           - type: custom:button-card
             template: vssp_nav_button
@@ -237,7 +237,7 @@ views:
             label: "Salle informatique"
             tap_action:
               action: navigate
-              navigation_path: /vssp-computer/computer
+              navigation_path: /visio-sapiens-computer/computer
 
           - type: custom:button-card
             template: vssp_nav_button
@@ -246,7 +246,7 @@ views:
             label: "Local technique"
             tap_action:
               action: navigate
-              navigation_path: /vssp-technical/technical
+              navigation_path: /visio-sapiens-technical/technical
 
           - type: custom:button-card
             template: vssp_nav_button
@@ -255,7 +255,7 @@ views:
             label: "Piece secrete"
             tap_action:
               action: navigate
-              navigation_path: /vssp-secret/secret
+              navigation_path: /visio-sapiens-secret/secret
 
           - type: custom:button-card
             template: vssp_nav_button
@@ -264,7 +264,7 @@ views:
             label: "Jardin"
             tap_action:
               action: navigate
-              navigation_path: /vssp-garden/garden
+              navigation_path: /visio-sapiens-garden/garden
 
           - type: custom:button-card
             template: vssp_nav_button
@@ -275,7 +275,7 @@ views:
               active: true
             tap_action:
               action: navigate
-              navigation_path: /vssp-energy/energy
+              navigation_path: /visio-sapiens-energy/energy
 
           - type: custom:button-card
             template: vssp_nav_button
@@ -284,7 +284,7 @@ views:
             label: "Panneau administration"
             tap_action:
               action: navigate
-              navigation_path: /vssp/admin
+              navigation_path: /visio-sapiens/admin
 
           - type: custom:button-card
             show_icon: false
