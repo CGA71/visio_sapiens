@@ -135,17 +135,17 @@ views:
             [[[
               const items = [
                 { icon: 'mdi:view-dashboard',          txt: 'HOME',      url: '/visio-sapiens-m/home', active: true },
-                { icon: 'mdi:server',                  txt: 'CORE',      url: '/visio-sapiens-core/core' },
+                { icon: 'mdi:server',                  txt: 'CORE',      url: '/visio-sapiens-core-m/core' },
                 { icon: 'mdi:lightning-bolt',          txt: 'ENERGY',    url: '/visio-sapiens-energy-m/energy' },
-                { icon: 'mdi:sofa',                    txt: 'SALON',     url: '/visio-sapiens-livingroom/livingroom' },
-                { icon: 'mdi:bed',                     txt: 'CH.1',      url: '/visio-sapiens-bedroom1/bedroom1' },
-                { icon: 'mdi:bed-outline',             txt: 'CH.2',      url: '/visio-sapiens-bedroom2/bedroom2' },
-                { icon: 'mdi:shower',                  txt: 'SDB',       url: '/visio-sapiens-bathroom/bathroom' },
-                { icon: 'mdi:laptop',                  txt: 'INFO',      url: '/visio-sapiens-computer/computer' },
-                { icon: 'mdi:factory',                 txt: 'TECH',      url: '/visio-sapiens-technical/technical' },
-                { icon: 'mdi:security',                txt: 'SECRET',    url: '/visio-sapiens-secret/secret' },
-                { icon: 'mdi:flower',                  txt: 'JARDIN',    url: '/visio-sapiens-garden/garden' },
-                { icon: 'mdi:shield-crown',            txt: 'ADMIN',     url: '/visio-sapiens/admin' },
+                { icon: 'mdi:sofa',                    txt: 'SALON',     url: '/visio-sapiens-livingroom-m/livingroom' },
+                { icon: 'mdi:bed',                     txt: 'CH.1',      url: '/visio-sapiens-bedroom1-m/bedroom1' },
+                { icon: 'mdi:bed-outline',             txt: 'CH.2',      url: '/visio-sapiens-bedroom2-m/bedroom2' },
+                { icon: 'mdi:shower',                  txt: 'SDB',       url: '/visio-sapiens-bathroom-m/bathroom' },
+                { icon: 'mdi:laptop',                  txt: 'INFO',      url: '/visio-sapiens-computer-m/computer' },
+                { icon: 'mdi:factory',                 txt: 'TECH',      url: '/visio-sapiens-technical-m/technical' },
+                { icon: 'mdi:security',                txt: 'SECRET',    url: '/visio-sapiens-secret-m/secret' },
+                { icon: 'mdi:flower',                  txt: 'JARDIN',    url: '/visio-sapiens-garden-m/garden' },
+                { icon: 'mdi:shield-crown',            txt: 'ADMIN',     url: '/visio-sapiens-m/admin' },
               ];
               const chip = (i) => `
                 <a href="${i.url}" style="text-decoration:none;flex:0 0 auto;">
