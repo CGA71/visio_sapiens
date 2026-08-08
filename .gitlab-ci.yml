@@ -18,7 +18,7 @@ stages:
   - release
 
 variables:
-  PACKAGE_NAME: osvision-v2
+  PACKAGE_NAME: visio-sapiens
 
   # --- Cible STAGING (k3s) -------------------------------------------------
   K3S_NAMESPACE: "homeassistant"
@@ -141,8 +141,8 @@ workflow:
         echo "      Verifier l'URL, ou utiliser le service interne du cluster."
         exit 1
       fi
-    - curl -sfI "$TARGET_URL/local/vssp/js/osvision.js" >/dev/null && echo "[OK] JS Engine servi"
-    - curl -sfI "$TARGET_URL/local/vssp/css/osvision.css" >/dev/null && echo "[OK] CSS Engine servi"
+    - curl -sfI "$TARGET_URL/local/vssp/js/vssp.js" >/dev/null && echo "[OK] JS Engine servi"
+    - curl -sfI "$TARGET_URL/local/vssp/css/vssp.css" >/dev/null && echo "[OK] CSS Engine servi"
     - |
       UNAVAIL=$(curl -sf -H "Authorization: Bearer $HA_TOKEN" "$TARGET_URL/api/states" \
         | jq '[.[] | select(.state=="unavailable")] | length')
@@ -159,15 +159,15 @@ validate:
     - echo "Validation structurelle"
     - test -d home-assistant/dashboards || { echo "[ERR] home-assistant/dashboards manquant"; exit 1; }
     - test -d home-assistant/templates  || { echo "[ERR] home-assistant/templates manquant"; exit 1; }
-    - test -f themes/visio_sapiens.yaml || { echo "[ERR] themes/osvision_v2.yaml manquant"; exit 1; }
+    - test -f themes/visio_sapiens.yaml || { echo "[ERR] themes/visio_sapiens.yaml manquant"; exit 1; }
     - test -d home-assistant/www/vssp || { echo "[ERR] www/vssp manquant"; exit 1; }
     - test -f hacs.json       || { echo "[ERR] hacs.json manquant"; exit 1; }
     - test -f repository.yaml || { echo "[ERR] repository.yaml manquant"; exit 1; }
     # Patch configuration.yaml : fragment + patcher présents dans le repo
     - test -f home-assistant/config-fragment.yaml || { echo "[ERR] home-assistant/config-fragment.yaml manquant"; exit 1; }
-    - test -f osvision/vssp_apply_config.py    || { echo "[ERR] osvision/osvision_apply_config.py manquant"; exit 1; }
-    - test -f osvision/vssp_ensure_packages.py || { echo "[ERR] osvision/osvision_ensure_packages.py manquant"; exit 1; }
-    - test -f osvision/vssp_sanitize_resources.py || { echo "[ERR] osvision/osvision_sanitize_resources.py manquant"; exit 1; }
+    - test -f vssp/vssp_apply_config.py    || { echo "[ERR] vssp/vssp_apply_config.py manquant"; exit 1; }
+    - test -f vssp/vssp_ensure_packages.py || { echo "[ERR] vssp/vssp_ensure_packages.py manquant"; exit 1; }
+    - test -f vssp/vssp_sanitize_resources.py || { echo "[ERR] vssp/vssp_sanitize_resources.py manquant"; exit 1; }
     # Source unique du theme : themes/ a la racine (impose par HACS)
     - |
       if [ -d home-assistant/themes ]; then
@@ -349,11 +349,11 @@ deploy:staging:
         cp /config/.osv_stage/OSVISION_VERSION /config/OSVISION_VERSION
         # Deployer le patcher + le fragment a leur emplacement /config
         mkdir -p /config/vssp
-        cp /config/.osv_stage/vssp/vssp_apply_config.py /config/osvision/
-        cp /config/.osv_stage/vssp/vssp_ensure_packages.py /config/osvision/
-        cp /config/.osv_stage/vssp/vssp_sanitize_resources.py /config/osvision/
+        cp /config/.osv_stage/vssp/vssp_apply_config.py /config/vssp/
+        cp /config/.osv_stage/vssp/vssp_ensure_packages.py /config/vssp/
+        cp /config/.osv_stage/vssp/vssp_sanitize_resources.py /config/vssp/
         cp /config/.osv_stage/config-fragment.yaml /config/config-fragment.yaml
-        # Packages (additif : n ecrase pas d eventuels packages non-OSVision)
+        # Packages (additif : n ecrase pas d eventuels packages non-vssp)
         mkdir -p /config/packages
         cp -r /config/.osv_stage/packages/. /config/packages/
       '
@@ -422,8 +422,8 @@ deploy:production:
         mv $HA_CFG/.osv_stage/www/vssp $HA_CFG/www/vssp
         cp $HA_CFG/.osv_stage/OSVISION_VERSION $HA_CFG/OSVISION_VERSION
         # Deployer patcher + fragment a leur emplacement /config
-        mkdir -p $HA_CFG/osvision
-        cp $HA_CFG/.osv_stage/vssp/vssp_apply_config.py $HA_CFG/osvision/
+        mkdir -p $HA_CFG/vssp
+        cp $HA_CFG/.osv_stage/vssp/vssp_apply_config.py $HA_CFG/vssp/
         cp $HA_CFG/.osv_stage/config-fragment.yaml $HA_CFG/config-fragment.yaml
         # Packages (additif : n ecrase pas d eventuels packages non-vssp)
         mkdir -p $HA_CFG/packages
