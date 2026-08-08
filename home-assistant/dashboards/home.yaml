@@ -206,7 +206,7 @@ views:
               active: false
             tap_action:
               action: navigate
-              navigation_path: /vssp-core/core
+              navigation_path: /visio-sapiens-core/core
           - type: custom:button-card
             template: vssp_nav_button
             icon: mdi:sofa
@@ -216,7 +216,7 @@ views:
               active: false
             tap_action:
               action: navigate
-              navigation_path: /vssp-livingroom/livingroom
+              navigation_path: /visio-sapiens-livingroom/livingroom
           - type: custom:button-card
             template: vssp_nav_button
             icon: mdi:bed
@@ -226,7 +226,7 @@ views:
               active: false
             tap_action:
               action: navigate
-              navigation_path: /vssp-bedroom1/bedroom1
+              navigation_path: /visio-sapiens-bedroom1/bedroom1
           - type: custom:button-card
             template: vssp_nav_button
             icon: mdi:bed
@@ -236,7 +236,7 @@ views:
               active: false
             tap_action:
               action: navigate
-              navigation_path: /vssp-bedroom2/bedroom2
+              navigation_path: visio-sapiens-bedroom2/bedroom2
           - type: custom:button-card
             template: vssp_nav_button
             icon: mdi:shower
@@ -246,7 +246,7 @@ views:
               active: false
             tap_action:
               action: navigate
-              navigation_path: /vssp-bathroom/bathroom
+              navigation_path: /visio-sapiens-bathroom/bathroom
           - type: custom:button-card
             template: vssp_nav_button
             icon: mdi:laptop
@@ -256,7 +256,7 @@ views:
               active: false
             tap_action:
               action: navigate
-              navigation_path: /vssp-computer/computer
+              navigation_path: /visio-sapiens-computer/computer
           - type: custom:button-card
             template: vssp_nav_button
             icon: mdi:factory
@@ -266,7 +266,7 @@ views:
               active: false
             tap_action:
               action: navigate
-              navigation_path: /vssp-technical/technical
+              navigation_path: /visio-sapiens-technical/technical
           - type: custom:button-card
             template: vssp_nav_button
             icon: mdi:security
@@ -276,7 +276,7 @@ views:
               active: false
             tap_action:
               action: navigate
-              navigation_path: /vssp-secret/secret
+              navigation_path: /visio-sapiens-secret/secret
           - type: custom:button-card
             template: vssp_nav_button
             icon: mdi:flower
@@ -286,7 +286,7 @@ views:
               active: false
             tap_action:
               action: navigate
-              navigation_path: /vssp-garden/garden
+              navigation_path: /visio-sapiens-garden/garden
           - type: custom:button-card
             template: vssp_nav_button
             icon: mdi:lightning-bolt
@@ -296,7 +296,7 @@ views:
               active: false
             tap_action:
               action: navigate
-              navigation_path: /vssp-energy/energy
+              navigation_path: /visio-sapiens-energy/energy
 
           - type: custom:button-card
             template: vssp_nav_button
