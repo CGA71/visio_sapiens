@@ -1,5 +1,5 @@
 ########################################################################
-# OSVision V2 — ENERGY Dashboard — VERSION MOBILE (iPhone 13 Pro Max)
+# Visio Sapiens — ENERGY Dashboard — VERSION MOBILE (iPhone 13 Pro Max)
 #
 # Emplacement attendu dans le repo :
 #   home-assistant/dashboards/views/energy_mobile.yaml
@@ -8,7 +8,7 @@
 #
 #   lovelace:
 #     dashboards:
-#       osvision-energy-m:
+#       vssp-energy-m:
 #         mode: yaml
 #         title: ENERGY (Mobile)
 #         icon: mdi:cellphone
@@ -41,7 +41,7 @@
 # apexcharts-card, config-template-card.
 ########################################################################
 title: ENERGY MOBILE
-theme: OSVision V2
+theme: Visio Sapiens
 
 # Indispensable : sans ces includes, chaque custom:button-card affiche
 # « Erreur de configuration ». Chemin relatif à dashboards/views/.
@@ -138,18 +138,18 @@ views:
           navbar: |
             [[[
               const items = [
-                { icon: 'mdi:view-dashboard',          txt: 'HOME',      url: '/osvision-v2/home' },
-                { icon: 'mdi:server',                  txt: 'CORE',      url: '/osvision-core/core' },
-                { icon: 'mdi:lightning-bolt',          txt: 'ENERGY',    url: '/osvision-energy-m/energy', active: true },
-                { icon: 'mdi:sofa',                    txt: 'SALON',     url: '/osvision-livingroom/livingroom' },
-                { icon: 'mdi:bed',                     txt: 'CH.1',      url: '/osvision-bedroom1/bedroom1' },
-                { icon: 'mdi:bed-outline',             txt: 'CH.2',      url: '/osvision-bedroom2/bedroom2' },
-                { icon: 'mdi:shower',                  txt: 'SDB',       url: '/osvision-bathroom/bathroom' },
-                { icon: 'mdi:desktop-tower-monitor',   txt: 'INFO',      url: '/osvision-computer/computer' },
-                { icon: 'mdi:tools',                   txt: 'TECH',      url: '/osvision-technical/technical' },
-                { icon: 'mdi:key',                     txt: 'SECRET',    url: '/osvision-secret/secret' },
-                { icon: 'mdi:flower',                  txt: 'JARDIN',    url: '/osvision-garden/garden' },
-                { icon: 'mdi:shield-crown',            txt: 'ADMIN',     url: '/osvision-v2/admin' },
+                { icon: 'mdi:view-dashboard',          txt: 'HOME',      url: '/vssp-m/home' },
+                { icon: 'mdi:server',                  txt: 'CORE',      url: '/vssp-core-m/core' },
+                { icon: 'mdi:lightning-bolt',          txt: 'ENERGY',    url: '/vssp-energy-m/energy', active: true },
+                { icon: 'mdi:sofa',                    txt: 'SALON',     url: '/vssp-livingroom-m/livingroom' },
+                { icon: 'mdi:bed',                     txt: 'CH.1',      url: '/vssp-bedroom1-m/bedroom1' },
+                { icon: 'mdi:bed-outline',             txt: 'CH.2',      url: '/vssp-bedroom2-m/bedroom2' },
+                { icon: 'mdi:shower',                  txt: 'SDB',       url: '/vssp-bathroom-m/bathroom' },
+                { icon: 'mdi:desktop-tower-monitor',   txt: 'INFO',      url: '/vssp-computer-m/computer' },
+                { icon: 'mdi:tools',                   txt: 'TECH',      url: '/vssp-technical-m/technical' },
+                { icon: 'mdi:key',                     txt: 'SECRET',    url: '/vssp-secret-m/secret' },
+                { icon: 'mdi:flower',                  txt: 'JARDIN',    url: '/vssp-garden-m/garden' },
+                { icon: 'mdi:shield-crown',            txt: 'ADMIN',     url: '/vssp-m/admin' },
               ];
               const chip = (i) => `
                 <a href="${i.url}" style="text-decoration:none;flex:0 0 auto;">
@@ -210,7 +210,7 @@ views:
             }
         cards:
           - type: custom:button-card
-            template: osvision_section_title
+            template: vssp_section_title
             name: "Production Solaire"
 
           # ── Jauge de production instantanée (pleine largeur) ───────
@@ -297,21 +297,21 @@ views:
           - type: horizontal-stack
             cards:
               - type: custom:button-card
-                template: osvision_energy_stat
+                template: vssp_energy_stat
                 entity: sensor.solar_energy_today            # TODO
                 label: "Aujourd'hui"
                 variables:
                   accent: "#FFFFFF"
                   size: "16px"
               - type: custom:button-card
-                template: osvision_energy_stat
+                template: vssp_energy_stat
                 entity: sensor.solar_energy_this_month       # TODO
                 label: "Ce mois-ci"
                 variables:
                   accent: "#FFFFFF"
                   size: "16px"
               - type: custom:button-card
-                template: osvision_energy_stat
+                template: vssp_energy_stat
                 entity: sensor.solar_energy_this_year        # TODO
                 label: "Cette année"
                 variables:
@@ -323,7 +323,7 @@ views:
             show_icon: false
             show_name: true
             show_state: true
-            entity: input_number.osvision_solar_capacity     # TODO helper (voir snippets)
+            entity: input_number.vssp_solar_capacity     # TODO helper (voir snippets)
             name: "Capacité maximale"
             styles:
               grid:
@@ -367,8 +367,8 @@ views:
               - type: horizontal-stack
                 cards:
                   - type: custom:button-card
-                    template: osvision_energy_tab
-                    entity: input_select.osvision_energy_period
+                    template: vssp_energy_tab
+                    entity: input_select.vssp_energy_period
                     name: Jour
                     icon: mdi:weather-sunny
                     variables:
@@ -377,11 +377,11 @@ views:
                       action: call-service
                       service: input_select.select_option
                       service_data:
-                        entity_id: input_select.osvision_energy_period
+                        entity_id: input_select.vssp_energy_period
                         option: Jour
                   - type: custom:button-card
-                    template: osvision_energy_tab
-                    entity: input_select.osvision_energy_period
+                    template: vssp_energy_tab
+                    entity: input_select.vssp_energy_period
                     name: Mois
                     icon: mdi:calendar-month
                     variables:
@@ -390,11 +390,11 @@ views:
                       action: call-service
                       service: input_select.select_option
                       service_data:
-                        entity_id: input_select.osvision_energy_period
+                        entity_id: input_select.vssp_energy_period
                         option: Mois
                   - type: custom:button-card
-                    template: osvision_energy_tab
-                    entity: input_select.osvision_energy_period
+                    template: vssp_energy_tab
+                    entity: input_select.vssp_energy_period
                     name: Année
                     icon: mdi:calendar
                     variables:
@@ -403,7 +403,7 @@ views:
                       action: call-service
                       service: input_select.select_option
                       service_data:
-                        entity_id: input_select.osvision_energy_period
+                        entity_id: input_select.vssp_energy_period
                         option: Année
 
               # Courbe : la période suit l'input_select
@@ -417,18 +417,18 @@ views:
                 card:
                   type: custom:config-template-card
                   entities:
-                    - input_select.osvision_energy_period
+                    - input_select.vssp_energy_period
                   card:
                     type: custom:apexcharts-card
                     header:
                       show: false
                     graph_span: >-
-                      ${ states['input_select.osvision_energy_period'].state === 'Jour' ? '24h'
-                         : states['input_select.osvision_energy_period'].state === 'Mois' ? '30d' : '365d' }
+                      ${ states['input_select.vssp_energy_period'].state === 'Jour' ? '24h'
+                         : states['input_select.vssp_energy_period'].state === 'Mois' ? '30d' : '365d' }
                     span:
                       start: >-
-                        ${ states['input_select.osvision_energy_period'].state === 'Jour' ? 'day'
-                           : states['input_select.osvision_energy_period'].state === 'Mois' ? 'month' : 'year' }
+                        ${ states['input_select.vssp_energy_period'].state === 'Jour' ? 'day'
+                           : states['input_select.vssp_energy_period'].state === 'Mois' ? 'month' : 'year' }
                     series:
                       - entity: sensor.solar_power_production   # TODO
                         name: "Production solaire"
@@ -437,8 +437,8 @@ views:
                         group_by:
                           func: avg
                           duration: >-
-                            ${ states['input_select.osvision_energy_period'].state === 'Jour' ? '30min'
-                               : states['input_select.osvision_energy_period'].state === 'Mois' ? '1d' : '30d' }
+                            ${ states['input_select.vssp_energy_period'].state === 'Jour' ? '30min'
+                               : states['input_select.vssp_energy_period'].state === 'Mois' ? '1d' : '30d' }
                     apex_config:
                       chart:
                         height: 120
@@ -477,14 +477,14 @@ views:
                 custom_fields:
                   cap: |
                     [[[
-                      const c = states['input_number.osvision_solar_capacity'];
+                      const c = states['input_number.vssp_solar_capacity'];
                       const cap = c ? Number(c.state) : 12500;
                       return '<span style="color:#56707E;font-size:10px">Capacité annuelle : ' +
                              cap.toLocaleString('fr-FR') + ' kWh</span>';
                     ]]]
                   goal: |
                     [[[
-                      const c = states['input_number.osvision_solar_capacity'];
+                      const c = states['input_number.vssp_solar_capacity'];
                       const cap = c ? Number(c.state) : 12500;
                       const y = entity && !isNaN(Number(entity.state)) ? Number(entity.state) : 0;
                       const pct = cap > 0 ? (y / cap * 100) : 0;
@@ -533,15 +533,15 @@ views:
             }
         cards:
           - type: custom:button-card
-            template: osvision_section_title
+            template: vssp_section_title
             name: "Consommation Totale"
 
           # Onglets (partagent le même input_select que la production)
           - type: horizontal-stack
             cards:
               - type: custom:button-card
-                template: osvision_energy_tab
-                entity: input_select.osvision_energy_period
+                template: vssp_energy_tab
+                entity: input_select.vssp_energy_period
                 name: Jour
                 icon: mdi:weather-sunny
                 variables:
@@ -550,11 +550,11 @@ views:
                   action: call-service
                   service: input_select.select_option
                   service_data:
-                    entity_id: input_select.osvision_energy_period
+                    entity_id: input_select.vssp_energy_period
                     option: Jour
               - type: custom:button-card
-                template: osvision_energy_tab
-                entity: input_select.osvision_energy_period
+                template: vssp_energy_tab
+                entity: input_select.vssp_energy_period
                 name: Mois
                 icon: mdi:calendar-month
                 variables:
@@ -563,11 +563,11 @@ views:
                   action: call-service
                   service: input_select.select_option
                   service_data:
-                    entity_id: input_select.osvision_energy_period
+                    entity_id: input_select.vssp_energy_period
                     option: Mois
               - type: custom:button-card
-                template: osvision_energy_tab
-                entity: input_select.osvision_energy_period
+                template: vssp_energy_tab
+                entity: input_select.vssp_energy_period
                 name: Année
                 icon: mdi:calendar
                 variables:
@@ -576,11 +576,11 @@ views:
                   action: call-service
                   service: input_select.select_option
                   service_data:
-                    entity_id: input_select.osvision_energy_period
+                    entity_id: input_select.vssp_energy_period
                     option: Année
 
           - type: custom:button-card
-            template: osvision_energy_kpi
+            template: vssp_energy_kpi
             entity: sensor.home_energy_today                 # TODO
             icon: mdi:chart-bar
             label: "Aujourd'hui"
@@ -588,7 +588,7 @@ views:
               accent: "#00E5FF"
 
           - type: custom:button-card
-            template: osvision_energy_kpi
+            template: vssp_energy_kpi
             entity: sensor.home_energy_this_month            # TODO
             icon: mdi:calendar-month
             label: "Ce mois-ci"
@@ -596,7 +596,7 @@ views:
               accent: "#00E5FF"
 
           - type: custom:button-card
-            template: osvision_energy_kpi
+            template: vssp_energy_kpi
             entity: sensor.home_energy_this_year             # TODO
             icon: mdi:calendar-star
             label: "Cette année"
@@ -627,7 +627,7 @@ views:
             }
         cards:
           - type: custom:button-card
-            template: osvision_section_title
+            template: vssp_section_title
             name: "Consommation par appareil"
 
           # ── Liste des appareils (défilante) ────────────────────────
@@ -635,7 +635,7 @@ views:
           # électrique de ce fichier (qui défile correctement) : les
           # 9 lignes sont de VRAIES cartes embarquées dans le champ
           # `list` d'un button-card à hauteur fixe + overflow. On
-          # réutilise le template osvision_energy_device_row défini
+          # réutilise le template vssp_energy_device_row défini
           # dans button_card_templates.yaml — donc rendu, données et
           # défilement se comportent comme sur le desktop.
           # TODO : adapter entity / energy_entity / model à vos Shelly.
@@ -676,7 +676,7 @@ views:
                     - type: horizontal-stack
                       cards:
                         - type: custom:button-card
-                          template: osvision_energy_device_row
+                          template: vssp_energy_device_row
                           entity: sensor.technical_room_aspirateur_puissance
                           name: "Aspirateur"
                           icon: mdi:vacuum
@@ -690,7 +690,7 @@ views:
                     - type: horizontal-stack
                       cards:
                         - type: custom:button-card
-                          template: osvision_energy_device_row
+                          template: vssp_energy_device_row
                           entity: sensor.technical_room_congelateur_puissance
                           name: "Congelateur"
                           icon: mdi:freezer
@@ -704,7 +704,7 @@ views:
                     - type: horizontal-stack
                       cards:
                         - type: custom:button-card
-                          template: osvision_energy_device_row
+                          template: vssp_energy_device_row
                           entity: sensor.technical_room_lavelinge_puissance
                           name: "Lave-linge"
                           icon: mdi:washing-machine
@@ -718,7 +718,7 @@ views:
                     - type: horizontal-stack
                       cards:
                         - type: custom:button-card
-                          template: osvision_energy_device_row
+                          template: vssp_energy_device_row
                           entity: sensor.technical_room_sechelinge_puissance
                           name: "Seche-linge"
                           icon: mdi:tumble-dryer
@@ -732,7 +732,7 @@ views:
                     - type: horizontal-stack
                       cards:
                         - type: custom:button-card
-                          template: osvision_energy_device_row
+                          template: vssp_energy_device_row
                           entity: sensor.technical_room_alarme_verisure_puissance
                           name: "Alarme"
                           icon: mdi:alarm
@@ -746,7 +746,7 @@ views:
                     - type: horizontal-stack
                       cards:
                         - type: custom:button-card
-                          template: osvision_energy_device_row
+                          template: vssp_energy_device_row
                           entity: sensor.technical_room_livebox_puissance
                           name: "Provider"
                           icon: mdi:web
@@ -760,7 +760,7 @@ views:
                     - type: horizontal-stack
                       cards:
                         - type: custom:button-card
-                          template: osvision_energy_device_row
+                          template: vssp_energy_device_row
                           entity: sensor.technical_room_netgear_commutateur_puissance
                           name: "Netgear-commutateur"
                           icon: mdi:lan
@@ -774,7 +774,7 @@ views:
                     - type: horizontal-stack
                       cards:
                         - type: custom:button-card
-                          template: osvision_energy_device_row
+                          template: vssp_energy_device_row
                           entity: sensor.technical_room_synology_puissance
                           name: "Synology"
                           icon: mdi:nas
@@ -788,7 +788,7 @@ views:
                     - type: horizontal-stack
                       cards:
                         - type: custom:button-card
-                          template: osvision_energy_device_row
+                          template: vssp_energy_device_row
                           entity: sensor.shelly_bureau_power
                           name: "Bureau"
                           icon: mdi:desk-lamp
@@ -801,7 +801,7 @@ views:
 
           # ── Total ──────────────────────────────────────────────────
           - type: custom:button-card
-            template: osvision_energy_total_row
+            template: vssp_energy_total_row
             entity: sensor.home_power_consumption            # TODO
             name: "Consommation totale actuelle"
 
@@ -828,7 +828,7 @@ views:
             }
         cards:
           - type: custom:button-card
-            template: osvision_section_title
+            template: vssp_section_title
             name: "Schéma de fonctionnement"
 
           - type: custom:button-card
@@ -964,20 +964,20 @@ views:
             }
         cards:
           - type: custom:button-card
-            template: osvision_section_title
+            template: vssp_section_title
             name: "Excédent & Revente EDF"
 
           - type: horizontal-stack
             cards:
               - type: custom:button-card
-                template: osvision_energy_stat
+                template: vssp_energy_stat
                 entity: sensor.grid_export_energy_today      # TODO
                 label: "Excédent aujourd'hui"
                 variables:
                   accent: "#00FFC3"
                   size: "20px"
               - type: custom:button-card
-                template: osvision_energy_stat
+                template: vssp_energy_stat
                 entity: sensor.grid_export_energy_this_month # TODO
                 label: "Excédent ce mois-ci"
                 variables:
@@ -989,13 +989,13 @@ views:
             show_name: false
             show_state: true
             show_label: true
-            entity: sensor.osvision_revente_mois             # TODO (template sensor)
+            entity: sensor.vssp_revente_mois             # TODO (template sensor)
             label: "Estimation de revente"
             custom_fields:
               period: '<span style="color:#8FB6C9;font-size:12px;">Ce mois-ci</span>'
               tarif: |
                 [[[
-                  const t = states['input_number.osvision_tarif_revente'];
+                  const t = states['input_number.vssp_tarif_revente'];
                   const v = t ? Number(t.state).toLocaleString('fr-FR',
                     { minimumFractionDigits: 2 }) : '0,20';
                   return '<span style="color:#00E5FF;font-size:11px;border:1px solid rgba(0,229,255,.35);' +
@@ -1039,7 +1039,7 @@ views:
             show_icon: false
             show_name: true
             show_state: true
-            entity: sensor.osvision_revente_annee            # TODO (template sensor)
+            entity: sensor.vssp_revente_annee            # TODO (template sensor)
             name: "Estimation cette année"
             styles:
               grid:
@@ -1087,7 +1087,7 @@ views:
             }
         cards:
           - type: custom:button-card
-            template: osvision_section_title
+            template: vssp_section_title
             name: "Tableau Électrique — Circuits (Shelly)"
 
           # ── Liste des circuits (défilante) ─────────────────────────
@@ -1132,7 +1132,7 @@ views:
                     - type: horizontal-stack
                       cards:
                         - type: custom:button-card
-                          template: osvision_circuit_switch
+                          template: vssp_circuit_switch
                           entity: switch.shelly_chauffe_eau            # TODO
                           name: "Chauffe-eau"
                           icon: mdi:water-boiler
@@ -1140,7 +1140,7 @@ views:
                             model: "Shelly 1PM"
                             amp: "25A"
                         - type: custom:button-card
-                          template: osvision_circuit_switch
+                          template: vssp_circuit_switch
                           entity: switch.shelly_clim_salon             # TODO
                           name: "Clim Salon"
                           icon: mdi:air-conditioner
@@ -1151,7 +1151,7 @@ views:
                     - type: horizontal-stack
                       cards:
                         - type: custom:button-card
-                          template: osvision_circuit_switch
+                          template: vssp_circuit_switch
                           entity: switch.shelly_lave_linge             # TODO
                           name: "Lave-linge"
                           icon: mdi:washing-machine
@@ -1159,7 +1159,7 @@ views:
                             model: "Shelly Plus 1PM"
                             amp: "16A"
                         - type: custom:button-card
-                          template: osvision_circuit_switch
+                          template: vssp_circuit_switch
                           entity: switch.shelly_four                   # TODO
                           name: "Four"
                           icon: mdi:toaster-oven
@@ -1170,7 +1170,7 @@ views:
                     - type: horizontal-stack
                       cards:
                         - type: custom:button-card
-                          template: osvision_circuit_switch
+                          template: vssp_circuit_switch
                           entity: switch.shelly_lave_vaisselle         # TODO
                           name: "Lave-vaisselle"
                           icon: mdi:dishwasher
@@ -1178,7 +1178,7 @@ views:
                             model: "Shelly Plus 1PM"
                             amp: "16A"
                         - type: custom:button-card
-                          template: osvision_circuit_switch
+                          template: vssp_circuit_switch
                           entity: switch.shelly_prises_cuisine         # TODO
                           name: "Prises Cuisine"
                           icon: mdi:power-socket-fr
@@ -1189,7 +1189,7 @@ views:
                     - type: horizontal-stack
                       cards:
                         - type: custom:button-card
-                          template: osvision_circuit_switch
+                          template: vssp_circuit_switch
                           entity: switch.shelly_refrigerateur          # TODO
                           name: "Réfrigérateur"
                           icon: mdi:fridge
@@ -1197,7 +1197,7 @@ views:
                             model: "Shelly Plus 1PM"
                             amp: "16A"
                         - type: custom:button-card
-                          template: osvision_circuit_switch
+                          template: vssp_circuit_switch
                           entity: switch.shelly_eclairage_salon        # TODO
                           name: "Éclairage Salon"
                           icon: mdi:lightbulb-on-outline
@@ -1208,7 +1208,7 @@ views:
                     - type: horizontal-stack
                       cards:
                         - type: custom:button-card
-                          template: osvision_circuit_switch
+                          template: vssp_circuit_switch
                           entity: switch.shelly_eclairage_chambre      # TODO
                           name: "Éclairage Chambre"
                           icon: mdi:ceiling-light
@@ -1216,7 +1216,7 @@ views:
                             model: "Shelly 1"
                             amp: "10A"
                         - type: custom:button-card
-                          template: osvision_circuit_switch
+                          template: vssp_circuit_switch
                           entity: switch.shelly_prises_salon           # TODO
                           name: "Prises Salon"
                           icon: mdi:power-socket-fr
@@ -1227,7 +1227,7 @@ views:
                     - type: horizontal-stack
                       cards:
                         - type: custom:button-card
-                          template: osvision_circuit_switch
+                          template: vssp_circuit_switch
                           entity: switch.shelly_bureau                 # TODO
                           name: "Bureau"
                           icon: mdi:desk-lamp
@@ -1235,7 +1235,7 @@ views:
                             model: "Shelly Plug S"
                             amp: "16A"
                         - type: custom:button-card
-                          template: osvision_circuit_switch
+                          template: vssp_circuit_switch
                           entity: switch.shelly_piscine                # TODO
                           name: "Piscine"
                           icon: mdi:pool
@@ -1277,5 +1277,5 @@ views:
     card_mod:
       style: |
         hui-view {
-          background: center / cover no-repeat fixed url("/local/osvision_v2/backgrounds/energy.png");
+          background: center / cover no-repeat fixed url("/local/vssp/backgrounds/energy.png");
         }

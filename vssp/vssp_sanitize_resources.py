@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # ============================================================================
-# OSVision V2 — osvision_sanitize_resources.py
+# Visio Sapiens — vssp_sanitize_resources.py
 #
 # Corrige l'effet du bug de fusion de lovelace.resources : le patcher
 # déduplique par URL COMPLÈTE, or le CI change le `?v=<token>` à chaque
@@ -15,7 +15,7 @@
 # Zéro dépendance (stdlib) : édition textuelle — tout ce qui est hors du
 # bloc `resources:` est préservé octet pour octet.
 #
-# Usage :  python3 osvision_sanitize_resources.py --config /config/configuration.yaml
+# Usage :  python3 vssp_sanitize_resources.py --config /config/configuration.yaml
 # Sortie : 0 si OK (nettoyé ou déjà propre), 1 si erreur.
 # ============================================================================
 import argparse

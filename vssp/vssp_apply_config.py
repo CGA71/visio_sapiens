@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # ============================================================================
-# OSVision V2 — Patcheur idempotent de configuration.yaml
+# Visio Sapiens — Patcheur idempotent de configuration.yaml
 #
 # Fusionne home-assistant/config-fragment.yaml (état désiré des clés gérées par
-# OSVision) dans le configuration.yaml de destination, en PRÉSERVANT :
-#   • tout le reste du fichier (clés non-OSVision, ordre, commentaires, style),
+# Vision Sapiens) dans le configuration.yaml de destination, en PRÉSERVANT :
+#   • tout le reste du fichier (clés non-Visio Sapiens, ordre, commentaires, style),
 #   • les tags Home Assistant (!include, !secret, !include_dir_merge_named...).
 #
 # Stratégie : merge DÉCLARATIF et CIBLÉ. On n'ajoute pas des lignes à l'aveugle,
@@ -14,12 +14,12 @@
 #   <config>/backups/configuration_AAAAMMJJ_HHMMSS.bak
 #
 # Usage :
-#   python3 osvision_apply_config.py \
+#   python3 vssp_apply_config.py \
 #       --config   /config/configuration.yaml \
 #       --fragment /config/.osv_stage/config-fragment.yaml \
 #       [--vtoken  v1.2.3]         # remplace __VTOKEN__ dans les url resources
 #       [--dry-run]                # affiche le diff sans écrire
-#       [--prune-resources]        # retire les anciennes resources OSVision absentes du fragment
+#       [--prune-resources]        # retire les anciennes resources Visio Sapiens absentes du fragment
 #
 # Codes de sortie : 0 = OK (modifié ou déjà conforme), 1 = erreur.
 #
@@ -40,10 +40,10 @@ except ImportError:
     )
     sys.exit(1)
 
-# Préfixe identifiant les entrées « propriété d'OSVision » (dashboards, helpers).
-OSV_PREFIX = "osvision"
-# Marqueur des ressources OSVision : toute url contenant ce segment est « à nous ».
-OSV_RESOURCE_MARK = "/local/osvision_v2/"
+# Préfixe identifiant les entrées « propriété de Visio Sapiens » (dashboards, helpers).
+OSV_PREFIX = "vssp"
+# Marqueur des ressources Visio Sapiens : toute url contenant ce segment est « à nous ».
+OSV_RESOURCE_MARK = "/local/vssp/"
 
 # Clés de premier niveau que le fragment peut fusionner. Toute autre clé du
 # fragment est ignorée (garde-fou : le patcher ne touche que ce périmètre).
@@ -113,8 +113,8 @@ def _merge_resources(dst_lovelace, src_resources, prune=False):
     """
     Fusionne la liste des resources par 'url' (dédupliqué).
     - Met à jour/ajoute les entrées présentes dans le fragment.
-    - Préserve les resources non-OSVision de l'utilisateur.
-    - Si prune=True, retire les resources OSVision (marquées OSV_RESOURCE_MARK)
+    - Préserve les resources non-Visio Sapiens de l'utilisateur.
+    - Si prune=True, retire les resources Visio Sapiens (marquées OSV_RESOURCE_MARK)
       qui ne sont PLUS dans le fragment.
     Retourne True si changement.
     """
@@ -150,7 +150,7 @@ def _merge_resources(dst_lovelace, src_resources, prune=False):
             u = url_of(it)
             is_osv = u and OSV_RESOURCE_MARK in u
             if is_osv and u not in src_urls:
-                changed = True  # on retire cette ancienne resource OSVision
+                changed = True  # on retire cette ancienne resource visio sapiens
                 continue
             keep.append(it)
         if changed:
@@ -174,7 +174,7 @@ def merge(config, fragment, prune_resources=False):
                 sys.stderr.write("[ERR] 'lovelace' cible n'est pas un mapping.\n")
                 sys.exit(1)
 
-            # dashboards : merge par sous-clé, uniquement les osvision-*
+            # dashboards : merge par sous-clé, uniquement les vssp-*
             if "dashboards" in src:
                 dboards = dst.setdefault("dashboards", CommentedMap())
                 if _merge_named(dboards, src["dashboards"], only_prefix=OSV_PREFIX):
@@ -194,7 +194,7 @@ def merge(config, fragment, prune_resources=False):
                     changed = True
 
         else:
-            # input_text / shell_command / template : merge par clé osvision_*
+            # input_text / shell_command / template : merge par clé vssp_*
             dst = config.setdefault(top, CommentedMap())
             if top == "template":
                 # 'template' peut être une liste ; on ne fusionne que si c'est
@@ -212,13 +212,13 @@ def merge(config, fragment, prune_resources=False):
 
 
 def main():
-    ap = argparse.ArgumentParser(description="Patch idempotent de configuration.yaml (OSVision).")
+    ap = argparse.ArgumentParser(description="Patch idempotent de configuration.yaml (Visio Sapiens).")
     ap.add_argument("--config", required=True, help="Chemin du configuration.yaml de destination")
     ap.add_argument("--fragment", required=True, help="Chemin du config-fragment.yaml source")
     ap.add_argument("--vtoken", default="", help="Token de version (remplace __VTOKEN__)")
     ap.add_argument("--dry-run", action="store_true", help="Affiche sans écrire")
     ap.add_argument("--prune-resources", action="store_true",
-                    help="Retire les resources OSVision absentes du fragment")
+                    help="Retire les resources Visio Sapiens absentes du fragment")
     args = ap.parse_args()
 
     if not os.path.isfile(args.config):

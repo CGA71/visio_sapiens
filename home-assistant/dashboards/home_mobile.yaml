@@ -1,5 +1,5 @@
 ########################################################################
-# OSVision V2 — HOME Dashboard — VERSION MOBILE (iPhone 13 Pro Max)
+# Visio Sapiens — HOME Dashboard — VERSION MOBILE (iPhone 13 Pro Max)
 #
 # Emplacement attendu dans le repo :
 #   home-assistant/dashboards/home_mobile.yaml
@@ -8,7 +8,7 @@
 #
 #   lovelace:
 #     dashboards:
-#       osvision-v2-m:                       # version MOBILE (iPhone)
+#       visio-sapiens-m:                       # version MOBILE (iPhone)
 #         mode: yaml
 #         title: HOME (Mobile)
 #         icon: mdi:cellphone
@@ -40,7 +40,7 @@
 # du home.yaml desktop restent servies par leurs dashboards respectifs.
 ########################################################################
 title: Visio Sapiens Mobile
-theme: OSVision V2
+theme: Visio Sapiens
 
 button_card_templates: !include templates/button_card_templates.yaml
 decluttering_templates: !include templates/decluttering_templates.yaml
@@ -79,7 +79,7 @@ views:
         show_label: true
         tap_action:
           action: navigate
-          navigation_path: /osvision-v2-m/home
+          navigation_path: /visio-sapiens-m/home
         label: |
           [[[
             const d = new Date();
@@ -134,18 +134,18 @@ views:
           navbar: |
             [[[
               const items = [
-                { icon: 'mdi:view-dashboard',          txt: 'HOME',      url: '/osvision-v2-m/home', active: true },
-                { icon: 'mdi:server',                  txt: 'CORE',      url: '/osvision-core/core' },
-                { icon: 'mdi:lightning-bolt',          txt: 'ENERGY',    url: '/osvision-energy-m/energy' },
-                { icon: 'mdi:sofa',                    txt: 'SALON',     url: '/osvision-livingroom/livingroom' },
-                { icon: 'mdi:bed',                     txt: 'CH.1',      url: '/osvision-bedroom1/bedroom1' },
-                { icon: 'mdi:bed-outline',             txt: 'CH.2',      url: '/osvision-bedroom2/bedroom2' },
-                { icon: 'mdi:shower',                  txt: 'SDB',       url: '/osvision-bathroom/bathroom' },
-                { icon: 'mdi:laptop',                  txt: 'INFO',      url: '/osvision-computer/computer' },
-                { icon: 'mdi:factory',                 txt: 'TECH',      url: '/osvision-technical/technical' },
-                { icon: 'mdi:security',                txt: 'SECRET',    url: '/osvision-secret/secret' },
-                { icon: 'mdi:flower',                  txt: 'JARDIN',    url: '/osvision-garden/garden' },
-                { icon: 'mdi:shield-crown',            txt: 'ADMIN',     url: '/osvision-v2/admin' },
+                { icon: 'mdi:view-dashboard',          txt: 'HOME',      url: '/visio-sapiens-m/home', active: true },
+                { icon: 'mdi:server',                  txt: 'CORE',      url: '/visio-sapiens-core/core' },
+                { icon: 'mdi:lightning-bolt',          txt: 'ENERGY',    url: '/visio-sapiens-energy-m/energy' },
+                { icon: 'mdi:sofa',                    txt: 'SALON',     url: '/visio-sapiens-livingroom/livingroom' },
+                { icon: 'mdi:bed',                     txt: 'CH.1',      url: '/visio-sapiens-bedroom1/bedroom1' },
+                { icon: 'mdi:bed-outline',             txt: 'CH.2',      url: '/visio-sapiens-bedroom2/bedroom2' },
+                { icon: 'mdi:shower',                  txt: 'SDB',       url: '/visio-sapiens-bathroom/bathroom' },
+                { icon: 'mdi:laptop',                  txt: 'INFO',      url: '/visio-sapiens-computer/computer' },
+                { icon: 'mdi:factory',                 txt: 'TECH',      url: '/visio-sapiens-technical/technical' },
+                { icon: 'mdi:security',                txt: 'SECRET',    url: '/visio-sapiens-secret/secret' },
+                { icon: 'mdi:flower',                  txt: 'JARDIN',    url: '/visio-sapiens-garden/garden' },
+                { icon: 'mdi:shield-crown',            txt: 'ADMIN',     url: '/visio-sapiens/admin' },
               ];
               const chip = (i) => `
                 <a href="${i.url}" style="text-decoration:none;flex:0 0 auto;">
@@ -193,19 +193,19 @@ views:
             cards:
               # Case 1 — System Status
               - type: custom:button-card
-                template: osvision_status_indicator
+                template: vssp_status_indicator
                 name: SYSTEM STATUS
                 label: "Statut métriques CORE"
-                entity: binary_sensor.osvision_core_health   # TODO
+                entity: binary_sensor.vssp_core_health   # TODO
               # Case 2 — Pièces actives
               - type: custom:button-card
-                template: osvision_kpi_card
+                template: vssp_kpi_card
                 icon: mdi:door-open
                 name: PIÈCES ACTIVES
-                entity: sensor.osvision_pieces_actives
+                entity: sensor.vssp_pieces_actives
                 state_display: >
                   [[[
-                    const s = states['sensor.osvision_pieces_actives'];
+                    const s = states['sensor.vssp_pieces_actives'];
                     if (!s) return "- / -";
                     return s.state + " / " + (s.attributes.total_areas ?? "-");
                   ]]]
@@ -218,13 +218,13 @@ views:
             cards:
               # Case 3 — Energy Status
               - type: custom:button-card
-                template: osvision_status_indicator
+                template: vssp_status_indicator
                 name: ENERGY STATUS
                 label: "Statut métriques ENERGY"
-                entity: binary_sensor.osvision_energy_health  # TODO
+                entity: binary_sensor.vssp_energy_health  # TODO
               # Case 4 — Sécurité / Alarme
               - type: custom:button-card
-                template: osvision_kpi_card
+                template: vssp_kpi_card
                 icon: mdi:shield-lock
                 name: SÉCURITÉ
                 entity: alarm_control_panel.maison            # TODO
@@ -250,10 +250,10 @@ views:
 
           # Case 5 — Connexions (pleine largeur)
           - type: custom:button-card
-            template: osvision_kpi_card
+            template: vssp_kpi_card
             icon: mdi:vector-polygon
             name: CONNEXIONS
-            entity: sensor.osvision_total_appareils
+            entity: sensor.vssp_total_appareils
             label: "Appareils connectés"
             variables:
               icon_color: "#B084FF"
@@ -274,7 +274,7 @@ views:
           video: >
             <video autoplay muted loop playsinline
               style="width:100%;display:block;aspect-ratio:16/9;object-fit:cover;">
-              <source src="/local/osvision_v2/movies/vs-sp.mp4" type="video/mp4" />
+              <source src="/local/vssp/movies/vs-sp.mp4" type="video/mp4" />
             </video>
         styles:
           card:
@@ -333,13 +333,13 @@ views:
           - type: horizontal-stack
             cards:
               - type: custom:button-card
-                template: osvision_metric
+                template: vssp_metric
                 show_icon: true
                 icon: mdi:solar-power
                 name: PRODUCTION
                 entity: sensor.solar_power_production          # TODO
               - type: custom:button-card
-                template: osvision_metric
+                template: vssp_metric
                 show_icon: true
                 icon: mdi:flash
                 name: CONSOMMATION
@@ -443,7 +443,7 @@ views:
           grid-area: right
         cards:
           - type: custom:button-card
-            template: osvision_panel
+            template: vssp_panel
             show_name: true
             name: INTERPHONE
             icon: mdi:doorbell-video
@@ -462,7 +462,7 @@ views:
                 - "--mdc-icon-size": 34px
 
           - type: custom:button-card
-            template: osvision_panel
+            template: vssp_panel
             show_name: true
             name: AUDIO STREAM
             icon: mdi:music-note
@@ -484,5 +484,5 @@ views:
     card_mod:
       style: |
         hui-view {
-          background: center / cover no-repeat fixed url("/local/osvision_v2/backgrounds/home.png");
+          background: center / cover no-repeat fixed url("/local/vssp/backgrounds/home.png");
         }

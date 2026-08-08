@@ -1,7 +1,7 @@
 /**
- * OSVision V2 — <osv-datetime-card>
+ * Visio Sapiens — <osv-datetime-card>
  * HUD header widget: live clock + full date (jour, mois, année).
- * Self-contained: does NOT depend on window.osvision engine, to avoid
+ * Self-contained: does NOT depend on window.vssp engine, to avoid
  * breaking if that global object isn't loaded/available for any reason.
  *
  * Usage in a dashboard:
@@ -93,6 +93,6 @@ customElements.define("osv-datetime-card", OSVDateTimeCard);
 window.customCards = window.customCards || [];
 window.customCards.push({
   type: "osv-datetime-card",
-  name: "OSVision DateTime Widget",
-  description: "Horloge + date en direct — cellule du bandeau HUD OSVision V2",
+  name: "Visio Sapiens DateTime Widget",
+  description: "Horloge + date en direct — cellule du bandeau HUD Visio Sapiens",
 });

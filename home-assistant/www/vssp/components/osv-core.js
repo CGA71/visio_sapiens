@@ -1,5 +1,5 @@
 /**
- * OSVision V2 — <osv-radar-card>
+ * Visio Sapiens — <osv-radar-card>
  * The central "IA CORE" visual: animated radar + neural status line.
  *
  * Usage in a dashboard:
@@ -84,6 +84,6 @@ customElements.define("osv-radar-card", OSVRadarCard);
 window.customCards = window.customCards || [];
 window.customCards.push({
   type: "osv-radar-card",
-  name: "OSVision Radar / IA Core",
-  description: "Radar animé central + statut du noyau IA OSVision V2",
+  name: "Visio Sapiens Radar / IA Core",
+  description: "Radar animé central + statut du noyau IA Visio Sapiens",
 });

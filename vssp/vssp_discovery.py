@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-OSVision V2 — Discovery Tool
+Visio Sapiens — Discovery Tool
 ============================
 Script de decouverte en lecture seule. Interroge ton Home Assistant pour
 lister, PAR PIECE (Area), toutes les entites disponibles groupees par
@@ -18,15 +18,15 @@ USAGE
 -----
     export HA_URL="http://192.168.1.11:8123"
     export HA_TOKEN="eyJhbGciOi..."
-    python3 osvision_discovery.py
+    python3 vssp_discovery.py
 
     # Ou cible uniquement certaines pieces :
-    python3 osvision_discovery.py --areas living_room,kitchen,garden
+    python3 vssp_discovery.py --areas living_room,kitchen,garden
 
 SORTIE
 ------
 Un rapport lisible dans la console, ET un fichier JSON
-(osvision_discovery_report.json) que tu peux me renvoyer directement
+(vssp_discovery_report.json) que tu peux me renvoyer directement
 pour qu'on branche les entites dans le dashboard.
 """
 
@@ -43,11 +43,11 @@ except ImportError:
 
 
 def get_config():
-    parser = argparse.ArgumentParser(description="OSVision V2 - Discovery Tool")
+    parser = argparse.ArgumentParser(description="Visio Sapiens - Discovery Tool")
     parser.add_argument("--url", default=os.environ.get("HA_URL"), help="URL de ton Home Assistant, ex: http://192.168.1.11:8123")
     parser.add_argument("--token", default=os.environ.get("HA_TOKEN"), help="Jeton d'acces longue duree")
     parser.add_argument("--areas", default=None, help="Liste d'area_id a cibler, separes par des virgules (sinon: toutes)")
-    parser.add_argument("--output", default="osvision_discovery_report.json", help="Fichier JSON de sortie")
+    parser.add_argument("--output", default="vssp_discovery_report.json", help="Fichier JSON de sortie")
     args = parser.parse_args()
 
     if not args.url or not args.token:

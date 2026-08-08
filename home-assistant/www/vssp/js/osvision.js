@@ -1,5 +1,5 @@
 /**
- * OSVision V2 — JS ENGINE
+ * Visio Sapiens — JS ENGINE
  * Shared utilities used by OSVision custom cards (osv-radar-card, osv-footer-card, ...).
  * Loaded once as a global lovelace resource (type: module).
  *

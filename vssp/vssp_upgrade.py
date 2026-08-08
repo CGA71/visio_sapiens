@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-OSVision V2 — Upgrade Engine (STUB)
+Visio Sapiens — Upgrade Engine (STUB)
 ====================================
 STATUT ACTUEL : squelette non destructif. Ne modifie PAS encore le
 dashboard. La vraie logique de generation (choisir quel gabarit de
@@ -27,9 +27,9 @@ import re
 import sys
 from pathlib import Path
 
-REPORT_PATH = Path("/config/osvision/report.json")
+REPORT_PATH = Path("/config/vssp/report.json")
 DASHBOARD_PATH = Path("/config/home-assistant/dashboards/home.yaml")
-DIFF_OUTPUT = Path("/config/osvision/upgrade_diff.json")
+DIFF_OUTPUT = Path("/config/vssp/upgrade_diff.json")
 
 
 def load_report():

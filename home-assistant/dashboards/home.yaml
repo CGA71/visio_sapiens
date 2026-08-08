@@ -1,16 +1,16 @@
 ########################################################################
-# OSVision V2 — CORE Dashboard (Phase 1)
+# Visio Sapiens — CORE Dashboard (Phase 1)
 #
 # Vues: 
-#   /osvision-v2/home    -> HUD, radar/IA core, metrics, alerts, quick actions - iteration 1
-#   /osvision-v2/core    -> HUD, radar/IA core, metrics, alerts, quick actions - iteration 2
-#   /osvision-v2/bedromm1-> HUD, radar/IA core, metrics, alerts, quick actions - iteration 3
-#   /osvision-v2/bedroom2-> HUD, radar/IA core, metrics, alerts, quick actions - iteration 4
-#   /osvision-v2/bathroom-> HUD, radar/IA core, metrics, alerts, quick actions - iteration 5
-#   /osvision-v2/computer-> HUD, radar/IA core, metrics, alerts, quick actions - iteration 6
-#   /osvision-v2/technical-> HUD, radar/IA core, metrics, alerts, quick actions - iteration 7
-#   /osvision-v2/secret  -> HUD, radar/IA core, metrics, alerts, quick actions - iteration 8
-#   /osvision-v2/garden  -> HUD, radar/IA core, metrics, alerts, quick actions - iteration 9
+#   /Visio-Sapiens/home    -> HUD, radar/IA core, metrics, alerts, quick actions - iteration 1
+#   /Visio-Sapiens/core    -> HUD, radar/IA core, metrics, alerts, quick actions - iteration 2
+#   /Visio-Sapiens/bedromm1-> HUD, radar/IA core, metrics, alerts, quick actions - iteration 3
+#   /Visio-Sapiens/bedroom2-> HUD, radar/IA core, metrics, alerts, quick actions - iteration 4
+#   /Visio-Sapiens/bathroom-> HUD, radar/IA core, metrics, alerts, quick actions - iteration 5
+#   /Visio-Sapiens/computer-> HUD, radar/IA core, metrics, alerts, quick actions - iteration 6
+#   /Visio-Sapiens/technical-> HUD, radar/IA core, metrics, alerts, quick actions - iteration 7
+#   /Visio-Sapiens/secret  -> HUD, radar/IA core, metrics, alerts, quick actions - iteration 8
+#   /Visio-Sapiens/garden  -> HUD, radar/IA core, metrics, alerts, quick actions - iteration 9
 #
 # Dépendances lovelace (à installer via HACS + déclarer en resources) :
 #   button-card, card-mod, layout-card, custom:stack-in-card,
@@ -18,8 +18,8 @@
 ########################################################################
 
 title: Visio Sapiens
-path: osvision-v2
-theme: OSVision V2
+path: visio-sapiens
+theme: Visio Sapiens
 
 button_card_templates: !include templates/button_card_templates.yaml
 decluttering_templates: !include templates/decluttering_templates.yaml
@@ -48,7 +48,7 @@ views:
       # ═══════════════════════════════════════════════════════════════
       # ── Case 1 : titre ────────────────────────────────────────
       - type: custom:button-card
-        template: osvision_page_header
+        template: vssp_page_header
         view_layout:
           grid-area: header1
         icon: mdi:chevron-left
@@ -56,7 +56,7 @@ views:
         label: "Home Sweet Home"
         tap_action:
           action: navigate
-          navigation_path: /osvision-v2/home
+          navigation_path: /visio-sapiens/home
         card_mod:
           style: |
             :host { flex: 1 1 0; }
@@ -79,16 +79,16 @@ views:
         ads:
           - name: HIKVISION
             url: https://www.hikvision.com
-            image: /local/osvision_v2/images/ads/hikvision.png
+            image: /local/vssp/images/ads/hikvision.png
           - name: ECOWITT
             url: https://www.ecowitt.com
-            image: /local/osvision_v2/images/ads/ecowitt.png
+            image: /local/vssp/images/ads/ecowitt.png
           - name: PHILIPS HUE
             url: https://www.philips-hue.com
-            image: /local/osvision_v2/images/ads/philips.png
+            image: /local/vssp/images/ads/philips.png
           - name: UBER EATS
             url: https://www.ubereats.com
-            image: /local/osvision_v2/images/ads/ubereats.png
+            image: /local/vssp/images/ads/ubereats.png
 
        # ── Case 2 : météo (carte NATIVE, toujours disponible) ─────
           - type: custom:simple-weather-card
@@ -182,13 +182,13 @@ views:
             }
         cards:
           - type: custom:button-card
-            template: osvision_sidebar_logo
+            template: vssp_sidebar_logo
             icon: mdi:hexagon-outline
             name: "VISIO SAPIENS"
             label: "Smart Home OS"
 
           - type: custom:button-card
-            template: osvision_nav_button
+            template: vssp_nav_button
             icon: mdi:view-dashboard
             name: HOME
             label: "Vue d'ensemble"
@@ -196,9 +196,9 @@ views:
               active: true
             tap_action:
               action: navigate
-              navigation_path: /osvision-v2/home
+              navigation_path: /visio-sapiens/home
           - type: custom:button-card
-            template: osvision_nav_button
+            template: vssp_nav_button
             icon: mdi:server
             name: CORE
             label: "Système central"
@@ -206,9 +206,9 @@ views:
               active: false
             tap_action:
               action: navigate
-              navigation_path: /osvision-core/core
+              navigation_path: /vssp-core/core
           - type: custom:button-card
-            template: osvision_nav_button
+            template: vssp_nav_button
             icon: mdi:sofa
             name: LIVING ROOM
             label: "Salon"
@@ -216,9 +216,9 @@ views:
               active: false
             tap_action:
               action: navigate
-              navigation_path: /osvision-livingroom/livingroom
+              navigation_path: /vssp-livingroom/livingroom
           - type: custom:button-card
-            template: osvision_nav_button
+            template: vssp_nav_button
             icon: mdi:bed
             name: BEDROOM-1
             label: "Chambre principale"
@@ -226,9 +226,9 @@ views:
               active: false
             tap_action:
               action: navigate
-              navigation_path: /osvision-bedroom1/bedroom1
+              navigation_path: /vssp-bedroom1/bedroom1
           - type: custom:button-card
-            template: osvision_nav_button
+            template: vssp_nav_button
             icon: mdi:bed
             name: BEDROOM-2
             label: "Chambre 2"
@@ -236,9 +236,9 @@ views:
               active: false
             tap_action:
               action: navigate
-              navigation_path: /osvision-bedroom2/bedroom2
+              navigation_path: /vssp-bedroom2/bedroom2
           - type: custom:button-card
-            template: osvision_nav_button
+            template: vssp_nav_button
             icon: mdi:shower
             name: BATHROOM
             label: "Salle de bain"
@@ -246,9 +246,9 @@ views:
               active: false
             tap_action:
               action: navigate
-              navigation_path: /osvision-bathroom/bathroom
+              navigation_path: /vssp-bathroom/bathroom
           - type: custom:button-card
-            template: osvision_nav_button
+            template: vssp_nav_button
             icon: mdi:laptop
             name: COMPUTER ROOM
             label: "Salle informatique"
@@ -256,9 +256,9 @@ views:
               active: false
             tap_action:
               action: navigate
-              navigation_path: /osvision-computer/computer
+              navigation_path: /vssp-computer/computer
           - type: custom:button-card
-            template: osvision_nav_button
+            template: vssp_nav_button
             icon: mdi:factory
             name: TECHNICAL ROOM
             label: "Local technique"
@@ -266,9 +266,9 @@ views:
               active: false
             tap_action:
               action: navigate
-              navigation_path: /osvision-technical/technical
+              navigation_path: /vssp-technical/technical
           - type: custom:button-card
-            template: osvision_nav_button
+            template: vssp_nav_button
             icon: mdi:security
             name: SECRET ROOM
             label: "Pièce secrète"
@@ -276,9 +276,9 @@ views:
               active: false
             tap_action:
               action: navigate
-              navigation_path: /osvision-secret/secret
+              navigation_path: /vssp-secret/secret
           - type: custom:button-card
-            template: osvision_nav_button
+            template: vssp_nav_button
             icon: mdi:flower
             name: GARDEN
             label: "Jardin"
@@ -286,9 +286,9 @@ views:
               active: false
             tap_action:
               action: navigate
-              navigation_path: /osvision-garden/garden
+              navigation_path: /vssp-garden/garden
           - type: custom:button-card
-            template: osvision_nav_button
+            template: vssp_nav_button
             icon: mdi:lightning-bolt
             name: ENERGY
             label: "Gestion énergie"
@@ -296,16 +296,16 @@ views:
               active: false
             tap_action:
               action: navigate
-              navigation_path: /osvision-energy/energy
+              navigation_path: /vssp-energy/energy
 
           - type: custom:button-card
-            template: osvision_nav_button
+            template: vssp_nav_button
             icon: mdi:shield-crown
             name: ADMIN
             label: "Panneau administration"
             tap_action:
               action: navigate
-              navigation_path: /osvision-v2/admin
+              navigation_path: /visio-sapiens/admin
 
           - type: custom:button-card
             show_icon: false
@@ -315,7 +315,7 @@ views:
               action: none
             custom_fields:
               logo: >
-                <img src="/local/osvision_v2/images/logo_VS-Sapiens.png"
+                <img src="/local/vssp/images/logo_VS-Sapiens.png"
                      style="width:100%;max-width:160px;display:block;margin:0 auto;mix-blend-mode:screen;filter:drop-shadow(0 0 8px rgba(0,229,255,.28));" />
             styles:
               card:
@@ -345,20 +345,20 @@ views:
         cards:
           # Case 1 — System Status : voyant vert reflétant l'état des métriques du dashboard CORE
           - type: custom:button-card
-            template: osvision_status_indicator
+            template: vssp_status_indicator
             name: SYSTEM STATUS
             label: "Statut métriques CORE"
-            entity: binary_sensor.osvision_core_health  # TODO: capteur agrégé à créer (ex: template sensor combinant CPU/GPU/RAM/etc.)
+            entity: binary_sensor.vssp_core_health  # TODO: capteur agrégé à créer (ex: template sensor combinant CPU/GPU/RAM/etc.)
 
           # Case 2 — Pièces actives
           - type: custom:button-card
-            template: osvision_kpi_card
+            template: vssp_kpi_card
             icon: mdi:door-open
             name: PIÈCES ACTIVES
-            entity: sensor.osvision_pieces_actives
+            entity: sensor.vssp_pieces_actives
             state_display: >
               [[[
-                const s = states['sensor.osvision_pieces_actives'];
+                const s = states['sensor.vssp_pieces_actives'];
                 if (!s) return "- / -";
                 return s.state + " / " + (s.attributes.total_areas ?? "-");
               ]]]
@@ -369,14 +369,14 @@ views:
 
           # Case 3 — Energy Status : voyant vert reflétant l'état des métriques du dashboard ENERGY
           - type: custom:button-card
-            template: osvision_status_indicator
+            template: vssp_status_indicator
             name: ENERGY STATUS
             label: "Statut métriques ENERGY"
-            entity: binary_sensor.osvision_energy_health  # TODO: capteur agrégé à créer (ex: template sensor sur production/consommation)
+            entity: binary_sensor.vssp_energy_health  # TODO: capteur agrégé à créer (ex: template sensor sur production/consommation)
 
           # Case 4 — Sécurité / Alarme
           - type: custom:button-card
-            template: osvision_kpi_card
+            template: vssp_kpi_card
             icon: mdi:shield-lock
             name: SÉCURITÉ
             entity: alarm_control_panel.maison  # TODO: remplacer par votre entité alarme
@@ -402,10 +402,10 @@ views:
 
           # Case 5 — Connexions (total appareils enregistrés dans HA)
           - type: custom:button-card
-            template: osvision_kpi_card
+            template: vssp_kpi_card
             icon: mdi:vector-polygon
             name: CONNEXIONS
-            entity: sensor.osvision_total_appareils
+            entity: sensor.vssp_total_appareils
             label: "Appareils connectés"
             variables:
               icon_color: "#B084FF"
@@ -413,7 +413,7 @@ views:
 
       # --- Video centrale VISIO SAPIENS (remplace le floorplan) -----------
       # Lecture auto, en boucle, sans son.
-      # Fichier a deposer dans : /config/www/osvision_v2/movies/vs-sp.mp4
+      # Fichier a deposer dans : /config/www/vssp/movies/vs-sp.mp4
       - type: custom:button-card
         view_layout:
           grid-area: floor
@@ -426,7 +426,7 @@ views:
           video: >
             <video autoplay muted loop playsinline
               style="width:100%;height:100%;object-fit:cover;display:block;">
-              <source src="/local/osvision_v2/movies/vs-sp.mp4" type="video/mp4" />
+              <source src="/local/vssp/movies/vs-sp.mp4" type="video/mp4" />
             </video>
         styles:
           card:
@@ -510,13 +510,13 @@ views:
                 }
             cards:
               - type: custom:button-card
-                template: osvision_metric
+                template: vssp_metric
                 show_icon: true
                 icon: mdi:solar-power
                 name: PRODUCTION
                 entity: sensor.solar_power_production  # TODO: remplacer par votre entité production solaire
               - type: custom:button-card
-                template: osvision_metric
+                template: vssp_metric
                 show_icon: true
                 icon: mdi:flash
                 name: CONSOMMATION
@@ -616,7 +616,7 @@ views:
           grid-area: right
         cards:
           - type: custom:button-card
-            template: osvision_panel
+            template: vssp_panel
             show_name: true
             name: INTERPHONE
             icon: mdi:doorbell-video
@@ -635,7 +635,7 @@ views:
                 - "--mdc-icon-size": 36px
 
           - type: custom:button-card
-            template: osvision_panel
+            template: vssp_panel
             show_name: true
             name: AUDIO STREAM
             icon: mdi:music-note
@@ -658,7 +658,7 @@ views:
     card_mod:
       style: |
         hui-view {
-          background: center / cover no-repeat fixed url("/local/osvision_v2/backgrounds/home.png");
+          background: center / cover no-repeat fixed url("/local/vssp/backgrounds/home.png");
         }
 
   # =====================================================================
@@ -681,7 +681,7 @@ views:
 
   # =====================================================================
   # ADMIN (panneau caché — non lié dans la sidebar de navigation).
-  # Accessible uniquement via l'URL directe /osvision-v2/admin.
+  # Accessible uniquement via l'URL directe /visio-sapiens/admin.
   # Recommandé : restreindre la visibilité à ton seul utilisateur admin
   # via la clé "visible" ci-dessous (remplace USER_ID_ADMIN).
   # =====================================================================
@@ -702,7 +702,7 @@ views:
       grid-gap: 18px 18px
     cards:
       - type: custom:button-card
-        template: osvision_title
+        template: vssp_title
         name: VISIO SAPIENS — ADMIN
         view_layout:
           grid-area: header
@@ -714,18 +714,18 @@ views:
         cards:
           # Bouton 1 — Wizard (ouvre le formulaire dans un nouvel onglet)
           - type: custom:button-card
-            template: osvision_admin_button
+            template: vssp_admin_button
             icon: mdi:magnify-scan
             name: DISCOVERY WIZARD
             label: "Définir les pièces et assigner les appareils"
             tap_action:
               action: url
-              url_path: /local/osvision_v2/wizard/osvision_wizard.html
+              url_path: /local/vssp/wizard/vssp_wizard.html
               target: _blank
 
           # Bouton 2 — Scan HA (génère report.json côté serveur)
           - type: custom:button-card
-            template: osvision_admin_button
+            template: vssp_admin_button
             icon: mdi:radar
             name: DISCOVERY SCAN
             label: "Scanner les entités HA (génère report.json)"
@@ -733,11 +733,11 @@ views:
               text: "Lancer une découverte des capteurs dans toutes les zones ?"
             tap_action:
               action: call-service
-              service: script.osvision_run_discovery
+              service: script.vssp_run_discovery
 
       # --- Upgrade ----------------------------------------------------------
       - type: custom:button-card
-        template: osvision_admin_button
+        template: vssp_admin_button
         icon: mdi:rocket-launch
         name: UPGRADE
         label: "Comparer le dashboard aux entités découvertes"
@@ -745,7 +745,7 @@ views:
           text: "Analyser les écarts entre le dashboard actuel et les dernières entités découvertes ? Une sauvegarde sera créée par précaution."
         tap_action:
           action: call-service
-          service: script.osvision_run_upgrade
+          service: script.vssp_run_upgrade
         view_layout:
           grid-area: upgrade
 
@@ -763,7 +763,7 @@ views:
             }
         cards:
           - type: custom:button-card
-            template: osvision_admin_button
+            template: vssp_admin_button
             icon: mdi:delete-alert
             name: DELETE DASHBOARD
             label: "Zone dangereuse — code + confirmation requis"
@@ -772,18 +772,18 @@ views:
 
           - type: entities
             entities:
-              - entity: input_text.osvision_pin_entry
+              - entity: input_text.vssp_pin_entry
                 name: "Code de confirmation"
 
           - type: custom:button-card
-            template: osvision_quick_action
+            template: vssp_quick_action
             icon: mdi:trash-can-outline
             name: CONFIRMER LA SUPPRESSION
             confirmation:
               text: "Action IRRÉVERSIBLE sans restauration manuelle de la sauvegarde. Le code doit être correct. Continuer ?"
             tap_action:
               action: call-service
-              service: script.osvision_delete_dashboard
+              service: script.vssp_delete_dashboard
 
       # --- Footer --------------------------------------------------------
       - type: custom:osv-footer-card

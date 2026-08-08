@@ -1,5 +1,5 @@
 ########################################################################
-# OSVision V2 — CORE Dashboard (Phase 1) — CORRIGÉ
+# Visio Sapiens — CORE Dashboard (Phase 1) — CORRIGÉ
 #
 # Correctif : la vue affichait deux versions superposées du même contenu
 # (jauges/charts/temperatures/K3S) :
@@ -12,15 +12,15 @@
 # (header) + le footer HUD, comme demandé.
 #
 # IMPORTANT : ce fichier est un dashboard Lovelace AUTONOME (déclaré dans
-# configuration.yaml sous lovelace: dashboards:, url_path "osvision-core"),
+# configuration.yaml sous lovelace: dashboards:, url_path "vssp-core"),
 # et non une vue fusionnée dans home.yaml. Il doit donc garder la structure
 # complète "title: / views: [...]" au niveau racine — sans ce wrapper,
 # Lovelace ne charge plus aucune carte (écran noir, thème dark seul visible).
 ########################################################################
 title: CORE
-theme: OSVision V2
+theme: Visio Sapiens
 
-# Ces includes sont INDISPENSABLES : les templates osvision_* (nav_button,
+# Ces includes sont INDISPENSABLES : les templates vssp_* (nav_button,
 # page_header, os_avatar, sidebar_logo...) sont définis dans ce fichier
 # partagé. Sans eux, chaque custom:button-card affiche "Erreur de
 # configuration" — c'était la cause racine du problème initial.
@@ -57,13 +57,13 @@ views:
 
           # ── Case 1 : titre ────────────────────────────────────────
           - type: custom:button-card
-            template: osvision_page_header
+            template: vssp_page_header
             icon: mdi:chevron-left
             name: CORE
             label: "System Management"
             tap_action:
               action: navigate
-              navigation_path: /osvision-core/core
+              navigation_path: /vssp-core/core
             card_mod:
               style: |
                 :host { flex: 1 1 0; }
@@ -174,22 +174,22 @@ views:
             }
         cards:
           - type: custom:button-card
-            template: osvision_sidebar_logo
+            template: vssp_sidebar_logo
             icon: mdi:hexagon-outline
             name: "VISIO SAPIENS"
             label: "Smart Home OS"
 
           - type: custom:button-card
-            template: osvision_nav_button
+            template: vssp_nav_button
             icon: mdi:view-dashboard
             name: HOME
             label: "Vue d'ensemble"
             tap_action:
               action: navigate
-              navigation_path: /osvision-v2/home
+              navigation_path: /vssp/home
 
           - type: custom:button-card
-            template: osvision_nav_button
+            template: vssp_nav_button
             icon: mdi:server
             name: CORE
             label: "Systeme central"
@@ -197,82 +197,82 @@ views:
             
             tap_action:
               action: navigate
-              navigation_path: /osvision-core/core
+              navigation_path: /vssp-core/core
 
           - type: custom:button-card
-            template: osvision_nav_button
+            template: vssp_nav_button
             icon: mdi:sofa
             name: LIVING ROOM
             label: "Salon"
             tap_action:
               action: navigate
-              navigation_path: /osvision-livingroom/livingroom
+              navigation_path: /vssp-livingroom/livingroom
 
           - type: custom:button-card
-            template: osvision_nav_button
+            template: vssp_nav_button
             icon: mdi:bed
             name: BEDROOM-1
             label: "Chambre principale"
             tap_action:
               action: navigate
-              navigation_path: /osvision-bedroom1/bedroom1
+              navigation_path: /vssp-bedroom1/bedroom1
 
           - type: custom:button-card
-            template: osvision_nav_button
+            template: vssp_nav_button
             icon: mdi:bed-outline
             name: BEDROOM-2
             label: "Chambre 2"
             tap_action:
               action: navigate
-              navigation_path: /osvision-bedroom2/bedroom2
+              navigation_path: /vssp-bedroom2/bedroom2
 
           - type: custom:button-card
-            template: osvision_nav_button
+            template: vssp_nav_button
             icon: mdi:shower
             name: BATHROOM
             label: "Salle de bain"
             tap_action:
               action: navigate
-              navigation_path: /osvision-bathroom/bathroom
+              navigation_path: /vssp-bathroom/bathroom
 
           - type: custom:button-card
-            template: osvision_nav_button
+            template: vssp_nav_button
             icon: mdi:desktop-tower-monitor
             name: COMPUTER ROOM
             label: "Salle informatique"
             tap_action:
               action: navigate
-              navigation_path: /osvision-computer/computer
+              navigation_path: /vssp-computer/computer
 
           - type: custom:button-card
-            template: osvision_nav_button
+            template: vssp_nav_button
             icon: mdi:tools
             name: TECHNICAL ROOM
             label: "Local technique"
             tap_action:
               action: navigate
-              navigation_path: /osvision-technical/technical
+              navigation_path: /vssp-technical/technical
 
           - type: custom:button-card
-            template: osvision_nav_button
+            template: vssp_nav_button
             icon: mdi:key
             name: SECRET ROOM
             label: "Piece secrete"
             tap_action:
               action: navigate
-              navigation_path: /osvision-secret/secret
+              navigation_path: /vssp-secret/secret
 
           - type: custom:button-card
-            template: osvision_nav_button
+            template: vssp_nav_button
             icon: mdi:flower
             name: GARDEN
             label: "Jardin"
             tap_action:
               action: navigate
-              navigation_path: /osvision-garden/garden
+              navigation_path: /vssp-garden/garden
 
           - type: custom:button-card
-            template: osvision_nav_button
+            template: vssp_nav_button
             icon: mdi:lightning-bolt
             name: ENERGY
             label: "Gestion energie"
@@ -280,16 +280,16 @@ views:
               active: true      
             tap_action:
               action: navigate
-              navigation_path: /osvision-energy/energy
+              navigation_path: /vssp-energy/energy
 
           - type: custom:button-card
-            template: osvision_nav_button
+            template: vssp_nav_button
             icon: mdi:shield-crown
             name: ADMIN
             label: "Panneau administration"
             tap_action:
               action: navigate
-              navigation_path: /osvision-v2/admin
+              navigation_path: /vssp/admin
 
           - type: custom:button-card
             show_icon: false
@@ -299,7 +299,7 @@ views:
               action: none
             custom_fields:
               logo: >
-                <img src="/local/osvision_v2/images/logo_VS-Sapiens.png"
+                <img src="/local/vssp/images/logo_VS-Sapiens.png"
                      style="width:100%;max-width:160px;display:block;margin:0 auto;mix-blend-mode:screen;filter:drop-shadow(0 0 8px rgba(0,229,255,.28));" />
             styles:
               card:
@@ -327,7 +327,7 @@ views:
       # Ici : uniquement la hauteur (calc 100vh-160px) ; core.html défile
       # à l'intérieur, comme à l'origine.
       - type: iframe
-        url: /local/osvision_v2/core.html
+        url: /local/vssp/core.html
         view_layout:
           grid-area: content
         card_mod:

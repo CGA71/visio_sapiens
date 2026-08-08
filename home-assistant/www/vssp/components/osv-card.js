@@ -1,17 +1,17 @@
 /**
- * OSVision V2 — <osv-footer-card>
+ * Visio Sapiens — <osv-footer-card>
  * HUD footer: live clock, date, connection status dot.
  * Self-contained: does NOT depend on window.osvision engine, to avoid
  * breaking if that global object isn't loaded/available for any reason.
  *
  * Usage in a dashboard:
  *   - type: custom:osv-footer-card
- *     label: OSVISION V2 // CORE SYSTEM
+ *     label: VISIO SAPIENS // CORE SYSTEM
  */
 class OSVFooterCard extends HTMLElement {
   setConfig(config) {
     this._config = {
-      label: "OSVISION V2 // CORE SYSTEM",
+      label: "VISIO SAPIENS // CORE SYSTEM",
       locale: "fr-FR",
       ...config,
     };
@@ -103,5 +103,5 @@ window.customCards = window.customCards || [];
 window.customCards.push({
   type: "osv-footer-card",
   name: "OSVision Footer HUD",
-  description: "Horloge, date et statut de connexion — pied de dashboard OSVision V2",
+  description: "Horloge, date et statut de connexion — pied de dashboard Visio Sapiens",
 });

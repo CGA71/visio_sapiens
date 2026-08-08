@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
 """
-OSVision V2 — Patch Dashboard
+Visio Sapiens — Patch Dashboard
 ================================
-Lit /config/osvision/floorplan_config.json (généré par le wizard),
+Lit /config/vssp/floorplan_config.json (généré par le wizard),
 puis met à jour la zone "floor" dans /config/dashboards/home.yaml :
   - remplace les éléments picture-elements existants par les nouveaux
     overlays de température/appareils générés à partir de la config
-  - met à jour l'image vers /local/osvision_v2/images/floorplan.svg
+  - met à jour l'image vers /local/vssp/images/floorplan.svg
   - recharge Lovelace via l'API HA
 
 Usage (shell_command HA) :
-  python3 /config/osvision/osvision_patch_dashboard.py
+  python3 /config/vssp/vssp_patch_dashboard.py
 """
 
 import json
@@ -21,11 +21,11 @@ import urllib.request
 import urllib.error
 from pathlib import Path
 
-CONFIG_PATH    = Path("/config/osvision/floorplan_config.json")
+CONFIG_PATH    = Path("/config/vssp/floorplan_config.json")
 DASHBOARD_PATH = Path("/config/dashboards/home.yaml")
-BACKUP_DIR     = Path("/config/osvision/backups")
+BACKUP_DIR     = Path("/config/vssp/backups")
 HA_URL         = "http://localhost:8123"
-TOKEN_PATH     = Path("/config/osvision/.ha_token")
+TOKEN_PATH     = Path("/config/vssp/.ha_token")
 
 
 def get_token():
@@ -179,7 +179,7 @@ def patch_dashboard(elements_yaml):
     new_floor_block = f"""      - type: picture-elements
         view_layout:
           grid-area: floor
-        image: /local/osvision_v2/images/floorplan.svg
+        image: /local/vssp/images/floorplan.svg
         card_mod:
           style: |
             ha-card {{

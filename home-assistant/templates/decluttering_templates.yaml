@@ -1,11 +1,11 @@
 ########################################################################
-# OSVision V2 — Decluttering-card Templates
+# Visio Sapiens — Decluttering-card Templates
 # Included from every dashboard via:
 #   decluttering_templates: !include templates/decluttering_templates.yaml
 ########################################################################
 
 # ---------------------------------------------------------------------
-# osvision_gauge
+# vssp_gauge
 # Neon radial gauge built on apexcharts-card. One template, N reuses,
 # so adding/removing a metric (Storage, Network...) is a one-line change.
 #
@@ -18,7 +18,7 @@
 #     - color: "#00E5FF"
 #     - max: 100
 # ---------------------------------------------------------------------
-osvision_gauge:
+vssp_gauge:
   default:
     - color: "#00E5FF"
     - max: 100

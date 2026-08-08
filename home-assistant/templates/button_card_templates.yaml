@@ -1,5 +1,5 @@
 ########################################################################
-# OSVision V2 — Button-Card Templates Library
+# Visio Sapiens — Button-Card Templates Library
 # Included from every dashboard via:
 #   button_card_templates: !include templates/button_card_templates.yaml
 ########################################################################
@@ -7,7 +7,7 @@
 # ---------------------------------------------------------------------
 # Base glass panel — generic container, no icon/name shown by default
 # ---------------------------------------------------------------------
-osvision_panel:
+vssp_panel:
   show_icon: false
   show_name: false
   styles:
@@ -22,7 +22,7 @@ osvision_panel:
 # ---------------------------------------------------------------------
 # Section title (used for HOME / ROOMS / SYSTEM headers)
 # ---------------------------------------------------------------------
-osvision_title:
+vssp_title:
   show_icon: false
   styles:
     card:
@@ -42,7 +42,7 @@ osvision_title:
 # KPI / metric tile (label + big value), used when a numeric value
 # doesn't need a full apexcharts radial gauge
 # ---------------------------------------------------------------------
-osvision_metric:
+vssp_metric:
   show_icon: false
   styles:
     card:
@@ -64,12 +64,12 @@ osvision_metric:
 
 # ---------------------------------------------------------------------
 # HUD header — page title cell (chevron-back + title + description)
-#   template: osvision_page_header
+#   template: vssp_page_header
 #   icon: mdi:chevron-left
 #   name: HOME
 #   label: "Vue d'ensemble de votre système"
 # ---------------------------------------------------------------------
-osvision_page_header:
+vssp_page_header:
   show_state: false
   show_label: true
   styles:
@@ -106,11 +106,11 @@ osvision_page_header:
 # alarm_control_panel.* once it's decided; icon/color/label react to
 # entity.state automatically: disarmed / armed_home / armed_away /
 # arming / pending / triggered / unavailable).
-#   template: osvision_alarm_status
+#   template: vssp_alarm_status
 #   entity: alarm_control_panel.maison
 #   name: MAISON
 # ---------------------------------------------------------------------
-osvision_alarm_status:
+vssp_alarm_status:
   show_state: false
   show_label: true
   icon: >
@@ -178,10 +178,10 @@ osvision_alarm_status:
 
 # ---------------------------------------------------------------------
 # HUD header — circular "OS" avatar / logo (right end of the header bar)
-#   template: osvision_os_avatar
+#   template: vssp_os_avatar
 #   name: "OS"
 # ---------------------------------------------------------------------
-osvision_os_avatar:
+vssp_os_avatar:
   show_state: false
   show_icon: false
   styles:
@@ -208,12 +208,12 @@ osvision_os_avatar:
 # ---------------------------------------------------------------------
 # Sidebar logo/brand block — top of the vertical nav (osv-sidebar).
 # Non interactive, purely decorative.
-#   template: osvision_sidebar_logo
+#   template: vssp_sidebar_logo
 #   icon: mdi:hexagon-outline
-#   name: "OSVISION V2"
+#   name: "vssp V2"
 #   label: "Smart Home OS"
 # ---------------------------------------------------------------------
-osvision_sidebar_logo:
+vssp_sidebar_logo:
   show_state: false
   show_label: true
   styles:
@@ -256,14 +256,14 @@ osvision_sidebar_logo:
 # Sidebar navigation item (HOME / CORE / ROOMS / SYSTEM / ENERGY...)
 # Vertical layout: icon left, title + subtitle stacked right.
 # Variables `active` (true/false) must be passed per-instance:
-#   template: osvision_nav_button
+#   template: vssp_nav_button
 #   icon: mdi:view-dashboard
 #   name: HOME
 #   label: "Vue d'ensemble"
 #   variables:
 #     active: true
 # ---------------------------------------------------------------------
-osvision_nav_button:
+vssp_nav_button:
   show_state: false
   show_label: true
   card_mod:
@@ -312,12 +312,12 @@ osvision_nav_button:
 # Sidebar bottom branding block — placed as the LAST card of the nav
 # vertical-stack, pushed to the bottom of the sidebar (margin-top: auto).
 # Purely decorative, non interactive.
-#   template: osvision_sidebar_brand_footer
+#   template: vssp_sidebar_brand_footer
 #   icon: mdi:hexagon-outline
-#   name: "OSVISION V2"
+#   name: "vssp V2"
 #   label: "SMART HOME OS"
 # ---------------------------------------------------------------------
-osvision_sidebar_brand_footer:
+vssp_sidebar_brand_footer:
   show_state: false
   show_label: true
   styles:
@@ -358,10 +358,10 @@ osvision_sidebar_brand_footer:
 
 # ---------------------------------------------------------------------
 # Security panel — central glowing badge (icon reacts to alarm entity).
-#   template: osvision_security_badge
+#   template: vssp_security_badge
 #   entity: alarm_control_panel.maison
 # ---------------------------------------------------------------------
-osvision_security_badge:
+vssp_security_badge:
   show_name: false
   show_state: false
   icon: >
@@ -415,12 +415,12 @@ osvision_security_badge:
 # ---------------------------------------------------------------------
 # Security panel — one status row (icon + label + dynamic state text).
 # Works with any entity domain (binary_sensor on/off, alarm_control_panel...).
-#   template: osvision_security_row
+#   template: vssp_security_row
 #   icon: mdi:door
 #   name: "Portes & Fenêtres"
 #   entity: binary_sensor.doors_windows
 # ---------------------------------------------------------------------
-osvision_security_row:
+vssp_security_row:
   show_state: false
   show_label: true
   label: >
@@ -475,14 +475,14 @@ osvision_security_row:
 # ---------------------------------------------------------------------
 # Admin panel button (Discovery / Upgrade / Delete). Pass `danger: true`
 # for destructive actions (red theme instead of cyan).
-#   template: osvision_admin_button
+#   template: vssp_admin_button
 #   icon: mdi:magnify-scan
 #   name: DISCOVERY
 #   label: "Rechercher les nouvelles entités"
 #   variables:
 #     danger: false
 # ---------------------------------------------------------------------
-osvision_admin_button:
+vssp_admin_button:
   show_state: false
   show_label: true
   variables:
@@ -522,13 +522,13 @@ osvision_admin_button:
 #   variables:
 #     value_color: "#3AA7FF"
 #     icon_color: "#3AA7FF"
-#   template: osvision_kpi_card
+#   template: vssp_kpi_card
 #   icon: mdi:door-open
 #   name: PIÈCES ACTIVES
 #   state: 3 / 10   (peut aussi venir d'une entité via `entity:`)
 #   label: "En activité"
 # ---------------------------------------------------------------------
-osvision_kpi_card:
+vssp_kpi_card:
   show_state: true
   show_label: true
   styles:
@@ -570,12 +570,12 @@ osvision_kpi_card:
 # Status indicator card (System Status / Energy Status) — titre + voyant
 # rond coloré + sous-titre. Voyant vert par defaut ; passe au rouge si
 # l'entite liee (optionnelle) est dans un etat considere anormal.
-#   template: osvision_status_indicator
+#   template: vssp_status_indicator
 #   name: SYSTEM STATUS
 #   label: "Statut métriques CORE"
-#   entity: binary_sensor.osvision_core_health   # optionnel, squelette
+#   entity: binary_sensor.vssp_core_health   # optionnel, squelette
 # ---------------------------------------------------------------------
-osvision_status_indicator:
+vssp_status_indicator:
   show_state: false
   show_label: true
   icon: mdi:circle
@@ -619,7 +619,7 @@ osvision_status_indicator:
 # ---------------------------------------------------------------------
 # Quick action button (scenes, scripts, toggles)
 # ---------------------------------------------------------------------
-osvision_quick_action:
+vssp_quick_action:
   show_state: false
   styles:
     card:
@@ -639,7 +639,7 @@ osvision_quick_action:
 # ---------------------------------------------------------------------
 # Alert banner. Pass a `level` variable: "critical" | "info" | "ok"
 # ---------------------------------------------------------------------
-osvision_alert:
+vssp_alert:
   show_icon: true
   styles:
     card:
@@ -666,7 +666,7 @@ osvision_alert:
 # ---------------------------------------------------------------------
 # Room card (used later for the ROOMS view — one tile per room)
 # ---------------------------------------------------------------------
-osvision_room_card:
+vssp_room_card:
   show_state: false
   styles:
     card:
@@ -684,32 +684,32 @@ osvision_room_card:
       - letter-spacing: 1px
 
 ########################################################################
-# OSVision V2 — Templates ENERGY
+# Visio Sapiens — Templates ENERGY
 #
 # ⚠️  CE FICHIER N'EST PAS UN FICHIER À PART.
 #     Son contenu doit être AJOUTÉ À LA FIN de :
 #         home-assistant/templates/button_card_templates.yaml
 #
 #     Raison : Lovelace n'accepte qu'UN SEUL `button_card_templates:`
-#     par dashboard. Les templates osvision_* doivent donc tous vivre
+#     par dashboard. Les templates vssp_* doivent donc tous vivre
 #     dans le même fichier partagé, comme pour core.yaml.
 #
 # Templates ajoutés :
-#   osvision_section_title       Titre de panneau (« Production Solaire »)
-#   osvision_energy_stat         Petit libellé + grande valeur colorée
-#   osvision_energy_kpi          Tuile KPI (icône encadrée + valeur + label)
-#   osvision_energy_tab          Onglet Jour / Mois / Année
-#   osvision_energy_device_row   Ligne « Consommation par appareil »
-#   osvision_energy_total_row    Ligne de total (pied de tableau)
-#   osvision_circuit_switch      Carte circuit du tableau électrique (Shelly)
+#   vssp_section_title       Titre de panneau (« Production Solaire »)
+#   vssp_energy_stat         Petit libellé + grande valeur colorée
+#   vssp_energy_kpi          Tuile KPI (icône encadrée + valeur + label)
+#   vssp_energy_tab          Onglet Jour / Mois / Année
+#   vssp_energy_device_row   Ligne « Consommation par appareil »
+#   vssp_energy_total_row    Ligne de total (pied de tableau)
+#   vssp_circuit_switch      Carte circuit du tableau électrique (Shelly)
 ########################################################################
 
 # ---------------------------------------------------------------------
 # Titre de panneau — première ligne à l'intérieur d'un bloc verre.
-#   template: osvision_section_title
+#   template: vssp_section_title
 #   name: "Production Solaire"
 # ---------------------------------------------------------------------
-osvision_section_title:
+vssp_section_title:
   show_icon: false
   show_state: false
   show_label: false
@@ -733,13 +733,13 @@ osvision_section_title:
 # ---------------------------------------------------------------------
 # Statistique simple : libellé discret au-dessus, valeur en gros dessous.
 # La couleur de la valeur est pilotée par `variables.accent`.
-#   template: osvision_energy_stat
+#   template: vssp_energy_stat
 #   entity: sensor.solar_energy_today
 #   label: "Aujourd'hui"
 #   variables:
 #     accent: "#00FFC3"
 # ---------------------------------------------------------------------
-osvision_energy_stat:
+vssp_energy_stat:
   show_icon: false
   show_name: false
   show_state: true
@@ -773,14 +773,14 @@ osvision_energy_stat:
 
 # ---------------------------------------------------------------------
 # Tuile KPI : icône dans un carré arrondi à gauche, valeur + label à droite.
-#   template: osvision_energy_kpi
+#   template: vssp_energy_kpi
 #   entity: sensor.home_energy_today
 #   icon: mdi:chart-bar
 #   label: "Aujourd'hui"
 #   variables:
 #     accent: "#00E5FF"
 # ---------------------------------------------------------------------
-osvision_energy_kpi:
+vssp_energy_kpi:
   show_icon: true
   show_name: false
   show_state: true
@@ -825,14 +825,14 @@ osvision_energy_kpi:
 # Onglet de période (Jour / Mois / Année). L'état actif est déduit de
 # `entity` (un input_select) comparé à `variables.period`.
 # Le tap_action est déclaré CÔTÉ CARTE (dans energy.yaml), pas ici.
-#   template: osvision_energy_tab
-#   entity: input_select.osvision_energy_period
+#   template: vssp_energy_tab
+#   entity: input_select.vssp_energy_period
 #   name: Jour
 #   icon: mdi:weather-sunny
 #   variables:
 #     period: Jour
 # ---------------------------------------------------------------------
-osvision_energy_tab:
+vssp_energy_tab:
   show_icon: true
   show_name: true
   show_state: false
@@ -883,7 +883,7 @@ osvision_energy_tab:
 # Ligne « Consommation par appareil » :
 #   icône | nom + modèle | pièce | puissance instantanée | énergie du jour | chevron
 #
-#   template: osvision_energy_device_row
+#   template: vssp_energy_device_row
 #   entity: sensor.shelly_chauffe_eau_power
 #   name: "Chauffe-eau"
 #   icon: mdi:water-boiler
@@ -893,7 +893,7 @@ osvision_energy_tab:
 #     energy_entity: sensor.shelly_chauffe_eau_energy_today
 #     detail_entity: switch.shelly_chauffe_eau   # ouvert au tap
 # ---------------------------------------------------------------------
-osvision_energy_device_row:
+vssp_energy_device_row:
   show_icon: true
   show_name: true
   show_state: true
@@ -980,11 +980,11 @@ osvision_energy_device_row:
 
 # ---------------------------------------------------------------------
 # Ligne de total (pied du tableau « Consommation par appareil »).
-#   template: osvision_energy_total_row
+#   template: vssp_energy_total_row
 #   entity: sensor.home_power_consumption
 #   name: "Consommation totale actuelle"
 # ---------------------------------------------------------------------
-osvision_energy_total_row:
+vssp_energy_total_row:
   show_icon: false
   show_name: true
   show_state: true
@@ -1020,7 +1020,7 @@ osvision_energy_total_row:
 # Ligne 1 : icône + nom | Ligne 2 : icône + modèle | Ligne 3 : calibre + toggle
 # Le tap bascule le circuit (tap_action: toggle).
 #
-#   template: osvision_circuit_switch
+#   template: vssp_circuit_switch
 #   entity: switch.shelly_chauffe_eau
 #   name: "Chauffe-eau"
 #   icon: mdi:water-boiler
@@ -1028,7 +1028,7 @@ osvision_energy_total_row:
 #     model: "Shelly 1PM"
 #     amp: "25A"
 # ---------------------------------------------------------------------
-osvision_circuit_switch:
+vssp_circuit_switch:
   show_icon: true
   show_name: true
   show_state: false

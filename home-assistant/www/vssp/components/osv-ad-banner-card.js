@@ -1,10 +1,10 @@
 /**
- * OSVision V2 — Ad Banner Card (v2, autonome)
+ * Visio Sapiens — Ad Banner Card (v2, autonome)
  * Bandeau publicitaire défilant (gauche → droite), chaque logo est un lien
  * cliquable vers une URL externe.
  *
  * v2 : le style est désormais injecté DIRECTEMENT dans le composant
- * (balise <style> interne) plutôt que de dépendre d'osvision.css.
+ * (balise <style> interne) plutôt que de dépendre d'vssp.css.
  * Raison : ha-card utilise son propre Shadow DOM, ce qui empêchait le
  * CSS externe d'atteindre nos classes de façon fiable.
  *
@@ -16,7 +16,7 @@
  *     ads:
  *       - name: HIKVISION
  *         url: https://www.hikvision.com
- *         image: /local/osvision_v2/images/ads/hikvision.png   # optionnel
+ *         image: /local/vssp/images/ads/hikvision.png   # optionnel
  *       ...
  */
 
@@ -58,7 +58,7 @@ class OsvAdBannerCard extends HTMLElement {
         </a>`;
     }).join("");
 
-    // Style 100% autonome — inline, aucune dépendance à osvision.css
+    // Style 100% autonome — inline, aucune dépendance à vssp.css
     this.innerHTML = `
       <style>
         osv-ad-banner-card{

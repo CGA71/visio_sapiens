@@ -1,5 +1,5 @@
 ########################################################################
-# OSVision V2 — ENERGY : configuration requise
+# Visio Sapiens — ENERGY : configuration requise
 #
 # Ce fichier n'est PAS chargé tel quel : copiez chaque bloc dans le
 # fichier indiqué en commentaire.
@@ -8,27 +8,27 @@
 
 # ══════════════════════════════════════════════════════════════════════
 # 1. DÉCLARATION DU DASHBOARD  →  configuration.yaml
-#    (à ajouter sous la clé `lovelace:` existante, à côté de osvision-core)
+#    (à ajouter sous la clé `lovelace:` existante, à côté de vssp-core)
 # ══════════════════════════════════════════════════════════════════════
 #
 # lovelace:
 #   mode: yaml
 #   dashboards:
-#     osvision-core:
+#     vssp-core:
 #       mode: yaml
 #       title: CORE
 #       icon: mdi:server
 #       show_in_sidebar: true
 #       filename: dashboards/views/core.yaml
 #
-#     osvision-energy:                       # <── NOUVEAU
+#     vssp-energy:                       # <── NOUVEAU
 #       mode: yaml
 #       title: ENERGY
 #       icon: mdi:lightning-bolt
 #       show_in_sidebar: true
 #       filename: dashboards/views/energy.yaml
 #
-# ⚠️  L'URL résultante est /osvision-energy/energy — elle correspond
+# ⚠️  L'URL résultante est /vssp-energy/energy — elle correspond
 #     exactement aux `navigation_path` déjà présents dans la sidebar de
 #     home.yaml et core.yaml. Rien d'autre à modifier côté navigation.
 #
@@ -42,8 +42,8 @@
 # ══════════════════════════════════════════════════════════════════════
 
 input_select:
-  osvision_energy_period:
-    name: OSVision — Période énergie
+  vssp_energy_period:
+    name: Visio Sapiens — Période énergie
     options:
       - Jour
       - Mois
@@ -53,8 +53,8 @@ input_select:
 
 input_number:
   # Capacité de production annuelle de l'installation (objectif)
-  osvision_solar_capacity:
-    name: OSVision — Capacité solaire annuelle
+  vssp_solar_capacity:
+    name: Visio Sapiens — Capacité solaire annuelle
     min: 0
     max: 50000
     step: 100
@@ -64,8 +64,8 @@ input_number:
     icon: mdi:solar-power
 
   # Tarif de rachat du surplus (€/kWh)
-  osvision_tarif_revente:
-    name: OSVision — Tarif revente
+  vssp_tarif_revente:
+    name: Visio Sapiens — Tarif revente
     min: 0
     max: 1
     step: 0.001
@@ -82,27 +82,27 @@ input_number:
 
 template:
   - sensor:
-      - name: "OSVision Revente Mois"
-        unique_id: osvision_revente_mois
+      - name: "Visio Sapiens Revente Mois"
+        unique_id: vssp_revente_mois
         unit_of_measurement: "€"
         state_class: total
         state: >
           {% set kwh = states('sensor.grid_export_energy_this_month') | float(0) %}
-          {% set tarif = states('input_number.osvision_tarif_revente') | float(0.20) %}
+          {% set tarif = states('input_number.vssp_tarif_revente') | float(0.20) %}
           {{ (kwh * tarif) | round(2) }}
 
-      - name: "OSVision Revente Annee"
-        unique_id: osvision_revente_annee
+      - name: "Visio Sapiens Revente Annee"
+        unique_id: vssp_revente_annee
         unit_of_measurement: "€"
         state_class: total
         state: >
           {% set kwh = states('sensor.grid_export_energy_this_year') | float(0) %}
-          {% set tarif = states('input_number.osvision_tarif_revente') | float(0.20) %}
+          {% set tarif = states('input_number.vssp_tarif_revente') | float(0.20) %}
           {{ (kwh * tarif) | round(2) }}
 
       # Moyenne quotidienne de consommation sur le mois en cours
-      - name: "OSVision Consommation Moyenne Quotidienne"
-        unique_id: osvision_conso_moyenne_quotidienne
+      - name: "Visio Sapiens Consommation Moyenne Quotidienne"
+        unique_id: vssp_conso_moyenne_quotidienne
         unit_of_measurement: kWh
         state_class: measurement
         state: >
@@ -163,8 +163,8 @@ utility_meter:
 #   sensor.grid_export_energy_today        kWh
 #   sensor.grid_export_energy_this_month   kWh
 #   sensor.grid_export_energy_this_year    kWh
-#   sensor.osvision_revente_mois           €    (= template §3)
-#   sensor.osvision_revente_annee          €    (= template §3)
+#   sensor.vssp_revente_mois           €    (= template §3)
+#   sensor.vssp_revente_annee          €    (= template §3)
 #
 # APPAREILS — 8 lignes du tableau (puissance + énergie du jour)
 #   sensor.shelly_<appareil>_power                kW

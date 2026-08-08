@@ -1,5 +1,5 @@
 # ============================================================================
-# OSVision V2 — Fragment de configuration (ÉTAT DÉSIRÉ)
+# Visio Sapiens — Fragment de configuration (ÉTAT DÉSIRÉ)
 #
 # Ce fichier ne contient QUE les clés de configuration.yaml qu'OSVision gère.
 # Il est fusionné dans le configuration.yaml de destination par le script
@@ -85,15 +85,15 @@ lovelace:
       type: module
     - url: /hacsfiles/lovelace-decluttering-card/decluttering-card.js
       type: module
-    - url: /local/osvision_v2/css/osvision.css?v=__VTOKEN__
+    - url: /local/vssp/css/osvision.css?v=__VTOKEN__
       type: css
-    - url: /local/osvision_v2/js/osvision.js?v=__VTOKEN__
+    - url: /local/vssp/js/osvision.js?v=__VTOKEN__
       type: module
-    - url: /local/osvision_v2/components/osv-core.js?v=__VTOKEN__
+    - url: /local/vssp/components/osv-core.js?v=__VTOKEN__
       type: module
-    - url: /local/osvision_v2/components/osv-card.js?v=__VTOKEN__
+    - url: /local/vssp/components/osv-card.js?v=__VTOKEN__
       type: module
-    - url: /local/osvision_v2/components/osv-datetime-card.js?v=__VTOKEN__
+    - url: /local/vssp/components/osv-datetime-card.js?v=__VTOKEN__
       type: module
-    - url: /local/osvision_v2/components/osv-ad-banner-card.js?v=__VTOKEN__
+    - url: /local/vssp/components/osv-ad-banner-card.js?v=__VTOKEN__
       type: module

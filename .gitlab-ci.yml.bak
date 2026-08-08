@@ -1,5 +1,5 @@
 # ============================================================================
-# Visio Sapiens — Pipeline dual-cible
+# OSVision V2 — Pipeline dual-cible
 #
 #   BRANCHES  →  k3s (namespace homeassistant)   = STAGING / tests
 #   TAGS      →  HAOS 18.1 sur mini PC via SSH   = PRODUCTION
@@ -141,8 +141,8 @@ workflow:
         echo "      Verifier l'URL, ou utiliser le service interne du cluster."
         exit 1
       fi
-    - curl -sfI "$TARGET_URL/local/vssp/js/osvision.js" >/dev/null && echo "[OK] JS Engine servi"
-    - curl -sfI "$TARGET_URL/local/vssp/css/osvision.css" >/dev/null && echo "[OK] CSS Engine servi"
+    - curl -sfI "$TARGET_URL/local/osvision_v2/js/osvision.js" >/dev/null && echo "[OK] JS Engine servi"
+    - curl -sfI "$TARGET_URL/local/osvision_v2/css/osvision.css" >/dev/null && echo "[OK] CSS Engine servi"
     - |
       UNAVAIL=$(curl -sf -H "Authorization: Bearer $HA_TOKEN" "$TARGET_URL/api/states" \
         | jq '[.[] | select(.state=="unavailable")] | length')
@@ -160,7 +160,7 @@ validate:
     - test -d home-assistant/dashboards || { echo "[ERR] home-assistant/dashboards manquant"; exit 1; }
     - test -d home-assistant/templates  || { echo "[ERR] home-assistant/templates manquant"; exit 1; }
     - test -f themes/osvision_v2.yaml || { echo "[ERR] themes/osvision_v2.yaml manquant"; exit 1; }
-    - test -d home-assistant/www/vssp || { echo "[ERR] www/vssp manquant"; exit 1; }
+    - test -d home-assistant/www/osvision_v2 || { echo "[ERR] www/osvision_v2 manquant"; exit 1; }
     - test -f hacs.json       || { echo "[ERR] hacs.json manquant"; exit 1; }
     - test -f repository.yaml || { echo "[ERR] repository.yaml manquant"; exit 1; }
     # Patch configuration.yaml : fragment + patcher présents dans le repo
@@ -235,7 +235,7 @@ build:
     # NB : on EXCLUT config-fragment.yaml — il utilise le placeholder __VTOKEN__
     #      remplace au moment du "apply" via --vtoken (et non ?v=X).
     - export VTOKEN=$(echo "$OSV_VERSION" | tr -c 'a-zA-Z0-9._-' '-')
-    - find dist -name '*.yaml' ! -name 'config-fragment.yaml' -exec sed -i "s|\(/local/vssp/[^ \"']*\)?v=[0-9A-Za-z._-]*|\1?v=${VTOKEN}|g" {} +
+    - find dist -name '*.yaml' ! -name 'config-fragment.yaml' -exec sed -i "s|\(/local/osvision_v2/[^ \"']*\)?v=[0-9A-Za-z._-]*|\1?v=${VTOKEN}|g" {} +
     - echo "Ressources taguees ?v=${VTOKEN}"
     - |
       cat > dist/OSVISION_VERSION <<EOF
@@ -343,9 +343,9 @@ deploy:staging:
           [ -d /config/$d ] && mv /config/$d /config/$d.old
           mv /config/.osv_stage/$d /config/$d
         done
-        rm -rf /config/www/vssp
+        rm -rf /config/www/osvision_v2
         mkdir -p /config/www
-        mv /config/.osv_stage/www/vssp /config/www/vssp
+        mv /config/.osv_stage/www/osvision_v2 /config/www/osvision_v2
         cp /config/.osv_stage/OSVISION_VERSION /config/OSVISION_VERSION
         # Deployer le patcher + le fragment a leur emplacement /config
         mkdir -p /config/osvision
@@ -417,9 +417,9 @@ deploy:production:
           [ -d $HA_CFG/\$d ] && mv $HA_CFG/\$d $HA_CFG/\$d.old
           mv $HA_CFG/.osv_stage/\$d $HA_CFG/\$d
         done
-        rm -rf $HA_CFG/www/vssp
+        rm -rf $HA_CFG/www/osvision_v2
         mkdir -p $HA_CFG/www
-        mv $HA_CFG/.osv_stage/www/vssp $HA_CFG/www/vssp
+        mv $HA_CFG/.osv_stage/www/osvision_v2 $HA_CFG/www/osvision_v2
         cp $HA_CFG/.osv_stage/OSVISION_VERSION $HA_CFG/OSVISION_VERSION
         # Deployer patcher + fragment a leur emplacement /config
         mkdir -p $HA_CFG/osvision
@@ -528,5 +528,5 @@ release:
     - echo "Release $CI_COMMIT_TAG"
   release:
     tag_name: "$CI_COMMIT_TAG"
-    name: "Visio Sapiens $CI_COMMIT_TAG"
+    name: "OSVision V2 $CI_COMMIT_TAG"
     description: "Deploye sur HAOS — commit $CI_COMMIT_SHA"

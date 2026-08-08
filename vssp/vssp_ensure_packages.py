@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # ============================================================================
-# OSVision V2 — osvision_ensure_packages.py
+# Visio Sapiens — vssp_ensure_packages.py
 #
 # Garantit la présence de :
 #
@@ -14,7 +14,7 @@
 #     `packages:` dedans (jamais de bloc dupliqué) ;
 #   • sinon -> ajoute le bloc complet en tête de fichier.
 #
-# Complète osvision_apply_config.py, qui ne gère pas le domaine
+# Complète vssp_apply_config.py, qui ne gère pas le domaine
 # « homeassistant ». Invoqué par le CI juste après le patcher (staging et
 # production).
 #
@@ -22,7 +22,7 @@
 # reste du fichier (commentaires, tags !include/!secret, indentation) est
 # préservé octet pour octet, fins de ligne comprises.
 #
-# Usage :  python3 osvision_ensure_packages.py --config /config/configuration.yaml
+# Usage :  python3 vssp_ensure_packages.py --config /config/configuration.yaml
 # Sortie : code 0 si OK (posé ou déjà présent), 1 si erreur.
 # ============================================================================
 import argparse
@@ -31,7 +31,7 @@ import shutil
 import sys
 
 PKG_LINE = "  packages: !include_dir_named packages"
-HEADER = "# OSVision : chargement des packages multi-domaines (spvs_*.yaml)"
+HEADER = "# Visio Sapiens : chargement des packages multi-domaines (spvs_*.yaml)"
 
 
 def main() -> int:
