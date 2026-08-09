@@ -55,13 +55,13 @@ lovelace:
       icon: mdi:lightning-bolt
       show_in_sidebar: false
       filename: dashboards/views/energy.yaml
-    visio-sapiens-mobile:
+    visio-sapiens-m:
       mode: yaml
       title: Visio-Sapiens
       icon: mdi:hexagon-outline
       show_in_sidebar: true
       filename: dashboards/home_mobile.yaml
-    visio-sapiens-energy-mobile:
+    visio-sapiens-energy-m:
       mode: yaml
       title: Energy Management
       icon: mdi:lightning-bolt
