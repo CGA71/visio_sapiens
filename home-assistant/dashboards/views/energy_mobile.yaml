@@ -132,7 +132,7 @@ views:
       # la vue : les 12 chips sont des cartes de premier niveau, chaque
       # tap_action:navigate reçoit le doigt sans intermédiaire.
       #
-      # Nécessite le template osvision_nav_chip dans
+      # Nécessite le template vssp_nav_chip dans
       # templates/button_card_templates.yaml (fourni séparément).
       # url_path : convention -m (config réellement déployée).
       # ═══════════════════════════════════════════════════════════════
@@ -161,21 +161,21 @@ views:
             :host::-webkit-scrollbar { display: none; }
         cards:
           - type: custom:button-card
-            template: osvision_nav_chip
+            template: vssp_nav_chip
             name: HOME
             icon: mdi:view-dashboard
             tap_action:
               action: navigate
               navigation_path: /visio-sapiens-m/home
           - type: custom:button-card
-            template: osvision_nav_chip
+            template: vssp_nav_chip
             name: CORE
             icon: mdi:server
             tap_action:
               action: navigate
               navigation_path: /visio-sapiens-core-m/core
           - type: custom:button-card
-            template: osvision_nav_chip
+            template: vssp_nav_chip
             name: ENERGY
             icon: mdi:lightning-bolt
             variables:
@@ -184,63 +184,63 @@ views:
               action: navigate
               navigation_path: /visio-sapiens-energy-m/energy
           - type: custom:button-card
-            template: osvision_nav_chip
+            template: vssp_nav_chip
             name: SALON
             icon: mdi:sofa
             tap_action:
               action: navigate
               navigation_path: /visio-sapiens-livingroom-m/livingroom
           - type: custom:button-card
-            template: osvision_nav_chip
+            template: vssp_nav_chip
             name: CH.1
             icon: mdi:bed
             tap_action:
               action: navigate
               navigation_path: /visio-sapiens-bedroom1-m/bedroom1
           - type: custom:button-card
-            template: osvision_nav_chip
+            template: vssp_nav_chip
             name: CH.2
             icon: mdi:bed-outline
             tap_action:
               action: navigate
               navigation_path: /visio-sapiens-bedroom2-m/bedroom2
           - type: custom:button-card
-            template: osvision_nav_chip
+            template: vssp_nav_chip
             name: SDB
             icon: mdi:shower
             tap_action:
               action: navigate
               navigation_path: /visio-sapiens-bathroom-m/bathroom
           - type: custom:button-card
-            template: osvision_nav_chip
+            template: vssp_nav_chip
             name: INFO
             icon: mdi:desktop-tower-monitor
             tap_action:
               action: navigate
               navigation_path: /visio-sapiens-computer-m/computer
           - type: custom:button-card
-            template: osvision_nav_chip
+            template: vssp_nav_chip
             name: TECH
             icon: mdi:tools
             tap_action:
               action: navigate
               navigation_path: /visio-sapiens-technical-m/technical
           - type: custom:button-card
-            template: osvision_nav_chip
+            template: vssp_nav_chip
             name: SECRET
             icon: mdi:key
             tap_action:
               action: navigate
               navigation_path: /visio-sapiens-secret-m/secret
           - type: custom:button-card
-            template: osvision_nav_chip
+            template: vssp_nav_chip
             name: JARDIN
             icon: mdi:flower
             tap_action:
               action: navigate
               navigation_path: /visio-sapiens-garden-m/garden
           - type: custom:button-card
-            template: osvision_nav_chip
+            template: vssp_nav_chip
             name: ADMIN
             icon: mdi:shield-crown
             tap_action:
