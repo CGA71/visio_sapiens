@@ -83,7 +83,7 @@ views:
         show_label: true
         tap_action:
           action: navigate
-          navigation_path: /visio-sapiens-mobile/home
+          navigation_path: /visio-sapiens-m/home
         label: |
           [[[
             const d = new Date();
@@ -123,83 +123,129 @@ views:
 
       # ═══════════════════════════════════════════════════════════════
       # NAVIGATION HORIZONTALE DÉFILANTE (remplace la sidebar desktop)
-      # Chips <a href> : navigation pleine page, autonome, aucun
-      # template requis. ENERGY est affiché comme actif.
+      # ENERGY est affiché comme actif.
       #
-      # IMPORTANT : PAS de `tap_action: none` sur cette carte — cela
-      # posait une couche interne qui interceptait/annulait les clics
-      # sur les liens <a>, d'où « rien ne se passe » au clic. Sans
-      # tap_action, button-card laisse les événements atteindre les <a>.
+      # SANS CARTE ENVELOPPANTE : button-card applique un tap_action par
+      # défaut (more-info) même quand on n'en déclare aucun — une
+      # button-card qui enveloppe la nav intercepte donc les taps avant
+      # les chips. Ici la nav est une layout-card posée DIRECTEMENT dans
+      # la vue : les 12 chips sont des cartes de premier niveau, chaque
+      # tap_action:navigate reçoit le doigt sans intermédiaire.
       #
-      # Les URLs pointent vers les url_path RÉELLEMENT déclarés dans
-      # config-fragment.yaml. Seuls HOME (visio-sapiens-mobile) et
-      # ENERGY (visio-sapiens-energy-mobile) existent en version mobile
-      # aujourd'hui ; les autres pointent vers leurs dashboards desktop
-      # existants en attendant leurs versions mobiles. Adaptez au fur
-      # et à mesure que vous créez les vues mobiles.
+      # Nécessite le template osvision_nav_chip dans
+      # templates/button_card_templates.yaml (fourni séparément).
+      # url_path : convention -m (config réellement déployée).
       # ═══════════════════════════════════════════════════════════════
-      - type: custom:button-card
+      - type: custom:layout-card
         view_layout:
           grid-area: nav
-        show_icon: false
-        show_name: false
-        show_state: false
-        custom_fields:
-          navbar: |
-            [[[
-              const items = [
-                { icon: 'mdi:view-dashboard',          txt: 'HOME',      url: '/visio-sapiens-mobile/home' },
-                { icon: 'mdi:server',                  txt: 'CORE',      url: '/visio-sapiens-core/core' },
-                { icon: 'mdi:lightning-bolt',          txt: 'ENERGY',    url: '/visio-sapiens-energy-mobile/energy', active: true },
-                { icon: 'mdi:sofa',                    txt: 'SALON',     url: '/visio-sapiens-livingroom/livingroom' },
-                { icon: 'mdi:bed',                     txt: 'CH.1',      url: '/visio-sapiens-bedroom1/bedroom1' },
-                { icon: 'mdi:bed-outline',             txt: 'CH.2',      url: '/visio-sapiens-bedroom2/bedroom2' },
-                { icon: 'mdi:shower',                  txt: 'SDB',       url: '/visio-sapiens-bathroom/bathroom' },
-                { icon: 'mdi:desktop-tower-monitor',   txt: 'INFO',      url: '/visio-sapiens-computer/computer' },
-                { icon: 'mdi:tools',                   txt: 'TECH',      url: '/visio-sapiens-technical/technical' },
-                { icon: 'mdi:key',                     txt: 'SECRET',    url: '/visio-sapiens-secret/secret' },
-                { icon: 'mdi:flower',                  txt: 'JARDIN',    url: '/visio-sapiens-garden/garden' },
-                { icon: 'mdi:shield-crown',            txt: 'ADMIN',     url: '/visio-sapiens/admin' },
-              ];
-              const chip = (i) => `
-                <a href="${i.url}" style="text-decoration:none;flex:0 0 auto;
-                  pointer-events:auto;-webkit-tap-highlight-color:transparent;">
-                  <div style="display:flex;align-items:center;gap:6px;
-                    padding:8px 14px;border-radius:14px;white-space:nowrap;
-                    background:${i.active ? 'rgba(0,229,255,0.14)' : 'rgba(16,27,39,0.85)'};
-                    border:1px solid ${i.active ? 'rgba(0,229,255,0.55)' : 'rgba(0,229,255,0.18)'};
-                    ${i.active ? 'box-shadow:0 0 12px rgba(0,229,255,.25);' : ''}">
-                    <ha-icon icon="${i.icon}" style="--mdc-icon-size:16px;
-                      color:${i.active ? '#00E5FF' : '#8FB6C9'};"></ha-icon>
-                    <span style="font-family:Orbitron,sans-serif;font-size:10px;
-                      letter-spacing:1px;color:${i.active ? '#00E5FF' : '#8FB6C9'};">
-                      ${i.txt}</span>
-                  </div>
-                </a>`;
-              return `
-                <div style="display:flex;gap:8px;overflow-x:auto;padding:2px 2px 6px 2px;
-                  touch-action:pan-x;pointer-events:auto;
-                  -webkit-overflow-scrolling:touch;scrollbar-width:none;">
-                  ${items.map(chip).join('')}
-                </div>`;
-            ]]]
-        styles:
-          grid:
-            - grid-template-areas: '"navbar"'
-          card:
-            - background: transparent
-            - box-shadow: none
-            - border: none
-            - padding: 0
-            # button-card bloque les gestes tactiles par défaut
-            # (touch-action) : sans pan-x, impossible de faire défiler
-            # les chips au doigt sur iPhone.
-            - touch-action: pan-x
-          custom_fields:
-            navbar:
-              - width: 100%
-              - touch-action: pan-x
-              - pointer-events: auto
+        layout_type: custom:grid-layout
+        layout:
+          grid-auto-flow: column
+          grid-auto-columns: max-content
+          grid-gap: 0px 0px
+          margin: 0px
+          padding: 0px
+        card_mod:
+          style: |
+            :host {
+              display: block;
+              width: 100%;
+              overflow-x: auto;
+              overflow-y: hidden;
+              touch-action: pan-x;
+              -webkit-overflow-scrolling: touch;
+              scrollbar-width: none;
+              padding-bottom: 4px;
+            }
+            :host::-webkit-scrollbar { display: none; }
+        cards:
+          - type: custom:button-card
+            template: osvision_nav_chip
+            name: HOME
+            icon: mdi:view-dashboard
+            tap_action:
+              action: navigate
+              navigation_path: /visio-sapiens-m/home
+          - type: custom:button-card
+            template: osvision_nav_chip
+            name: CORE
+            icon: mdi:server
+            tap_action:
+              action: navigate
+              navigation_path: /visio-sapiens-core-m/core
+          - type: custom:button-card
+            template: osvision_nav_chip
+            name: ENERGY
+            icon: mdi:lightning-bolt
+            variables:
+              active: true
+            tap_action:
+              action: navigate
+              navigation_path: /visio-sapiens-energy-m/energy
+          - type: custom:button-card
+            template: osvision_nav_chip
+            name: SALON
+            icon: mdi:sofa
+            tap_action:
+              action: navigate
+              navigation_path: /visio-sapiens-livingroom-m/livingroom
+          - type: custom:button-card
+            template: osvision_nav_chip
+            name: CH.1
+            icon: mdi:bed
+            tap_action:
+              action: navigate
+              navigation_path: /visio-sapiens-bedroom1-m/bedroom1
+          - type: custom:button-card
+            template: osvision_nav_chip
+            name: CH.2
+            icon: mdi:bed-outline
+            tap_action:
+              action: navigate
+              navigation_path: /visio-sapiens-bedroom2-m/bedroom2
+          - type: custom:button-card
+            template: osvision_nav_chip
+            name: SDB
+            icon: mdi:shower
+            tap_action:
+              action: navigate
+              navigation_path: /visio-sapiens-bathroom-m/bathroom
+          - type: custom:button-card
+            template: osvision_nav_chip
+            name: INFO
+            icon: mdi:desktop-tower-monitor
+            tap_action:
+              action: navigate
+              navigation_path: /visio-sapiens-computer-m/computer
+          - type: custom:button-card
+            template: osvision_nav_chip
+            name: TECH
+            icon: mdi:tools
+            tap_action:
+              action: navigate
+              navigation_path: /visio-sapiens-technical-m/technical
+          - type: custom:button-card
+            template: osvision_nav_chip
+            name: SECRET
+            icon: mdi:key
+            tap_action:
+              action: navigate
+              navigation_path: /visio-sapiens-secret-m/secret
+          - type: custom:button-card
+            template: osvision_nav_chip
+            name: JARDIN
+            icon: mdi:flower
+            tap_action:
+              action: navigate
+              navigation_path: /visio-sapiens-garden-m/garden
+          - type: custom:button-card
+            template: osvision_nav_chip
+            name: ADMIN
+            icon: mdi:shield-crown
+            tap_action:
+              action: navigate
+              navigation_path: /visio-sapiens-m/admin
 
       # ═══════════════════════════════════════════════════════════════
       # PANNEAU 1 — PRODUCTION SOLAIRE
