@@ -1111,4 +1111,53 @@ vssp_circuit_switch:
         border-color: rgba(0,229,255,0.55) !important;
         box-shadow: 0 0 18px rgba(0,229,255,.22) !important;
       }
+# ============================================================================
+# Template : vssp_nav_chip
+#
+# À AJOUTER dans templates/button_card_templates.yaml (au même niveau que
+# vos autres templates osvision_*). Utilisé par la barre de navigation
+# horizontale des dashboards mobiles (home_mobile.yaml, energy_mobile.yaml).
+#
+# Chaque onglet passe :
+#   • name  : libellé (HOME, ENERGY, …)
+#   • icon  : mdi:...
+#   • variables.active : true sur l'onglet de la page courante (optionnel)
+#   • tap_action.navigation_path : la cible (défini dans le dashboard)
+#
+# Rendu : chip arrondi cyan, icône + texte Orbitron, état actif surligné.
+# ============================================================================
 
+vssp_nav_chip:
+  show_icon: true
+  show_name: true
+  show_state: false
+  size: 16px
+  styles:
+    grid:
+      - grid-template-areas: '"i n"'
+      - grid-template-columns: auto auto
+      - align-items: center
+      - column-gap: 6px
+    card:
+      - height: 38px
+      - padding: 0px 14px
+      - margin: 0px 4px
+      - border-radius: 14px
+      - white-space: nowrap
+      - background: >
+          [[[ return variables.active ? 'rgba(0,229,255,0.14)' : 'rgba(16,27,39,0.85)'; ]]]
+      - border: >
+          [[[ return '1px solid ' + (variables.active ? 'rgba(0,229,255,0.55)' : 'rgba(0,229,255,0.18)'); ]]]
+      - box-shadow: >
+          [[[ return variables.active ? '0 0 12px rgba(0,229,255,.25)' : 'none'; ]]]
+    icon:
+      - width: 16px
+      - color: >
+          [[[ return variables.active ? '#00E5FF' : '#8FB6C9'; ]]]
+    name:
+      - font-family: Orbitron, sans-serif
+      - font-size: 10px
+      - letter-spacing: 1px
+      - justify-self: start
+      - color: >
+          [[[ return variables.active ? '#00E5FF' : '#8FB6C9'; ]]]
