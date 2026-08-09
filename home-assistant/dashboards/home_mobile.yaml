@@ -118,69 +118,404 @@ views:
             - width: 100%
 
       # ═══════════════════════════════════════════════════════════════
-      # NAVIGATION HORIZONTALE DÉFILANTE (remplace la sidebar desktop)
-      # HOME est affiché comme actif. touch-action:pan-x aux deux niveaux
-      # pour débloquer le défilement tactile sur iPhone.
+      # NAVIGATION — GRILLE NATIVE 4×3, ZÉRO DÉPENDANCE
+      # Carte `grid` native de HA. Chaque chip est une button-card
+      # autonome (styles intégrés, AUCUN template requis) avec
+      # tap_action:navigate natif — le même mécanisme que les autres
+      # boutons du dashboard. Pas de layout-card, pas de card-mod,
+      # pas de défilement : les 12 onglets sont tous visibles et la
+      # grille ne peut pas élargir la page (colonnes fractionnaires).
       # ═══════════════════════════════════════════════════════════════
-      - type: custom:button-card
+      - type: grid
         view_layout:
           grid-area: nav
-        show_icon: false
-        show_name: false
-        show_state: false
-        tap_action:
-          action: none
-        custom_fields:
-          navbar: |
-            [[[
-              const items = [
-                { icon: 'mdi:view-dashboard',          txt: 'HOME',      url: '/visio-sapiens-m/home', active: true },
-                { icon: 'mdi:server',                  txt: 'CORE',      url: '/visio-sapiens-core-m/core' },
-                { icon: 'mdi:lightning-bolt',          txt: 'ENERGY',    url: '/visio-sapiens-energy-m/energy' },
-                { icon: 'mdi:sofa',                    txt: 'SALON',     url: '/visio-sapiens-livingroom-m/livingroom' },
-                { icon: 'mdi:bed',                     txt: 'CH.1',      url: '/visio-sapiens-bedroom1-m/bedroom1' },
-                { icon: 'mdi:bed-outline',             txt: 'CH.2',      url: '/visio-sapiens-bedroom2-m/bedroom2' },
-                { icon: 'mdi:shower',                  txt: 'SDB',       url: '/visio-sapiens-bathroom-m/bathroom' },
-                { icon: 'mdi:laptop',                  txt: 'INFO',      url: '/visio-sapiens-computer-m/computer' },
-                { icon: 'mdi:factory',                 txt: 'TECH',      url: '/visio-sapiens-technical-m/technical' },
-                { icon: 'mdi:security',                txt: 'SECRET',    url: '/visio-sapiens-secret-m/secret' },
-                { icon: 'mdi:flower',                  txt: 'JARDIN',    url: '/visio-sapiens-garden-m/garden' },
-                { icon: 'mdi:shield-crown',            txt: 'ADMIN',     url: '/visio-sapiens-m/admin' },
-              ];
-              const chip = (i) => `
-                <a href="${i.url}" style="text-decoration:none;flex:0 0 auto;">
-                  <div style="display:flex;align-items:center;gap:6px;
-                    padding:8px 14px;border-radius:14px;white-space:nowrap;
-                    background:${i.active ? 'rgba(0,229,255,0.14)' : 'rgba(16,27,39,0.85)'};
-                    border:1px solid ${i.active ? 'rgba(0,229,255,0.55)' : 'rgba(0,229,255,0.18)'};
-                    ${i.active ? 'box-shadow:0 0 12px rgba(0,229,255,.25);' : ''}">
-                    <ha-icon icon="${i.icon}" style="--mdc-icon-size:16px;
-                      color:${i.active ? '#00E5FF' : '#8FB6C9'};"></ha-icon>
-                    <span style="font-family:Orbitron,sans-serif;font-size:10px;
-                      letter-spacing:1px;color:${i.active ? '#00E5FF' : '#8FB6C9'};">
-                      ${i.txt}</span>
-                  </div>
-                </a>`;
-              return `
-                <div style="display:flex;gap:8px;overflow-x:auto;padding:2px 2px 6px 2px;
-                  touch-action:pan-x;-webkit-overflow-scrolling:touch;scrollbar-width:none;">
-                  ${items.map(chip).join('')}
-                </div>`;
-            ]]]
-        styles:
-          grid:
-            - grid-template-areas: '"navbar"'
-          card:
-            - background: transparent
-            - box-shadow: none
-            - border: none
-            - padding: 0
-            - touch-action: pan-x
-          custom_fields:
-            navbar:
-              - width: 100%
-              - touch-action: pan-x
-              - pointer-events: auto
+        columns: 4
+        square: false
+        cards:
+          - type: custom:button-card
+            name: "HOME"
+            icon: mdi:view-dashboard
+            size: 14px
+            tap_action:
+              action: navigate
+              navigation_path: /visio-sapiens-m/home
+            styles:
+              grid:
+                - grid-template-areas: '"i n"'
+                - grid-template-columns: auto 1fr
+                - column-gap: 4px
+                - align-items: center
+              card:
+                - height: 36px
+                - padding: 0px 8px
+                - border-radius: 12px
+                - background: rgba(0,229,255,0.14)
+                - border: 1px solid rgba(0,229,255,0.55)
+                - box-shadow: 0 0 12px rgba(0,229,255,.25)
+              icon:
+                - width: 14px
+                - color: "#00E5FF"
+              name:
+                - font-family: Orbitron, sans-serif
+                - font-size: 8px
+                - letter-spacing: 0.5px
+                - color: "#00E5FF"
+                - justify-self: start
+                - white-space: nowrap
+                - overflow: hidden
+                - text-overflow: ellipsis
+          - type: custom:button-card
+            name: "CORE"
+            icon: mdi:server
+            size: 14px
+            tap_action:
+              action: navigate
+              navigation_path: /visio-sapiens-core-m/core
+            styles:
+              grid:
+                - grid-template-areas: '"i n"'
+                - grid-template-columns: auto 1fr
+                - column-gap: 4px
+                - align-items: center
+              card:
+                - height: 36px
+                - padding: 0px 8px
+                - border-radius: 12px
+                - background: rgba(16,27,39,0.85)
+                - border: 1px solid rgba(0,229,255,0.18)
+                - box-shadow: none
+              icon:
+                - width: 14px
+                - color: "#8FB6C9"
+              name:
+                - font-family: Orbitron, sans-serif
+                - font-size: 8px
+                - letter-spacing: 0.5px
+                - color: "#8FB6C9"
+                - justify-self: start
+                - white-space: nowrap
+                - overflow: hidden
+                - text-overflow: ellipsis
+          - type: custom:button-card
+            name: "ENERGY"
+            icon: mdi:lightning-bolt
+            size: 14px
+            tap_action:
+              action: navigate
+              navigation_path: /visio-sapiens-energy-m/energy
+            styles:
+              grid:
+                - grid-template-areas: '"i n"'
+                - grid-template-columns: auto 1fr
+                - column-gap: 4px
+                - align-items: center
+              card:
+                - height: 36px
+                - padding: 0px 8px
+                - border-radius: 12px
+                - background: rgba(16,27,39,0.85)
+                - border: 1px solid rgba(0,229,255,0.18)
+                - box-shadow: none
+              icon:
+                - width: 14px
+                - color: "#8FB6C9"
+              name:
+                - font-family: Orbitron, sans-serif
+                - font-size: 8px
+                - letter-spacing: 0.5px
+                - color: "#8FB6C9"
+                - justify-self: start
+                - white-space: nowrap
+                - overflow: hidden
+                - text-overflow: ellipsis
+          - type: custom:button-card
+            name: "SALON"
+            icon: mdi:sofa
+            size: 14px
+            tap_action:
+              action: navigate
+              navigation_path: /visio-sapiens-livingroom-m/livingroom
+            styles:
+              grid:
+                - grid-template-areas: '"i n"'
+                - grid-template-columns: auto 1fr
+                - column-gap: 4px
+                - align-items: center
+              card:
+                - height: 36px
+                - padding: 0px 8px
+                - border-radius: 12px
+                - background: rgba(16,27,39,0.85)
+                - border: 1px solid rgba(0,229,255,0.18)
+                - box-shadow: none
+              icon:
+                - width: 14px
+                - color: "#8FB6C9"
+              name:
+                - font-family: Orbitron, sans-serif
+                - font-size: 8px
+                - letter-spacing: 0.5px
+                - color: "#8FB6C9"
+                - justify-self: start
+                - white-space: nowrap
+                - overflow: hidden
+                - text-overflow: ellipsis
+          - type: custom:button-card
+            name: "CH.1"
+            icon: mdi:bed
+            size: 14px
+            tap_action:
+              action: navigate
+              navigation_path: /visio-sapiens-bedroom1-m/bedroom1
+            styles:
+              grid:
+                - grid-template-areas: '"i n"'
+                - grid-template-columns: auto 1fr
+                - column-gap: 4px
+                - align-items: center
+              card:
+                - height: 36px
+                - padding: 0px 8px
+                - border-radius: 12px
+                - background: rgba(16,27,39,0.85)
+                - border: 1px solid rgba(0,229,255,0.18)
+                - box-shadow: none
+              icon:
+                - width: 14px
+                - color: "#8FB6C9"
+              name:
+                - font-family: Orbitron, sans-serif
+                - font-size: 8px
+                - letter-spacing: 0.5px
+                - color: "#8FB6C9"
+                - justify-self: start
+                - white-space: nowrap
+                - overflow: hidden
+                - text-overflow: ellipsis
+          - type: custom:button-card
+            name: "CH.2"
+            icon: mdi:bed-outline
+            size: 14px
+            tap_action:
+              action: navigate
+              navigation_path: /visio-sapiens-bedroom2-m/bedroom2
+            styles:
+              grid:
+                - grid-template-areas: '"i n"'
+                - grid-template-columns: auto 1fr
+                - column-gap: 4px
+                - align-items: center
+              card:
+                - height: 36px
+                - padding: 0px 8px
+                - border-radius: 12px
+                - background: rgba(16,27,39,0.85)
+                - border: 1px solid rgba(0,229,255,0.18)
+                - box-shadow: none
+              icon:
+                - width: 14px
+                - color: "#8FB6C9"
+              name:
+                - font-family: Orbitron, sans-serif
+                - font-size: 8px
+                - letter-spacing: 0.5px
+                - color: "#8FB6C9"
+                - justify-self: start
+                - white-space: nowrap
+                - overflow: hidden
+                - text-overflow: ellipsis
+          - type: custom:button-card
+            name: "SDB"
+            icon: mdi:shower
+            size: 14px
+            tap_action:
+              action: navigate
+              navigation_path: /visio-sapiens-bathroom-m/bathroom
+            styles:
+              grid:
+                - grid-template-areas: '"i n"'
+                - grid-template-columns: auto 1fr
+                - column-gap: 4px
+                - align-items: center
+              card:
+                - height: 36px
+                - padding: 0px 8px
+                - border-radius: 12px
+                - background: rgba(16,27,39,0.85)
+                - border: 1px solid rgba(0,229,255,0.18)
+                - box-shadow: none
+              icon:
+                - width: 14px
+                - color: "#8FB6C9"
+              name:
+                - font-family: Orbitron, sans-serif
+                - font-size: 8px
+                - letter-spacing: 0.5px
+                - color: "#8FB6C9"
+                - justify-self: start
+                - white-space: nowrap
+                - overflow: hidden
+                - text-overflow: ellipsis
+          - type: custom:button-card
+            name: "INFO"
+            icon: mdi:laptop
+            size: 14px
+            tap_action:
+              action: navigate
+              navigation_path: /visio-sapiens-computer-m/computer
+            styles:
+              grid:
+                - grid-template-areas: '"i n"'
+                - grid-template-columns: auto 1fr
+                - column-gap: 4px
+                - align-items: center
+              card:
+                - height: 36px
+                - padding: 0px 8px
+                - border-radius: 12px
+                - background: rgba(16,27,39,0.85)
+                - border: 1px solid rgba(0,229,255,0.18)
+                - box-shadow: none
+              icon:
+                - width: 14px
+                - color: "#8FB6C9"
+              name:
+                - font-family: Orbitron, sans-serif
+                - font-size: 8px
+                - letter-spacing: 0.5px
+                - color: "#8FB6C9"
+                - justify-self: start
+                - white-space: nowrap
+                - overflow: hidden
+                - text-overflow: ellipsis
+          - type: custom:button-card
+            name: "TECH"
+            icon: mdi:factory
+            size: 14px
+            tap_action:
+              action: navigate
+              navigation_path: /visio-sapiens-technical-m/technical
+            styles:
+              grid:
+                - grid-template-areas: '"i n"'
+                - grid-template-columns: auto 1fr
+                - column-gap: 4px
+                - align-items: center
+              card:
+                - height: 36px
+                - padding: 0px 8px
+                - border-radius: 12px
+                - background: rgba(16,27,39,0.85)
+                - border: 1px solid rgba(0,229,255,0.18)
+                - box-shadow: none
+              icon:
+                - width: 14px
+                - color: "#8FB6C9"
+              name:
+                - font-family: Orbitron, sans-serif
+                - font-size: 8px
+                - letter-spacing: 0.5px
+                - color: "#8FB6C9"
+                - justify-self: start
+                - white-space: nowrap
+                - overflow: hidden
+                - text-overflow: ellipsis
+          - type: custom:button-card
+            name: "SECRET"
+            icon: mdi:security
+            size: 14px
+            tap_action:
+              action: navigate
+              navigation_path: /visio-sapiens-secret-m/secret
+            styles:
+              grid:
+                - grid-template-areas: '"i n"'
+                - grid-template-columns: auto 1fr
+                - column-gap: 4px
+                - align-items: center
+              card:
+                - height: 36px
+                - padding: 0px 8px
+                - border-radius: 12px
+                - background: rgba(16,27,39,0.85)
+                - border: 1px solid rgba(0,229,255,0.18)
+                - box-shadow: none
+              icon:
+                - width: 14px
+                - color: "#8FB6C9"
+              name:
+                - font-family: Orbitron, sans-serif
+                - font-size: 8px
+                - letter-spacing: 0.5px
+                - color: "#8FB6C9"
+                - justify-self: start
+                - white-space: nowrap
+                - overflow: hidden
+                - text-overflow: ellipsis
+          - type: custom:button-card
+            name: "JARDIN"
+            icon: mdi:flower
+            size: 14px
+            tap_action:
+              action: navigate
+              navigation_path: /visio-sapiens-garden-m/garden
+            styles:
+              grid:
+                - grid-template-areas: '"i n"'
+                - grid-template-columns: auto 1fr
+                - column-gap: 4px
+                - align-items: center
+              card:
+                - height: 36px
+                - padding: 0px 8px
+                - border-radius: 12px
+                - background: rgba(16,27,39,0.85)
+                - border: 1px solid rgba(0,229,255,0.18)
+                - box-shadow: none
+              icon:
+                - width: 14px
+                - color: "#8FB6C9"
+              name:
+                - font-family: Orbitron, sans-serif
+                - font-size: 8px
+                - letter-spacing: 0.5px
+                - color: "#8FB6C9"
+                - justify-self: start
+                - white-space: nowrap
+                - overflow: hidden
+                - text-overflow: ellipsis
+          - type: custom:button-card
+            name: "ADMIN"
+            icon: mdi:shield-crown
+            size: 14px
+            tap_action:
+              action: navigate
+              navigation_path: /visio-sapiens-m/admin
+            styles:
+              grid:
+                - grid-template-areas: '"i n"'
+                - grid-template-columns: auto 1fr
+                - column-gap: 4px
+                - align-items: center
+              card:
+                - height: 36px
+                - padding: 0px 8px
+                - border-radius: 12px
+                - background: rgba(16,27,39,0.85)
+                - border: 1px solid rgba(0,229,255,0.18)
+                - box-shadow: none
+              icon:
+                - width: 14px
+                - color: "#8FB6C9"
+              name:
+                - font-family: Orbitron, sans-serif
+                - font-size: 8px
+                - letter-spacing: 0.5px
+                - color: "#8FB6C9"
+                - justify-self: start
+                - white-space: nowrap
+                - overflow: hidden
+                - text-overflow: ellipsis
 
       # ═══════════════════════════════════════════════════════════════
       # KPI — grille 2 colonnes (5 cases du desktop repliées)
