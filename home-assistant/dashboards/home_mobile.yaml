@@ -863,5 +863,11 @@ views:
     card_mod:
       style: |
         hui-view {
-          background: center / cover no-repeat fixed url("/local/vssp/backgrounds/home.png");
+          /* PAS de background-attachment:fixed : cassé sur iOS/Safari,
+             l'image ne couvrait pas la longueur du dashboard. Sans
+             `fixed`, l'image est peinte sur TOUTE la hauteur de la vue
+             (cover s'étire sur la longueur totale du contenu) et
+             défile avec la page. */
+          min-height: 100%;
+          background: center top / cover no-repeat url("/local/vssp/backgrounds/home.png");
         }
