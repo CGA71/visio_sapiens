@@ -51,7 +51,12 @@ views:
     subview: false
     type: custom:grid-layout
     layout:
-      grid-template-columns: 1fr
+      # minmax(0,1fr) et non 1fr : '1fr' vaut minmax(auto,1fr) et refuse
+      # de descendre sous la largeur naturelle du contenu — un élément
+      # large (nav défilante, graphe…) élargirait toute la page (effet
+      # « format tablette »). minmax(0,1fr) verrouille la colonne à la
+      # largeur de l'écran quoi qu'elle contienne.
+      grid-template-columns: minmax(0, 1fr)
       grid-template-rows: auto
       grid-template-areas: |
         "header"
@@ -150,6 +155,10 @@ views:
             - border: none
             - border-radius: 0
             - padding: 0px 0px 4px 0px
+            # Plafond en unité viewport (définie) : borne la contribution
+            # de la carte au calcul de la grille — la nav ne peut pas
+            # réclamer ses 1240px à la page, le défilement reste interne.
+            - max-width: calc(100vw - 16px)
             - overflow-x: auto
             - overflow-y: hidden
             - touch-action: pan-x
