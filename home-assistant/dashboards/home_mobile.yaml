@@ -136,7 +136,7 @@ views:
               const items = [
                 { icon: 'mdi:view-dashboard',          txt: 'HOME',      url: '/visio-sapiens-m/home', active: true },
                 { icon: 'mdi:server',                  txt: 'CORE',      url: '/visio-sapiens-core-m/core' },
-                { icon: 'mdi:lightning-bolt',          txt: 'ENERGY',    url: '/visio-sapiens-energy-m/energy' },
+                { icon: 'mdi:lightning-bolt',          txt: 'ENERGY',    url: '/visio-sapiens-energy-m/energy', active: true },
                 { icon: 'mdi:sofa',                    txt: 'SALON',     url: '/visio-sapiens-livingroom-m/livingroom' },
                 { icon: 'mdi:bed',                     txt: 'CH.1',      url: '/visio-sapiens-bedroom1-m/bedroom1' },
                 { icon: 'mdi:bed-outline',             txt: 'CH.2',      url: '/visio-sapiens-bedroom2-m/bedroom2' },
