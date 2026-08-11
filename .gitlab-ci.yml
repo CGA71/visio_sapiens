@@ -356,6 +356,7 @@ deploy:staging:
         cp /config/.osv_stage/vssp/vssp_sanitize_resources.py /config/vssp/
         cp /config/.osv_stage/config-fragment.yaml /config/config-fragment.yaml
         cp /config/.osv_stage/vssp/vssp_lan_probe.py /config/vssp/
+        cp /config/.osv_stage/vssp/livebox.env      /config/vssp/
         chmod +x /config/vssp/vssp_lan_probe.py
         # Packages (additif : n ecrase pas d eventuels packages non-vssp)
         mkdir -p /config/packages
