@@ -18,21 +18,20 @@
 # ── PRINCIPES D'ADAPTATION MOBILE (identiques a energy_mobile.yaml) ───
 # Cible : iPhone 13 Pro Max, viewport ≈ 428 px de large.
 #   • Colonne unique : tous les panneaux sont empiles verticalement
-#     (header → nav → appareils → conso totale → interrupteurs →
-#      Livebox → switch reseau → etat des equipements).
+#     (header → nav → interrupteurs → Livebox → switch reseau →
+#      etat des equipements).
 #   • La sidebar verticale est remplacee par une BARRE DE NAVIGATION
 #     HORIZONTALE defilante (chips), pouce-friendly. TECH est actif.
-#   • Les listes longues (appareils, interrupteurs, regles NAT, table
-#     du commutateur) vivent DANS le champ custom d'un button-card a
+#   • Les listes longues (interrupteurs, regles NAT, table du
+#     commutateur) vivent DANS le champ custom d'un button-card a
 #     hauteur fixe + overflow + touch-action:pan-y — pattern PROUVE en
 #     production sur energy_mobile.yaml.
 #   • Les interrupteurs passent a 2 colonnes.
 #
 # ── PREREQUIS ────────────────────────────────────────────────────────
 # 1. Templates de button_card_templates.yaml deja en place
-#    (vssp_section_title, vssp_energy_device_row, vssp_energy_total_row,
-#     vssp_energy_stat, vssp_energy_kpi, vssp_energy_tab,
-#     vssp_circuit_switch) — AUCUN nouveau template requis.
+#    (vssp_section_title, vssp_circuit_switch) — AUCUN nouveau
+#    template requis.
 # 2. Helpers + capteurs de technical_room_config_snippets.yaml crees
 #    (alimentation Shelly via LAN + sondes Livebox / commutateur).
 # 3. Remplacer les entites marquees « # TODO » par les votres.
@@ -43,7 +42,7 @@
 # immediat, et un bandeau orange signale l'etat « demo ».
 #
 # Cartes HACS utilisees : button-card, card-mod, layout-card,
-# apexcharts-card, config-template-card.
+# (aucune carte de graphe requise).
 ########################################################################
 title: TECHNICAL ROOM MOBILE
 theme: Visio Sapiens
@@ -70,8 +69,6 @@ views:
       grid-template-areas: |
         "header"
         "nav"
-        "devices"
-        "total"
         "board"
         "livebox"
         "netsw"
@@ -567,361 +564,7 @@ views:
                       - text-overflow: ellipsis
 
       # ═══════════════════════════════════════════════════════════════
-      # PANNEAU 1 — CONSOMMATION PAR APPAREIL (10 appareils connectes)
-      # Version mobile : lignes compactes autonomes (icone / nom+piece
-      # / W actuel / kWh du jour), liste defilante 300 px.
-      # ═══════════════════════════════════════════════════════════════
-      - type: vertical-stack
-        view_layout:
-          grid-area: devices
-        card_mod:
-          style: |
-            :host {
-              display: flex;
-              flex-direction: column;
-              box-sizing: border-box;
-              background: rgba(8,18,28,0.75);
-              border-radius: 20px;
-              border: 1px solid rgba(0,229,255,0.28);
-              backdrop-filter: blur(12px);
-              box-shadow: 0 0 18px rgba(0,229,255,.15);
-              padding: 14px;
-              overflow: hidden;
-            }
-        cards:
-          - type: custom:button-card
-            template: vssp_section_title
-            name: "Appareils connectes — Local technique"
-
-          # ── Liste des appareils (defilante) ────────────────────────
-          # Structure IDENTIQUE a energy_mobile.yaml : les 10 lignes
-          # sont de VRAIES cartes embarquees dans le champ `list` d'un
-          # button-card a hauteur fixe + overflow.
-          # TODO : adapter entity / energy_entity / model a vos Shelly.
-          - type: custom:button-card
-            show_icon: false
-            show_name: false
-            show_state: false
-            tap_action:
-              action: none
-            styles:
-              grid:
-                - grid-template-areas: '"list"'
-              card:
-                - background: transparent
-                - box-shadow: none
-                - border: none
-                - border-radius: 0
-                - padding: 0
-                - cursor: default
-                - touch-action: pan-y
-              custom_fields:
-                list:
-                  - display: block
-                  - width: 100%
-                  - height: 300px
-                  - overflow-y: auto
-                  - overflow-x: hidden
-                  - padding-right: 4px
-                  - scrollbar-width: thin
-                  - scrollbar-color: rgba(0,229,255,0.35) rgba(0,229,255,0.06)
-                  - touch-action: pan-y
-                  - "-webkit-overflow-scrolling": touch
-            custom_fields:
-              list:
-                card:
-                  type: vertical-stack
-                  cards:
-                    - type: horizontal-stack
-                      cards:
-                        - type: custom:button-card
-                          template: vssp_energy_device_row
-                          entity: sensor.technical_room_lavelinge_puissance
-                          name: "Lave-linge"
-                          icon: mdi:washing-machine
-                          variables:
-                            room: "Local technique"
-                            model: "Shelly Power Strip 4 Gen 4 — ch.1"
-                            energy_entity: sensor.technical_room_lavelinge_energie
-                          tap_action:
-                            action: more-info
-                    - type: horizontal-stack
-                      cards:
-                        - type: custom:button-card
-                          template: vssp_energy_device_row
-                          entity: sensor.technical_room_sechelinge_puissance
-                          name: "Seche-linge"
-                          icon: mdi:tumble-dryer
-                          variables:
-                            room: "Local technique"
-                            model: "Shelly Power Strip 4 Gen 4 — ch.2"
-                            energy_entity: sensor.technical_room_sechelinge_energie
-                          tap_action:
-                            action: more-info
-                    - type: horizontal-stack
-                      cards:
-                        - type: custom:button-card
-                          template: vssp_energy_device_row
-                          entity: sensor.technical_room_lumiere_puissance
-                          name: "Lumiere"
-                          icon: mdi:ceiling-light
-                          variables:
-                            room: "Local technique"
-                            model: "Shelly Plus 1"
-                            energy_entity: sensor.technical_room_lumiere_energie
-                          tap_action:
-                            action: more-info
-                    - type: horizontal-stack
-                      cards:
-                        - type: custom:button-card
-                          template: vssp_energy_device_row
-                          entity: sensor.technical_room_aspirateur_puissance
-                          name: "Aspirateur Dyson"
-                          icon: mdi:vacuum
-                          variables:
-                            room: "Local technique"
-                            model: "Shelly Power Strip 4 Gen 4 — ch.3"
-                            energy_entity: sensor.technical_room_aspirateur_energie
-                          tap_action:
-                            action: more-info
-                    - type: horizontal-stack
-                      cards:
-                        - type: custom:button-card
-                          template: vssp_energy_device_row
-                          entity: sensor.technical_room_ballon_ecs_puissance
-                          name: "Ballon d'eau chaude"
-                          icon: mdi:water-boiler
-                          variables:
-                            room: "Local technique"
-                            model: "Shelly Pro 1PM"
-                            energy_entity: sensor.technical_room_ballon_ecs_energie
-                          tap_action:
-                            action: more-info
-                    - type: horizontal-stack
-                      cards:
-                        - type: custom:button-card
-                          template: vssp_energy_device_row
-                          entity: sensor.technical_room_congelateur_puissance
-                          name: "Congelateur"
-                          icon: mdi:freezer
-                          variables:
-                            room: "Local technique"
-                            model: "Shelly Power Strip 4 Gen 4 — ch.4"
-                            energy_entity: sensor.technical_room_congelateur_energie
-                          tap_action:
-                            action: more-info
-                    - type: horizontal-stack
-                      cards:
-                        - type: custom:button-card
-                          template: vssp_energy_device_row
-                          entity: sensor.technical_room_synology_puissance
-                          name: "NAS Synology"
-                          icon: mdi:nas
-                          variables:
-                            room: "Local technique"
-                            model: "Shelly Plus PlugS"
-                            energy_entity: sensor.technical_room_synology_energie
-                          tap_action:
-                            action: more-info
-                    - type: horizontal-stack
-                      cards:
-                        - type: custom:button-card
-                          template: vssp_energy_device_row
-                          entity: sensor.technical_room_livebox_puissance
-                          name: "Livebox V7 Pro"
-                          icon: mdi:router-wireless
-                          variables:
-                            room: "Local technique"
-                            model: "Shelly Plus PlugS"
-                            energy_entity: sensor.technical_room_livebox_energie
-                          tap_action:
-                            action: more-info
-                    - type: horizontal-stack
-                      cards:
-                        - type: custom:button-card
-                          template: vssp_energy_device_row
-                          entity: sensor.technical_room_alarme_puissance
-                          name: "Centrale alarme"
-                          icon: mdi:shield-home
-                          variables:
-                            room: "Local technique"
-                            model: "Shelly Plus PlugS"
-                            energy_entity: sensor.technical_room_alarme_energie
-                          tap_action:
-                            action: more-info
-                    - type: horizontal-stack
-                      cards:
-                        - type: custom:button-card
-                          template: vssp_energy_device_row
-                          entity: sensor.technical_room_netgear_puissance
-                          name: "Switch MS510TX"
-                          icon: mdi:switch
-                          variables:
-                            room: "Local technique"
-                            model: "Shelly Plus PlugS"
-                            energy_entity: sensor.technical_room_netgear_energie
-                          tap_action:
-                            action: more-info
-
-          # ── Total ──────────────────────────────────────────────────
-          - type: custom:button-card
-            template: vssp_energy_total_row
-            entity: sensor.technical_room_power                # TODO
-            name: "Consommation du local technique"
-
-      # ═══════════════════════════════════════════════════════════════
-      # PANNEAU 2 — CONSOMMATION TOTALE DU LOCAL
-      # ═══════════════════════════════════════════════════════════════
-      - type: vertical-stack
-        view_layout:
-          grid-area: total
-        card_mod:
-          style: |
-            :host {
-              display: flex;
-              flex-direction: column;
-              background: rgba(8,18,28,0.75);
-              border-radius: 20px;
-              border: 1px solid rgba(0,229,255,0.28);
-              backdrop-filter: blur(12px);
-              box-shadow: 0 0 18px rgba(0,229,255,.15);
-              padding: 14px;
-              overflow: hidden;
-            }
-        cards:
-          - type: custom:button-card
-            template: vssp_section_title
-            name: "Consommation Totale"
-
-          # Onglets (partagent le meme input_select que le dashboard ENERGY)
-          - type: horizontal-stack
-            cards:
-              - type: custom:button-card
-                template: vssp_energy_tab
-                entity: input_select.vssp_energy_period
-                name: Jour
-                icon: mdi:weather-sunny
-                variables:
-                  period: Jour
-                tap_action:
-                  action: call-service
-                  service: input_select.select_option
-                  service_data:
-                    entity_id: input_select.vssp_energy_period
-                    option: Jour
-              - type: custom:button-card
-                template: vssp_energy_tab
-                entity: input_select.vssp_energy_period
-                name: Mois
-                icon: mdi:calendar-month
-                variables:
-                  period: Mois
-                tap_action:
-                  action: call-service
-                  service: input_select.select_option
-                  service_data:
-                    entity_id: input_select.vssp_energy_period
-                    option: Mois
-              - type: custom:button-card
-                template: vssp_energy_tab
-                entity: input_select.vssp_energy_period
-                name: Année
-                icon: mdi:calendar
-                variables:
-                  period: Année
-                tap_action:
-                  action: call-service
-                  service: input_select.select_option
-                  service_data:
-                    entity_id: input_select.vssp_energy_period
-                    option: Année
-
-          # Courbe : la periode suit l'input_select
-          - type: conditional
-            conditions:
-              - condition: state
-                entity: sensor.technical_room_power             # TODO
-                state_not: unavailable
-            card:
-              type: custom:config-template-card
-              entities:
-                - input_select.vssp_energy_period
-              card:
-                type: custom:apexcharts-card
-                header:
-                  show: false
-                graph_span: >-
-                  ${ states['input_select.vssp_energy_period'].state === 'Jour' ? '24h'
-                     : states['input_select.vssp_energy_period'].state === 'Mois' ? '30d' : '365d' }
-                span:
-                  start: >-
-                    ${ states['input_select.vssp_energy_period'].state === 'Jour' ? 'day'
-                       : states['input_select.vssp_energy_period'].state === 'Mois' ? 'month' : 'year' }
-                series:
-                  - entity: sensor.technical_room_power         # TODO
-                    name: "Local technique"
-                    type: column
-                    color: "#00E5FF"
-                    group_by:
-                      func: avg
-                      duration: >-
-                        ${ states['input_select.vssp_energy_period'].state === 'Jour' ? '30min'
-                           : states['input_select.vssp_energy_period'].state === 'Mois' ? '1d' : '30d' }
-                apex_config:
-                  chart:
-                    height: 120
-                  legend:
-                    show: false
-                  grid:
-                    borderColor: "rgba(255,255,255,0.06)"
-                  xaxis:
-                    labels:
-                      style:
-                        colors: "#56707E"
-                        fontSize: "9px"
-                  yaxis:
-                    labels:
-                      style:
-                        colors: "#56707E"
-                        fontSize: "9px"
-                  plotOptions:
-                    bar:
-                      columnWidth: "62%"
-                      borderRadius: 2
-                card_mod:
-                  style: |
-                    ha-card {
-                      background: transparent !important;
-                      border: none !important;
-                      box-shadow: none !important;
-                    }
-
-          - type: custom:button-card
-            template: vssp_energy_kpi
-            entity: sensor.technical_room_energy_today          # TODO
-            icon: mdi:chart-bar
-            label: "Aujourd'hui"
-            variables:
-              accent: "#00E5FF"
-
-          - type: custom:button-card
-            template: vssp_energy_kpi
-            entity: sensor.technical_room_energy_this_month     # TODO
-            icon: mdi:calendar-month
-            label: "Ce mois-ci"
-            variables:
-              accent: "#00E5FF"
-
-          - type: custom:button-card
-            template: vssp_energy_kpi
-            entity: sensor.technical_room_energy_this_year      # TODO
-            icon: mdi:calendar-star
-            label: "Cette année"
-            variables:
-              accent: "#00E5FF"
-
-      # ═══════════════════════════════════════════════════════════════
-      # PANNEAU 3 — INTERRUPTEURS (memes cartes que le tableau
+      # PANNEAU 1 — INTERRUPTEURS (memes cartes que le tableau
       # electrique d'energy.yaml : template vssp_circuit_switch).
       # La LUMIERE du local est le premier interrupteur.
       # Les charges critiques (ECS, congelateur, NAS, Livebox, alarme,
@@ -1144,7 +787,7 @@ views:
                   - width: 100%
 
       # ═════════════════════════════════════════════════════════════
-      # PANNEAU 4 — LIVEBOX V7 PRO : IP publique FIXE, plage DHCP,
+      # PANNEAU 2 — LIVEBOX V7 PRO : IP publique FIXE, plage DHCP,
       # regles NAT. Sondes alimentees par le LAN (voir snippets).
       # ═════════════════════════════════════════════════════════════
       - type: vertical-stack
@@ -1470,7 +1113,7 @@ views:
                   - "-webkit-overflow-scrolling": touch
 
       # ═════════════════════════════════════════════════════════════
-      # PANNEAU 5 — COMMUTATEUR NETGEAR MS510TX
+      # PANNEAU 3 — COMMUTATEUR NETGEAR MS510TX
       # Table defilante : colonne 1 = IP, colonne 2 = hostname,
       # colonne 3 = adresse MAC. En-tete fige (position:sticky).
       # ═════════════════════════════════════════════════════════════
@@ -1612,7 +1255,7 @@ views:
                   - "-webkit-overflow-scrolling": touch
 
       # ═════════════════════════════════════════════════════════════
-      # PANNEAU 6 — ETAT DES EQUIPEMENTS (NAS, alarme, ECS, congelateur)
+      # PANNEAU 4 — ETAT DES EQUIPEMENTS (NAS, alarme, ECS, congelateur)
       # ═════════════════════════════════════════════════════════════
       - type: vertical-stack
         view_layout:
