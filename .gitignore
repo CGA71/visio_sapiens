@@ -2,3 +2,4 @@
 *.db
 *.log
 .storage/
+vssp/.livebox.env
