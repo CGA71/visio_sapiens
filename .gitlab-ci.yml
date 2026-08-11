@@ -8,6 +8,16 @@
 # cibles. Seul le canal de transport differe (kubectl cp vs ssh).
 #
 # Aucune ancre YAML : uniquement `extends`, comprise par le schema GitLab.
+#
+# VARIABLES CI/CD REQUISES (Settings > CI/CD > Variables)
+#   HA_SSH_KEY         type File, protegee   - cle privee vers HAOS
+#   HA_TOKEN_STAGING   masquee               - jeton longue duree k3s
+#   HA_TOKEN_PROD      masquee               - jeton longue duree HAOS
+#   LIVEBOX_PASSWORD   masquee + protegee    - admin Livebox, ecrit dans
+#                                              /config/vssp/.livebox.env par
+#                                              les jobs de deploiement.
+#                                              Absente = sondes Livebox
+#                                              inactives, pipeline OK.
 # ============================================================================
 
 stages:
@@ -169,6 +179,38 @@ validate:
     - test -f vssp/vssp_ensure_packages.py || { echo "[ERR] vssp/vssp_ensure_packages.py manquant"; exit 1; }
     - test -f vssp/vssp_sanitize_resources.py || { echo "[ERR] vssp/vssp_sanitize_resources.py manquant"; exit 1; }
     - test -f vssp/vssp_lan_probe.py || { echo "[ERR] vssp/vssp_lan_probe.py manquant"; exit 1; }
+    - test -f vssp/livebox.env || { echo "[ERR] vssp/livebox.env manquant"; exit 1; }
+    # Le secret de la Livebox ne doit JAMAIS etre versionne
+    - |
+      if [ -f vssp/.livebox.env ]; then
+        echo "[ERR] vssp/.livebox.env est versionne — il contient le mot de passe."
+        echo "      git rm --cached vssp/.livebox.env  puis ajouter au .gitignore"
+        exit 1
+      fi
+    # Coherence OSV_PREFIX <-> cles de dashboards du fragment (non bloquant)
+    - |
+      python3 - <<'PY'
+      import re, yaml
+      yaml.SafeLoader.add_multi_constructor('!', lambda l, s, n: None)
+      with open('home-assistant/config-fragment.yaml', encoding='utf-8') as fh:
+          frag = yaml.safe_load(fh) or {}
+      dboards = ((frag.get('lovelace') or {}).get('dashboards') or {})
+      with open('vssp/vssp_apply_config.py', encoding='utf-8') as fh:
+          src = fh.read()
+      m = re.search(r'^OSV_PREFIX\s*=\s*["\']([^"\']+)', src, re.M)
+      prefix = m.group(1) if m else ''
+      ignored = [k for k in dboards if not str(k).startswith(prefix)]
+      if ignored:
+          print("[AVERT] OSV_PREFIX = %r dans vssp_apply_config.py" % prefix)
+          print("        Ces dashboards du fragment ne seront PAS ecrits dans")
+          print("        configuration.yaml (le patcher les ignore) :")
+          for k in ignored:
+              print("          - %s" % k)
+          print("        Corriger OSV_PREFIX, ou renommer les cles du fragment.")
+      else:
+          print("[OK] %d dashboard(s) du fragment couverts par OSV_PREFIX=%r"
+                % (len(dboards), prefix))
+      PY
     # Source unique du theme : themes/ a la racine (impose par HACS)
     - |
       if [ -d home-assistant/themes ]; then
@@ -222,7 +264,6 @@ build:
     - cp -r home-assistant/templates/.   dist/dashboards/templates/
     - cp -r themes/.                     dist/themes/
     - cp -r home-assistant/www/.         dist/www/
-    - cp vssp/vssp_lan_probe.py dist/vssp/
     # Packages HA multi-domaines (template, utility_meter...) charges via
     # `homeassistant: packages: !include_dir_named packages` du fragment.
     - mkdir -p dist/packages
@@ -233,6 +274,9 @@ build:
     - cp vssp/vssp_apply_config.py dist/vssp/
     - cp vssp/vssp_ensure_packages.py dist/vssp/
     - cp vssp/vssp_sanitize_resources.py dist/vssp/
+    # Sonde LAN du local technique + ses reglages NON SECRETS
+    - cp vssp/vssp_lan_probe.py          dist/vssp/
+    - cp vssp/livebox.env                dist/vssp/
     # Cache-busting automatique des ressources Lovelace
     # NB : on EXCLUT config-fragment.yaml — il utilise le placeholder __VTOKEN__
     #      remplace au moment du "apply" via --vtoken (et non ?v=X).
@@ -362,6 +406,20 @@ deploy:staging:
         mkdir -p /config/packages
         cp -r /config/.osv_stage/packages/. /config/packages/
       '
+    # --- SECRET Livebox : ecrit depuis la variable CI/CD masquee ---
+    # Le mot de passe passe en ARGUMENT du shell distant ($1), jamais dans
+    # la chaine de commande : pas de fuite via `ps` ni via les logs.
+    - |
+      if [ -z "$LIVEBOX_PASSWORD" ]; then
+        echo "[avert] LIVEBOX_PASSWORD absente — sondes Livebox inactives."
+        echo "        Les panneaux Livebox/commutateur afficheront leurs"
+        echo "        valeurs de demonstration. Settings > CI/CD > Variables."
+      else
+        kubectl exec -n $K3S_NAMESPACE $HA_POD -c $K3S_CONTAINER -- sh -c \
+          'umask 077; printf "LIVEBOX_PASSWORD=%s\n" "$1" > /config/vssp/.livebox.env' \
+          sh "$LIVEBOX_PASSWORD"
+        echo "[OK] Secret Livebox deploye"
+      fi
     # --- PATCH configuration.yaml (idempotent, avec backup .bak) ---
     - |
       kubectl exec -n $K3S_NAMESPACE $HA_POD -c $K3S_CONTAINER -- sh -c '
@@ -429,11 +487,29 @@ deploy:production:
         # Deployer patcher + fragment a leur emplacement /config
         mkdir -p $HA_CFG/vssp
         cp $HA_CFG/.osv_stage/vssp/vssp_apply_config.py $HA_CFG/vssp/
+        cp $HA_CFG/.osv_stage/vssp/vssp_ensure_packages.py $HA_CFG/vssp/
+        cp $HA_CFG/.osv_stage/vssp/vssp_sanitize_resources.py $HA_CFG/vssp/
+        # Sonde LAN : executee par HA lui-meme via les capteurs command_line,
+        # elle DOIT donc exister cote HAOS (les patchers, eux, tournent dans
+        # le runner). Sans ce cp, les capteurs Livebox restent unavailable.
+        cp $HA_CFG/.osv_stage/vssp/vssp_lan_probe.py $HA_CFG/vssp/
+        cp $HA_CFG/.osv_stage/vssp/livebox.env $HA_CFG/vssp/
+        chmod +x $HA_CFG/vssp/vssp_lan_probe.py
         cp $HA_CFG/.osv_stage/config-fragment.yaml $HA_CFG/config-fragment.yaml
         # Packages (additif : n ecrase pas d eventuels packages non-vssp)
         mkdir -p $HA_CFG/packages
         cp -r $HA_CFG/.osv_stage/packages/. $HA_CFG/packages/
         rm -rf $HA_CFG/.osv_stage"
+    # --- SECRET Livebox : transmis par STDIN, jamais sur la ligne de
+    #     commande distante (invisible dans `ps` cote HAOS).
+    - |
+      if [ -z "$LIVEBOX_PASSWORD" ]; then
+        echo "[avert] LIVEBOX_PASSWORD absente — sondes Livebox inactives."
+      else
+        printf 'LIVEBOX_PASSWORD=%s\n' "$LIVEBOX_PASSWORD" \
+          | ssh ha "umask 077; cat > $HA_CFG/vssp/.livebox.env"
+        echo "[OK] Secret Livebox deploye"
+      fi
     # --- PATCH configuration.yaml : execute dans le RUNNER (ruamel dispo),
     #     puis renvoye par scp. Plus fiable que d'installer ruamel dans HAOS.
     #     Le "ha backups new pre-$CI_COMMIT_TAG" ci-dessus couvre deja le
