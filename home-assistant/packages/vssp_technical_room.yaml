@@ -1,0 +1,346 @@
+# ══════════════════════════════════════════════════════════════════════
+#  Visio Sapiens — LOCAL TECHNIQUE : capteurs et sondes
+#
+#  Emplacement dans le repo :
+#      home-assistant/packages/vssp_technical_room.yaml
+#
+#  Chargé automatiquement par la clé déjà posée dans config-fragment.yaml :
+#      homeassistant:
+#        packages: !include_dir_named packages
+#  Rien à copier dans configuration.yaml — le fichier est un package HA
+#  complet, à la différence des anciens *_config_snippets.yaml.
+#
+#  Alimente les deux dashboards :
+#      dashboards/views/technical_room.yaml         (tablette / desktop)
+#      dashboards/views/technical_room_mobile.yaml  (iPhone)
+#
+#  ⚠ CONVENTION *_energie — À LIRE AVANT DE MODIFIER
+#    packages/spvs_energy_totaux.yaml calcule sensor.home_energy_total en
+#    sommant TOUS les capteurs dont l'entity_id finit par « _energie », et
+#    la règle posée là-bas est explicite : ce scan ne doit additionner que
+#    des compteurs CUMULATIFS (lifetime). Les alias *_energie ci-dessous
+#    respectent cette règle — ce sont des total_increasing, pas des
+#    compteurs journaliers. Ne les remplacez jamais par un utility_meter
+#    « daily » sous le même nom : vous mélangeriez des kWh de vie et des
+#    kWh du jour dans le total maison.
+#    (Les compteurs journaliers par appareil existent quand même, en
+#     *_energie_jour — voir la section 3.)
+# ══════════════════════════════════════════════════════════════════════
+
+
+template:
+  - sensor:
+      # ── Puissance instantanée du local ────────────────────────────
+      # Les entités absentes ou indisponibles valent 0 : le total reste
+      # numérique même pendant un redémarrage de Shelly.
+      - name: "Technical Room Power"
+        unique_id: technical_room_power
+        unit_of_measurement: "W"
+        device_class: power
+        state_class: measurement
+        state: >
+          {% set ids = [
+            'sensor.technical_room_lavelinge_puissance',
+            'sensor.technical_room_sechelinge_puissance',
+            'sensor.technical_room_lumiere_puissance',
+            'sensor.technical_room_aspirateur_puissance',
+            'sensor.technical_room_ballon_ecs_puissance',
+            'sensor.technical_room_congelateur_puissance',
+            'sensor.technical_room_synology_puissance',
+            'sensor.technical_room_livebox_puissance',
+            'sensor.technical_room_alarme_puissance',
+            'sensor.technical_room_netgear_puissance' ] %}
+          {{ ids | map('states') | map('float', 0) | sum | round(1) }}
+
+      # ── Alias *_energie : compteurs CUMULATIFS des Shelly ──────────
+      # Colonne « Énergie » des lignes d'appareils, ET entrée du scan
+      # home_energy_total. Remplacez la source de chaque alias par le
+      # capteur kWh cumulé réellement exposé par votre Shelly.
+      - name: "Technical Room Lavelinge Energie"
+        unique_id: technical_room_lavelinge_energie
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+        state: "{{ states('sensor.shelly_strip4_channel_1_energy') | float(0) | round(3) }}"   # TODO
+      - name: "Technical Room Sechelinge Energie"
+        unique_id: technical_room_sechelinge_energie
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+        state: "{{ states('sensor.shelly_strip4_channel_2_energy') | float(0) | round(3) }}"   # TODO
+      - name: "Technical Room Aspirateur Energie"
+        unique_id: technical_room_aspirateur_energie
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+        state: "{{ states('sensor.shelly_strip4_channel_3_energy') | float(0) | round(3) }}"   # TODO
+      - name: "Technical Room Congelateur Energie"
+        unique_id: technical_room_congelateur_energie
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+        state: "{{ states('sensor.shelly_strip4_channel_4_energy') | float(0) | round(3) }}"   # TODO
+      - name: "Technical Room Lumiere Energie"
+        unique_id: technical_room_lumiere_energie
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+        state: "{{ states('sensor.shelly_lumiere_energy') | float(0) | round(3) }}"            # TODO
+      - name: "Technical Room Ballon Ecs Energie"
+        unique_id: technical_room_ballon_ecs_energie
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+        state: "{{ states('sensor.shelly_ballon_ecs_energy') | float(0) | round(3) }}"         # TODO
+      - name: "Technical Room Synology Energie"
+        unique_id: technical_room_synology_energie
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+        state: "{{ states('sensor.shelly_nas_energy') | float(0) | round(3) }}"                # TODO
+      - name: "Technical Room Livebox Energie"
+        unique_id: technical_room_livebox_energie
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+        state: "{{ states('sensor.shelly_livebox_energy') | float(0) | round(3) }}"            # TODO
+      - name: "Technical Room Alarme Energie"
+        unique_id: technical_room_alarme_energie
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+        state: "{{ states('sensor.shelly_alarme_energy') | float(0) | round(3) }}"             # TODO
+      - name: "Technical Room Netgear Energie"
+        unique_id: technical_room_netgear_energie
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+        state: "{{ states('sensor.shelly_netgear_energy') | float(0) | round(3) }}"            # TODO
+
+      # ── Dérivés des sondes LAN (section 4) ────────────────────────
+      # Le dashboard lit ces entités ; les capteurs command_line
+      # ci-dessous portent les données brutes en attributs.
+      - name: "Livebox Public IP"
+        unique_id: livebox_public_ip
+        icon: mdi:web
+        state: "{{ state_attr('sensor.livebox_wan', 'ip') | default('—', true) }}"
+        attributes:
+          assignment: "{{ state_attr('sensor.livebox_wan', 'assignment') | default('static', true) }}"
+      - name: "Livebox WAN Status"
+        unique_id: livebox_wan_status
+        state: "{{ states('sensor.livebox_wan') }}"
+      - name: "Livebox Downstream Rate"
+        unique_id: livebox_downstream_rate
+        unit_of_measurement: "Mbit/s"
+        state_class: measurement
+        state: "{{ state_attr('sensor.livebox_wan', 'downstream') | float(0) | round(0) }}"
+      - name: "Livebox Upstream Rate"
+        unique_id: livebox_upstream_rate
+        unit_of_measurement: "Mbit/s"
+        state_class: measurement
+        state: "{{ state_attr('sensor.livebox_wan', 'upstream') | float(0) | round(0) }}"
+      - name: "Netgear MS510TX Ports Up"
+        unique_id: netgear_ms510tx_ports_up
+        icon: mdi:ethernet
+        state: "{{ state_attr('sensor.netgear_ms510tx_clients', 'ports_up') | int(0) }}"
+
+
+# ══════════════════════════════════════════════════════════════════════
+#  2. INTÉGRATION DE RIEMANN — W instantanés → kWh cumulés
+#     Le nom NE finit PAS par « _energie » : ce total est déjà la somme
+#     des appareils, il ne doit surtout pas entrer une deuxième fois
+#     dans le scan de home_energy_total.
+# ══════════════════════════════════════════════════════════════════════
+sensor:
+  - platform: integration
+    source: sensor.technical_room_power
+    name: "Technical Room Energy Total"
+    unique_id: technical_room_energy_total
+    unit_prefix: k
+    unit_time: h
+    method: left
+    max_sub_interval: "00:01:00"
+
+
+# ══════════════════════════════════════════════════════════════════════
+#  3. COMPTEURS PÉRIODIQUES
+# ══════════════════════════════════════════════════════════════════════
+utility_meter:
+  # KPI Aujourd'hui / Ce mois-ci / Cette année du panneau
+  # « Consommation Totale » des deux dashboards.
+  technical_room_energy_today:
+    name: "Technical Room Energy Today"
+    source: sensor.technical_room_energy_total
+    cycle: daily
+  technical_room_energy_this_month:
+    name: "Technical Room Energy This Month"
+    source: sensor.technical_room_energy_total
+    cycle: monthly
+  technical_room_energy_this_year:
+    name: "Technical Room Energy This Year"
+    source: sensor.technical_room_energy_total
+    cycle: yearly
+
+  # Consommation du jour appareil par appareil. Suffixe « _energie_jour »
+  # et non « _energie » : ces compteurs sont remis à zéro chaque nuit et
+  # doivent rester HORS du scan home_energy_total.
+  # Pour afficher le jour plutôt que le cumul dans les lignes d'appareils,
+  # remplacez dans les deux dashboards :
+  #     energy_entity: sensor.technical_room_<appareil>_energie
+  #  →  energy_entity: sensor.technical_room_<appareil>_energie_jour
+  technical_room_lavelinge_energie_jour:
+    name: "Technical Room Lavelinge Energie Jour"
+    source: sensor.technical_room_lavelinge_energie
+    cycle: daily
+  technical_room_sechelinge_energie_jour:
+    name: "Technical Room Sechelinge Energie Jour"
+    source: sensor.technical_room_sechelinge_energie
+    cycle: daily
+  technical_room_lumiere_energie_jour:
+    name: "Technical Room Lumiere Energie Jour"
+    source: sensor.technical_room_lumiere_energie
+    cycle: daily
+  technical_room_aspirateur_energie_jour:
+    name: "Technical Room Aspirateur Energie Jour"
+    source: sensor.technical_room_aspirateur_energie
+    cycle: daily
+  technical_room_ballon_ecs_energie_jour:
+    name: "Technical Room Ballon Ecs Energie Jour"
+    source: sensor.technical_room_ballon_ecs_energie
+    cycle: daily
+  technical_room_congelateur_energie_jour:
+    name: "Technical Room Congelateur Energie Jour"
+    source: sensor.technical_room_congelateur_energie
+    cycle: daily
+  technical_room_synology_energie_jour:
+    name: "Technical Room Synology Energie Jour"
+    source: sensor.technical_room_synology_energie
+    cycle: daily
+  technical_room_livebox_energie_jour:
+    name: "Technical Room Livebox Energie Jour"
+    source: sensor.technical_room_livebox_energie
+    cycle: daily
+  technical_room_alarme_energie_jour:
+    name: "Technical Room Alarme Energie Jour"
+    source: sensor.technical_room_alarme_energie
+    cycle: daily
+  technical_room_netgear_energie_jour:
+    name: "Technical Room Netgear Energie Jour"
+    source: sensor.technical_room_netgear_energie
+    cycle: daily
+
+
+# ══════════════════════════════════════════════════════════════════════
+#  4. SONDES LAN — LIVEBOX V7 PRO ET COMMUTATEUR
+#
+#  vssp/vssp_lan_probe.py est déployé par la CI dans /config/vssp/,
+#  à côté de vssp_apply_config.py. Il interroge la Livebox en LOCAL
+#  (http://192.168.1.1/ws, API sysbus) et n'a aucune dépendance externe.
+#
+#  Identifiants : /config/vssp/.livebox.env (chmod 600) ou variables
+#  d'environnement du conteneur — voir l'en-tête du script.
+#
+#  Tant que ces capteurs n'existent pas, les panneaux Livebox et
+#  commutateur affichent des valeurs de démonstration signalées par un
+#  bandeau orange : aucune carte en erreur.
+# ══════════════════════════════════════════════════════════════════════
+command_line:
+  # ── WAN : IP publique fixe, état du lien, débits ───────────────────
+  - sensor:
+      name: "Livebox WAN"
+      unique_id: livebox_wan
+      command: "python3 /config/vssp/vssp_lan_probe.py wan"
+      command_timeout: 30
+      scan_interval: 300
+      value_template: "{{ value_json.status }}"
+      json_attributes:
+        - ip
+        - assignment
+        - downstream
+        - upstream
+
+  # ── DHCP : plage, durée de bail, baux actifs ───────────────────────
+  - sensor:
+      name: "Livebox DHCP"
+      unique_id: livebox_dhcp
+      command: "python3 /config/vssp/vssp_lan_probe.py dhcp"
+      command_timeout: 30
+      scan_interval: 300
+      unit_of_measurement: "baux"
+      value_template: "{{ value_json.count }}"
+      json_attributes:
+        - pool_start
+        - pool_end
+        - gateway
+        - netmask
+        - lease_time
+        - leases
+
+  # ── NAT : redirections de ports ────────────────────────────────────
+  - sensor:
+      name: "Livebox NAT"
+      unique_id: livebox_nat
+      command: "python3 /config/vssp/vssp_lan_probe.py nat"
+      command_timeout: 30
+      scan_interval: 900
+      unit_of_measurement: "règles"
+      value_template: "{{ value_json.count }}"
+      json_attributes:
+        - rules
+
+  # ── Commutateur : table IP / hostname / MAC ────────────────────────
+  # La MS510TX est un modèle « Plus » : elle n'expose pas de table
+  # MAC-par-port en HTTP. La table est reconstruite depuis les baux DHCP
+  # et les équipements vus par la Livebox, ce qui couvre tous les hôtes
+  # branchés derrière le commutateur.
+  - sensor:
+      name: "Netgear MS510TX Clients"
+      unique_id: netgear_ms510tx_clients
+      command: "python3 /config/vssp/vssp_lan_probe.py clients"
+      command_timeout: 45
+      scan_interval: 300
+      unit_of_measurement: "hôtes"
+      value_template: "{{ value_json.count }}"
+      json_attributes:
+        - clients
+        - ports_up
+
+
+# ══════════════════════════════════════════════════════════════════════
+#  5. ENTITÉS ATTENDUES PAR LES DASHBOARDS
+#
+#  Les Shelly sont intégrés en LOCAL (intégration « Shelly » native, mDNS
+#  ou IP fixe) — aucun cloud. Renommez les entités créées par
+#  l'intégration pour obtenir exactement ces identifiants
+#  (Paramètres → Appareils → entité → ID d'entité).
+#
+#  Appareil              Puissance                                    Interrupteur
+#  ────────────────────  ───────────────────────────────────────────  ────────────────────────────────────
+#  Lave-linge            sensor.technical_room_lavelinge_puissance    switch.technical_room_lave_linge
+#  Sèche-linge           sensor.technical_room_sechelinge_puissance   switch.technical_room_seche_linge
+#  Lumière               sensor.technical_room_lumiere_puissance      switch.technical_room_lumiere
+#  Aspirateur Dyson      sensor.technical_room_aspirateur_puissance   switch.technical_room_aspirateur
+#  Ballon d'eau chaude   sensor.technical_room_ballon_ecs_puissance   switch.technical_room_ballon_ecs
+#  Congélateur           sensor.technical_room_congelateur_puissance  switch.technical_room_congelateur
+#  NAS Synology          sensor.technical_room_synology_puissance     switch.technical_room_nas_synology
+#  Livebox V7 Pro        sensor.technical_room_livebox_puissance      switch.technical_room_livebox
+#  Centrale d'alarme     sensor.technical_room_alarme_puissance       switch.technical_room_alarme
+#  Switch MS510TX        sensor.technical_room_netgear_puissance      switch.technical_room_netgear_switch
+#
+#  Lumière : si le Shelly Plus 1 est configuré en « éclairage » dans son
+#  interface web, l'intégration crée light.technical_room_lumiere au lieu
+#  de switch.*. Le template vssp_circuit_switch fonctionne avec les deux —
+#  remplacez le préfixe dans les deux dashboards.
+#
+#  Panneau « État des équipements » (facultatif, chaque tuile absente
+#  affiche un tiret) :
+#    binary_sensor.synology_nas_status              (intégration Synology DSM)
+#    sensor.synology_nas_cpu / _temperature / _volume_used
+#    alarm_control_panel.centrale_alarme
+#    sensor.technical_room_ballon_ecs_temperature   (sonde DS18B20 / Shelly Add-on)
+#    sensor.technical_room_congelateur_temperature
+#
+#  Les deux dashboards partagent input_select.vssp_energy_period avec
+#  ENERGY : changer d'onglet Jour/Mois/Année d'un côté se répercute de
+#  l'autre. Le helper est déjà défini dans vssp/energy_config_snippets.yaml.
+# ══════════════════════════════════════════════════════════════════════
