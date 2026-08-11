@@ -2,4 +2,4 @@
 *.db
 *.log
 .storage/
-vssp/.livebox.env
+vssp/livebox.env
