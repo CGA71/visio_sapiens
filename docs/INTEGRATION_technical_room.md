@@ -14,6 +14,7 @@ placer, deux fichiers existants à patcher.
 | `technical_room_mobile.yaml` | `home-assistant/dashboards/views/technical_room_mobile.yaml` | `dashboards/views/technical_room_mobile.yaml` |
 | `vssp_technical_room.yaml` | `home-assistant/packages/vssp_technical_room.yaml` | `packages/vssp_technical_room.yaml` |
 | `vssp_lan_probe.py` | `vssp/vssp_lan_probe.py` | `/config/vssp/vssp_lan_probe.py` |
+| `livebox.env` | `vssp/livebox.env` | `/config/vssp/livebox.env` |
 
 À déposer également : `home-assistant/www/vssp/backgrounds/technical.png`
 (fond des deux vues). En attendant, `energy.png` ou `core.png` font l'affaire —
@@ -63,6 +64,7 @@ Aucune navigation existante n'est à modifier — les liens morts deviennent viv
 
 ```yaml
     - cp vssp/vssp_lan_probe.py dist/vssp/
+    - cp vssp/livebox.env         dist/vssp/
 ```
 
 **Job `deploy:staging`** — dans le `kubectl exec`, à côté des autres `cp` vers
@@ -70,6 +72,7 @@ Aucune navigation existante n'est à modifier — les liens morts deviennent viv
 
 ```sh
         cp /config/.osv_stage/vssp/vssp_lan_probe.py /config/vssp/
+        cp /config/.osv_stage/vssp/livebox.env      /config/vssp/
         chmod +x /config/vssp/vssp_lan_probe.py
 ```
 
@@ -80,25 +83,63 @@ n'incluent que `../templates/button_card_templates.yaml` et
 
 ---
 
-## 4. Identifiants Livebox
+## 4. Identifiants Livebox — rien à faire à la main
 
-Créer `/config/vssp/.livebox.env` (chmod 600), non versionné :
+Un seul élément est un secret : le mot de passe admin de la box. Tout le reste
+(`LIVEBOX_HOST`, `LIVEBOX_USER`, `LIVEBOX_IP_MODE`, `NETGEAR_PORTS`) n'en est
+pas un — `.gitlab-ci.yml` versionne déjà `HA_HOST: "192.168.1.26"` et
+`STAGING_URL: "http://192.168.1.11:8123"`. Ces réglages vivent donc dans le
+repo, dans `vssp/livebox.env`, et se modifient par commit comme le reste.
+
+Le mot de passe suit le mécanisme déjà en place pour `HA_SSH_KEY` et
+`HA_TOKEN_STAGING` : **une variable CI/CD masquée**, écrite dans le conteneur
+au moment du déploiement.
+
+**Une seule action, une fois** — GitLab → Settings → CI/CD → Variables :
+
+| Clé | Valeur | Options |
+|---|---|---|
+| `LIVEBOX_PASSWORD` | mot de passe admin de la Livebox | Masked ✔ · Protected ✔ |
+
+**Patch `deploy:staging`** — après les `cp` vers `/config/vssp/` :
+
+```yaml
+    - |
+      if [ -z "$LIVEBOX_PASSWORD" ]; then
+        echo "[avert] LIVEBOX_PASSWORD absente — sondes Livebox inactives"
+      else
+        kubectl exec -n $K3S_NAMESPACE $HA_POD -c $K3S_CONTAINER -- sh -c \
+          "umask 077; printf 'LIVEBOX_PASSWORD=%s\n' '$LIVEBOX_PASSWORD' > /config/vssp/.livebox.env"
+        echo "[OK] Secret Livebox deploye"
+      fi
+```
+
+**Patch `deploy:production`** — même logique via SSH :
+
+```yaml
+    - |
+      if [ -z "$LIVEBOX_PASSWORD" ]; then
+        echo "[avert] LIVEBOX_PASSWORD absente — sondes Livebox inactives"
+      else
+        ssh ha "umask 077; printf 'LIVEBOX_PASSWORD=%s\n' '$LIVEBOX_PASSWORD' > $HA_CFG/vssp/.livebox.env"
+        echo "[OK] Secret Livebox deploye"
+      fi
+```
+
+Le garde-fou `if [ -z ... ]` évite de casser le pipeline tant que la variable
+n'existe pas : le déploiement passe, seules les sondes Livebox restent en
+`unavailable` et les panneaux affichent leurs valeurs de démonstration.
+
+Ajouter au `.gitignore` :
 
 ```
-LIVEBOX_HOST=192.168.1.1
-LIVEBOX_USER=admin
-LIVEBOX_PASSWORD=xxxxxxxx
-LIVEBOX_IP_MODE=static
-NETGEAR_PORTS=10
+vssp/.livebox.env
 ```
 
-`LIVEBOX_IP_MODE=static` pilote le badge **IP FIXE** du dashboard. Ajouter la
-ligne au `.gitignore` du repo.
-
-Test manuel avant de brancher les capteurs :
+Et pour un diagnostic ponctuel, sans rien modifier :
 
 ```sh
-kubectl exec -n <ns> <pod> -c <container> -- \
+kubectl exec -n homeassistant <pod> -c homeassistant -- \
   python3 /config/vssp/vssp_lan_probe.py dhcp
 ```
 
