@@ -1,0 +1,1481 @@
+########################################################################
+# Visio Sapiens — TECHNICAL ROOM Dashboard (version detaillee / tablette)
+#
+# Emplacement attendu dans le repo :
+#   home-assistant/dashboards/views/technical_room.yaml
+#
+# Meme principe que energy.yaml : dashboard Lovelace AUTONOME, declare
+# dans configuration.yaml sous `lovelace: dashboards:` avec url_path
+# "vssp-technical". Il garde donc le wrapper complet
+# "title: / views: [...]" au niveau racine — sans lui, Lovelace
+# n'affiche plus aucune carte.
+#
+# Structure conservee A L'IDENTIQUE d'energy.yaml :
+#   - bandeau vertical (sidebar nav, grid-area "nav"), TECHNICAL ROOM actif
+#   - premiere ligne du bandeau header (page_header + meteo + heure)
+#   - panneaux glassmorphism, listes defilantes, legende, fond de vue
+# Seule la zone de contenu change : elle couvre les 10 appareils
+# connectes du local technique.
+#
+# ── PREREQUIS ─────────────────────────────────────────────────────────
+# 1. Templates deja presents dans templates/button_card_templates.yaml
+#    (vssp_page_header, vssp_sidebar_logo, vssp_nav_button,
+#     vssp_section_title, vssp_energy_device_row, vssp_energy_total_row,
+#     vssp_energy_kpi, vssp_energy_tab, vssp_circuit_switch)
+#    → AUCUN nouveau template n'est requis.
+# 2. Creer les helpers + capteurs de technical_room_config_snippets.yaml
+#    (Shelly via LAN, sondes Livebox, table du commutateur).
+# 3. Remplacer toutes les entites marquees « # TODO » par les votres.
+#
+# Les visuels Livebox (IP publique fixe, plage DHCP, regles NAT) et la
+# table du commutateur affichent des VALEURS DE DEMONSTRATION tant que
+# les capteurs n'existent pas ; un bandeau orange signale cet etat.
+#
+# Cartes HACS utilisees : button-card, card-mod, layout-card,
+# apexcharts-card, simple-weather-card, config-template-card.
+########################################################################
+title: TECHNICAL ROOM
+theme: Visio Sapiens
+
+# Indispensable : sans ces includes, chaque custom:button-card affiche
+# « Erreur de configuration ». Chemin relatif a dashboards/views/.
+button_card_templates: !include ../templates/button_card_templates.yaml
+decluttering_templates: !include ../templates/decluttering_templates.yaml
+
+views:
+  - title: TECHNICAL
+    path: technical
+    subview: false
+    type: custom:grid-layout
+    layout:
+      grid-template-columns: minmax(200px, auto) 1fr 1fr 1fr 1fr 1fr
+      # minmax(...) plutot que des hauteurs figees : les panneaux ont
+      # overflow:hidden, une rangee trop courte rognerait la derniere
+      # ligne d'un tableau sur les tablettes en portrait.
+      grid-template-rows: 105px minmax(430px, auto) minmax(380px, auto) minmax(360px, auto) auto
+      grid-template-areas: |
+        "nav header  header  header  header  header"
+        "nav devices devices devices total   total"
+        "nav livebox livebox livebox nat     nat"
+        "nav netsw   netsw   netsw   systems systems"
+        "nav board   board   board   board   board"
+      margin: 12px
+      grid-gap: 14px 14px
+    cards:
+      # ═══════════════════════════════════════════════════════════════
+      # LIGNE 1 — HEADER : titre / meteo / heure
+      # ═══════════════════════════════════════════════════════════════
+      - type: horizontal-stack
+        view_layout:
+          grid-area: header
+        cards:
+
+          # ── Case 1 : titre ────────────────────────────────────────
+          - type: custom:button-card
+            template: vssp_page_header
+            icon: mdi:chevron-left
+            name: TECHNICAL ROOM
+            label: "Local technique"
+            tap_action:
+              action: navigate
+              navigation_path: /visio-sapiens-technical/technical
+            card_mod:
+              style: |
+                :host { flex: 1 1 0; }
+                ha-card {
+                  background: rgba(16,27,39,0.85) !important;
+                  border: 1px solid rgba(0,229,255,0.28) !important;
+                  border-radius: 20px !important;
+                  box-shadow: 0 0 18px rgba(0,229,255,.12) !important;
+                  height: 100px
+                }
+
+          # ── Case 2 : meteo (carte NATIVE, toujours disponible) ─────
+          - type: custom:simple-weather-card
+            entity: weather.maison
+            show_name: true
+            tap_action:
+              action: more-info
+            primary_info:
+              - extrema
+            secondary_info:
+              - precipitation
+            state_content: state
+            forecast_type: daily
+            custom: []
+            animated_icons: true
+            backdrop:
+              day: "#7cbfee"
+              night: "#a6aae8"
+              text: "#ffffff"
+              bg: true
+              fade: false
+            card_mod:
+              style: |
+                :host { flex: 1 1 0; }
+                ha-card {
+                  background: rgba(16,27,39,0.85) !important;
+                  border: 1px solid rgba(0,229,255,0.28) !important;
+                  border-radius: 20px !important;
+                  box-shadow: 0 0 18px rgba(0,229,255,.12) !important;
+                  height: 100px
+                }
+
+          # ── Case 3 : heure (button-card autonome, sans dependance) ─
+          - type: custom:button-card
+            entity: sensor.time                                  # integration "time_date"
+            show_name: false
+            show_icon: false
+            show_state: false
+            show_label: true
+            label: |
+              [[[
+                const d = new Date();
+                const h = String(d.getHours()).padStart(2,'0');
+                const m = String(d.getMinutes()).padStart(2,'0');
+                const jours = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
+                const mois = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
+                return `<div style="font-family:Orbitron,sans-serif;font-size:24px;color:#00E5FF;line-height:1;">${h}:${m}</div>
+                        <div style="font-size:11px;color:#8FB6C9;letter-spacing:.5px;margin-top:4px;">
+                          ${jours[d.getDay()]} ${d.getDate()} ${mois[d.getMonth()]} ${d.getFullYear()}</div>`;
+              ]]]
+            styles:
+              card:
+                - background: rgba(16,27,39,0.85)
+                - border: 1px solid rgba(0,229,255,0.28)
+                - border-radius: 20px
+                - box-shadow: 0 0 18px rgba(0,229,255,.12)
+                - padding: 0 20px
+              label:
+                - justify-self: start
+                - text-align: left
+            card_mod:
+              style: |
+                :host { flex: 1 1 0; }
+                ha-card {
+                  background: rgba(16,27,39,0.85) !important;
+                  border: 1px solid rgba(0,229,255,0.28) !important;
+                  border-radius: 20px !important;
+                  box-shadow: 0 0 18px rgba(0,229,255,.12) !important;
+                  height: 100px
+                }
+
+      # ═══════════════════════════════════════════════════════════════
+      # SIDEBAR NAV — identique a energy.yaml, TECHNICAL ROOM en actif
+      # ═══════════════════════════════════════════════════════════════
+      - type: vertical-stack
+        view_layout:
+          grid-area: nav
+        card_mod:
+          style: |
+            :host {
+              display: flex;
+              flex-direction: column;
+              height: 100%;
+              width: 100%;
+              min-width: 200px;
+              background: rgba(5,11,18,0.85);
+              border-radius: 20px;
+              border: 1px solid rgba(0,229,255,0.18);
+              padding: 16px 10px;
+              box-shadow: 0 0 18px rgba(0,229,255,.12);
+            }
+        cards:
+          - type: custom:button-card
+            template: vssp_sidebar_logo
+            icon: mdi:hexagon-outline
+            name: "VISIO SAPIENS"
+            label: "Smart Home OS"
+
+          - type: custom:button-card
+            template: vssp_nav_button
+            icon: mdi:view-dashboard
+            name: HOME
+            label: "Vue d'ensemble"
+            tap_action:
+              action: navigate
+              navigation_path: /visio-sapiens/home
+          - type: custom:button-card
+            template: vssp_nav_button
+            icon: mdi:server
+            name: CORE
+            label: "Systeme central"
+            tap_action:
+              action: navigate
+              navigation_path: /visio-sapiens-core/core
+          - type: custom:button-card
+            template: vssp_nav_button
+            icon: mdi:sofa
+            name: LIVING ROOM
+            label: "Salon"
+            tap_action:
+              action: navigate
+              navigation_path: /visio-sapiens-livingroom/livingroom
+          - type: custom:button-card
+            template: vssp_nav_button
+            icon: mdi:bed
+            name: BEDROOM-1
+            label: "Chambre principale"
+            tap_action:
+              action: navigate
+              navigation_path: /visio-sapiens-bedroom1/bedroom1
+          - type: custom:button-card
+            template: vssp_nav_button
+            icon: mdi:bed-outline
+            name: BEDROOM-2
+            label: "Chambre 2"
+            tap_action:
+              action: navigate
+              navigation_path: /visio-sapiens-bedroom2/bedroom2
+          - type: custom:button-card
+            template: vssp_nav_button
+            icon: mdi:shower
+            name: BATHROOM
+            label: "Salle de bain"
+            tap_action:
+              action: navigate
+              navigation_path: /visio-sapiens-bathroom/bathroom
+          - type: custom:button-card
+            template: vssp_nav_button
+            icon: mdi:desktop-tower-monitor
+            name: COMPUTER ROOM
+            label: "Salle informatique"
+            tap_action:
+              action: navigate
+              navigation_path: /visio-sapiens-computer/computer
+          - type: custom:button-card
+            template: vssp_nav_button
+            icon: mdi:tools
+            name: TECHNICAL ROOM
+            label: "Local technique"
+            variables:
+              active: true
+            tap_action:
+              action: navigate
+              navigation_path: /visio-sapiens-technical/technical
+          - type: custom:button-card
+            template: vssp_nav_button
+            icon: mdi:key
+            name: SECRET ROOM
+            label: "Piece secrete"
+            tap_action:
+              action: navigate
+              navigation_path: /visio-sapiens-secret/secret
+          - type: custom:button-card
+            template: vssp_nav_button
+            icon: mdi:flower
+            name: GARDEN
+            label: "Jardin"
+            tap_action:
+              action: navigate
+              navigation_path: /visio-sapiens-garden/garden
+          - type: custom:button-card
+            template: vssp_nav_button
+            icon: mdi:lightning-bolt
+            name: ENERGY
+            label: "Gestion energie"
+            tap_action:
+              action: navigate
+              navigation_path: /visio-sapiens-energy/energy
+          - type: custom:button-card
+            template: vssp_nav_button
+            icon: mdi:shield-crown
+            name: ADMIN
+            label: "Panneau administration"
+            tap_action:
+              action: navigate
+              navigation_path: /visio-sapiens/admin
+
+          - type: custom:button-card
+            show_icon: false
+            show_name: false
+            show_label: false
+            tap_action:
+              action: none
+            custom_fields:
+              logo: >
+                <img src="/local/vssp/images/logo_VS-Sapiens.png"
+                     style="width:100%;max-width:160px;display:block;margin:0 auto;mix-blend-mode:screen;filter:drop-shadow(0 0 8px rgba(0,229,255,.28));" />
+            styles:
+              card:
+                - background: transparent
+                - border: none
+                - box-shadow: none
+                - padding: 12px 6px 4px 6px
+              grid:
+                - grid-template-areas: '"logo"'
+              custom_fields:
+                logo:
+                  - width: 100%
+            card_mod:
+              style: |
+                :host { margin-top: auto; }
+                ha-card {
+                  background: transparent !important;
+                  border: none !important;
+                  box-shadow: none !important;
+                }
+
+      # ═══════════════════════════════════════════════════════════════
+      # PANNEAU 1 — CONSOMMATION PAR APPAREIL (10 appareils connectes)
+      # ═══════════════════════════════════════════════════════════════
+      - type: vertical-stack
+        view_layout:
+          grid-area: devices
+        card_mod:
+          style: |
+            :host {
+              display: flex;
+              flex-direction: column;
+              height: 100%;
+              box-sizing: border-box;
+              background: rgba(8,18,28,0.75);
+              border-radius: 20px;
+              border: 1px solid rgba(0,229,255,0.28);
+              backdrop-filter: blur(12px);
+              box-shadow: 0 0 18px rgba(0,229,255,.15);
+              padding: 16px 18px;
+              overflow: hidden;
+            }
+        cards:
+          - type: custom:button-card
+            template: vssp_section_title
+            name: "Appareils connectes — Local technique"
+
+          # ── En-tetes de colonnes ───────────────────────────────────
+          - type: custom:button-card
+            show_icon: false
+            show_name: false
+            show_state: false
+            custom_fields:
+              c1: '<span style="color:#56707E;font-size:11px">Appareil</span>'
+              cr: '<span style="color:#8FB6C9;font-size:11px;display:block;text-align:right">Pièce</span>'
+              c2: >
+                <span style="color:#8FB6C9;font-size:11px;display:block;text-align:right">Consommation<br>
+                <span style="color:#56707E;font-size:9px">(actuelle)</span></span>
+              c3: >
+                <span style="color:#8FB6C9;font-size:11px;display:block;text-align:right">Énergie<br>
+                <span style="color:#56707E;font-size:9px">(aujourd'hui)</span></span>
+            styles:
+              grid:
+                - grid-template-areas: '"c1 cr c2 c3 pad"'
+                - grid-template-columns: 1fr 96px 84px 84px 18px
+                - column-gap: 8px
+                - align-items: center
+              card:
+                - background: rgba(0,0,0,.22)
+                - box-shadow: none
+                - border: none
+                - border-radius: 10px
+                - padding: 8px 10px
+                - margin-bottom: 4px
+                - cursor: default
+                - pointer-events: none
+              custom_fields:
+                c1:
+                  - justify-self: start
+                cr:
+                  - justify-self: end
+                c2:
+                  - justify-self: end
+                c3:
+                  - justify-self: end
+
+          # ── Liste des appareils (defilante) ────────────────────────
+          # Le defilement vit DANS une vraie carte unique : les 10
+          # lignes sont embarquees dans un button-card dont le champ
+          # « list » a une hauteur fixe + overflow — c'est le moteur de
+          # styles de button-card qui s'en charge, pas card-mod.
+          # Ajustez `height` (290px) si besoin.
+          - type: custom:button-card
+            show_icon: false
+            show_name: false
+            show_state: false
+            tap_action:
+              action: none
+            styles:
+              grid:
+                - grid-template-areas: '"list"'
+              card:
+                - background: transparent
+                - box-shadow: none
+                - border: none
+                - border-radius: 0
+                - padding: 0
+                - cursor: default
+              custom_fields:
+                list:
+                  - display: block
+                  - width: 100%
+                  - height: 290px
+                  - overflow-y: auto
+                  - overflow-x: hidden
+                  - padding-right: 4px
+                  - scrollbar-width: thin
+                  - scrollbar-color: rgba(0,229,255,0.35) rgba(0,229,255,0.06)
+            custom_fields:
+              list:
+                card:
+                  type: vertical-stack
+                  cards:
+                    - type: custom:button-card
+                      template: vssp_energy_device_row
+                      entity: sensor.technical_room_lavelinge_puissance
+                      name: "Lave-linge"
+                      icon: mdi:washing-machine
+                      variables:
+                        room: "Local technique"
+                        model: "Shelly Power Strip 4 Gen 4 — ch.1"
+                        energy_entity: sensor.technical_room_lavelinge_energie
+                      tap_action:
+                        action: more-info
+                    - type: custom:button-card
+                      template: vssp_energy_device_row
+                      entity: sensor.technical_room_sechelinge_puissance
+                      name: "Seche-linge"
+                      icon: mdi:tumble-dryer
+                      variables:
+                        room: "Local technique"
+                        model: "Shelly Power Strip 4 Gen 4 — ch.2"
+                        energy_entity: sensor.technical_room_sechelinge_energie
+                      tap_action:
+                        action: more-info
+                    - type: custom:button-card
+                      template: vssp_energy_device_row
+                      entity: sensor.technical_room_lumiere_puissance
+                      name: "Lumiere"
+                      icon: mdi:ceiling-light
+                      variables:
+                        room: "Local technique"
+                        model: "Shelly Plus 1"
+                        energy_entity: sensor.technical_room_lumiere_energie
+                      tap_action:
+                        action: more-info
+                    - type: custom:button-card
+                      template: vssp_energy_device_row
+                      entity: sensor.technical_room_aspirateur_puissance
+                      name: "Aspirateur Dyson"
+                      icon: mdi:vacuum
+                      variables:
+                        room: "Local technique"
+                        model: "Shelly Power Strip 4 Gen 4 — ch.3"
+                        energy_entity: sensor.technical_room_aspirateur_energie
+                      tap_action:
+                        action: more-info
+                    - type: custom:button-card
+                      template: vssp_energy_device_row
+                      entity: sensor.technical_room_ballon_ecs_puissance
+                      name: "Ballon d'eau chaude"
+                      icon: mdi:water-boiler
+                      variables:
+                        room: "Local technique"
+                        model: "Shelly Pro 1PM"
+                        energy_entity: sensor.technical_room_ballon_ecs_energie
+                      tap_action:
+                        action: more-info
+                    - type: custom:button-card
+                      template: vssp_energy_device_row
+                      entity: sensor.technical_room_congelateur_puissance
+                      name: "Congelateur"
+                      icon: mdi:freezer
+                      variables:
+                        room: "Local technique"
+                        model: "Shelly Power Strip 4 Gen 4 — ch.4"
+                        energy_entity: sensor.technical_room_congelateur_energie
+                      tap_action:
+                        action: more-info
+                    - type: custom:button-card
+                      template: vssp_energy_device_row
+                      entity: sensor.technical_room_synology_puissance
+                      name: "NAS Synology"
+                      icon: mdi:nas
+                      variables:
+                        room: "Local technique"
+                        model: "Shelly Plus PlugS"
+                        energy_entity: sensor.technical_room_synology_energie
+                      tap_action:
+                        action: more-info
+                    - type: custom:button-card
+                      template: vssp_energy_device_row
+                      entity: sensor.technical_room_livebox_puissance
+                      name: "Livebox V7 Pro"
+                      icon: mdi:router-wireless
+                      variables:
+                        room: "Local technique"
+                        model: "Shelly Plus PlugS"
+                        energy_entity: sensor.technical_room_livebox_energie
+                      tap_action:
+                        action: more-info
+                    - type: custom:button-card
+                      template: vssp_energy_device_row
+                      entity: sensor.technical_room_alarme_puissance
+                      name: "Centrale alarme"
+                      icon: mdi:shield-home
+                      variables:
+                        room: "Local technique"
+                        model: "Shelly Plus PlugS"
+                        energy_entity: sensor.technical_room_alarme_energie
+                      tap_action:
+                        action: more-info
+                    - type: custom:button-card
+                      template: vssp_energy_device_row
+                      entity: sensor.technical_room_netgear_puissance
+                      name: "Switch MS510TX"
+                      icon: mdi:switch
+                      variables:
+                        room: "Local technique"
+                        model: "Shelly Plus PlugS"
+                        energy_entity: sensor.technical_room_netgear_energie
+                      tap_action:
+                        action: more-info
+
+          # ── Total ──────────────────────────────────────────────────
+          - type: custom:button-card
+            template: vssp_energy_total_row
+            entity: sensor.technical_room_power                # TODO
+            name: "Consommation du local technique"
+
+      # ═══════════════════════════════════════════════════════════════
+      # PANNEAU 2 — CONSOMMATION TOTALE DU LOCAL
+      # ═══════════════════════════════════════════════════════════════
+      - type: vertical-stack
+        view_layout:
+          grid-area: total
+        card_mod:
+          style: |
+            :host {
+              display: flex;
+              flex-direction: column;
+              height: 100%;
+              background: rgba(8,18,28,0.75);
+              border-radius: 20px;
+              border: 1px solid rgba(0,229,255,0.28);
+              backdrop-filter: blur(12px);
+              box-shadow: 0 0 18px rgba(0,229,255,.15);
+              padding: 16px 18px;
+              overflow: hidden;
+            }
+        cards:
+          - type: custom:button-card
+            template: vssp_section_title
+            name: "Consommation Totale"
+
+          # Onglets (partagent le meme input_select que le dashboard ENERGY)
+          - type: horizontal-stack
+            cards:
+              - type: custom:button-card
+                template: vssp_energy_tab
+                entity: input_select.vssp_energy_period
+                name: Jour
+                icon: mdi:weather-sunny
+                variables:
+                  period: Jour
+                tap_action:
+                  action: call-service
+                  service: input_select.select_option
+                  service_data:
+                    entity_id: input_select.vssp_energy_period
+                    option: Jour
+              - type: custom:button-card
+                template: vssp_energy_tab
+                entity: input_select.vssp_energy_period
+                name: Mois
+                icon: mdi:calendar-month
+                variables:
+                  period: Mois
+                tap_action:
+                  action: call-service
+                  service: input_select.select_option
+                  service_data:
+                    entity_id: input_select.vssp_energy_period
+                    option: Mois
+              - type: custom:button-card
+                template: vssp_energy_tab
+                entity: input_select.vssp_energy_period
+                name: Année
+                icon: mdi:calendar
+                variables:
+                  period: Année
+                tap_action:
+                  action: call-service
+                  service: input_select.select_option
+                  service_data:
+                    entity_id: input_select.vssp_energy_period
+                    option: Année
+
+          # Courbe : la periode suit l'input_select via config-template-card
+          - type: conditional
+            conditions:
+              - condition: state
+                entity: sensor.technical_room_power             # TODO
+                state_not: unavailable
+            card:
+              type: custom:config-template-card
+              entities:
+                - input_select.vssp_energy_period
+              card:
+                type: custom:apexcharts-card
+                header:
+                  show: false
+                graph_span: >-
+                  ${ states['input_select.vssp_energy_period'].state === 'Jour' ? '24h'
+                     : states['input_select.vssp_energy_period'].state === 'Mois' ? '30d' : '365d' }
+                span:
+                  start: >-
+                    ${ states['input_select.vssp_energy_period'].state === 'Jour' ? 'day'
+                       : states['input_select.vssp_energy_period'].state === 'Mois' ? 'month' : 'year' }
+                series:
+                  - entity: sensor.technical_room_power         # TODO
+                    name: "Local technique"
+                    type: column
+                    color: "#00E5FF"
+                    group_by:
+                      func: avg
+                      duration: >-
+                        ${ states['input_select.vssp_energy_period'].state === 'Jour' ? '30min'
+                           : states['input_select.vssp_energy_period'].state === 'Mois' ? '1d' : '30d' }
+                apex_config:
+                  chart:
+                    height: 132
+                  legend:
+                    show: false
+                  grid:
+                    borderColor: "rgba(255,255,255,0.06)"
+                  xaxis:
+                    labels:
+                      style:
+                        colors: "#56707E"
+                        fontSize: "10px"
+                  yaxis:
+                    labels:
+                      style:
+                        colors: "#56707E"
+                        fontSize: "10px"
+                  plotOptions:
+                    bar:
+                      columnWidth: "62%"
+                      borderRadius: 2
+                card_mod:
+                  style: |
+                    ha-card {
+                      background: transparent !important;
+                      border: none !important;
+                      box-shadow: none !important;
+                    }
+
+          - type: custom:button-card
+            template: vssp_energy_kpi
+            entity: sensor.technical_room_energy_today          # TODO
+            icon: mdi:chart-bar
+            label: "Aujourd'hui"
+            variables:
+              accent: "#00E5FF"
+
+          - type: custom:button-card
+            template: vssp_energy_kpi
+            entity: sensor.technical_room_energy_this_month     # TODO
+            icon: mdi:calendar-month
+            label: "Ce mois-ci"
+            variables:
+              accent: "#00E5FF"
+
+          - type: custom:button-card
+            template: vssp_energy_kpi
+            entity: sensor.technical_room_energy_this_year      # TODO
+            icon: mdi:calendar-star
+            label: "Cette année"
+            variables:
+              accent: "#00E5FF"
+
+      # ═════════════════════════════════════════════════════════════
+      # PANNEAU 3 — LIVEBOX V7 PRO : IP publique FIXE + plage DHCP
+      # Sondes alimentees par le LAN (voir technical_room_config_snippets.yaml).
+      # ═════════════════════════════════════════════════════════════
+      - type: vertical-stack
+        view_layout:
+          grid-area: livebox
+        card_mod:
+          style: |
+            :host {
+              display: flex;
+              flex-direction: column;
+              height: 100%;
+              box-sizing: border-box;
+              background: rgba(8,18,28,0.75);
+              border-radius: 20px;
+              border: 1px solid rgba(0,229,255,0.28);
+              backdrop-filter: blur(12px);
+              box-shadow: 0 0 18px rgba(0,229,255,.15);
+              padding: 16px 18px;
+              overflow: hidden;
+            }
+        cards:
+          - type: custom:button-card
+            template: vssp_section_title
+            name: "Livebox V7 Pro — Acces Internet & DHCP"
+
+          - type: custom:button-card
+            show_icon: false
+            show_name: false
+            show_state: false
+            tap_action:
+              action: none
+            triggers_update:
+              - sensor.livebox_public_ip
+              - sensor.livebox_wan_status
+              - sensor.livebox_downstream_rate
+              - sensor.livebox_upstream_rate
+            custom_fields:
+              wan: |
+                [[[
+                  const S  = states['sensor.livebox_public_ip'];
+                  const W  = states['sensor.livebox_wan_status'];
+                  const D  = states['sensor.livebox_downstream_rate'];
+                  const U  = states['sensor.livebox_upstream_rate'];
+                  const demo = !S;
+                  const ip   = S ? S.state : '90.24.118.42';
+                  const kind = (S && S.attributes && S.attributes.assignment)
+                                 ? S.attributes.assignment : 'static';
+                  const fixe = String(kind).toLowerCase().indexOf('stat') === 0
+                            || String(kind).toLowerCase().indexOf('fix') === 0;
+                  const on   = W ? (['up','on','connected','bound'].indexOf(String(W.state).toLowerCase()) >= 0)
+                                 : true;
+                  const col  = on ? '#00FFC3' : '#FF3D71';
+                  const rate = (E, def) => {
+                    const s = states[E];
+                    if (!s || isNaN(Number(s.state))) return def;
+                    return Number(s.state).toLocaleString('fr-FR',
+                      { maximumFractionDigits: 0 });
+                  };
+                  const badge = (txt, c) => `
+                    <span style="display:inline-block;font-size:10px;color:${c};
+                      border:1px solid ${c}55;background:${c}14;border-radius:7px;
+                      padding:2px 7px;letter-spacing:.5px;white-space:nowrap;">${txt}</span>`;
+                  const cell = (lab, val, c) => `
+                    <div style="flex:1;min-width:0;text-align:center;">
+                      <div style="color:#56707E;font-size:10px;white-space:nowrap;">${lab}</div>
+                      <div style="color:${c};font-size:15px;font-weight:700;
+                        font-family:Orbitron,sans-serif;white-space:nowrap;">${val}</div>
+                    </div>`;
+                  return `
+                    <div style="width:100%;box-sizing:border-box;">
+                      <div style="display:flex;align-items:center;gap:10px;
+                        padding:11px 14px;border-radius:12px;box-sizing:border-box;
+                        background:rgba(0,229,255,0.05);border:1px solid rgba(0,229,255,0.18);">
+                        <div style="width:44px;height:44px;flex:0 0 44px;
+                          border-radius:10px;display:flex;align-items:center;justify-content:center;
+                          background:rgba(0,229,255,0.07);border:1px solid rgba(0,229,255,0.20);">
+                          <ha-icon icon="mdi:web" style="--mdc-icon-size:26px;color:${col};"></ha-icon>
+                        </div>
+                        <div style="flex:1 1 auto;min-width:0;">
+                          <div style="color:#56707E;font-size:10px;letter-spacing:.4px;">
+                            Adresse IP publique</div>
+                          <div style="color:#FFFFFF;font-size:22px;font-weight:700;
+                            font-family:Orbitron,sans-serif;letter-spacing:1px;
+                            white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${ip}</div>
+                        </div>
+                        <div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;">
+                          ${badge(fixe ? 'IP FIXE' : 'DYNAMIQUE', fixe ? '#00FFC3' : '#FF9800')}
+                          ${badge(on ? 'EN LIGNE' : 'HORS LIGNE', col)}
+                        </div>
+                      </div>
+                      <div style="display:flex;gap:8px;margin-top:8px;padding:9px 8px;
+                        border-radius:12px;box-sizing:border-box;background:rgba(0,0,0,.22);">
+                        ${cell('Descendant', rate('sensor.livebox_downstream_rate','1 000') + ' Mb/s', '#00E5FF')}
+                        ${cell('Montant',    rate('sensor.livebox_upstream_rate','700') + ' Mb/s', '#00E5FF')}
+                        ${cell('Passerelle', '192.168.1.1', '#8FB6C9')}
+                      </div>
+                      ${demo ? `<div style="color:#FF9800;font-size:10px;margin-top:6px;">
+                        <ha-icon icon="mdi:alert-outline" style="--mdc-icon-size:12px;color:#FF9800;"></ha-icon>
+                        Valeurs de demonstration — creez sensor.livebox_public_ip
+                        (voir technical_room_config_snippets.yaml)</div>` : ''}
+                    </div>`;
+                ]]]
+            styles:
+              grid:
+                - grid-template-areas: '"wan"'
+              card:
+                - background: transparent
+                - box-shadow: none
+                - border: none
+                - border-radius: 0
+                - padding: 0
+                - cursor: default
+                - pointer-events: none
+              custom_fields:
+                wan:
+                  - width: 100%
+
+          - type: custom:button-card
+            show_icon: false
+            show_name: false
+            show_state: false
+            tap_action:
+              action: none
+            triggers_update:
+              - sensor.livebox_dhcp
+            custom_fields:
+              dhcp: |
+                [[[
+                  const S = states['sensor.livebox_dhcp'];
+                  const a = (S && S.attributes) ? S.attributes : {};
+                  const demo = !S;
+                  const start = a.pool_start  || '192.168.1.100';
+                  const end   = a.pool_end    || '192.168.1.200';
+                  const gw    = a.gateway     || '192.168.1.1';
+                  const mask  = a.netmask     || '255.255.255.0';
+                  const lease = a.lease_time  || '12 h';
+                  const arr   = Array.isArray(a.leases) ? a.leases : [];
+                  const oct = (ip) => Number(String(ip).split('.')[3] || 0);
+                  const s = oct(start), e = oct(end);
+                  const size = Math.max(1, e - s + 1);
+                  const used = demo ? 37 : arr.length;
+                  const free = Math.max(0, size - used);
+                  const pct  = Math.min(100, used / size * 100);
+                  const left = ((s - 1) / 254 * 100);
+                  const wid  = (size / 254 * 100);
+                  const barCol = pct > 85 ? '#FF3D71' : (pct > 65 ? '#FF9800' : '#00FFC3');
+                  const kpi = (lab, val, c) => `
+                    <div style="flex:1;min-width:0;text-align:center;padding:8px 6px;
+                      border-radius:10px;box-sizing:border-box;background:rgba(0,0,0,.22);">
+                      <div style="color:${c};font-size:15px;font-weight:700;
+                        font-family:Orbitron,sans-serif;line-height:1.1;">${val}</div>
+                      <div style="color:#56707E;font-size:10px;white-space:nowrap;
+                        overflow:hidden;text-overflow:ellipsis;">${lab}</div>
+                    </div>`;
+                  const tick = (pos, txt, c) => `
+                    <div style="position:absolute;left:${pos}%;transform:translateX(-50%);
+                      top:0;color:${c};font-size:9px;white-space:nowrap;">${txt}</div>`;
+                  return `
+                    <div style="width:100%;box-sizing:border-box;">
+
+                      <div style="display:flex;align-items:baseline;justify-content:space-between;
+                        margin-bottom:8px;">
+                        <span style="color:#8FB6C9;font-size:12px;letter-spacing:.5px;">
+                          Plage DHCP</span>
+                        <span style="color:#00E5FF;font-size:12px;font-weight:700;
+                          font-family:Orbitron,sans-serif;">${start} &rarr; ${end}</span>
+                      </div>
+
+                      <!-- Reglette du /24 : zone statique / pool DHCP -->
+                      <div style="position:relative;width:100%;height:24px;border-radius:9px;
+                        overflow:hidden;box-sizing:border-box;
+                        background:repeating-linear-gradient(90deg,
+                          rgba(255,255,255,.05) 0 4px, transparent 4px 8px);
+                        border:1px solid rgba(0,229,255,0.18);">
+                        <div style="position:absolute;left:${left}%;width:${wid}%;top:0;bottom:0;
+                          background:rgba(0,229,255,0.10);
+                          border-left:1px solid rgba(0,229,255,.55);
+                          border-right:1px solid rgba(0,229,255,.55);">
+                          <div style="position:absolute;left:0;top:0;bottom:0;width:${pct}%;
+                            background:linear-gradient(90deg, ${barCol}66, ${barCol});
+                            box-shadow:0 0 12px ${barCol}55;"></div>
+                        </div>
+                      </div>
+
+                      <div style="position:relative;height:14px;margin-top:3px;">
+                        ${tick(0, '.1', '#56707E')}
+                        ${tick(left, '.' + s, '#00E5FF')}
+                        ${tick(left + wid, '.' + e, '#00E5FF')}
+                        ${tick(100, '.254', '#56707E')}
+                      </div>
+
+                      <div style="display:flex;gap:6px;margin-top:8px;">
+                        ${kpi('Baux actifs', used, '#00E5FF')}
+                        ${kpi('Disponibles', free, '#00FFC3')}
+                        ${kpi('Taille pool', size, '#FFFFFF')}
+                        ${kpi('Occupation', pct.toLocaleString('fr-FR',
+                          { maximumFractionDigits: 0 }) + '%', barCol)}
+                      </div>
+
+                      <div style="display:flex;gap:6px;margin-top:6px;">
+                        ${kpi('Masque', mask, '#8FB6C9')}
+                        ${kpi('Passerelle', gw, '#8FB6C9')}
+                        ${kpi('Duree du bail', lease, '#8FB6C9')}
+                      </div>
+
+                      ${demo ? `<div style="color:#FF9800;font-size:10px;margin-top:6px;">
+                        <ha-icon icon="mdi:alert-outline" style="--mdc-icon-size:12px;color:#FF9800;"></ha-icon>
+                        Valeurs de demonstration — creez sensor.livebox_dhcp</div>` : ''}
+                    </div>`;
+                ]]]
+            styles:
+              grid:
+                - grid-template-areas: '"dhcp"'
+              card:
+                - background: transparent
+                - box-shadow: none
+                - border: none
+                - border-top: 1px solid rgba(0,229,255,0.10)
+                - border-radius: 0
+                - margin-top: 10px
+                - padding: 12px 0 0 0
+                - cursor: default
+                - pointer-events: none
+              custom_fields:
+                dhcp:
+                  - width: 100%
+
+      # ═════════════════════════════════════════════════════════════
+      # PANNEAU 4 — LIVEBOX V7 PRO : redirections de ports (NAT/PAT)
+      # ═════════════════════════════════════════════════════════════
+      - type: vertical-stack
+        view_layout:
+          grid-area: nat
+        card_mod:
+          style: |
+            :host {
+              display: flex;
+              flex-direction: column;
+              height: 100%;
+              box-sizing: border-box;
+              background: rgba(8,18,28,0.75);
+              border-radius: 20px;
+              border: 1px solid rgba(0,229,255,0.28);
+              backdrop-filter: blur(12px);
+              box-shadow: 0 0 18px rgba(0,229,255,.15);
+              padding: 16px 18px;
+              overflow: hidden;
+            }
+        cards:
+          - type: custom:button-card
+            template: vssp_section_title
+            name: "Livebox — Regles NAT"
+
+          - type: custom:button-card
+            show_icon: false
+            show_name: false
+            show_state: false
+            tap_action:
+              action: none
+            triggers_update:
+              - sensor.livebox_nat
+            custom_fields:
+              nat: |
+                [[[
+                  const S = states['sensor.livebox_nat'];
+                  const demo = !S;
+                  const dm = [
+                    { name: 'Home Assistant', protocol: 'TCP', external_port: '8123',
+                      internal_ip: '192.168.1.11', internal_port: '8123', enabled: true },
+                    { name: 'Reverse proxy',  protocol: 'TCP', external_port: '443',
+                      internal_ip: '192.168.1.11', internal_port: '443', enabled: true },
+                    { name: 'Synology DSM',   protocol: 'TCP', external_port: '5001',
+                      internal_ip: '192.168.1.20', internal_port: '5001', enabled: true },
+                    { name: 'WireGuard VPN',  protocol: 'UDP', external_port: '51820',
+                      internal_ip: '192.168.1.20', internal_port: '51820', enabled: true },
+                    { name: 'Synology Drive', protocol: 'TCP', external_port: '6690',
+                      internal_ip: '192.168.1.20', internal_port: '6690', enabled: false },
+                    { name: 'SSH bastion',    protocol: 'TCP', external_port: '2222',
+                      internal_ip: '192.168.1.11', internal_port: '22', enabled: false }
+                  ];
+                  const rules = (S && Array.isArray(S.attributes.rules))
+                                  ? S.attributes.rules : dm;
+                  const on = rules.filter(r => r.enabled !== false).length;
+                  const chip = (p) => {
+                    const c = String(p).toUpperCase() === 'UDP' ? '#B388FF' : '#00E5FF';
+                    return `<span style="color:${c};font-size:9px;border:1px solid ${c}55;
+                      background:${c}14;border-radius:6px;padding:1px 5px;
+                      font-family:Orbitron,sans-serif;">${String(p).toUpperCase()}</span>`;
+                  };
+                  const row = (r) => {
+                    const ok = r.enabled !== false;
+                    const c  = ok ? '#00FFC3' : '#56707E';
+                    return `
+                      <div style="display:flex;align-items:center;gap:8px;padding:8px 10px;
+                        border-radius:10px;box-sizing:border-box;margin-bottom:5px;
+                        background:rgba(0,0,0,.22);border-left:2px solid ${c};">
+                        <div style="width:7px;height:7px;flex:0 0 7px;border-radius:50%;
+                          background:${c};${ok ? 'box-shadow:0 0 7px ' + c + '99;' : ''}"></div>
+                        <div style="flex:1 1 auto;min-width:0;">
+                          <div style="color:#FFFFFF;font-size:12px;white-space:nowrap;
+                            overflow:hidden;text-overflow:ellipsis;">${r.name || 'Regle'}</div>
+                          <div style="color:#56707E;font-size:10px;white-space:nowrap;
+                            overflow:hidden;text-overflow:ellipsis;">
+                            WAN:${r.external_port} &rarr; ${r.internal_ip}:${r.internal_port}</div>
+                        </div>
+                        ${chip(r.protocol || 'TCP')}
+                      </div>`;
+                  };
+                  return `
+                    <div style="width:100%;box-sizing:border-box;">
+                      <div style="display:flex;align-items:baseline;justify-content:space-between;
+                        margin-bottom:8px;position:sticky;top:0;z-index:2;
+                        background:rgba(8,18,28,0.96);padding:2px 0 6px 0;">
+                        <span style="color:#8FB6C9;font-size:12px;letter-spacing:.5px;">
+                          Redirections de ports (NAT/PAT)</span>
+                        <span style="color:#00FFC3;font-size:10px;font-weight:700;">
+                          ${on}/${rules.length} actives</span>
+                      </div>
+                      ${rules.map(row).join('')}
+                      ${demo ? `<div style="color:#FF9800;font-size:10px;margin-top:2px;">
+                        <ha-icon icon="mdi:alert-outline" style="--mdc-icon-size:12px;color:#FF9800;"></ha-icon>
+                        Valeurs de demonstration — creez sensor.livebox_nat</div>` : ''}
+                    </div>`;
+                ]]]
+            styles:
+              grid:
+                - grid-template-areas: '"nat"'
+              card:
+                - background: transparent
+                - box-shadow: none
+                - border: none
+                - border-top: 1px solid rgba(0,229,255,0.10)
+                - border-radius: 0
+                - margin-top: 10px
+                - padding: 12px 0 0 0
+                - cursor: default
+                - touch-action: pan-y
+              custom_fields:
+                nat:
+                  - display: block
+                  - width: 100%
+                  - height: 196px
+                  - overflow-y: auto
+                  - overflow-x: hidden
+                  - padding-right: 4px
+                  - scrollbar-width: thin
+                  - scrollbar-color: rgba(0,229,255,0.35) rgba(0,229,255,0.06)
+                  - touch-action: pan-y
+                  - "-webkit-overflow-scrolling": touch
+
+      # ═════════════════════════════════════════════════════════════
+      # PANNEAU 5 — COMMUTATEUR NETGEAR MS510TX
+      # Table defilante : colonne 1 = IP, colonne 2 = hostname,
+      # colonne 3 = adresse MAC. En-tete fige (position:sticky).
+      # ═════════════════════════════════════════════════════════════
+      - type: vertical-stack
+        view_layout:
+          grid-area: netsw
+        card_mod:
+          style: |
+            :host {
+              display: flex;
+              flex-direction: column;
+              height: 100%;
+              box-sizing: border-box;
+              background: rgba(8,18,28,0.75);
+              border-radius: 20px;
+              border: 1px solid rgba(0,229,255,0.28);
+              backdrop-filter: blur(12px);
+              box-shadow: 0 0 18px rgba(0,229,255,.15);
+              padding: 16px 18px;
+              overflow: hidden;
+            }
+        cards:
+          - type: custom:button-card
+            template: vssp_section_title
+            name: "Commutateur Netgear MS510TX — Hotes du LAN"
+
+          - type: custom:button-card
+            show_icon: false
+            show_name: false
+            show_state: false
+            tap_action:
+              action: none
+            triggers_update:
+              - sensor.netgear_ms510tx_clients
+            custom_fields:
+              head: |
+                [[[
+                  const S = states['sensor.netgear_ms510tx_clients'];
+                  const n = (S && Array.isArray(S.attributes.clients))
+                              ? S.attributes.clients.length : 9;
+                  const P = states['sensor.netgear_ms510tx_ports_up'];
+                  const up = P ? P.state : '6';
+                  const kpi = (lab, val, c) => `
+                    <div style="flex:1;min-width:0;text-align:center;padding:8px 6px;
+                      border-radius:10px;box-sizing:border-box;background:rgba(0,0,0,.22);">
+                      <div style="color:${c};font-size:15px;font-weight:700;
+                        font-family:Orbitron,sans-serif;line-height:1.1;">${val}</div>
+                      <div style="color:#56707E;font-size:10px;white-space:nowrap;
+                        overflow:hidden;text-overflow:ellipsis;">${lab}</div>
+                    </div>`;
+                  return `
+                    <div style="display:flex;gap:6px;width:100%;box-sizing:border-box;">
+                      ${kpi('Hotes detectes', n, '#00E5FF')}
+                      ${kpi('Ports actifs', up + '/10', '#00FFC3')}
+                      ${kpi('Uplink', '10 Gb/s', '#FFFFFF')}
+                    </div>`;
+                ]]]
+              table: |
+                [[[
+                  const S = states['sensor.netgear_ms510tx_clients'];
+                  const demo = !S;
+                  const dm = [
+                    { ip: '192.168.1.1',  hostname: 'livebox',        mac: '00:1A:2B:3C:4D:5E' },
+                    { ip: '192.168.1.11', hostname: 'k3s-master',     mac: 'B8:27:EB:11:22:33' },
+                    { ip: '192.168.1.20', hostname: 'nas-synology',   mac: '00:11:32:AA:BB:CC' },
+                    { ip: '192.168.1.30', hostname: 'ms510tx',        mac: '9C:3D:CF:00:11:22' },
+                    { ip: '192.168.1.41', hostname: 'shelly-strip4',  mac: 'E8:65:38:44:55:66' },
+                    { ip: '192.168.1.42', hostname: 'shelly-ballon',  mac: 'E8:65:38:77:88:99' },
+                    { ip: '192.168.1.43', hostname: 'shelly-lumiere', mac: 'E8:65:38:AA:BB:CC' },
+                    { ip: '192.168.1.60', hostname: 'alarme-centrale', mac: '3C:5A:B4:12:34:56' },
+                    { ip: '192.168.1.90', hostname: 'tablette-hall',  mac: 'F0:9F:C2:65:43:21' }
+                  ];
+                  const list = (S && Array.isArray(S.attributes.clients))
+                                 ? S.attributes.clients : dm;
+                  const sorted = list.slice().sort((x, y) => {
+                    const n = (i) => String(i.ip || '').split('.').reduce(
+                      (a, b) => a * 256 + Number(b), 0);
+                    return n(x) - n(y);
+                  });
+                  const cell = (v, c, mono, align) => `
+                    <div style="color:${c};font-size:12px;text-align:${align};
+                      ${mono ? 'font-family:\'SFMono-Regular\',Consolas,monospace;letter-spacing:.2px;' : ''}
+                      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${v}</div>`;
+                  const row = (c, i) => `
+                    <div style="display:grid;grid-template-columns:150px minmax(0,1fr) 190px;column-gap:8px;
+                      align-items:center;padding:7px 12px;border-radius:8px;box-sizing:border-box;
+                      background:${i % 2 ? 'rgba(0,0,0,.28)' : 'rgba(0,0,0,.16)'};
+                      margin-bottom:3px;">
+                      ${cell(c.ip || '—', '#00E5FF', true, 'left')}
+                      ${cell(c.hostname || 'inconnu', '#FFFFFF', false, 'left')}
+                      ${cell(String(c.mac || '—').toUpperCase(), '#8FB6C9', true, 'right')}
+                    </div>`;
+                  const th = (v, align) => `
+                    <div style="color:#56707E;font-size:10px;letter-spacing:.5px;
+                      text-align:${align};text-transform:uppercase;">${v}</div>`;
+                  return `
+                    <div style="width:100%;box-sizing:border-box;">
+                      <div style="position:sticky;top:0;z-index:2;display:grid;
+                        grid-template-columns:150px minmax(0,1fr) 190px;column-gap:8px;padding:7px 12px;
+                        box-sizing:border-box;margin-bottom:4px;border-radius:8px;
+                        background:rgba(8,18,28,0.96);
+                        border-bottom:1px solid rgba(0,229,255,0.18);">
+                        ${th('Adresse IP', 'left')}
+                        ${th('Hostname', 'left')}
+                        ${th('Adresse MAC', 'right')}
+                      </div>
+                      ${sorted.map(row).join('')}
+                      ${demo ? `<div style="color:#FF9800;font-size:10px;margin-top:4px;">
+                        <ha-icon icon="mdi:alert-outline" style="--mdc-icon-size:12px;color:#FF9800;"></ha-icon>
+                        Valeurs de demonstration — creez sensor.netgear_ms510tx_clients</div>` : ''}
+                    </div>`;
+                ]]]
+            styles:
+              grid:
+                - grid-template-areas: '"head" "table"'
+                - grid-template-columns: 1fr
+                - row-gap: 10px
+              card:
+                - background: transparent
+                - box-shadow: none
+                - border: none
+                - border-radius: 0
+                - padding: 0
+                - cursor: default
+                - touch-action: pan-y
+              custom_fields:
+                head:
+                  - width: 100%
+                table:
+                  - display: block
+                  - width: 100%
+                  - height: 260px
+                  - overflow-y: auto
+                  - overflow-x: hidden
+                  - padding-right: 4px
+                  - scrollbar-width: thin
+                  - scrollbar-color: rgba(0,229,255,0.35) rgba(0,229,255,0.06)
+                  - touch-action: pan-y
+                  - "-webkit-overflow-scrolling": touch
+
+      # ═════════════════════════════════════════════════════════════
+      # PANNEAU 5 bis — ETAT DES EQUIPEMENTS
+      # (NAS Synology, centrale d'alarme, ballon ECS, congelateur)
+      # ═════════════════════════════════════════════════════════════
+      - type: vertical-stack
+        view_layout:
+          grid-area: systems
+        card_mod:
+          style: |
+            :host {
+              display: flex;
+              flex-direction: column;
+              height: 100%;
+              box-sizing: border-box;
+              background: rgba(8,18,28,0.75);
+              border-radius: 20px;
+              border: 1px solid rgba(0,229,255,0.28);
+              backdrop-filter: blur(12px);
+              box-shadow: 0 0 18px rgba(0,229,255,.15);
+              padding: 16px 18px;
+              overflow: hidden;
+            }
+        cards:
+          - type: custom:button-card
+            template: vssp_section_title
+            name: "Etat des equipements"
+
+          - type: custom:button-card
+            show_icon: false
+            show_name: false
+            show_state: false
+            tap_action:
+              action: none
+            triggers_update:
+              - binary_sensor.synology_nas_status
+              - sensor.synology_nas_cpu
+              - sensor.synology_nas_temperature
+              - sensor.synology_nas_volume_used
+              - alarm_control_panel.centrale_alarme
+              - sensor.technical_room_ballon_ecs_temperature
+              - sensor.technical_room_congelateur_temperature
+            custom_fields:
+              sys: |
+                [[[
+                  const v = (id, unit, dec, def) => {
+                    const s = states[id];
+                    if (!s || isNaN(Number(s.state))) return def;
+                    return Number(s.state).toLocaleString('fr-FR',
+                      { minimumFractionDigits: dec, maximumFractionDigits: dec }) + unit;
+                  };
+                  const nas = states['binary_sensor.synology_nas_status'];
+                  const nasOn = nas ? nas.state === 'on' : true;
+                  const al = states['alarm_control_panel.centrale_alarme'];
+                  const alSt = al ? al.state : 'armed_away';
+                  const alMap = {
+                    disarmed:    ['Desarmee', '#8FB6C9', 'mdi:shield-off-outline'],
+                    armed_home:  ['Armee — presence', '#00FFC3', 'mdi:shield-home'],
+                    armed_away:  ['Armee — absence', '#00FFC3', 'mdi:shield-lock'],
+                    armed_night: ['Armee — nuit', '#00FFC3', 'mdi:shield-moon'],
+                    pending:     ['Temporisation', '#FF9800', 'mdi:shield-sync'],
+                    triggered:   ['ALARME', '#FF3D71', 'mdi:shield-alert']
+                  };
+                  const a = alMap[alSt] || ['Statut inconnu', '#56707E', 'mdi:shield-outline'];
+                  const tile = (icon, title, val, sub, c) => `
+                    <div style="flex:1;min-width:0;display:flex;align-items:center;gap:9px;
+                      padding:11px 12px;border-radius:12px;box-sizing:border-box;
+                      background:rgba(0,229,255,0.05);border:1px solid rgba(0,229,255,0.18);">
+                      <div style="width:44px;height:44px;flex:0 0 44px;
+                        border-radius:10px;display:flex;align-items:center;justify-content:center;
+                        background:rgba(0,229,255,0.07);border:1px solid rgba(0,229,255,0.20);">
+                        <ha-icon icon="${icon}" style="--mdc-icon-size:26px;color:${c};"></ha-icon>
+                      </div>
+                      <div style="flex:1 1 auto;min-width:0;">
+                        <div style="color:#56707E;font-size:10px;white-space:nowrap;
+                          overflow:hidden;text-overflow:ellipsis;">${title}</div>
+                        <div style="color:${c};font-size:15px;font-weight:700;
+                          font-family:Orbitron,sans-serif;white-space:nowrap;overflow:hidden;
+                          text-overflow:ellipsis;">${val}</div>
+                        <div style="color:#8FB6C9;font-size:10px;white-space:nowrap;
+                          overflow:hidden;text-overflow:ellipsis;">${sub}</div>
+                      </div>
+                    </div>`;
+                  return `
+                    <div style="display:flex;flex-wrap:wrap;gap:8px;width:100%;box-sizing:border-box;">
+                      ${tile('mdi:nas', 'NAS Synology',
+                             nasOn ? 'En ligne' : 'Hors ligne',
+                             'CPU ' + v('sensor.synology_nas_cpu', ' %', 0, '— %') +
+                             ' · ' + v('sensor.synology_nas_temperature', ' °C', 0, '— °C'),
+                             nasOn ? '#00FFC3' : '#FF3D71')}
+                      ${tile(a[2], 'Centrale d\'alarme', a[0],
+                             'Volume ' + v('sensor.synology_nas_volume_used', ' %', 0, '— %') +
+                             ' utilise', a[1])}
+                      ${tile('mdi:water-boiler', 'Ballon d\'eau chaude',
+                             v('sensor.technical_room_ballon_ecs_temperature', ' °C', 0, '— °C'),
+                             'Consigne 55 °C', '#FF9800')}
+                      ${tile('mdi:freezer', 'Congelateur',
+                             v('sensor.technical_room_congelateur_temperature', ' °C', 0, '— °C'),
+                             'Seuil alerte -15 °C', '#00E5FF')}
+                    </div>`;
+                ]]]
+            styles:
+              grid:
+                - grid-template-areas: '"sys"'
+              card:
+                - background: transparent
+                - box-shadow: none
+                - border: none
+                - border-radius: 0
+                - padding: 0
+                - cursor: default
+                - pointer-events: none
+              custom_fields:
+                sys:
+                  - width: 100%
+
+      # ═══════════════════════════════════════════════════════════════
+      # PANNEAU 6 — INTERRUPTEURS / TABLEAU ELECTRIQUE DU LOCAL
+      # Memes cartes que energy.yaml (template vssp_circuit_switch).
+      # La LUMIERE du local est le premier interrupteur.
+      # Les charges critiques (ECS, congelateur, NAS, Livebox, alarme,
+      # commutateur) demandent une CONFIRMATION avant coupure.
+      # ═══════════════════════════════════════════════════════════════
+      - type: vertical-stack
+        view_layout:
+          grid-area: board
+        card_mod:
+          style: |
+            :host {
+              display: flex;
+              flex-direction: column;
+              background: rgba(8,18,28,0.75);
+              border-radius: 20px;
+              border: 1px solid rgba(0,229,255,0.28);
+              backdrop-filter: blur(12px);
+              box-shadow: 0 0 18px rgba(0,229,255,.15);
+              padding: 16px 18px;
+            }
+        cards:
+          - type: custom:button-card
+            template: vssp_section_title
+            name: "Interrupteurs — Controle des Circuits (Shelly)"
+
+          - type: horizontal-stack
+            cards:
+              - type: custom:button-card
+                template: vssp_circuit_switch
+                entity: switch.technical_room_lumiere
+                name: "Lumiere"
+                icon: mdi:ceiling-light
+                variables:
+                  model: "Shelly Plus 1"
+                  amp: "10A"
+                tap_action:
+                  action: toggle
+              - type: custom:button-card
+                template: vssp_circuit_switch
+                entity: switch.technical_room_lave_linge
+                name: "Lave-linge"
+                icon: mdi:washing-machine
+                variables:
+                  model: "Strip 4 · ch.1"
+                  amp: "16A"
+                tap_action:
+                  action: toggle
+              - type: custom:button-card
+                template: vssp_circuit_switch
+                entity: switch.technical_room_seche_linge
+                name: "Seche-linge"
+                icon: mdi:tumble-dryer
+                variables:
+                  model: "Strip 4 · ch.2"
+                  amp: "16A"
+                tap_action:
+                  action: toggle
+              - type: custom:button-card
+                template: vssp_circuit_switch
+                entity: switch.technical_room_aspirateur
+                name: "Aspirateur Dyson"
+                icon: mdi:vacuum
+                variables:
+                  model: "Strip 4 · ch.3"
+                  amp: "16A"
+                tap_action:
+                  action: toggle
+              - type: custom:button-card
+                template: vssp_circuit_switch
+                entity: switch.technical_room_ballon_ecs
+                name: "Ballon d'eau chaude"
+                icon: mdi:water-boiler
+                variables:
+                  model: "Shelly Pro 1PM"
+                  amp: "25A"
+                tap_action:
+                  action: toggle
+                  confirmation:
+                    text: "Ballon d'eau chaude — equipement critique du local technique. Confirmer la coupure ?"
+
+          - type: horizontal-stack
+            cards:
+              - type: custom:button-card
+                template: vssp_circuit_switch
+                entity: switch.technical_room_congelateur
+                name: "Congelateur"
+                icon: mdi:freezer
+                variables:
+                  model: "Strip 4 · ch.4"
+                  amp: "16A"
+                tap_action:
+                  action: toggle
+                  confirmation:
+                    text: "Congelateur — equipement critique du local technique. Confirmer la coupure ?"
+              - type: custom:button-card
+                template: vssp_circuit_switch
+                entity: switch.technical_room_nas_synology
+                name: "NAS Synology"
+                icon: mdi:nas
+                variables:
+                  model: "Shelly Plus PlugS"
+                  amp: "16A"
+                tap_action:
+                  action: toggle
+                  confirmation:
+                    text: "NAS Synology — equipement critique du local technique. Confirmer la coupure ?"
+              - type: custom:button-card
+                template: vssp_circuit_switch
+                entity: switch.technical_room_livebox
+                name: "Livebox V7 Pro"
+                icon: mdi:router-wireless
+                variables:
+                  model: "Shelly Plus PlugS"
+                  amp: "16A"
+                tap_action:
+                  action: toggle
+                  confirmation:
+                    text: "Livebox V7 Pro — equipement critique du local technique. Confirmer la coupure ?"
+              - type: custom:button-card
+                template: vssp_circuit_switch
+                entity: switch.technical_room_alarme
+                name: "Centrale alarme"
+                icon: mdi:shield-home
+                variables:
+                  model: "Shelly Plus PlugS"
+                  amp: "16A"
+                tap_action:
+                  action: toggle
+                  confirmation:
+                    text: "Centrale alarme — equipement critique du local technique. Confirmer la coupure ?"
+              - type: custom:button-card
+                template: vssp_circuit_switch
+                entity: switch.technical_room_netgear_switch
+                name: "Switch MS510TX"
+                icon: mdi:switch
+                variables:
+                  model: "Shelly Plus PlugS"
+                  amp: "16A"
+                tap_action:
+                  action: toggle
+                  confirmation:
+                    text: "Switch MS510TX — equipement critique du local technique. Confirmer la coupure ?"
+
+          # ── Legende ────────────────────────────────────────────────
+          - type: custom:button-card
+            show_icon: false
+            show_name: false
+            show_state: false
+            custom_fields:
+              legend: >
+                <div style="display:flex;gap:24px;justify-content:center;padding-top:12px;">
+                  <div style="display:flex;align-items:center;gap:6px;">
+                    <div style="width:9px;height:9px;border-radius:50%;background:#00FFC3;
+                      box-shadow:0 0 8px rgba(0,255,195,.6);"></div>
+                    <span style="color:#8FB6C9;font-size:11px;">Allumé</span></div>
+                  <div style="display:flex;align-items:center;gap:6px;">
+                    <div style="width:9px;height:9px;border-radius:50%;background:#56707E;"></div>
+                    <span style="color:#8FB6C9;font-size:11px;">Éteint</span></div>
+                </div>
+            styles:
+              grid:
+                - grid-template-areas: '"legend"'
+              card:
+                - background: transparent
+                - box-shadow: none
+                - border: none
+                - padding: 0
+                - cursor: default
+                - pointer-events: none
+              custom_fields:
+                legend:
+                  - width: 100%
+
+    # ── Fond de vue (meme principe que energy.yaml) ──────────────────
+    # Deposez technical.png dans www/vssp/backgrounds/, ou remplacez
+    # par core.png / energy.png en attendant.
+    card_mod:
+      style: |
+        hui-view {
+          background: center / cover no-repeat fixed url("/local/vssp/backgrounds/technical.png");
+        }
