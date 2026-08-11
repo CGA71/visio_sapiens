@@ -1,4 +1,4 @@
-# OSVision V2
+# Visio Sapiens
 
 OS domotique avec une interface futuriste comparable à celle d'un centre de contrôle.
 
@@ -13,13 +13,13 @@ le socle doit se reposer sur :
 * config-template-card
 * browser_mod
 * decluttering-card
-* un moteur CSS et JavaScript propre à OSVision V2
+* un moteur CSS et JavaScript propre à Visio Sapiens
 
 L'objectif est que Home Assistant ne soit plus qu'un moteur de données. Toute l'interface est pilotée par OSVision.
 
 Architecture
 ```
-OSVision V2
+Visio Sapiens
 
 ├── CORE
 │      HUD
@@ -61,7 +61,7 @@ mon project OS Vsion V2 :
 
 ![dashboard-osvision](osvision.png)
 
-# Framework OsVision V2
+# Framework Visio Sapiens
 
 1- OSVision Core UI (HUD, navigation, layout)
 2- CSS Engine (~800 lignes dédiées à l'identité visuelle)
@@ -142,7 +142,7 @@ home-assistant/
 * decluttering-card
 
 # home.yaml
-* HUD OSVision V2
+* HUD Visio Sapiens
 * Navigation HOME / LIVINGROOM / BEDROOM1 / BEDROOM2 / BATHROOM / COMPUTER ROOM / TECHNICAL ROOM / SECRET ROOM / GARDEN / ENERGY
 * Radar central
 * IA Core
@@ -171,7 +171,7 @@ d'origine ci-dessus, au fil des itérations.
 
 ## Bandeau HUD (header)
 
-* Le header générique ("OSVISION V2 — NEURAL CORE ACTIVE") a été
+* Le header générique ("Visio Sapiens — NEURAL CORE ACTIVE") a été
   remplacé par un **bandeau à 5 cases**, reproduisant la maquette
   cible :
   1. Chevron retour + titre de page + descriptif (`osvision_page_header`)
