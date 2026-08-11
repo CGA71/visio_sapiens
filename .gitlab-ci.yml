@@ -451,6 +451,53 @@ deploy:staging:
         exit 1
       fi
     - kubectl exec -n $K3S_NAMESPACE $HA_POD -c $K3S_CONTAINER -- sh -c 'rm -rf /config/dashboards.old /config/themes.old /config/.osv_stage /config/.osv.tar.gz'
+    # --- REDEMARRAGE DE HOME ASSISTANT — ETAPE INDISPENSABLE ---
+    # configuration.yaml n'est relu qu'au demarrage : les dashboards
+    # (lovelace.dashboards) et les packages ne sont PAS pris en compte a
+    # chaud. Sans cette etape, le job finissait en vert alors que
+    # l'instance continuait a servir l'ancienne configuration — les
+    # nouveautes n'apparaissaient qu'au prochain redemarrage fortuit du
+    # pod. La production faisait deja un `ha core restart`, pas le staging.
+    #
+    # Voie normale : service homeassistant.restart via l'API REST.
+    # Repli : recreation du pod (fonctionne pour Deployment et StatefulSet).
+    - |
+      code=000
+      if [ -n "$HA_TOKEN_STAGING" ] && command -v curl >/dev/null 2>&1; then
+        code=$(curl -s -o /dev/null -w '%{http_code}' -m 15 -X POST \
+          -H "Authorization: Bearer $HA_TOKEN_STAGING" \
+          -H "Content-Type: application/json" \
+          "$STAGING_URL/api/services/homeassistant/restart" || echo 000)
+        echo "[i] homeassistant.restart -> HTTP $code"
+      else
+        echo "[i] HA_TOKEN_STAGING absente ou curl indisponible"
+      fi
+      if [ "$code" != "200" ]; then
+        echo "[i] Repli : recreation du pod $HA_POD"
+        kubectl delete pod -n $K3S_NAMESPACE $HA_POD --wait=false
+        kubectl wait --for=delete pod/$HA_POD -n $K3S_NAMESPACE --timeout=120s || true
+        kubectl wait --for=condition=ready pod -n $K3S_NAMESPACE \
+          -l app=homeassistant --timeout=300s || true
+      fi
+    # Attente du retour de l'API : evite que test:staging echoue sur une
+    # instance encore en cours de demarrage.
+    - |
+      if command -v curl >/dev/null 2>&1 && [ -n "$HA_TOKEN_STAGING" ]; then
+        for i in $(seq 1 36); do
+          c=$(curl -s -o /dev/null -w '%{http_code}' -m 5 \
+              -H "Authorization: Bearer $HA_TOKEN_STAGING" "$STAGING_URL/api/" || echo 000)
+          [ "$c" = "200" ] && echo "[OK] HA redemarre et joignable" && break
+          echo "[..] Attente du redemarrage ($i/36) - HTTP $c"
+          sleep 5
+        done
+      else
+        sleep 45
+      fi
+    # Trace de verification : ce que HA a REELLEMENT charge
+    - |
+      echo "[i] Version deployee dans le conteneur :"
+      kubectl exec -n $K3S_NAMESPACE $HA_POD -c $K3S_CONTAINER -- \
+        cat /config/OSVISION_VERSION 2>/dev/null || echo "  (pod recree, fichier lisible au prochain job)"
     - echo "[OK] Staging a jour"
 
 # ============================================================================
