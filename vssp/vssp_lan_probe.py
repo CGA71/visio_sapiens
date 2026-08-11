@@ -15,14 +15,19 @@ declares dans technical_room_config_snippets.yaml.
 Aucune dependance externe (urllib uniquement) : le script tourne tel
 quel dans le conteneur Home Assistant. Rien ne sort du LAN.
 
-Configuration — variables d'environnement, ou fichier .livebox.env
-place a cote du script (format CLE=valeur, chmod 600) :
+Configuration en CASCADE, du moins au plus prioritaire :
 
-    LIVEBOX_HOST=192.168.1.1
-    LIVEBOX_USER=admin
-    LIVEBOX_PASSWORD=xxxxxxxx
-    LIVEBOX_IP_MODE=static      # "static" => badge IP FIXE du dashboard
-    NETGEAR_PORTS=10
+  1. livebox.env   — reglages NON SECRETS, VERSIONNES dans le repo
+                     (vssp/livebox.env : hote, utilisateur, mode d'IP,
+                      nombre de ports du commutateur).
+  2. .livebox.env  — le SEUL secret : LIVEBOX_PASSWORD. Ecrit par le job
+                     de deploiement depuis la variable CI/CD masquee,
+                     jamais commite (chmod 600).
+  3. variables d'environnement du conteneur — priorite maximale, utile
+                     pour un test ponctuel sans toucher aux fichiers.
+
+Aucune de ces trois etapes n'est manuelle en fonctionnement normal :
+la CI ecrit .livebox.env a chaque deploiement.
 
 Code retour non nul en cas d'echec : Home Assistant marque alors le
 capteur "unavailable" plutot que de publier des donnees fausses.
@@ -36,7 +41,10 @@ import urllib.request
 import urllib.error
 
 HERE = os.path.dirname(os.path.abspath(__file__))
-ENV_FILE = os.path.join(HERE, ".livebox.env")
+# Reglages versionnes (repo) puis secret depose par la CI. L'ordre compte :
+# le second ecrase le premier, l'environnement ecrase les deux.
+CONF_FILES = (os.path.join(HERE, "livebox.env"),
+              os.path.join(HERE, ".livebox.env"))
 
 CT = "application/x-sah-ws-4-call+json"
 
@@ -44,6 +52,20 @@ CT = "application/x-sah-ws-4-call+json"
 # ─────────────────────────────────────────────────────────────────────
 # Configuration
 # ─────────────────────────────────────────────────────────────────────
+def _read_conf(path, cfg):
+    if not os.path.isfile(path):
+        return
+    with open(path, encoding="utf-8") as fh:
+        for line in fh:
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            k, v = line.split("=", 1)
+            v = v.strip().strip('"').strip("'")
+            if v:                      # une valeur vide ne doit rien ecraser
+                cfg[k.strip()] = v
+
+
 def load_env():
     cfg = {
         "LIVEBOX_HOST": "192.168.1.1",
@@ -52,14 +74,8 @@ def load_env():
         "LIVEBOX_IP_MODE": "static",
         "NETGEAR_PORTS": "10",
     }
-    if os.path.isfile(ENV_FILE):
-        with open(ENV_FILE, encoding="utf-8") as fh:
-            for line in fh:
-                line = line.strip()
-                if not line or line.startswith("#") or "=" not in line:
-                    continue
-                k, v = line.split("=", 1)
-                cfg[k.strip()] = v.strip().strip('"').strip("'")
+    for path in CONF_FILES:
+        _read_conf(path, cfg)
     for k in list(cfg):
         if os.environ.get(k):
             cfg[k] = os.environ[k]
@@ -92,7 +108,12 @@ def login():
     """Ouvre un contexte sysbus et memorise le contextID + les cookies."""
     global _context_id
     if not CFG["LIVEBOX_PASSWORD"]:
-        raise RuntimeError("LIVEBOX_PASSWORD non defini (env ou .livebox.env)")
+        raise RuntimeError(
+            "LIVEBOX_PASSWORD absent. Il est ecrit dans "
+            "/config/vssp/.livebox.env par le job de deploiement, depuis la "
+            "variable CI/CD masquee LIVEBOX_PASSWORD. Verifier qu'elle existe "
+            "dans GitLab (Settings > CI/CD > Variables)."
+        )
     out = _post({
         "service": "sah.Device.Information",
         "method": "createContext",
