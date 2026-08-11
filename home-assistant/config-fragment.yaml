@@ -67,6 +67,19 @@ lovelace:
       icon: mdi:lightning-bolt
       show_in_sidebar: false
       filename: dashboards/views/energy_mobile.yaml
+    visio-sapiens-technical:
+      mode: yaml
+      title: Technical Room
+      icon: mdi:tools
+      show_in_sidebar: false
+      filename: dashboards/views/technical_room.yaml
+    visio-sapiens-technical-m:
+      mode: yaml
+      title: Technical Room
+      icon: mdi:cellphone-cog
+      show_in_sidebar: false
+      filename: dashboards/views/technical_room_mobile.yaml
+
 
   resources:
     - url: /hacsfiles/button-card/button-card.js
