@@ -1015,6 +1015,9 @@ views:
                 dhcp:
                   - width: 100%
 
+          # ── En-tete : carte SOEUR au-dessus de la zone defilante,
+          # exactement comme les en-tetes de colonnes du panneau
+          # « Appareils connectes » de energy.yaml. Aucun position:sticky.
           - type: custom:button-card
             show_icon: false
             show_name: false
@@ -1024,71 +1027,25 @@ views:
             triggers_update:
               - sensor.livebox_nat
             custom_fields:
-              nat: |
+              nathead: |
                 [[[
                   const S = states['sensor.livebox_nat'];
-                  const demo = !S;
-                  const dm = [
-                    { name: 'Home Assistant', protocol: 'TCP', external_port: '8123',
-                      internal_ip: '192.168.1.11', internal_port: '8123', enabled: true },
-                    { name: 'Reverse proxy',  protocol: 'TCP', external_port: '443',
-                      internal_ip: '192.168.1.11', internal_port: '443', enabled: true },
-                    { name: 'Synology DSM',   protocol: 'TCP', external_port: '5001',
-                      internal_ip: '192.168.1.20', internal_port: '5001', enabled: true },
-                    { name: 'WireGuard VPN',  protocol: 'UDP', external_port: '51820',
-                      internal_ip: '192.168.1.20', internal_port: '51820', enabled: true },
-                    { name: 'Synology Drive', protocol: 'TCP', external_port: '6690',
-                      internal_ip: '192.168.1.20', internal_port: '6690', enabled: false },
-                    { name: 'SSH bastion',    protocol: 'TCP', external_port: '2222',
-                      internal_ip: '192.168.1.11', internal_port: '22', enabled: false }
-                  ];
-                  const rules = (S && Array.isArray(S.attributes.rules))
-                                  ? S.attributes.rules : dm;
-                  const on = rules.filter(r => r.enabled !== false).length;
-                  const chip = (p) => {
-                    const c = String(p).toUpperCase() === 'UDP' ? '#B388FF' : '#00E5FF';
-                    return `<span style="color:${c};font-size:8px;border:1px solid ${c}55;
-                      background:${c}14;border-radius:6px;padding:1px 5px;
-                      font-family:Orbitron,sans-serif;">${String(p).toUpperCase()}</span>`;
-                  };
-                  const row = (r) => {
-                    const ok = r.enabled !== false;
-                    const c  = ok ? '#00FFC3' : '#56707E';
-                    return `
-                      <div style="display:flex;align-items:center;gap:8px;padding:7px 8px;
-                        border-radius:10px;box-sizing:border-box;margin-bottom:5px;
-                        background:rgba(0,0,0,.22);border-left:2px solid ${c};">
-                        <div style="width:7px;height:7px;flex:0 0 7px;border-radius:50%;
-                          background:${c};${ok ? 'box-shadow:0 0 7px ' + c + '99;' : ''}"></div>
-                        <div style="flex:1 1 auto;min-width:0;">
-                          <div style="color:#FFFFFF;font-size:11px;white-space:nowrap;
-                            overflow:hidden;text-overflow:ellipsis;">${r.name || 'Regle'}</div>
-                          <div style="color:#56707E;font-size:9px;white-space:nowrap;
-                            overflow:hidden;text-overflow:ellipsis;">
-                            WAN:${r.external_port} &rarr; ${r.internal_ip}:${r.internal_port}</div>
-                        </div>
-                        ${chip(r.protocol || 'TCP')}
-                      </div>`;
-                  };
+                  const r = (S && Array.isArray(S.attributes.rules))
+                              ? S.attributes.rules : null;
+                  const tot = r ? r.length : 6;
+                  const on  = r ? r.filter(x => x.enabled !== false).length : 4;
                   return `
-                    <div style="width:100%;box-sizing:border-box;">
-                      <div style="display:flex;align-items:baseline;justify-content:space-between;
-                        margin-bottom:8px;position:sticky;top:0;z-index:2;
-                        background:rgba(8,18,28,0.96);padding:2px 0 6px 0;">
-                        <span style="color:#8FB6C9;font-size:11px;letter-spacing:.5px;">
-                          Redirections de ports (NAT/PAT)</span>
-                        <span style="color:#00FFC3;font-size:9px;font-weight:700;">
-                          ${on}/${rules.length} actives</span>
-                      </div>
-                      ${rules.map(row).join('')}
-                      ${demo ? `<div style="color:#FF9800;font-size:9px;margin-top:2px;">
-                        <ha-icon icon="mdi:alert-outline" style="--mdc-icon-size:12px;color:#FF9800;"></ha-icon>
-                        Valeurs de demonstration — creez sensor.livebox_nat</div>` : ''}
+                    <div style="display:flex;align-items:baseline;
+                      justify-content:space-between;width:100%;box-sizing:border-box;">
+                      <span style="color:#8FB6C9;font-size:11px;letter-spacing:.5px;">
+                        Redirections de ports (NAT/PAT)</span>
+                      <span style="color:#00FFC3;font-size:9px;font-weight:700;">
+                        ${on}/${tot} actives</span>
                     </div>`;
                 ]]]
             styles:
               grid:
-                - grid-template-areas: '"nat"'
+                - grid-template-areas: '"nathead"'
               card:
                 - background: transparent
                 - box-shadow: none
@@ -1096,7 +1053,33 @@ views:
                 - border-top: 1px solid rgba(0,229,255,0.10)
                 - border-radius: 0
                 - margin-top: 10px
-                - padding: 12px 0 0 0
+                - padding: 12px 0 8px 0
+                - cursor: default
+                - pointer-events: none
+              custom_fields:
+                nathead:
+                  - width: 100%
+
+          # ── Liste des regles NAT (defilante) ───────────────────────
+          # Montage IDENTIQUE aux listes de energy_mobile.yaml, qui
+          # defilent correctement en production : une VRAIE carte
+          # embarquee dans le champ `nat` d'un button-card a hauteur
+          # fixe + overflow, styles poses sur le champ custom.
+          - type: custom:button-card
+            show_icon: false
+            show_name: false
+            show_state: false
+            tap_action:
+              action: none
+            styles:
+              grid:
+                - grid-template-areas: '"nat"'
+              card:
+                - background: transparent
+                - box-shadow: none
+                - border: none
+                - border-radius: 0
+                - padding: 0
                 - cursor: default
                 - touch-action: pan-y
               custom_fields:
@@ -1111,11 +1094,90 @@ views:
                   - scrollbar-color: rgba(0,229,255,0.35) rgba(0,229,255,0.06)
                   - touch-action: pan-y
                   - "-webkit-overflow-scrolling": touch
+            custom_fields:
+              nat:
+                card:
+                  type: custom:button-card
+                  show_icon: false
+                  show_name: false
+                  show_state: false
+                  tap_action:
+                    action: none
+                  triggers_update:
+                    - sensor.livebox_nat
+                  custom_fields:
+                    rows: |
+                      [[[
+                        const S = states['sensor.livebox_nat'];
+                        const demo = !S;
+                        const dm = [
+                          { name: 'Home Assistant', protocol: 'TCP', external_port: '8123',
+                            internal_ip: '192.168.1.11', internal_port: '8123', enabled: true },
+                          { name: 'Reverse proxy',  protocol: 'TCP', external_port: '443',
+                            internal_ip: '192.168.1.11', internal_port: '443', enabled: true },
+                          { name: 'Synology DSM',   protocol: 'TCP', external_port: '5001',
+                            internal_ip: '192.168.1.20', internal_port: '5001', enabled: true },
+                          { name: 'WireGuard VPN',  protocol: 'UDP', external_port: '51820',
+                            internal_ip: '192.168.1.20', internal_port: '51820', enabled: true },
+                          { name: 'Synology Drive', protocol: 'TCP', external_port: '6690',
+                            internal_ip: '192.168.1.20', internal_port: '6690', enabled: false },
+                          { name: 'SSH bastion',    protocol: 'TCP', external_port: '2222',
+                            internal_ip: '192.168.1.11', internal_port: '22', enabled: false }
+                        ];
+                        const rules = (S && Array.isArray(S.attributes.rules))
+                                        ? S.attributes.rules : dm;
+                        const chip = (p) => {
+                          const c = String(p).toUpperCase() === 'UDP' ? '#B388FF' : '#00E5FF';
+                          return `<span style="color:${c};font-size:8px;border:1px solid ${c}55;
+                            background:${c}14;border-radius:6px;padding:1px 5px;
+                            font-family:Orbitron,sans-serif;">${String(p).toUpperCase()}</span>`;
+                        };
+                        const row = (r) => {
+                          const ok = r.enabled !== false;
+                          const c  = ok ? '#00FFC3' : '#56707E';
+                          return `
+                            <div style="display:flex;align-items:center;gap:8px;padding:7px 8px;
+                              border-radius:10px;box-sizing:border-box;margin-bottom:5px;
+                              background:rgba(0,0,0,.22);border-left:2px solid ${c};">
+                              <div style="width:7px;height:7px;flex:0 0 7px;border-radius:50%;
+                                background:${c};${ok ? 'box-shadow:0 0 7px ' + c + '99;' : ''}"></div>
+                              <div style="flex:1 1 auto;min-width:0;">
+                                <div style="color:#FFFFFF;font-size:11px;white-space:nowrap;
+                                  overflow:hidden;text-overflow:ellipsis;">${r.name || 'Regle'}</div>
+                                <div style="color:#56707E;font-size:9px;white-space:nowrap;
+                                  overflow:hidden;text-overflow:ellipsis;">
+                                  WAN:${r.external_port} &rarr; ${r.internal_ip}:${r.internal_port}</div>
+                              </div>
+                              ${chip(r.protocol || 'TCP')}
+                            </div>`;
+                        };
+                        return `
+                          <div style="width:100%;box-sizing:border-box;">
+                            ${rules.map(row).join('')}
+                            ${demo ? `<div style="color:#FF9800;font-size:9px;margin-top:2px;">
+                              <ha-icon icon="mdi:alert-outline" style="--mdc-icon-size:12px;color:#FF9800;"></ha-icon>
+                              Valeurs de demonstration — creez sensor.livebox_nat</div>` : ''}
+                          </div>`;
+                      ]]]
+                  styles:
+                    grid:
+                      - grid-template-areas: '"rows"'
+                    card:
+                      - background: transparent
+                      - box-shadow: none
+                      - border: none
+                      - border-radius: 0
+                      - padding: 0
+                      - cursor: default
+                      - pointer-events: none
+                    custom_fields:
+                      rows:
+                        - width: 100%
 
       # ═════════════════════════════════════════════════════════════
       # PANNEAU 3 — COMMUTATEUR NETGEAR MS510TX
       # Table defilante : colonne 1 = IP, colonne 2 = hostname,
-      # colonne 3 = adresse MAC. En-tete fige (position:sticky).
+      # colonne 3 = adresse MAC. En-tete hors zone defilante.
       # ═════════════════════════════════════════════════════════════
       - type: vertical-stack
         view_layout:
@@ -1140,6 +1202,7 @@ views:
             template: vssp_section_title
             name: "Commutateur Netgear MS510TX"
 
+          # ── Bandeau de synthese ───────────────────────────────────
           - type: custom:button-card
             show_icon: false
             show_name: false
@@ -1148,6 +1211,7 @@ views:
               action: none
             triggers_update:
               - sensor.netgear_ms510tx_clients
+              - sensor.netgear_ms510tx_ports_up
             custom_fields:
               head: |
                 [[[
@@ -1171,66 +1235,76 @@ views:
                       ${kpi('Uplink', '10 Gb/s', '#FFFFFF')}
                     </div>`;
                 ]]]
-              table: |
+            styles:
+              grid:
+                - grid-template-areas: '"head"'
+              card:
+                - background: transparent
+                - box-shadow: none
+                - border: none
+                - border-radius: 0
+                - padding: 0 0 8px 0
+                - cursor: default
+                - pointer-events: none
+              custom_fields:
+                head:
+                  - width: 100%
+
+          # ── En-tetes de colonnes : carte SOEUR au-dessus de la zone
+          # defilante, comme dans le panneau « Appareils connectes » de
+          # energy.yaml. Les colonnes sont declarees une seule fois
+          # (84px minmax(0,1fr) 112px) et partagees avec les lignes : elles restent donc
+          # alignees sans position:sticky.
+          - type: custom:button-card
+            show_icon: false
+            show_name: false
+            show_state: false
+            tap_action:
+              action: none
+            custom_fields:
+              cols: |
                 [[[
-                  const S = states['sensor.netgear_ms510tx_clients'];
-                  const demo = !S;
-                  const dm = [
-                    { ip: '192.168.1.1',  hostname: 'livebox',        mac: '00:1A:2B:3C:4D:5E' },
-                    { ip: '192.168.1.11', hostname: 'k3s-master',     mac: 'B8:27:EB:11:22:33' },
-                    { ip: '192.168.1.20', hostname: 'nas-synology',   mac: '00:11:32:AA:BB:CC' },
-                    { ip: '192.168.1.30', hostname: 'ms510tx',        mac: '9C:3D:CF:00:11:22' },
-                    { ip: '192.168.1.41', hostname: 'shelly-strip4',  mac: 'E8:65:38:44:55:66' },
-                    { ip: '192.168.1.42', hostname: 'shelly-ballon',  mac: 'E8:65:38:77:88:99' },
-                    { ip: '192.168.1.43', hostname: 'shelly-lumiere', mac: 'E8:65:38:AA:BB:CC' },
-                    { ip: '192.168.1.60', hostname: 'alarme-centrale', mac: '3C:5A:B4:12:34:56' },
-                    { ip: '192.168.1.90', hostname: 'tablette-hall',  mac: 'F0:9F:C2:65:43:21' }
-                  ];
-                  const list = (S && Array.isArray(S.attributes.clients))
-                                 ? S.attributes.clients : dm;
-                  const sorted = list.slice().sort((x, y) => {
-                    const n = (i) => String(i.ip || '').split('.').reduce(
-                      (a, b) => a * 256 + Number(b), 0);
-                    return n(x) - n(y);
-                  });
-                  const cell = (v, c, mono, align) => `
-                    <div style="color:${c};font-size:10px;text-align:${align};
-                      ${mono ? 'font-family:\'SFMono-Regular\',Consolas,monospace;letter-spacing:.2px;' : ''}
-                      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${v}</div>`;
-                  const row = (c, i) => `
-                    <div style="display:grid;grid-template-columns:84px minmax(0,1fr) 112px;column-gap:8px;
-                      align-items:center;padding:6px 8px;border-radius:8px;box-sizing:border-box;
-                      background:${i % 2 ? 'rgba(0,0,0,.28)' : 'rgba(0,0,0,.16)'};
-                      margin-bottom:3px;">
-                      ${cell(c.ip || '—', '#00E5FF', true, 'left')}
-                      ${cell(c.hostname || 'inconnu', '#FFFFFF', false, 'left')}
-                      ${cell(String(c.mac || '—').toUpperCase(), '#8FB6C9', true, 'right')}
-                    </div>`;
                   const th = (v, align) => `
                     <div style="color:#56707E;font-size:9px;letter-spacing:.5px;
                       text-align:${align};text-transform:uppercase;">${v}</div>`;
                   return `
-                    <div style="width:100%;box-sizing:border-box;">
-                      <div style="position:sticky;top:0;z-index:2;display:grid;
-                        grid-template-columns:84px minmax(0,1fr) 112px;column-gap:8px;padding:6px 8px;
-                        box-sizing:border-box;margin-bottom:4px;border-radius:8px;
-                        background:rgba(8,18,28,0.96);
-                        border-bottom:1px solid rgba(0,229,255,0.18);">
-                        ${th('Adresse IP', 'left')}
-                        ${th('Hostname', 'left')}
-                        ${th('Adresse MAC', 'right')}
-                      </div>
-                      ${sorted.map(row).join('')}
-                      ${demo ? `<div style="color:#FF9800;font-size:9px;margin-top:4px;">
-                        <ha-icon icon="mdi:alert-outline" style="--mdc-icon-size:12px;color:#FF9800;"></ha-icon>
-                        Valeurs de demonstration — creez sensor.netgear_ms510tx_clients</div>` : ''}
+                    <div style="display:grid;grid-template-columns:84px minmax(0,1fr) 112px;column-gap:8px;
+                      padding:6px 8px;box-sizing:border-box;border-radius:8px;
+                      border-bottom:1px solid rgba(0,229,255,0.18);
+                      margin-right:6px;">
+                      ${th('Adresse IP', 'left')}
+                      ${th('Hostname', 'left')}
+                      ${th('Adresse MAC', 'right')}
                     </div>`;
                 ]]]
             styles:
               grid:
-                - grid-template-areas: '"head" "table"'
-                - grid-template-columns: 1fr
-                - row-gap: 10px
+                - grid-template-areas: '"cols"'
+              card:
+                - background: transparent
+                - box-shadow: none
+                - border: none
+                - border-radius: 0
+                - padding: 0 4px 4px 0
+                - cursor: default
+                - pointer-events: none
+              custom_fields:
+                cols:
+                  - width: 100%
+
+          # ── Table des hotes (defilante) ────────────────────────────
+          # Montage IDENTIQUE aux listes de energy_mobile.yaml : une
+          # VRAIE carte embarquee dans le champ `table` d'un button-card
+          # a hauteur fixe + overflow, styles poses sur le champ custom.
+          - type: custom:button-card
+            show_icon: false
+            show_name: false
+            show_state: false
+            tap_action:
+              action: none
+            styles:
+              grid:
+                - grid-template-areas: '"table"'
               card:
                 - background: transparent
                 - box-shadow: none
@@ -1240,8 +1314,6 @@ views:
                 - cursor: default
                 - touch-action: pan-y
               custom_fields:
-                head:
-                  - width: 100%
                 table:
                   - display: block
                   - width: 100%
@@ -1253,6 +1325,75 @@ views:
                   - scrollbar-color: rgba(0,229,255,0.35) rgba(0,229,255,0.06)
                   - touch-action: pan-y
                   - "-webkit-overflow-scrolling": touch
+            custom_fields:
+              table:
+                card:
+                  type: custom:button-card
+                  show_icon: false
+                  show_name: false
+                  show_state: false
+                  tap_action:
+                    action: none
+                  triggers_update:
+                    - sensor.netgear_ms510tx_clients
+                  custom_fields:
+                    rows: |
+                      [[[
+                        const S = states['sensor.netgear_ms510tx_clients'];
+                        const demo = !S;
+                        const dm = [
+                          { ip: '192.168.1.1',  hostname: 'livebox',        mac: '00:1A:2B:3C:4D:5E' },
+                          { ip: '192.168.1.11', hostname: 'k3s-master',     mac: 'B8:27:EB:11:22:33' },
+                          { ip: '192.168.1.20', hostname: 'nas-synology',   mac: '00:11:32:AA:BB:CC' },
+                          { ip: '192.168.1.30', hostname: 'ms510tx',        mac: '9C:3D:CF:00:11:22' },
+                          { ip: '192.168.1.41', hostname: 'shelly-strip4',  mac: 'E8:65:38:44:55:66' },
+                          { ip: '192.168.1.42', hostname: 'shelly-ballon',  mac: 'E8:65:38:77:88:99' },
+                          { ip: '192.168.1.43', hostname: 'shelly-lumiere', mac: 'E8:65:38:AA:BB:CC' },
+                          { ip: '192.168.1.60', hostname: 'alarme-centrale', mac: '3C:5A:B4:12:34:56' },
+                          { ip: '192.168.1.90', hostname: 'tablette-hall',  mac: 'F0:9F:C2:65:43:21' }
+                        ];
+                        const list = (S && Array.isArray(S.attributes.clients))
+                                       ? S.attributes.clients : dm;
+                        const sorted = list.slice().sort((x, y) => {
+                          const n = (i) => String(i.ip || '').split('.').reduce(
+                            (a, b) => a * 256 + Number(b), 0);
+                          return n(x) - n(y);
+                        });
+                        const cell = (v, c, mono, align) => `
+                          <div style="color:${c};font-size:10px;text-align:${align};
+                            ${mono ? 'font-family:SFMono-Regular,Consolas,monospace;letter-spacing:.2px;' : ''}
+                            white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${v}</div>`;
+                        const row = (c, i) => `
+                          <div style="display:grid;grid-template-columns:84px minmax(0,1fr) 112px;column-gap:8px;
+                            align-items:center;padding:6px 8px;border-radius:8px;box-sizing:border-box;
+                            background:${i % 2 ? 'rgba(0,0,0,.28)' : 'rgba(0,0,0,.16)'};
+                            margin-bottom:3px;">
+                            ${cell(c.ip || '—', '#00E5FF', true, 'left')}
+                            ${cell(c.hostname || 'inconnu', '#FFFFFF', false, 'left')}
+                            ${cell(String(c.mac || '—').toUpperCase(), '#8FB6C9', true, 'right')}
+                          </div>`;
+                        return `
+                          <div style="width:100%;box-sizing:border-box;">
+                            ${sorted.map(row).join('')}
+                            ${demo ? `<div style="color:#FF9800;font-size:9px;margin-top:4px;">
+                              <ha-icon icon="mdi:alert-outline" style="--mdc-icon-size:12px;color:#FF9800;"></ha-icon>
+                              Valeurs de demonstration — creez sensor.netgear_ms510tx_clients</div>` : ''}
+                          </div>`;
+                      ]]]
+                  styles:
+                    grid:
+                      - grid-template-areas: '"rows"'
+                    card:
+                      - background: transparent
+                      - box-shadow: none
+                      - border: none
+                      - border-radius: 0
+                      - padding: 0
+                      - cursor: default
+                      - pointer-events: none
+                    custom_fields:
+                      rows:
+                        - width: 100%
 
       # ═════════════════════════════════════════════════════════════
       # PANNEAU 4 — ETAT DES EQUIPEMENTS (NAS, alarme, ECS, congelateur)
@@ -1368,14 +1509,34 @@ views:
                 sys:
                   - width: 100%
 
-    # ── Fond de vue (meme principe que energy_mobile.yaml) ───────────
+    # ── Fond de vue ──────────────────────────────────────────────────
+    # Le fond n'est PLUS pose sur hui-view : sa hauteur est celle du
+    # premier ecran, l'image s'arretait donc en cours de page des que le
+    # contenu depassait. `background-attachment: fixed` ne repare rien —
+    # il est ignore sur iOS/Safari.
+    #
+    # A la place : un calque en position:fixed, cale sur la fenetre, donc
+    # toujours plein cadre quelle que soit la longueur du dashboard.
+    # z-index:-1 + hui-view en contexte d'empilement (position:relative
+    # + z-index:0) le maintiennent DERRIERE les panneaux sans jamais
+    # deborder sur le reste de l'interface.
     card_mod:
       style: |
         hui-view {
-          /* PAS de background-attachment:fixed : casse sur iOS/Safari,
-             l'image ne couvrait pas la longueur du dashboard. Sans
-             `fixed`, l'image est peinte sur TOUTE la hauteur de la vue
-             et defile avec la page. */
+          position: relative;
+          z-index: 0;
           min-height: 100%;
-          background: center top / cover no-repeat url("/local/vssp/backgrounds/technical.png");
+          background: none;
+        }
+        hui-view::before {
+          content: "";
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          z-index: -1;
+          pointer-events: none;
+          background: center center / cover no-repeat
+                      url("/local/vssp/backgrounds/technical.png");
         }
