@@ -41,7 +41,7 @@ except ImportError:
     sys.exit(1)
 
 # Préfixe identifiant les entrées « propriété de Visio Sapiens » (dashboards, helpers).
-OSV_PREFIX = "vssp"
+OSV_PREFIX = "visio-sapiens"
 # Marqueur des ressources Visio Sapiens : toute url contenant ce segment est « à nous ».
 OSV_RESOURCE_MARK = "/local/vssp/"
 
