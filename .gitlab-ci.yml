@@ -168,6 +168,7 @@ validate:
     - test -f vssp/vssp_apply_config.py    || { echo "[ERR] vssp/vssp_apply_config.py manquant"; exit 1; }
     - test -f vssp/vssp_ensure_packages.py || { echo "[ERR] vssp/vssp_ensure_packages.py manquant"; exit 1; }
     - test -f vssp/vssp_sanitize_resources.py || { echo "[ERR] vssp/vssp_sanitize_resources.py manquant"; exit 1; }
+    - test -f vssp/vssp_lan_probe.py || { echo "[ERR] vssp/vssp_lan_probe.py manquant"; exit 1; }
     # Source unique du theme : themes/ a la racine (impose par HACS)
     - |
       if [ -d home-assistant/themes ]; then
@@ -221,6 +222,7 @@ build:
     - cp -r home-assistant/templates/.   dist/dashboards/templates/
     - cp -r themes/.                     dist/themes/
     - cp -r home-assistant/www/.         dist/www/
+    - cp vssp/vssp_lan_probe.py dist/vssp/
     # Packages HA multi-domaines (template, utility_meter...) charges via
     # `homeassistant: packages: !include_dir_named packages` du fragment.
     - mkdir -p dist/packages
@@ -353,6 +355,8 @@ deploy:staging:
         cp /config/.osv_stage/vssp/vssp_ensure_packages.py /config/vssp/
         cp /config/.osv_stage/vssp/vssp_sanitize_resources.py /config/vssp/
         cp /config/.osv_stage/config-fragment.yaml /config/config-fragment.yaml
+        cp /config/.osv_stage/vssp/vssp_lan_probe.py /config/vssp/
+        chmod +x /config/vssp/vssp_lan_probe.py
         # Packages (additif : n ecrase pas d eventuels packages non-vssp)
         mkdir -p /config/packages
         cp -r /config/.osv_stage/packages/. /config/packages/
