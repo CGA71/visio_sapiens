@@ -85,7 +85,7 @@
     .status-warn{background:rgba(255,152,0,.08);border:1px solid rgba(255,152,0,.3);color:#FF9800}
 
     /* SVG preview */
-    .svg-preview{background:rgba(8,18,28,.9);border:1px solid rgba(0,229,255,.2);border-radius:12px;padding:8px;overflow:auto;max-height:400px}
+    .svg-preview{background:rgba(8,18,28,.9);border:1px solid rgba(0,229,255,.2);border-radius:12px;padding:12px;overflow:auto;max-height:420px}
 
     /* Domain section */
     .domain-header{color:#00E5FF;font-family:'Orbitron','Courier New',monospace;font-size:11px;letter-spacing:1px;padding:8px 0 4px;border-top:1px solid rgba(0,229,255,.1);margin-top:12px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;user-select:none}
@@ -124,9 +124,9 @@
   <div class="steps">
     <div class="step active" id="s1"><div class="step-bar"></div><div class="step-label">1. STRUCTURE</div></div>
     <div class="step" id="s2"><div class="step-bar"></div><div class="step-label">2. APPAREILS</div></div>
-    <div class="step" id="s3"><div class="step-bar"></div><div class="step-label">3. GÉNÉRATION IA</div></div>
+    <div class="step" id="s3"><div class="step-bar"></div><div class="step-label">3. MODÈLE</div></div>
     <div class="step" id="s4"><div class="step-bar"></div><div class="step-label">4. GIT PUSH</div></div>
-    <div class="step" id="s5"><div class="step-bar"></div><div class="step-label">5. DASHBOARD</div></div>
+    <div class="step" id="s5"><div class="step-bar"></div><div class="step-label">5. GÉNÉRATION</div></div>
   </div>
 
   <!-- CONTENT -->
@@ -149,9 +149,8 @@ let state = {
   step: 0,   // 0=token, 1-5=phases
   house: { floors:[], exteriors:[] },
   devices: [],
-  svg: "",
-  houseStyle: "futuriste",  // futuriste | moderne | provencale
-  generatedImageUrl: null,  // URL ComfyUI de l'image générée
+  sensors: [],        // capteurs sensor.* relevés au scan (pour pairage énergie)
+  modelYaml: "",      // fragment rooms généré (house_rooms.yaml)
   gitlab: {
     url: localStorage.getItem("osv_gitlab_url") || "http://192.168.1.11:10000",
     projectId: localStorage.getItem("osv_gitlab_project") || "",
@@ -412,7 +411,7 @@ function renderPhase2(c) {
       <button class="btn btn-ghost" onclick="goPhase1()">← Retour</button>
       <div class="actions-right">
         <button class="btn" onclick="goPhase3()" ${assigned>0?'':'disabled'}>
-          Suivant → Générer le plan SVG
+          Suivant → Générer le modèle
         </button>
       </div>
     </div>`;
@@ -430,7 +429,7 @@ async function runDiscoveryScan() {
 
   try {
     // 1. Lancer le script Python via HA service
-    await callService("script", "turn_on", { entity_id:"script.osvision_run_discovery" });
+    await callService("script", "turn_on", { entity_id:"script.vssp_run_discovery" });
     status.innerHTML = `<div class="status status-info"><span class="spinner"></span>Script lancé — récupération directe des entités…</div>`;
 
     // 2. Récupérer directement les états HA (plus fiable)
@@ -442,6 +441,10 @@ async function runDiscoveryScan() {
                      "camera","alarm_control_panel","vacuum","fan","lock",
                      "input_boolean","button","remote"];
     const states = await haGet("states");
+    // Capteurs de mesure : gardés de côté pour le pairage puissance/énergie
+    state.sensors = states
+      .filter(s => s.entity_id.startsWith("sensor."))
+      .map(s => s.entity_id);
     const devs = states
       .filter(s => DOMAINS.includes(s.entity_id.split(".")[0]))
       .map(s => ({
@@ -480,317 +483,195 @@ function assignDevice(entity_id, room) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// PHASE 3 — Génération IA (ComfyUI SDXL)
+// PHASE 3 — Génération du modèle (rooms → house_rooms.yaml)
 // ═══════════════════════════════════════════════════════════════════════════
 
-const COMFY_URL = "http://192.168.1.15:8188";
-
-// Construit le prompt depuis la structure de la maison
-function buildPrompt(house, roomName, isExterior) {
-  const floors = house.floors.map(f => f.name).join(", ");
-  const rooms = house.floors.flatMap(f => f.rooms.map(r => r.name)).filter(Boolean);
-  const exteriors = house.exteriors;
-
-  // Styles de maison disponibles
-  const STYLES = {
-    futuriste: {
-      ext: "futuristic smart home, neon cyan accent lights, dark night atmosphere, OSVision HUD style, sci-fi architecture, glass and steel",
-      int: "futuristic smart home interior, neon cyan accent lighting, dark elegant atmosphere, ultra modern, high-tech"
-    },
-    moderne: {
-      ext: "modern contemporary house, clean lines, large windows, minimalist design, warm evening lighting, landscaped garden",
-      int: "modern contemporary interior design, clean minimalist style, natural materials, warm lighting, elegant furniture"
-    },
-    provencale: {
-      ext: "provencal french country house, stone walls, terracotta roof tiles, lavender garden, warm mediterranean sunlight, rustic charm, olive trees",
-      int: "provencal french country interior, rustic wooden beams, stone walls, warm terracotta tones, cozy mediterranean style"
-    }
-  };
-  const style = STYLES[state.houseStyle] || STYLES.futuriste;
-
-  if (isExterior) {
-    // Vue 3D extérieure principale
-    const extList = exteriors.length > 0 ? exteriors.join(", ") : "garden";
-    const roomList = rooms.slice(0,6).join(", ");
-    return {
-      positive: `isometric 3D architectural rendering of a house exterior, ${floors.length} floors, ${extList}, ${roomList}, ${style.ext}, ultra detailed, 8k, professional architectural visualization, photorealistic`,
-      negative: `blurry, low quality, distorted, flat, 2D, sketch, cartoon, people, cars, watermark, text`
-    };
-  } else {
-    // Vignette d'une pièce
-    const roomLower = roomName.toLowerCase();
-    return {
-      positive: `interior design of a ${roomLower}, ${style.int}, 8k, photorealistic`,
-      negative: `blurry, low quality, distorted, people, watermark, text, ugly`
-    };
-  }
+function slugify(name) {
+  return String(name).normalize("NFD").replace(/[\u0300-\u036f]/g, "")
+    .toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
 }
 
-// Construit le workflow ComfyUI avec les paramètres voulus
-function buildWorkflow(positivePrompt, negativePrompt, width=1024, height=768, seed=null) {
+// Icône mdi devinée depuis le nom / domaine (modifiable ensuite dans le YAML)
+const ICON_RULES = [
+  [/aspirateur|vacuum/i, "mdi:vacuum"],
+  [/congel|freezer/i, "mdi:snowflake"],
+  [/frigo|refrigerat|fridge/i, "mdi:fridge"],
+  [/lave.?linge|washing/i, "mdi:washing-machine"],
+  [/seche.?linge|dryer/i, "mdi:tumble-dryer"],
+  [/lave.?vaisselle|dishwasher/i, "mdi:dishwasher"],
+  [/four|oven/i, "mdi:toaster-oven"],
+  [/alarme|alarm/i, "mdi:alarm"],
+  [/livebox|box|router|provider/i, "mdi:web"],
+  [/commutateur|switch|netgear|lan/i, "mdi:lan"],
+  [/synology|nas/i, "mdi:nas"],
+  [/tv|television/i, "mdi:television"],
+  [/clim|air.?cond/i, "mdi:air-conditioner"],
+  [/chauffe.?eau|boiler/i, "mdi:water-boiler"],
+  [/piscine|pool/i, "mdi:pool"],
+  [/lamp|light|eclairage|lumiere/i, "mdi:lightbulb-on-outline"],
+  [/bureau|desk/i, "mdi:desk-lamp"],
+  [/prise|plug|socket/i, "mdi:power-socket-fr"],
+];
+const DOMAIN_MDI = { light:"mdi:lightbulb-on-outline", switch:"mdi:power-socket-fr",
+  climate:"mdi:thermostat", media_player:"mdi:speaker", cover:"mdi:window-shutter",
+  camera:"mdi:cctv", alarm_control_panel:"mdi:shield-home", vacuum:"mdi:vacuum",
+  fan:"mdi:fan", lock:"mdi:lock" };
+
+function guessIcon(name, domain) {
+  for (const [re, icon] of ICON_RULES) if (re.test(name)) return icon;
+  return DOMAIN_MDI[domain] || "mdi:power-plug";
+}
+
+// Cherche les capteurs puissance/énergie liés à un appareil via son stem
+// (ex: switch.shelly_bureau → sensor.shelly_bureau_power / _energy_today)
+const POWER_RE = /_(power|puissance|watts?)$/;
+const ENERGY_RE = /_(energy_today|energy|energie|kwh)$/;
+
+function findEnergyPair(entity_id) {
+  const stem = entity_id.split(".")[1];
+  const related = state.sensors
+    .map(s => s.split(".")[1])
+    .filter(oid => oid === stem || oid.startsWith(stem + "_"));
+  const power = related.find(oid => POWER_RE.test(oid));
+  const energy = related.find(oid => ENERGY_RE.test(oid));
   return {
-    "4": {
-      "inputs": { "ckpt_name": "sd_xl_base_1.0.safetensors" },
-      "class_type": "CheckpointLoaderSimple"
-    },
-    "5": {
-      "inputs": { "text": positivePrompt, "clip": ["4", 1] },
-      "class_type": "CLIPTextEncode"
-    },
-    "10": {
-      "inputs": { "text": negativePrompt, "clip": ["4", 1] },
-      "class_type": "CLIPTextEncode"
-    },
-    "6": {
-      "inputs": { "width": width, "height": height, "batch_size": 1 },
-      "class_type": "EmptyLatentImage"
-    },
-    "7": {
-      "inputs": {
-        "seed": seed || Math.floor(Math.random() * 999999999999),
-        "steps": 15,  // réduit pour accélérer
-        "cfg": 8,
-        "sampler_name": "euler",
-        "scheduler": "simple",
-        "denoise": 1,
-        "model": ["4", 0],
-        "positive": ["5", 0],
-        "negative": ["10", 0],
-        "latent_image": ["6", 0]
-      },
-      "class_type": "KSampler"
-    },
-    "8": {
-      "inputs": { "samples": ["7", 0], "vae": ["4", 2] },
-      "class_type": "VAEDecode"
-    },
-    "9": {
-      "inputs": { "filename_prefix": "OSVision", "images": ["8", 0] },
-      "class_type": "SaveImage"
-    }
+    power: power ? "sensor." + power : null,
+    energy: energy ? "sensor." + energy : null,
   };
 }
 
-// Soumet un workflow et poll jusqu'à l'image
-async function generateImage(positivePrompt, negativePrompt, width=1024, height=768) {
-  const workflow = buildWorkflow(positivePrompt, negativePrompt, width, height);
-  
-  // 1. Soumettre
-  const queueResp = await fetch(`${COMFY_URL}/prompt`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt: workflow })
-  });
-  if (!queueResp.ok) throw new Error(`ComfyUI /prompt: ${queueResp.status}`);
-  const { prompt_id } = await queueResp.json();
-  
-  // 2. Poll jusqu'à completion (max 300s)
-  for (let i = 0; i < 150; i++) {  // 300s max
-    await new Promise(r => setTimeout(r, 2000));
-    // Mettre à jour le statut si présent
-    const progEl = document.getElementById('img-3d-status') || document.querySelector('.status-info');
-    if (progEl) {
-      const elapsed = Math.round((i+1)*2);
-      progEl.innerHTML = `<div class="status status-info"><span class="spinner"></span>Génération en cours… ${elapsed}s écoulées</div>`;
-    }
-    const histResp = await fetch(`${COMFY_URL}/history/${prompt_id}`);
-    if (!histResp.ok) continue;
-    const hist = await histResp.json();
-    if (hist[prompt_id]?.status?.completed) {
-      // Récupérer l'image générée
-      const outputs = hist[prompt_id].outputs;
-      for (const nodeId in outputs) {
-        const imgs = outputs[nodeId].images;
-        if (imgs && imgs.length > 0) {
-          const img = imgs[0];
-          const imgUrl = `${COMFY_URL}/view?filename=${img.filename}&subfolder=${img.subfolder||''}&type=${img.type||'output'}`;
-          return imgUrl;
-        }
+function buildModelYaml() {
+  const rooms = getAllRooms();
+  const now = new Date().toISOString().slice(0, 16).replace("T", " ");
+  let complete = 0, incomplete = 0;
+
+  let y = "";
+  y += "########################################################################\n";
+  y += "# Visio Sapiens — rooms générées par le Discovery Wizard (" + now + ")\n";
+  y += "# Fichier fusionné automatiquement par vssp/generate_dashboards.py :\n";
+  y += "# s'il existe, sa clé rooms: remplace celle de model/house.yaml.\n";
+  y += "# Compléter les champs model: et ajuster les icônes si besoin.\n";
+  y += "########################################################################\n";
+  y += "rooms:\n";
+
+  rooms.forEach(roomName => {
+    const devs = state.devices.filter(d => d.room === roomName);
+    y += "  - id: " + slugify(roomName) + "\n";
+    y += '    name: "' + roomName.replace(/"/g, "'") + '"\n';
+    y += "    devices:\n";
+    let emitted = 0;
+    devs.forEach(d => {
+      const pair = findEnergyPair(d.entity_id);
+      const name = (d.friendly_name || d.entity_id).replace(/"/g, "'");
+      const icon = guessIcon(name, d.entity_id.split(".")[0]);
+      if (pair.power && pair.energy) {
+        y += '      - name: "' + name + '"\n';
+        y += "        icon: " + icon + "\n";
+        y += '        model: "A COMPLETER"\n';
+        y += "        power_entity: " + pair.power + "\n";
+        y += "        energy_entity: " + pair.energy + "\n";
+        emitted++; complete++;
+      } else {
+        y += "      # TODO " + d.entity_id + ' ("' + name + '") : capteurs\n';
+        y += "      #      puissance/energie non trouves — a renseigner\n";
+        y += "      #      manuellement (power_entity / energy_entity)\n";
+        incomplete++;
       }
-    }
-  }
-  throw new Error("Timeout : génération trop longue (>300s) — vérifie que ComfyUI n'est pas surchargé");
+    });
+    if (emitted === 0) y += "      []\n";
+  });
+
+  state.modelYaml = y.replace(/      \[\]\n/g, "");
+  // rooms sans device complet : devices: [] valide pour le générateur
+  state.modelYaml = state.modelYaml.replace(/    devices:\n(?=  - id:|$)/g, "    devices: []\n");
+  return { complete, incomplete };
 }
 
 function renderPhase3(c) {
-  const assigned = state.devices.filter(d=>d.room).length;
-  const allRooms = getAllRooms();
-  const totalRooms = allRooms.length;
+  const rooms = getAllRooms();
+  const assigned = state.devices.filter(d => d.room).length;
 
-  let roomButtons = allRooms.map(r => 
-    `<button class="btn btn-sm" style="margin:4px" onclick="generateVignette('${esc(r)}')" id="btn-vignette-${esc(r).replace(/[^a-z0-9]/gi,'_')}">
-      🏠 ${esc(r)}
-    </button>`
-  ).join('');
-
-  c.innerHTML = `
+  let html = `
     <div class="card">
-      <div class="card-title">PHASE 3 — GÉNÉRATION IA</div>
-      <div class="card-sub">ComfyUI SDXL · ${totalRooms} zones · ${assigned} appareils assignés</div>
-
-      <div class="card" style="background:rgba(0,229,255,.05);margin-bottom:12px">
-        <div style="color:#8FB6C9;font-size:12px;letter-spacing:1px;margin-bottom:8px">STYLE DE LA MAISON</div>
-        <div style="display:flex;gap:8px;flex-wrap:wrap">
-          <span class="chip ${state.houseStyle==='futuriste'?'on':''}" onclick="setHouseStyle('futuriste')">🌃 Futuriste</span>
-          <span class="chip ${state.houseStyle==='moderne'?'on':''}" onclick="setHouseStyle('moderne')">🏠 Moderne</span>
-          <span class="chip ${state.houseStyle==='provencale'?'on':''}" onclick="setHouseStyle('provencale')">🌿 Provençale</span>
-        </div>
+      <div class="card-title">PHASE 3 — GÉNÉRATION DU MODÈLE</div>
+      <div class="card-sub">
+        Construit le fragment <code style="color:#00E5FF">house_rooms.yaml</code>
+        (pièces + appareils avec leurs capteurs puissance/énergie) qui alimente
+        le générateur de dashboards.
       </div>
-
-      <div class="card" style="background:rgba(0,229,255,.05);margin-bottom:0">
-        <div style="color:#8FB6C9;font-size:12px;letter-spacing:1px;margin-bottom:8px">PROMPT AUTO-GÉNÉRÉ</div>
-        <div id="prompt-preview" style="color:#00E5FF;font-size:11px;line-height:1.6;font-family:'Courier New',monospace;background:rgba(0,0,0,.3);padding:10px;border-radius:8px;white-space:pre-wrap"></div>
+      <div class="row" style="margin-bottom:16px">
+        <span class="badge badge-cyan">${rooms.length} pièces</span>
+        <span class="badge badge-cyan">${assigned} appareils assignés</span>
       </div>
+      <button class="btn" onclick="doBuildModel()" id="btn-model">⚙ Générer le modèle</button>
     </div>
-
-    <div class="card">
-      <div class="card-title" style="margin-bottom:12px">VUE 3D EXTÉRIEURE</div>
-      <div class="row" style="flex-wrap:wrap;gap:8px;margin-bottom:16px">
-        <button class="btn" onclick="generate3DView()" id="btn-3d">
-          ⚡ Générer la vue 3D principale
-        </button>
-        <button class="btn btn-sm btn-ghost" onclick="regenerate3DView()" id="btn-3d-regen" style="display:none">
-          🔄 Régénérer
-        </button>
-      </div>
-      <div id="img-3d-status"></div>
-      <div id="img-3d-container"></div>
-    </div>
-
-    <div class="card">
-      <div class="card-title" style="margin-bottom:8px">VIGNETTES PAR PIÈCE</div>
-      <div class="card-sub">Génère une ambiance visuelle pour chaque pièce</div>
-      <div style="margin-bottom:12px;flex-wrap:wrap;display:flex;gap:4px">
-        <button class="btn btn-sm" onclick="generateAllVignettes()" id="btn-all-vignettes">
-          ⚡ Tout générer
-        </button>
-        ${roomButtons}
-      </div>
-      <div id="vignettes-container" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:12px;margin-top:12px"></div>
-    </div>
-
+    <div id="model-status"></div>
+    <div id="model-preview"></div>
     <div class="actions">
       <button class="btn btn-ghost" onclick="goPhase2()">← Retour</button>
       <div class="actions-right">
-        <button class="btn" onclick="goPhaseGit()">
-          Suivant → Pousser vers GitLab
+        <button class="btn" onclick="goPhaseGit()" ${state.modelYaml ? "" : "disabled"}>
+          Suivant → Push GitLab
         </button>
       </div>
     </div>`;
-
-  // Afficher le prompt preview
-  const { positive } = buildPrompt(state.house, null, true);
-  document.getElementById("prompt-preview").textContent = positive;
+  c.innerHTML = html;
+  if (state.modelYaml) showModelPreview({ complete: -1, incomplete: -1 });
 }
 
-async function generate3DView() {
-  const btn = document.getElementById("btn-3d");
-  const status = document.getElementById("img-3d-status");
-  const container = document.getElementById("img-3d-container");
-  btn.disabled = true;
-  btn.innerHTML = `<span class="spinner"></span>Génération en cours… (60-120s selon GPU)`;
-  status.innerHTML = `<div class="status status-info"><span class="spinner"></span>Envoi à ComfyUI (${COMFY_URL})…</div>`;
+function doBuildModel() {
+  const stats = buildModelYaml();
+  showModelPreview(stats);
+  const next = document.querySelector(".actions-right .btn");
+  if (next) next.disabled = false;
+}
 
-  try {
-    const { positive, negative } = buildPrompt(state.house, null, true);
-    const imgUrl = await generateImage(positive, negative, 768, 512);
-    state.generatedImageUrl = imgUrl;
-    
-    container.innerHTML = `
-      <div id="osv-img-wrapper" style="position:relative;display:inline-block;width:100%;margin-top:8px">
-        <img id="osv-3d-img" src="${imgUrl}" style="width:100%;border-radius:10px;border:1px solid rgba(0,229,255,.3);display:block"
-             onerror="this.style.display='none'" alt="Vue 3D OSVision"
-             onload="initBadges('${imgUrl}')"/>
-        <svg id="osv-lines" style="position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;overflow:visible;z-index:5"></svg>
+function showModelPreview(stats) {
+  const status = document.getElementById("model-status");
+  const prev = document.getElementById("model-preview");
+  if (stats.complete >= 0) {
+    status.innerHTML = `<div class="status ${stats.incomplete ? "status-warn" : "status-ok"}">
+      ✓ Modèle généré — ${stats.complete} appareil(s) avec capteurs énergie détectés` +
+      (stats.incomplete ? `, ${stats.incomplete} en TODO (pas de capteur puissance/énergie trouvé)` : "") +
+      `</div>`;
+  }
+  prev.innerHTML = `
+    <div class="card">
+      <div class="row" style="margin-bottom:8px">
+        <button class="btn btn-sm" onclick="copyModel()">📋 Copier</button>
+        <button class="btn btn-sm" onclick="downloadModel()">⬇ Télécharger house_rooms.yaml</button>
       </div>
-      <div id="osv-badges-container" style="position:relative;margin-top:8px"></div>
-      <div style="margin-top:8px;display:flex;gap:8px">
-        <a href="${imgUrl}" download="osvision_3d.png" class="btn btn-sm">⬇ Télécharger</a>
-        <button class="btn btn-sm" onclick="exportWithBadges()">⬇ Exporter avec badges</button>
-      </div>`;
-    status.innerHTML = `<div class="status status-ok">✓ Image générée — glisse les badges autour de l'image pour les positionner</div>`;
-    document.getElementById("btn-3d-regen").style.display = "inline-block";
-    btn.innerHTML = `✓ Généré`;
-  } catch(e) {
-    status.innerHTML = `<div class="status status-error">Erreur : ${e.message}</div>`;
-    btn.innerHTML = `⚡ Générer la vue 3D principale`;
-    btn.disabled = false;
-  }
+      <pre class="svg-preview" style="white-space:pre-wrap;color:#8FB6C9;font-size:12px;line-height:1.5">${esc(state.modelYaml)}</pre>
+    </div>`;
 }
 
-function regenerate3DView() {
-  document.getElementById("btn-3d").disabled = false;
-  document.getElementById("btn-3d").innerHTML = `⚡ Générer la vue 3D principale`;
-  generate3DView();
+function copyModel() {
+  navigator.clipboard.writeText(state.modelYaml)
+    .then(() => alert("Modèle copié dans le presse-papiers"));
 }
 
-async function generateVignette(roomName) {
-  const safeId = roomName.replace(/[^a-z0-9]/gi,'_');
-  const btn = document.getElementById(`btn-vignette-${safeId}`);
-  const container = document.getElementById("vignettes-container");
-  
-  // Placeholder
-  let card = document.getElementById(`vignette-card-${safeId}`);
-  if (!card) {
-    card = document.createElement('div');
-    card.id = `vignette-card-${safeId}`;
-    card.style.cssText = "background:rgba(0,229,255,.05);border:1px solid rgba(0,229,255,.2);border-radius:10px;overflow:hidden";
-    container.appendChild(card);
-  }
-  card.innerHTML = `
-    <div style="height:150px;display:flex;align-items:center;justify-content:center;color:#00E5FF">
-      <span class="spinner"></span>
-    </div>
-    <div style="padding:8px;font-size:11px;color:#8FB6C9;text-align:center">${esc(roomName)}</div>`;
-
-  if (btn) { btn.disabled = true; btn.innerHTML = `⟳ ${esc(roomName)}`; }
-
-  try {
-    const { positive, negative } = buildPrompt(state.house, roomName, false);
-    const imgUrl = await generateImage(positive, negative, 512, 512);
-    
-    card.innerHTML = `
-      <img src="${imgUrl}" style="width:100%;height:150px;object-fit:cover" alt="${esc(roomName)}"/>
-      <div style="padding:8px;display:flex;justify-content:space-between;align-items:center">
-        <span style="font-size:11px;color:#00E5FF;font-weight:bold">${esc(roomName)}</span>
-        <a href="${imgUrl}" download="osvision_${safeId}.png" style="color:#8FB6C9;font-size:18px;text-decoration:none">⬇</a>
-      </div>`;
-    if (btn) { btn.innerHTML = `✓ ${esc(roomName)}`; }
-  } catch(e) {
-    card.innerHTML = `
-      <div style="height:150px;display:flex;align-items:center;justify-content:center;color:#FF3D71;font-size:11px;padding:8px;text-align:center">
-        Erreur : ${e.message}
-      </div>
-      <div style="padding:8px;font-size:11px;color:#8FB6C9;text-align:center">${esc(roomName)}</div>`;
-    if (btn) { btn.disabled = false; btn.innerHTML = `🏠 ${esc(roomName)}`; }
-  }
-}
-
-async function generateAllVignettes() {
-  const btn = document.getElementById("btn-all-vignettes");
-  btn.disabled = true;
-  btn.innerHTML = `<span class="spinner"></span>Génération séquentielle…`;
-  
-  const rooms = getAllRooms();
-  for (const room of rooms) {
-    await generateVignette(room);
-  }
-  btn.innerHTML = `✓ Tout généré`;
+function downloadModel() {
+  const blob = new Blob([state.modelYaml], { type: "text/yaml" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "house_rooms.yaml";
+  a.click();
+  URL.revokeObjectURL(a.href);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// PHASE GIT — Push de l'image vers GitLab
+// PHASE 4 — Push du modèle vers GitLab
 // ═══════════════════════════════════════════════════════════════════════════
 function renderPhaseGit(c) {
   var g = state.gitlab;
-  var hasImage = !!state.generatedImageUrl;
+  var hasModel = !!state.modelYaml;
 
   c.innerHTML = '<div class="card">' +
-    '<div class="card-title">PHASE 4 — PUSH VERS GITLAB</div>' +
-    '<div class="card-sub">L\'image sera commitée dans le repo — ta chaîne CI la déploiera automatiquement.</div>' +
-    (hasImage ?
-      '<div class="status status-ok">✓ Image 3D générée, prête à être poussée</div>' :
-      '<div class="status status-warn">⚠ Aucune image générée — retourne en phase 3 pour en générer une</div>') +
+    '<div class="card-title">PHASE 4 — PUSH DU MODÈLE VERS GITLAB</div>' +
+    '<div class="card-sub">Le fragment house_rooms.yaml sera commité dans le repo — ta chaîne CI le déploiera sur le pod HA.</div>' +
+    (hasModel ?
+      '<div class="status status-ok">✓ Modèle généré, prêt à être poussé</div>' :
+      '<div class="status status-warn">⚠ Aucun modèle généré — retourne en phase 3</div>') +
     '<div style="margin-top:16px">' +
       '<label>URL GITLAB</label>' +
       '<input type="text" id="gl-url" value="' + esc(g.url) + '" style="margin-bottom:12px"/>' +
@@ -801,17 +682,17 @@ function renderPhaseGit(c) {
       '<label>BRANCHE</label>' +
       '<input type="text" id="gl-branch" value="' + esc(g.branch) + '" style="margin-bottom:12px"/>' +
       '<label>CHEMIN DANS LE REPO</label>' +
-      '<input type="text" id="gl-path" value="home-assistant/www/osvision_v2/images/floorplan.png" style="margin-bottom:16px"/>' +
+      '<input type="text" id="gl-path" value="home-assistant/dashboards/model/house_rooms.yaml" style="margin-bottom:16px"/>' +
     '</div>' +
-    '<button class="btn" onclick="pushToGitLab()" id="btn-git-push"' + (hasImage ? '' : ' disabled') + '>' +
-      '🚀 Commit + Push l\'image' +
+    '<button class="btn" onclick="pushToGitLab()" id="btn-git-push"' + (hasModel ? '' : ' disabled') + '>' +
+      '🚀 Commit + Push le modèle' +
     '</button>' +
     '</div>' +
     '<div id="git-status"></div>' +
     '<div class="actions">' +
       '<button class="btn btn-ghost" onclick="goPhase3()">← Retour</button>' +
       '<div class="actions-right">' +
-        '<button class="btn" onclick="goPhase4()">Suivant → Dashboard</button>' +
+        '<button class="btn" onclick="goPhase4()">Suivant → Génération</button>' +
       '</div>' +
     '</div>';
 }
@@ -820,7 +701,6 @@ async function pushToGitLab() {
   var btn = document.getElementById('btn-git-push');
   var status = document.getElementById('git-status');
 
-  // Sauvegarder la config
   state.gitlab.url = document.getElementById('gl-url').value.trim().replace(/\/$/, '');
   state.gitlab.projectId = document.getElementById('gl-project').value.trim();
   state.gitlab.token = document.getElementById('gl-token').value.trim();
@@ -839,25 +719,14 @@ async function pushToGitLab() {
 
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span>Push en cours…';
-  status.innerHTML = '<div class="status status-info"><span class="spinner"></span>Étape 1/3 — Téléchargement de l\'image depuis ComfyUI…</div>';
 
   try {
-    // 1. Récupérer l'image en blob depuis ComfyUI
-    var imgResp = await fetch(state.generatedImageUrl);
-    if (!imgResp.ok) throw new Error('Image ComfyUI inaccessible: ' + imgResp.status);
-    var blob = await imgResp.blob();
+    // 1. Encodage base64 (UTF-8 safe : accents des noms de pièces)
+    status.innerHTML = '<div class="status status-info"><span class="spinner"></span>Étape 1/2 — Encodage du modèle…</div>';
+    var base64 = btoa(unescape(encodeURIComponent(state.modelYaml)));
 
-    // 2. Convertir en base64
-    status.innerHTML = '<div class="status status-info"><span class="spinner"></span>Étape 2/3 — Encodage base64…</div>';
-    var base64 = await new Promise(function(resolve, reject) {
-      var reader = new FileReader();
-      reader.onload = function() { resolve(reader.result.split(',')[1]); };
-      reader.onerror = reject;
-      reader.readAsDataURL(blob);
-    });
-
-    // 3. Commit via l'API GitLab (create or update)
-    status.innerHTML = '<div class="status status-info"><span class="spinner"></span>Étape 3/3 — Commit dans GitLab…</div>';
+    // 2. Commit via l'API GitLab (create or update)
+    status.innerHTML = '<div class="status status-info"><span class="spinner"></span>Étape 2/2 — Commit dans GitLab…</div>';
     var apiUrl = state.gitlab.url + '/api/v4/projects/' + encodeURIComponent(state.gitlab.projectId) +
                  '/repository/files/' + encodeURIComponent(filePath);
 
@@ -865,27 +734,20 @@ async function pushToGitLab() {
       branch: state.gitlab.branch,
       content: base64,
       encoding: 'base64',
-      commit_message: 'feat(osvision): update floorplan image via Discovery Wizard'
+      commit_message: 'feat(vssp): update house model via Discovery Wizard'
     };
 
     // Essayer update (PUT) d'abord, sinon create (POST)
     var resp = await fetch(apiUrl, {
       method: 'PUT',
-      headers: {
-        'PRIVATE-TOKEN': state.gitlab.token,
-        'Content-Type': 'application/json'
-      },
+      headers: { 'PRIVATE-TOKEN': state.gitlab.token, 'Content-Type': 'application/json' },
       body: JSON.stringify(body)
     });
 
     if (resp.status === 400 || resp.status === 404) {
-      // Le fichier n'existe pas encore → POST (create)
       resp = await fetch(apiUrl, {
         method: 'POST',
-        headers: {
-          'PRIVATE-TOKEN': state.gitlab.token,
-          'Content-Type': 'application/json'
-        },
+        headers: { 'PRIVATE-TOKEN': state.gitlab.token, 'Content-Type': 'application/json' },
         body: JSON.stringify(body)
       });
     }
@@ -896,8 +758,8 @@ async function pushToGitLab() {
     }
 
     status.innerHTML = '<div class="status status-ok">' +
-      '✓ Image commitée dans <strong>' + esc(filePath) + '</strong> (branche ' + esc(state.gitlab.branch) + ')<br>' +
-      '<span style="font-size:12px">Ta chaîne CI va maintenant déployer l\'image automatiquement.</span></div>';
+      '✓ Modèle commité dans <strong>' + esc(filePath) + '</strong> (branche ' + esc(state.gitlab.branch) + ')<br>' +
+      '<span style="font-size:12px">Ta chaîne CI va maintenant le déployer sur le pod HA.</span></div>';
     btn.innerHTML = '✓ Poussé';
   } catch(e) {
     status.innerHTML = '<div class="status status-error">Erreur : ' + esc(e.message) + '</div>';
@@ -907,42 +769,44 @@ async function pushToGitLab() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// PHASE 4 — Mise à jour du dashboard
+// PHASE 5 — Génération des dashboards
 // ═══════════════════════════════════════════════════════════════════════════
 function renderPhase4(c) {
   c.innerHTML = `
     <div class="card">
-      <div class="card-title">PHASE 4 — MISE À JOUR DU DASHBOARD</div>
+      <div class="card-title">PHASE 5 — GÉNÉRATION DES DASHBOARDS</div>
       <div class="card-sub">
-        Le script Python va :
+        Le générateur va :
         <ol style="margin:12px 0 0 20px;line-height:2">
-          <li>Sauvegarder le plan SVG dans <code style="color:#00E5FF">/config/www/osvision_v2/images/floorplan.svg</code></li>
-          <li>Sauvegarder la config JSON dans <code style="color:#00E5FF">/config/osvision/floorplan_config.json</code></li>
-          <li>Patcher la zone <code style="color:#00E5FF">floor</code> dans <code style="color:#00E5FF">home.yaml</code></li>
+          <li>Sauvegarder le dashboard actuel dans <code style="color:#00E5FF">/config/vssp/backups/</code></li>
+          <li>Fusionner <code style="color:#00E5FF">house_rooms.yaml</code> dans le modèle <code style="color:#00E5FF">model/house.yaml</code></li>
+          <li>Rendre les templates Jinja2 → <code style="color:#00E5FF">views/energy.yaml</code> (validation YAML avant écriture)</li>
           <li>Recharger Lovelace automatiquement</li>
         </ol>
       </div>
       <div class="status status-warn" style="margin-bottom:16px">
-        ⚠ Assure-toi que <strong>osvision_patch_dashboard.py</strong> est déposé dans <code>/config/osvision/</code>
-        et que les shell_commands sont déclarés dans <code>configuration.yaml</code>.
+        ⚠ Prérequis : <strong>generate_dashboards.py</strong> déposé dans <code>/config/vssp/</code>,
+        shell_command <code>vssp_generate_dashboards</code> déclaré (voir vssp_admin_config.yaml),
+        et le modèle déployé sur le pod (push GitLab + CI de la phase 4, ou copie manuelle).
       </div>
       <button class="btn" onclick="applyDashboard()" id="btn-apply">
-        🚀 Appliquer la mise à jour
+        🚀 Générer les dashboards
       </button>
     </div>
     <div id="apply-status"></div>
     <div class="card" style="margin-top:16px">
       <div class="card-title" style="font-size:12px;margin-bottom:8px">ALTERNATIVE MANUELLE</div>
       <div style="color:#8FB6C9;font-size:13px;line-height:1.7">
-        Si le patch automatique échoue :
+        Si le déclenchement automatique échoue :
         <ol style="margin:8px 0 0 20px">
-          <li>Télécharge <strong>floorplan.svg</strong> (étape 3) et dépose-le dans <code style="color:#00E5FF">/config/www/osvision_v2/images/</code></li>
-          <li>Recharge le dashboard OSVision</li>
+          <li>Télécharge <strong>house_rooms.yaml</strong> (phase 3) et dépose-le dans <code style="color:#00E5FF">/config/home-assistant/dashboards/model/</code></li>
+          <li>Sur le pod : <code style="color:#00E5FF">python3 /config/vssp/generate_dashboards.py</code></li>
+          <li>Recharge les dashboards Lovelace</li>
         </ol>
       </div>
     </div>
     <div class="actions">
-      <button class="btn btn-ghost" onclick="goPhase3()">← Retour</button>
+      <button class="btn btn-ghost" onclick="goPhaseGit()">← Retour</button>
     </div>`;
 }
 
@@ -950,20 +814,15 @@ async function applyDashboard() {
   const btn = document.getElementById("btn-apply");
   const status = document.getElementById("apply-status");
   btn.disabled = true;
-  btn.innerHTML = `<span class="spinner"></span>Application en cours…`;
+  btn.innerHTML = `<span class="spinner"></span>Génération en cours…`;
 
   try {
-    // 1. Envoyer le SVG via notify (workaround : on passe le SVG en notification
-    //    persistante que le script Python lira — ou via input_text si petit)
-    //    Solution pratique : écrire dans un input_text puis le script le lit
-    status.innerHTML = `<div class="status status-info"><span class="spinner"></span>Étape 1/3 — Sauvegarde du SVG…</div>`;
-
-    // Appeler shell_command via service
-    await callService("shell_command", "osvision_save_pending_svg");
+    status.innerHTML = `<div class="status status-info"><span class="spinner"></span>Étape 1/3 — Sauvegarde du dashboard actuel…</div>`;
+    await callService("shell_command", "vssp_backup_dashboard");
     await new Promise(r => setTimeout(r, 800));
 
-    status.innerHTML = `<div class="status status-info"><span class="spinner"></span>Étape 2/3 — Patch du dashboard…</div>`;
-    await callService("shell_command", "osvision_patch_dashboard");
+    status.innerHTML = `<div class="status status-info"><span class="spinner"></span>Étape 2/3 — Génération depuis le modèle…</div>`;
+    await callService("shell_command", "vssp_generate_dashboards");
     await new Promise(r => setTimeout(r, 1500));
 
     status.innerHTML = `<div class="status status-info"><span class="spinner"></span>Étape 3/3 — Rechargement Lovelace…</div>`;
@@ -971,10 +830,10 @@ async function applyDashboard() {
     await new Promise(r => setTimeout(r, 1000));
 
     status.innerHTML = `<div class="status status-ok">
-      ✓ Dashboard mis à jour et Lovelace rechargé !<br>
-      <span style="font-size:12px">Retourne sur ton dashboard OSVision pour voir le résultat.</span>
+      ✓ Dashboards régénérés et Lovelace rechargé !<br>
+      <span style="font-size:12px">Ouvre le dashboard ENERGY pour voir les nouveaux appareils.</span>
     </div>`;
-    btn.innerHTML = `✓ Appliqué`;
+    btn.innerHTML = `✓ Généré`;
 
   } catch(e) {
     status.innerHTML = `<div class="status status-error">
@@ -1005,251 +864,6 @@ function esc(str) {
   return String(str||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
 }
 
-// ═══════════════════════════════════════════════════════════════════════════
-// BADGES FLOTTANTS — lignes de connexion style OSVision
-// ═══════════════════════════════════════════════════════════════════════════
-
-let badgeState = [];
-
-function getDefaultBadgePos(idx, total, imgW, imgH) {
-  const perSide = Math.ceil(total / 2);
-  if (idx < perSide) {
-    return { x: -185, y: 20 + idx * 65 };
-  } else {
-    return { x: imgW + 10, y: 20 + (idx - perSide) * 65 };
-  }
-}
-
-function initBadges() {
-  const rooms = getAllRooms();
-  const img = document.getElementById('osv-3d-img');
-  if (!img) return;
-  const imgW = img.offsetWidth;
-  const imgH = img.offsetHeight;
-  badgeState = rooms.map(function(name, i) {
-    var pos = getDefaultBadgePos(i, rooms.length, imgW, imgH);
-    return {
-      id: 'badge-' + i,
-      name: name,
-      x: pos.x,
-      y: pos.y,
-      anchorX: i < Math.ceil(rooms.length/2) ? 10 : 90,
-      anchorY: 15 + Math.floor(i / Math.ceil(rooms.length/2)) * (70 / Math.max(Math.ceil(rooms.length/2)-1,1)),
-      entity: null
-    };
-  });
-  renderBadges();
-}
-
-function getSensorOptions(selected) {
-  var sensors = state.devices
-    .filter(function(d) { return d.entity_id.startsWith('sensor.'); })
-    .map(function(d) { return d.entity_id; });
-  // Ajouter capteurs par défaut si absents
-  var defaults = [
-    'sensor.secret_room_temperature','sensor.living_room_temperature',
-    'sensor.kitchen_temperature','sensor.bedroom1_temperature',
-    'sensor.bedroom2_temperature','sensor.bathroom_temperature',
-    'sensor.technical_room_temperature','sensor.computer_room_temperature',
-    'sensor.spa_temperature'
-  ];
-  defaults.forEach(function(d) { if (!sensors.includes(d)) sensors.push(d); });
-  return sensors.map(function(s) {
-    var sel = selected === s ? ' selected' : '';
-    var label = s.replace('sensor.','').replace(/_/g,' ');
-    return '<option value="' + s + '"' + sel + '>' + label + '</option>';
-  }).join('');
-}
-
-function setBadgeEntity(idx, entity) {
-  badgeState[idx].entity = entity || null;
-}
-
-function renderBadges() {
-  var wrapper = document.getElementById('osv-img-wrapper');
-  var svg = document.getElementById('osv-lines');
-  if (!wrapper || !svg) return;
-
-  wrapper.querySelectorAll('.osv-badge').forEach(function(b) { b.remove(); });
-  svg.innerHTML = '<defs><filter id="glow"><feGaussianBlur stdDeviation="2" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter></defs>';
-
-  var img = document.getElementById('osv-3d-img');
-  var imgW = img ? img.offsetWidth : 700;
-  var imgH = img ? img.offsetHeight : 500;
-
-  badgeState.forEach(function(b, i) {
-    var badge = document.createElement('div');
-    badge.className = 'osv-badge';
-    badge.id = b.id;
-    badge.style.position = 'absolute';
-    badge.style.left = b.x + 'px';
-    badge.style.top = b.y + 'px';
-    badge.style.background = 'rgba(8,18,28,0.92)';
-    badge.style.border = '1px solid rgba(0,229,255,0.6)';
-    badge.style.borderRadius = '8px';
-    badge.style.padding = '6px 10px';
-    badge.style.minWidth = '130px';
-    badge.style.cursor = 'move';
-    badge.style.userSelect = 'none';
-    badge.style.zIndex = '10';
-    badge.style.boxShadow = '0 0 12px rgba(0,229,255,0.25)';
-    badge.style.backdropFilter = 'blur(8px)';
-
-    var title = document.createElement('div');
-    title.style.color = '#00E5FF';
-    title.style.fontSize = '11px';
-    title.style.fontWeight = 'bold';
-    title.style.letterSpacing = '1px';
-    title.style.marginBottom = '4px';
-    title.textContent = b.name;
-    badge.appendChild(title);
-
-    var sel = document.createElement('select');
-    sel.style.background = 'rgba(0,0,0,.5)';
-    sel.style.border = '1px solid rgba(0,229,255,.3)';
-    sel.style.borderRadius = '4px';
-    sel.style.color = '#B8E8F5';
-    sel.style.fontSize = '10px';
-    sel.style.padding = '2px 4px';
-    sel.style.width = '100%';
-    sel.innerHTML = '<option value="">— capteur —</option>' + getSensorOptions(b.entity);
-    sel.onchange = (function(idx) { return function() { setBadgeEntity(idx, this.value); }; })(i);
-    badge.appendChild(sel);
-
-    makeDraggable(badge, i);
-    wrapper.appendChild(badge);
-
-    // Ligne SVG
-    var bX = b.x + 65;
-    var bY = b.y + 18;
-    var aX = imgW * b.anchorX / 100;
-    var aY = imgH * b.anchorY / 100;
-    var mx = (bX + aX) / 2;
-    var my = Math.min(bY, aY) - 20;
-
-    var path = document.createElementNS('http://www.w3.org/2000/svg','path');
-    path.setAttribute('id','line-'+i);
-    path.setAttribute('d','M '+bX+' '+bY+' Q '+mx+' '+my+' '+aX+' '+aY);
-    path.setAttribute('stroke','rgba(0,229,255,0.5)');
-    path.setAttribute('stroke-width','1.5');
-    path.setAttribute('fill','none');
-    path.setAttribute('stroke-dasharray','4 3');
-    svg.appendChild(path);
-
-    var dot = document.createElementNS('http://www.w3.org/2000/svg','circle');
-    dot.setAttribute('id','dot-'+i);
-    dot.setAttribute('cx', aX);
-    dot.setAttribute('cy', aY);
-    dot.setAttribute('r','6');
-    dot.setAttribute('fill','#00E5FF');
-    dot.setAttribute('filter','url(#glow)');
-    dot.setAttribute('cursor','move');
-    dot.style.pointerEvents = 'all';
-    makeAnchorDraggable(dot, i);
-    svg.appendChild(dot);
-  });
-}
-
-function makeDraggable(el, idx) {
-  var startX, startY, startLeft, startTop;
-  el.addEventListener('mousedown', function(e) {
-    if (e.target.tagName === 'SELECT') return;
-    e.preventDefault();
-    startX = e.clientX; startY = e.clientY;
-    startLeft = parseFloat(el.style.left) || 0;
-    startTop  = parseFloat(el.style.top)  || 0;
-    function onMove(e) {
-      var dx = e.clientX - startX;
-      var dy = e.clientY - startY;
-      el.style.left = (startLeft + dx) + 'px';
-      el.style.top  = (startTop  + dy) + 'px';
-      badgeState[idx].x = startLeft + dx;
-      badgeState[idx].y = startTop  + dy;
-      updateLine(idx);
-    }
-    function onUp() {
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onUp);
-    }
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
-  });
-}
-
-function makeAnchorDraggable(dot, idx) {
-  dot.addEventListener('mousedown', function(e) {
-    e.preventDefault();
-    e.stopPropagation();
-    var img = document.getElementById('osv-3d-img');
-    if (!img) return;
-    var imgRect = img.getBoundingClientRect();
-
-    function onMove(ev) {
-      // Position relative à l'image en %
-      var relX = ((ev.clientX - imgRect.left) / imgRect.width) * 100;
-      var relY = ((ev.clientY - imgRect.top) / imgRect.height) * 100;
-      // Limiter dans l'image
-      relX = Math.max(0, Math.min(100, relX));
-      relY = Math.max(0, Math.min(100, relY));
-      badgeState[idx].anchorX = relX;
-      badgeState[idx].anchorY = relY;
-      // Déplacer le dot
-      var aX = imgRect.width * relX / 100;
-      var aY = imgRect.height * relY / 100;
-      dot.setAttribute('cx', aX);
-      dot.setAttribute('cy', aY);
-      updateLine(idx);
-    }
-    function onUp() {
-      document.removeEventListener('mousemove', onMove);
-      document.removeEventListener('mouseup', onUp);
-    }
-    document.addEventListener('mousemove', onMove);
-    document.addEventListener('mouseup', onUp);
-  });
-}
-
-function updateLine(idx) {
-  var line  = document.getElementById('line-'+idx);
-  var badge = document.getElementById('badge-'+idx);
-  var img   = document.getElementById('osv-3d-img');
-  if (!line || !badge || !img) return;
-  var imgW = img.offsetWidth;
-  var imgH = img.offsetHeight;
-  var bX = parseFloat(badge.style.left) + 65;
-  var bY = parseFloat(badge.style.top)  + 18;
-  var aX = imgW * badgeState[idx].anchorX / 100;
-  var aY = imgH * badgeState[idx].anchorY / 100;
-  var mx = (bX + aX) / 2;
-  var my = Math.min(bY, aY) - 20;
-  line.setAttribute('d','M '+bX+' '+bY+' Q '+mx+' '+my+' '+aX+' '+aY);
-}
-
-function exportWithBadges() {
-  var config = {
-    generated: new Date().toISOString(),
-    house: state.house,
-    badges: badgeState.map(function(b) {
-      return { name: b.name, entity: b.entity, anchorX: b.anchorX, anchorY: b.anchorY };
-    })
-  };
-  var blob = new Blob([JSON.stringify(config,null,2)],{type:'application/json'});
-  var a = document.createElement('a');
-  a.href = URL.createObjectURL(blob);
-  a.download = 'osvision_badges_config.json';
-  a.click();
-}
-
-// ─── Style de maison ───────────────────────────────────────────────────────
-function setHouseStyle(style) {
-  state.houseStyle = style;
-  // Re-render la phase 3 pour mettre à jour les chips + le prompt preview
-  if (state.step === 3) {
-    renderPhase3(document.getElementById('content'));
-  }
-}
-
-// ─── Toggle domain section ───────────────────────────────────────────────
 function toggleDomain(id) {
   const el = document.getElementById(id);
   const arr = document.getElementById(`arr-${id}`);
