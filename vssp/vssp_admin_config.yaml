@@ -38,9 +38,20 @@ shell_command:
     /config/vssp/backups/home_$(date +%Y%m%d_%H%M%S).yaml"
   vssp_delete_dashboard: >-
     rm -f /config/home-assistant/dashboards/home.yaml
+  # Generation des dashboards depuis le modele metier (etape 5).
+  # Fusionne automatiquement model/house_rooms.yaml (produit par le
+  # Discovery Wizard, phase 3) s'il est present, puis rend les
+  # templates Jinja2 vers dashboards/views/ (validation YAML avant
+  # ecriture : jamais de dashboard casse deploye).
+  vssp_generate_dashboards: >-
+    python3 /config/vssp/generate_dashboards.py
+    --model /config/home-assistant/dashboards/model/house.yaml
+    --rooms /config/home-assistant/dashboards/model/house_rooms.yaml
+    --templates /config/home-assistant/dashboards/templates_j2
+    --out /config/home-assistant/dashboards/views
 
 # --------------------------------------------------------------------
-# SCRIPTS — la logique appelee par les 3 boutons du dashboard ADMIN
+# SCRIPTS — la logique appelee par les boutons du dashboard ADMIN
 # --------------------------------------------------------------------
 script:
   vssp_run_discovery:
@@ -66,6 +77,21 @@ script:
             Le dashboard a été régénéré à partir des dernières entités
             découvertes. Une sauvegarde de l'ancienne version a été
             conservée dans /config/vssp/backups/.
+
+  # Appele par la phase 5 du Discovery Wizard, ou par un futur bouton
+  # GENERATE du panneau ADMIN (template: vssp_admin_button).
+  vssp_run_generate:
+    alias: "Visio Sapiens — Régénérer les dashboards"
+    sequence:
+      - service: shell_command.vssp_backup_dashboard
+      - service: shell_command.vssp_generate_dashboards
+      - service: persistent_notification.create
+        data:
+          title: "Visio Sapiens — Dashboards régénérés"
+          message: >
+            energy.yaml a été régénéré depuis model/house.yaml
+            (+ house_rooms.yaml du wizard s'il existe).
+            Rechargez Lovelace pour voir le résultat.
 
   vssp_delete_dashboard:
     alias: "Visio Sapiens — Supprimer le dashboard (protégé par code)"
