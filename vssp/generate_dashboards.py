@@ -74,6 +74,10 @@ def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--model",
                 default="home-assistant/dashboards/model/house.yaml")
+    ap.add_argument("--rooms",
+                default="home-assistant/dashboards/model/house_rooms.yaml",
+                help="Fragment rooms généré par le Discovery Wizard ; "
+                     "s'il existe, sa clé rooms: remplace celle du modèle")
     ap.add_argument("--templates",
                 default="home-assistant/dashboards/templates_j2")
     ap.add_argument("--out",
@@ -81,6 +85,15 @@ def main() -> int:
     args = ap.parse_args()
 
     model = yaml.safe_load(Path(args.model).read_text(encoding="utf-8"))
+
+    # Fusion du fragment du Discovery Wizard (étapes 2-4 du processus admin)
+    rooms_path = Path(args.rooms)
+    if rooms_path.exists():
+        fragment = yaml.safe_load(rooms_path.read_text(encoding="utf-8"))
+        if fragment and fragment.get("rooms"):
+            model["rooms"] = fragment["rooms"]
+            print(f"ℹ rooms: repris depuis {rooms_path} "
+                  f"({len(fragment['rooms'])} pièces)")
 
     errors = validate_model(model)
     if errors:
