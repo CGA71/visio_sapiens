@@ -1,0 +1,257 @@
+########################################################################
+# Visio Sapiens — MODÈLE MÉTIER DE LA MAISON (source de vérité)
+#
+# Emplacement suggéré : home-assistant/dashboards/model/house.yaml
+#
+# Ce fichier est LA donnée d'entrée du générateur de dashboards.
+# C'est lui que votre futur processus admin (formulaire dans home.yaml)
+# mettra à jour :
+#   étape 2 — le formulaire écrit/complète `rooms:`
+#   étape 3 — le scan des nouveaux objets ajoute des entrées `devices:`
+#   étape 4 — l'assignation déplace un device dans la bonne pièce
+#   étape 5 — le générateur rend energy.yaml.j2 avec ce modèle
+#
+# Toute modification ici + `python3 generate_dashboards.py` régénère
+# les dashboards. Ne modifiez plus energy.yaml à la main.
+########################################################################
+
+# ── Identité / chartre graphique globale ──────────────────────────────
+house:
+  name: "VISIO SAPIENS"
+  tagline: "Smart Home OS"
+  theme: "Visio Sapiens"
+  logo: /local/vssp/images/logo_VS-Sapiens.png
+  weather_entity: weather.maison
+  time_entity: sensor.time            # intégration "time_date"
+
+# ── Navigation — ordre = ordre d'affichage ───────────────────────────
+# `path` : sidebar desktop (home.yaml) ; `path_mobile` : tuiles du
+# dashboard mobile (home_mobile.yaml, urls en -m).
+nav:
+  - id: home
+    name: HOME
+    label: "Vue d'ensemble"
+    icon: mdi:view-dashboard
+    path: /visio-sapiens/home
+    path_mobile: /visio-sapiens-m/home
+  - id: core
+    name: CORE
+    label: "Systeme central"
+    icon: mdi:server
+    path: /visio-sapiens-core/core
+    path_mobile: /visio-sapiens-core-m/core
+  - id: livingroom
+    name: LIVING ROOM
+    label: "Salon"
+    icon: mdi:sofa
+    path: /visio-sapiens-livingroom/livingroom
+    path_mobile: /visio-sapiens-livingroom-m/livingroom
+  - id: bedroom1
+    name: BEDROOM-1
+    label: "Chambre principale"
+    icon: mdi:bed
+    path: /visio-sapiens-bedroom1/bedroom1
+    path_mobile: /visio-sapiens-bedroom1-m/bedroom1
+  - id: bedroom2
+    name: BEDROOM-2
+    label: "Chambre 2"
+    icon: mdi:bed-outline
+    path: /visio-sapiens-bedroom2/bedroom2
+    path_mobile: /visio-sapiens-bedroom2-m/bedroom2
+  - id: bathroom
+    name: BATHROOM
+    label: "Salle de bain"
+    icon: mdi:shower
+    path: /visio-sapiens-bathroom/bathroom
+    path_mobile: /visio-sapiens-bathroom-m/bathroom
+  - id: computer
+    name: COMPUTER ROOM
+    label: "Salle informatique"
+    icon: mdi:desktop-tower-monitor
+    path: /visio-sapiens-computer/computer
+    path_mobile: /visio-sapiens-computer-m/computer
+  - id: technical
+    name: TECHNICAL ROOM
+    label: "Local technique"
+    icon: mdi:tools
+    path: /visio-sapiens-technical/technical
+    path_mobile: /visio-sapiens-technical-m/technical
+  - id: secret
+    name: SECRET ROOM
+    label: "Piece secrete"
+    icon: mdi:key
+    path: /visio-sapiens-secret/secret
+    path_mobile: /visio-sapiens-secret-m/secret
+  - id: garden
+    name: GARDEN
+    label: "Jardin"
+    icon: mdi:flower
+    path: /visio-sapiens-garden/garden
+    path_mobile: /visio-sapiens-garden-m/garden
+  - id: energy
+    name: ENERGY
+    label: "Gestion energie"
+    icon: mdi:lightning-bolt
+    path: /visio-sapiens-energy/energy
+    path_mobile: /visio-sapiens-energy-m/energy
+  - id: admin
+    name: ADMIN
+    label: "Panneau administration"
+    icon: mdi:shield-crown
+    path: /visio-sapiens/admin
+    path_mobile: /visio-sapiens-m/admin
+
+# ── Paramètres du dashboard ENERGY ────────────────────────────────────
+energy:
+  title: ENERGY
+  subtitle: "Energy Management"
+  url_path: vssp-energy
+  view_path: energy
+  background: /local/vssp/backgrounds/energy.png
+  period_helper: input_select.vssp_energy_period
+
+  solar:
+    capacity_helper: input_number.vssp_solar_capacity
+    tarif_helper: input_number.vssp_tarif_revente
+    inverter_running: binary_sensor.solar_inverter_running
+    power: sensor.solar_power_production
+    today: sensor.solar_energy_today
+    month: sensor.solar_energy_this_month
+    year: sensor.solar_energy_this_year
+
+  totals:
+    power: sensor.home_power_consumption
+    today: sensor.home_energy_today
+    month: sensor.home_energy_this_month
+    year: sensor.home_energy_this_year
+
+  grid:
+    import_power: sensor.grid_import_power
+    export_power: sensor.grid_export_power
+    export_today: sensor.grid_export_energy_today
+    export_month: sensor.grid_export_energy_this_month
+    revenue_month: sensor.vssp_revente_mois       # template sensor
+    revenue_year: sensor.vssp_revente_annee       # template sensor
+
+# ── Pièces + objets connectés (rempli par le formulaire / scan) ──────
+# Chaque device DOIT avoir : name, icon, model, power_entity,
+# energy_entity. Le scan (étape 3) ajoute ici les nouveaux objets ;
+# l'assignation (étape 4) les range sous la bonne pièce.
+rooms:
+  - id: technical
+    name: "Local technique"
+    devices:
+      - name: "Aspirateur"
+        icon: mdi:vacuum
+        model: "Shelly Power Strip 4 Gen 4"
+        power_entity: sensor.technical_room_aspirateur_puissance
+        energy_entity: sensor.technical_room_aspirateur_energie
+      - name: "Congelateur"
+        icon: mdi:freezer
+        model: "Shelly Power Strip 4 Gen 4"
+        power_entity: sensor.technical_room_congelateur_puissance
+        energy_entity: sensor.technical_room_congelateur_energie
+      - name: "Lave-linge"
+        icon: mdi:washing-machine
+        model: "Shelly Power Strip 4 Gen 4"
+        power_entity: sensor.technical_room_lavelinge_puissance
+        energy_entity: sensor.technical_room_lavelinge_energie
+      - name: "Seche-linge"
+        icon: mdi:tumble-dryer
+        model: "Shelly Power Strip 4 Gen 4"
+        power_entity: sensor.technical_room_sechelinge_puissance
+        energy_entity: sensor.technical_room_sechelinge_energie
+      - name: "Alarme"
+        icon: mdi:alarm
+        model: "Shelly Power Strip 4 Gen 4"
+        power_entity: sensor.technical_room_alarme_verisure_puissance
+        energy_entity: sensor.technical_room_alarme_verisure_energie
+      - name: "Provider"
+        icon: mdi:web
+        model: "Shelly Power Strip 4 Gen 4"
+        power_entity: sensor.technical_room_livebox_puissance
+        energy_entity: sensor.technical_room_livebox_energie
+      - name: "Netgear-commutateur"
+        icon: mdi:lan
+        model: "Shelly Power Strip 4 Gen 4"
+        power_entity: sensor.technical_room_netgear_commutateur_puissance
+        energy_entity: sensor.technical_room_netgear_commutateur_energie
+      - name: "Synology"
+        icon: mdi:nas
+        model: "Shelly Power Strip 4 Gen 4"
+        power_entity: sensor.technical_room_synology_puissance
+        energy_entity: sensor.technical_room_synology_energie
+
+  - id: office
+    name: "Bureau"
+    devices:
+      - name: "Bureau"
+        icon: mdi:desk-lamp
+        model: "Shelly Plug S"
+        power_entity: sensor.shelly_bureau_power
+        energy_entity: sensor.shelly_bureau_energy_today
+
+# ── Tableau électrique — circuits Shelly ─────────────────────────────
+# Affichés par rangées de `circuits_per_row` (défaut 6).
+circuits_per_row: 6
+circuits:
+  - name: "Chauffe-eau"
+    icon: mdi:water-boiler
+    entity: switch.shelly_chauffe_eau
+    model: "Shelly 1PM"
+    amp: "25A"
+  - name: "Clim Salon"
+    icon: mdi:air-conditioner
+    entity: switch.shelly_clim_salon
+    model: "Shelly Plus 1PM"
+    amp: "20A"
+  - name: "Lave-linge"
+    icon: mdi:washing-machine
+    entity: switch.shelly_lave_linge
+    model: "Shelly Plus 1PM"
+    amp: "16A"
+  - name: "Four"
+    icon: mdi:toaster-oven
+    entity: switch.shelly_four
+    model: "Shelly Plus 1PM"
+    amp: "20A"
+  - name: "Lave-vaisselle"
+    icon: mdi:dishwasher
+    entity: switch.shelly_lave_vaisselle
+    model: "Shelly Plus 1PM"
+    amp: "16A"
+  - name: "Prises Cuisine"
+    icon: mdi:power-socket-fr
+    entity: switch.shelly_prises_cuisine
+    model: "Shelly Plug S"
+    amp: "16A"
+  - name: "Réfrigérateur"
+    icon: mdi:fridge
+    entity: switch.shelly_refrigerateur
+    model: "Shelly Plus 1PM"
+    amp: "16A"
+  - name: "Éclairage Salon"
+    icon: mdi:lightbulb-on-outline
+    entity: switch.shelly_eclairage_salon
+    model: "Shelly 1"
+    amp: "10A"
+  - name: "Éclairage Chambre"
+    icon: mdi:ceiling-light
+    entity: switch.shelly_eclairage_chambre
+    model: "Shelly 1"
+    amp: "10A"
+  - name: "Prises Salon"
+    icon: mdi:power-socket-fr
+    entity: switch.shelly_prises_salon
+    model: "Shelly Plug S"
+    amp: "16A"
+  - name: "Bureau"
+    icon: mdi:desk-lamp
+    entity: switch.shelly_bureau
+    model: "Shelly Plug S"
+    amp: "16A"
+  - name: "Piscine"
+    icon: mdi:pool
+    entity: switch.shelly_piscine
+    model: "Shelly 1PM"
+    amp: "20A"
