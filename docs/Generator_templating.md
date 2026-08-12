@@ -1,122 +1,169 @@
-# Visio Sapiens — Neural Home Interface
+# Visio Sapiens — Générateur de dashboards (étape 5 du processus admin)
 
-Interface Home Assistant futuriste inspirée d'OSVision, pensée pour
-tablette et mobile. Chaque pièce devient un module système ; les
-dashboards sont progressivement **générés** depuis un modèle métier
-plutôt qu'écrits à la main.
+## Principe
 
-## Concept
+`views/energy.yaml` n'est plus édité à la main. Il est **généré** à
+partir de :
 
-- CORE (Home) — HUD, radar central, IA Core, metrics
-- LIVING / SLEEP MODULES — pièces de vie
-- DATA CENTER / ENGINE ROOM — salle informatique, local technique
-- POWER GRID — gestion de l'énergie (solaire, EDF, tableau électrique)
-- Sidebar de navigation commune, chartre graphique néon/glassmorphism
-
-## Stack
-
-Home Assistant (Lovelace YAML), button-card, card-mod, layout-card,
-stack-in-card, apexcharts-card, mini-graph-card, config-template-card,
-decluttering-card, browser_mod — thème `Visio Sapiens`, CSS/JS Engine
-maison (`www/vssp/`). CI/CD GitLab → k3s.
-
-## Arborescence du repo
-
-Les répertoires existants sont conservés tels quels ; seuls ceux
-marqués **NOUVEAU** sont ajoutés par le générateur de dashboards.
+- **`home-assistant/dashboards/model/house.yaml`** — le modèle métier :
+  pièces, appareils, circuits, capteurs solaires/EDF, navigation
+  (desktop `path` et mobile `path_mobile`). C'est le fichier que le
+  processus admin alimentera (wizard Phase 1 = pièces, Phase 2 =
+  scan + assignation).
+- **`home-assistant/dashboards/templates_j2/energy.yaml.j2`** — le
+  template Jinja2, qui porte la chartre graphique, le grid-layout, les
+  polices et le modèle de cartes. Dérivé de l'`energy.yaml` original
+  avec 100 % de fidélité (validé par comparaison structurelle des YAML
+  parsés).
 
 ```
-.
-├── .gitlab-ci.yml               validate / build / deploy:staging (k3s)
-│                                + smoke tests (/local/vssp/*, cache-busting __VTOKEN__)
-├── hacs.json
-├── repository.yaml
-├── README.md                    ← ce fichier
-│
-├── docs/
-│   ├── project.md               architecture, changelog des itérations
-│   ├── modules.md
-│   ├── desygn-system.md         chartre graphique
-│   ├── osvision.md
-│   ├── CI_INTEGRATION.md        patch configuration.yaml dans le pipeline
-│   └── Generator_templating.md  générateur de dashboards (étape 5)
-│
-├── scripts/                     package.sh / deploy.sh / reload.sh / validate.sh
-│
-├── themes/
-│   └── visio_sapiens.yaml
-│
-├── vssp/                        scripts Python du processus admin + config HA
-│   ├── vssp_discovery.py        scan des entités par Area → report.json
-│   ├── vssp_upgrade.py          diff report.json ↔ dashboard (non destructif)
-│   ├── vssp_apply_config.py     patch de configuration.yaml (ruamel)
-│   ├── vssp_ensure_packages.py
-│   ├── vssp_sanitize_resources.py
-│   ├── vssp_lan_probe.py
-│   ├── vssp_admin_config.yaml   helpers / shell_command / scripts ADMIN
-│   ├── generate_dashboards.py   ← NOUVEAU — rend les templates Jinja2
-│   └── build_template.py        ← NOUVEAU — templatise un dashboard existant
-│
-└── home-assistant/
-    ├── config-fragment.yaml     état désiré des clés OSVision (lovelace, resources)
-    ├── packages/                spvs_energy_totaux.yaml, …
-    ├── templates/
-    ├── dashboards/
-    │   ├── home.yaml            dashboard principal /visio-sapiens (+ vue ADMIN)
-    │   ├── home_mobile.yaml     variante mobile /visio-sapiens-m
-    │   ├── templates/           button_card_templates.yaml, decluttering_templates.yaml
-    │   ├── views/               vues et dashboards autonomes
-    │   │   ├── core.yaml
-    │   │   ├── computer.yaml
-    │   │   ├── energy.yaml          ← GÉNÉRÉ — ne plus éditer à la main
-    │   │   ├── energy_mobile.yaml
-    │   │   ├── technical_room.yaml
-    │   │   └── technical_room_mobile.yaml
-    │   ├── model/               ← NOUVEAU
-    │   │   └── house.yaml         modèle métier (pièces, appareils, circuits, nav)
-    │   └── templates_j2/        ← NOUVEAU
-    │       └── energy.yaml.j2     template Jinja2 (chartre graphique ENERGY)
-    └── www/vssp/                CSS/JS Engine, composants, wizard, assets
-        ├── css/  js/  components/  fonts/  icons/
-        ├── wizard/              formulaire web (phases 1-4 du processus admin)
-        ├── backgrounds/
-        └── images/
+dashboards/model/house.yaml ──┐
+                              ├── vssp/generate_dashboards.py
+dashboards/templates_j2/*.j2 ─┘            │
+                                           ▼
+                          dashboards/views/energy.yaml
 ```
 
-## Processus admin — génération automatique des dashboards
+## Emplacement dans le repo (répertoires existants inchangés)
 
-| Étape | Statut | Où |
-|---|---|---|
-| 1. Tablette / mobile | ✅ dashboards `home.yaml` + `home_mobile.yaml` (+ variantes `-m` déclarées dans `config-fragment.yaml`) | `dashboards/` |
-| 2. Formulaire pièces / étages | ✅ wizard Phase 1 | `www/vssp/wizard/` |
-| 3. Scan des objets connectés | ✅ `vssp_discovery.py` (bouton DISCOVERY SCAN du panneau ADMIN, ou wizard Phase 2) → `report.json` | `vssp/` |
-| 4. Assignation objets → pièces | ✅ wizard Phase 2 (sélecteur de pièce par entité) | `www/vssp/wizard/` |
-| 5. Génération des dashboards | 🟡 **fait pour ENERGY** — `energy.yaml.j2` + `generate_dashboards.py` (fidélité 100 % validée par comparaison structurelle) ; à étendre aux autres vues | `dashboards/templates_j2/` + `vssp/` |
+```
+vssp/
+├── vssp_discovery.py          EXISTANT — scan par Area → report.json
+├── vssp_upgrade.py            EXISTANT — diff non destructif
+├── generate_dashboards.py     ← NOUVEAU
+└── build_template.py          ← NOUVEAU (templatise un dashboard existant)
 
-Le maillon restant entre 4 et 5 : écrire le résultat de l'assignation du
-wizard dans `dashboards/model/house.yaml` (au lieu du seul `report.json`),
-puis appeler `generate_dashboards.py`. `vssp_upgrade.py` reste l'outil de
-diff non destructif pour vérifier les écarts avant régénération.
+home-assistant/
+├── templates/                 EXISTANT — button_card_templates.yaml, …
+└── dashboards/
+    ├── views/
+    │   └── energy.yaml        ← GÉNÉRÉ, ne pas éditer
+    ├── model/                 ← NOUVEAU
+    │   └── house.yaml
+    └── templates_j2/          ← NOUVEAU
+        └── energy.yaml.j2
+```
 
-## Générer les dashboards
+Note sur les `!include` : le template `energy.yaml.j2` conserve tel quel
+le chemin de votre dashboard fonctionnel
+(`!include ../templates/button_card_templates.yaml`). Si vos includes
+résolvent vers `home-assistant/templates/` dans votre déploiement,
+rien à changer ; sinon adaptez cette ligne dans le `.j2` une seule fois
+— elle sera reprise dans chaque génération.
+
+## Utilisation
+
+Depuis la racine du repo (les défauts du script pointent sur ces
+chemins) :
 
 ```bash
 pip install jinja2 pyyaml
-python3 vssp/generate_dashboards.py    # défauts alignés sur ce repo
+python3 vssp/generate_dashboards.py
 ```
 
-Détails, garde-fous et intégration `shell_command` :
-voir `docs/Generator_templating.md`.
+Puis dans Home Assistant : Outils de développement → YAML →
+**Recharger les dashboards Lovelace** (aucun redémarrage nécessaire).
+En déploiement CI, le fichier généré part dans le paquet `dist/` comme
+n'importe quel YAML de `dashboards/` — rien à changer au pipeline.
 
-## CI/CD
+## Ajouter un nouvel objet connecté (manuellement, en attendant le pont wizard → modèle)
 
-Pipeline GitLab (`.gitlab-ci.yml`) : `validate` (structure du repo,
-YAML), `build` (paquet `dist/` + cache-busting `__VTOKEN__`),
-`deploy:staging` (k3s : déballage dans le pod HA, patch de
-`configuration.yaml` via `vssp_apply_config.py`, `check_config`,
-rollback automatique), smoke tests HTTP sur `/local/vssp/*`.
+1. Ouvrir `home-assistant/dashboards/model/house.yaml`
+2. Ajouter le device sous la bonne pièce :
 
-## Statut
+```yaml
+rooms:
+  - id: livingroom
+    name: "Salon"
+    devices:
+      - name: "TV"
+        icon: mdi:television
+        model: "Shelly Plug S"
+        power_entity: sensor.shelly_tv_power
+        energy_entity: sensor.shelly_tv_energy_today
+```
 
-🚧 En développement actif — voir `docs/project.md` (changelog) pour le
-détail des itérations.
+3. Relancer `vssp/generate_dashboards.py` → la ligne apparaît dans le
+   panneau « Consommation par appareil » d'ENERGY.
+
+Si la pièce n'existe pas encore, l'ajouter dans `rooms:` (et dans `nav:`
+si elle doit apparaître dans les sidebars — chaque entrée `nav` porte
+`path` pour le desktop et `path_mobile` pour les dashboards `-m`).
+
+## Garde-fous intégrés au générateur
+
+- **Validation du modèle** avant rendu : champs obligatoires présents,
+  pas d'entité assignée à deux pièces.
+- **`StrictUndefined`** : une variable manquante dans le modèle fait
+  échouer la génération au lieu de produire un trou silencieux.
+- **Validation YAML du rendu avant écriture** : un template cassé ne
+  remplace jamais un dashboard fonctionnel.
+
+C'est complémentaire de `vssp_upgrade.py` : upgrade compare l'existant
+aux découvertes (diagnostic), le générateur produit l'état cible
+(construction).
+
+## Intégration Home Assistant — à ajouter dans `vssp/vssp_admin_config.yaml`
+
+Dans le même style que `vssp_discovery` / `vssp_upgrade` (le repo étant
+déployé sous `/config` sur le pod) :
+
+```yaml
+shell_command:
+  vssp_generate_dashboards: >-
+    python3 /config/vssp/generate_dashboards.py
+    --model /config/home-assistant/dashboards/model/house.yaml
+    --templates /config/home-assistant/dashboards/templates_j2
+    --out /config/home-assistant/dashboards/views
+
+script:
+  vssp_run_generate:
+    alias: "Visio Sapiens — Régénérer les dashboards"
+    sequence:
+      - service: shell_command.vssp_backup_dashboard
+      - service: shell_command.vssp_generate_dashboards
+      - service: persistent_notification.create
+        data:
+          title: "Visio Sapiens — Dashboards régénérés"
+          message: >
+            energy.yaml a été régénéré depuis model/house.yaml.
+            Rechargez Lovelace pour voir le résultat.
+```
+
+Un bouton GENERATE peut rejoindre la rangée DISCOVERY / UPGRADE /
+DELETE du panneau ADMIN (`template: vssp_admin_button`,
+`service: script.vssp_run_generate`).
+
+## Pont wizard → modèle (le maillon manquant étapes 4 → 5)
+
+Le wizard (Phase 2) connaît déjà `{entity_id, friendly_name, room}` ;
+`vssp_discovery.py` produit `report.json` groupé par Area et
+device_class. Prochaine brique : un petit
+`vssp/vssp_model_sync.py` qui
+
+1. lit `report.json` + les assignations du wizard,
+2. mappe les entités `power`/`energy` par appareil (icône déduite du
+   device_class, modèle depuis le device registry),
+3. fusionne dans `model/house.yaml` **sans écraser** les champs déjà
+   personnalisés (nom, icône),
+4. appelle `generate_dashboards.py`.
+
+`vssp_upgrade.py` sert alors de contrôle final : zéro écart attendu
+entre les entités découvertes assignées et le dashboard généré.
+
+## Templatiser les autres dashboards
+
+`vssp/build_template.py` montre la méthode : remplacements exacts des
+blocs répétitifs par des boucles Jinja + substitution des entités.
+Candidats suivants, par ordre de rentabilité :
+
+1. **`views/energy_mobile.yaml`** — même modèle `house.yaml`, layout
+   mobile (dashboard `visio-sapiens-energy-m` déjà déclaré dans
+   `config-fragment.yaml`).
+2. **`home_mobile.yaml`** — les 12 tuiles de nav se génèrent depuis
+   `nav:` avec `path_mobile`.
+3. **`home.yaml`** — sidebar + KPIs + includes de vues pilotés par le
+   modèle.
+4. **`room.yaml.j2`** — un template unique par pièce qui génère
+   `views/livingroom.yaml`, `views/bedroom1.yaml`, etc. depuis `rooms:`
+   (les vues encore commentées en fin de `home.yaml`).
