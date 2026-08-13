@@ -10,9 +10,9 @@ Ajoute ces deux fichiers au dépôt :
 
 ```
 home-assistant/
-├── config-fragment.yaml          ← état désiré des clés OSVision
-└── osvision/
-    └── osvision_apply_config.py  ← le patcher (à côté de tes autres scripts osvision/)
+├── config-fragment.yaml          ← état désiré des clés vssp
+└── vssp/
+    └── vssp_apply_config.py  ← le patcher (à côté de tes autres scripts vssp/)
 ```
 
 ---
@@ -24,8 +24,8 @@ Dans le job **`build`**, après la copie des dossiers (`cp -r ...`), ajoute :
 ```yaml
     # --- Patch configuration.yaml : embarque fragment + patcher ---
     - cp home-assistant/config-fragment.yaml       dist/config-fragment.yaml
-    - mkdir -p dist/osvision
-    - cp home-assistant/osvision/osvision_apply_config.py dist/osvision/
+    - mkdir -p dist/vssp
+    - cp home-assistant/vssp/vssp_apply_config.py dist/vssp/
 ```
 
 Le cache-busting `?v=` du build s'applique déjà aux `*.yaml` de `dist/` via le `find ... sed`
@@ -51,7 +51,7 @@ insère l'application du patch :
       kubectl exec -n $K3S_NAMESPACE $HA_POD -c $K3S_CONTAINER -- sh -c '
         set -e
         pip install ruamel.yaml --quiet 2>/dev/null || pip install ruamel.yaml --quiet --break-system-packages
-        python3 /config/.osv_stage/osvision/osvision_apply_config.py \
+        python3 /config/.osv_stage/vssp/vssp_apply_config.py \
           --config   /config/configuration.yaml \
           --fragment /config/.osv_stage/config-fragment.yaml \
           --vtoken   "'"$OSV_VERSION"'"
@@ -79,7 +79,7 @@ dossiers, et AVANT le `ha core check`, insère :
     - |
       ssh ha "set -e
         pip install ruamel.yaml --quiet 2>/dev/null || pip install ruamel.yaml --quiet --break-system-packages 2>/dev/null || true
-        python3 $HA_CFG/.osv_stage/osvision/osvision_apply_config.py \
+        python3 $HA_CFG/.osv_stage/vssp/vssp_apply_config.py \
           --config   $HA_CFG/configuration.yaml \
           --fragment $HA_CFG/.osv_stage/config-fragment.yaml \
           --vtoken   '$CI_COMMIT_TAG'"
@@ -91,7 +91,7 @@ dossiers, et AVANT le `ha core check`, insère :
 >    ```yaml
 >    - apk add --no-cache py3-pip >/dev/null && pip install ruamel.yaml --quiet --break-system-packages
 >    - scp ha:$HA_CFG/configuration.yaml /tmp/prod_config.yaml
->    - python3 dist/osvision/osvision_apply_config.py \
+>    - python3 dist/vssp/vssp_apply_config.py \
 >        --config /tmp/prod_config.yaml \
 >        --fragment dist/config-fragment.yaml \
 >        --vtoken "$CI_COMMIT_TAG"
@@ -113,7 +113,7 @@ Dans **`validate`**, ajoute le fragment à la liste des fichiers vérifiés :
 
 ```yaml
     - test -f home-assistant/config-fragment.yaml || { echo "[ERR] config-fragment.yaml manquant"; exit 1; }
-    - test -f home-assistant/osvision/osvision_apply_config.py || { echo "[ERR] patcher manquant"; exit 1; }
+    - test -f home-assistant/vssp/vssp_apply_config.py || { echo "[ERR] patcher manquant"; exit 1; }
 ```
 
 Le bloc Python de validation YAML existant couvre déjà `home-assistant/**/*.yaml`, donc
@@ -125,9 +125,9 @@ le fragment est syntaxiquement validé automatiquement.
 
 | Situation | Résultat |
 |---|---|
-| 1er déploiement | Entrées OSVision ajoutées à `configuration.yaml`, reste intact |
+| 1er déploiement | Entrées vssp ajoutées à `configuration.yaml`, reste intact |
 | Re-déploiement identique | `[OK] déjà conforme` — aucune écriture |
-| Chemin/titre OSVision changé dans le fragment | Mis à jour en prod, backup .bak créé |
+| Chemin/titre vssp changé dans le fragment | Mis à jour en prod, backup .bak créé |
 | Dashboard/resource perso de l'utilisateur | **Toujours préservé** |
 | Échec `ha core check` | Rollback dossiers + restauration du .bak / backup HAOS |
-| Ressource OSVision retirée du fragment | Conservée par défaut ; retirée si `--prune-resources` |
+| Ressource vssp retirée du fragment | Conservée par défaut ; retirée si `--prune-resources` |
