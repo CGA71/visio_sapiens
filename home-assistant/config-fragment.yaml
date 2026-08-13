@@ -79,6 +79,14 @@ lovelace:
       icon: mdi:cellphone-cog
       show_in_sidebar: false
       filename: dashboards/views/technical_room_mobile.yaml
+# ── APERÇU — chaîne de test, non déployée ────────────────────────
+    vssp-energy-preview:
+      mode: yaml
+      title: "ENERGY ⧗ PREVIEW"
+      icon: mdi:flask-outline
+      show_in_sidebar: true          # passe à false pour le masquer aux autres
+      filename: home-assistant/dashboards/views/energy_preview.yaml
+      require_admin: true            # visible uniquement par les comptes admin
 
 
   resources:
