@@ -284,7 +284,7 @@ build:
     - find dist -name '*.yaml' ! -name 'config-fragment.yaml' -exec sed -i "s|\(/local/vssp/[^ \"']*\)?v=[0-9A-Za-z._-]*|\1?v=${VTOKEN}|g" {} +
     - echo "Ressources taguees ?v=${VTOKEN}"
     - |
-      cat > dist/OSVISION_VERSION <<EOF
+      cat > dist/VSSP_VERSION <<EOF
       version=$OSV_VERSION
       commit=$CI_COMMIT_SHA
       ref=$CI_COMMIT_REF_NAME
