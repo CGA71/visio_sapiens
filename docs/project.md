@@ -15,7 +15,7 @@ le socle doit se reposer sur :
 * decluttering-card
 * un moteur CSS et JavaScript propre à Visio Sapiens
 
-L'objectif est que Home Assistant ne soit plus qu'un moteur de données. Toute l'interface est pilotée par OSVision.
+L'objectif est que Home Assistant ne soit plus qu'un moteur de données. Toute l'interface est pilotée par VSSP.
 
 Architecture
 ```
@@ -59,11 +59,11 @@ Il deviendra une interface unique.
 
 mon project OS Vsion V2 :
 
-![dashboard-osvision](osvision.png)
+![dashboard-VSSP](VSSP.png)
 
 # Framework Visio Sapiens
 
-1- OSVision Core UI (HUD, navigation, layout)
+1- VSSP Core UI (HUD, navigation, layout)
 2- CSS Engine (~800 lignes dédiées à l'identité visuelle)
 3- JavaScript Engine (animations, radar, IA, interactions)
 4- Templates Button-Card (bibliothèque de composants réutilisables)
@@ -88,8 +88,8 @@ home-assistant/
 │      project.md
 │      modules.md
 │      desygn-system.md
-│      osvision.md
-│      osvision.png
+│      VSSP.md
+│      VSSP.png
 │
 ├── dashboards/
 │      home.yaml(vue d'ensemble)
@@ -108,15 +108,15 @@ home-assistant/
 │      button_card_templates.yaml
 │
 ├── themes/
-│      osvision_v2.yaml
+│      VSSP_v2.yaml
 │
 └── www/
-    └── osvision_v2/
+    └── VSSP_v2/
         ├── css/
-        │      osvision.css
+        │      VSSP.css
         │
         ├── js/
-        │      osvision.js
+        │      VSSP.js
 		│
 		├── components
 		│      osv-card.js
@@ -166,59 +166,59 @@ d'origine ci-dessus, au fil des itérations.
   pleine hauteur (logo en tête, items icône + titre + sous-titre,
   highlight actif, hover sur toute la liste, logo/branding animé en
   pied de sidebar).
-* Nouveaux templates : `osvision_sidebar_logo`, `osvision_nav_button`
-  (refondu), `osvision_sidebar_brand_footer`.
+* Nouveaux templates : `VSSP_sidebar_logo`, `VSSP_nav_button`
+  (refondu), `VSSP_sidebar_brand_footer`.
 
 ## Bandeau HUD (header)
 
 * Le header générique ("Visio Sapiens — NEURAL CORE ACTIVE") a été
   remplacé par un **bandeau à 5 cases**, reproduisant la maquette
   cible :
-  1. Chevron retour + titre de page + descriptif (`osvision_page_header`)
+  1. Chevron retour + titre de page + descriptif (`VSSP_page_header`)
   2. Météo extérieure — carte **native** `weather-forecast`
   3. Date/heure en direct — composant custom `osv-datetime-card`
   4. Statut alarme (squelette générique, réagit à `entity.state`
-     quel que soit le domaine) — `osvision_alarm_status`
-  5. Avatar circulaire "OS" — `osvision_os_avatar`
+     quel que soit le domaine) — `VSSP_alarm_status`
+  5. Avatar circulaire "OS" — `VSSP_os_avatar`
 
 ## Rangée Énergie (vue HOME uniquement)
 
 * Nouvelle rangée sous les quick actions, avant le footer :
   1. Courbe production solaire / consommation — carte native
      `apexcharts-card` (2 séries)
-  2. Synthèse kW production / consommation — `osvision_metric`
+  2. Synthèse kW production / consommation — `VSSP_metric`
   3. Événements des appareils connectés — carte **native** `logbook`
   4. Panneau Sécurité/Alarme (remplace l'emplacement météo détaillée
      de la maquette) — badge circulaire réactif + 4 lignes de statut
-     (`osvision_security_badge`, `osvision_security_row`)
+     (`VSSP_security_badge`, `VSSP_security_row`)
 
 ## Composants JS
 
 * `osv-card.js` (footer) et `osv-datetime-card.js` ont été rendus
   **autonomes** : ils calculent l'heure/date nativement au lieu de
-  dépendre de `window.osvision.formatTime()/formatDate()`, suite à un
+  dépendre de `window.VSSP.formatTime()/formatDate()`, suite à un
   bug où cette dépendance échouait silencieusement dans certains
   déploiements.
-* `osvision.js` (moteur) conservé pour son bus pub/sub et ses helpers
+* `VSSP.js` (moteur) conservé pour son bus pub/sub et ses helpers
   de couleur/seuils, réutilisables par de futurs composants.
 
 ## Panneau ADMIN (nouveau, hors sidebar de navigation)
 
-* Vue cachée `/osvision-v2/admin` (non liée dans le menu), restreinte
+* Vue cachée `/VSSP-v2/admin` (non liée dans le menu), restreinte
   à un utilisateur HA précis via `visible:`.
 * Trois actions :
-  - **DISCOVERY** — lance `osvision_discovery.py` (scan en lecture
+  - **DISCOVERY** — lance `VSSP_discovery.py` (scan en lecture
     seule des entités par Area/pièce).
-  - **UPGRADE** — lance `osvision_upgrade.py` (compare le rapport de
+  - **UPGRADE** — lance `VSSP_upgrade.py` (compare le rapport de
     découverte au dashboard actuel, liste les écarts — non destructif,
     ne modifie jamais le YAML).
   - **DELETE DASHBOARD** — protégé par code PIN + confirmation native
     + sauvegarde automatique avant toute suppression. Retour visuel
     par popup `browser_mod.popup` (succès ou échec), plutôt qu'une
     simple notification discrète.
-* Nouveau dossier `osvision/` à la racine du repo : scripts Python
-  (`osvision_discovery.py`, `osvision_upgrade.py`) + config HA associée
-  (`osvision_admin_config.yaml` : helpers, shell_command, scripts).
+* Nouveau dossier `VSSP/` à la racine du repo : scripts Python
+  (`VSSP_discovery.py`, `VSSP_upgrade.py`) + config HA associée
+  (`VSSP_admin_config.yaml` : helpers, shell_command, scripts).
 
 ## Prochaines pistes identifiées (non démarrées)
 
