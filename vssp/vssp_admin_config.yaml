@@ -49,6 +49,46 @@ shell_command:
     --rooms /config/home-assistant/dashboards/model/house_rooms.yaml
     --templates /config/home-assistant/dashboards/templates_j2
     --out /config/home-assistant/dashboards/views
+    --status-file /config/www/vssp/preview_status.json
+
+  # ------------------------------------------------------------------
+  # APERCU — chaine de TEST, totalement isolee du staging
+  # ------------------------------------------------------------------
+  # 1) Ecrit le modele du wizard dans un fichier *.preview.yaml dedie.
+  #    Le contenu arrive en base64 (variable content_b64) : pas de
+  #    probleme de quoting ni d'accents dans les noms de pieces.
+  vssp_write_preview_model: >-
+    sh -c "mkdir -p /config/home-assistant/dashboards/model &&
+    printf '%s' '{{ content_b64 }}' | base64 -d
+    > /config/home-assistant/dashboards/model/house_rooms.preview.yaml"
+
+  # 2) Genere energy_preview.yaml (url vssp-energy-preview) a partir du
+  #    modele d'apercu. --preview garantit qu'aucun fichier de staging
+  #    n'est ecrit : le nom de sortie et l'url_path sont suffixes.
+  vssp_generate_preview: >-
+    python3 /config/vssp/generate_dashboards.py
+    --model /config/home-assistant/dashboards/model/house.yaml
+    --rooms /config/home-assistant/dashboards/model/house_rooms.preview.yaml
+    --templates /config/home-assistant/dashboards/templates_j2
+    --out /config/home-assistant/dashboards/views
+    --preview
+    --status-file /config/www/vssp/preview_status.json
+
+  # 3) Validation seule : ne produit aucun fichier, juste le rapport.
+  vssp_validate_preview: >-
+    python3 /config/vssp/generate_dashboards.py
+    --model /config/home-assistant/dashboards/model/house.yaml
+    --rooms /config/home-assistant/dashboards/model/house_rooms.preview.yaml
+    --templates /config/home-assistant/dashboards/templates_j2
+    --out /config/home-assistant/dashboards/views
+    --preview --dry-run
+    --status-file /config/www/vssp/preview_status.json
+
+  # 4) Nettoyage des fichiers d'apercu (jamais ceux du staging).
+  vssp_clean_preview: >-
+    sh -c "rm -f /config/home-assistant/dashboards/views/energy_preview.yaml
+    /config/home-assistant/dashboards/model/house_rooms.preview.yaml
+    /config/www/vssp/preview_status.json"
 
 # --------------------------------------------------------------------
 # SCRIPTS — la logique appelee par les boutons du dashboard ADMIN
@@ -92,6 +132,33 @@ script:
             energy.yaml a été régénéré depuis model/house.yaml
             (+ house_rooms.yaml du wizard s'il existe).
             Rechargez Lovelace pour voir le résultat.
+
+  # Appele par la phase 4 du Discovery Wizard (bouton APERCU).
+  # Boucle d'iteration : on peut le relancer autant de fois que voulu,
+  # il ne touche que les fichiers *_preview / *.preview.yaml.
+  vssp_preview_dashboards:
+    alias: "Visio Sapiens — Générer l'aperçu de test"
+    fields:
+      content_b64:
+        description: "Modèle rooms (house_rooms.yaml) encodé en base64"
+        example: "cm9vbXM6Cg=="
+      dry_run:
+        description: "true = valider seulement, sans écrire de dashboard"
+        example: false
+    sequence:
+      - service: shell_command.vssp_write_preview_model
+        data:
+          content_b64: "{{ content_b64 }}"
+      - if:
+          - condition: template
+            value_template: "{{ dry_run | default(false) }}"
+        then:
+          - service: shell_command.vssp_validate_preview
+        else:
+          - service: shell_command.vssp_generate_preview
+          # Recharge Lovelace pour que l'apercu apparaisse tout de suite.
+          # Sans effet sur le contenu des dashboards de staging.
+          - service: lovelace.reload
 
   vssp_delete_dashboard:
     alias: "Visio Sapiens — Supprimer le dashboard (protégé par code)"
