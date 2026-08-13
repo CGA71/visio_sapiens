@@ -1,123 +1,153 @@
 # Intégration du patch `configuration.yaml` dans `.gitlab-ci.yml`
 
-Trois modifications ciblées. Rien d'autre du pipeline ne change.
+> **Statut : appliqué.** Les trois modifications décrites ici sont dans le
+> pipeline courant, et deux scripts complémentaires s'y sont ajoutés depuis.
+> Ce document est conservé comme trace de la décision de conception ; la
+> référence à jour du pipeline complet est **`CI_CD.md`**.
+>
+> ⚠️ La version précédente de ce fichier utilisait l'ancienne nomenclature
+> `osvision/osvision_apply_config.py`. Les chemins réels sont
+> `vssp/vssp_apply_config.py` — corrigés ci-dessous.
 
 ---
 
-## 1. Arborescence du repo
-
-Ajoute ces deux fichiers au dépôt :
+## 1. Arborescence du repo ✅
 
 ```
 home-assistant/
-├── config-fragment.yaml          ← état désiré des clés vssp
-└── vssp/
-    └── vssp_apply_config.py  ← le patcher (à côté de tes autres scripts vssp/)
+└── config-fragment.yaml            ← état désiré des clés Visio Sapiens
+
+vssp/                               ← à la RACINE, pas sous home-assistant/
+├── vssp_apply_config.py            le patcher
+├── vssp_ensure_packages.py         pose la clé homeassistant.packages
+└── vssp_sanitize_resources.py      déduplique les resources Lovelace
 ```
+
+Les deux scripts complémentaires ne figuraient pas dans le plan initial :
+
+- **`vssp_ensure_packages.py`** — le patcher ne gère que
+  `lovelace`, `input_text`, `shell_command` et `template`. Le domaine
+  `homeassistant:` (donc `packages: !include_dir_named packages`) sort de son
+  périmètre, par garde-fou. Ce script pose la clé de façon idempotente.
+- **`vssp_sanitize_resources.py`** — le patcher déduplique les `resources` par
+  URL **complète**. Le `?v=` changeant à chaque build, chaque déploiement
+  ajoutait 6 entrées de plus. Ce script assainit la liste en dédupliquant par
+  URL de base.
 
 ---
 
-## 2. Job `build` — inclure le fragment + le script dans le paquet
-
-Dans le job **`build`**, après la copie des dossiers (`cp -r ...`), ajoute :
+## 2. Job `build` — inclure le fragment + les scripts ✅
 
 ```yaml
-    # --- Patch configuration.yaml : embarque fragment + patcher ---
-    - cp home-assistant/config-fragment.yaml       dist/config-fragment.yaml
+    # --- Patch configuration.yaml : embarque fragment + patchers ---
+    - cp home-assistant/config-fragment.yaml dist/config-fragment.yaml
     - mkdir -p dist/vssp
-    - cp home-assistant/vssp/vssp_apply_config.py dist/vssp/
+    - cp vssp/vssp_apply_config.py       dist/vssp/
+    - cp vssp/vssp_ensure_packages.py    dist/vssp/
+    - cp vssp/vssp_sanitize_resources.py dist/vssp/
 ```
 
-Le cache-busting `?v=` du build s'applique déjà aux `*.yaml` de `dist/` via le `find ... sed`
-existant. Mais le fragment utilise le placeholder `__VTOKEN__` (pas `?v=X`), qu'on
-remplacera au moment du `apply` avec `--vtoken`. **Ne le fais donc PAS passer dans le
-sed de cache-busting** — laisse `__VTOKEN__` intact dans `dist/config-fragment.yaml`.
+Le cache-busting `?v=` du build s'applique aux `*.yaml` de `dist/` via le
+`find … sed`. Le fragment, lui, utilise le placeholder `__VTOKEN__` (et non
+`?v=X`), remplacé au moment du `apply` avec `--vtoken` : il est donc **exclu**
+du sed.
 
-Si ton `find` risque de le toucher, exclus-le :
 ```yaml
-    - find dist -name '*.yaml' ! -name 'config-fragment.yaml' -exec sed -i "s|...|...|g" {} +
+    - find dist -name '*.yaml' ! -name 'config-fragment.yaml' \
+        -exec sed -i "s|\(/local/vssp/[^ \"']*\)?v=[0-9A-Za-z._-]*|\1?v=${VTOKEN}|g" {} +
 ```
+
+> **Évolution recommandée (G2 de `CI_CD.md`) :** remplacer ces `cp` unitaires
+> par `cp vssp/*.py dist/vssp/`. En l'état, `vssp_discovery.py`,
+> `vssp_upgrade.py` et `vssp_admin_config.yaml` ne partent jamais dans le
+> paquet, et le panneau ADMIN est inerte sur les deux cibles.
 
 ---
 
-## 3. `deploy:staging` (k3s) — appliquer le patch dans le conteneur
+## 3. `deploy:staging` (k3s) ✅
 
-Dans **`deploy:staging`**, le bloc `kubectl exec ... tar xzf` déballe déjà le paquet dans
-`/config/.osv_stage`. Juste APRÈS le déballage et AVANT le `hass --script check_config`,
-insère l'application du patch :
+Les scripts sont d'abord installés à leur emplacement définitif
+(`/config/vssp/`), puis exécutés depuis là — et non depuis `/config/.osv_stage`,
+qui est effacé en fin de job :
 
 ```yaml
     - |
       kubectl exec -n $K3S_NAMESPACE $HA_POD -c $K3S_CONTAINER -- sh -c '
         set -e
-        pip install ruamel.yaml --quiet 2>/dev/null || pip install ruamel.yaml --quiet --break-system-packages
-        python3 /config/.osv_stage/vssp/vssp_apply_config.py \
+        pip install ruamel.yaml --quiet 2>/dev/null || pip install ruamel.yaml --quiet --break-system-packages 2>/dev/null
+        python3 /config/vssp/vssp_apply_config.py \
           --config   /config/configuration.yaml \
-          --fragment /config/.osv_stage/config-fragment.yaml \
+          --fragment /config/config-fragment.yaml \
           --vtoken   "'"$OSV_VERSION"'"
+        python3 /config/vssp/vssp_ensure_packages.py    --config /config/configuration.yaml
+        python3 /config/vssp/vssp_sanitize_resources.py --config /config/configuration.yaml
       '
 ```
 
-Le `hass --script check_config` qui suit valide DÉJÀ le résultat, et le bloc de rollback
-existant restaure `dashboards/themes`. Pour restaurer AUSSI `configuration.yaml` en cas
-d'échec, ajoute au bloc de rollback existant :
+Le `hass --script check_config` qui suit valide le résultat, et le bloc de
+rollback restaure `dashboards`/`themes` **et** `configuration.yaml` :
 
 ```yaml
-        # dans le "if ! ... check_config" de rollback, avant "exit 1" :
         LAST_BAK=$(ls -t /config/backups/configuration_*.bak 2>/dev/null | head -1)
-        [ -n "$LAST_BAK" ] && cp "$LAST_BAK" /config/configuration.yaml && echo "[rollback] configuration.yaml restauré depuis $LAST_BAK"
+        [ -n "$LAST_BAK" ] && cp "$LAST_BAK" /config/configuration.yaml \
+          && echo "[rollback] configuration.yaml restaure depuis $LAST_BAK"
 ```
+
+**Ajout ultérieur, indispensable :** le job se termine désormais par un
+redémarrage de Home Assistant (service REST, repli sur recréation du pod) puis
+une attente du retour de l'API. Sans lui, `configuration.yaml` était bien patché
+mais jamais relu — voir `DIAGNOSTIC_staging.md`.
 
 ---
 
-## 4. `deploy:production` (HAOS/SSH) — idem via ssh
+## 4. `deploy:production` (HAOS/SSH) ✅ — option 1 retenue
 
-Dans **`deploy:production`**, après le bloc `ssh ha "set -e ... mv ..."` qui installe les
-dossiers, et AVANT le `ha core check`, insère :
+Le conteneur HAOS n'a pas toujours `pip` accessible. C'est l'option
+« patcher côté runner » qui a été retenue, et elle est en place :
 
 ```yaml
+    - apk add --no-cache python3 py3-pip >/dev/null
+    - pip install ruamel.yaml --quiet --break-system-packages 2>/dev/null || pip install ruamel.yaml --quiet
+    - rm -rf /tmp/osv_pkg && mkdir -p /tmp/osv_pkg && tar xzf $PACKAGE_NAME.tar.gz -C /tmp/osv_pkg
+    - scp ha:$HA_CFG/configuration.yaml /tmp/prod_configuration.yaml
+    - cp /tmp/prod_configuration.yaml /tmp/prod_configuration.yaml.pre   # filet local
     - |
-      ssh ha "set -e
-        pip install ruamel.yaml --quiet 2>/dev/null || pip install ruamel.yaml --quiet --break-system-packages 2>/dev/null || true
-        python3 $HA_CFG/.osv_stage/vssp/vssp_apply_config.py \
-          --config   $HA_CFG/configuration.yaml \
-          --fragment $HA_CFG/.osv_stage/config-fragment.yaml \
-          --vtoken   '$CI_COMMIT_TAG'"
+      python3 /tmp/osv_pkg/vssp/vssp_apply_config.py \
+        --config   /tmp/prod_configuration.yaml \
+        --fragment /tmp/osv_pkg/config-fragment.yaml \
+        --vtoken   "$CI_COMMIT_TAG"
+    - python3 /tmp/osv_pkg/vssp/vssp_ensure_packages.py    --config /tmp/prod_configuration.yaml
+    - python3 /tmp/osv_pkg/vssp/vssp_sanitize_resources.py --config /tmp/prod_configuration.yaml
+    - scp /tmp/prod_configuration.yaml ha:$HA_CFG/configuration.yaml
 ```
 
-> Note HAOS : le conteneur HA n'a pas toujours `pip` accessible. Deux options fiables :
-> 1. **Recommandé** — n'utilise pas ruamel sur HAOS : fais tourner le patcher dans le
->    runner GitLab (image alpine avec python3+ruamel), en récupérant le fichier par SSH :
->    ```yaml
->    - apk add --no-cache py3-pip >/dev/null && pip install ruamel.yaml --quiet --break-system-packages
->    - scp ha:$HA_CFG/configuration.yaml /tmp/prod_config.yaml
->    - python3 dist/vssp/vssp_apply_config.py \
->        --config /tmp/prod_config.yaml \
->        --fragment dist/config-fragment.yaml \
->        --vtoken "$CI_COMMIT_TAG"
->    - scp /tmp/prod_config.yaml ha:$HA_CFG/configuration.yaml
->    ```
->    (La sauvegarde .bak est alors créée côté runner ; le `ha backups new --name pre-$CI_COMMIT_TAG`
->    déjà présent en début de job couvre le rollback complet côté HAOS.)
-> 2. Installer ruamel dans le conteneur HAOS (moins propre, non persistant après update).
+Le `ha core check` valide ; en cas d'échec, les dossiers sont restaurés et le
+`configuration.yaml` pré-patch est renvoyé par `scp`. Le
+`ha backups new --name pre-$CI_COMMIT_TAG` de début de job couvre le rollback
+complet, et `rollback:production` (manuel) sait le restaurer par son slug.
 
-Le `ha core check` existant valide le résultat. Le bloc de rollback existant restaure
-`dashboards/themes` ; le `rollback:production` manuel (restore backup HAOS `pre-$CI_COMMIT_TAG`)
-couvre déjà `configuration.yaml` puisque le backup natif HAOS est complet.
+L'option 2 (installer `ruamel.yaml` dans le conteneur HAOS) reste écartée : non
+persistante après update de l'image.
 
 ---
 
-## 5. Job `validate` — valider le fragment aussi (optionnel mais recommandé)
+## 5. Job `validate` ✅ — et au-delà
 
-Dans **`validate`**, ajoute le fragment à la liste des fichiers vérifiés :
+Le fragment et les patchers sont vérifiés :
 
 ```yaml
-    - test -f home-assistant/config-fragment.yaml || { echo "[ERR] config-fragment.yaml manquant"; exit 1; }
-    - test -f home-assistant/vssp/vssp_apply_config.py || { echo "[ERR] patcher manquant"; exit 1; }
+    - test -f home-assistant/config-fragment.yaml    || { echo "[ERR] config-fragment.yaml manquant"; exit 1; }
+    - test -f vssp/vssp_apply_config.py              || { echo "[ERR] patcher manquant"; exit 1; }
+    - test -f vssp/vssp_ensure_packages.py           || { echo "[ERR] ensure_packages manquant"; exit 1; }
+    - test -f vssp/vssp_sanitize_resources.py        || { echo "[ERR] sanitize_resources manquant"; exit 1; }
 ```
 
-Le bloc Python de validation YAML existant couvre déjà `home-assistant/**/*.yaml`, donc
-le fragment est syntaxiquement validé automatiquement.
+Le bloc Python de validation YAML couvre `home-assistant/**/*.yaml`, donc le
+fragment est syntaxiquement validé automatiquement.
+
+S'y sont ajoutés depuis : le contrôle de cohérence `OSV_PREFIX` ↔ clés du
+fragment, l'interdiction de versionner `vssp/.livebox.env`, et le refus d'un
+`home-assistant/themes/` dupliqué.
 
 ---
 
@@ -125,9 +155,19 @@ le fragment est syntaxiquement validé automatiquement.
 
 | Situation | Résultat |
 |---|---|
-| 1er déploiement | Entrées vssp ajoutées à `configuration.yaml`, reste intact |
+| 1er déploiement | Entrées `visio-sapiens-*` ajoutées à `configuration.yaml`, reste intact |
 | Re-déploiement identique | `[OK] déjà conforme` — aucune écriture |
-| Chemin/titre vssp changé dans le fragment | Mis à jour en prod, backup .bak créé |
+| Chemin/titre changé dans le fragment | Mis à jour en prod, backup `.bak` créé |
 | Dashboard/resource perso de l'utilisateur | **Toujours préservé** |
-| Échec `ha core check` | Rollback dossiers + restauration du .bak / backup HAOS |
-| Ressource vssp retirée du fragment | Conservée par défaut ; retirée si `--prune-resources` |
+| Échec `check_config` / `ha core check` | Rollback dossiers + restauration du `.bak` / backup HAOS |
+| Ressource retirée du fragment | Conservée par défaut ; retirée si `--prune-resources` |
+| Clé de dashboard hors préfixe `visio-sapiens` | **Ignorée silencieusement** — `validate` l'affiche en avertissement |
+
+---
+
+## Suite
+
+Les trous restants du pipeline (ressources Lovelace pointant sur des fichiers
+inexistants, outils admin non déployés, générateur non intégré, fichier de
+version encore nommé `OSVISION_VERSION`, verrous de concurrence) sont traités
+dans **`CI_CD.md`**, sections G1 à G5.
