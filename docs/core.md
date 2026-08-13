@@ -3,6 +3,9 @@
 Documentation du processus de fonctionnement : d'où viennent les métriques, comment elles
 remontent jusqu'à la page, et à quelle fréquence.
 
+**Emplacement réel dans le dépôt :** `home-assistant/www/vssp/core.html`
+→ déployé en `/config/www/vssp/core.html` → servi sur `/local/vssp/core.html`.
+
 ---
 
 ## 1. Vue d'ensemble
@@ -10,6 +13,13 @@ remontent jusqu'à la page, et à quelle fréquence.
 `core.html` est une **page statique autonome** (HTML + CSS + JS inline, aucun build, aucun
 framework). Elle ne collecte **aucune métrique elle-même** : c'est un pur client d'affichage
 qui interroge l'API REST de Home Assistant.
+
+Elle n'est pas ouverte directement par l'utilisateur : le dashboard Lovelace
+`dashboards/views/core.yaml` (url_path `visio-sapiens-core`) l'embarque dans une **iframe**.
+Ce fichier a d'ailleurs été corrigé pour ne plus superposer deux versions du même contenu —
+les cartes natives HA (gauge, apexcharts, auto-entities) qui doublonnaient l'iframe ont été
+retirées. La vue CORE ne contient plus que : sidebar (`nav`), première ligne du bandeau
+(`header`), iframe, footer HUD.
 
 La chaîne complète est la suivante :
 
@@ -39,21 +49,21 @@ La chaîne complète est la suivante :
        ┌───────────────────────────────────────────┐
        │ Canal séparé pour K3s :                    │
        │ cron k3s_stats.sh → k3s_stats.json         │
-       │ → /config/www/vssp/ → /local/...    │
+       │ → /config/www/vssp/ → /local/vssp/...      │
        └───────────────────────────────────────────┘
 ```
 
 **Point clé :** `HA_URL = window.location.origin`. La page **doit** être servie par Home
-Assistant lui-même (typiquement déposée dans `/config/www/`, accessible via
-`https://ha.mondomaine/local/…/core.html`). Ouverte en `file://` ou depuis un autre domaine,
-tous les appels API échouent (mauvaise origine + CORS).
+Assistant lui-même. Ouverte en `file://` ou depuis un autre domaine, tous les appels API
+échouent (mauvaise origine + CORS). L'iframe de `core.yaml` respecte cette contrainte
+puisqu'elle pointe sur une URL `/local/` de la même instance.
 
 ---
 
 ## 2. La couche de collecte : Glances
 
-Oui, la dépendance de collecte est bien **Glances**, un outil de monitoring écrit en Python
-(basé sur `psutil`). Le sous-titre du header le confirme : `Glances Monitoring`.
+La dépendance de collecte est **Glances**, un outil de monitoring écrit en Python (basé sur
+`psutil`). Le sous-titre du header le confirme : `Glances Monitoring`.
 
 ### Installation côté host
 
@@ -119,7 +129,10 @@ var HA_URL = window.location.origin,
 - Il est ensuite envoyé sur chaque requête : `Authorization: Bearer <TOKEN>`.
 
 ⚠️ Le token est stocké en clair dans `localStorage` et reste valable très longtemps — à
-traiter comme un secret d'accès complet à Home Assistant.
+traiter comme un secret d'accès complet à Home Assistant. La clé `osv_ha_token` est un
+reliquat de nommage : la renommer casserait la session de tous les navigateurs déjà
+appairés, donc à ne faire qu'avec une migration explicite (lire l'ancienne clé, réécrire
+sous la nouvelle, supprimer l'ancienne).
 
 ---
 
@@ -173,6 +186,12 @@ Même logique pour la RAM (`ram+use` → `memory+use` → `utilisation+memoire`)
 **Conséquence :** renommer une entité dans HA peut casser silencieusement une jauge
 (elle affichera `0` ou `--` sans erreur).
 
+**Effet de bord à connaître :** les exclusions de la table des températures listent
+explicitement des pièces (`bedroom`, `kitchen`, `living`, `garden`, `spa`, `secret`,
+`computer_room_temp`, `technical_room_temp`). Chaque nouvelle pièce du Room Engine devra
+être ajoutée à cette liste, sinon son capteur d'ambiance apparaîtra dans le tableau des
+composants matériels.
+
 ### 4.3 Historique — `haHistory(entity, days)`
 
 ```js
@@ -194,20 +213,40 @@ GET /api/history/period/<start_iso>
 3. **sous-échantillonne** à ~200 points max (`step = floor(len/200)`), sinon Chart.js
    s'effondrerait sur 5 jours de relevés minute par minute.
 
-### 4.4 Statistiques K3s — canal séparé
+### 4.4 Statistiques K3s — canal séparé 🔴 chemin cassé
 
 Le cluster Kubernetes **ne passe pas par l'API HA** :
+
+```js
+var k3r = await fetch(HA_URL+'/local/osvision_v2/k3s_stats.json?t='+Date.now());
+```
+
+**Ce chemin est périmé.** Le dossier `www/` du projet s'appelle désormais `vssp/`
+(`home-assistant/www/vssp/` → `/local/vssp/`), et le pipeline ne déploie plus rien sous
+`/local/osvision_v2/`. Le `fetch` part donc systématiquement en 404, le `catch` avale
+l'erreur, et le panneau affiche en permanence *« K3s stats non disponibles. Installez le
+cron k3s_stats.sh sur le host. »* — même quand le cron tourne parfaitement.
+
+**Correctif, une ligne dans `core.html` :**
 
 ```js
 var k3r = await fetch(HA_URL+'/local/vssp/k3s_stats.json?t='+Date.now());
 ```
 
+Et vérifier que le cron écrit bien dans le nouveau dossier :
+
+```sh
+# k3s_stats.sh, côté host
+OUT=/config/www/vssp/k3s_stats.json
+```
+
+Fonctionnement une fois corrigé :
+
 - Un script `k3s_stats.sh` (exécuté en cron sur le host) appelle `kubectl` et écrit un JSON
   dans `/config/www/vssp/k3s_stats.json`.
 - HA sert `/config/www/` sous l'URL `/local/` — pas de token nécessaire ici.
 - Le paramètre `?t=<timestamp>` sert de **cache-buster**.
-- Si le fichier est absent ou invalide, `renderK3s(null)` affiche : *« K3s stats non
-  disponibles. Installez le cron k3s_stats.sh sur le host. »*
+- Si le fichier est absent ou invalide, `renderK3s(null)` affiche le message d'aide.
 
 Structure JSON attendue :
 
@@ -227,6 +266,11 @@ Structure JSON attendue :
   "events": [{"time":"14:32","type":"Warning","object":"pod/x","message":"..."}]
 }
 ```
+
+> `k3s_stats.json` est produit sur le host, pas dans le dépôt : il ne doit **pas** être
+> versionné, et le déploiement (`rm -rf /config/www/vssp` puis `mv`) l'écrase à chaque run.
+> Si vous voulez qu'il survive aux déploiements, faites-le écrire ailleurs
+> (ex. `/config/www/vssp_runtime/`) — ce dossier n'étant pas remplacé par la CI.
 
 ---
 
@@ -287,8 +331,7 @@ type `line`, `fill: true`, `tension: .3`, `pointRadius: 0`. L'instance précéde
 
 Deux niveaux de filtrage :
 
-1. `findEntities(states, ['temp'], [...])` exclut météo, prévisions, pièces de la maison
-   (`bedroom`, `kitchen`, `living`, `garden`, `spa`…),
+1. `findEntities(states, ['temp'], [...])` exclut météo, prévisions, pièces de la maison,
 2. ne garde que les capteurs matériels dont l'`entity_id` contient `cpu`, `core`, `nvme`,
    `ssd`, `package`, `edge`, `board`, `k10`, `it87`.
 
@@ -310,6 +353,11 @@ XSS pour les données provenant de HA et surtout des messages d'événements K3s
 - **Gestion d'erreur** : tout `init()` est enveloppé dans un `try/catch` ; une erreur affiche
   un encart rouge en bas de page. À noter — en cas d'erreur, **le `setTimeout` n'est pas
   atteint**, donc la boucle s'arrête définitivement jusqu'au rechargement manuel.
+- **Cache-busting CI** : le `find … sed` du job `build` ne réécrit que les `?v=` des `*.yaml`
+  de `dist/`. `core.html` n'est **pas** couvert, et n'est de toute façon pas déclaré en
+  ressource Lovelace : c'est l'URL de l'iframe dans `core.yaml` qui devrait porter un `?v=`
+  si l'on veut forcer le rechargement après déploiement. Sans ça, seul le bouton
+  « VIDER CACHE » débloque un navigateur qui a mis la page en cache.
 
 ---
 
@@ -317,12 +365,15 @@ XSS pour les données provenant de HA et surtout des messages d'événements K3s
 
 | Problème | Impact | Piste |
 |---|---|---|
+| **Chemin K3s `/local/osvision_v2/`** | Panneau K3s toujours vide, sans erreur visible | Passer à `/local/vssp/` (§4.4) |
 | `setTimeout` dans le `try` | La boucle meurt à la première erreur réseau | Déplacer dans un `finally` |
 | `saveToken()` rappelle `init()` | Risque de plusieurs boucles concurrentes | Garder l'id du timer et `clearTimeout` |
 | 4 requêtes d'historique 5 j toutes les 30 s | Charge inutile sur le recorder HA | Rafraîchir l'historique toutes les 5–10 min seulement |
 | Découverte par mots-clés | Casse silencieuse au renommage d'entité | Config d'`entity_id` explicites en surcharge |
-| Chart.js via CDN | Dashboard KO hors ligne | Héberger le fichier dans `/local/` |
+| Exclusions de pièces codées en dur | Chaque nouvelle pièce pollue la table des températures | Filtrer sur l'Area HA plutôt que sur le nom |
+| Chart.js via CDN | Dashboard KO hors ligne | Héberger le fichier dans `/local/vssp/js/` |
 | Token en `localStorage` | Accès HA complet exposé au XSS | Token dédié / durée limitée |
 | `pods_total / 330` en dur | Faux ratio si le nb de nœuds change | Calculer `node_count × 110` |
 | Colonnes Min/Max températures | Toujours `--` | Suivre les extrêmes via l'historique HA |
 | Polling 30 s vs scan 60 s | Moitié des cycles sans nouvelle donnée | WebSocket HA `state_changed` |
+| Pas de `?v=` sur l'iframe | Ancienne version servie après déploiement | Ajouter le token de version dans `core.yaml` |
