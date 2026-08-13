@@ -90,6 +90,45 @@ Si la pièce n'existe pas encore, l'ajouter dans `rooms:` (et dans `nav:`
 si elle doit apparaître dans les sidebars — chaque entrée `nav` porte
 `path` pour le desktop et `path_mobile` pour les dashboards `-m`).
 
+## Aperçu — itérer sans toucher au staging
+
+Le wizard (phase 4) et le générateur savent produire un dashboard de
+**test isolé**. Trois niveaux, du plus prudent au plus engageant :
+
+| Mode | Commande | Écrit quoi |
+|---|---|---|
+| Validation seule | `--dry-run` | rien (juste le rapport JSON) |
+| Aperçu | `--preview` | `views/energy_preview.yaml` (url `vssp-energy-preview`) |
+| Publication | *(aucun flag)* | `views/energy.yaml` (staging) |
+
+L'isolation repose sur trois choses simultanées : un **fichier de
+sortie suffixé** (`_preview.yaml`), une **url_path distincte**
+(`vssp-energy-preview`, donc une entrée Lovelace séparée déclarée une
+fois pour toutes), et un **modèle séparé**
+(`model/house_rooms.preview.yaml`). Aucun chemin de staging n'apparaît
+dans la chaîne d'aperçu — ce n'est pas une convention de nommage, c'est
+structurel.
+
+Boucle d'itération type :
+
+```bash
+# 1. tester
+python3 vssp/generate_dashboards.py --preview
+# 2. ouvrir /vssp-energy-preview/energy, corriger le modèle ou le template
+# 3. relancer autant de fois que nécessaire… puis seulement :
+python3 vssp/generate_dashboards.py
+```
+
+Le générateur écrit un rapport JSON (`--status-file`) que le wizard lit
+via `/local/vssp/preview_status.json` : nombre de pièces, appareils,
+circuits, appareils en TODO, et erreurs de validation le cas échéant.
+
+Déclaration du dashboard d'aperçu : voir
+`config-fragment-preview.yaml` (à fusionner une fois dans
+`home-assistant/config-fragment.yaml`). Pensez à ajouter les fichiers
+`*_preview.yaml`, `*.preview.yaml` et `preview_status.json` au
+`.gitignore` pour qu'ils ne partent jamais en CI.
+
 ## Garde-fous intégrés au générateur
 
 - **Validation du modèle** avant rendu : champs obligatoires présents,
