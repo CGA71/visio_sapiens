@@ -220,7 +220,7 @@ d'origine ci-dessus, au fil des itérations.
   (`VSSP_discovery.py`, `VSSP_upgrade.py`) + config HA associée
   (`VSSP_admin_config.yaml` : helpers, shell_command, scripts).
 
-## Prochaines pistes identifiées (non démarrées)
+## Prochaines pistes identifiées (en cours de developpement)
 
 * Basculer les popups **Discovery** et **Upgrade** sur `browser_mod.popup`
   également (actuellement encore en `persistent_notification`).
