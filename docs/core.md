@@ -1,4 +1,4 @@
-# core.html — Dashboard Système (Visio Sapiens / OSVision)
+# core.html — Dashboard Système (Visio Sapiens)
 
 Documentation du processus de fonctionnement : d'où viennent les métriques, comment elles
 remontent jusqu'à la page, et à quelle fréquence.
@@ -39,7 +39,7 @@ La chaîne complète est la suivante :
        ┌───────────────────────────────────────────┐
        │ Canal séparé pour K3s :                    │
        │ cron k3s_stats.sh → k3s_stats.json         │
-       │ → /config/www/osvision_v2/ → /local/...    │
+       │ → /config/www/vssp/ → /local/...    │
        └───────────────────────────────────────────┘
 ```
 
@@ -199,11 +199,11 @@ GET /api/history/period/<start_iso>
 Le cluster Kubernetes **ne passe pas par l'API HA** :
 
 ```js
-var k3r = await fetch(HA_URL+'/local/osvision_v2/k3s_stats.json?t='+Date.now());
+var k3r = await fetch(HA_URL+'/local/vssp/k3s_stats.json?t='+Date.now());
 ```
 
 - Un script `k3s_stats.sh` (exécuté en cron sur le host) appelle `kubectl` et écrit un JSON
-  dans `/config/www/osvision_v2/k3s_stats.json`.
+  dans `/config/www/vssp/k3s_stats.json`.
 - HA sert `/config/www/` sous l'URL `/local/` — pas de token nécessaire ici.
 - Le paramètre `?t=<timestamp>` sert de **cache-buster**.
 - Si le fichier est absent ou invalide, `renderK3s(null)` affiche : *« K3s stats non
