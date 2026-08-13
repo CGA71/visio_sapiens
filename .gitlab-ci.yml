@@ -392,7 +392,7 @@ deploy:staging:
         rm -rf /config/www/vssp
         mkdir -p /config/www
         mv /config/.osv_stage/www/vssp /config/www/vssp
-        cp /config/.osv_stage/OSVISION_VERSION /config/OSVISION_VERSION
+        cp /config/.osv_stage/VSSP_VERSION /config/VSSP_VERSION
         # Deployer le patcher + le fragment a leur emplacement /config
         mkdir -p /config/vssp
         cp /config/.osv_stage/vssp/vssp_apply_config.py /config/vssp/
@@ -497,7 +497,7 @@ deploy:staging:
     - |
       echo "[i] Version deployee dans le conteneur :"
       kubectl exec -n $K3S_NAMESPACE $HA_POD -c $K3S_CONTAINER -- \
-        cat /config/OSVISION_VERSION 2>/dev/null || echo "  (pod recree, fichier lisible au prochain job)"
+        cat /config/VSSP_VERSION 2>/dev/null || echo "  (pod recree, fichier lisible au prochain job)"
     - echo "[OK] Staging a jour"
 
 # ============================================================================
@@ -530,7 +530,7 @@ deploy:production:
         rm -rf $HA_CFG/www/vssp
         mkdir -p $HA_CFG/www
         mv $HA_CFG/.osv_stage/www/vssp $HA_CFG/www/vssp
-        cp $HA_CFG/.osv_stage/OSVISION_VERSION $HA_CFG/OSVISION_VERSION
+        cp $HA_CFG/.osv_stage/VSSP_VERSION $HA_CFG/VSSP_VERSION
         # Deployer patcher + fragment a leur emplacement /config
         mkdir -p $HA_CFG/vssp
         cp $HA_CFG/.osv_stage/vssp/vssp_apply_config.py $HA_CFG/vssp/
