@@ -401,7 +401,7 @@ s'ils existent — donc le modèle et les templates arrivent sur `/config`. Mais
 
 ---
 
-## G4 — Reliquats de nommage `OSVISION` 🟡
+## G4 — Reliquats de nommage `OSVISION` (fix uprgade : issue 125)🟢
 
 Le pipeline écrit toujours `dist/OSVISION_VERSION`, copié en
 `/config/OSVISION_VERSION`. Les commandes de diagnostic qui lisent
