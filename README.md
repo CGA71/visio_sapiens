@@ -1,6 +1,6 @@
 # Visio Sapiens — Neural Home Interface
 
-Interface Home Assistant futuriste inspirée d'OSVision, pensée pour
+Interface Home Assistant futuriste, pensée pour
 tablette et mobile. Chaque pièce devient un module système ; les
 dashboards sont progressivement **générés** depuis un modèle métier
 plutôt qu'écrits à la main.
