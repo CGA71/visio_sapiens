@@ -3,7 +3,9 @@
 
 Usage :
     # depuis la racine du repo (défauts alignés sur l'arborescence) :
-    python3 vssp/generate_dashboards.py
+    python3 vssp/generate_dashboards.py                 # publication
+    python3 vssp/generate_dashboards.py --preview       # dashboard de TEST isolé
+    python3 vssp/generate_dashboards.py --dry-run       # validation seule
     # ou sur le pod HA (voir vssp/vssp_admin_config.yaml) :
     python3 /config/vssp/generate_dashboards.py --model ... --templates ... --out ...
 
@@ -16,10 +18,13 @@ Pensé pour être appelé par un shell_command Home Assistant à la fin
 du processus scan/assignation.
 """
 import argparse
+import json
 import sys
+from datetime import datetime
 from pathlib import Path
 
 import yaml
+from copy import deepcopy
 from jinja2 import Environment, FileSystemLoader, StrictUndefined
 
 # ── Dashboards à générer : (template, sortie, variables spécifiques) ──
@@ -70,6 +75,35 @@ def validate_model(model: dict) -> list[str]:
     return errors
 
 
+def preview_context(context: dict) -> dict:
+    """Isole le rendu dans un dashboard de TEST.
+
+    Le dashboard d'aperçu a sa propre url_path, donc sa propre entrée
+    Lovelace : il coexiste avec le dashboard de staging sans jamais
+    l'écraser. Le titre est marqué pour éviter toute confusion visuelle.
+    """
+    ctx = deepcopy(context)
+    energy = ctx.get("energy", {})
+    energy["url_path"] = energy.get("url_path", "vssp-energy") + "-preview"
+    energy["title"] = energy.get("title", "ENERGY") + " ⧗ PREVIEW"
+    energy["subtitle"] = "APERÇU — non deploye"
+    ctx["energy"] = energy
+    return ctx
+
+
+def write_status(path, status: dict) -> None:
+    """Rapport JSON lu par le wizard (servi en /local/vssp/…)."""
+    if not path:
+        return
+    try:
+        p = Path(path)
+        p.parent.mkdir(parents=True, exist_ok=True)
+        p.write_text(json.dumps(status, indent=2, ensure_ascii=False),
+                     encoding="utf-8")
+    except OSError as exc:
+        print(f"⚠ status-file non écrit : {exc}")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--model",
@@ -82,14 +116,29 @@ def main() -> int:
                 default="home-assistant/dashboards/templates_j2")
     ap.add_argument("--out",
                 default="home-assistant/dashboards/views")
+    ap.add_argument("--preview", action="store_true",
+                help="Genere un dashboard de TEST isole "
+                     "(energy_preview.yaml / url vssp-energy-preview) "
+                     "sans jamais toucher aux dashboards de staging")
+    ap.add_argument("--dry-run", action="store_true",
+                help="Valide le modele et le rendu, n'ecrit aucun fichier")
+    ap.add_argument("--status-file", default=None,
+                help="Ecrit un rapport JSON (lisible par le wizard via "
+                     "/local/vssp/preview_status.json)")
     args = ap.parse_args()
+
+    status = {"ok": False, "preview": args.preview, "dry_run": args.dry_run,
+              "generated": [], "errors": [], "warnings": [],
+              "timestamp": datetime.now().isoformat(timespec="seconds")}
 
     model = yaml.safe_load(Path(args.model).read_text(encoding="utf-8"))
 
     # Fusion du fragment du Discovery Wizard (étapes 2-4 du processus admin)
+    todo_count = 0
     rooms_path = Path(args.rooms)
     if rooms_path.exists():
         fragment = yaml.safe_load(rooms_path.read_text(encoding="utf-8"))
+        todo_count = rooms_path.read_text(encoding="utf-8").count("# TODO ")
         if fragment and fragment.get("rooms"):
             model["rooms"] = fragment["rooms"]
             print(f"ℹ rooms: repris depuis {rooms_path} "
@@ -100,6 +149,8 @@ def main() -> int:
         print("✗ Modèle invalide — génération annulée :")
         for e in errors:
             print(f"  - {e}")
+        status["errors"] = errors
+        write_status(args.status_file, status)
         return 1
 
     env = Environment(
@@ -113,23 +164,53 @@ def main() -> int:
     out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
 
+    n_dev = sum(len(r.get("devices", [])) for r in model.get("rooms", []))
+
     for tpl_name, out_name, extra in DASHBOARDS:
         context = {**model, **extra}
+
+        if args.preview:
+            context = preview_context(context)
+            out_name = out_name.replace(".yaml", "_preview.yaml")
+
         rendered = env.get_template(tpl_name).render(**context)
 
         # Validation YAML AVANT écriture
         try:
             yaml.load(rendered, Loader=HaLoader)
         except yaml.YAMLError as exc:
-            print(f"✗ {out_name} : YAML invalide après rendu — non écrit\n{exc}")
+            msg = f"{out_name} : YAML invalide après rendu — non écrit"
+            print(f"✗ {msg}\n{exc}")
+            status["errors"].append(f"{msg} — {exc}")
+            write_status(args.status_file, status)
             return 1
 
         target = out_dir / out_name
-        target.write_text(rendered, encoding="utf-8")
-        n_dev = sum(len(r.get("devices", [])) for r in model.get("rooms", []))
-        print(f"✓ {target} généré "
-              f"({len(model.get('rooms', []))} pièces, {n_dev} appareils, "
-              f"{len(model.get('circuits', []))} circuits)")
+        if args.dry_run:
+            print(f"● {target} — rendu valide ({len(rendered.splitlines())} "
+                  f"lignes) — NON écrit (--dry-run)")
+        else:
+            target.write_text(rendered, encoding="utf-8")
+            print(f"{'◑' if args.preview else '✓'} {target} généré "
+                  f"({len(model.get('rooms', []))} pièces, {n_dev} appareils, "
+                  f"{len(model.get('circuits', []))} circuits)")
+
+        status["generated"].append({
+            "file": str(target),
+            "lines": len(rendered.splitlines()),
+            "url": f"/{context['energy']['url_path']}/{context['energy']['view_path']}"
+                   if "energy" in context else None,
+        })
+
+    status["ok"] = True
+    status["rooms"] = len(model.get("rooms", []))
+    status["devices"] = n_dev
+    status["circuits"] = len(model.get("circuits", []))
+    status["todo_devices"] = todo_count
+    if args.preview:
+        print("\n→ Aperçu disponible sur /vssp-energy-preview/energy "
+              "— vos dashboards de staging n'ont pas été modifiés.")
+    write_status(args.status_file, status)
     return 0
 
 
