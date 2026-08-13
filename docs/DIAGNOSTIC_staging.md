@@ -76,7 +76,7 @@ POD=$(kubectl get pod -n homeassistant -l app=homeassistant \
       -o jsonpath='{.items[0].metadata.name}')
 
 # 1. Quelle version le conteneur a-t-il reçue ?
-kubectl exec -n homeassistant $POD -c homeassistant -- cat /config/OSVISION_VERSION
+kubectl exec -n homeassistant $POD -c homeassistant -- cat /config/VSSP_VERSION
 
 # 2. Le patcher a-t-il écrit les dashboards ?
 kubectl exec -n homeassistant $POD -c homeassistant -- \
