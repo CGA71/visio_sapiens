@@ -106,9 +106,9 @@ lovelace:
       type: module
     - url: /hacsfiles/lovelace-decluttering-card/decluttering-card.js
       type: module
-    - url: /local/vssp/css/osvision.css?v=__VTOKEN__
+    - url: /local/vssp/css/vssp.css?v=__VTOKEN__
       type: css
-    - url: /local/vssp/js/osvision.js?v=__VTOKEN__
+    - url: /local/vssp/js/vssp.js?v=__VTOKEN__
       type: module
     - url: /local/vssp/components/osv-core.js?v=__VTOKEN__
       type: module
