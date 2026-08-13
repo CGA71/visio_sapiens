@@ -198,7 +198,7 @@ premiers cassent quelque chose aujourd'hui.
 
 ---
 
-## G1 — Les URL de ressources ne correspondent plus aux fichiers 🔴
+## G1 — Les URL de ressources ne correspondent plus aux fichiers (corrigé : issue 124) 🟢
 
 État constaté dans le dépôt :
 
@@ -283,7 +283,7 @@ et dans `config-fragment.yaml` :
 
 ---
 
-## G2 — Le panneau ADMIN n'est jamais déployé 🔴
+## G2 — Le panneau ADMIN n'est jamais déployé (upgrade fix) 🟠
 
 `build` ne copie que `vssp_apply_config.py`, `vssp_ensure_packages.py`,
 `vssp_sanitize_resources.py`, `vssp_lan_probe.py` et `livebox.env`.
