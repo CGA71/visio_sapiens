@@ -125,8 +125,8 @@
     <div class="step active" id="s1"><div class="step-bar"></div><div class="step-label">1. STRUCTURE</div></div>
     <div class="step" id="s2"><div class="step-bar"></div><div class="step-label">2. APPAREILS</div></div>
     <div class="step" id="s3"><div class="step-bar"></div><div class="step-label">3. MODÈLE</div></div>
-    <div class="step" id="s4"><div class="step-bar"></div><div class="step-label">4. GIT PUSH</div></div>
-    <div class="step" id="s5"><div class="step-bar"></div><div class="step-label">5. GÉNÉRATION</div></div>
+    <div class="step" id="s4"><div class="step-bar"></div><div class="step-label">4. APERÇU</div></div>
+    <div class="step" id="s5"><div class="step-bar"></div><div class="step-label">5. PUBLICATION</div></div>
   </div>
 
   <!-- CONTENT -->
@@ -151,6 +151,7 @@ let state = {
   devices: [],
   sensors: [],        // capteurs sensor.* relevés au scan (pour pairage énergie)
   modelYaml: "",      // fragment rooms généré (house_rooms.yaml)
+  previewOk: false,   // un aperçu a-t-il été généré avec succès ?
   gitlab: {
     url: localStorage.getItem("osv_gitlab_url") || "http://192.168.1.11:10000",
     projectId: localStorage.getItem("osv_gitlab_project") || "",
@@ -611,7 +612,7 @@ function renderPhase3(c) {
       <button class="btn btn-ghost" onclick="goPhase2()">← Retour</button>
       <div class="actions-right">
         <button class="btn" onclick="goPhaseGit()" ${state.modelYaml ? "" : "disabled"}>
-          Suivant → Push GitLab
+          Suivant → Aperçu de test
         </button>
       </div>
     </div>`;
@@ -660,18 +661,168 @@ function downloadModel() {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
-// PHASE 4 — Push du modèle vers GitLab
+// PHASE 4 — Aperçu (dashboard de test, staging intact)
 // ═══════════════════════════════════════════════════════════════════════════
+// Rien n'est commité et aucun dashboard existant n'est touché : le modèle
+// part dans house_rooms.preview.yaml et le rendu dans energy_preview.yaml,
+// servi sous l'url /vssp-energy-preview/energy.
+
+const PREVIEW_URL = "/vssp-energy-preview/energy";
+const PREVIEW_STATUS_URL = "/local/vssp/preview_status.json";
+
 function renderPhaseGit(c) {
-  var g = state.gitlab;
   var hasModel = !!state.modelYaml;
 
+  c.innerHTML = `
+    <div class="card">
+      <div class="card-title">PHASE 4 — APERÇU DE TEST</div>
+      <div class="card-sub">
+        Génère un dashboard <strong>isolé</strong> à partir du modèle, pour
+        itérer autant de fois que nécessaire.
+        <span style="color:#00FFC3">Aucun commit, aucun dashboard existant modifié.</span>
+      </div>
+      ${hasModel
+        ? '<div class="status status-ok">✓ Modèle prêt à être testé</div>'
+        : '<div class="status status-warn">⚠ Aucun modèle généré — retourne en phase 3</div>'}
+      <div class="card" style="background:rgba(0,229,255,.04);margin:16px 0 0">
+        <div style="color:#8FB6C9;font-size:13px;line-height:1.8">
+          <strong style="color:#00E5FF">Ce qui se passe sur le pod :</strong>
+          <ol style="margin:8px 0 0 20px">
+            <li>Écriture du modèle dans <code style="color:#00E5FF">model/house_rooms.preview.yaml</code></li>
+            <li>Rendu en <code style="color:#00E5FF">views/energy_preview.yaml</code> (url <code style="color:#00E5FF">${PREVIEW_URL}</code>)</li>
+            <li>Rechargement Lovelace</li>
+          </ol>
+          <div style="margin-top:10px;color:#00FFC3">
+            Vos fichiers <code>views/energy.yaml</code> et
+            <code>model/house_rooms.yaml</code> restent intacts.
+          </div>
+        </div>
+      </div>
+      <button class="btn" onclick="runPreview()" id="btn-preview" style="margin-top:16px"
+        ${hasModel ? "" : "disabled"}>
+        🔍 ${state.previewOk ? "Régénérer l'aperçu" : "Générer l'aperçu de test"}
+      </button>
+      <button class="btn btn-ghost btn-sm" onclick="runDryRun()" id="btn-dryrun"
+        style="margin-top:8px" ${hasModel ? "" : "disabled"}>
+        ✓ Valider seulement (aucune écriture)
+      </button>
+    </div>
+    <div id="preview-status"></div>
+    <div class="actions">
+      <button class="btn btn-ghost" onclick="goPhase3()">← Retour au modèle</button>
+      <div class="actions-right">
+        <button class="btn" onclick="goPhase4()" ${state.previewOk ? "" : "disabled"}>
+          Suivant → Publication
+        </button>
+      </div>
+    </div>`;
+
+  if (state.previewOk) showPreviewLink();
+}
+
+// Boucle d'itération : modifier le modèle → relancer l'aperçu, sans limite
+async function runPreview() { await doPreview(false); }
+async function runDryRun()  { await doPreview(true); }
+
+async function doPreview(dryRun) {
+  const btn = document.getElementById(dryRun ? "btn-dryrun" : "btn-preview");
+  const status = document.getElementById("preview-status");
+  const label = btn.innerHTML;
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner"></span>${dryRun ? "Validation…" : "Génération…"}`;
+
+  try {
+    // 1. Modèle → pod, en base64 (UTF-8 safe pour les accents)
+    status.innerHTML = `<div class="status status-info"><span class="spinner"></span>Étape 1/3 — Envoi du modèle sur le pod…</div>`;
+    const b64 = btoa(unescape(encodeURIComponent(state.modelYaml)));
+    await callService("script", "vssp_preview_dashboards", {
+      content_b64: b64,
+      dry_run: dryRun,
+    });
+
+    // 2. Le script écrit puis génère ; on laisse le temps au shell_command
+    status.innerHTML = `<div class="status status-info"><span class="spinner"></span>Étape 2/3 — ${dryRun ? "Validation du rendu" : "Génération du dashboard de test"}…</div>`;
+    await new Promise(r => setTimeout(r, 2500));
+
+    // 3. Lire le rapport JSON écrit par le générateur
+    status.innerHTML = `<div class="status status-info"><span class="spinner"></span>Étape 3/3 — Lecture du rapport…</div>`;
+    const report = await fetchPreviewStatus();
+
+    if (!report) {
+      status.innerHTML = `<div class="status status-warn">
+        Rapport introuvable (${esc(PREVIEW_STATUS_URL)}).<br>
+        <span style="font-size:12px">Vérifie les notifications Home Assistant :
+        le script a peut-être échoué, ou le rapport n'est pas encore servi.</span></div>`;
+    } else if (!report.ok) {
+      status.innerHTML = `<div class="status status-error">
+        Génération refusée — le modèle est invalide :
+        <ul style="margin:8px 0 0 18px">${(report.errors||[]).map(e=>`<li>${esc(e)}</li>`).join("")}</ul>
+        <span style="font-size:12px">Corrige en phase 3 puis relance. Rien n'a été écrit.</span></div>`;
+    } else if (dryRun) {
+      status.innerHTML = `<div class="status status-ok">
+        ✓ Rendu valide — ${report.rooms} pièces, ${report.devices} appareils, ${report.circuits} circuits.
+        Aucun fichier écrit.</div>`;
+    } else {
+      state.previewOk = true;
+      status.innerHTML = `<div class="status status-ok">
+        ✓ Aperçu généré — ${report.rooms} pièces, ${report.devices} appareils, ${report.circuits} circuits`
+        + (report.todo_devices ? ` <span class="badge badge-orange">${report.todo_devices} appareil(s) en TODO</span>` : "")
+        + `</div>`;
+      showPreviewLink();
+      const next = document.querySelector(".actions-right .btn");
+      if (next) next.disabled = false;
+    }
+    btn.innerHTML = dryRun ? "✓ Valider seulement (aucune écriture)" : "🔄 Régénérer l'aperçu";
+  } catch(e) {
+    status.innerHTML = `<div class="status status-error">Erreur : ${esc(e.message)}</div>`;
+    btn.innerHTML = label;
+  }
+  btn.disabled = false;
+}
+
+// Cache-busting : le rapport change à chaque génération
+async function fetchPreviewStatus() {
+  try {
+    const r = await fetch(PREVIEW_STATUS_URL + "?t=" + Date.now(), { cache: "no-store" });
+    if (!r.ok) return null;
+    return await r.json();
+  } catch(e) { return null; }
+}
+
+function showPreviewLink() {
+  const status = document.getElementById("preview-status");
+  if (!status) return;
+  status.innerHTML += `
+    <div class="card" style="margin-top:12px">
+      <div class="card-title" style="font-size:12px">DASHBOARD DE TEST</div>
+      <div style="color:#8FB6C9;font-size:13px;line-height:1.7;margin-bottom:12px">
+        Ouvre-le dans un nouvel onglet, vérifie le rendu, puis reviens ici :
+        corrige le modèle en phase 3 et relance l'aperçu autant de fois
+        que nécessaire. La publication reste une action séparée.
+      </div>
+      <a class="btn" href="${HA_URL}${PREVIEW_URL}" target="_blank"
+         style="display:inline-block;text-decoration:none">
+        ↗ Ouvrir ${esc(PREVIEW_URL)}
+      </a>
+    </div>`;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// PHASE 5 — Publication (GitLab → CI → staging)
+// ═══════════════════════════════════════════════════════════════════════════
+// Seule phase qui touche le staging. À ne lancer qu'après validation
+// de l'aperçu en phase 4.
+
+function renderPhase4(c) {
+  var g = state.gitlab;
+  var ready = state.previewOk;
+
   c.innerHTML = '<div class="card">' +
-    '<div class="card-title">PHASE 4 — PUSH DU MODÈLE VERS GITLAB</div>' +
-    '<div class="card-sub">Le fragment house_rooms.yaml sera commité dans le repo — ta chaîne CI le déploiera sur le pod HA.</div>' +
-    (hasModel ?
-      '<div class="status status-ok">✓ Modèle généré, prêt à être poussé</div>' :
-      '<div class="status status-warn">⚠ Aucun modèle généré — retourne en phase 3</div>') +
+    '<div class="card-title">PHASE 5 — PUBLICATION</div>' +
+    '<div class="card-sub">Commit du modèle validé — ta chaîne CI le déploiera sur le staging.</div>' +
+    (ready ?
+      '<div class="status status-ok">✓ Aperçu validé — prêt à publier</div>' :
+      '<div class="status status-warn">⚠ Aucun aperçu généré — valide d\'abord le rendu en phase 4</div>') +
     '<div style="margin-top:16px">' +
       '<label>URL GITLAB</label>' +
       '<input type="text" id="gl-url" value="' + esc(g.url) + '" style="margin-bottom:12px"/>' +
@@ -684,17 +835,34 @@ function renderPhaseGit(c) {
       '<label>CHEMIN DANS LE REPO</label>' +
       '<input type="text" id="gl-path" value="home-assistant/dashboards/model/house_rooms.yaml" style="margin-bottom:16px"/>' +
     '</div>' +
-    '<button class="btn" onclick="pushToGitLab()" id="btn-git-push"' + (hasModel ? '' : ' disabled') + '>' +
+    '<button class="btn" onclick="pushToGitLab()" id="btn-git-push"' + (ready ? '' : ' disabled') + '>' +
       '🚀 Commit + Push le modèle' +
     '</button>' +
     '</div>' +
     '<div id="git-status"></div>' +
-    '<div class="actions">' +
-      '<button class="btn btn-ghost" onclick="goPhase3()">← Retour</button>' +
-      '<div class="actions-right">' +
-        '<button class="btn" onclick="goPhase4()">Suivant → Génération</button>' +
+    '<div class="card" style="margin-top:16px">' +
+      '<div class="card-title" style="font-size:12px;margin-bottom:8px">NETTOYAGE (OPTIONNEL)</div>' +
+      '<div style="color:#8FB6C9;font-size:13px;line-height:1.7;margin-bottom:12px">' +
+        'Une fois publié, tu peux supprimer le dashboard d\'aperçu du pod ' +
+        '(views/energy_preview.yaml et model/house_rooms.preview.yaml).' +
       '</div>' +
+      '<button class="btn btn-ghost btn-sm" onclick="cleanPreview()">🧹 Supprimer l\'aperçu</button>' +
+    '</div>' +
+    '<div class="actions">' +
+      '<button class="btn btn-ghost" onclick="goPhaseGit()">← Retour à l\'aperçu</button>' +
     '</div>';
+}
+
+async function cleanPreview() {
+  try {
+    await callService("shell_command", "vssp_clean_preview");
+    state.previewOk = false;
+    document.getElementById("git-status").innerHTML =
+      '<div class="status status-ok">✓ Fichiers d\'aperçu supprimés du pod</div>';
+  } catch(e) {
+    document.getElementById("git-status").innerHTML =
+      '<div class="status status-error">Erreur : ' + esc(e.message) + '</div>';
+  }
 }
 
 async function pushToGitLab() {
@@ -759,88 +927,11 @@ async function pushToGitLab() {
 
     status.innerHTML = '<div class="status status-ok">' +
       '✓ Modèle commité dans <strong>' + esc(filePath) + '</strong> (branche ' + esc(state.gitlab.branch) + ')<br>' +
-      '<span style="font-size:12px">Ta chaîne CI va maintenant le déployer sur le pod HA.</span></div>';
-    btn.innerHTML = '✓ Poussé';
+      '<span style="font-size:12px">Ta chaîne CI va maintenant le déployer sur le staging.</span></div>';
+    btn.innerHTML = '✓ Publié';
   } catch(e) {
     status.innerHTML = '<div class="status status-error">Erreur : ' + esc(e.message) + '</div>';
     btn.innerHTML = '🚀 Réessayer';
-    btn.disabled = false;
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// PHASE 5 — Génération des dashboards
-// ═══════════════════════════════════════════════════════════════════════════
-function renderPhase4(c) {
-  c.innerHTML = `
-    <div class="card">
-      <div class="card-title">PHASE 5 — GÉNÉRATION DES DASHBOARDS</div>
-      <div class="card-sub">
-        Le générateur va :
-        <ol style="margin:12px 0 0 20px;line-height:2">
-          <li>Sauvegarder le dashboard actuel dans <code style="color:#00E5FF">/config/vssp/backups/</code></li>
-          <li>Fusionner <code style="color:#00E5FF">house_rooms.yaml</code> dans le modèle <code style="color:#00E5FF">model/house.yaml</code></li>
-          <li>Rendre les templates Jinja2 → <code style="color:#00E5FF">views/energy.yaml</code> (validation YAML avant écriture)</li>
-          <li>Recharger Lovelace automatiquement</li>
-        </ol>
-      </div>
-      <div class="status status-warn" style="margin-bottom:16px">
-        ⚠ Prérequis : <strong>generate_dashboards.py</strong> déposé dans <code>/config/vssp/</code>,
-        shell_command <code>vssp_generate_dashboards</code> déclaré (voir vssp_admin_config.yaml),
-        et le modèle déployé sur le pod (push GitLab + CI de la phase 4, ou copie manuelle).
-      </div>
-      <button class="btn" onclick="applyDashboard()" id="btn-apply">
-        🚀 Générer les dashboards
-      </button>
-    </div>
-    <div id="apply-status"></div>
-    <div class="card" style="margin-top:16px">
-      <div class="card-title" style="font-size:12px;margin-bottom:8px">ALTERNATIVE MANUELLE</div>
-      <div style="color:#8FB6C9;font-size:13px;line-height:1.7">
-        Si le déclenchement automatique échoue :
-        <ol style="margin:8px 0 0 20px">
-          <li>Télécharge <strong>house_rooms.yaml</strong> (phase 3) et dépose-le dans <code style="color:#00E5FF">/config/home-assistant/dashboards/model/</code></li>
-          <li>Sur le pod : <code style="color:#00E5FF">python3 /config/vssp/generate_dashboards.py</code></li>
-          <li>Recharge les dashboards Lovelace</li>
-        </ol>
-      </div>
-    </div>
-    <div class="actions">
-      <button class="btn btn-ghost" onclick="goPhaseGit()">← Retour</button>
-    </div>`;
-}
-
-async function applyDashboard() {
-  const btn = document.getElementById("btn-apply");
-  const status = document.getElementById("apply-status");
-  btn.disabled = true;
-  btn.innerHTML = `<span class="spinner"></span>Génération en cours…`;
-
-  try {
-    status.innerHTML = `<div class="status status-info"><span class="spinner"></span>Étape 1/3 — Sauvegarde du dashboard actuel…</div>`;
-    await callService("shell_command", "vssp_backup_dashboard");
-    await new Promise(r => setTimeout(r, 800));
-
-    status.innerHTML = `<div class="status status-info"><span class="spinner"></span>Étape 2/3 — Génération depuis le modèle…</div>`;
-    await callService("shell_command", "vssp_generate_dashboards");
-    await new Promise(r => setTimeout(r, 1500));
-
-    status.innerHTML = `<div class="status status-info"><span class="spinner"></span>Étape 3/3 — Rechargement Lovelace…</div>`;
-    await callService("lovelace", "reload");
-    await new Promise(r => setTimeout(r, 1000));
-
-    status.innerHTML = `<div class="status status-ok">
-      ✓ Dashboards régénérés et Lovelace rechargé !<br>
-      <span style="font-size:12px">Ouvre le dashboard ENERGY pour voir les nouveaux appareils.</span>
-    </div>`;
-    btn.innerHTML = `✓ Généré`;
-
-  } catch(e) {
-    status.innerHTML = `<div class="status status-error">
-      Erreur : ${e.message}<br>
-      <span style="font-size:12px">Utilise la méthode manuelle ci-dessous.</span>
-    </div>`;
-    btn.innerHTML = `🚀 Réessayer`;
     btn.disabled = false;
   }
 }
