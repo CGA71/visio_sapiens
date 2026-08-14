@@ -287,7 +287,9 @@ build:
     # donc pas possible). Consequence : un nouveau repertoire dans
     # home-assistant/ serait ignore en silence. On refuse ce cas.
     - |
-      KNOWN=" dashboards templates www packages config-fragment.yaml "
+      # Marqueurs inertes : presents pour Git ou la lecture humaine, sans
+      # destination dans /config. Ils ne sont ni packages ni signales.
+      KNOWN=" dashboards templates www packages config-fragment.yaml .gitkeep .gitignore README.md "
       UNHANDLED=""
       for e in home-assistant/* home-assistant/.[!.]*; do
         [ -e "$e" ] || continue
