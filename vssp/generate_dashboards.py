@@ -54,16 +54,24 @@ for tag in ("!include", "!include_dir_list", "!include_dir_named",
     HaLoader.add_constructor(tag, lambda loader, node: node.value)
 
 
-def validate_model(model: dict) -> list[str]:
-    """Contrôles métier avant génération — renvoie la liste des erreurs."""
-    errors = []
+def validate_model(model: dict) -> tuple[list[str], list[str]]:
+    """Contrôles métier — renvoie (erreurs bloquantes, avertissements)."""
+    errors: list[str] = []
+    warnings: list[str] = []
     seen_entities = {}
     for d in model.get("energy_devices", []):
-        for field in ("name", "icon", "model", "power_entity", "energy_entity"):
+        # Bloquant : sans ces champs, la carte ne peut pas s'afficher.
+        for field in ("name", "icon", "power_entity", "energy_entity"):
             if not d.get(field):
                 errors.append(
                     f"Appareil « {d.get('name', '?')} » : "
                     f"champ manquant `{field}`")
+        # Informatif : le modele vient du registre HA quand il est
+        # disponible, sinon il reste a completer — ce n'est pas une
+        # raison de refuser tout le dashboard.
+        if not d.get("model"):
+            warnings.append(f"Appareil « {d.get('name', '?')} » : "
+                            f"modele inconnu")
         ent = d.get("power_entity")
         if ent in seen_entities:
             errors.append(
@@ -71,11 +79,16 @@ def validate_model(model: dict) -> list[str]:
                 f"(« {seen_entities[ent]} » et « {d.get('name')} »)")
         seen_entities[ent] = d.get("name")
     for c in model.get("circuits", []):
-        for field in ("name", "icon", "entity", "model", "amp"):
+        for field in ("name", "icon", "entity"):
             if not c.get(field):
                 errors.append(f"Circuit « {c.get('name', '?')} » : "
                               f"champ manquant `{field}`")
-    return errors
+        # Le calibre n'est jamais decouvrable automatiquement : il se
+        # lit sur le disjoncteur. Signale, jamais bloquant.
+        if not c.get("amp"):
+            warnings.append(f"Circuit « {c.get('name', '?')} » : "
+                            f"calibre (amp) a renseigner")
+    return errors, warnings
 
 
 def flatten_rooms(rooms: list) -> list:
@@ -188,7 +201,15 @@ def main() -> int:
     else:
         model["energy_devices"] = flatten_rooms(model.get("rooms", []))
 
-    errors = validate_model(model)
+    errors, warns = validate_model(model)
+    status["warnings"] = warns
+    if warns:
+        print(f"⚠ {len(warns)} champ(s) à compléter dans "
+              f"model/energy_devices.yaml :")
+        for w in warns[:5]:
+            print(f"  - {w}")
+        if len(warns) > 5:
+            print(f"  … et {len(warns) - 5} autre(s)")
     if errors:
         print("✗ Modèle invalide — génération annulée :")
         for e in errors:
