@@ -344,10 +344,62 @@ def merge(existing: list[dict], found: list[dict], key: str,
     return result, report
 
 
+def resolve_token(args) -> str | None:
+    """Jeton : argument, puis environnement, puis fichier.
+
+    Un jeton vide donne un 401 « Login attempt failed » cote Home
+    Assistant, sans autre explication — d'ou le message explicite ici.
+    """
+    import os
+
+    if args.token and args.token.strip() not in ("", "unknown", "unavailable",
+                                                 "None"):
+        return args.token.strip()
+
+    env = os.environ.get("HA_TOKEN", "").strip()
+    if env:
+        return env
+
+    tf = Path(args.token_file)
+    if tf.exists():
+        val = tf.read_text(encoding="utf-8").strip()
+        if val:
+            return val
+        print(f"✗ {tf} est vide.")
+    else:
+        print(f"✗ Aucun jeton fourni et {tf} est absent.")
+
+    print("""
+  Trois façons de fournir le jeton, par ordre de priorité :
+
+    1. En ligne de commande :   --token "eyJhbGci..."
+    2. Par l'environnement  :   export HA_TOKEN="eyJhbGci..."
+    3. Par fichier (recommandé pour les shell_command) :
+
+         printf '%s' "eyJhbGci..." > /config/vssp/.ha_token
+         chmod 600 /config/vssp/.ha_token
+
+  Le jeton se crée dans Home Assistant : votre profil → onglet
+  Sécurité → Jetons d'accès longue durée → Créer un jeton.
+  Sa valeur ne s'affiche qu'une seule fois.
+
+  Le fichier évite que le jeton apparaisse en clair dans les journaux
+  de Home Assistant et dans la table des processus, contrairement à un
+  passage par argument.
+""")
+    return None
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--url", default="http://localhost:8123")
-    ap.add_argument("--token", required=True, help="Jeton longue durée HA")
+    ap.add_argument("--token", default=None,
+                    help="Jeton longue durée HA. À défaut : variable "
+                         "d'environnement HA_TOKEN, puis --token-file.")
+    ap.add_argument("--token-file", default="/config/vssp/.ha_token",
+                    help="Fichier contenant le jeton (défaut : "
+                         "/config/vssp/.ha_token). Utilisé si --token et "
+                         "HA_TOKEN sont absents.")
     ap.add_argument("--devices",
                     default="home-assistant/dashboards/model/energy_devices.yaml")
     ap.add_argument("--dry-run", action="store_true",
@@ -370,13 +422,17 @@ def main() -> int:
     existing_circuits = doc.get("circuits") or []
     ignore = list(doc.get("ignore") or DEFAULT_IGNORE) + list(args.exclude)
 
+    token = resolve_token(args)
+    if not token:
+        return 1
+
     try:
-        states = ha_states(args.url, args.token)
+        states = ha_states(args.url, token)
     except (urllib.error.URLError, urllib.error.HTTPError) as exc:
         print(f"✗ Home Assistant injoignable ({args.url}) : {exc}")
         return 1
 
-    registry = ha_registry(args.url, args.token)
+    registry = ha_registry(args.url, token)
     print(f"Registre : {len(registry)} entites documentees "
           f"(piece / modele / nom d'appareil)")
     print(f"Exclusions : {', '.join(ignore) if ignore else 'aucune'}")
