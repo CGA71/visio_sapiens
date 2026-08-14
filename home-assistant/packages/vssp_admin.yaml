@@ -1,0 +1,423 @@
+########################################################################
+# Visio Sapiens — Configuration ADMIN (PACKAGE Home Assistant)
+#
+# DESTINATION DANS LE REPO :
+#     home-assistant/packages/vssp_admin.yaml
+#
+# CHEMIN FINAL SUR LE POD (pose par le CI) :
+#     /config/packages/vssp_admin.yaml
+#
+# Charge AUTOMATIQUEMENT par la cle deja presente dans
+# config-fragment.yaml :
+#     homeassistant:
+#       packages: !include_dir_named packages
+#
+# Rien a recopier dans configuration.yaml : c'est un package HA complet,
+# comme vssp_technical_room.yaml. Un package peut declarer plusieurs
+# domaines (input_text, command_line, shell_command, script) — ils sont
+# fusionnes avec ceux deja definis ailleurs.
+#
+# ⚠ SI LES BOUTONS DU PANNEAU ADMIN DISENT « script.vssp_… introuvable »
+#   c'est que ce fichier n'est pas charge. Verifier dans l'ordre :
+#     1. le fichier est bien dans /config/packages/ sur le pod
+#        (kubectl exec … -- ls /config/packages/)
+#     2. configuration.yaml contient bien
+#        homeassistant: packages: !include_dir_named packages
+#        (pose par vssp_ensure_packages.py au deploiement)
+#     3. Home Assistant a ete REDEMARRE (les input_text et command_line
+#        declares en YAML ne se rechargent pas a chaud ; pour les scripts
+#        seuls, Outils de developpement > YAML > Recharger les scripts)
+#     4. Outils de developpement > Etats : chercher « vssp » — les
+#        entites script.vssp_* et binary_sensor.vssp_* doivent apparaitre
+#
+# APRES INSTALLATION : lancer une fois le script vssp_set_admin_pin
+# (apres y avoir mis votre vrai code), puis renseigner le helper
+# input_text.vssp_ha_token avec un jeton longue duree.
+#
+# Prerequis dossiers sur le pod :
+#     mkdir -p /config/vssp/backups /config/www/vssp /config/dashboards/model
+########################################################################
+
+# --------------------------------------------------------------------
+# HELPERS (Parametres > Appareils et services > Aides, ou via ce YAML)
+# --------------------------------------------------------------------
+input_text:
+  vssp_admin_pin:
+    name: "Visio Sapiens — Code admin (reference)"
+    mode: password
+    max: 20
+  vssp_pin_entry:
+    name: "Visio Sapiens — Saisie du code"
+    mode: password
+    max: 20
+  # Jeton longue duree utilise par vssp_discovery.py et
+  # vssp_energy_sync.py (Profil > Jetons d'acces longue duree).
+  # Sans ce helper, les shell_command correspondants s'executent avec un
+  # token vide et le panneau affiche « Entite non trouvee ».
+  vssp_ha_token:
+    name: "Visio Sapiens — Jeton API Home Assistant"
+    mode: password
+    max: 255
+
+# --------------------------------------------------------------------
+# ETAT DES DASHBOARDS SYSTEME (ENERGY, CORE)
+# --------------------------------------------------------------------
+# ENERGY et CORE ne sont pas rattaches a une piece Home Assistant : ils
+# ne passent donc jamais par le formulaire creation/modification/
+# suppression du wizard. Le panneau ADMIN a besoin de savoir s'ils
+# existent pour proposer soit CREER, soit REGENERER.
+#
+# `command_line` est une integration de premier niveau : si votre
+# configuration.yaml en a deja une, fusionnez seulement les entrees.
+command_line:
+  - binary_sensor:
+      name: "VSSP Dashboard Energy Present"
+      unique_id: vssp_dashboard_energy_present
+      command: >-
+        test -s /config/dashboards/views/energy.yaml
+        && echo ON || echo OFF
+      payload_on: "ON"
+      payload_off: "OFF"
+      # Pas de device_class : « on » signifie ici « present », pas
+      # « probleme ». Un device_class: problem inverserait le sens.
+      scan_interval: 60
+
+  - binary_sensor:
+      name: "VSSP Dashboard Core Present"
+      unique_id: vssp_dashboard_core_present
+      command: >-
+        test -s /config/dashboards/views/core.yaml
+        && echo ON || echo OFF
+      payload_on: "ON"
+      payload_off: "OFF"
+      # Pas de device_class : « on » signifie ici « present », pas
+      # « probleme ». Un device_class: problem inverserait le sens.
+      scan_interval: 60
+
+  # Date de derniere generation, pour l'affichage du panneau ADMIN.
+  - sensor:
+      name: "VSSP Dashboard Energy Modifie"
+      unique_id: vssp_dashboard_energy_mtime
+      command: >-
+        date -r /config/dashboards/views/energy.yaml
+        "+%d/%m %H:%M" 2>/dev/null || echo "jamais genere"
+      scan_interval: 300
+
+# --------------------------------------------------------------------
+# SHELL COMMANDS — executent les scripts Python sur le pod HA lui-meme
+# --------------------------------------------------------------------
+shell_command:
+  vssp_discovery: >-
+    python3 /config/vssp/vssp_discovery.py
+    --url http://localhost:8123
+    --token {{ states('input_text.vssp_ha_token') }}
+    --output /config/vssp/report.json
+  vssp_upgrade: >-
+    python3 /config/vssp/vssp_upgrade.py
+  vssp_backup_dashboard: >-
+    sh -c "mkdir -p /config/vssp/backups &&
+    cp /config/dashboards/home.yaml
+    /config/vssp/backups/home_$(date +%Y%m%d_%H%M%S).yaml"
+  vssp_delete_dashboard: >-
+    rm -f /config/dashboards/home.yaml
+  # Generation des dashboards depuis le modele metier (etape 5).
+  # Fusionne automatiquement model/house_rooms.yaml (produit par le
+  # Discovery Wizard, phase 3) s'il est present, puis rend les
+  # templates Jinja2 vers dashboards/views/ (validation YAML avant
+  # ecriture : jamais de dashboard casse deploye).
+  vssp_generate_dashboards: >-
+    python3 /config/vssp/generate_dashboards.py
+    --model /config/dashboards/model/house.yaml
+    --rooms /config/dashboards/model/house_rooms.yaml
+    --devices /config/dashboards/model/energy_devices.yaml
+    --templates /config/dashboards/templates_j2
+    --out /config/dashboards/views
+    --status-file /config/www/vssp/preview_status.json
+
+  # ------------------------------------------------------------------
+  # DASHBOARDS SYSTEME — creation / regeneration
+  # ------------------------------------------------------------------
+  # CREER : --if-missing garantit qu'un dashboard deja en place n'est
+  # JAMAIS ecrase. Le bouton est donc sans risque, meme clique par
+  # erreur sur une installation deja configuree.
+  vssp_create_energy: >-
+    python3 /config/vssp/generate_dashboards.py
+    --only energy --if-missing
+    --model /config/dashboards/model/house.yaml
+    --devices /config/dashboards/model/energy_devices.yaml
+    --templates /config/dashboards/templates_j2
+    --out /config/dashboards/views
+    --status-file /config/www/vssp/energy_generate_status.json
+
+  # REGENERER : ecrase volontairement (apres sauvegarde par le script).
+  vssp_regenerate_energy: >-
+    python3 /config/vssp/generate_dashboards.py
+    --only energy
+    --model /config/dashboards/model/house.yaml
+    --devices /config/dashboards/model/energy_devices.yaml
+    --templates /config/dashboards/templates_j2
+    --out /config/dashboards/views
+    --status-file /config/www/vssp/energy_generate_status.json
+
+  # Sauvegarde ciblee du seul dashboard ENERGY.
+  vssp_backup_energy: >-
+    sh -c "mkdir -p /config/vssp/backups &&
+    [ -f /config/dashboards/views/energy.yaml ] &&
+    cp /config/dashboards/views/energy.yaml
+    /config/vssp/backups/energy_$(date +%Y%m%d_%H%M%S).yaml || true"
+
+  # ------------------------------------------------------------------
+  # ENERGY — synchronisation du parc d'appareils mesures
+  # ------------------------------------------------------------------
+  # Scanne HA, apparie les capteurs *_puissance / *_energie, met a jour
+  # model/energy_devices.yaml (ajouts + circuits du tableau electrique).
+  # SANS --prune : un appareil momentanement hors ligne reste affiche.
+  vssp_energy_sync: >-
+    python3 /config/vssp/vssp_energy_sync.py
+    --url http://localhost:8123
+    --token {{ states('input_text.vssp_ha_token') }}
+    --devices /config/dashboards/model/energy_devices.yaml
+    --status-file /config/www/vssp/energy_sync_status.json
+
+  # Idem, mais applique reellement les retraits (bouton PRUNE de l'ADMIN).
+  vssp_energy_sync_prune: >-
+    python3 /config/vssp/vssp_energy_sync.py
+    --url http://localhost:8123
+    --token {{ states('input_text.vssp_ha_token') }}
+    --devices /config/dashboards/model/energy_devices.yaml
+    --status-file /config/www/vssp/energy_sync_status.json
+    --prune
+
+  # Diff seul : rien n'est ecrit, le rapport dit ce qui changerait.
+  vssp_energy_sync_dryrun: >-
+    python3 /config/vssp/vssp_energy_sync.py
+    --url http://localhost:8123
+    --token {{ states('input_text.vssp_ha_token') }}
+    --devices /config/dashboards/model/energy_devices.yaml
+    --status-file /config/www/vssp/energy_sync_status.json
+    --dry-run
+
+  # ------------------------------------------------------------------
+  # APERCU — chaine de TEST, totalement isolee du staging
+  # ------------------------------------------------------------------
+  # 1) Ecrit le modele du wizard dans un fichier *.preview.yaml dedie.
+  #    Le contenu arrive en base64 (variable content_b64) : pas de
+  #    probleme de quoting ni d'accents dans les noms de pieces.
+  vssp_write_preview_model: >-
+    sh -c "mkdir -p /config/dashboards/model &&
+    printf '%s' '{{ content_b64 }}' | base64 -d
+    > /config/dashboards/model/house_rooms.preview.yaml"
+
+  # 2) Genere energy_preview.yaml (url vssp-energy-preview) a partir du
+  #    modele d'apercu. --preview garantit qu'aucun fichier de staging
+  #    n'est ecrit : le nom de sortie et l'url_path sont suffixes.
+  vssp_generate_preview: >-
+    python3 /config/vssp/generate_dashboards.py
+    --model /config/dashboards/model/house.yaml
+    --rooms /config/dashboards/model/house_rooms.preview.yaml
+    --templates /config/dashboards/templates_j2
+    --out /config/dashboards/views
+    --preview
+    --status-file /config/www/vssp/preview_status.json
+
+  # 3) Validation seule : ne produit aucun fichier, juste le rapport.
+  vssp_validate_preview: >-
+    python3 /config/vssp/generate_dashboards.py
+    --model /config/dashboards/model/house.yaml
+    --rooms /config/dashboards/model/house_rooms.preview.yaml
+    --templates /config/dashboards/templates_j2
+    --out /config/dashboards/views
+    --preview --dry-run
+    --status-file /config/www/vssp/preview_status.json
+
+  # 4) Nettoyage des fichiers d'apercu (jamais ceux du staging).
+  vssp_clean_preview: >-
+    sh -c "rm -f /config/dashboards/views/energy_preview.yaml
+    /config/dashboards/model/house_rooms.preview.yaml
+    /config/www/vssp/preview_status.json"
+
+# --------------------------------------------------------------------
+# SCRIPTS — la logique appelee par les boutons du dashboard ADMIN
+# --------------------------------------------------------------------
+script:
+  vssp_run_discovery:
+    alias: "Visio Sapiens — Lancer la découverte"
+    sequence:
+      - service: shell_command.vssp_discovery
+      - service: persistent_notification.create
+        data:
+          title: "Visio Sapiens — Découverte terminée"
+          message: >
+            Rapport généré dans /config/vssp/report.json.
+            Consulte-le pour voir les nouvelles entités par pièce.
+
+  vssp_run_upgrade:
+    alias: "Visio Sapiens — Mettre à jour le dashboard"
+    sequence:
+      - service: shell_command.vssp_backup_dashboard
+      - service: shell_command.vssp_upgrade
+      - service: persistent_notification.create
+        data:
+          title: "Visio Sapiens — Mise à jour appliquée"
+          message: >
+            Le dashboard a été régénéré à partir des dernières entités
+            découvertes. Une sauvegarde de l'ancienne version a été
+            conservée dans /config/vssp/backups/.
+
+  # Appele par la phase 5 du Discovery Wizard, ou par un futur bouton
+  # GENERATE du panneau ADMIN (template: vssp_admin_button).
+  vssp_run_generate:
+    alias: "Visio Sapiens — Régénérer les dashboards"
+    sequence:
+      - service: shell_command.vssp_backup_dashboard
+      - service: shell_command.vssp_generate_dashboards
+      - service: persistent_notification.create
+        data:
+          title: "Visio Sapiens — Dashboards régénérés"
+          message: >
+            energy.yaml a été régénéré depuis model/house.yaml
+            (+ house_rooms.yaml du wizard s'il existe).
+            Rechargez Lovelace pour voir le résultat.
+
+  # Bouton CREER LE DASHBOARD ENERGY du panneau ADMIN.
+  # Idempotent : si le dashboard existe deja, il n'est pas touche et le
+  # script se contente de le dire.
+  vssp_create_energy_dashboard:
+    alias: "Visio Sapiens — Créer le dashboard ENERGY"
+    sequence:
+      # 1. Partir du parc d'appareils reel plutot que d'un modele vide
+      - service: shell_command.vssp_energy_sync
+        continue_on_error: true
+      # 2. Generer uniquement s'il manque
+      - service: shell_command.vssp_create_energy
+      - service: lovelace.reload
+      # 3. Laisser le capteur d'existence se rafraichir avant le message
+      - delay: "00:00:05"
+      - service: persistent_notification.create
+        data:
+          title: "Visio Sapiens — Dashboard ENERGY"
+          message: >
+            {% if is_state('binary_sensor.vssp_dashboard_energy_present', 'on') %}
+              Dashboard ENERGY disponible sur /vssp-energy/energy
+              ({{ states('sensor.vssp_dashboard_energy_modifie') }}).
+              Si l'entree n'apparait pas dans la barre laterale, verifiez
+              que vssp-energy est bien declare dans config-fragment.yaml.
+            {% else %}
+              La generation a echoue. Consultez
+              /config/www/vssp/energy_generate_status.json pour le detail
+              des erreurs de validation du modele.
+            {% endif %}
+
+  # Bouton REGENERER : ecrase le dashboard existant, apres sauvegarde.
+  vssp_regenerate_energy_dashboard:
+    alias: "Visio Sapiens — Régénérer le dashboard ENERGY"
+    sequence:
+      - service: shell_command.vssp_backup_energy
+      - service: shell_command.vssp_energy_sync
+        continue_on_error: true
+      - service: shell_command.vssp_regenerate_energy
+      - service: lovelace.reload
+      - service: persistent_notification.create
+        data:
+          title: "Visio Sapiens — Dashboard ENERGY régénéré"
+          message: >
+            Tableaux mis a jour depuis le parc reel
+            ({{ states('sensor.vssp_appareils_mesures') }} appareils mesures).
+            Une sauvegarde de la version precedente est dans
+            /config/vssp/backups/.
+
+  # Bouton SYNC ENERGY du panneau ADMIN : resynchronise les tableaux
+  # « Consommation par appareil » et « Tableau electrique » avec les
+  # appareils reellement presents dans Home Assistant.
+  vssp_run_energy_sync:
+    alias: "Visio Sapiens — Synchroniser ENERGY"
+    fields:
+      prune:
+        description: "true = retirer aussi les appareils absents de HA"
+        example: false
+    sequence:
+      - service: shell_command.vssp_backup_dashboard
+      - if:
+          - condition: template
+            value_template: "{{ prune | default(false) }}"
+        then:
+          - service: shell_command.vssp_energy_sync_prune
+        else:
+          - service: shell_command.vssp_energy_sync
+      - service: shell_command.vssp_generate_dashboards
+      - service: lovelace.reload
+      - service: persistent_notification.create
+        data:
+          title: "Visio Sapiens — ENERGY synchronise"
+          message: >
+            Tableaux regeneres —
+            {{ states('sensor.vssp_appareils_mesures') }} appareils mesures
+            detectes dans Home Assistant. Rapport detaille dans
+            /config/www/vssp/energy_sync_status.json.
+
+  # Appele par la phase 4 du Discovery Wizard (bouton APERCU).
+  # Boucle d'iteration : on peut le relancer autant de fois que voulu,
+  # il ne touche que les fichiers *_preview / *.preview.yaml.
+  vssp_preview_dashboards:
+    alias: "Visio Sapiens — Générer l'aperçu de test"
+    fields:
+      content_b64:
+        description: "Modèle rooms (house_rooms.yaml) encodé en base64"
+        example: "cm9vbXM6Cg=="
+      dry_run:
+        description: "true = valider seulement, sans écrire de dashboard"
+        example: false
+    sequence:
+      - service: shell_command.vssp_write_preview_model
+        data:
+          content_b64: "{{ content_b64 }}"
+      - if:
+          - condition: template
+            value_template: "{{ dry_run | default(false) }}"
+        then:
+          - service: shell_command.vssp_validate_preview
+        else:
+          - service: shell_command.vssp_generate_preview
+          # Recharge Lovelace pour que l'apercu apparaisse tout de suite.
+          # Sans effet sur le contenu des dashboards de staging.
+          - service: lovelace.reload
+
+  vssp_delete_dashboard:
+    alias: "Visio Sapiens — Supprimer le dashboard (protégé par code)"
+    sequence:
+      - if:
+          - condition: template
+            value_template: >-
+              {{ states('input_text.vssp_pin_entry') not in ['', 'unknown', 'unavailable']
+                 and states('input_text.vssp_pin_entry') == states('input_text.vssp_admin_pin') }}
+        then:
+          - service: shell_command.vssp_backup_dashboard
+          - service: shell_command.vssp_delete_dashboard
+          - service: persistent_notification.create
+            data:
+              title: "Visio Sapiens — Dashboard supprimé"
+              message: >
+                Une sauvegarde a été conservée dans
+                /config/vssp/backups/ avant suppression.
+        else:
+          - service: persistent_notification.create
+            data:
+              title: "Visio Sapiens — Échec de suppression"
+              message: "Code incorrect. Aucune action effectuée."
+      # Toujours vider le champ de saisie, succes ou echec (hygiene de securite)
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.vssp_pin_entry
+        data:
+          value: ""
+
+  # A lancer UNE SEULE FOIS a la main pour definir ton code admin,
+  # puis supprime/desactive ce script pour eviter qu'il soit relance.
+  vssp_set_admin_pin:
+    alias: "Visio Sapiens — Définir le code admin (à usage unique)"
+    sequence:
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.vssp_admin_pin
+        data:
+          value: "CHANGE_MOI_1234"  # <-- remplace par ton vrai code avant de lancer
