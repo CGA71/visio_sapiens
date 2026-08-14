@@ -126,13 +126,17 @@ def ha_states(url: str, token: str) -> list[dict]:
 # parc, format ligne a ligne pour rester robuste au parsing.
 REGISTRY_TEMPLATE = """
 {%- set ns = namespace(lines=[]) -%}
-{%- for s in states.sensor + states.switch -%}
+{%- for s in states.sensor -%}
   {%- set eid = s.entity_id -%}
-  {%- set area = area_name(eid) or '' -%}
-  {%- set model = device_attr(eid, 'model') or '' -%}
-  {%- set dname = device_attr(eid, 'name_by_user')
-                  or device_attr(eid, 'name') or '' -%}
-  {%- set ns.lines = ns.lines + [eid ~ '|' ~ area ~ '|' ~ model ~ '|' ~ dname] -%}
+  {%- set ns.lines = ns.lines + [eid ~ '|' ~ (area_name(eid) or '') ~ '|' ~
+      (device_attr(eid, 'model') or '') ~ '|' ~
+      (device_attr(eid, 'name_by_user') or device_attr(eid, 'name') or '')] -%}
+{%- endfor -%}
+{%- for s in states.switch -%}
+  {%- set eid = s.entity_id -%}
+  {%- set ns.lines = ns.lines + [eid ~ '|' ~ (area_name(eid) or '') ~ '|' ~
+      (device_attr(eid, 'model') or '') ~ '|' ~
+      (device_attr(eid, 'name_by_user') or device_attr(eid, 'name') or '')] -%}
 {%- endfor -%}
 {{ ns.lines | join('\n') }}
 """
@@ -151,9 +155,14 @@ def ha_registry(url: str, token: str) -> dict[str, dict]:
     try:
         with urllib.request.urlopen(req, timeout=30) as resp:
             text = resp.read().decode("utf-8")
-    except (urllib.error.URLError, urllib.error.HTTPError) as exc:
-        print(f"⚠ Registre inaccessible ({exc}) — les champs piece et "
-              f"modele resteront a completer manuellement.")
+    except urllib.error.HTTPError as exc:
+        body = exc.read().decode("utf-8", "replace")[:300]
+        print(f"⚠ Registre inaccessible (HTTP {exc.code}) — pieces et "
+              f"modeles a completer manuellement.\n   Reponse HA : {body}")
+        return {}
+    except urllib.error.URLError as exc:
+        print(f"⚠ Registre inaccessible ({exc}) — pieces et modeles a "
+              f"completer manuellement.")
         return {}
     for line in text.splitlines():
         parts = line.split("|")
@@ -232,10 +241,26 @@ def discover(states: list[dict], registry: dict | None = None,
             "energy_entity": energy_eid,
         })
 
+    # Radicaux des appareils mesures : seul un switch qui pilote l'un
+    # d'eux est un vrai circuit du tableau electrique.
+    device_stems = {d["power_entity"].split(".", 1)[1] for d in devices}
+    device_stems = {strip_suffix(o, POWER_SUFFIXES) or o for o in device_stems}
+
     circuits = []
+    skipped_switches = []
     for s in states:
         eid = s["entity_id"]
         if not eid.startswith("switch.") or excluded(eid) or ignored(eid):
+            continue
+        stem = eid.split(".", 1)[1]
+        reg_model = (registry.get(eid, {}).get("model") or "")
+        is_circuit = (
+            stem in device_stems                      # pilote un appareil mesure
+            or any(stem.startswith(d + "_") for d in device_stems)
+            or "shelly" in reg_model.lower()          # module Shelly identifie
+        )
+        if not is_circuit:
+            skipped_switches.append(eid)
             continue
         attrs = s.get("attributes") or {}
         reg = registry.get(eid, {})
@@ -250,6 +275,13 @@ def discover(states: list[dict], registry: dict | None = None,
             "amp": "",                # calibre : a renseigner, puis preserve
         })
     circuits.sort(key=lambda c: c["entity"])
+    if skipped_switches:
+        print(f"  {len(skipped_switches)} interrupteur(s) ignore(s) "
+              f"— pas de mesure associee, donc pas un circuit :")
+        for e in skipped_switches[:8]:
+            print(f"      · {e}")
+        if len(skipped_switches) > 8:
+            print(f"      · … et {len(skipped_switches) - 8} autre(s)")
     return devices, circuits
 
 
