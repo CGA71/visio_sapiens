@@ -58,6 +58,11 @@ EXCLUDE_PATTERNS = (
     r"battery", r"_rssi", r"_signal",
 )
 
+# Exclusions par defaut : equipements d'infrastructure qui ne doivent pas
+# apparaitre comme des consommateurs. Surchargeable par la cle `ignore:`
+# de energy_devices.yaml (preservee d'un scan a l'autre) ou par --exclude.
+DEFAULT_IGNORE = [r"multiprise", r"power[_\s-]?strip[_\s-]?total"]
+
 ICON_RULES = [
     (r"aspirateur|vacuum", "mdi:vacuum"),
     (r"congel|freezer", "mdi:snowflake"),
@@ -101,9 +106,9 @@ def strip_suffix(object_id: str, suffixes: tuple) -> str | None:
 
 
 # ── Accès Home Assistant ─────────────────────────────────────────────
-def ha_states(url: str, token: str) -> list[dict]:
+def ha_get(url: str, token: str, path: str):
     req = urllib.request.Request(
-        f"{url.rstrip('/')}/api/states",
+        f"{url.rstrip('/')}{path}",
         headers={"Authorization": f"Bearer {token}",
                  "Content-Type": "application/json"},
     )
@@ -111,9 +116,71 @@ def ha_states(url: str, token: str) -> list[dict]:
         return json.load(resp)
 
 
+def ha_states(url: str, token: str) -> list[dict]:
+    return ha_get(url, token, "/api/states")
+
+
+# Le registre (piece, fabricant, modele) n'est pas expose par /api/states.
+# On le recupere en faisant evaluer un template par Home Assistant, qui a
+# acces a area_name() et device_attr(). Une seule requete pour tout le
+# parc, format ligne a ligne pour rester robuste au parsing.
+REGISTRY_TEMPLATE = """
+{%- set ns = namespace(lines=[]) -%}
+{%- for s in states.sensor + states.switch -%}
+  {%- set eid = s.entity_id -%}
+  {%- set area = area_name(eid) or '' -%}
+  {%- set model = device_attr(eid, 'model') or '' -%}
+  {%- set dname = device_attr(eid, 'name_by_user')
+                  or device_attr(eid, 'name') or '' -%}
+  {%- set ns.lines = ns.lines + [eid ~ '|' ~ area ~ '|' ~ model ~ '|' ~ dname] -%}
+{%- endfor -%}
+{{ ns.lines | join('\n') }}
+"""
+
+
+def ha_registry(url: str, token: str) -> dict[str, dict]:
+    """entity_id → {area, model, device_name}, via /api/template."""
+    body = json.dumps({"template": REGISTRY_TEMPLATE}).encode()
+    req = urllib.request.Request(
+        f"{url.rstrip('/')}/api/template", data=body,
+        headers={"Authorization": f"Bearer {token}",
+                 "Content-Type": "application/json"},
+        method="POST",
+    )
+    out = {}
+    try:
+        with urllib.request.urlopen(req, timeout=30) as resp:
+            text = resp.read().decode("utf-8")
+    except (urllib.error.URLError, urllib.error.HTTPError) as exc:
+        print(f"⚠ Registre inaccessible ({exc}) — les champs piece et "
+              f"modele resteront a completer manuellement.")
+        return {}
+    for line in text.splitlines():
+        parts = line.split("|")
+        if len(parts) == 4:
+            out[parts[0]] = {"area": parts[1], "model": parts[2],
+                             "device_name": parts[3]}
+    return out
+
+
 # ── Découverte ───────────────────────────────────────────────────────
-def discover(states: list[dict]) -> tuple[list[dict], list[dict]]:
-    """→ (appareils mesurés, circuits du tableau électrique)."""
+def discover(states: list[dict], registry: dict | None = None,
+             ignore: list[str] | None = None) -> tuple[list[dict], list[dict]]:
+    """→ (appareils mesurés, circuits du tableau électrique).
+
+    `registry` fournit piece / modele / nom d'appareil (via /api/template).
+    `ignore` est une liste d'expressions regulieres : tout entity_id ou
+    nom d'appareil qui correspond est ecarte — c'est la ou l'on met les
+    multiprises et autres equipements d'infrastructure que l'on ne veut
+    pas voir apparaitre comme des consommateurs.
+    """
+    registry = registry or {}
+    ignore = ignore or []
+
+    def ignored(eid: str) -> bool:
+        dname = registry.get(eid, {}).get("device_name", "")
+        return any(re.search(pat, eid, re.I) or (dname and re.search(pat, dname, re.I))
+                   for pat in ignore)
     powers: dict[str, str] = {}      # radical → entity_id puissance
     energies: dict[str, str] = {}    # radical → entity_id énergie cumulée
     friendly: dict[str, str] = {}    # radical → nom lisible
@@ -121,7 +188,7 @@ def discover(states: list[dict]) -> tuple[list[dict], list[dict]]:
 
     for s in states:
         eid = s["entity_id"]
-        if not eid.startswith("sensor.") or excluded(eid):
+        if not eid.startswith("sensor.") or excluded(eid) or ignored(eid):
             continue
         oid = eid.split(".", 1)[1]
         attrs = s.get("attributes") or {}
@@ -151,13 +218,16 @@ def discover(states: list[dict]) -> tuple[list[dict], list[dict]]:
         energy_eid = energies.get(stem) or energies.get(stem + "\x00daily")
         if not energy_eid:
             continue  # une ligne du tableau a besoin des deux colonnes
-        raw_name = friendly.get(stem, stem)
+        reg = registry.get(power_eid, {})
+        # Le nom de l'APPAREIL du registre est bien meilleur que le nom du
+        # capteur : « Lavelinge » plutot que « Lavelinge Puissance ».
+        raw_name = reg.get("device_name") or friendly.get(stem, stem)
         name = clean_name(raw_name)
         devices.append({
             "name": name,
             "icon": guess_icon(stem + " " + raw_name),
-            "model": "",              # complété manuellement, puis préservé
-            "room": areas.get(stem, ""),
+            "model": reg.get("model", ""),      # ex: Shelly Power Strip 4 Gen4
+            "room": pretty_area(reg.get("area", "")),
             "power_entity": power_eid,
             "energy_entity": energy_eid,
         })
@@ -165,19 +235,27 @@ def discover(states: list[dict]) -> tuple[list[dict], list[dict]]:
     circuits = []
     for s in states:
         eid = s["entity_id"]
-        if not eid.startswith("switch.") or excluded(eid):
+        if not eid.startswith("switch.") or excluded(eid) or ignored(eid):
             continue
         attrs = s.get("attributes") or {}
-        name = clean_name(attrs.get("friendly_name", eid.split(".", 1)[1]))
+        reg = registry.get(eid, {})
+        raw = reg.get("device_name") or attrs.get("friendly_name",
+                                                  eid.split(".", 1)[1])
+        name = clean_name(raw)
         circuits.append({
             "name": name,
-            "icon": guess_icon(eid + " " + name),
+            "icon": guess_icon(eid + " " + raw),
             "entity": eid,
-            "model": "",
-            "amp": "",
+            "model": reg.get("model", ""),
+            "amp": "",                # calibre : a renseigner, puis preserve
         })
     circuits.sort(key=lambda c: c["entity"])
     return devices, circuits
+
+
+def pretty_area(area: str) -> str:
+    """« Technical_Room » → « Technical Room »."""
+    return re.sub(r"[_\-]+", " ", area).strip() if area else ""
 
 
 def clean_name(raw: str) -> str:
@@ -244,8 +322,21 @@ def main() -> int:
                     help="Affiche le diff sans rien écrire")
     ap.add_argument("--prune", action="store_true",
                     help="Retire réellement les appareils absents de HA")
+    ap.add_argument("--exclude", action="append", default=[],
+                    help="Expression reguliere d'exclusion (repetable). "
+                         "S'ajoute a la cle `ignore:` du fichier devices.")
     ap.add_argument("--status-file", default=None)
     args = ap.parse_args()
+
+    # Les exclusions sont lues AVANT le scan : elles conditionnent la
+    # decouverte elle-meme, pas seulement l'affichage.
+    path = Path(args.devices)
+    doc = {}
+    if path.exists():
+        doc = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
+    existing_devices = doc.get("devices") or []
+    existing_circuits = doc.get("circuits") or []
+    ignore = list(doc.get("ignore") or DEFAULT_IGNORE) + list(args.exclude)
 
     try:
         states = ha_states(args.url, args.token)
@@ -253,14 +344,12 @@ def main() -> int:
         print(f"✗ Home Assistant injoignable ({args.url}) : {exc}")
         return 1
 
-    found_devices, found_circuits = discover(states)
+    registry = ha_registry(args.url, args.token)
+    print(f"Registre : {len(registry)} entites documentees "
+          f"(piece / modele / nom d'appareil)")
+    print(f"Exclusions : {', '.join(ignore) if ignore else 'aucune'}")
 
-    path = Path(args.devices)
-    doc = {}
-    if path.exists():
-        doc = yaml.safe_load(path.read_text(encoding="utf-8")) or {}
-    existing_devices = doc.get("devices") or []
-    existing_circuits = doc.get("circuits") or []
+    found_devices, found_circuits = discover(states, registry, ignore)
 
     devices, dev_report = merge(existing_devices, found_devices,
                                 "power_entity", PRESERVED_DEVICE, args.prune)
@@ -299,11 +388,15 @@ def main() -> int:
         "# (name, icon, model, amp, ordre) sont preservees a chaque scan.\n"
         "# Ajoutez `keep: true` a un appareil pour qu'il ne soit jamais\n"
         "# retire, meme temporairement absent de Home Assistant.\n"
+        "#\n"
+        "# `ignore:` = expressions regulieres d'equipements a ne jamais\n"
+        "# faire apparaitre (multiprises, agregats...). Testees sur\n"
+        "# l'entity_id ET sur le nom de l'appareil du registre.\n"
         f"# Derniere synchronisation : {datetime.now():%Y-%m-%d %H:%M}\n"
         "########################################################################\n"
     )
     out = header + yaml.safe_dump(
-        {"devices": devices, "circuits": circuits},
+        {"ignore": ignore, "devices": devices, "circuits": circuits},
         allow_unicode=True, sort_keys=False, default_flow_style=False)
 
     if args.dry_run:
