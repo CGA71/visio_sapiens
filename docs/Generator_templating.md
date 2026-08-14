@@ -90,6 +90,110 @@ Si la pièce n'existe pas encore, l'ajouter dans `rooms:` (et dans `nav:`
 si elle doit apparaître dans les sidebars — chaque entrée `nav` porte
 `path` pour le desktop et `path_mobile` pour les dashboards `-m`).
 
+## Dashboards système (ENERGY, CORE) — hors du cycle des pièces
+
+ENERGY et CORE ne sont rattachés à aucune pièce Home Assistant. Ils ne
+passent donc pas par le formulaire création / modification / suppression
+du wizard, qui raisonne par pièce : ils ont leur propre cycle de vie,
+piloté depuis le panneau ADMIN.
+
+La carte vit dans son propre fichier,
+`home-assistant/dashboards/admin/system_dashboards.yaml`, chargée par
+`home.yaml` via `- !include admin/system_dashboards.yaml` — même
+mécanique que vos vues.
+
+Le panneau affiche **un seul emplacement à deux états**, pour qu'aucune
+mauvaise manipulation ne puisse écraser un dashboard en place :
+
+| État du fichier `views/energy.yaml` | Bouton affiché | Action |
+|---|---|---|
+| absent | **CRÉER ENERGY** | sync du parc + génération (`--only energy --if-missing`) |
+| présent | **RÉGÉNÉRER ENERGY** | sauvegarde + sync + génération complète |
+| (toujours) | **SYNC ENERGY** | met à jour les tableaux sans tout régénérer |
+
+La bascule repose sur `binary_sensor.vssp_dashboard_energy_present`, un
+capteur `command_line` qui teste l'existence du fichier toutes les 60 s.
+Le bouton RÉGÉNÉRER affiche en libellé la date de dernière génération et
+le nombre d'appareils mesurés détectés.
+
+Double sécurité côté générateur : `--if-missing` fait que la création
+**ne peut pas** écraser un fichier existant, même si le bouton est
+cliqué par erreur ou si le capteur est en retard d'un cycle.
+
+CORE apparaît dans le panneau pour la cohérence, mais son bouton est
+inactif tant que `core.yaml.j2` n'existe pas. Quand le template sera
+écrit, il suffira de décommenter l'entrée `core` dans `DASHBOARDS`
+(`generate_dashboards.py`) et de dupliquer le couple conditionnel
+d'ENERGY.
+
+## ENERGY — un dashboard dynamique, à deux vitesses
+
+ENERGY n'est pas un dashboard de pièce : il liste tous les appareils
+mesurés de la maison. Sa mise à jour se fait à deux niveaux, et il est
+important de savoir lequel s'applique à quoi.
+
+| Panneau | Mécanisme | Régénération nécessaire ? |
+|---|---|---|
+| Consommation Totale (jour / mois / année) | **scan à l'exécution** — `packages/vssp_energy_totaux.yaml` somme tous les `*_puissance` et `*_energie` | **Non** — automatique |
+| Puissance instantanée maison | scan à l'exécution (idem) | **Non** |
+| Consommation par appareil (lignes) | boucle Jinja sur `model/energy_devices.yaml` | Oui |
+| Tableau électrique (cases) | boucle Jinja sur `circuits` | Oui |
+
+La raison de cette asymétrie : Lovelace ne sait pas boucler sur une
+liste d'entités. Une somme, si — d'où des totaux réellement vivants,
+et des tableaux qui demandent une passe de génération.
+
+### La boucle automatique
+
+```
+appairage / suppression d'un Shelly
+        │
+        ├─► totaux : mis à jour immédiatement (scan)
+        │
+        └─► event entity_registry_updated
+                │  (automation vssp_energy_autosync, temporisée 5 min)
+                ├─► vssp_energy_sync.py    → met à jour energy_devices.yaml
+                ├─► generate_dashboards.py → régénère views/energy.yaml
+                └─► lovelace.reload
+```
+
+Une passe quotidienne à 04h30 sert de filet, au cas où un événement
+aurait été manqué (redémarrage pendant un appairage).
+
+### vssp_energy_sync.py — fusion non destructive
+
+Le script apparie les capteurs d'un même appareil par radical d'entité
+(`sensor.shelly_bureau_power` + `sensor.shelly_bureau_energy_today`),
+détecte les `switch.*` pour le tableau électrique, puis fusionne avec
+l'existant :
+
+- **nouvel appareil** → ajouté en fin de liste ;
+- **appareil déjà connu** → conservé tel quel, avec vos personnalisations
+  (nom, icône, modèle, ampérage, ordre d'affichage) ;
+- **appareil disparu de HA** → *signalé mais pas retiré*. Un Shelly hors
+  ligne ne doit pas faire disparaître sa ligne. Le retrait effectif
+  demande `--prune` (bouton PRUNE de l'ADMIN) ;
+- **`keep: true`** sur un appareil → jamais retiré, même avec `--prune`
+  (utile pour un équipement saisonnier).
+
+Un appareil n'entre dans le tableau que s'il a **les deux** capteurs
+(puissance ET énergie) : une ligne sans sa colonne énergie n'aurait pas
+de sens. Les agrégats (`sensor.home_*`, `sensor.solar_*`,
+`sensor.grid_*`, `*_room_power`) sont exclus pour éviter les doubles
+comptes.
+
+### Convention de nommage (la clé de tout)
+
+| Suffixe | Sens | Entre dans les scans |
+|---|---|---|
+| `*_puissance` / `*_power` | puissance instantanée | oui (total puissance) |
+| `*_energie` / `*_energy` | compteur cumulatif (lifetime) | oui (total énergie) |
+| `*_energie_jour` / `*_energy_today` | compteur journalier | non — sinon on mélangerait kWh de vie et kWh du jour |
+
+Le capteur `sensor.vssp_appareils_mesures` compte les appareils
+détectés : si sa valeur dépasse le nombre de lignes du tableau, une
+resynchronisation est en attente.
+
 ## Aperçu — itérer sans toucher au staging
 
 Le wizard (phase 4) et le générateur savent produire un dashboard de
