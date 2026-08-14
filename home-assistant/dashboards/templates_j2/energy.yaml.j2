@@ -627,23 +627,38 @@ views:
                 card:
                   type: vertical-stack
                   cards:
-                    # ── Lignes appareils (générées depuis house.yaml) ──
-{% for room in rooms %}
-{% for d in room.devices %}
+                    # ── Lignes appareils ──────────────────────────────
+                    # Liste PLATE : le dashboard ENERGY n'est pas un
+                    # dashboard de pièce. `room` n'est qu'un libellé de
+                    # provenance affiché sous le nom de l'appareil.
+                    # Alimentée par vssp_energy_sync.py (ajout/retrait
+                    # automatique selon les entités présentes dans HA).
+{% for d in energy_devices %}
                     - type: custom:button-card
                       template: vssp_energy_device_row
                       entity: {{ d.power_entity }}
                       name: "{{ d.name }}"
                       icon: {{ d.icon }}
                       variables:
-                        room: "{{ room.name }}"
-                        model: "{{ d.model }}"
+                        room: "{{ d.room }}"
+                        model: "{{ d.model | default('—', true) }}"
                         energy_entity: {{ d.energy_entity }}
                       tap_action:
                         action: more-info
 
 {% endfor %}
-{% endfor %}
+{% if not energy_devices %}
+                    # Aucun appareil avec capteurs puissance + énergie
+                    # détecté. Lancez vssp_energy_sync.py ou complétez
+                    # model/energy_devices.yaml.
+                    - type: custom:button-card
+                      template: vssp_energy_device_row
+                      name: "Aucun appareil detecte"
+                      icon: mdi:help-circle-outline
+                      variables:
+                        room: "—"
+                        model: "vssp_energy_sync.py"
+{% endif %}
           # ── Total ──────────────────────────────────────────────────
           - type: custom:button-card
             template: vssp_energy_total_row
@@ -999,6 +1014,11 @@ views:
             name: "Tableau Électrique — Contrôle des Circuits (Shelly)"
 
           # ── Circuits (générés depuis house.yaml, par rangées) ──────
+{% if not circuits %}
+          - type: custom:button-card
+            template: vssp_section_title
+            name: "Aucun circuit detecte — lancez vssp_energy_sync.py"
+{% endif %}
 {% for row in circuits | batch(circuits_per_row | default(6)) %}
           - type: horizontal-stack
             cards:
@@ -1009,8 +1029,8 @@ views:
                 name: "{{ c.name }}"
                 icon: {{ c.icon }}
                 variables:
-                  model: "{{ c.model }}"
-                  amp: "{{ c.amp }}"
+                  model: "{{ c.model | default('', true) }}"
+                  amp: "{{ c.amp | default('—', true) }}"
 {% endfor %}
 
 {% endfor %}
