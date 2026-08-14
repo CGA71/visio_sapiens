@@ -22,6 +22,48 @@ input_text:
     max: 20
 
 # --------------------------------------------------------------------
+# ETAT DES DASHBOARDS SYSTEME (ENERGY, CORE)
+# --------------------------------------------------------------------
+# ENERGY et CORE ne sont pas rattaches a une piece Home Assistant : ils
+# ne passent donc jamais par le formulaire creation/modification/
+# suppression du wizard. Le panneau ADMIN a besoin de savoir s'ils
+# existent pour proposer soit CREER, soit REGENERER.
+#
+# `command_line` est une integration de premier niveau : si votre
+# configuration.yaml en a deja une, fusionnez seulement les entrees.
+command_line:
+  - binary_sensor:
+      name: "VSSP Dashboard Energy Present"
+      unique_id: vssp_dashboard_energy_present
+      command: >-
+        test -s /config/home-assistant/dashboards/views/energy.yaml
+        && echo ON || echo OFF
+      payload_on: "ON"
+      payload_off: "OFF"
+      device_class: problem
+      scan_interval: 60
+
+  - binary_sensor:
+      name: "VSSP Dashboard Core Present"
+      unique_id: vssp_dashboard_core_present
+      command: >-
+        test -s /config/home-assistant/dashboards/views/core.yaml
+        && echo ON || echo OFF
+      payload_on: "ON"
+      payload_off: "OFF"
+      device_class: problem
+      scan_interval: 60
+
+  # Date de derniere generation, pour l'affichage du panneau ADMIN.
+  - sensor:
+      name: "VSSP Dashboard Energy Modifie"
+      unique_id: vssp_dashboard_energy_mtime
+      command: >-
+        date -r /config/home-assistant/dashboards/views/energy.yaml
+        "+%d/%m %H:%M" 2>/dev/null || echo "jamais genere"
+      scan_interval: 300
+
+# --------------------------------------------------------------------
 # SHELL COMMANDS — executent les scripts Python sur le pod HA lui-meme
 # --------------------------------------------------------------------
 shell_command:
@@ -47,9 +89,73 @@ shell_command:
     python3 /config/vssp/generate_dashboards.py
     --model /config/home-assistant/dashboards/model/house.yaml
     --rooms /config/home-assistant/dashboards/model/house_rooms.yaml
+    --devices /config/home-assistant/dashboards/model/energy_devices.yaml
     --templates /config/home-assistant/dashboards/templates_j2
     --out /config/home-assistant/dashboards/views
     --status-file /config/www/vssp/preview_status.json
+
+  # ------------------------------------------------------------------
+  # DASHBOARDS SYSTEME — creation / regeneration
+  # ------------------------------------------------------------------
+  # CREER : --if-missing garantit qu'un dashboard deja en place n'est
+  # JAMAIS ecrase. Le bouton est donc sans risque, meme clique par
+  # erreur sur une installation deja configuree.
+  vssp_create_energy: >-
+    python3 /config/vssp/generate_dashboards.py
+    --only energy --if-missing
+    --model /config/home-assistant/dashboards/model/house.yaml
+    --devices /config/home-assistant/dashboards/model/energy_devices.yaml
+    --templates /config/home-assistant/dashboards/templates_j2
+    --out /config/home-assistant/dashboards/views
+    --status-file /config/www/vssp/energy_generate_status.json
+
+  # REGENERER : ecrase volontairement (apres sauvegarde par le script).
+  vssp_regenerate_energy: >-
+    python3 /config/vssp/generate_dashboards.py
+    --only energy
+    --model /config/home-assistant/dashboards/model/house.yaml
+    --devices /config/home-assistant/dashboards/model/energy_devices.yaml
+    --templates /config/home-assistant/dashboards/templates_j2
+    --out /config/home-assistant/dashboards/views
+    --status-file /config/www/vssp/energy_generate_status.json
+
+  # Sauvegarde ciblee du seul dashboard ENERGY.
+  vssp_backup_energy: >-
+    sh -c "mkdir -p /config/vssp/backups &&
+    [ -f /config/home-assistant/dashboards/views/energy.yaml ] &&
+    cp /config/home-assistant/dashboards/views/energy.yaml
+    /config/vssp/backups/energy_$(date +%Y%m%d_%H%M%S).yaml || true"
+
+  # ------------------------------------------------------------------
+  # ENERGY — synchronisation du parc d'appareils mesures
+  # ------------------------------------------------------------------
+  # Scanne HA, apparie les capteurs *_puissance / *_energie, met a jour
+  # model/energy_devices.yaml (ajouts + circuits du tableau electrique).
+  # SANS --prune : un appareil momentanement hors ligne reste affiche.
+  vssp_energy_sync: >-
+    python3 /config/vssp/vssp_energy_sync.py
+    --url http://localhost:8123
+    --token {{ states('input_text.vssp_ha_token') }}
+    --devices /config/home-assistant/dashboards/model/energy_devices.yaml
+    --status-file /config/www/vssp/energy_sync_status.json
+
+  # Idem, mais applique reellement les retraits (bouton PRUNE de l'ADMIN).
+  vssp_energy_sync_prune: >-
+    python3 /config/vssp/vssp_energy_sync.py
+    --url http://localhost:8123
+    --token {{ states('input_text.vssp_ha_token') }}
+    --devices /config/home-assistant/dashboards/model/energy_devices.yaml
+    --status-file /config/www/vssp/energy_sync_status.json
+    --prune
+
+  # Diff seul : rien n'est ecrit, le rapport dit ce qui changerait.
+  vssp_energy_sync_dryrun: >-
+    python3 /config/vssp/vssp_energy_sync.py
+    --url http://localhost:8123
+    --token {{ states('input_text.vssp_ha_token') }}
+    --devices /config/home-assistant/dashboards/model/energy_devices.yaml
+    --status-file /config/www/vssp/energy_sync_status.json
+    --dry-run
 
   # ------------------------------------------------------------------
   # APERCU — chaine de TEST, totalement isolee du staging
@@ -132,6 +238,82 @@ script:
             energy.yaml a été régénéré depuis model/house.yaml
             (+ house_rooms.yaml du wizard s'il existe).
             Rechargez Lovelace pour voir le résultat.
+
+  # Bouton CREER LE DASHBOARD ENERGY du panneau ADMIN.
+  # Idempotent : si le dashboard existe deja, il n'est pas touche et le
+  # script se contente de le dire.
+  vssp_create_energy_dashboard:
+    alias: "Visio Sapiens — Créer le dashboard ENERGY"
+    sequence:
+      # 1. Partir du parc d'appareils reel plutot que d'un modele vide
+      - service: shell_command.vssp_energy_sync
+        continue_on_error: true
+      # 2. Generer uniquement s'il manque
+      - service: shell_command.vssp_create_energy
+      - service: lovelace.reload
+      # 3. Laisser le capteur d'existence se rafraichir avant le message
+      - delay: "00:00:05"
+      - service: persistent_notification.create
+        data:
+          title: "Visio Sapiens — Dashboard ENERGY"
+          message: >
+            {% if is_state('binary_sensor.vssp_dashboard_energy_present', 'on') %}
+              Dashboard ENERGY disponible sur /vssp-energy/energy
+              ({{ states('sensor.vssp_dashboard_energy_modifie') }}).
+              Si l'entree n'apparait pas dans la barre laterale, verifiez
+              que vssp-energy est bien declare dans config-fragment.yaml.
+            {% else %}
+              La generation a echoue. Consultez
+              /config/www/vssp/energy_generate_status.json pour le detail
+              des erreurs de validation du modele.
+            {% endif %}
+
+  # Bouton REGENERER : ecrase le dashboard existant, apres sauvegarde.
+  vssp_regenerate_energy_dashboard:
+    alias: "Visio Sapiens — Régénérer le dashboard ENERGY"
+    sequence:
+      - service: shell_command.vssp_backup_energy
+      - service: shell_command.vssp_energy_sync
+        continue_on_error: true
+      - service: shell_command.vssp_regenerate_energy
+      - service: lovelace.reload
+      - service: persistent_notification.create
+        data:
+          title: "Visio Sapiens — Dashboard ENERGY régénéré"
+          message: >
+            Tableaux mis a jour depuis le parc reel
+            ({{ states('sensor.vssp_appareils_mesures') }} appareils mesures).
+            Une sauvegarde de la version precedente est dans
+            /config/vssp/backups/.
+
+  # Bouton SYNC ENERGY du panneau ADMIN : resynchronise les tableaux
+  # « Consommation par appareil » et « Tableau electrique » avec les
+  # appareils reellement presents dans Home Assistant.
+  vssp_run_energy_sync:
+    alias: "Visio Sapiens — Synchroniser ENERGY"
+    fields:
+      prune:
+        description: "true = retirer aussi les appareils absents de HA"
+        example: false
+    sequence:
+      - service: shell_command.vssp_backup_dashboard
+      - if:
+          - condition: template
+            value_template: "{{ prune | default(false) }}"
+        then:
+          - service: shell_command.vssp_energy_sync_prune
+        else:
+          - service: shell_command.vssp_energy_sync
+      - service: shell_command.vssp_generate_dashboards
+      - service: lovelace.reload
+      - service: persistent_notification.create
+        data:
+          title: "Visio Sapiens — ENERGY synchronise"
+          message: >
+            Tableaux regeneres —
+            {{ states('sensor.vssp_appareils_mesures') }} appareils mesures
+            detectes dans Home Assistant. Rapport detaille dans
+            /config/www/vssp/energy_sync_status.json.
 
   # Appele par la phase 4 du Discovery Wizard (bouton APERCU).
   # Boucle d'iteration : on peut le relancer autant de fois que voulu,
