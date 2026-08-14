@@ -133,125 +133,28 @@ energy:
     revenue_month: sensor.vssp_revente_mois       # template sensor
     revenue_year: sensor.vssp_revente_annee       # template sensor
 
-# ── Pièces + objets connectés (rempli par le formulaire / scan) ──────
-# Chaque device DOIT avoir : name, icon, model, power_entity,
-# energy_entity. Le scan (étape 3) ajoute ici les nouveaux objets ;
-# l'assignation (étape 4) les range sous la bonne pièce.
-rooms:
-  - id: technical
-    name: "Local technique"
-    devices:
-      - name: "Aspirateur"
-        icon: mdi:vacuum
-        model: "Shelly Power Strip 4 Gen 4"
-        power_entity: sensor.technical_room_aspirateur_puissance
-        energy_entity: sensor.technical_room_aspirateur_energie
-      - name: "Congelateur"
-        icon: mdi:freezer
-        model: "Shelly Power Strip 4 Gen 4"
-        power_entity: sensor.technical_room_congelateur_puissance
-        energy_entity: sensor.technical_room_congelateur_energie
-      - name: "Lave-linge"
-        icon: mdi:washing-machine
-        model: "Shelly Power Strip 4 Gen 4"
-        power_entity: sensor.technical_room_lavelinge_puissance
-        energy_entity: sensor.technical_room_lavelinge_energie
-      - name: "Seche-linge"
-        icon: mdi:tumble-dryer
-        model: "Shelly Power Strip 4 Gen 4"
-        power_entity: sensor.technical_room_sechelinge_puissance
-        energy_entity: sensor.technical_room_sechelinge_energie
-      - name: "Alarme"
-        icon: mdi:alarm
-        model: "Shelly Power Strip 4 Gen 4"
-        power_entity: sensor.technical_room_alarme_verisure_puissance
-        energy_entity: sensor.technical_room_alarme_verisure_energie
-      - name: "Provider"
-        icon: mdi:web
-        model: "Shelly Power Strip 4 Gen 4"
-        power_entity: sensor.technical_room_livebox_puissance
-        energy_entity: sensor.technical_room_livebox_energie
-      - name: "Netgear-commutateur"
-        icon: mdi:lan
-        model: "Shelly Power Strip 4 Gen 4"
-        power_entity: sensor.technical_room_netgear_commutateur_puissance
-        energy_entity: sensor.technical_room_netgear_commutateur_energie
-      - name: "Synology"
-        icon: mdi:nas
-        model: "Shelly Power Strip 4 Gen 4"
-        power_entity: sensor.technical_room_synology_puissance
-        energy_entity: sensor.technical_room_synology_energie
+# ── Pièces (structure de la maison) ──────────────────────────────────
+# Renseigné par le wizard (phase 1). Le dashboard ENERGY ne s'en sert
+# PAS : il n'est lié à aucune pièce. Ces données servent aux futurs
+# dashboards de pièce (livingroom, bedroom…).
+rooms: []
 
-  - id: office
-    name: "Bureau"
-    devices:
-      - name: "Bureau"
-        icon: mdi:desk-lamp
-        model: "Shelly Plug S"
-        power_entity: sensor.shelly_bureau_power
-        energy_entity: sensor.shelly_bureau_energy_today
+# ── Appareils du dashboard ENERGY ────────────────────────────────────
+# VOLONTAIREMENT ABSENTS D'ICI.
+#
+# La liste vit dans model/energy_devices.yaml, maintenue par
+# vssp/vssp_energy_sync.py à partir des entités réellement présentes
+# dans Home Assistant. Y remettre des appareils en dur ferait
+# réapparaître un parc fictif dès que le sync échoue, ce qui masquerait
+# la panne au lieu de la signaler.
+#
+# Si le tableau « Consommation par appareil » est vide, c'est que le
+# sync n'a pas tourné — voir le message affiché dans la carte.
 
-# ── Tableau électrique — circuits Shelly ─────────────────────────────
-# Affichés par rangées de `circuits_per_row` (défaut 6).
+# ── Tableau électrique ───────────────────────────────────────────────
+# Même principe : les circuits sont découverts (switch.*) par le sync
+# et écrits dans model/energy_devices.yaml, avec leur modèle Shelly.
+# Seul le calibre (amp) est à renseigner à la main — il est ensuite
+# préservé à chaque scan.
 circuits_per_row: 6
-circuits:
-  - name: "Chauffe-eau"
-    icon: mdi:water-boiler
-    entity: switch.shelly_chauffe_eau
-    model: "Shelly 1PM"
-    amp: "25A"
-  - name: "Clim Salon"
-    icon: mdi:air-conditioner
-    entity: switch.shelly_clim_salon
-    model: "Shelly Plus 1PM"
-    amp: "20A"
-  - name: "Lave-linge"
-    icon: mdi:washing-machine
-    entity: switch.shelly_lave_linge
-    model: "Shelly Plus 1PM"
-    amp: "16A"
-  - name: "Four"
-    icon: mdi:toaster-oven
-    entity: switch.shelly_four
-    model: "Shelly Plus 1PM"
-    amp: "20A"
-  - name: "Lave-vaisselle"
-    icon: mdi:dishwasher
-    entity: switch.shelly_lave_vaisselle
-    model: "Shelly Plus 1PM"
-    amp: "16A"
-  - name: "Prises Cuisine"
-    icon: mdi:power-socket-fr
-    entity: switch.shelly_prises_cuisine
-    model: "Shelly Plug S"
-    amp: "16A"
-  - name: "Réfrigérateur"
-    icon: mdi:fridge
-    entity: switch.shelly_refrigerateur
-    model: "Shelly Plus 1PM"
-    amp: "16A"
-  - name: "Éclairage Salon"
-    icon: mdi:lightbulb-on-outline
-    entity: switch.shelly_eclairage_salon
-    model: "Shelly 1"
-    amp: "10A"
-  - name: "Éclairage Chambre"
-    icon: mdi:ceiling-light
-    entity: switch.shelly_eclairage_chambre
-    model: "Shelly 1"
-    amp: "10A"
-  - name: "Prises Salon"
-    icon: mdi:power-socket-fr
-    entity: switch.shelly_prises_salon
-    model: "Shelly Plug S"
-    amp: "16A"
-  - name: "Bureau"
-    icon: mdi:desk-lamp
-    entity: switch.shelly_bureau
-    model: "Shelly Plug S"
-    amp: "16A"
-  - name: "Piscine"
-    icon: mdi:pool
-    entity: switch.shelly_piscine
-    model: "Shelly 1PM"
-    amp: "20A"
+circuits: []
