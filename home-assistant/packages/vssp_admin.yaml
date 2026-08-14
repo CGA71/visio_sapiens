@@ -94,6 +94,33 @@ command_line:
       # « probleme ». Un device_class: problem inverserait le sens.
       scan_interval: 60
 
+  # Nombre d'appareils REELLEMENT ecrits dans le modele. A comparer a
+  # sensor.vssp_appareils_mesures (ce que HA expose) : un ecart entre
+  # les deux signifie que le sync n'a pas abouti.
+  - sensor:
+      name: "VSSP Modele Appareils"
+      unique_id: vssp_modele_appareils
+      command: >-
+        grep -c "power_entity:" /config/dashboards/model/energy_devices.yaml
+        2>/dev/null || echo 0
+      scan_interval: 60
+
+  - sensor:
+      name: "VSSP Modele Circuits"
+      unique_id: vssp_modele_circuits
+      command: >-
+        grep -c "entity: switch\." /config/dashboards/model/energy_devices.yaml
+        2>/dev/null || echo 0
+      scan_interval: 60
+
+  # Resultat du dernier sync (ok/ko), lu dans le rapport JSON.
+  - sensor:
+      name: "VSSP Sync Resultat"
+      unique_id: vssp_sync_resultat
+      command: >-
+        sh -c "python3 -c \"import json;d=json.load(open('/config/www/vssp/energy_sync_status.json'));print('ok' if d.get('ok') else 'echec')\" 2>/dev/null || echo jamais_lance"
+      scan_interval: 60
+
   # Date de derniere generation, pour l'affichage du panneau ADMIN.
   - sensor:
       name: "VSSP Dashboard Energy Modifie"
@@ -333,7 +360,6 @@ script:
     sequence:
       # 1. Partir du parc d'appareils reel plutot que d'un modele vide
       - service: shell_command.vssp_energy_sync
-        continue_on_error: true
       # 2. Generer uniquement s'il manque
       - service: shell_command.vssp_create_energy
       # Pas de service de rechargement : `lovelace.reload` n'existe pas
@@ -363,8 +389,10 @@ script:
     alias: "Visio Sapiens — Régénérer le dashboard ENERGY"
     sequence:
       - service: shell_command.vssp_backup_energy
+      # Pas de continue_on_error : si le scan echoue (jeton absent ou
+      # invalide, HA injoignable), il ne faut PAS regenerer derriere —
+      # cela ecraserait le dashboard avec un modele vide.
       - service: shell_command.vssp_energy_sync
-        continue_on_error: true
       - service: shell_command.vssp_regenerate_energy
       # Pas de service de rechargement : `lovelace.reload` n'existe pas
       # dans Home Assistant. Un dashboard en mode YAML est relu tout seul
@@ -374,11 +402,17 @@ script:
         data:
           title: "Visio Sapiens — Dashboard ENERGY régénéré"
           message: >
-            Tableaux mis a jour depuis le parc reel
-            ({{ states('sensor.vssp_appareils_mesures') }} appareils mesures).
-            Rafraichissez l'onglet (Ctrl+Maj+R) pour voir le resultat.
-            Une sauvegarde de la version precedente est dans
-            /config/vssp/backups/.
+            {% set n = states('sensor.vssp_modele_appareils') | int(0) %}
+            {% if n > 0 %}
+              Tableaux mis a jour : {{ n }} appareil(s) et
+              {{ states('sensor.vssp_modele_circuits') }} circuit(s).
+              Rafraichissez l'onglet (Ctrl+Maj+R).
+            {% else %}
+              ATTENTION — le modele est vide, les tableaux le seront
+              aussi. Verifiez le jeton API (script vssp_save_token) puis
+              relancez. Sauvegarde de la version precedente dans
+              /config/vssp/backups/.
+            {% endif %}
 
   # Bouton SYNC ENERGY du panneau ADMIN : resynchronise les tableaux
   # « Consommation par appareil » et « Tableau electrique » avec les
@@ -407,11 +441,21 @@ script:
         data:
           title: "Visio Sapiens — ENERGY synchronise"
           message: >
-            Tableaux regeneres —
-            {{ states('sensor.vssp_appareils_mesures') }} appareils mesures
-            detectes dans Home Assistant. Rafraichissez l'onglet
-            (Ctrl+Maj+R). Rapport detaille dans
-            /config/www/vssp/energy_sync_status.json.
+            {% set n = states('sensor.vssp_modele_appareils') | int(0) %}
+            {% set c = states('sensor.vssp_modele_circuits') | int(0) %}
+            {% set vus = states('sensor.vssp_appareils_mesures') | int(0) %}
+            {% if n > 0 %}
+              Tableaux regeneres : {{ n }} appareil(s) et {{ c }} circuit(s)
+              ecrits dans le modele. Rafraichissez l'onglet (Ctrl+Maj+R).
+            {% else %}
+              ECHEC — le modele est vide alors que Home Assistant expose
+              {{ vus }} appareil(s) mesure(s). Le scan n'a pas pu ecrire
+              /config/dashboards/model/energy_devices.yaml.
+              Cause la plus frequente : jeton API absent ou invalide
+              (lancez le script vssp_save_token, ou creez
+              /config/vssp/.ha_token). Detail dans
+              /config/www/vssp/energy_sync_status.json.
+            {% endif %}
 
   # Appele par la phase 4 du Discovery Wizard (bouton APERCU).
   # Boucle d'iteration : on peut le relancer autant de fois que voulu,
