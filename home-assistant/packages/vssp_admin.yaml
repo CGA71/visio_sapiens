@@ -107,11 +107,17 @@ command_line:
 # SHELL COMMANDS — executent les scripts Python sur le pod HA lui-meme
 # --------------------------------------------------------------------
 shell_command:
+  # vssp_discovery.py attend --token en argument. On prend le helper
+  # s'il est renseigne, sinon le contenu de /config/vssp/.ha_token :
+  # ainsi les deux methodes fonctionnent sans toucher a ce script.
   vssp_discovery: >-
+    sh -c "TOKEN='{{ states('input_text.vssp_ha_token') }}';
+    case \"$TOKEN\" in ''|unknown|unavailable)
+      TOKEN=$(cat /config/vssp/.ha_token 2>/dev/null);; esac;
     python3 /config/vssp/vssp_discovery.py
     --url http://localhost:8123
-    --token {{ states('input_text.vssp_ha_token') }}
-    --output /config/vssp/report.json
+    --token \"$TOKEN\"
+    --output /config/vssp/report.json" 
   vssp_upgrade: >-
     python3 /config/vssp/vssp_upgrade.py
   vssp_backup_dashboard: >-
@@ -133,6 +139,14 @@ shell_command:
     --templates /config/dashboards/templates_j2
     --out /config/dashboards/views
     --status-file /config/www/vssp/preview_status.json
+
+  # Ecrit le jeton du helper dans un fichier protege, lu ensuite par
+  # les scripts Python. A relancer si vous changez de jeton.
+  vssp_write_token: >-
+    sh -c "mkdir -p /config/vssp &&
+    printf '%s' '{{ states('input_text.vssp_ha_token') }}'
+    > /config/vssp/.ha_token &&
+    chmod 600 /config/vssp/.ha_token"
 
   # ------------------------------------------------------------------
   # DASHBOARDS SYSTEME — creation / regeneration
@@ -172,10 +186,14 @@ shell_command:
   # Scanne HA, apparie les capteurs *_puissance / *_energie, met a jour
   # model/energy_devices.yaml (ajouts + circuits du tableau electrique).
   # SANS --prune : un appareil momentanement hors ligne reste affiche.
+  # Le jeton est lu dans /config/vssp/.ha_token (voir le script
+  # vssp_save_token ci-dessous). Il ne transite plus par la ligne de
+  # commande : un helper vide donnait un 401 « Login attempt failed »
+  # sans explication, et le jeton apparaissait en clair dans les
+  # journaux et la table des processus.
   vssp_energy_sync: >-
     python3 /config/vssp/vssp_energy_sync.py
     --url http://localhost:8123
-    --token {{ states('input_text.vssp_ha_token') }}
     --devices /config/dashboards/model/energy_devices.yaml
     --status-file /config/www/vssp/energy_sync_status.json
 
@@ -183,7 +201,6 @@ shell_command:
   vssp_energy_sync_prune: >-
     python3 /config/vssp/vssp_energy_sync.py
     --url http://localhost:8123
-    --token {{ states('input_text.vssp_ha_token') }}
     --devices /config/dashboards/model/energy_devices.yaml
     --status-file /config/www/vssp/energy_sync_status.json
     --prune
@@ -192,7 +209,6 @@ shell_command:
   vssp_energy_sync_dryrun: >-
     python3 /config/vssp/vssp_energy_sync.py
     --url http://localhost:8123
-    --token {{ states('input_text.vssp_ha_token') }}
     --devices /config/dashboards/model/energy_devices.yaml
     --status-file /config/www/vssp/energy_sync_status.json
     --dry-run
@@ -278,6 +294,36 @@ script:
             energy.yaml a été régénéré depuis model/house.yaml
             (+ house_rooms.yaml du wizard s'il existe).
             Rechargez Lovelace pour voir le résultat.
+
+  # A lancer UNE FOIS apres avoir colle le jeton dans le helper
+  # input_text.vssp_ha_token, et a chaque changement de jeton.
+  vssp_save_token:
+    alias: "Visio Sapiens — Enregistrer le jeton API"
+    sequence:
+      - if:
+          - condition: template
+            value_template: >-
+              {{ states('input_text.vssp_ha_token') | length > 50 }}
+        then:
+          - service: shell_command.vssp_write_token
+          - service: persistent_notification.create
+            data:
+              title: "Visio Sapiens — Jeton enregistre"
+              message: >
+                Le jeton a ete ecrit dans /config/vssp/.ha_token.
+                Les boutons SYNC et REGENERER peuvent maintenant
+                interroger l'API. Vous pouvez vider le helper
+                input_text.vssp_ha_token si vous le souhaitez : le
+                fichier fait desormais foi.
+        else:
+          - service: persistent_notification.create
+            data:
+              title: "Visio Sapiens — Jeton invalide"
+              message: >
+                Le helper input_text.vssp_ha_token est vide ou trop
+                court. Collez-y un jeton longue duree
+                (Profil > Securite > Jetons d'acces longue duree),
+                puis relancez ce script.
 
   # Bouton CREER LE DASHBOARD ENERGY du panneau ADMIN.
   # Idempotent : si le dashboard existe deja, il n'est pas touche et le
