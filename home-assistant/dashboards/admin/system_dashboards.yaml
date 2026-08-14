@@ -19,6 +19,19 @@
 #   suppression du wizard, qui raisonne par piece. Leur cycle de vie est
 #   gere ici.
 #
+# ROBUSTESSE — a lire avant de modifier
+#   Cette carte doit rester affichable AVANT que vssp_admin_config.yaml
+#   soit charge, sinon le panneau ADMIN devient inutilisable au moment
+#   precis ou l'on en a besoin. Deux regles :
+#     1. tout acces JS a une entite passe par une garde
+#        (`var s = states['...']; return s ? ... : ...`) — sans elle,
+#        button-card leve ButtonCardJSTemplateError et la carte
+#        n'affiche plus rien ;
+#     2. la condition d'affichage du bouton CREER utilise `state_not`,
+#        pour qu'il apparaisse aussi quand le capteur d'existence est
+#        absent ou indisponible. Le garde-fou reel est cote generateur
+#        (--if-missing), pas cote interface.
+#
 # PREREQUIS
 #   1. vssp/vssp_admin_config.yaml fusionne (binary_sensor d'existence,
 #      shell_command et scripts vssp_create_energy_dashboard /
@@ -53,15 +66,15 @@ cards:
 
   - type: horizontal-stack
     cards:
-      # ── ENERGY ─────────────────────────────────────────────
-      # Un seul emplacement, deux etats : le bouton CREER
-      # n'apparait que si le fichier est absent, le bouton
-      # REGENERER que s'il existe. Pas de risque d'ecraser un
-      # dashboard en place par une mauvaise manipulation.
+      # ── ENERGY — CREER ────────────────────────────────────────────
+      # S'affiche tant que le dashboard n'est pas confirme present :
+      # `state_not: "on"` couvre aussi le capteur absent, inconnu ou
+      # indisponible. Impossible d'ecraser un dashboard existant : le
+      # script appelle le generateur avec --if-missing.
       - type: conditional
         conditions:
           - entity: binary_sensor.vssp_dashboard_energy_present
-            state: "off"
+            state_not: "on"
         card:
           type: custom:button-card
           template: vssp_admin_button
@@ -74,6 +87,7 @@ cards:
             action: call-service
             service: script.vssp_create_energy_dashboard
 
+      # ── ENERGY — REGENERER ────────────────────────────────────────
       - type: conditional
         conditions:
           - entity: binary_sensor.vssp_dashboard_energy_present
@@ -83,19 +97,25 @@ cards:
           template: vssp_admin_button
           icon: mdi:lightning-bolt
           name: REGENERER ENERGY
+          # Garde systematique : une entite absente renvoie undefined et
+          # `.state` leverait ButtonCardJSTemplateError.
           label: >-
-            [[[ return "Genere le " +
-                states['sensor.vssp_dashboard_energy_modifie'].state +
-                " — " +
-                states['sensor.vssp_appareils_mesures'].state +
-                " appareils mesures" ]]]
+            [[[
+              var m = states['sensor.vssp_dashboard_energy_modifie'];
+              var n = states['sensor.vssp_appareils_mesures'];
+              var parts = [];
+              if (m && m.state && m.state !== 'unknown') parts.push('Genere le ' + m.state);
+              if (n && !isNaN(parseInt(n.state))) parts.push(n.state + ' appareils mesures');
+              return parts.length ? parts.join(' — ')
+                                  : 'Ecrase le dashboard actuel (sauvegarde auto)';
+            ]]]
           confirmation:
             text: "Regenerer ENERGY ecrasera le dashboard actuel (une sauvegarde sera creee). Continuer ?"
           tap_action:
             action: call-service
             service: script.vssp_regenerate_energy_dashboard
 
-      # ── SYNC — resynchroniser sans tout regenerer ──────────
+      # ── SYNC — resynchroniser sans tout regenerer ─────────────────
       - type: custom:button-card
         template: vssp_admin_button
         icon: mdi:sync
@@ -105,24 +125,48 @@ cards:
           action: call-service
           service: script.vssp_run_energy_sync
 
-      # ── CORE ───────────────────────────────────────────────
-      # Le template core.yaml.j2 n'existe pas encore : le bouton
-      # est present pour la coherence du panneau, mais il indique
-      # l'etat plutot que de proposer une action qui echouerait.
-      # Des que le template sera en place, il suffira de
-      # decommenter l'entree "core" dans DASHBOARDS
-      # (generate_dashboards.py) et de remplacer ce bouton par le
-      # meme couple conditionnel que ENERGY.
+      # ── CORE ──────────────────────────────────────────────────────
+      # Le template core.yaml.j2 n'existe pas encore : bouton present
+      # pour la coherence du panneau, mais inactif. Des que le template
+      # sera ecrit, decommenter l'entree "core" dans DASHBOARDS
+      # (generate_dashboards.py) et dupliquer le couple conditionnel
+      # d'ENERGY ci-dessus.
       - type: custom:button-card
         template: vssp_admin_button
         icon: mdi:server
         name: CORE
         label: >-
-          [[[ return states['binary_sensor.vssp_dashboard_core_present'].state === 'on'
-                ? "Dashboard en place — template de generation a venir"
-                : "Dashboard absent — template de generation a venir" ]]]
+          [[[
+            var s = states['binary_sensor.vssp_dashboard_core_present'];
+            var etat = !s ? 'etat inconnu'
+                     : (s.state === 'on' ? 'dashboard en place' : 'dashboard absent');
+            return etat + ' — template de generation a venir';
+          ]]]
         tap_action:
           action: none
         styles:
           card:
             - opacity: 0.55
+
+  # ── Diagnostic : la configuration ADMIN est-elle chargee ? ────────
+  # Ne s'affiche que si les capteurs d'existence manquent, c'est-a-dire
+  # si vssp_admin_config.yaml n'a pas ete fusionne ou si Home Assistant
+  # n'a pas encore ete redemarre. Sans ce message, les boutons semblent
+  # simplement « ne rien faire ».
+  - type: conditional
+    conditions:
+      - entity: binary_sensor.vssp_dashboard_energy_present
+        state: "unavailable"
+    card:
+      type: markdown
+      content: >
+        ⚠ **Configuration ADMIN non chargee** — les capteurs d'etat des
+        dashboards sont absents. Fusionnez `vssp/vssp_admin_config.yaml`
+        dans votre configuration, puis redemarrez Home Assistant.
+      card_mod:
+        style: |
+          ha-card {
+            background: rgba(255,176,0,.08);
+            border: 1px solid rgba(255,176,0,.35);
+            color: #FFB000;
+          }
