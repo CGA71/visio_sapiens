@@ -270,13 +270,38 @@ build:
     - cp -r home-assistant/packages/.    dist/packages/
     # Patch configuration.yaml : fragment (a la racine de /config) + patcher
     - cp home-assistant/config-fragment.yaml dist/config-fragment.yaml
+    # --- Outillage VSSP : on embarque TOUT le dossier vssp/ -----------------
+    # Principe : liste NOIRE, pas liste blanche. Tout nouveau script ajoute
+    # dans vssp/ part automatiquement en staging et en production ; seuls les
+    # elements explicitement exclus ci-dessous restent au sol.
     - mkdir -p dist/vssp
-    - cp vssp/vssp_apply_config.py dist/vssp/
-    - cp vssp/vssp_ensure_packages.py dist/vssp/
-    - cp vssp/vssp_sanitize_resources.py dist/vssp/
-    # Sonde LAN du local technique + ses reglages NON SECRETS
-    - cp vssp/vssp_lan_probe.py          dist/vssp/
-    - cp vssp/livebox.env                dist/vssp/
+    - cp -r vssp/. dist/vssp/
+    - rm -f  dist/vssp/.livebox.env    # secret : ne doit JAMAIS etre package
+    - rm -rf dist/vssp/backups         # etat local du patcher, pas du code
+    - rm -f  dist/vssp/.gitkeep
+    - chmod +x dist/vssp/*.py
+    - echo "[i] Scripts embarques :" && ls -1 dist/vssp/
+    # --- GARDE-FOU liste blanche n1 -----------------------------------------
+    # Les copies ci-dessus nomment les repertoires un par un (leur destination
+    # dans /config differe de leur nom dans le depot, une copie en bloc n'est
+    # donc pas possible). Consequence : un nouveau repertoire dans
+    # home-assistant/ serait ignore en silence. On refuse ce cas.
+    - |
+      KNOWN=" dashboards templates www packages config-fragment.yaml "
+      UNHANDLED=""
+      for e in home-assistant/* home-assistant/.[!.]*; do
+        [ -e "$e" ] || continue
+        n=$(basename "$e")
+        echo "$KNOWN" | grep -q " $n " || UNHANDLED="$UNHANDLED $n"
+      done
+      if [ -n "$UNHANDLED" ]; then
+        echo "[ERR] Entrees de home-assistant/ non prises en charge par le build :"
+        for n in $UNHANDLED; do echo "        - $n"; done
+        echo "      Ajouter leur copie ici ET leur deploiement dans les deux"
+        echo "      jobs deploy, ou les sortir de home-assistant/."
+        exit 1
+      fi
+      echo "[OK] Toutes les entrees de home-assistant/ sont packagees"
     # Cache-busting automatique des ressources Lovelace
     # NB : on EXCLUT config-fragment.yaml — il utilise le placeholder __VTOKEN__
     #      remplace au moment du "apply" via --vtoken (et non ?v=X).
@@ -319,6 +344,11 @@ build:
       yaml.SafeLoader.add_multi_constructor('!', _ha_tag)
 
       for f in sorted(glob.glob('**/*.yaml', recursive=True)):
+          # vssp/ contient de l'outillage (vssp_admin_config.yaml,
+          # energy_config_snippets.yaml...) qui n'est pas charge par HA :
+          # on ne le passe pas au controle des !include.
+          if f.startswith('vssp/'):
+              continue
           with open(f, encoding='utf-8') as fh:
               yaml.safe_load(fh)
 
@@ -389,22 +419,42 @@ deploy:staging:
           [ -d /config/$d ] && mv /config/$d /config/$d.old
           mv /config/.osv_stage/$d /config/$d
         done
-        rm -rf /config/www/vssp
+        # www/ : TOUTES les entrees du paquet, pas seulement vssp/. Avant, le
+        # reste de www/ etait package, transfere, puis efface avec le staging.
         mkdir -p /config/www
-        mv /config/.osv_stage/www/vssp /config/www/vssp
-        cp /config/.osv_stage/VSSP_VERSION /config/VSSP_VERSION
-        # Deployer le patcher + le fragment a leur emplacement /config
+        for e in /config/.osv_stage/www/* /config/.osv_stage/www/.[!.]*; do
+          [ -e "$e" ] || continue
+          n=$(basename "$e")
+          rm -rf /config/www/$n
+          mv "$e" /config/www/$n
+        done
+        rmdir /config/.osv_stage/www 2>/dev/null || true
+        mv /config/.osv_stage/VSSP_VERSION /config/VSSP_VERSION
+        # Deployer TOUT l outillage vssp/ + le fragment a leur emplacement
+        # /config. La copie est additive : /config/vssp/.livebox.env (secret)
+        # et /config/vssp/backups/ ne sont pas touches.
         mkdir -p /config/vssp
-        cp /config/.osv_stage/vssp/vssp_apply_config.py /config/vssp/
-        cp /config/.osv_stage/vssp/vssp_ensure_packages.py /config/vssp/
-        cp /config/.osv_stage/vssp/vssp_sanitize_resources.py /config/vssp/
-        cp /config/.osv_stage/config-fragment.yaml /config/config-fragment.yaml
-        cp /config/.osv_stage/vssp/vssp_lan_probe.py /config/vssp/
-        cp /config/.osv_stage/vssp/livebox.env      /config/vssp/
-        chmod +x /config/vssp/vssp_lan_probe.py
+        cp -r /config/.osv_stage/vssp/. /config/vssp/
+        rm -rf /config/.osv_stage/vssp
+        chmod +x /config/vssp/*.py
+        mv /config/.osv_stage/config-fragment.yaml /config/config-fragment.yaml
         # Packages (additif : n ecrase pas d eventuels packages non-vssp)
         mkdir -p /config/packages
         cp -r /config/.osv_stage/packages/. /config/packages/
+        rm -rf /config/.osv_stage/packages
+        # --- GARDE-FOU liste blanche n2 ---
+        # Chaque etape ci-dessus retire du staging ce quelle a traite. Ce qui
+        # reste a ete package mais na aucune destination : cest exactement le
+        # bug constate sur vssp/. On echoue au lieu de leffacer en silence.
+        LEFT=$(find /config/.osv_stage -type f 2>/dev/null)
+        if [ -n "$LEFT" ]; then
+          echo "[ERR] Fichiers packages mais jamais deployes :"
+          echo "$LEFT"
+          echo "      Ajouter leur deploiement dans deploy:staging ET deploy:production."
+          exit 1
+        fi
+        echo "[i] Contenu reel de /config/vssp :"
+        ls -1 /config/vssp
       '
     # --- SECRET Livebox : ecrit depuis la variable CI/CD masquee ---
     # Le mot de passe passe en ARGUMENT du shell distant ($1), jamais dans
@@ -527,26 +577,41 @@ deploy:production:
           [ -d $HA_CFG/\$d ] && mv $HA_CFG/\$d $HA_CFG/\$d.old
           mv $HA_CFG/.osv_stage/\$d $HA_CFG/\$d
         done
-        rm -rf $HA_CFG/www/vssp
+        # www/ : TOUTES les entrees du paquet, pas seulement vssp/
         mkdir -p $HA_CFG/www
-        mv $HA_CFG/.osv_stage/www/vssp $HA_CFG/www/vssp
-        cp $HA_CFG/.osv_stage/VSSP_VERSION $HA_CFG/VSSP_VERSION
-        # Deployer patcher + fragment a leur emplacement /config
+        for e in $HA_CFG/.osv_stage/www/* $HA_CFG/.osv_stage/www/.[!.]*; do
+          [ -e \"\$e\" ] || continue
+          n=\$(basename \"\$e\")
+          rm -rf $HA_CFG/www/\$n
+          mv \"\$e\" $HA_CFG/www/\$n
+        done
+        rmdir $HA_CFG/.osv_stage/www 2>/dev/null || true
+        mv $HA_CFG/.osv_stage/VSSP_VERSION $HA_CFG/VSSP_VERSION
+        # Deployer TOUT l outillage vssp/ (patchers, sondes, generateurs).
+        # Les scripts executes par HA lui-meme via les capteurs command_line
+        # (vssp_lan_probe.py...) DOIVENT exister cote HAOS : sans eux les
+        # capteurs restent unavailable. Copie additive : .livebox.env et
+        # backups/ deja presents cote HAOS sont preserves.
         mkdir -p $HA_CFG/vssp
-        cp $HA_CFG/.osv_stage/vssp/vssp_apply_config.py $HA_CFG/vssp/
-        cp $HA_CFG/.osv_stage/vssp/vssp_ensure_packages.py $HA_CFG/vssp/
-        cp $HA_CFG/.osv_stage/vssp/vssp_sanitize_resources.py $HA_CFG/vssp/
-        # Sonde LAN : executee par HA lui-meme via les capteurs command_line,
-        # elle DOIT donc exister cote HAOS (les patchers, eux, tournent dans
-        # le runner). Sans ce cp, les capteurs Livebox restent unavailable.
-        cp $HA_CFG/.osv_stage/vssp/vssp_lan_probe.py $HA_CFG/vssp/
-        cp $HA_CFG/.osv_stage/vssp/livebox.env $HA_CFG/vssp/
-        chmod +x $HA_CFG/vssp/vssp_lan_probe.py
-        cp $HA_CFG/.osv_stage/config-fragment.yaml $HA_CFG/config-fragment.yaml
+        cp -r $HA_CFG/.osv_stage/vssp/. $HA_CFG/vssp/
+        rm -rf $HA_CFG/.osv_stage/vssp
+        chmod +x $HA_CFG/vssp/*.py
+        mv $HA_CFG/.osv_stage/config-fragment.yaml $HA_CFG/config-fragment.yaml
         # Packages (additif : n ecrase pas d eventuels packages non-vssp)
         mkdir -p $HA_CFG/packages
         cp -r $HA_CFG/.osv_stage/packages/. $HA_CFG/packages/
-        rm -rf $HA_CFG/.osv_stage"
+        rm -rf $HA_CFG/.osv_stage/packages
+        # --- GARDE-FOU liste blanche n2 (identique au staging) ---
+        LEFT=\$(find $HA_CFG/.osv_stage -type f 2>/dev/null)
+        if [ -n \"\$LEFT\" ]; then
+          echo '[ERR] Fichiers packages mais jamais deployes :'
+          echo \"\$LEFT\"
+          echo '      Ajouter leur deploiement dans deploy:staging ET deploy:production.'
+          exit 1
+        fi
+        rm -rf $HA_CFG/.osv_stage
+        echo '[i] Contenu reel de vssp/ :'
+        ls -1 $HA_CFG/vssp"
     # --- SECRET Livebox : transmis par STDIN, jamais sur la ligne de
     #     commande distante (invisible dans `ps` cote HAOS).
     - |
