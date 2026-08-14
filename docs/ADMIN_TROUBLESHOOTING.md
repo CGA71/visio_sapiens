@@ -1,6 +1,37 @@
 # Panneau ADMIN — dépannage
 
-## « Entité non trouvée » (bandeau jaune)
+## « script.vssp_… introuvable » / « Entité non trouvée »
+
+Même cause dans les deux cas : le fichier de configuration ADMIN n'est
+pas chargé par Home Assistant. Les entités `script.vssp_*`,
+`input_text.vssp_*` et `binary_sensor.vssp_dashboard_*` n'existent donc
+pas, et les boutons appellent des services inconnus.
+
+**La solution la plus simple chez vous** : le fichier est livré comme
+package, `home-assistant/packages/vssp_admin.yaml`. Votre CI copie déjà
+`home-assistant/packages/.` vers `dist/packages/` → `/config/packages/`,
+et `config-fragment.yaml` pose `packages: !include_dir_named packages`.
+Il est donc chargé sans rien ajouter à `configuration.yaml`.
+
+**Vérifier dans l'ordre :**
+
+1. Le fichier est-il sur le pod ?
+   `kubectl -n home-assistant exec home-assistant-0 -c home-assistant -- ls /config/packages/`
+2. La clé de chargement est-elle en place ?
+   `grep -A2 "^homeassistant:" /config/configuration.yaml`
+   (elle est posée automatiquement par `vssp_ensure_packages.py`)
+3. **Redémarrer Home Assistant.** Les `input_text` et `command_line`
+   déclarés en YAML ne se rechargent pas à chaud. Pour les scripts seuls,
+   Outils de développement → YAML → Recharger les scripts suffit.
+4. Outils de développement → États, chercher `vssp` : les entités
+   `script.vssp_run_energy_sync`, `binary_sensor.vssp_dashboard_energy_present`
+   et `input_text.vssp_ha_token` doivent apparaître.
+
+Si le fichier est bien dans `/config/packages/` mais que les entités
+n'apparaissent pas, regarder Paramètres → Journaux : une erreur de
+fusion (clé dupliquée avec un autre package) y est explicite.
+
+## « Entité non trouvée » (bandeau jaune) — détail
 
 Une carte référence une entité que Home Assistant ne connaît pas.
 
@@ -11,23 +42,13 @@ Sur la capture, c'est la carte `entities` de la zone DELETE, qui affiche
 **Vérifier** — Outils de développement → États, chercher
 `input_text.vssp_`. S'il n'y a aucun résultat :
 
-1. Les helpers de `vssp_admin_config.yaml` doivent être fusionnés dans
-   votre configuration. Trois façons, au choix :
-
-   * **En package** (le plus simple ici, la clé existe déjà chez vous) :
-     copier le fichier dans `home-assistant/packages/` — les clés
-     `input_text`, `shell_command`, `script`, `command_line` y sont
-     toutes acceptées.
-   * **Par include** dans `configuration.yaml` :
-     `input_text: !include vssp/vssp_admin_config_input_text.yaml`
-     (il faut alors éclater le fichier par domaine).
-   * **Par fusion manuelle** des blocs dans `configuration.yaml`.
-
-2. Redémarrer Home Assistant (les `input_text` ne se rechargent pas à
-   chaud lorsqu'ils sont déclarés en YAML).
-
-3. Définir le code admin une fois : lancer le script
+1. Déposer `vssp_admin.yaml` dans `home-assistant/packages/` (voir
+   section précédente), déployer, redémarrer.
+2. Définir le code admin une fois : lancer le script
    `vssp_set_admin_pin` après y avoir mis votre vraie valeur.
+3. Renseigner `input_text.vssp_ha_token` avec un jeton longue durée
+   (Profil → Jetons d'accès longue durée) — sans lui, `vssp_discovery`
+   et `vssp_energy_sync` s'exécutent avec un jeton vide.
 
 **Note** : le helper `input_text.vssp_ha_token` manquait dans la version
 précédente du fichier alors que `vssp_discovery` et `vssp_energy_sync`
@@ -81,6 +102,8 @@ vérifier dans l'ordre :
 
 1. **Les scripts Python sont-ils sur le pod ?**
    `ls /config/vssp/generate_dashboards.py /config/vssp/vssp_energy_sync.py`
+   S'ils manquent : le job `build` du CI ne les copie pas encore dans
+   `dist/vssp/` — voir `PATCH_gitlab-ci.md` (deux lignes à ajouter).
 2. **Les dépendances sont-elles présentes ?** `python3 -c "import jinja2, yaml"`
    — sinon `pip install jinja2 pyyaml` dans le conteneur, ou ajouter la
    dépendance à votre image.
@@ -102,3 +125,55 @@ manque, pas la génération. Vérifier le bloc `lovelace: dashboards:` de
 `home-assistant/dashboards/views/energy.yaml`. Un redémarrage est
 nécessaire après ajout d'une entrée (le rechargement à chaud ne suffit
 que pour le contenu, pas pour la déclaration).
+
+## Note sur les chemins du pod
+
+Le CI déploie `home-assistant/dashboards/` vers **`/config/dashboards/`**
+(et non `/config/home-assistant/dashboards/`), `home-assistant/packages/`
+vers `/config/packages/`, `vssp/` vers `/config/vssp/` et
+`home-assistant/www/` vers `/config/www/`.
+
+Les chemins des `shell_command` sont alignés là-dessus :
+
+| Dans le repo | Sur le pod |
+|---|---|
+| `home-assistant/dashboards/views/energy.yaml` | `/config/dashboards/views/energy.yaml` |
+| `home-assistant/dashboards/model/house.yaml` | `/config/dashboards/model/house.yaml` |
+| `home-assistant/dashboards/templates_j2/` | `/config/dashboards/templates_j2/` |
+| `home-assistant/packages/vssp_admin.yaml` | `/config/packages/vssp_admin.yaml` |
+| `vssp/generate_dashboards.py` | `/config/vssp/generate_dashboards.py` |
+
+Les valeurs par défaut de `generate_dashboards.py` utilisent les chemins
+du **repo** (pour un lancement depuis la racine du dépôt) ; les
+`shell_command` passent les chemins du **pod** explicitement.
+
+## « L'action script.vssp_… utilise l'action lovelace.reload qui n'a pas été trouvée »
+
+`lovelace.reload` **n'existe pas** dans Home Assistant. Le domaine
+`lovelace` n'expose qu'un seul service, `lovelace.reload_resources`, qui
+recharge les ressources JS/CSS déclarées dans `lovelace.resources` — pas
+les dashboards.
+
+Home Assistant refuse d'exécuter un script dont une étape référence un
+service inconnu : le script s'arrête à cette ligne, même si les étapes
+précédentes ont réussi. C'est pour ça que le message apparaît alors que
+la synchronisation, elle, s'est peut-être bien déroulée.
+
+**Corrigé** : les appels ont été retirés de `vssp_admin.yaml` et de
+`vssp_energy_totaux.yaml`.
+
+**Pourquoi rien ne les remplace** : un dashboard en mode YAML est relu
+automatiquement. Home Assistant met la configuration en cache avec la
+date de modification du fichier et la recharge dès que celle-ci change.
+Le seul cache restant est celui du navigateur pour l'onglet déjà ouvert
+— d'où l'invitation à faire Ctrl+Maj+R dans les notifications.
+
+Ce qui nécessite en revanche un vrai redémarrage, c'est l'ajout d'une
+**entrée** de dashboard dans `lovelace: dashboards:` — pas la
+modification de son contenu.
+
+### Vérifier qu'un service existe avant de l'appeler
+
+Outils de développement → Actions : le sélecteur ne propose que les
+services réellement enregistrés. Taper `lovelace.` n'y fait apparaître
+que `reload_resources`, ce qui confirme le diagnostic en deux secondes.
