@@ -184,7 +184,8 @@ automation:
       - delay: "00:05:00"
       - service: shell_command.vssp_energy_sync
       - service: shell_command.vssp_generate_dashboards
-      - service: lovelace.reload
+      # Pas de lovelace.reload : ce service n'existe pas. HA relit le
+      # fichier YAML au prochain affichage du dashboard.
       - service: persistent_notification.create
         data:
           title: "Visio Sapiens — ENERGY resynchronise"
@@ -192,7 +193,8 @@ automation:
             Le parc d'appareils mesures a change
             ({{ states('sensor.vssp_appareils_mesures') }} appareils
             detectes). Les tableaux « Consommation par appareil » et
-            « Tableau electrique » ont ete regeneres.
+            « Tableau electrique » ont ete regeneres. Rafraichissez
+            l'onglet (Ctrl+Maj+R) si le dashboard est deja ouvert.
 
   # Filet de securite : une passe quotidienne, au cas ou un evenement
   # aurait ete manque (redemarrage de HA pendant un appairage, etc.).
@@ -205,7 +207,6 @@ automation:
     action:
       - service: shell_command.vssp_energy_sync
       - service: shell_command.vssp_generate_dashboards
-      - service: lovelace.reload
 
 
 ########################################################################
