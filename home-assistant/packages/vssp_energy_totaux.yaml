@@ -1,0 +1,223 @@
+########################################################################
+#  Visio Sapiens — ENERGY : totaux dynamiques + resynchronisation
+#
+#  Emplacement : home-assistant/packages/vssp_energy_totaux.yaml
+#  (remplace spvs_energy_totaux.yaml — meme role, scan etendu a la
+#   puissance et exclusions durcies)
+#
+#  Charge par la cle deja posee dans config-fragment.yaml :
+#      homeassistant:
+#        packages: !include_dir_named packages
+#
+#  ── LES DEUX VITESSES DU DASHBOARD ENERGY ───────────────────────────
+#
+#  1. TEMPS REEL (ce fichier) — aucune regeneration necessaire.
+#     Les totaux sont des SCANS : ils somment tous les capteurs qui
+#     respectent la convention de nommage. Un appareil branche ce matin
+#     entre dans les totaux des que HA cree ses entites ; un appareil
+#     debranche en sort de la meme facon. Le panneau
+#     « Consommation Totale » (jour / mois / annee) suit tout seul.
+#
+#  2. REGENERATION (vssp_energy_sync.py + generate_dashboards.py) —
+#     necessaire uniquement pour les LIGNES du tableau « Consommation
+#     par appareil » et les cases du tableau electrique : Lovelace ne
+#     sait pas boucler sur une liste d'entites, chaque ligne est une
+#     carte ecrite dans le YAML. L'automatisation en fin de fichier
+#     declenche cette regeneration quand le registre d'entites change.
+#
+#  ── CONVENTION DE NOMMAGE (a respecter pour entrer dans les scans) ──
+#     *_puissance / *_power        puissance instantanee (W)
+#     *_energie / *_energy         compteur CUMULATIF (kWh, lifetime)
+#     *_energie_jour / *_energy_today  compteur JOURNALIER — exclu des
+#                                  scans (sinon on melangerait des kWh
+#                                  de vie et des kWh du jour)
+########################################################################
+
+
+# ══════════════════════════════════════════════════════════════════════
+#  1) LES SCANS — sommes dynamiques
+# ══════════════════════════════════════════════════════════════════════
+template:
+  - sensor:
+      # ── Puissance instantanee de la maison ────────────────────────
+      # Remplace la liste d'entites codee en dur : tout capteur
+      # *_puissance / *_power entre automatiquement dans le total.
+      - name: "Home Power Consumption"
+        unique_id: home_power_consumption
+        unit_of_measurement: "kW"
+        device_class: power
+        state_class: measurement
+        state: >
+          {% set ns = namespace(total=0.0) %}
+          {% set exclude = [
+               'sensor.home_power_consumption',
+               'sensor.solar_power_production',
+               'sensor.grid_import_power',
+               'sensor.grid_export_power' ] %}
+          {% for s in states.sensor %}
+            {% set eid = s.entity_id %}
+            {% if (eid.endswith('_puissance') or eid.endswith('_power'))
+                  and eid not in exclude
+                  and not eid.endswith('_room_power')
+                  and 'battery' not in eid %}
+              {% set w = s.state | float(0) %}
+              {# Les capteurs deja en kW ne sont pas reconvertis #}
+              {% set kw = w if s.attributes.unit_of_measurement == 'kW'
+                          else w / 1000 %}
+              {% set ns.total = ns.total + kw %}
+            {% endif %}
+          {% endfor %}
+          {{ ns.total | round(3) }}
+        availability: "{{ states.sensor | list | count > 0 }}"
+
+      # ── Energie cumulee de la maison ──────────────────────────────
+      # N'additionne QUE des compteurs cumulatifs (lifetime), jamais un
+      # *_energie_jour / *_energy_today deja remis a zero chaque nuit.
+      - name: "Home Energy Total"
+        unique_id: home_energy_total
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: total_increasing
+        state: >
+          {% set ns = namespace(total=0.0) %}
+          {% set exclude = [
+               'sensor.home_energy_total',
+               'sensor.solar_energy_total',
+               'sensor.technical_room_energy_total' ] %}
+          {% for s in states.sensor %}
+            {% set eid = s.entity_id %}
+            {% if (eid.endswith('_energie') or eid.endswith('_energy'))
+                  and eid not in exclude
+                  and not eid.endswith('_energie_jour')
+                  and not eid.endswith('_energy_today')
+                  and not eid.startswith('sensor.solar_')
+                  and not eid.startswith('sensor.grid_') %}
+              {% set ns.total = ns.total + (s.state | float(0)) %}
+            {% endif %}
+          {% endfor %}
+          {{ ns.total | round(3) }}
+
+      # ── Moyenne quotidienne du mois en cours ──────────────────────
+      - name: "Home Energy Daily Average"
+        unique_id: home_energy_daily_average
+        unit_of_measurement: "kWh"
+        device_class: energy
+        state_class: measurement
+        state: >
+          {% set kwh = states('sensor.home_energy_this_month') | float(0) %}
+          {% set jour = now().day %}
+          {{ (kwh / jour) | round(1) if jour > 0 else 0 }}
+
+      # ── Compteur d'appareils mesures (diagnostic) ─────────────────
+      # Compare cette valeur au nombre de lignes du tableau : un ecart
+      # signifie qu'une regeneration est necessaire.
+      - name: "VSSP Appareils Mesures"
+        unique_id: vssp_appareils_mesures
+        state_class: measurement
+        icon: mdi:counter
+        state: >
+          {% set ns = namespace(n=0) %}
+          {% for s in states.sensor %}
+            {% if (s.entity_id.endswith('_puissance') or s.entity_id.endswith('_power'))
+                  and not s.entity_id.startswith('sensor.home_')
+                  and not s.entity_id.startswith('sensor.solar_')
+                  and not s.entity_id.startswith('sensor.grid_')
+                  and not s.entity_id.endswith('_room_power')
+                  and 'battery' not in s.entity_id %}
+              {% set ns.n = ns.n + 1 %}
+            {% endif %}
+          {% endfor %}
+          {{ ns.n }}
+
+
+# ══════════════════════════════════════════════════════════════════════
+#  2) LES PERIODES — jour / mois / annee
+#  Alimentent directement le panneau « Consommation Totale ». Comme
+#  leur source est un scan, ils integrent les ajouts et retraits
+#  d'appareils sans aucune intervention.
+# ══════════════════════════════════════════════════════════════════════
+utility_meter:
+  home_energy_today:
+    name: "Home Energy Today"
+    source: sensor.home_energy_total
+    cycle: daily
+  home_energy_this_month:
+    name: "Home Energy This Month"
+    source: sensor.home_energy_total
+    cycle: monthly
+  home_energy_this_year:
+    name: "Home Energy This Year"
+    source: sensor.home_energy_total
+    cycle: yearly
+
+
+# ══════════════════════════════════════════════════════════════════════
+#  3) RESYNCHRONISATION DES TABLEAUX
+#  Le registre d'entites change (appareil appaire ou supprime) ?
+#  On resynchronise le modele ENERGY puis on regenere le dashboard.
+#
+#  Prerequis : shell_command.vssp_energy_sync et
+#  shell_command.vssp_generate_dashboards (voir vssp_admin_config.yaml).
+# ══════════════════════════════════════════════════════════════════════
+automation:
+  - id: vssp_energy_autosync
+    alias: "Visio Sapiens — Resynchroniser ENERGY apres changement d'entites"
+    description: >
+      Detecte l'ajout ou la suppression d'un appareil mesure et met a
+      jour les tableaux « Consommation par appareil » et « Tableau
+      electrique ». Temporise de 5 min : un appairage cree souvent
+      plusieurs entites d'affilee, on ne regenere qu'une fois.
+    mode: restart
+    trigger:
+      - platform: event
+        event_type: entity_registry_updated
+    condition:
+      # On ne reagit qu'aux creations/suppressions de capteurs de mesure
+      # et d'interrupteurs — pas aux simples renommages d'autre chose.
+      - condition: template
+        value_template: >
+          {% set a = trigger.event.data.action | default('') %}
+          {% set e = trigger.event.data.entity_id | default('') %}
+          {{ a in ['create', 'remove']
+             and (e.startswith('sensor.') or e.startswith('switch.')) }}
+    action:
+      - delay: "00:05:00"
+      - service: shell_command.vssp_energy_sync
+      - service: shell_command.vssp_generate_dashboards
+      - service: lovelace.reload
+      - service: persistent_notification.create
+        data:
+          title: "Visio Sapiens — ENERGY resynchronise"
+          message: >
+            Le parc d'appareils mesures a change
+            ({{ states('sensor.vssp_appareils_mesures') }} appareils
+            detectes). Les tableaux « Consommation par appareil » et
+            « Tableau electrique » ont ete regeneres.
+
+  # Filet de securite : une passe quotidienne, au cas ou un evenement
+  # aurait ete manque (redemarrage de HA pendant un appairage, etc.).
+  - id: vssp_energy_autosync_daily
+    alias: "Visio Sapiens — Resynchronisation ENERGY quotidienne"
+    mode: single
+    trigger:
+      - platform: time
+        at: "04:30:00"
+    action:
+      - service: shell_command.vssp_energy_sync
+      - service: shell_command.vssp_generate_dashboards
+      - service: lovelace.reload
+
+
+########################################################################
+#  NOTE — pourquoi les retraits ne sont pas automatiques
+#
+#  vssp_energy_sync.py est appele SANS --prune par ces automatisations :
+#  un Shelly hors ligne ou une integration en cours de rechargement fait
+#  disparaitre ses entites quelques minutes, et il serait desagreable de
+#  voir la ligne disparaitre du dashboard puis revenir. Les disparitions
+#  sont signalees dans le rapport ; le retrait effectif se fait par le
+#  bouton PRUNE du panneau ADMIN (ou --prune en ligne de commande).
+#
+#  Pour qu'un appareil ne soit JAMAIS retire (saisonnier, coupe l'hiver),
+#  ajoutez-lui `keep: true` dans model/energy_devices.yaml.
+########################################################################
