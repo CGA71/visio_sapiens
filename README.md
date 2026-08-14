@@ -1,6 +1,6 @@
 # Visio Sapiens — Neural Home Interface
 
-Interface Home Assistant futuriste, pensée pour
+Interface Home Assistant futuriste inspirée d'OSVision, pensée pour
 tablette et mobile. Chaque pièce devient un module système ; les
 dashboards sont progressivement **générés** depuis un modèle métier
 plutôt qu'écrits à la main.
@@ -54,17 +54,20 @@ marqués **NOUVEAU** sont ajoutés par le générateur de dashboards.
 │   ├── vssp_sanitize_resources.py
 │   ├── vssp_lan_probe.py
 │   ├── vssp_admin_config.yaml   helpers / shell_command / scripts ADMIN
+│   ├── vssp_energy_sync.py      ← NOUVEAU — parc mesuré ENERGY (ajout/retrait)
 │   ├── generate_dashboards.py   ← NOUVEAU — rend les templates Jinja2
 │   └── build_template.py        ← NOUVEAU — templatise un dashboard existant
 │
 └── home-assistant/
     ├── config-fragment.yaml     état désiré des clés OSVision (lovelace, resources)
-    ├── packages/                spvs_energy_totaux.yaml, …
-    ├── templates/
+    ├── packages/                vssp_energy_totaux.yaml (totaux dynamiques), …
+    ├── templates/               button_card_templates.yaml, decluttering_templates.yaml
     ├── dashboards/
     │   ├── home.yaml            dashboard principal /visio-sapiens (+ vue ADMIN)
     │   ├── home_mobile.yaml     variante mobile /visio-sapiens-m
-    │   ├── templates/           button_card_templates.yaml, decluttering_templates.yaml
+    │   ├── admin/              ← NOUVEAU
+    │   │   └── system_dashboards.yaml   carte ADMIN « dashboards système »
+    │   │                                (ENERGY/CORE, hors cycle des pièces)
     │   ├── views/               vues et dashboards autonomes
     │   │   ├── core.yaml
     │   │   ├── computer.yaml
