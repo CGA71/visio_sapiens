@@ -290,7 +290,10 @@ script:
         continue_on_error: true
       # 2. Generer uniquement s'il manque
       - service: shell_command.vssp_create_energy
-      - service: lovelace.reload
+      # Pas de service de rechargement : `lovelace.reload` n'existe pas
+      # dans Home Assistant. Un dashboard en mode YAML est relu tout seul
+      # au prochain affichage (HA compare la date du fichier). Seul
+      # l'onglet deja ouvert garde l'ancienne version en memoire.
       # 3. Laisser le capteur d'existence se rafraichir avant le message
       - delay: "00:00:05"
       - service: persistent_notification.create
@@ -300,6 +303,7 @@ script:
             {% if is_state('binary_sensor.vssp_dashboard_energy_present', 'on') %}
               Dashboard ENERGY disponible sur /vssp-energy/energy
               ({{ states('sensor.vssp_dashboard_energy_modifie') }}).
+              Rafraichissez l'onglet (Ctrl+Maj+R) pour le voir.
               Si l'entree n'apparait pas dans la barre laterale, verifiez
               que vssp-energy est bien declare dans config-fragment.yaml.
             {% else %}
@@ -316,13 +320,17 @@ script:
       - service: shell_command.vssp_energy_sync
         continue_on_error: true
       - service: shell_command.vssp_regenerate_energy
-      - service: lovelace.reload
+      # Pas de service de rechargement : `lovelace.reload` n'existe pas
+      # dans Home Assistant. Un dashboard en mode YAML est relu tout seul
+      # au prochain affichage (HA compare la date du fichier). Seul
+      # l'onglet deja ouvert garde l'ancienne version en memoire.
       - service: persistent_notification.create
         data:
           title: "Visio Sapiens — Dashboard ENERGY régénéré"
           message: >
             Tableaux mis a jour depuis le parc reel
             ({{ states('sensor.vssp_appareils_mesures') }} appareils mesures).
+            Rafraichissez l'onglet (Ctrl+Maj+R) pour voir le resultat.
             Une sauvegarde de la version precedente est dans
             /config/vssp/backups/.
 
@@ -345,14 +353,18 @@ script:
         else:
           - service: shell_command.vssp_energy_sync
       - service: shell_command.vssp_generate_dashboards
-      - service: lovelace.reload
+      # Pas de service de rechargement : `lovelace.reload` n'existe pas
+      # dans Home Assistant. Un dashboard en mode YAML est relu tout seul
+      # au prochain affichage (HA compare la date du fichier). Seul
+      # l'onglet deja ouvert garde l'ancienne version en memoire.
       - service: persistent_notification.create
         data:
           title: "Visio Sapiens — ENERGY synchronise"
           message: >
             Tableaux regeneres —
             {{ states('sensor.vssp_appareils_mesures') }} appareils mesures
-            detectes dans Home Assistant. Rapport detaille dans
+            detectes dans Home Assistant. Rafraichissez l'onglet
+            (Ctrl+Maj+R). Rapport detaille dans
             /config/www/vssp/energy_sync_status.json.
 
   # Appele par la phase 4 du Discovery Wizard (bouton APERCU).
@@ -380,7 +392,10 @@ script:
           - service: shell_command.vssp_generate_preview
           # Recharge Lovelace pour que l'apercu apparaisse tout de suite.
           # Sans effet sur le contenu des dashboards de staging.
-          - service: lovelace.reload
+          # Pas de service de rechargement : `lovelace.reload` n'existe pas
+      # dans Home Assistant. Un dashboard en mode YAML est relu tout seul
+      # au prochain affichage (HA compare la date du fichier). Seul
+      # l'onglet deja ouvert garde l'ancienne version en memoire.
 
   vssp_delete_dashboard:
     alias: "Visio Sapiens — Supprimer le dashboard (protégé par code)"
