@@ -20,6 +20,14 @@ input_text:
     name: "Visio Sapiens — Saisie du code"
     mode: password
     max: 20
+  # Jeton longue duree utilise par vssp_discovery.py et
+  # vssp_energy_sync.py (Profil > Jetons d'acces longue duree).
+  # Sans ce helper, les shell_command correspondants s'executent avec un
+  # token vide et le panneau affiche « Entite non trouvee ».
+  vssp_ha_token:
+    name: "Visio Sapiens — Jeton API Home Assistant"
+    mode: password
+    max: 255
 
 # --------------------------------------------------------------------
 # ETAT DES DASHBOARDS SYSTEME (ENERGY, CORE)
@@ -40,7 +48,8 @@ command_line:
         && echo ON || echo OFF
       payload_on: "ON"
       payload_off: "OFF"
-      device_class: problem
+      # Pas de device_class : « on » signifie ici « present », pas
+      # « probleme ». Un device_class: problem inverserait le sens.
       scan_interval: 60
 
   - binary_sensor:
@@ -51,7 +60,8 @@ command_line:
         && echo ON || echo OFF
       payload_on: "ON"
       payload_off: "OFF"
-      device_class: problem
+      # Pas de device_class : « on » signifie ici « present », pas
+      # « probleme ». Un device_class: problem inverserait le sens.
       scan_interval: 60
 
   # Date de derniere generation, pour l'affichage du panneau ADMIN.
