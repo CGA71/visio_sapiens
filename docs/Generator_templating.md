@@ -61,8 +61,12 @@ pip install jinja2 pyyaml
 python3 vssp/generate_dashboards.py
 ```
 
-Puis dans Home Assistant : Outils de développement → YAML →
-**Recharger les dashboards Lovelace** (aucun redémarrage nécessaire).
+Puis rafraîchir l'onglet du dashboard (Ctrl+Maj+R). Aucun service de
+rechargement n'est nécessaire : un dashboard en mode YAML est relu par
+Home Assistant dès que le fichier change (comparaison de date dans le
+cache Lovelace). Il n'existe d'ailleurs pas de service
+`lovelace.reload` — seul `lovelace.reload_resources` existe, et il ne
+concerne que les ressources JS/CSS.
 En déploiement CI, le fichier généré part dans le paquet `dist/` comme
 n'importe quel YAML de `dashboards/` — rien à changer au pipeline.
 
@@ -255,9 +259,9 @@ déployé sous `/config` sur le pod) :
 shell_command:
   vssp_generate_dashboards: >-
     python3 /config/vssp/generate_dashboards.py
-    --model /config/home-assistant/dashboards/model/house.yaml
-    --templates /config/home-assistant/dashboards/templates_j2
-    --out /config/home-assistant/dashboards/views
+    --model /config/dashboards/model/house.yaml
+    --templates /config/dashboards/templates_j2
+    --out /config/dashboards/views
 
 script:
   vssp_run_generate:
