@@ -1,10 +1,10 @@
 ########################################################################
 # Visio Sapiens — Locale: ENGLISH (reference)
 #
-# EN | This file is the CONTRACT. Every key that appears anywhere in the
-# EN | project must exist here. Other locales are overlays: any key they
-# EN | omit falls back to the English value below, so the interface can
-# EN | never render an empty label.
+# EN | This file is the CONTRACT. Every key used anywhere in the project
+# EN | must exist here. Other locales are overlays: any key they omit
+# EN | falls back to the English value below, so the interface can never
+# EN | render an empty label.
 # FR | Ce fichier est le CONTRAT. Toute cle utilisee quelque part dans le
 # FR | projet doit exister ici. Les autres langues sont des surcouches :
 # FR | toute cle omise retombe sur la valeur anglaise ci-dessous, donc
@@ -34,6 +34,67 @@ meta:
   decimal_separator: "."
 
 # ----------------------------------------------------------------------
+# EN | ROOM CATALOGUE — the closed list offered by the admin console.
+# EN | Rooms marked (n) below can be instantiated several times; the
+# EN | generator appends the index (Bedroom 1, Bedroom 2...).
+# FR | CATALOGUE DE PIECES — la liste fermee proposee par la console admin.
+# FR | Les pieces marquees (n) ci-dessous peuvent etre instanciees
+# FR | plusieurs fois ; le generateur ajoute l'index (Chambre 1,
+# FR | Chambre 2...).
+#
+# EN | The KEY is the identifier (never translated, used in entity_id,
+# EN | paths and file names). The VALUE is the displayed label.
+# FR | La CLE est l'identifiant (jamais traduit, utilise dans les
+# FR | entity_id, les chemins et les noms de fichiers). La VALEUR est le
+# FR | libelle affiche.
+# ----------------------------------------------------------------------
+room:
+  kitchen: Kitchen
+  living_room: Living room
+  dining_room: Dining room
+  entrance: Entrance hall
+  laundry: Laundry room
+  technical: Technical room
+  garage: Garage
+  cellar: Cellar
+  bedroom: Bedroom            # (n)
+  bathroom: Bathroom          # (n)
+  toilet: Toilet              # (n)
+  garden: Garden
+  pool: Swimming pool
+  jacuzzi: Jacuzzi
+  roof: Roof
+  # EN | Legacy room, kept for the existing computer.yaml dashboard. Not
+  # EN | offered by the admin console form.
+  # FR | Piece historique, conservee pour le dashboard computer.yaml
+  # FR | existant. Non proposee par le formulaire de la console admin.
+  computer: Desk & server room
+
+# ----------------------------------------------------------------------
+# EN | SYSTEM DASHBOARDS — the four mandatory ones, always generated,
+# EN | never tied to a room. CORE and ENERGY are produced automatically
+# EN | when the home is created; HOME is the entry point and ADMIN is the
+# EN | console itself.
+# FR | DASHBOARDS SYSTEME — les quatre obligatoires, toujours generes,
+# FR | jamais lies a une piece. CORE et ENERGY sont produits
+# FR | automatiquement a la creation de la maison ; HOME est le point
+# FR | d'entree et ADMIN est la console elle-meme.
+# ----------------------------------------------------------------------
+system:
+  home: Home
+  core: Core
+  energy: Energy
+  admin: Admin
+
+# ----------------------------------------------------------------------
+# EN | Output formats offered by the admin console.
+# FR | Formats de sortie proposes par la console admin.
+# ----------------------------------------------------------------------
+format:
+  mobile: Mobile
+  tablet: Tablet
+
+# ----------------------------------------------------------------------
 # EN | Dashboard titles — shown in the Home Assistant sidebar.
 # EN | Consumed by config-fragment.yaml through __T:dashboard.*.title__
 # FR | Titres des dashboards — affiches dans la barre laterale de Home
@@ -54,21 +115,18 @@ dashboard:
     title: "ENERGY ⧗ PREVIEW"
 
 # ----------------------------------------------------------------------
-# EN | Navigation sidebar entries.
-# FR | Entrees de la barre de navigation laterale.
+# EN | Navigation rail — only the four system entries are fixed. Room
+# EN | entries are generated from the room catalogue above, so this block
+# EN | does NOT grow when a home has fifteen rooms.
+# FR | Bandeau de navigation — seules les quatre entrees systeme sont
+# FR | fixes. Les entrees de pieces sont generees depuis le catalogue
+# FR | ci-dessus, donc ce bloc NE grossit PAS quand une maison a quinze
+# FR | pieces.
 # ----------------------------------------------------------------------
 nav:
   home: HOME
-  living: LIVING
-  bedroom1: BEDROOM 1
-  bedroom2: BEDROOM 2
-  bathroom: BATHROOM
-  computer: DESK
-  technical: TECHNICAL
-  secret: SECRET
-  garden: GARDEN
-  energy: ENERGY
   core: CORE
+  energy: ENERGY
   admin: ADMIN
 
 # ----------------------------------------------------------------------
@@ -180,26 +238,38 @@ common:
   loading: Loading
 
 # ----------------------------------------------------------------------
-# EN | ADMIN panel and generation wizard.
-# FR | Panneau ADMIN et wizard de generation.
+# EN | ADMIN console — the dashboard creation menu.
+# FR | Console ADMIN — le menu de creation des dashboards.
 # ----------------------------------------------------------------------
 admin:
+  console_title: Admin console
   discovery: DISCOVERY SCAN
   upgrade: UPGRADE
   generate: GENERATE DASHBOARDS
+  regenerate: REGENERATE
   delete_dashboard: DELETE DASHBOARD
   pin_prompt: Enter the PIN code
   backup_created: Backup created
   system_dashboards: System dashboards
+  select_language: Interface language
+  select_format: Target format
+  room_count: Number of rooms
+  add_room: Add a room
+  remove_room: Remove
+  generated_at: Last generated
 
 wizard:
-  # EN | Phase 0 — the language question this whole engine exists for.
-  # FR | Phase 0 — la question de langue pour laquelle ce moteur existe.
+  # EN | Phase 0 — the two selectors that drive the whole generation.
+  # FR | Phase 0 — les deux selecteurs qui pilotent toute la generation.
   language_step_title: Interface language
   language_step_help: >-
     Choose the language of the generated dashboards. English is the
     default; other languages fall back to English for anything not
     translated yet.
+  format_step_title: Target format
+  format_step_help: >-
+    Mobile renders the compact single-column layout; Tablet renders the
+    full HUD with the navigation rail. Both can be generated.
   phase1_title: "PHASE 1 — ROOMS & FLOORS"
   phase2_title: "PHASE 2 — DEVICE ASSIGNMENT"
   phase3_title: "PHASE 3 — FLOOR PLAN"
