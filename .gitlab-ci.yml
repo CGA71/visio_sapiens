@@ -1,23 +1,40 @@
 # ============================================================================
-# Visio Sapiens — Pipeline dual-cible
+# Visio Sapiens — Dual-target pipeline
 #
-#   BRANCHES  →  k3s (namespace homeassistant)   = STAGING / tests
-#   TAGS      →  HAOS 18.1 sur mini PC via SSH   = PRODUCTION
+# EN |   BRANCHES  ->  k3s (namespace homeassistant)   = STAGING / tests
+# EN |   TAGS      ->  HAOS 18.1 on a mini PC over SSH = PRODUCTION
+# FR |   BRANCHES  ->  k3s (namespace homeassistant)   = STAGING / tests
+# FR |   TAGS      ->  HAOS 18.1 sur mini PC via SSH   = PRODUCTION
 #
-# Le paquet est construit UNE SEULE FOIS et deploye tel quel sur les deux
-# cibles. Seul le canal de transport differe (kubectl cp vs ssh).
+# EN | The package is built ONCE and deployed as-is to both targets. Only the
+# EN | transport channel differs (kubectl cp vs ssh).
+# FR | Le paquet est construit UNE SEULE FOIS et deploye tel quel sur les deux
+# FR | cibles. Seul le canal de transport differe (kubectl cp vs ssh).
 #
-# Aucune ancre YAML : uniquement `extends`, comprise par le schema GitLab.
+# EN | No YAML anchors: only `extends`, which the GitLab schema understands.
+# FR | Aucune ancre YAML : uniquement `extends`, comprise par le schema GitLab.
 #
-# VARIABLES CI/CD REQUISES (Settings > CI/CD > Variables)
-#   HA_SSH_KEY         type File, protegee   - cle privee vers HAOS
-#   HA_TOKEN_STAGING   masquee               - jeton longue duree k3s
-#   HA_TOKEN_PROD      masquee               - jeton longue duree HAOS
-#   LIVEBOX_PASSWORD   masquee + protegee    - admin Livebox, ecrit dans
-#                                              /config/vssp/.livebox.env par
-#                                              les jobs de deploiement.
-#                                              Absente = sondes Livebox
-#                                              inactives, pipeline OK.
+# EN | Job log messages stay in English on purpose. CI output is developer-
+# EN | facing, is read in a terminal, and is the first thing pasted into an
+# EN | issue or a search engine — it is not part of the localized product.
+# EN | Only the strings that reach a Home Assistant screen are translated,
+# EN | through home-assistant/dashboards/locales/.
+# FR | Les messages de log des jobs restent en anglais volontairement. La
+# FR | sortie CI s'adresse au developpeur, se lit dans un terminal, et c'est
+# FR | la premiere chose collee dans un ticket ou un moteur de recherche —
+# FR | elle ne fait pas partie du produit localise. Seules les chaines qui
+# FR | atteignent un ecran Home Assistant sont traduites, via
+# FR | home-assistant/dashboards/locales/.
+#
+# EN | REQUIRED CI/CD VARIABLES (Settings > CI/CD > Variables)
+# FR | VARIABLES CI/CD REQUISES (Settings > CI/CD > Variables)
+#   HA_SSH_KEY         File type, protected  - private key to HAOS
+#   HA_TOKEN_STAGING   masked                - long-lived token, k3s
+#   HA_TOKEN_PROD      masked                - long-lived token, HAOS
+#   LIVEBOX_PASSWORD   masked + protected    - router admin password, written
+#                                              to /config/vssp/.livebox.env by
+#                                              the deploy jobs. Absent = router
+#                                              probes inactive, pipeline still OK.
 # ============================================================================
 
 stages:
@@ -30,12 +47,24 @@ stages:
 variables:
   PACKAGE_NAME: visio-sapiens
 
-  # --- Cible STAGING (k3s) -------------------------------------------------
+  # --- EN | Interface language of the generated deliverable ----------------
+  # --- FR | Langue d'interface du livrable genere ---------------------------
+  # EN | English is the default and the source of truth. Set this to `fr` (in
+  # EN | Settings > CI/CD > Variables, or per-pipeline when running manually)
+  # EN | to build a French deliverable. Any locale file present in
+  # EN | home-assistant/dashboards/locales/ is a valid value.
+  # FR | L'anglais est la valeur par defaut et la source de verite. Passer a
+  # FR | `fr` (dans Settings > CI/CD > Variables, ou au lancement manuel d'un
+  # FR | pipeline) pour construire un livrable francais. Toute langue presente
+  # FR | dans home-assistant/dashboards/locales/ est une valeur valide.
+  VSSP_LOCALE: "en"
+
+  # --- EN | STAGING target (k3s) / FR | Cible STAGING (k3s) ----------------
   K3S_NAMESPACE: "homeassistant"
   K3S_CONTAINER: "homeassistant"
   STAGING_URL: "http://192.168.1.11:8123"
 
-  # --- Cible PRODUCTION (HAOS) --------------------------------------------
+  # --- EN | PRODUCTION target (HAOS) / FR | Cible PRODUCTION (HAOS) --------
   HA_HOST: "192.168.1.26"
   HA_SSH_PORT: "22222"
   HA_SSH_USER: "root"
@@ -43,14 +72,23 @@ variables:
   PROD_RESTART_CORE: "true"
 
 # ============================================================================
-# WORKFLOW — quand un pipeline est-il CREE ?
-#   - Merge Request                         -> pipeline STAGING (validate,
-#                                              build, deploy:staging, test)
-#   - Tag                                   -> pipeline PRODUCTION
-#   - Push simple (fix/*, features/*, master) -> AUCUN pipeline
-#
-# => on peut committer autant qu'on veut sur une branche courte sans rien
-#    lancer ; la chaine ne part qu'a l'ouverture (ou la mise a jour) d'une MR.
+# WORKFLOW
+# EN | When is a pipeline CREATED?
+# EN |   - Merge Request                            -> STAGING pipeline
+# EN |                                                 (validate, build,
+# EN |                                                  deploy:staging, test)
+# EN |   - Tag                                      -> PRODUCTION pipeline
+# EN |   - Plain push (fix/*, features/*, master)   -> NO pipeline
+# EN | => you can commit as much as you want on a short-lived branch without
+# EN |    triggering anything; the chain only starts when an MR is opened
+# EN |    (or updated).
+# FR | Quand un pipeline est-il CREE ?
+# FR |   - Merge Request                            -> pipeline STAGING
+# FR |   - Tag                                      -> pipeline PRODUCTION
+# FR |   - Push simple (fix/*, features/*, master)  -> AUCUN pipeline
+# FR | => on peut committer autant qu'on veut sur une branche courte sans rien
+# FR |    lancer ; la chaine ne part qu'a l'ouverture (ou la mise a jour)
+# FR |    d'une MR.
 # ============================================================================
 workflow:
   rules:
@@ -60,12 +98,17 @@ workflow:
     - when: never
 
 # ============================================================================
-# TEMPLATES (jobs caches, reutilises via `extends`)
+# EN | TEMPLATES (hidden jobs, reused through `extends`)
+# FR | TEMPLATES (jobs caches, reutilises via `extends`)
 # ============================================================================
 
-# Jobs STAGING : tournent sur un push direct sur `master` OU dans une Merge
-# Request. => on peut soit bosser directement sur master, soit passer par
-# une branche courte (fix/*, features/*) + MR ; les deux deploient le staging.
+# EN | STAGING jobs: run on a direct push to `master` OR inside a Merge
+# EN | Request. => you can either work directly on master, or go through a
+# EN | short-lived branch (fix/*, features/*) + MR; both deploy to staging.
+# FR | Jobs STAGING : tournent sur un push direct sur `master` OU dans une
+# FR | Merge Request. => on peut soit bosser directement sur master, soit
+# FR | passer par une branche courte (fix/*, features/*) + MR ; les deux
+# FR | deploient le staging.
 .rules_staging:
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
@@ -82,24 +125,25 @@ workflow:
     - mkdir -p ~/.ssh && chmod 700 ~/.ssh
     - |
       if [ -z "$HA_SSH_KEY" ]; then
-        echo "[ERR] Variable HA_SSH_KEY absente."
-        echo "      Settings > CI/CD > Variables : la creer avec le type File."
+        echo "[ERR] HA_SSH_KEY variable is missing."
+        echo "      Settings > CI/CD > Variables: create it with the File type."
         exit 1
       fi
       if [ -f "$HA_SSH_KEY" ]; then
-        cp "$HA_SSH_KEY" ~/.ssh/id_ed25519          # variable de type File
+        # EN | File-type variable / FR | variable de type File
+        cp "$HA_SSH_KEY" ~/.ssh/id_ed25519
       else
         printf '%s\n' "$HA_SSH_KEY" > ~/.ssh/id_ed25519
-        echo "[avert] HA_SSH_KEY n'est pas de type File - repli sur le contenu brut."
+        echo "[warn] HA_SSH_KEY is not a File-type variable - falling back to raw content."
       fi
       chmod 600 ~/.ssh/id_ed25519
       if ! ssh-keygen -y -f ~/.ssh/id_ed25519 </dev/null >/dev/null 2>&1; then
-        echo "[ERR] Cle privee illisible."
-        echo "      Causes frequentes - type Variable au lieu de File,"
-        echo "      ligne vide finale absente, ou passphrase sur la cle."
+        echo "[ERR] Private key is unreadable."
+        echo "      Common causes - Variable type instead of File,"
+        echo "      missing trailing newline, or a passphrase on the key."
         exit 1
       fi
-      echo "[OK] Cle privee valide"
+      echo "[OK] Private key is valid"
     - |
       cat > ~/.ssh/config <<EOF
       Host ha
@@ -112,82 +156,138 @@ workflow:
       EOF
     - chmod 600 ~/.ssh/config
     - |
-      ssh ha "echo '[OK] SSH etabli' && ha core info --raw-json | jq -r '.data.version' | sed 's/^/HA Core: /'"
+      ssh ha "echo '[OK] SSH established' && ha core info --raw-json | jq -r '.data.version' | sed 's/^/HA Core: /'"
 
 .smoke_test:
   image: alpine:latest
   stage: test
   script:
     - apk add --no-cache curl jq >/dev/null
-    # Echec immediat et explicite si la variable de token n'existe pas
+    # EN | Fail immediately and explicitly if the token variable is missing.
+    # FR | Echec immediat et explicite si la variable de token n'existe pas.
     - |
       if [ -z "$HA_TOKEN" ]; then
-        echo "[ERR] Token vide."
-        echo "      Cree la variable CI/CD manquante (HA_TOKEN_STAGING ou HA_TOKEN_PROD)"
-        echo "      Jeton a generer dans HA : Profil > Jetons d'acces longue duree"
+        echo "[ERR] Empty token."
+        echo "      Create the missing CI/CD variable (HA_TOKEN_STAGING or HA_TOKEN_PROD)."
+        echo "      Generate the token in HA: Profile > Long-lived access tokens"
         exit 1
       fi
-    - echo "[i] Cible ->" "$TARGET_URL"
-    # Attente bornee a 60s, avec distinction reseau / authentification
+    - echo "[i] Target ->" "$TARGET_URL"
+    # EN | Bounded 60s wait, distinguishing network from authentication errors.
+    # FR | Attente bornee a 60s, avec distinction reseau / authentification.
     - |
       code=""
       for i in $(seq 1 12); do
         code=$(curl -s -o /tmp/resp -w '%{http_code}' -m 5 \
                -H "Authorization: Bearer $HA_TOKEN" "$TARGET_URL/api/" || echo 000)
         case "$code" in
-          200) echo "[OK] API HA joignable"; break ;;
+          200) echo "[OK] HA API reachable"; break ;;
           401|403)
-            echo "[ERR] HTTP $code - token refuse par Home Assistant"
-            echo "      Le jeton est invalide, revoque, ou destine a l'autre instance."
+            echo "[ERR] HTTP $code - token rejected by Home Assistant"
+            echo "      The token is invalid, revoked, or meant for the other instance."
             exit 1 ;;
-          000) echo "[..] $TARGET_URL injoignable ($i/12)" ;;
+          000) echo "[..] $TARGET_URL unreachable ($i/12)" ;;
           *)   echo "[..] HTTP $code ($i/12)" ;;
         esac
         sleep 5
       done
       if [ "$code" != "200" ]; then
-        echo "[ERR] Abandon apres 60s - dernier code HTTP obtenu -> $code"
-        echo "      000 = aucune reponse reseau depuis le namespace ci."
-        echo "      Verifier l'URL, ou utiliser le service interne du cluster."
+        echo "[ERR] Giving up after 60s - last HTTP code -> $code"
+        echo "      000 = no network response from the ci namespace."
+        echo "      Check the URL, or use the cluster-internal service."
         exit 1
       fi
-    - curl -sfI "$TARGET_URL/local/vssp/js/vssp.js" >/dev/null && echo "[OK] JS Engine servi"
-    - curl -sfI "$TARGET_URL/local/vssp/css/vssp.css" >/dev/null && echo "[OK] CSS Engine servi"
+    - curl -sfI "$TARGET_URL/local/vssp/js/vssp.js" >/dev/null && echo "[OK] JS Engine served"
+    - curl -sfI "$TARGET_URL/local/vssp/css/vssp.css" >/dev/null && echo "[OK] CSS Engine served"
     - |
       UNAVAIL=$(curl -sf -H "Authorization: Bearer $HA_TOKEN" "$TARGET_URL/api/states" \
         | jq '[.[] | select(.state=="unavailable")] | length')
-      echo "[i] Entites unavailable : $UNAVAIL"
+      echo "[i] Unavailable entities: $UNAVAIL"
 
 # ============================================================================
-# 1. VALIDATE — branches ET tags
+# EN | 1. VALIDATE — branches AND tags
+# FR | 1. VALIDATE — branches ET tags
 # ============================================================================
 validate:
   stage: validate
   image: alpine:latest
   script:
     - apk add --no-cache python3 py3-yaml >/dev/null
-    - echo "Validation structurelle"
-    - test -d home-assistant/dashboards || { echo "[ERR] home-assistant/dashboards manquant"; exit 1; }
-    - test -d home-assistant/templates  || { echo "[ERR] home-assistant/templates manquant"; exit 1; }
-    - test -f themes/visio_sapiens.yaml || { echo "[ERR] themes/visio_sapiens.yaml manquant"; exit 1; }
-    - test -d home-assistant/www/vssp || { echo "[ERR] www/vssp manquant"; exit 1; }
-    - test -f hacs.json       || { echo "[ERR] hacs.json manquant"; exit 1; }
-    - test -f repository.yaml || { echo "[ERR] repository.yaml manquant"; exit 1; }
-    # Patch configuration.yaml : fragment + patcher présents dans le repo
-    - test -f home-assistant/config-fragment.yaml || { echo "[ERR] home-assistant/config-fragment.yaml manquant"; exit 1; }
-    - test -f vssp/vssp_apply_config.py    || { echo "[ERR] vssp/vssp_apply_config.py manquant"; exit 1; }
-    - test -f vssp/vssp_ensure_packages.py || { echo "[ERR] vssp/vssp_ensure_packages.py manquant"; exit 1; }
-    - test -f vssp/vssp_sanitize_resources.py || { echo "[ERR] vssp/vssp_sanitize_resources.py manquant"; exit 1; }
-    - test -f vssp/vssp_lan_probe.py || { echo "[ERR] vssp/vssp_lan_probe.py manquant"; exit 1; }
-    - test -f vssp/livebox.env || { echo "[ERR] vssp/livebox.env manquant"; exit 1; }
-    # Le secret de la Livebox ne doit JAMAIS etre versionne
+    - echo "Structural validation"
+    - test -d home-assistant/dashboards || { echo "[ERR] home-assistant/dashboards missing"; exit 1; }
+    - test -d home-assistant/templates  || { echo "[ERR] home-assistant/templates missing"; exit 1; }
+    - test -f themes/visio_sapiens.yaml || { echo "[ERR] themes/visio_sapiens.yaml missing"; exit 1; }
+    - test -d home-assistant/www/vssp || { echo "[ERR] www/vssp missing"; exit 1; }
+    - test -f hacs.json       || { echo "[ERR] hacs.json missing"; exit 1; }
+    - test -f repository.yaml || { echo "[ERR] repository.yaml missing"; exit 1; }
+    # EN | configuration.yaml patch: fragment + patcher present in the repo
+    # FR | Patch configuration.yaml : fragment + patcher presents dans le depot
+    - test -f home-assistant/config-fragment.yaml || { echo "[ERR] home-assistant/config-fragment.yaml missing"; exit 1; }
+    - test -f vssp/vssp_apply_config.py    || { echo "[ERR] vssp/vssp_apply_config.py missing"; exit 1; }
+    - test -f vssp/vssp_ensure_packages.py || { echo "[ERR] vssp/vssp_ensure_packages.py missing"; exit 1; }
+    - test -f vssp/vssp_sanitize_resources.py || { echo "[ERR] vssp/vssp_sanitize_resources.py missing"; exit 1; }
+    - test -f vssp/vssp_lan_probe.py || { echo "[ERR] vssp/vssp_lan_probe.py missing"; exit 1; }
+    - test -f vssp/livebox.env || { echo "[ERR] vssp/livebox.env missing"; exit 1; }
+    # EN | i18n engine: catalogues + engine must ship with the package
+    # FR | Moteur i18n : catalogues + moteur doivent partir avec le paquet
+    - test -f vssp/vssp_i18n.py || { echo "[ERR] vssp/vssp_i18n.py missing"; exit 1; }
+    - test -f home-assistant/dashboards/locales/en.yaml || { echo "[ERR] locales/en.yaml missing (reference locale)"; exit 1; }
+    - test -f "home-assistant/dashboards/locales/${VSSP_LOCALE}.yaml" || { echo "[ERR] locales/${VSSP_LOCALE}.yaml missing - VSSP_LOCALE=${VSSP_LOCALE} has no catalogue"; exit 1; }
+    # EN | The router password must NEVER be committed.
+    # FR | Le secret de la Livebox ne doit JAMAIS etre versionne.
     - |
       if [ -f vssp/.livebox.env ]; then
-        echo "[ERR] vssp/.livebox.env est versionne — il contient le mot de passe."
-        echo "      git rm --cached vssp/.livebox.env  puis ajouter au .gitignore"
+        echo "[ERR] vssp/.livebox.env is committed - it holds the password."
+        echo "      git rm --cached vssp/.livebox.env  then add it to .gitignore"
         exit 1
       fi
-    # Coherence OSV_PREFIX <-> cles de dashboards du fragment (non bloquant)
+    # EN | Every locale must be consistent with the English reference: keys
+    # EN | that exist nowhere else are typos that would never be displayed.
+    # FR | Chaque langue doit etre coherente avec la reference anglaise : les
+    # FR | cles inexistantes ailleurs sont des fautes jamais affichees.
+    - |
+      python3 vssp/vssp_i18n.py \
+        --locales-dir home-assistant/dashboards/locales check \
+        || { echo "[ERR] locale catalogues are inconsistent"; exit 1; }
+    # EN | Every __T:key__ used anywhere in the repo must resolve in the
+    # EN | reference catalogue. Catching this here beats discovering an
+    # EN | unreplaced placeholder in the Home Assistant sidebar.
+    # FR | Chaque __T:cle__ utilisee dans le depot doit se resoudre dans le
+    # FR | catalogue de reference. Le detecter ici vaut mieux que de decouvrir
+    # FR | une substitution non remplacee dans la barre laterale de HA.
+    - |
+      python3 - <<'PY'
+      import re, sys, glob, yaml
+      PLACEHOLDER = re.compile(r'__T:([A-Za-z0-9_.]+)__')
+      with open('home-assistant/dashboards/locales/en.yaml', encoding='utf-8') as fh:
+          cat = yaml.safe_load(fh) or {}
+      def has(key):
+          node = cat
+          for part in key.split('.'):
+              if not isinstance(node, dict) or part not in node:
+                  return False
+              node = node[part]
+          return True
+      bad = []
+      targets = glob.glob('home-assistant/**/*.yaml', recursive=True)
+      targets += glob.glob('home-assistant/**/*.j2', recursive=True)
+      targets += glob.glob('home-assistant/www/**/*.js', recursive=True)
+      for f in sorted(set(targets)):
+          if '/locales/' in f:
+              continue
+          with open(f, encoding='utf-8') as fh:
+              for n, line in enumerate(fh, 1):
+                  for key in PLACEHOLDER.findall(line):
+                      if not has(key):
+                          bad.append((f, n, key))
+      for f, n, key in bad:
+          print(f"[ERR] {f}:{n} unknown translation key -> {key}")
+      print("[OK] every __T: placeholder resolves" if not bad
+            else f"[ERR] {len(bad)} unresolved placeholder(s)")
+      sys.exit(1 if bad else 0)
+      PY
+    # EN | OSV_PREFIX <-> fragment dashboard keys consistency (non-blocking)
+    # FR | Coherence OSV_PREFIX <-> cles de dashboards du fragment (non bloquant)
     - |
       python3 - <<'PY'
       import re, yaml
@@ -201,30 +301,34 @@ validate:
       prefix = m.group(1) if m else ''
       ignored = [k for k in dboards if not str(k).startswith(prefix)]
       if ignored:
-          print("[AVERT] OSV_PREFIX = %r dans vssp_apply_config.py" % prefix)
-          print("        Ces dashboards du fragment ne seront PAS ecrits dans")
-          print("        configuration.yaml (le patcher les ignore) :")
+          print("[WARN] OSV_PREFIX = %r in vssp_apply_config.py" % prefix)
+          print("       These fragment dashboards will NOT be written to")
+          print("       configuration.yaml (the patcher skips them):")
           for k in ignored:
               print("          - %s" % k)
-          print("        Corriger OSV_PREFIX, ou renommer les cles du fragment.")
+          print("       Fix OSV_PREFIX, or rename the fragment keys.")
       else:
-          print("[OK] %d dashboard(s) du fragment couverts par OSV_PREFIX=%r"
+          print("[OK] %d fragment dashboard(s) covered by OSV_PREFIX=%r"
                 % (len(dboards), prefix))
       PY
-    # Source unique du theme : themes/ a la racine (impose par HACS)
+    # EN | Single source for the theme: themes/ at the repo root (HACS rule).
+    # FR | Source unique du theme : themes/ a la racine (impose par HACS).
     - |
       if [ -d home-assistant/themes ]; then
-        echo "[ERR] home-assistant/themes/ existe encore et cree une source dupliquee."
-        echo "      Supprime-le : git rm -r home-assistant/themes"
+        echo "[ERR] home-assistant/themes/ still exists and creates a duplicate source."
+        echo "      Remove it: git rm -r home-assistant/themes"
         exit 1
       fi
     - |
       python3 - <<'PY'
       import sys, glob, yaml
 
-      # Home Assistant utilise des tags YAML personnalises (!include, !secret,
-      # !include_dir_merge_list...). PyYAML ne les connait pas : on les accepte
-      # sans les interpreter, on ne valide ici que la syntaxe.
+      # EN | Home Assistant uses custom YAML tags (!include, !secret,
+      # EN | !include_dir_merge_list...). PyYAML does not know them: we accept
+      # EN | them without interpreting them - only syntax is validated here.
+      # FR | Home Assistant utilise des tags YAML personnalises (!include,
+      # FR | !secret, !include_dir_merge_list...). PyYAML ne les connait pas :
+      # FR | on les accepte sans les interpreter, on ne valide ici que la syntaxe.
       def _ha_tag(loader, suffix, node):
           if isinstance(node, yaml.ScalarNode):
               return loader.construct_scalar(node)
@@ -244,13 +348,14 @@ validate:
                   yaml.safe_load(fh)
           except Exception as e:
               print(f"[ERR] {f}"); print(f"      {e}"); err = 1
-      print(f"[i] {len(files)} fichiers analyses")
-      print("[OK] Syntaxe YAML valide" if not err else "[ERR] Erreurs de syntaxe")
+      print(f"[i] {len(files)} file(s) analysed")
+      print("[OK] YAML syntax is valid" if not err else "[ERR] Syntax errors")
       sys.exit(err)
       PY
 
 # ============================================================================
-# 2. BUILD — paquet unique, structure identique a /config
+# EN | 2. BUILD — single package, same layout as /config
+# FR | 2. BUILD — paquet unique, structure identique a /config
 # ============================================================================
 build:
   stage: build
@@ -258,37 +363,71 @@ build:
   script:
     - apk add --no-cache python3 py3-yaml >/dev/null
     - export OSV_VERSION="${CI_COMMIT_TAG:-dev-${CI_COMMIT_SHORT_SHA}}"
-    - echo "Build $OSV_VERSION"
+    - echo "Build $OSV_VERSION - locale ${VSSP_LOCALE}"
     - mkdir -p dist/dashboards/templates dist/themes dist/www
     - cp -r home-assistant/dashboards/.  dist/dashboards/
     - cp -r home-assistant/templates/.   dist/dashboards/templates/
     - cp -r themes/.                     dist/themes/
     - cp -r home-assistant/www/.         dist/www/
-    # Packages HA multi-domaines (template, utility_meter...) charges via
-    # `homeassistant: packages: !include_dir_named packages` du fragment.
+    # EN | Multi-domain HA packages (template, utility_meter...) loaded through
+    # EN | the fragment's `homeassistant: packages: !include_dir_named packages`.
+    # FR | Packages HA multi-domaines (template, utility_meter...) charges via
+    # FR | `homeassistant: packages: !include_dir_named packages` du fragment.
     - mkdir -p dist/packages
     - cp -r home-assistant/packages/.    dist/packages/
-    # Patch configuration.yaml : fragment (a la racine de /config) + patcher
-    - cp home-assistant/config-fragment.yaml dist/config-fragment.yaml
-    # --- Outillage VSSP : on embarque TOUT le dossier vssp/ -----------------
-    # Principe : liste NOIRE, pas liste blanche. Tout nouveau script ajoute
-    # dans vssp/ part automatiquement en staging et en production ; seuls les
-    # elements explicitement exclus ci-dessous restent au sol.
+    # --- EN | VSSP tooling: the WHOLE vssp/ folder ships ---------------------
+    # --- FR | Outillage VSSP : on embarque TOUT le dossier vssp/ ------------
+    # EN | Principle: BLACKLIST, not whitelist. Any new script added to vssp/
+    # EN | automatically reaches staging and production; only the items
+    # EN | explicitly excluded below stay behind.
+    # FR | Principe : liste NOIRE, pas liste blanche. Tout nouveau script
+    # FR | ajoute dans vssp/ part automatiquement en staging et en production ;
+    # FR | seuls les elements explicitement exclus ci-dessous restent au sol.
     - mkdir -p dist/vssp
     - cp -r vssp/. dist/vssp/
-    - rm -f  dist/vssp/.livebox.env    # secret : ne doit JAMAIS etre package
-    - rm -rf dist/vssp/backups         # etat local du patcher, pas du code
+    # EN | secret: must NEVER be packaged / FR | secret : ne doit JAMAIS partir
+    - rm -f  dist/vssp/.livebox.env
+    # EN | local patcher state, not code / FR | etat local du patcher, pas du code
+    - rm -rf dist/vssp/backups
     - rm -f  dist/vssp/.gitkeep
     - chmod +x dist/vssp/*.py
-    - echo "[i] Scripts embarques :" && ls -1 dist/vssp/
-    # --- GARDE-FOU liste blanche n1 -----------------------------------------
-    # Les copies ci-dessus nomment les repertoires un par un (leur destination
-    # dans /config differe de leur nom dans le depot, une copie en bloc n'est
-    # donc pas possible). Consequence : un nouveau repertoire dans
-    # home-assistant/ serait ignore en silence. On refuse ce cas.
+    - echo "[i] Bundled scripts:" && ls -1 dist/vssp/
+    # --- EN | LOCALE RENDERING — must run BEFORE cache-busting --------------
+    # --- FR | RENDU DE LA LANGUE — doit tourner AVANT le cache-busting ------
+    # EN | Substitutes every __T:key__ in the fragment with the chosen
+    # EN | language. English is the source of truth, so VSSP_LOCALE=en yields
+    # EN | the untouched default wording. __VTOKEN__ is deliberately NOT
+    # EN | touched here - it is replaced later, at apply time.
+    # FR | Substitue chaque __T:cle__ du fragment par la langue choisie.
+    # FR | L'anglais etant la source de verite, VSSP_LOCALE=en produit le
+    # FR | libelle par defaut inchange. __VTOKEN__ n'est volontairement PAS
+    # FR | touche ici - il est remplace plus tard, au moment du apply.
     - |
-      # Marqueurs inertes : presents pour Git ou la lecture humaine, sans
-      # destination dans /config. Ils ne sont ni packages ni signales.
+      python3 vssp/vssp_i18n.py \
+        --locales-dir home-assistant/dashboards/locales \
+        render --locale "$VSSP_LOCALE" \
+        --in  home-assistant/config-fragment.yaml \
+        --out dist/config-fragment.yaml \
+        || { echo "[ERR] locale rendering of config-fragment.yaml failed"; exit 1; }
+    # EN | Record the language inside the package so the deployed instance can
+    # EN | report which locale it is actually running.
+    # FR | Trace la langue dans le paquet pour que l'instance deployee puisse
+    # FR | indiquer la langue qu'elle execute reellement.
+    - echo "$VSSP_LOCALE" > dist/VSSP_LOCALE
+    # --- EN | WHITELIST GUARD #1 / FR | GARDE-FOU liste blanche n1 ----------
+    # EN | The copies above name directories one by one (their destination in
+    # EN | /config differs from their name in the repo, so a bulk copy is not
+    # EN | possible). Consequence: a new directory under home-assistant/ would
+    # EN | be silently ignored. We refuse that case.
+    # FR | Les copies ci-dessus nomment les repertoires un par un (leur
+    # FR | destination dans /config differe de leur nom dans le depot, une
+    # FR | copie en bloc n'est donc pas possible). Consequence : un nouveau
+    # FR | repertoire dans home-assistant/ serait ignore en silence. On refuse.
+    - |
+      # EN | Inert markers: present for Git or for human readers, with no
+      # EN | destination in /config. They are neither packaged nor reported.
+      # FR | Marqueurs inertes : presents pour Git ou la lecture humaine, sans
+      # FR | destination dans /config. Ils ne sont ni packages ni signales.
       KNOWN=" dashboards templates www packages config-fragment.yaml .gitkeep .gitignore README.md "
       UNHANDLED=""
       for e in home-assistant/* home-assistant/.[!.]*; do
@@ -297,24 +436,28 @@ build:
         echo "$KNOWN" | grep -q " $n " || UNHANDLED="$UNHANDLED $n"
       done
       if [ -n "$UNHANDLED" ]; then
-        echo "[ERR] Entrees de home-assistant/ non prises en charge par le build :"
+        echo "[ERR] home-assistant/ entries not handled by the build:"
         for n in $UNHANDLED; do echo "        - $n"; done
-        echo "      Ajouter leur copie ici ET leur deploiement dans les deux"
-        echo "      jobs deploy, ou les sortir de home-assistant/."
+        echo "      Add their copy here AND their deployment in both deploy"
+        echo "      jobs, or move them out of home-assistant/."
         exit 1
       fi
-      echo "[OK] Toutes les entrees de home-assistant/ sont packagees"
-    # Cache-busting automatique des ressources Lovelace
-    # NB : on EXCLUT config-fragment.yaml — il utilise le placeholder __VTOKEN__
-    #      remplace au moment du "apply" via --vtoken (et non ?v=X).
+      echo "[OK] every home-assistant/ entry is packaged"
+    # EN | Automatic cache-busting of Lovelace resources.
+    # EN | NOTE: config-fragment.yaml is EXCLUDED - it uses the __VTOKEN__
+    # EN | placeholder, replaced at apply time via --vtoken (not ?v=X).
+    # FR | Cache-busting automatique des ressources Lovelace.
+    # FR | NB : on EXCLUT config-fragment.yaml — il utilise le placeholder
+    # FR | __VTOKEN__ remplace au moment du apply via --vtoken (et non ?v=X).
     - export VTOKEN=$(echo "$OSV_VERSION" | tr -c 'a-zA-Z0-9._-' '-')
     - find dist -name '*.yaml' ! -name 'config-fragment.yaml' -exec sed -i "s|\(/local/vssp/[^ \"']*\)?v=[0-9A-Za-z._-]*|\1?v=${VTOKEN}|g" {} +
-    - echo "Ressources taguees ?v=${VTOKEN}"
+    - echo "Resources tagged ?v=${VTOKEN}"
     - |
       cat > dist/VSSP_VERSION <<EOF
       version=$OSV_VERSION
       commit=$CI_COMMIT_SHA
       ref=$CI_COMMIT_REF_NAME
+      locale=$VSSP_LOCALE
       pipeline=$CI_PIPELINE_ID
       built=$(date -u +%Y-%m-%dT%H:%M:%SZ)
       EOF
@@ -322,8 +465,10 @@ build:
       cd dist && python3 - <<'PY'
       import sys, os, glob, yaml
 
-      # Verifie que chaque !include pointe vers une cible existante, dans
-      # l'arborescence telle qu'elle sera dans /config (et non dans le depot).
+      # EN | Checks that every !include points at an existing target, in the
+      # EN | tree as it will be inside /config (not as it is in the repo).
+      # FR | Verifie que chaque !include pointe vers une cible existante, dans
+      # FR | l'arborescence telle qu'elle sera dans /config (et non dans le depot).
       missing = []
       DIR_TAGS = ('include_dir_list', 'include_dir_merge_list',
                   'include_dir_named', 'include_dir_merge_named')
@@ -346,18 +491,21 @@ build:
       yaml.SafeLoader.add_multi_constructor('!', _ha_tag)
 
       for f in sorted(glob.glob('**/*.yaml', recursive=True)):
-          # vssp/ contient de l'outillage (vssp_admin_config.yaml,
-          # energy_config_snippets.yaml...) qui n'est pas charge par HA :
-          # on ne le passe pas au controle des !include.
+          # EN | vssp/ holds tooling (vssp_admin_config.yaml,
+          # EN | energy_config_snippets.yaml...) that HA never loads: it is
+          # EN | not submitted to the !include check.
+          # FR | vssp/ contient de l'outillage (vssp_admin_config.yaml,
+          # FR | energy_config_snippets.yaml...) qui n'est pas charge par HA :
+          # FR | on ne le passe pas au controle des !include.
           if f.startswith('vssp/'):
               continue
           with open(f, encoding='utf-8') as fh:
               yaml.safe_load(fh)
 
       for src, tag, val in missing:
-          print(f"[ERR] {src}"); print(f"      {tag} {val} -> cible introuvable dans /config")
-      print("[OK] Toutes les references !include sont resolues"
-            if not missing else f"[ERR] {len(missing)} reference(s) cassee(s)")
+          print(f"[ERR] {src}"); print(f"      {tag} {val} -> target not found in /config")
+      print("[OK] every !include reference resolves"
+            if not missing else f"[ERR] {len(missing)} broken reference(s)")
       sys.exit(1 if missing else 0)
       PY
     - cd "$CI_PROJECT_DIR"
@@ -372,18 +520,28 @@ build:
       - .osv_version
 
 # ============================================================================
-# 2bis. PACKAGE HACS — distribution publique, sur tags uniquement
+# EN | 2b. HACS PACKAGE — public distribution, tags only
+# FR | 2bis. PAQUET HACS — distribution publique, sur tags uniquement
 # ============================================================================
 package:hacs:
   extends: .rules_tag
   stage: build
   image: alpine:latest
   script:
-    - echo "Paquet HACS $CI_COMMIT_TAG"
+    - echo "HACS package $CI_COMMIT_TAG"
     - mkdir -p dist
     - cp -r themes dist/
     - cp hacs.json repository.yaml README.md dist/
-    - cp CHANGELOG.md dist/ 2>/dev/null || echo "[avert] CHANGELOG.md absent"
+    # EN | Localized READMEs ship alongside the English one. Absence is not an
+    # EN | error: a language can be dropped without breaking the release.
+    # FR | Les README localises partent a cote de l'anglais. Leur absence n'est
+    # FR | pas une erreur : une langue peut etre retiree sans casser la release.
+    - |
+      for f in README.*.md; do
+        [ -e "$f" ] || continue
+        cp "$f" dist/ && echo "[i] bundled $f"
+      done
+    - cp CHANGELOG.md dist/ 2>/dev/null || echo "[warn] CHANGELOG.md missing"
     - echo "$CI_COMMIT_TAG" > dist/VERSION
     - tar -czf $PACKAGE_NAME-hacs-$CI_COMMIT_TAG.tar.gz -C dist .
   artifacts:
@@ -394,7 +552,8 @@ package:hacs:
       - $PACKAGE_NAME-hacs-$CI_COMMIT_TAG.tar.gz
 
 # ============================================================================
-# 3a. DEPLOY STAGING — k3s, sur branches uniquement
+# EN | 3a. DEPLOY STAGING — k3s, branches only
+# FR | 3a. DEPLOY STAGING — k3s, sur branches uniquement
 # ============================================================================
 deploy:staging:
   extends: .rules_staging
@@ -406,10 +565,10 @@ deploy:staging:
     url: $STAGING_URL
   script:
     - export OSV_VERSION=$(cat .osv_version)
-    - echo "Deploiement STAGING (k3s) — $OSV_VERSION"
+    - echo "STAGING deployment (k3s) - $OSV_VERSION"
     - export HA_POD=$(kubectl get pod -n $K3S_NAMESPACE -l app=homeassistant -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
     - '[ -z "$HA_POD" ] && export HA_POD=$(kubectl get pods -n $K3S_NAMESPACE -o jsonpath="{.items[0].metadata.name}")'
-    - echo "Pod cible ->" "$HA_POD"
+    - echo "Target pod ->" "$HA_POD"
     - kubectl cp $PACKAGE_NAME.tar.gz $K3S_NAMESPACE/$HA_POD:/config/.osv.tar.gz -c $K3S_CONTAINER
     - |
       kubectl exec -n $K3S_NAMESPACE $HA_POD -c $K3S_CONTAINER -- sh -c '
@@ -421,8 +580,10 @@ deploy:staging:
           [ -d /config/$d ] && mv /config/$d /config/$d.old
           mv /config/.osv_stage/$d /config/$d
         done
-        # www/ : TOUTES les entrees du paquet, pas seulement vssp/. Avant, le
-        # reste de www/ etait package, transfere, puis efface avec le staging.
+        # EN | www/: ALL package entries, not just vssp/. Previously the rest
+        # EN | of www/ was packaged, transferred, then wiped with the staging dir.
+        # FR | www/ : TOUTES les entrees du paquet, pas seulement vssp/. Avant,
+        # FR | le reste de www/ etait package, transfere, puis efface avec le staging.
         mkdir -p /config/www
         for e in /config/.osv_stage/www/* /config/.osv_stage/www/.[!.]*; do
           [ -e "$e" ] || continue
@@ -432,47 +593,60 @@ deploy:staging:
         done
         rmdir /config/.osv_stage/www 2>/dev/null || true
         mv /config/.osv_stage/VSSP_VERSION /config/VSSP_VERSION
-        # Deployer TOUT l outillage vssp/ + le fragment a leur emplacement
-        # /config. La copie est additive : /config/vssp/.livebox.env (secret)
-        # et /config/vssp/backups/ ne sont pas touches.
+        mv /config/.osv_stage/VSSP_LOCALE  /config/VSSP_LOCALE
+        # EN | Deploy ALL vssp/ tooling + the fragment to their /config location.
+        # EN | The copy is additive: /config/vssp/.livebox.env (secret) and
+        # EN | /config/vssp/backups/ are left untouched.
+        # FR | Deployer TOUT l outillage vssp/ + le fragment a leur emplacement
+        # FR | /config. La copie est additive : /config/vssp/.livebox.env (secret)
+        # FR | et /config/vssp/backups/ ne sont pas touches.
         mkdir -p /config/vssp
         cp -r /config/.osv_stage/vssp/. /config/vssp/
         rm -rf /config/.osv_stage/vssp
         chmod +x /config/vssp/*.py
         mv /config/.osv_stage/config-fragment.yaml /config/config-fragment.yaml
-        # Packages (additif : n ecrase pas d eventuels packages non-vssp)
+        # EN | Packages (additive: does not overwrite non-vssp packages)
+        # FR | Packages (additif : n ecrase pas d eventuels packages non-vssp)
         mkdir -p /config/packages
         cp -r /config/.osv_stage/packages/. /config/packages/
         rm -rf /config/.osv_stage/packages
-        # --- GARDE-FOU liste blanche n2 ---
-        # Chaque etape ci-dessus retire du staging ce quelle a traite. Ce qui
-        # reste a ete package mais na aucune destination : cest exactement le
-        # bug constate sur vssp/. On echoue au lieu de leffacer en silence.
+        # --- EN | WHITELIST GUARD #2 / FR | GARDE-FOU liste blanche n2 ---
+        # EN | Each step above removes from staging what it handled. Whatever
+        # EN | remains was packaged but has no destination: exactly the bug seen
+        # EN | on vssp/. We fail instead of silently deleting it.
+        # FR | Chaque etape ci-dessus retire du staging ce quelle a traite. Ce
+        # FR | qui reste a ete package mais na aucune destination : cest
+        # FR | exactement le bug constate sur vssp/. On echoue au lieu de
+        # FR | leffacer en silence.
         LEFT=$(find /config/.osv_stage -type f 2>/dev/null)
         if [ -n "$LEFT" ]; then
-          echo "[ERR] Fichiers packages mais jamais deployes :"
+          echo "[ERR] Files packaged but never deployed:"
           echo "$LEFT"
-          echo "      Ajouter leur deploiement dans deploy:staging ET deploy:production."
+          echo "      Add their deployment to deploy:staging AND deploy:production."
           exit 1
         fi
-        echo "[i] Contenu reel de /config/vssp :"
+        echo "[i] Actual content of /config/vssp:"
         ls -1 /config/vssp
       '
-    # --- SECRET Livebox : ecrit depuis la variable CI/CD masquee ---
-    # Le mot de passe passe en ARGUMENT du shell distant ($1), jamais dans
-    # la chaine de commande : pas de fuite via `ps` ni via les logs.
+    # --- EN | Router secret: written from the masked CI/CD variable ---------
+    # --- FR | SECRET Livebox : ecrit depuis la variable CI/CD masquee -------
+    # EN | The password is passed as an ARGUMENT to the remote shell ($1),
+    # EN | never inside the command string: no leak through `ps` or the logs.
+    # FR | Le mot de passe passe en ARGUMENT du shell distant ($1), jamais dans
+    # FR | la chaine de commande : pas de fuite via `ps` ni via les logs.
     - |
       if [ -z "$LIVEBOX_PASSWORD" ]; then
-        echo "[avert] LIVEBOX_PASSWORD absente — sondes Livebox inactives."
-        echo "        Les panneaux Livebox/commutateur afficheront leurs"
-        echo "        valeurs de demonstration. Settings > CI/CD > Variables."
+        echo "[warn] LIVEBOX_PASSWORD missing - router probes inactive."
+        echo "       Router/switch panels will show their demo values."
+        echo "       Settings > CI/CD > Variables."
       else
         kubectl exec -n $K3S_NAMESPACE $HA_POD -c $K3S_CONTAINER -- sh -c \
           'umask 077; printf "LIVEBOX_PASSWORD=%s\n" "$1" > /config/vssp/.livebox.env' \
           sh "$LIVEBOX_PASSWORD"
-        echo "[OK] Secret Livebox deploye"
+        echo "[OK] Router secret deployed"
       fi
-    # --- PATCH configuration.yaml (idempotent, avec backup .bak) ---
+    # --- EN | configuration.yaml patch (idempotent, with .bak backup) -------
+    # --- FR | PATCH configuration.yaml (idempotent, avec backup .bak) -------
     - |
       kubectl exec -n $K3S_NAMESPACE $HA_POD -c $K3S_CONTAINER -- sh -c '
         set -e
@@ -481,38 +655,53 @@ deploy:staging:
           --config   /config/configuration.yaml \
           --fragment /config/config-fragment.yaml \
           --vtoken   "'"$OSV_VERSION"'"
-        # Le patcher ne gere pas le domaine homeassistant : ce script pose
-        # (idempotent) la cle packages qui charge /config/packages/
+        # EN | The patcher does not handle the homeassistant domain: this
+        # EN | script sets (idempotently) the packages key loading /config/packages/
+        # FR | Le patcher ne gere pas le domaine homeassistant : ce script pose
+        # FR | (idempotent) la cle packages qui charge /config/packages/
         python3 /config/vssp/vssp_ensure_packages.py \
           --config /config/configuration.yaml
-        # Le patcher dedupe les ressources par URL complete : le ?v= changeant
-        # a chaque build, chaque deploiement AJOUTAIT 6 entrees. On assainit.
+        # EN | The patcher dedupes resources by full URL: since ?v= changes on
+        # EN | every build, each deployment used to ADD 6 entries. We clean up.
+        # FR | Le patcher dedupe les ressources par URL complete : le ?v=
+        # FR | changeant a chaque build, chaque deploiement AJOUTAIT 6 entrees.
+        # FR | On assainit.
         python3 /config/vssp/vssp_sanitize_resources.py \
           --config /config/configuration.yaml
       '
     - |
       if ! kubectl exec -n $K3S_NAMESPACE $HA_POD -c $K3S_CONTAINER -- hass --script check_config -c /config; then
-        echo "[ERR] Config invalide — rollback staging"
+        echo "[ERR] Invalid config - rolling back staging"
         kubectl exec -n $K3S_NAMESPACE $HA_POD -c $K3S_CONTAINER -- sh -c '
           for d in dashboards themes; do
             [ -d /config/$d.old ] && rm -rf /config/$d && mv /config/$d.old /config/$d
           done
-          # Restaurer configuration.yaml depuis le dernier backup .bak
+          # EN | Restore configuration.yaml from the latest .bak backup
+          # FR | Restaurer configuration.yaml depuis le dernier backup .bak
           LAST_BAK=$(ls -t /config/backups/configuration_*.bak 2>/dev/null | head -1)
-          [ -n "$LAST_BAK" ] && cp "$LAST_BAK" /config/configuration.yaml && echo "[rollback] configuration.yaml restaure depuis $LAST_BAK"'
+          [ -n "$LAST_BAK" ] && cp "$LAST_BAK" /config/configuration.yaml && echo "[rollback] configuration.yaml restored from $LAST_BAK"'
         exit 1
       fi
     - kubectl exec -n $K3S_NAMESPACE $HA_POD -c $K3S_CONTAINER -- sh -c 'rm -rf /config/dashboards.old /config/themes.old /config/.osv_stage /config/.osv.tar.gz'
-    # --- REDEMARRAGE DE HOME ASSISTANT — ETAPE INDISPENSABLE ---
-    # configuration.yaml n'est relu qu'au demarrage : les dashboards
-    # (lovelace.dashboards) et les packages ne sont PAS pris en compte a
-    # chaud. Sans cette etape, le job finissait en vert alors que
-    # l'instance continuait a servir l'ancienne configuration — les
-    # nouveautes n'apparaissaient qu'au prochain redemarrage fortuit du
-    # pod. La production faisait deja un `ha core restart`, pas le staging.
+    # --- EN | HOME ASSISTANT RESTART - MANDATORY STEP -----------------------
+    # --- FR | REDEMARRAGE DE HOME ASSISTANT - ETAPE INDISPENSABLE -----------
+    # EN | configuration.yaml is only re-read at startup: dashboards
+    # EN | (lovelace.dashboards) and packages are NOT picked up hot. Without
+    # EN | this step the job finished green while the instance kept serving the
+    # EN | old configuration - the new content only appeared at the next
+    # EN | accidental pod restart. Production already did `ha core restart`,
+    # EN | staging did not.
+    # FR | configuration.yaml n'est relu qu'au demarrage : les dashboards
+    # FR | (lovelace.dashboards) et les packages ne sont PAS pris en compte a
+    # FR | chaud. Sans cette etape, le job finissait en vert alors que
+    # FR | l'instance continuait a servir l'ancienne configuration - les
+    # FR | nouveautes n'apparaissaient qu'au prochain redemarrage fortuit du
+    # FR | pod. La production faisait deja un `ha core restart`, pas le staging.
     #
-    # Voie normale : service homeassistant.restart via l'API REST.
-    # Repli : recreation du pod (fonctionne pour Deployment et StatefulSet).
+    # EN | Normal path: homeassistant.restart service through the REST API.
+    # EN | Fallback: recreate the pod (works for Deployment and StatefulSet).
+    # FR | Voie normale : service homeassistant.restart via l'API REST.
+    # FR | Repli : recreation du pod (fonctionne pour Deployment et StatefulSet).
     - |
       code=000
       if [ -n "$HA_TOKEN_STAGING" ] && command -v curl >/dev/null 2>&1; then
@@ -522,38 +711,42 @@ deploy:staging:
           "$STAGING_URL/api/services/homeassistant/restart" || echo 000)
         echo "[i] homeassistant.restart -> HTTP $code"
       else
-        echo "[i] HA_TOKEN_STAGING absente ou curl indisponible"
+        echo "[i] HA_TOKEN_STAGING missing or curl unavailable"
       fi
       if [ "$code" != "200" ]; then
-        echo "[i] Repli : recreation du pod $HA_POD"
+        echo "[i] Fallback: recreating pod $HA_POD"
         kubectl delete pod -n $K3S_NAMESPACE $HA_POD --wait=false
         kubectl wait --for=delete pod/$HA_POD -n $K3S_NAMESPACE --timeout=120s || true
         kubectl wait --for=condition=ready pod -n $K3S_NAMESPACE \
           -l app=homeassistant --timeout=300s || true
       fi
-    # Attente du retour de l'API : evite que test:staging echoue sur une
-    # instance encore en cours de demarrage.
+    # EN | Wait for the API to come back: prevents test:staging from failing
+    # EN | against an instance that is still booting.
+    # FR | Attente du retour de l'API : evite que test:staging echoue sur une
+    # FR | instance encore en cours de demarrage.
     - |
       if command -v curl >/dev/null 2>&1 && [ -n "$HA_TOKEN_STAGING" ]; then
         for i in $(seq 1 36); do
           c=$(curl -s -o /dev/null -w '%{http_code}' -m 5 \
               -H "Authorization: Bearer $HA_TOKEN_STAGING" "$STAGING_URL/api/" || echo 000)
-          [ "$c" = "200" ] && echo "[OK] HA redemarre et joignable" && break
-          echo "[..] Attente du redemarrage ($i/36) - HTTP $c"
+          [ "$c" = "200" ] && echo "[OK] HA restarted and reachable" && break
+          echo "[..] Waiting for restart ($i/36) - HTTP $c"
           sleep 5
         done
       else
         sleep 45
       fi
-    # Trace de verification : ce que HA a REELLEMENT charge
+    # EN | Verification trace: what HA ACTUALLY loaded.
+    # FR | Trace de verification : ce que HA a REELLEMENT charge.
     - |
-      echo "[i] Version deployee dans le conteneur :"
+      echo "[i] Version deployed inside the container:"
       kubectl exec -n $K3S_NAMESPACE $HA_POD -c $K3S_CONTAINER -- \
-        cat /config/VSSP_VERSION 2>/dev/null || echo "  (pod recree, fichier lisible au prochain job)"
-    - echo "[OK] Staging a jour"
+        cat /config/VSSP_VERSION 2>/dev/null || echo "  (pod recreated, file readable on the next job)"
+    - echo "[OK] Staging up to date"
 
 # ============================================================================
-# 3b. DEPLOY PRODUCTION — HAOS 18.1, tags uniquement, gate manuelle
+# EN | 3b. DEPLOY PRODUCTION — HAOS 18.1, tags only, manual gate
+# FR | 3b. DEPLOY PRODUCTION — HAOS 18.1, tags uniquement, gate manuelle
 # ============================================================================
 deploy:production:
   extends: .ssh_bootstrap
@@ -567,10 +760,10 @@ deploy:production:
     name: production
     url: $PROD_URL
   script:
-    - echo "Deploiement PRODUCTION (HAOS) — $CI_COMMIT_TAG"
+    - echo "PRODUCTION deployment (HAOS) - $CI_COMMIT_TAG"
     - export HA_CFG=$(ssh ha '[ -d /homeassistant ] && echo /homeassistant || echo /config')
-    - echo "Config HAOS ->" "$HA_CFG"
-    - ssh ha "ha backups new --name 'pre-$CI_COMMIT_TAG' --no-progress" || echo "[avert] backup non cree"
+    - echo "HAOS config ->" "$HA_CFG"
+    - ssh ha "ha backups new --name 'pre-$CI_COMMIT_TAG' --no-progress" || echo "[warn] backup not created"
     - cat $PACKAGE_NAME.tar.gz | ssh ha "rm -rf $HA_CFG/.osv_stage && mkdir -p $HA_CFG/.osv_stage && tar xzf - -C $HA_CFG/.osv_stage"
     - |
       ssh ha "set -e
@@ -579,7 +772,8 @@ deploy:production:
           [ -d $HA_CFG/\$d ] && mv $HA_CFG/\$d $HA_CFG/\$d.old
           mv $HA_CFG/.osv_stage/\$d $HA_CFG/\$d
         done
-        # www/ : TOUTES les entrees du paquet, pas seulement vssp/
+        # EN | www/: ALL package entries, not just vssp/
+        # FR | www/ : TOUTES les entrees du paquet, pas seulement vssp/
         mkdir -p $HA_CFG/www
         for e in $HA_CFG/.osv_stage/www/* $HA_CFG/.osv_stage/www/.[!.]*; do
           [ -e \"\$e\" ] || continue
@@ -589,73 +783,98 @@ deploy:production:
         done
         rmdir $HA_CFG/.osv_stage/www 2>/dev/null || true
         mv $HA_CFG/.osv_stage/VSSP_VERSION $HA_CFG/VSSP_VERSION
-        # Deployer TOUT l outillage vssp/ (patchers, sondes, generateurs).
-        # Les scripts executes par HA lui-meme via les capteurs command_line
-        # (vssp_lan_probe.py...) DOIVENT exister cote HAOS : sans eux les
-        # capteurs restent unavailable. Copie additive : .livebox.env et
-        # backups/ deja presents cote HAOS sont preserves.
+        mv $HA_CFG/.osv_stage/VSSP_LOCALE  $HA_CFG/VSSP_LOCALE
+        # EN | Deploy ALL vssp/ tooling (patchers, probes, generators).
+        # EN | The scripts HA itself runs through command_line sensors
+        # EN | (vssp_lan_probe.py...) MUST exist on the HAOS side: without them
+        # EN | the sensors stay unavailable. Additive copy: .livebox.env and
+        # EN | backups/ already present on HAOS are preserved.
+        # FR | Deployer TOUT l outillage vssp/ (patchers, sondes, generateurs).
+        # FR | Les scripts executes par HA lui-meme via les capteurs
+        # FR | command_line (vssp_lan_probe.py...) DOIVENT exister cote HAOS :
+        # FR | sans eux les capteurs restent unavailable. Copie additive :
+        # FR | .livebox.env et backups/ deja presents cote HAOS sont preserves.
         mkdir -p $HA_CFG/vssp
         cp -r $HA_CFG/.osv_stage/vssp/. $HA_CFG/vssp/
         rm -rf $HA_CFG/.osv_stage/vssp
         chmod +x $HA_CFG/vssp/*.py
         mv $HA_CFG/.osv_stage/config-fragment.yaml $HA_CFG/config-fragment.yaml
-        # Packages (additif : n ecrase pas d eventuels packages non-vssp)
+        # EN | Packages (additive: does not overwrite non-vssp packages)
+        # FR | Packages (additif : n ecrase pas d eventuels packages non-vssp)
         mkdir -p $HA_CFG/packages
         cp -r $HA_CFG/.osv_stage/packages/. $HA_CFG/packages/
         rm -rf $HA_CFG/.osv_stage/packages
-        # --- GARDE-FOU liste blanche n2 (identique au staging) ---
+        # EN | WHITELIST GUARD #2 (identical to staging)
+        # FR | GARDE-FOU liste blanche n2 (identique au staging)
         LEFT=\$(find $HA_CFG/.osv_stage -type f 2>/dev/null)
         if [ -n \"\$LEFT\" ]; then
-          echo '[ERR] Fichiers packages mais jamais deployes :'
+          echo '[ERR] Files packaged but never deployed:'
           echo \"\$LEFT\"
-          echo '      Ajouter leur deploiement dans deploy:staging ET deploy:production.'
+          echo '      Add their deployment to deploy:staging AND deploy:production.'
           exit 1
         fi
         rm -rf $HA_CFG/.osv_stage
-        echo '[i] Contenu reel de vssp/ :'
+        echo '[i] Actual content of vssp/:'
         ls -1 $HA_CFG/vssp"
-    # --- SECRET Livebox : transmis par STDIN, jamais sur la ligne de
-    #     commande distante (invisible dans `ps` cote HAOS).
+    # --- EN | Router secret: passed over STDIN, never on the remote command
+    # ---      line (invisible in `ps` on the HAOS side).
+    # --- FR | SECRET Livebox : transmis par STDIN, jamais sur la ligne de
+    # ---      commande distante (invisible dans `ps` cote HAOS).
     - |
       if [ -z "$LIVEBOX_PASSWORD" ]; then
-        echo "[avert] LIVEBOX_PASSWORD absente — sondes Livebox inactives."
+        echo "[warn] LIVEBOX_PASSWORD missing - router probes inactive."
       else
         printf 'LIVEBOX_PASSWORD=%s\n' "$LIVEBOX_PASSWORD" \
           | ssh ha "umask 077; cat > $HA_CFG/vssp/.livebox.env"
-        echo "[OK] Secret Livebox deploye"
+        echo "[OK] Router secret deployed"
       fi
-    # --- PATCH configuration.yaml : execute dans le RUNNER (ruamel dispo),
-    #     puis renvoye par scp. Plus fiable que d'installer ruamel dans HAOS.
-    #     Le "ha backups new pre-$CI_COMMIT_TAG" ci-dessus couvre deja le
-    #     rollback complet ; le patcher cree en plus un .bak cote runner.
+    # --- EN | configuration.yaml patch: run inside the RUNNER (ruamel is
+    # ---      available there), then sent back over scp. More reliable than
+    # ---      installing ruamel inside HAOS. The `ha backups new
+    # ---      pre-$CI_COMMIT_TAG` above already covers a full rollback; the
+    # ---      patcher additionally creates a .bak on the runner.
+    # --- FR | PATCH configuration.yaml : execute dans le RUNNER (ruamel
+    # ---      dispo), puis renvoye par scp. Plus fiable que d'installer ruamel
+    # ---      dans HAOS. Le "ha backups new pre-$CI_COMMIT_TAG" ci-dessus
+    # ---      couvre deja le rollback complet ; le patcher cree en plus un
+    # ---      .bak cote runner.
     - apk add --no-cache python3 py3-pip >/dev/null
     - pip install ruamel.yaml --quiet --break-system-packages 2>/dev/null || pip install ruamel.yaml --quiet
-    # Le build n'expose que le .tar.gz : on extrait patcher + fragment dans le runner
+    # EN | The build only exposes the .tar.gz: extract patcher + fragment in the runner
+    # FR | Le build n'expose que le .tar.gz : on extrait patcher + fragment dans le runner
     - rm -rf /tmp/osv_pkg && mkdir -p /tmp/osv_pkg && tar xzf $PACKAGE_NAME.tar.gz -C /tmp/osv_pkg
     - scp ha:$HA_CFG/configuration.yaml /tmp/prod_configuration.yaml
-    - cp /tmp/prod_configuration.yaml /tmp/prod_configuration.yaml.pre   # filet local
+    # EN | local safety net / FR | filet local
+    - cp /tmp/prod_configuration.yaml /tmp/prod_configuration.yaml.pre
+    # EN | The fragment inside the package is ALREADY rendered in the target
+    # EN | language by the build job - nothing language-related happens here.
+    # FR | Le fragment contenu dans le paquet est DEJA rendu dans la langue
+    # FR | cible par le job build - rien de linguistique ne se passe ici.
     - |
       python3 /tmp/osv_pkg/vssp/vssp_apply_config.py \
         --config   /tmp/prod_configuration.yaml \
         --fragment /tmp/osv_pkg/config-fragment.yaml \
-        --vtoken   "$CI_COMMIT_TAG" || { echo "[ERR] patch configuration.yaml echoue"; exit 1; }
-    # Le patcher ne gere pas le domaine homeassistant : poser la cle packages
+        --vtoken   "$CI_COMMIT_TAG" || { echo "[ERR] configuration.yaml patch failed"; exit 1; }
+    # EN | The patcher does not handle the homeassistant domain: set packages key
+    # FR | Le patcher ne gere pas le domaine homeassistant : poser la cle packages
     - |
       python3 /tmp/osv_pkg/vssp/vssp_ensure_packages.py \
-        --config /tmp/prod_configuration.yaml || { echo "[ERR] ensure packages echoue"; exit 1; }
-    # Dedup des ressources Lovelace (le patcher accumule les ?v= successifs)
+        --config /tmp/prod_configuration.yaml || { echo "[ERR] ensure packages failed"; exit 1; }
+    # EN | Dedupe Lovelace resources (the patcher accumulates successive ?v=)
+    # FR | Dedup des ressources Lovelace (le patcher accumule les ?v= successifs)
     - |
       python3 /tmp/osv_pkg/vssp/vssp_sanitize_resources.py \
-        --config /tmp/prod_configuration.yaml || { echo "[ERR] sanitize resources echoue"; exit 1; }
+        --config /tmp/prod_configuration.yaml || { echo "[ERR] sanitize resources failed"; exit 1; }
     - scp /tmp/prod_configuration.yaml ha:$HA_CFG/configuration.yaml
     - |
       if ! ssh ha "ha core check"; then
-        echo "[ERR] Config invalide — rollback production"
+        echo "[ERR] Invalid config - rolling back production"
         ssh ha "for d in dashboards themes; do
           [ -d $HA_CFG/\$d.old ] && rm -rf $HA_CFG/\$d && mv $HA_CFG/\$d.old $HA_CFG/\$d
         done"
-        # Restaurer le configuration.yaml d'avant patch
-        scp /tmp/prod_configuration.yaml.pre ha:$HA_CFG/configuration.yaml && echo "[rollback] configuration.yaml restaure (pre-patch)"
+        # EN | Restore the pre-patch configuration.yaml
+        # FR | Restaurer le configuration.yaml d'avant patch
+        scp /tmp/prod_configuration.yaml.pre ha:$HA_CFG/configuration.yaml && echo "[rollback] configuration.yaml restored (pre-patch)"
         exit 1
       fi
     - |
@@ -665,10 +884,10 @@ deploy:production:
         ssh ha "ha core reload"
       fi
     - ssh ha "rm -rf $HA_CFG/dashboards.old $HA_CFG/themes.old"
-    - echo "[OK] $CI_COMMIT_TAG en production"
+    - echo "[OK] $CI_COMMIT_TAG live in production"
 
 # ============================================================================
-# 4. TESTS DE FUMEE
+# EN | 4. SMOKE TESTS / FR | 4. TESTS DE FUMEE
 # ============================================================================
 test:staging:
   extends:
@@ -689,7 +908,8 @@ test:production:
     HA_TOKEN: $HA_TOKEN_PROD
 
 # ============================================================================
-# 5. ROLLBACK PRODUCTION — manuel
+# EN | 5. PRODUCTION ROLLBACK — manual
+# FR | 5. ROLLBACK PRODUCTION — manuel
 # ============================================================================
 rollback:production:
   extends: .ssh_bootstrap
@@ -702,17 +922,17 @@ rollback:production:
     name: production
     url: $PROD_URL
   script:
-    - echo "Restauration de la sauvegarde pre-$CI_COMMIT_TAG"
+    - echo "Restoring the pre-$CI_COMMIT_TAG backup"
     - |
       SLUG=$(ssh ha "ha backups --raw-json" \
         | jq -r ".data.backups[] | select(.name==\"pre-$CI_COMMIT_TAG\") | .slug" | head -1)
-      if [ -z "$SLUG" ]; then echo "[ERR] Sauvegarde introuvable"; ssh ha "ha backups"; exit 1; fi
-      echo "Slug : $SLUG"
+      if [ -z "$SLUG" ]; then echo "[ERR] Backup not found"; ssh ha "ha backups"; exit 1; fi
+      echo "Slug: $SLUG"
       ssh ha "ha backups restore $SLUG --no-progress"
-    - echo "[OK] Rollback effectue"
+    - echo "[OK] Rollback complete"
 
 # ============================================================================
-# 6. RELEASE GitLab
+# EN | 6. GitLab RELEASE / FR | 6. RELEASE GitLab
 # ============================================================================
 release:
   extends: .rules_tag
@@ -724,4 +944,4 @@ release:
   release:
     tag_name: "$CI_COMMIT_TAG"
     name: "Visio Sapiens $CI_COMMIT_TAG"
-    description: "Deploye sur HAOS — commit $CI_COMMIT_SHA"
+    description: "Deployed to HAOS - commit $CI_COMMIT_SHA"
