@@ -47,6 +47,24 @@ room:
   roof: Toit de la maison
   computer: Bureau & salle informatique
 
+# EN | Slot labels. The keys stay in English — only the labels change.
+# FR | Libelles des tableaux. Les cles restent en anglais — seuls les
+# FR | libelles changent.
+slot:
+  climate: Température & chauffage
+  lights: Éclairages
+  appliances: Appareils
+  shutters: Volets roulants
+  security: Sécurité
+  audio: Audio
+  empty: Aucun appareil
+  audio_source: Source
+  audio_output: Sortie
+  audio_no_speaker: Aucune enceinte à proximité
+
+header:
+  weather_unavailable: Météo indisponible
+
 system:
   home: Accueil
   core: Cœur
