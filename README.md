@@ -2,7 +2,7 @@
 
 **English** · [Français](README.fr.md)
 
-A futuristic Home Assistant interface inspired by OSVision, designed for
+A futuristic Home Assistant interface inspired by futur, designed for
 tablet and mobile. Each room becomes a system module; dashboards are
 progressively **generated** from a domain model rather than hand-written.
 
