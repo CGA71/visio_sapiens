@@ -1,0 +1,192 @@
+########################################################################
+# Visio Sapiens — Locale: FRENCH / FRANCAIS (overlay)
+#
+# EN | Overlay merged on top of en.yaml. Only the keys present here are
+# EN | translated; anything omitted keeps its English value. You can
+# EN | therefore ship a partial translation safely.
+# FR | Surcouche fusionnee par-dessus en.yaml. Seules les cles presentes
+# FR | ici sont traduites ; tout ce qui est omis garde sa valeur anglaise.
+# FR | On peut donc livrer une traduction partielle sans risque.
+#
+# EN | Run `python3 vssp/vssp_i18n.py check` to list what still falls back
+# EN | to English, and to catch keys that exist here but not in en.yaml.
+# FR | Lancer `python3 vssp/vssp_i18n.py check` pour lister ce qui retombe
+# FR | encore sur l'anglais, et reperer les cles presentes ici mais
+# FR | absentes de en.yaml.
+########################################################################
+
+meta:
+  code: fr
+  name: French
+  native_name: Français
+  # EN | Drives Intl.* — this is what turns "Mon" into "lun." automatically.
+  # FR | Pilote Intl.* — c'est ce qui transforme "Mon" en "lun." tout seul.
+  locale_tag: fr-FR
+  first_day_of_week: 1
+  currency_symbol: "€"
+  decimal_separator: ","
+
+dashboard:
+  main:
+    title: Visio-Sapiens
+  core:
+    title: Système central
+  computer:
+    title: Salle informatique
+  energy:
+    title: Gestion de l'énergie
+  technical:
+    title: Local technique
+  preview:
+    title: "ÉNERGIE ⧗ APERÇU"
+
+nav:
+  home: ACCUEIL
+  living: SALON
+  bedroom1: CHAMBRE 1
+  bedroom2: CHAMBRE 2
+  bathroom: SALLE DE BAIN
+  computer: BUREAU
+  technical: TECHNIQUE
+  secret: SECRÈTE
+  garden: JARDIN
+  energy: ÉNERGIE
+  core: CŒUR
+  admin: ADMIN
+
+page:
+  home:
+    name: ACCUEIL
+    subtitle: Home Sweet Home
+  core:
+    name: SYSTÈME CENTRAL
+    subtitle: Supervision du système central
+  computer:
+    name: BUREAU
+    subtitle: Bureau & salle informatique
+  technical:
+    name: LOCAL TECHNIQUE
+    subtitle: Local technique
+  energy:
+    name: ÉNERGIE
+    subtitle: Production, consommation & réseau
+  admin:
+    name: ADMIN
+    subtitle: Génération des dashboards & maintenance
+
+energy:
+  panel:
+    solar_production: Production solaire
+    per_device: Consommation par appareil
+    total_consumption: Consommation totale
+    breaker_panel: Tableau électrique
+    grid: Réseau
+    security: Sécurité
+  # EN | Display labels only — the stored input_select values stay Day /
+  # EN | Month / Year in French too. See the note in en.yaml.
+  # FR | Libellés d'affichage uniquement — les valeurs stockées de
+  # FR | l'input_select restent Day / Month / Year même en français.
+  # FR | Voir la note dans en.yaml.
+  tab:
+    day: Jour
+    month: Mois
+    year: Année
+  stat:
+    annual_capacity: "Capacité annuelle"
+    of_annual_target: "% de l'objectif annuel"
+    of_target: "% de l'objectif"
+    produced: Produit
+    consumed: Consommé
+    exported: Exporté
+    imported: Importé
+    self_consumption: Autoconsommation
+    export_revenue: Revenu de revente
+    total: Total
+  helper:
+    period_name: "Visio Sapiens — Période énergie"
+    solar_capacity_name: "Visio Sapiens — Capacité solaire annuelle"
+    export_rate_name: "Visio Sapiens — Tarif de revente"
+
+technical:
+  livebox: Box internet
+  switch: Commutateur réseau
+  nat: Redirections de ports
+  systems: Systèmes
+  board: Appareils connectés
+  connected: Connecté
+  disconnected: Déconnecté
+
+common:
+  on: "Marche"
+  off: "Arrêt"
+  open: Ouvert
+  closed: Fermé
+  unavailable: Indisponible
+  unknown: Inconnu
+  none: Aucun
+  active: Actif
+  inactive: Inactif
+  weather: Météo
+  alarm: Alarme
+  alerts: Alertes
+  security: Sécurité
+  settings: Réglages
+  backup: Sauvegarde
+  delete: Supprimer
+  confirm: Confirmer
+  cancel: Annuler
+  save: Enregistrer
+  error: Erreur
+  failed: Échec
+  success: Succès
+  warning: Attention
+  loading: Chargement
+
+admin:
+  discovery: SCAN DE DÉCOUVERTE
+  upgrade: MISE À NIVEAU
+  generate: GÉNÉRER LES DASHBOARDS
+  delete_dashboard: SUPPRIMER LE DASHBOARD
+  pin_prompt: Saisissez le code PIN
+  backup_created: Sauvegarde créée
+  system_dashboards: Dashboards système
+
+wizard:
+  language_step_title: Langue de l'interface
+  language_step_help: >-
+    Choisissez la langue des dashboards générés. L'anglais est la langue
+    par défaut ; les autres langues retombent sur l'anglais pour tout ce
+    qui n'est pas encore traduit.
+  phase1_title: "PHASE 1 — PIÈCES & ÉTAGES"
+  phase2_title: "PHASE 2 — ASSIGNATION DES APPAREILS"
+  phase3_title: "PHASE 3 — PLAN DE LA MAISON"
+  phase4_title: "PHASE 4 — PUSH VERS GIT"
+  next: Suivant
+  back: Retour
+  finish: Terminer
+
+date:
+  # EN | These arrays match what Intl produces for fr-FR, so JS using
+  # EN | Intl.DateTimeFormat('fr-FR') and YAML using these keys agree.
+  # FR | Ces tableaux correspondent a ce que produit Intl pour fr-FR : le JS
+  # FR | utilisant Intl.DateTimeFormat('fr-FR') et le YAML utilisant ces
+  # FR | cles restent coherents.
+  weekday_short: [dim., lun., mar., mer., jeu., ven., sam.]
+  weekday_long: [dimanche, lundi, mardi, mercredi, jeudi, vendredi, samedi]
+  month_short: [janv., févr., mars, avr., mai, juin, juil., août, sept., oct., nov., déc.]
+  month_long:
+    - janvier
+    - février
+    - mars
+    - avril
+    - mai
+    - juin
+    - juillet
+    - août
+    - septembre
+    - octobre
+    - novembre
+    - décembre
+  today: Aujourd'hui
+  yesterday: Hier
+  now: Maintenant
