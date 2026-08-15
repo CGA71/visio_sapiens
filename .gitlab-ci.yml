@@ -409,6 +409,22 @@ build:
         --in  home-assistant/config-fragment.yaml \
         --out dist/config-fragment.yaml \
         || { echo "[ERR] locale rendering of config-fragment.yaml failed"; exit 1; }
+    # EN | HARD GUARD: no unsubstituted placeholder may leave the build. If
+    # EN | the render step was skipped or silently failed, `__T:` reaches
+    # EN | configuration.yaml and Home Assistant displays the raw marker as a
+    # EN | dashboard title in the sidebar. Fail here instead.
+    # FR | GARDE-FOU DUR : aucune substitution non resolue ne doit sortir du
+    # FR | build. Si l'etape de rendu a ete sautee ou a echoue en silence,
+    # FR | `__T:` arrive dans configuration.yaml et Home Assistant affiche le
+    # FR | marqueur brut comme titre de dashboard dans la sidebar. On echoue ici.
+    - |
+      if grep -rEn '__T:[A-Za-z0-9_.]+__' dist/ ; then
+        echo "[ERR] Unsubstituted translation placeholder(s) in the package."
+        echo "      The locale rendering step did not run, or did not cover"
+        echo "      these files. Nothing must reach /config with a raw __T: marker."
+        exit 1
+      fi
+      echo "[OK] no unsubstituted __T: placeholder in the package"
     # EN | Record the language inside the package so the deployed instance can
     # EN | report which locale it is actually running.
     # FR | Trace la langue dans le paquet pour que l'instance deployee puisse
@@ -650,6 +666,17 @@ deploy:staging:
     - |
       kubectl exec -n $K3S_NAMESPACE $HA_POD -c $K3S_CONTAINER -- sh -c '
         set -e
+        # EN | Last line of defence before the fragment is merged into
+        # EN | configuration.yaml. A raw __T: here would become a dashboard
+        # EN | title in the sidebar, and only a restart would clear it.
+        # FR | Derniere ligne de defense avant fusion du fragment dans
+        # FR | configuration.yaml. Un __T: brut ici deviendrait un titre de
+        # FR | dashboard dans la sidebar, et seul un redemarrage l effacerait.
+        if grep -En "__T:[A-Za-z0-9_.]+__" /config/config-fragment.yaml; then
+          echo "[ERR] /config/config-fragment.yaml still holds translation placeholders."
+          echo "      It was deployed without passing through vssp_i18n.py render."
+          exit 1
+        fi
         pip install ruamel.yaml --quiet 2>/dev/null || pip install ruamel.yaml --quiet --break-system-packages 2>/dev/null
         python3 /config/vssp/vssp_apply_config.py \
           --config   /config/configuration.yaml \
@@ -846,6 +873,16 @@ deploy:production:
     - scp ha:$HA_CFG/configuration.yaml /tmp/prod_configuration.yaml
     # EN | local safety net / FR | filet local
     - cp /tmp/prod_configuration.yaml /tmp/prod_configuration.yaml.pre
+    # EN | Same guard as staging: refuse to patch production from a fragment
+    # EN | that still holds raw __T: markers.
+    # FR | Meme garde-fou qu en staging : refuser de patcher la production
+    # FR | depuis un fragment contenant encore des marqueurs __T: bruts.
+    - |
+      if grep -En '__T:[A-Za-z0-9_.]+__' /tmp/osv_pkg/config-fragment.yaml; then
+        echo "[ERR] The packaged fragment still holds translation placeholders."
+        echo "      Rebuild: the locale rendering step did not run."
+        exit 1
+      fi
     # EN | The fragment inside the package is ALREADY rendered in the target
     # EN | language by the build job - nothing language-related happens here.
     # FR | Le fragment contenu dans le paquet est DEJA rendu dans la langue
