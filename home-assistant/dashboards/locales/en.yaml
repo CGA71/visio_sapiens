@@ -71,6 +71,45 @@ room:
   computer: Desk & server room
 
 # ----------------------------------------------------------------------
+# EN | SLOTS — the six fixed panels of a room dashboard. The KEY is the
+# EN | identifier: it is used in house.yaml, as the CSS grid-area, and as
+# EN | the section name in the template. Those three uses must be the same
+# EN | string — that is what "normalised" means here. Never translated.
+# FR | TABLEAUX — les six panneaux fixes d'un dashboard de piece. La CLE
+# FR | est l'identifiant : elle sert dans house.yaml, comme grid-area CSS,
+# FR | et comme nom de section dans le template. Ces trois usages doivent
+# FR | employer la meme chaine — c'est ce que « normalise » veut dire ici.
+# FR | Jamais traduite.
+# ----------------------------------------------------------------------
+slot:
+  climate: Temperature & heating
+  lights: Lights
+  appliances: Devices
+  shutters: Shutters
+  security: Security
+  audio: Audio
+  # EN | Shown when a slot belongs to the room's slot set but holds no
+  # EN | device yet. A slot that does not apply to the room at all is not
+  # EN | rendered — it collapses and its neighbours expand.
+  # FR | Affiche quand un tableau appartient au jeu de la piece mais ne
+  # FR | contient encore aucun appareil. Un tableau sans objet pour la
+  # FR | piece n'est pas rendu du tout — il s'effondre et ses voisins
+  # FR | s'etendent.
+  empty: No device
+  # EN | Audio slot: the stream exists independently of its output.
+  # FR | Tableau audio : le flux existe independamment de sa sortie.
+  audio_source: Source
+  audio_output: Output
+  audio_no_speaker: No nearby speaker
+
+# ----------------------------------------------------------------------
+# EN | Header band, identical on every dashboard.
+# FR | Bandeau horizontal, identique sur tous les dashboards.
+# ----------------------------------------------------------------------
+header:
+  weather_unavailable: Weather unavailable
+
+# ----------------------------------------------------------------------
 # EN | SYSTEM DASHBOARDS — the four mandatory ones, always generated,
 # EN | never tied to a room. CORE and ENERGY are produced automatically
 # EN | when the home is created; HOME is the entry point and ADMIN is the
