@@ -1,95 +1,156 @@
 # ============================================================================
-# Visio Sapiens — Fragment de configuration (ÉTAT DÉSIRÉ)
+# Visio Sapiens — Configuration fragment (DESIRED STATE)
 #
-# Ce fichier ne contient QUE les clés de configuration.yaml qu'OSVision gère.
-# Il est fusionné dans le configuration.yaml de destination par le script
-# osvision_apply_config.py, de façon idempotente : il POSE/MET À JOUR ses
-# propres entrées et ne touche à RIEN d'autre dans le fichier cible.
+# EN | This file holds ONLY the configuration.yaml keys that Visio Sapiens
+# EN | owns. It is merged into the target configuration.yaml by
+# EN | vssp_apply_config.py, idempotently: it writes/updates its own entries
+# EN | and touches NOTHING else in the destination file.
+# FR | Ce fichier ne contient QUE les cles de configuration.yaml que Visio
+# FR | Sapiens gere. Il est fusionne dans le configuration.yaml de destination
+# FR | par vssp_apply_config.py, de facon idempotente : il POSE/MET A JOUR ses
+# FR | propres entrees et ne touche a RIEN d'autre dans le fichier cible.
 #
-# Règles de fusion appliquées par le script (voir osvision_apply_config.py) :
-#   • lovelace.dashboards : merge par sous-clé — seules les clés listées ici
-#     (préfixe osvision-*) sont écrites ; les autres dashboards de l'utilisateur
-#     sont préservés.
-#   • lovelace.resources : merge par 'url' — dédupliqué ; les ressources non
-#     listées ici sont préservées.
-#   • input_text / shell_command / template : merge par clé (préfixe osvision_).
-#   • homeassistant.packages : pose la clé de chargement du dossier packages/
-#     (utilisée pour les fragments multi-domaines : utility_meter, template…).
-#     ⚠ Nécessite que osvision_apply_config.py gère le domaine « homeassistant » ;
-#       sinon, poser cette ligne directement dans configuration.yaml.
+# EN | Merge rules applied by the script (see vssp_apply_config.py):
+# EN |   - lovelace.dashboards : merged per sub-key — only the keys listed
+# EN |     here (OSV_PREFIX prefix) are written; the user's other dashboards
+# EN |     are preserved.
+# EN |   - lovelace.resources  : merged by 'url' — deduplicated; resources not
+# EN |     listed here are preserved.
+# EN |   - input_text / shell_command / template : merged per key (vssp_ prefix).
+# EN |   - homeassistant.packages : sets the loading key for the packages/
+# EN |     folder (used by multi-domain fragments: utility_meter, template...).
+# EN |     NOTE: requires vssp_apply_config.py to handle the "homeassistant"
+# EN |     domain; otherwise set this line directly in configuration.yaml.
+# FR | Regles de fusion appliquees par le script (voir vssp_apply_config.py) :
+# FR |   - lovelace.dashboards : merge par sous-cle — seules les cles listees
+# FR |     ici (prefixe OSV_PREFIX) sont ecrites ; les autres dashboards de
+# FR |     l'utilisateur sont preserves.
+# FR |   - lovelace.resources  : merge par 'url' — dedoublonne ; les ressources
+# FR |     non listees ici sont preservees.
+# FR |   - input_text / shell_command / template : merge par cle (prefixe vssp_).
+# FR |   - homeassistant.packages : pose la cle de chargement du dossier
+# FR |     packages/ (utilisee par les fragments multi-domaines : utility_meter,
+# FR |     template...). NB : necessite que vssp_apply_config.py gere le domaine
+# FR |     « homeassistant » ; sinon, poser cette ligne directement dans
+# FR |     configuration.yaml.
 #
-# ⇒ Pour ajouter/modifier/supprimer une ligne de config OSVision, on édite CE
-#   fichier. Le patcher se charge de refléter l'état dans la prod.
+# EN | => To add/change/remove a line of Visio Sapiens config, edit THIS file.
+# EN |    The patcher reflects the state into production.
+# FR | => Pour ajouter/modifier/supprimer une ligne de config Visio Sapiens, on
+# FR |    edite CE fichier. Le patcher se charge de refleter l'etat en prod.
 #
-# NB : les tags HA (!include, etc.) sont préservés tels quels par ruamel.
+# EN | HA tags (!include, etc.) are preserved as-is by ruamel.
+# FR | Les tags HA (!include, etc.) sont preserves tels quels par ruamel.
+#
+# ----------------------------------------------------------------------------
+# EN | TWO PLACEHOLDERS ARE SUBSTITUTED BEFORE THIS FILE REACHES PRODUCTION:
+# EN |   __VTOKEN__     -> build version, injected by vssp_apply_config.py --vtoken
+# EN |   __T:<key>__ -> translated string, injected by vssp_i18n.py render
+# EN | The build job renders the locale FIRST, then the deploy job applies the
+# EN | version token. Never hardcode a dashboard title here — it belongs in
+# EN | home-assistant/dashboards/locales/<code>.yaml.
+# FR | DEUX SUBSTITUTIONS SONT APPLIQUEES AVANT LA PRODUCTION :
+# FR |   __VTOKEN__     -> version du build, injectee par vssp_apply_config.py
+# FR |   __T:<cle>__  -> chaine traduite, injectee par vssp_i18n.py render
+# FR | Le job build rend d'abord la langue, puis le job deploy applique le
+# FR | jeton de version. Ne jamais coder un titre de dashboard en dur ici — il
+# FR | appartient a home-assistant/dashboards/locales/<code>.yaml.
 # ============================================================================
 
 homeassistant:
-  # Charge tous les fichiers de config/packages/ (dont spvs_energy_totaux.yaml,
-  # qui alimente le panneau « Consommation Totale » du dashboard Energy).
+  # EN | Loads every file in config/packages/ (including vssp_energy_totaux.yaml,
+  # EN | which feeds the "Total Consumption" panel of the Energy dashboard).
+  # FR | Charge tous les fichiers de config/packages/ (dont vssp_energy_totaux.yaml,
+  # FR | qui alimente le panneau « Consommation totale » du dashboard Energy).
   packages: !include_dir_named packages
 
 lovelace:
   dashboards:
     visio-sapiens:
       mode: yaml
-      title: Visio-Sapiens
+      title: __T:dashboard.main.title__
       icon: mdi:hexagon-outline
       show_in_sidebar: true
       filename: dashboards/home.yaml
     visio-sapiens-core:
       mode: yaml
-      title: Core System
+      title: __T:dashboard.core.title__
       icon: mdi:server
       show_in_sidebar: false
       filename: dashboards/views/core.yaml
     visio-sapiens-computer:
       mode: yaml
-      title: Computer Room
+      title: __T:dashboard.computer.title__
       icon: mdi:desktop-tower-monitor
       show_in_sidebar: false
       filename: dashboards/views/computer.yaml
     visio-sapiens-energy:
       mode: yaml
-      title: Energy Management
+      title: __T:dashboard.energy.title__
       icon: mdi:lightning-bolt
       show_in_sidebar: false
       filename: dashboards/views/energy.yaml
     visio-sapiens-m:
       mode: yaml
-      title: Visio-Sapiens
+      title: __T:dashboard.main.title__
       icon: mdi:hexagon-outline
       show_in_sidebar: true
       filename: dashboards/home_mobile.yaml
     visio-sapiens-energy-m:
       mode: yaml
-      title: Energy Management
+      title: __T:dashboard.energy.title__
       icon: mdi:lightning-bolt
       show_in_sidebar: false
       filename: dashboards/views/energy_mobile.yaml
     visio-sapiens-technical:
       mode: yaml
-      title: Technical Room
+      title: __T:dashboard.technical.title__
       icon: mdi:tools
       show_in_sidebar: false
       filename: dashboards/views/technical_room.yaml
     visio-sapiens-technical-m:
       mode: yaml
-      title: Technical Room
+      title: __T:dashboard.technical.title__
       icon: mdi:cellphone-cog
       show_in_sidebar: false
       filename: dashboards/views/technical_room_mobile.yaml
-# ── APERÇU — chaîne de test, non déployée ────────────────────────
+
+# ── PREVIEW — test chain, not deployed ──────────────────────────────
+# EN | ⚠ TWO ISSUES TO SETTLE, left untouched by the translation pass:
+# EN |   1. The key is `vssp-energy-preview` while every other dashboard uses
+# EN |      the `visio-sapiens-` prefix. The validate job checks keys against
+# EN |      OSV_PREFIX in vssp_apply_config.py — this one is very likely being
+# EN |      silently skipped by the patcher, so the preview never reaches
+# EN |      configuration.yaml. Rename it `visio-sapiens-energy-preview`.
+# EN |   2. `filename` is repo-relative, not /config-relative. Every other
+# EN |      entry starts at `dashboards/`; this one starts at
+# EN |      `home-assistant/dashboards/` and will not resolve on the HA side.
+# FR | ⚠ DEUX PROBLEMES A TRANCHER, laisses intacts par la traduction :
+# FR |   1. La cle est `vssp-energy-preview` alors que tous les autres
+# FR |      dashboards utilisent le prefixe `visio-sapiens-`. Le job validate
+# FR |      compare les cles a OSV_PREFIX dans vssp_apply_config.py — celle-ci
+# FR |      est tres probablement ignoree en silence par le patcher, donc
+# FR |      l'apercu n'arrive jamais dans configuration.yaml. La renommer
+# FR |      `visio-sapiens-energy-preview`.
+# FR |   2. `filename` est relatif au depot, pas a /config. Toutes les autres
+# FR |      entrees commencent a `dashboards/` ; celle-ci commence a
+# FR |      `home-assistant/dashboards/` et ne sera pas resolue cote HA.
     vssp-energy-preview:
       mode: yaml
-      title: "ENERGY ⧗ PREVIEW"
+      title: __T:dashboard.preview.title__
       icon: mdi:flask-outline
-      show_in_sidebar: true          # passe à false pour le masquer aux autres
+      # EN | Set to false to hide it from other users.
+      # FR | Passer a false pour le masquer aux autres utilisateurs.
+      show_in_sidebar: true
       filename: home-assistant/dashboards/views/energy_preview.yaml
-      require_admin: true            # visible uniquement par les comptes admin
-
+      # EN | Visible to admin accounts only.
+      # FR | Visible uniquement par les comptes admin.
+      require_admin: true
 
   resources:
+    # EN | HACS-managed custom cards — versioned by HACS itself, no cache-busting.
+    # FR | Cartes custom gerees par HACS — versionnees par HACS, pas de
+    # FR | cache-busting a appliquer.
     - url: /hacsfiles/button-card/button-card.js
       type: module
     - url: /hacsfiles/lovelace-card-mod/card-mod.js
@@ -106,6 +167,11 @@ lovelace:
       type: module
     - url: /hacsfiles/lovelace-decluttering-card/decluttering-card.js
       type: module
+    # EN | Visio Sapiens engine — ?v=__VTOKEN__ is replaced at apply time so
+    # EN | browsers pick up a new build instead of serving a stale cache.
+    # FR | Moteur Visio Sapiens — ?v=__VTOKEN__ est remplace au moment du apply
+    # FR | pour que les navigateurs prennent le nouveau build au lieu de servir
+    # FR | un cache perime.
     - url: /local/vssp/css/vssp.css?v=__VTOKEN__
       type: css
     - url: /local/vssp/js/vssp.js?v=__VTOKEN__
