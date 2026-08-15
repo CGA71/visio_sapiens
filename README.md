@@ -27,6 +27,15 @@ engine (`www/vssp/`), Jinja2 generator. GitLab CI/CD → k3s.
 
 ## Dashboard catalogue
 
+### Header band
+
+Every dashboard — room and system alike — opens with the same horizontal
+band, rendered from a shared `header.j2` partial: **dashboard name,
+weather, date and time**. The name comes from `t('room.kitchen')` or
+`t('system.energy')`, so it follows the selected language; the date and
+time come from `Intl` with the locale tag. One partial, included by every
+template — the band is never duplicated.
+
 ### Room dashboards
 
 The admin console offers a closed catalogue of rooms. Each declared room
@@ -54,6 +63,60 @@ Rooms marked *(n)* can be instantiated several times; the generator
 appends the index (`Bedroom 1`, `Bedroom 2`, …). The room identifier
 (`bedroom`, `living_room`, …) stays in English in every language — it
 feeds `entity_id`s, navigation paths and file names.
+
+### Room slots
+
+Below the band, a room dashboard lays out a **fixed number of panels**,
+called slots. The count is fixed so the HUD grid is drawn once and never
+deformed by a room holding more devices than another.
+
+| # | id | Holds |
+|---|---|---|
+| 1 | `climate` | temperature, heating, air conditioning, thermostat |
+| 2 | `lights` | lighting |
+| 3 | `appliances` | white goods, TV, home cinema, console, wine fridge, spa, HRV, towel rail |
+| 4 | `shutters` | roller shutters |
+| 5 | `security` | alarm, intercom, camera |
+| 6 | `audio` | audio stream |
+
+The slot id is **normalised**: the same string is used as the key in
+`house.yaml`, as the CSS `grid-area`, and as the section name in the
+template. It is never translated — only its label is, through `slot.*`.
+
+Two rooms use a reduced slot set. This does not fork the template: it only
+says which slots are candidates.
+
+| Slot set | Slots |
+|---|---|
+| `default` | climate, lights, appliances, shutters, security, audio |
+| `toilet` | climate, lights, shutters, audio |
+| `garden` | climate, lights, appliances, security, audio |
+
+Garden equipment (pool, jacuzzi, sauna, robot mower, pool robot) falls into
+`appliances` — no special rule.
+
+**Empty slots.** A slot outside the room's set is not rendered at all: it
+collapses and its neighbours expand across the grid. A slot inside the set
+but holding no device yet shows `slot.empty` — the distinction matters,
+because a toilet will never have shutters whereas a living room may simply
+not have integrated them yet. The Visio Sapiens animation fills at most one
+slot per dashboard, `shutters` first.
+
+**Slot height is fixed.** A kitchen may hold twelve devices in
+`appliances` and a hallway one. Lists scroll inside their panel rather
+than stretching it, so every room dashboard keeps the same footprint.
+
+**The audio slot has three states**, because a stream exists independently
+of its output:
+
+| State | Rendering |
+|---|---|
+| stream + speakers | media player with an output selector |
+| stream, no speaker | media player + `slot.audio_no_speaker` |
+| nothing at all | collapsed |
+
+This is the one slot where the form distinguishes two roles — **source**
+and **output** — instead of holding a flat list.
 
 ### System dashboards
 
@@ -96,11 +159,33 @@ maintaining the home. It drives generation through three inputs:
 | Language selector | English / French | picks the locale catalogue used for every generated label |
 | Format selector | Mobile / Tablet | picks the layout variant of the template |
 | Room form | the catalogue above, with a count for *(n)* rooms | determines how many room dashboards are generated and how long the navigation rail is |
+| Device assignment | every discovered device → a room **and** a slot | fills the six panels of each room dashboard |
 
 Those three answers are written into `dashboards/model/house.yaml`, which
-is the single source of truth. Regenerating from that model is
-idempotent: rooms added later are created, the rail is re-rendered, and
-existing dashboards are refreshed rather than duplicated.
+is the single source of truth. The form also assigns every device to a
+room **and to a slot**, so the model is flat and the template routes
+nothing:
+
+```yaml
+rooms:
+  - id: living_room
+    slot_set: default
+    slots:
+      climate:    [climate.living_room_ac]
+      lights:     [light.living_room_ceiling, light.living_room_strip]
+      appliances: [media_player.tv, media_player.ps5]
+      shutters:   [cover.living_room]
+      security:   []
+      audio:
+        source: [media_player.spotify]
+        output: [media_player.sonos_living]
+```
+
+Order within a list is the order set in the form, not an alphabetical
+sort — you decide the TV comes before the console without renaming an
+entity. Regenerating from that model is idempotent: rooms added later are
+created, the rail is re-rendered, and existing dashboards are refreshed
+rather than duplicated.
 
 ## Language
 
@@ -155,7 +240,7 @@ code change anywhere.
 | User-facing strings | never hardcoded — they live in the locale catalogues |
 | Documentation (`.md`) | one file per language: `X.md` (English) + `X.fr.md`, with a language switch line at the top |
 | CI job logs, commit messages, branch names | English only — developer-facing, not part of the localized product |
-| Identifiers | English only, never translated: room keys, `entity_id`, `path` / `navigation_path`, button-card template names, `input_select` option values, `grid-area` names, file names |
+| Identifiers | English only, never translated: room keys, slot ids, `entity_id`, `path` / `navigation_path`, button-card template names, `input_select` option values, `grid-area` names, file names |
 
 ## Repository layout
 
