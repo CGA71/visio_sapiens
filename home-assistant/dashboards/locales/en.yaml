@@ -1,0 +1,241 @@
+########################################################################
+# Visio Sapiens — Locale: ENGLISH (reference)
+#
+# EN | This file is the CONTRACT. Every key that appears anywhere in the
+# EN | project must exist here. Other locales are overlays: any key they
+# EN | omit falls back to the English value below, so the interface can
+# EN | never render an empty label.
+# FR | Ce fichier est le CONTRAT. Toute cle utilisee quelque part dans le
+# FR | projet doit exister ici. Les autres langues sont des surcouches :
+# FR | toute cle omise retombe sur la valeur anglaise ci-dessous, donc
+# FR | l'interface ne peut jamais afficher un libelle vide.
+#
+# EN | Never delete a key. Renaming one means updating every template that
+# EN | calls it — run `python3 vssp/vssp_i18n.py check` to catch strays.
+# FR | Ne jamais supprimer une cle. En renommer une impose de mettre a jour
+# FR | tous les templates qui l'appellent — lancer
+# FR | `python3 vssp/vssp_i18n.py check` pour reperer les orphelines.
+########################################################################
+
+meta:
+  code: en
+  name: English
+  native_name: English
+  # EN | BCP-47 tag handed to Intl.* in button-card JS blocks. This is what
+  # EN | produces "Mon"/"Tue" automatically — no hardcoded weekday arrays.
+  # FR | Etiquette BCP-47 passee a Intl.* dans les blocs JS des button-card.
+  # FR | C'est elle qui produit "Mon"/"Tue" automatiquement — plus aucun
+  # FR | tableau de jours code en dur.
+  locale_tag: en-US
+  # EN | 0 = Sunday, 1 = Monday. Used by weekly energy charts.
+  # FR | 0 = dimanche, 1 = lundi. Utilise par les graphes energie hebdo.
+  first_day_of_week: 0
+  currency_symbol: "€"
+  decimal_separator: "."
+
+# ----------------------------------------------------------------------
+# EN | Dashboard titles — shown in the Home Assistant sidebar.
+# EN | Consumed by config-fragment.yaml through __T:dashboard.*.title__
+# FR | Titres des dashboards — affiches dans la barre laterale de Home
+# FR | Assistant. Consommes par config-fragment.yaml via __T:dashboard.*__
+# ----------------------------------------------------------------------
+dashboard:
+  main:
+    title: Visio-Sapiens
+  core:
+    title: Core System
+  computer:
+    title: Computer Room
+  energy:
+    title: Energy Management
+  technical:
+    title: Technical Room
+  preview:
+    title: "ENERGY ⧗ PREVIEW"
+
+# ----------------------------------------------------------------------
+# EN | Navigation sidebar entries.
+# FR | Entrees de la barre de navigation laterale.
+# ----------------------------------------------------------------------
+nav:
+  home: HOME
+  living: LIVING
+  bedroom1: BEDROOM 1
+  bedroom2: BEDROOM 2
+  bathroom: BATHROOM
+  computer: DESK
+  technical: TECHNICAL
+  secret: SECRET
+  garden: GARDEN
+  energy: ENERGY
+  core: CORE
+  admin: ADMIN
+
+# ----------------------------------------------------------------------
+# EN | Page headers — the large title plus its subtitle line.
+# FR | En-tetes de page — le grand titre et sa ligne de sous-titre.
+# ----------------------------------------------------------------------
+page:
+  home:
+    name: HOME
+    subtitle: Home Sweet Home
+  core:
+    name: CORE SYSTEM
+    subtitle: Central system monitoring
+  computer:
+    name: DESK
+    subtitle: Desk & server room
+  technical:
+    name: TECHNICAL ROOM
+    subtitle: Technical room
+  energy:
+    name: ENERGY
+    subtitle: Production, consumption & grid
+  admin:
+    name: ADMIN
+    subtitle: Dashboard generation & maintenance
+
+# ----------------------------------------------------------------------
+# EN | ENERGY dashboard.
+# FR | Dashboard ENERGY.
+# ----------------------------------------------------------------------
+energy:
+  panel:
+    solar_production: Solar Production
+    per_device: Per-Device Consumption
+    total_consumption: Total Consumption
+    breaker_panel: Breaker Panel
+    grid: Grid
+    security: Security
+  # EN | IMPORTANT — these are DISPLAY labels only. The underlying
+  # EN | input_select option values stay in English (Day/Month/Year) in
+  # EN | every language, because they are identifiers compared inside JS.
+  # EN | Translating the stored state would break the comparisons.
+  # FR | IMPORTANT — ce sont uniquement des libelles d'AFFICHAGE. Les
+  # FR | valeurs d'options de l'input_select restent en anglais
+  # FR | (Day/Month/Year) dans toutes les langues, car ce sont des
+  # FR | identifiants compares dans le JS. Traduire l'etat stocke
+  # FR | casserait les comparaisons.
+  tab:
+    day: Day
+    month: Month
+    year: Year
+  stat:
+    annual_capacity: "Annual capacity"
+    of_annual_target: "% of annual target"
+    of_target: "% of target"
+    produced: Produced
+    consumed: Consumed
+    exported: Exported
+    imported: Imported
+    self_consumption: Self-consumption
+    export_revenue: Export revenue
+    total: Total
+  helper:
+    period_name: "Visio Sapiens — Energy period"
+    solar_capacity_name: "Visio Sapiens — Annual solar capacity"
+    export_rate_name: "Visio Sapiens — Export rate"
+
+# ----------------------------------------------------------------------
+# EN | Technical room / network.
+# FR | Local technique / reseau.
+# ----------------------------------------------------------------------
+technical:
+  livebox: Router
+  switch: Network switch
+  nat: Port forwarding
+  systems: Systems
+  board: Connected devices
+  connected: Connected
+  disconnected: Disconnected
+
+# ----------------------------------------------------------------------
+# EN | Shared vocabulary reused across every view.
+# FR | Vocabulaire commun reutilise dans toutes les vues.
+# ----------------------------------------------------------------------
+common:
+  on: "On"
+  off: "Off"
+  open: Open
+  closed: Closed
+  unavailable: Unavailable
+  unknown: Unknown
+  none: None
+  active: Active
+  inactive: Inactive
+  weather: Weather
+  alarm: Alarm
+  alerts: Alerts
+  security: Security
+  settings: Settings
+  backup: Backup
+  delete: Delete
+  confirm: Confirm
+  cancel: Cancel
+  save: Save
+  error: Error
+  failed: Failed
+  success: Success
+  warning: Warning
+  loading: Loading
+
+# ----------------------------------------------------------------------
+# EN | ADMIN panel and generation wizard.
+# FR | Panneau ADMIN et wizard de generation.
+# ----------------------------------------------------------------------
+admin:
+  discovery: DISCOVERY SCAN
+  upgrade: UPGRADE
+  generate: GENERATE DASHBOARDS
+  delete_dashboard: DELETE DASHBOARD
+  pin_prompt: Enter the PIN code
+  backup_created: Backup created
+  system_dashboards: System dashboards
+
+wizard:
+  # EN | Phase 0 — the language question this whole engine exists for.
+  # FR | Phase 0 — la question de langue pour laquelle ce moteur existe.
+  language_step_title: Interface language
+  language_step_help: >-
+    Choose the language of the generated dashboards. English is the
+    default; other languages fall back to English for anything not
+    translated yet.
+  phase1_title: "PHASE 1 — ROOMS & FLOORS"
+  phase2_title: "PHASE 2 — DEVICE ASSIGNMENT"
+  phase3_title: "PHASE 3 — FLOOR PLAN"
+  phase4_title: "PHASE 4 — PUSH TO GIT"
+  next: Next
+  back: Back
+  finish: Finish
+
+# ----------------------------------------------------------------------
+# EN | Date and time.
+# EN | Prefer Intl.DateTimeFormat(locale_tag) in JS — it already knows every
+# EN | language. The arrays below exist only as an override when you want
+# EN | exact control over the wording (casing, trailing dot, width).
+# FR | Date et heure.
+# FR | Preferer Intl.DateTimeFormat(locale_tag) en JS — il connait deja
+# FR | toutes les langues. Les tableaux ci-dessous n'existent que comme
+# FR | surcharge quand on veut un controle exact du libelle (casse, point
+# FR | final, largeur).
+# ----------------------------------------------------------------------
+date:
+  weekday_short: [Sun, Mon, Tue, Wed, Thu, Fri, Sat]
+  weekday_long: [Sunday, Monday, Tuesday, Wednesday, Thursday, Friday, Saturday]
+  month_short: [Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec]
+  month_long:
+    - January
+    - February
+    - March
+    - April
+    - May
+    - June
+    - July
+    - August
+    - September
+    - October
+    - November
+    - December
+  today: Today
+  yesterday: Yesterday
+  now: Now
