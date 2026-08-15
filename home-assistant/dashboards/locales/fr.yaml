@@ -26,6 +26,37 @@ meta:
   currency_symbol: "€"
   decimal_separator: ","
 
+# EN | Room catalogue. The keys stay in English — only the labels change.
+# FR | Catalogue de pieces. Les cles restent en anglais — seuls les
+# FR | libelles changent.
+room:
+  kitchen: Cuisine
+  living_room: Salon
+  dining_room: Salle à manger
+  entrance: Entrée
+  laundry: Buanderie
+  technical: Local technique
+  garage: Garage
+  cellar: Cave
+  bedroom: Chambre            # (n)
+  bathroom: Salle de bain     # (n)
+  toilet: Toilettes           # (n)
+  garden: Jardin
+  pool: Piscine
+  jacuzzi: Jacuzzi
+  roof: Toit de la maison
+  computer: Bureau & salle informatique
+
+system:
+  home: Accueil
+  core: Cœur
+  energy: Énergie
+  admin: Admin
+
+format:
+  mobile: Mobile
+  tablet: Tablette
+
 dashboard:
   main:
     title: Visio-Sapiens
@@ -42,16 +73,8 @@ dashboard:
 
 nav:
   home: ACCUEIL
-  living: SALON
-  bedroom1: CHAMBRE 1
-  bedroom2: CHAMBRE 2
-  bathroom: SALLE DE BAIN
-  computer: BUREAU
-  technical: TECHNIQUE
-  secret: SECRÈTE
-  garden: JARDIN
-  energy: ÉNERGIE
   core: CŒUR
+  energy: ÉNERGIE
   admin: ADMIN
 
 page:
@@ -143,13 +166,21 @@ common:
   loading: Chargement
 
 admin:
+  console_title: Console d'administration
   discovery: SCAN DE DÉCOUVERTE
   upgrade: MISE À NIVEAU
   generate: GÉNÉRER LES DASHBOARDS
+  regenerate: REGÉNÉRER
   delete_dashboard: SUPPRIMER LE DASHBOARD
   pin_prompt: Saisissez le code PIN
   backup_created: Sauvegarde créée
   system_dashboards: Dashboards système
+  select_language: Langue de l'interface
+  select_format: Format cible
+  room_count: Nombre de pièces
+  add_room: Ajouter une pièce
+  remove_room: Retirer
+  generated_at: Dernière génération
 
 wizard:
   language_step_title: Langue de l'interface
@@ -157,6 +188,11 @@ wizard:
     Choisissez la langue des dashboards générés. L'anglais est la langue
     par défaut ; les autres langues retombent sur l'anglais pour tout ce
     qui n'est pas encore traduit.
+  format_step_title: Format cible
+  format_step_help: >-
+    Mobile produit la disposition compacte sur une colonne ; Tablette
+    produit le HUD complet avec le bandeau de navigation. Les deux
+    peuvent être générés.
   phase1_title: "PHASE 1 — PIÈCES & ÉTAGES"
   phase2_title: "PHASE 2 — ASSIGNATION DES APPAREILS"
   phase3_title: "PHASE 3 — PLAN DE LA MAISON"
