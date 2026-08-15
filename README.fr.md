@@ -29,6 +29,15 @@ maison (`www/vssp/`), générateur Jinja2. CI/CD GitLab → k3s.
 
 ## Catalogue de dashboards
 
+### Bandeau horizontal
+
+Chaque dashboard — de pièce comme système — s'ouvre sur le même bandeau
+horizontal, rendu depuis un partial `header.j2` partagé : **nom du
+dashboard, météo, date et heure**. Le nom vient de `t('room.kitchen')` ou
+`t('system.energy')`, il suit donc la langue choisie ; la date et l'heure
+viennent d'`Intl` avec l'étiquette de langue. Un seul partial, inclus par
+tous les templates — le bandeau n'est jamais dupliqué.
+
 ### Dashboards de pièce
 
 La console admin propose un catalogue fermé de pièces. Chaque pièce
@@ -57,6 +66,63 @@ générateur ajoute l'index (`Chambre 1`, `Chambre 2`, …). L'identifiant de
 pièce (`bedroom`, `living_room`, …) reste en anglais dans toutes les
 langues — il alimente les `entity_id`, les chemins de navigation et les
 noms de fichiers.
+
+### Tableaux de pièce
+
+Sous le bandeau, un dashboard de pièce dispose un **nombre fixe de
+panneaux**, appelés tableaux. Le nombre est fixe pour que la grille HUD
+soit dessinée une fois et jamais déformée par une pièce contenant plus
+d'appareils qu'une autre.
+
+| # | id | Contient |
+|---|---|---|
+| 1 | `climate` | température, chauffage, climatisation, thermostat |
+| 2 | `lights` | éclairages |
+| 3 | `appliances` | électroménager, TV, home cinéma, console, cave à vin, SPA, VMC, sèche-serviettes |
+| 4 | `shutters` | volets roulants |
+| 5 | `security` | alarme, interphone, caméra |
+| 6 | `audio` | flux audio |
+
+L'identifiant de tableau est **normalisé** : la même chaîne sert de clé
+dans `house.yaml`, de `grid-area` CSS et de nom de section dans le
+template. Il n'est jamais traduit — seul son libellé l'est, via `slot.*`.
+
+Deux pièces utilisent un jeu de tableaux réduit. Cela ne duplique pas le
+template : cela dit seulement quels tableaux sont candidats.
+
+| Jeu de tableaux | Tableaux |
+|---|---|
+| `default` | climate, lights, appliances, shutters, security, audio |
+| `toilet` | climate, lights, shutters, audio |
+| `garden` | climate, lights, appliances, security, audio |
+
+Les équipements de jardin (piscine, jacuzzi, sauna, robot tondeuse, robot
+piscine) tombent dans `appliances` — aucune règle particulière.
+
+**Tableaux vides.** Un tableau hors du jeu de la pièce n'est pas rendu du
+tout : il s'effondre et ses voisins s'étendent sur la grille. Un tableau
+appartenant au jeu mais ne contenant encore aucun appareil affiche
+`slot.empty` — la distinction compte, car des toilettes n'auront jamais de
+volet alors qu'un salon peut simplement ne pas l'avoir encore intégré.
+L'animation Visio Sapiens remplit au plus un tableau par dashboard,
+`shutters` en priorité.
+
+**La hauteur des tableaux est fixe.** Une cuisine peut contenir douze
+appareils dans `appliances` et un couloir un seul. Les listes défilent à
+l'intérieur de leur panneau au lieu de l'étirer, pour que tous les
+dashboards de pièce gardent la même emprise.
+
+**Le tableau audio a trois états**, car un flux existe indépendamment de
+sa sortie :
+
+| État | Rendu |
+|---|---|
+| flux + enceintes | media player avec sélecteur de sortie |
+| flux, aucune enceinte | media player + `slot.audio_no_speaker` |
+| rien du tout | effondré |
+
+C'est le seul tableau où le formulaire distingue deux rôles — **source**
+et **sortie** — au lieu de porter une liste plate.
 
 ### Dashboards système
 
@@ -100,12 +166,33 @@ maintenir la maison. Elle pilote la génération via trois entrées :
 | Sélecteur de langue | Français / Anglais | choisit le catalogue de langue utilisé pour chaque libellé généré |
 | Sélecteur de format | Mobile / Tablette | choisit la variante de disposition du template |
 | Formulaire de pièces | le catalogue ci-dessus, avec un nombre pour les pièces *(n)* | détermine combien de dashboards de pièce sont générés et la longueur du bandeau de navigation |
+| Assignation des appareils | chaque appareil découvert → une pièce **et** un tableau | remplit les six panneaux de chaque dashboard de pièce |
 
 Ces trois réponses sont écrites dans `dashboards/model/house.yaml`, qui
-est la source de vérité unique. Régénérer depuis ce modèle est
-idempotent : les pièces ajoutées plus tard sont créées, le bandeau est
-re-rendu, et les dashboards existants sont rafraîchis plutôt que
-dupliqués.
+est la source de vérité unique. Le formulaire assigne aussi chaque
+appareil à une pièce **et à un tableau**, si bien que le modèle est plat
+et que le template ne route rien :
+
+```yaml
+rooms:
+  - id: living_room
+    slot_set: default
+    slots:
+      climate:    [climate.living_room_ac]
+      lights:     [light.living_room_ceiling, light.living_room_strip]
+      appliances: [media_player.tv, media_player.ps5]
+      shutters:   [cover.living_room]
+      security:   []
+      audio:
+        source: [media_player.spotify]
+        output: [media_player.sonos_living]
+```
+
+L'ordre dans une liste est celui défini dans le formulaire, pas un tri
+alphabétique — tu décides que la TV passe avant la console sans renommer
+d'entité. Régénérer depuis ce modèle est idempotent : les pièces ajoutées
+plus tard sont créées, le bandeau est re-rendu, et les dashboards
+existants sont rafraîchis plutôt que dupliqués.
 
 ## Langue
 
@@ -164,7 +251,7 @@ aucune modification de code nulle part.
 | Chaînes visibles par l'utilisateur | jamais en dur — elles vivent dans les catalogues de langue |
 | Documentation (`.md`) | un fichier par langue : `X.md` (anglais) + `X.fr.md`, avec une ligne de bascule en tête |
 | Logs des jobs CI, messages de commit, noms de branches | anglais uniquement — destinés au développeur, hors produit localisé |
-| Identifiants | anglais uniquement, jamais traduits : clés de pièces, `entity_id`, `path` / `navigation_path`, noms de templates button-card, valeurs d'options `input_select`, noms de `grid-area`, noms de fichiers |
+| Identifiants | anglais uniquement, jamais traduits : clés de pièces, identifiants de tableaux, `entity_id`, `path` / `navigation_path`, noms de templates button-card, valeurs d'options `input_select`, noms de `grid-area`, noms de fichiers |
 
 ## Arborescence du repo
 
