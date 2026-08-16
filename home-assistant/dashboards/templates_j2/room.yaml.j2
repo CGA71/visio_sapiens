@@ -1,0 +1,578 @@
+########################################################################
+# Visio Sapiens — ROOM Dashboard (single shared template)
+#
+# EN | *** GENERATED FILE — DO NOT EDIT BY HAND ***
+# EN | Source: room.yaml.j2 + model/house.yaml + locales/<code>.yaml
+# EN | Regenerate with: python3 generate_dashboards.py
+# FR | *** FICHIER GENERE — NE PAS EDITER A LA MAIN ***
+# FR | Source : room.yaml.j2 + model/house.yaml + locales/<code>.yaml
+# FR | Regenerer avec : python3 generate_dashboards.py
+#
+# EN | ONE template renders EVERY room. The differences live in the data —
+# EN | slot set and device lists — never in a second template. A kitchen and
+# EN | a garage differ by what house.yaml says they contain, not by their
+# EN | markup.
+# FR | UN template rend TOUTES les pieces. Les differences vivent dans la
+# FR | donnee — jeu de tableaux et listes d'appareils — jamais dans un second
+# FR | template. Une cuisine et un garage different par ce que house.yaml dit
+# FR | qu'elles contiennent, pas par leur balisage.
+#
+# EN | THE SIX SLOTS / FR | LES SIX TABLEAUX
+#   1 climate     temperature, heating, air conditioning, thermostat
+#   2 lights      lighting
+#   3 appliances  white goods, TV, home cinema, console, wine fridge, spa,
+#                 HRV, towel rail — LINE BY LINE, with a scrollbar
+#   4 shutters    roller shutters
+#   5 security    alarm, intercom, camera — OVERSIZED: an intercom video
+#                 feed, a camera mosaic and the alarm state need room
+#   6 audio       audio stream, with speaker output selection
+#
+# EN | SLOT STATES — set by generate_dashboards.py, not decided here:
+# EN |   filled  the slot holds at least one device
+# EN |   empty   the slot is in the room's set but holds nothing yet
+# EN |           -> shows slot.empty, because a shutter may still be added
+# EN |   filler  empty, and carries the Visio Sapiens animation (one per
+# EN |           dashboard at most, shutters first)
+# EN | A slot OUTSIDE the room's set never reaches this template: it is
+# EN | absent from room.slots and absent from the grid areas below, so it
+# EN | collapses and its neighbours expand.
+# FR | ETATS DES TABLEAUX — poses par generate_dashboards.py, pas decides ici :
+# FR |   filled  le tableau contient au moins un appareil
+# FR |   empty   le tableau est dans le jeu de la piece mais ne contient rien
+# FR |           -> affiche slot.empty, car un volet peut encore etre ajoute
+# FR |   filler  vide, et porte l'animation Visio Sapiens (au plus une par
+# FR |           dashboard, shutters en priorite)
+# FR | Un tableau HORS du jeu de la piece n'atteint jamais ce template : il
+# FR | est absent de room.slots et absent des grid areas ci-dessous, donc il
+# FR | s'effondre et ses voisins s'etendent.
+#
+# EN | PREREQUISITES / FR | PREREQUIS
+#   Same button-card templates as energy.yaml.j2
+#   (vssp_page_header, vssp_nav_button, vssp_sidebar_logo,
+#    vssp_section_title, vssp_energy_device_row).
+########################################################################
+
+{#- =====================================================================
+    EN | GRID LAYOUT — comes from the data (house.yaml `layouts:`, merged
+    EN | with the defaults in generate_dashboards.py), NOT from this file.
+    EN | Two reasons: a grid can be tuned without touching the template, and
+    EN | validate_layouts() checks the very same values before rendering.
+    EN | That check matters more than it looks: a slot present in the set but
+    EN | absent from the areas below would produce a card whose grid-area does
+    EN | not exist — the panel would simply not be displayed, silently.
+    FR | GABARIT DE GRILLE — vient de la donnee (house.yaml `layouts:`,
+    FR | fusionne avec les defauts de generate_dashboards.py), PAS de ce
+    FR | fichier. Deux raisons : une grille se regle sans toucher au template,
+    FR | et validate_layouts() controle exactement ces valeurs avant le rendu.
+    FR | Ce controle compte plus qu'il n'y parait : un tableau present dans le
+    FR | jeu mais absent des zones ci-dessous produirait une carte au
+    FR | grid-area inexistant — le panneau ne s'afficherait pas, en silence.
+    ================================================================== #}
+{%- set layout = layouts.get(room.slot_set, layouts['default']) -%}
+{%- set filler_media = house.filler_animation | default('/local/vssp/images/vssp_loop.gif', true) -%}
+
+title: {{ room.label }}
+theme: {{ house.theme }}
+
+# EN | Without these includes every custom:button-card shows "Configuration
+# EN | error". Path is relative to dashboards/views/.
+# FR | Sans ces includes, chaque custom:button-card affiche « Erreur de
+# FR | configuration ». Chemin relatif a dashboards/views/.
+button_card_templates: !include ../templates/button_card_templates.yaml
+decluttering_templates: !include ../templates/decluttering_templates.yaml
+
+views:
+  - title: {{ room.label }}
+    path: {{ room.id }}
+    subview: false
+{% if format == 'mobile' %}
+    # EN | Mobile: one column, no rail. Reading order puts the slots you
+    # EN | reach for first at the top — nobody wants to scroll to switch a
+    # EN | light on.
+    # FR | Mobile : une colonne, sans bandeau. L'ordre de lecture place en
+    # FR | haut les tableaux qu'on cherche en premier — personne ne veut
+    # FR | scroller pour allumer une lampe.
+    type: custom:vertical-layout
+    layout:
+      margin: 8px
+      card_margin: 8px
+{% else %}
+    type: custom:grid-layout
+    layout:
+      grid-template-columns: minmax(200px, auto) 1fr 1fr 1fr 1fr 1fr
+      grid-template-rows: {{ layout.rows }}
+      grid-template-areas: |
+{% for line in layout.areas %}
+        "{{ line }}"
+{% endfor %}
+      margin: 12px
+      grid-gap: 14px 14px
+{% endif %}
+    cards:
+      # ═══════════════════════════════════════════════════════════════
+      # EN | HEADER BAND — shared partial, identical on every dashboard
+      # FR | BANDEAU HORIZONTAL — partial partage, identique partout
+      # ═══════════════════════════════════════════════════════════════
+{% set page_title = room.name %}
+{% set page_subtitle = room.label %}
+{% set page_path = room.path_mobile if format == 'mobile' else room.path %}
+{% include '_header.j2' %}
+
+{% if format != 'mobile' %}
+      # ═══════════════════════════════════════════════════════════════
+      # EN | NAVIGATION RAIL — dynamic, 4 system entries + rooms
+      # FR | BANDEAU DE NAVIGATION — dynamique, 4 entrees systeme + pieces
+      # ═══════════════════════════════════════════════════════════════
+{% include '_nav.j2' %}
+{% endif %}
+
+{% set mobile_order = ['climate', 'lights', 'security', 'appliances', 'shutters', 'audio'] %}
+{% set slot_order = mobile_order if format == 'mobile' else slots %}
+{% for slot_id in slot_order if slot_id in room.slots %}
+{% set slot = room.slots[slot_id] %}
+      # ═══════════════════════════════════════════════════════════════
+      # EN | SLOT {{ loop.index }} — {{ slot_id | upper }} ({{ slot.state }})
+      # FR | TABLEAU {{ loop.index }} — {{ slot_id | upper }} ({{ slot.state }})
+      # ═══════════════════════════════════════════════════════════════
+      - type: vertical-stack
+{% if format != 'mobile' %}
+        view_layout:
+          grid-area: {{ slot_id }}
+{% endif %}
+        card_mod:
+          style: |
+            :host {
+              display: flex;
+              flex-direction: column;
+              height: 100%;
+              background: rgba(8,18,28,0.75);
+              border-radius: 20px;
+              border: 1px solid rgba(0,229,255,0.28);
+              backdrop-filter: blur(12px);
+              box-shadow: 0 0 18px rgba(0,229,255,.15);
+              padding: 16px 18px;
+              overflow: hidden;
+            }
+        cards:
+          - type: custom:button-card
+            template: vssp_section_title
+            name: "{{ t('slot.' ~ slot_id) }}"
+
+{% if slot.state == 'empty' %}
+          # EN | The slot belongs to this room's set but holds no device yet.
+          # EN | It is NOT "coming soon": nothing is promised. It simply
+          # EN | states that the place exists and is available — assign a
+          # EN | device to it in the admin console and it fills in.
+          # FR | Le tableau appartient au jeu de cette piece mais ne contient
+          # FR | encore aucun appareil. Ce n'est PAS « bientot disponible » :
+          # FR | rien n'est promis. Il indique simplement que la place existe
+          # FR | et est disponible — assignez-lui un appareil dans la console
+          # FR | admin et il se remplit.
+          - type: custom:button-card
+            show_icon: true
+            show_name: false
+            show_state: false
+            show_label: true
+            icon: mdi:tray-remove
+            label: "{{ t('slot.empty') }}"
+            tap_action:
+              action: none
+            styles:
+              card:
+                - background: transparent
+                - box-shadow: none
+                - border: none
+                - flex: 1 1 auto
+                - cursor: default
+                - pointer-events: none
+              icon:
+                - color: rgba(143,182,201,0.35)
+                - "--mdc-icon-size": 40px
+              label:
+                - color: rgba(143,182,201,0.55)
+                - font-size: 12px
+                - letter-spacing: .6px
+                - margin-top: 8px
+
+{% elif slot.state == 'filler' %}
+          # EN | Visio Sapiens animation. At most ONE per dashboard, chosen by
+          # EN | the generator — several identical panels on one screen would
+          # EN | read as a broken interface rather than a signature.
+          # FR | Animation Visio Sapiens. Au plus UNE par dashboard, choisie
+          # FR | par le generateur — plusieurs panneaux identiques sur un meme
+          # FR | ecran se liraient comme une interface cassee, pas comme une
+          # FR | signature.
+          - type: custom:button-card
+            show_icon: false
+            show_name: false
+            show_state: false
+            tap_action:
+              action: none
+            custom_fields:
+              anim: >
+                <img src="{{ filler_media }}"
+                     style="width:100%;height:100%;object-fit:cover;border-radius:14px;opacity:.75;mix-blend-mode:screen;" />
+            styles:
+              card:
+                - background: transparent
+                - box-shadow: none
+                - border: none
+                - padding: 0
+                - flex: 1 1 auto
+                - cursor: default
+                - pointer-events: none
+              grid:
+                - grid-template-areas: '"anim"'
+              custom_fields:
+                anim:
+                  - width: 100%
+                  - height: 100%
+
+{% elif slot_id == 'appliances' %}
+          # EN | LINE BY LINE, WITH A SCROLLBAR.
+          # EN | Same idiom as the ENERGY device list: the scrolling lives
+          # EN | INSIDE a single button-card whose custom field has a fixed
+          # EN | height and overflow-y. button-card's own style engine handles
+          # EN | it, not card-mod.
+          # EN | This is what keeps the HUD grid rigid: a kitchen with twelve
+          # EN | devices and a hallway with one occupy exactly the same
+          # EN | footprint, so every room dashboard looks like the others.
+          # FR | LIGNE PAR LIGNE, AVEC UN ASCENSEUR.
+          # FR | Meme idiome que la liste d'appareils ENERGY : le defilement
+          # FR | vit DANS une seule button-card dont le champ custom a une
+          # FR | hauteur fixe et overflow-y. C'est le moteur de styles de
+          # FR | button-card qui s'en charge, pas card-mod.
+          # FR | C'est ce qui garde la grille HUD rigide : une cuisine a douze
+          # FR | appareils et un couloir a un seul occupent exactement la meme
+          # FR | emprise, donc tous les dashboards de piece se ressemblent.
+          - type: custom:button-card
+            show_icon: false
+            show_name: false
+            show_state: false
+            tap_action:
+              action: none
+            styles:
+              grid:
+                - grid-template-areas: '"list"'
+              card:
+                - background: transparent
+                - box-shadow: none
+                - border: none
+                - border-radius: 0
+                - padding: 0
+                - cursor: default
+              custom_fields:
+                list:
+                  - display: block
+                  - width: 100%
+                  - height: {{ '320px' if format != 'mobile' else '260px' }}
+                  - overflow-y: auto
+                  - overflow-x: hidden
+                  - padding-right: 4px
+                  - scrollbar-width: thin
+                  - scrollbar-color: rgba(0,229,255,0.35) rgba(0,229,255,0.06)
+            custom_fields:
+              list:
+                card:
+                  type: vertical-stack
+                  cards:
+{% for e in slot.entities %}
+                    # EN | Order is the one set in the admin console, not an
+                    # EN | alphabetical sort — you decide the TV comes before
+                    # EN | the console without renaming an entity.
+                    # FR | L'ordre est celui defini dans la console admin, pas
+                    # FR | un tri alphabetique — tu decides que la TV passe
+                    # FR | avant la console sans renommer d'entite.
+                    - type: custom:button-card
+                      entity: {{ e }}
+                      show_state: true
+                      show_label: false
+                      size: 22px
+                      styles:
+                        grid:
+                          - grid-template-areas: '"i n s"'
+                          - grid-template-columns: 32px 1fr auto
+                          - align-items: center
+                          - column-gap: 10px
+                        card:
+                          - background: rgba(0,0,0,.22)
+                          - border: 1px solid rgba(0,229,255,.12)
+                          - border-radius: 12px
+                          - padding: 8px 12px
+                          - margin-bottom: 6px
+                          - height: 46px
+                        name:
+                          - justify-self: start
+                          - font-size: 13px
+                          - color: "#DCEEF6"
+                        state:
+                          - justify-self: end
+                          - font-size: 12px
+                          - color: "#00E5FF"
+                        icon:
+                          - color: "#00E5FF"
+                      tap_action:
+                        action: toggle
+                      hold_action:
+                        action: more-info
+{% endfor %}
+
+{% elif slot_id == 'security' %}
+          # EN | OVERSIZED SLOT — it carries three things of different visual
+          # EN | natures: an alarm state (a word), an intercom (a video feed)
+          # EN | and cameras (a mosaic). Squeezing them into one card would
+          # EN | work for the first and cramp the other two, which is why this
+          # EN | slot spans three columns and two rows in the grid above.
+          # FR | TABLEAU SURDIMENSIONNE — il porte trois choses de natures
+          # FR | visuelles differentes : un etat d'alarme (un mot), un
+          # FR | interphone (un flux video) et des cameras (une mosaique). Les
+          # FR | tasser dans une seule carte marcherait pour la premiere et
+          # FR | serrerait les deux autres, d'ou les trois colonnes et deux
+          # FR | lignes que ce tableau occupe dans la grille ci-dessus.
+{% set alarms = slot.by_domain.get('alarm_control_panel', []) %}
+{% set cameras = slot.by_domain.get('camera', []) %}
+{% set others = slot.entities | reject('in', alarms + cameras) | list %}
+{% if alarms %}
+          # EN | Alarm state: armed / disarmed / triggered
+          # FR | Etat de l'alarme : arme / desarme / declenche
+          - type: horizontal-stack
+            cards:
+{% for e in alarms %}
+              - type: custom:button-card
+                entity: {{ e }}
+                show_state: true
+                show_name: true
+                size: 30px
+                state:
+                  - value: "disarmed"
+                    color: "#8FB6C9"
+                    icon: mdi:shield-off-outline
+                  - value: "triggered"
+                    color: "#FF4D6D"
+                    icon: mdi:shield-alert
+                  - operator: default
+                    color: "#00FFC3"
+                    icon: mdi:shield-check
+                styles:
+                  card:
+                    - background: rgba(0,0,0,.28)
+                    - border: 1px solid rgba(0,229,255,.18)
+                    - border-radius: 14px
+                    - padding: 10px
+                    - height: 96px
+                  name:
+                    - font-size: 12px
+                    - color: "#8FB6C9"
+                  state:
+                    - font-size: 15px
+                    - font-family: Orbitron, sans-serif
+                    - text-transform: uppercase
+                tap_action:
+                  action: more-info
+{% endfor %}
+{% endif %}
+{% if cameras %}
+          # EN | Camera mosaic — a live feed per camera, two per row. The
+          # EN | intercom is a camera like any other: it lands here and gets
+          # EN | its own visible feed rather than a thumbnail.
+          # FR | Mosaique de cameras — un flux direct par camera, deux par
+          # FR | ligne. L'interphone est une camera comme une autre : il
+          # FR | atterrit ici et obtient son propre flux visible plutot qu'une
+          # FR | vignette.
+          - type: grid
+            columns: 2
+            square: false
+            cards:
+{% for e in cameras %}
+              - type: picture-entity
+                entity: {{ e }}
+                camera_view: live
+                show_name: true
+                show_state: false
+                card_mod:
+                  style: |
+                    ha-card {
+                      background: rgba(0,0,0,.35) !important;
+                      border: 1px solid rgba(0,229,255,.18) !important;
+                      border-radius: 14px !important;
+                      overflow: hidden;
+                    }
+{% endfor %}
+{% endif %}
+{% if others %}
+          # EN | Contacts, motion detectors, locks, sirens
+          # FR | Contacts, detecteurs de mouvement, serrures, sirenes
+          - type: grid
+            columns: 2
+            square: false
+            cards:
+{% for e in others %}
+              - type: custom:button-card
+                entity: {{ e }}
+                show_state: true
+                size: 22px
+                styles:
+                  card:
+                    - background: rgba(0,0,0,.22)
+                    - border: 1px solid rgba(0,229,255,.12)
+                    - border-radius: 12px
+                    - padding: 8px
+                  name:
+                    - font-size: 12px
+                    - color: "#DCEEF6"
+                  state:
+                    - font-size: 11px
+                    - color: "#00E5FF"
+                tap_action:
+                  action: more-info
+{% endfor %}
+{% endif %}
+
+{% elif slot_id == 'audio' %}
+          # EN | AUDIO — the stream exists independently of its output, which
+          # EN | is why this is the one slot the form fills with two roles.
+          # EN | Three states: stream + speakers, stream without speaker, and
+          # EN | nothing at all (handled above as empty/filler).
+          # FR | AUDIO — le flux existe independamment de sa sortie, c'est
+          # FR | pourquoi c'est le seul tableau que le formulaire remplit avec
+          # FR | deux roles. Trois etats : flux + enceintes, flux sans
+          # FR | enceinte, et rien du tout (traite plus haut en empty/filler).
+{% for e in slot.source %}
+          - type: media-control
+            entity: {{ e }}
+            card_mod:
+              style: |
+                ha-card {
+                  background: rgba(0,0,0,.28) !important;
+                  border: 1px solid rgba(0,229,255,.18) !important;
+                  border-radius: 14px !important;
+                }
+{% endfor %}
+{% if slot.has_speaker %}
+          # EN | Output selection — which speaker plays the stream
+          # FR | Selection de la sortie — quelle enceinte diffuse le flux
+          - type: custom:button-card
+            show_icon: false
+            show_name: false
+            show_state: false
+            show_label: true
+            label: "{{ t('slot.audio_output') }}"
+            tap_action:
+              action: none
+            styles:
+              card:
+                - background: transparent
+                - box-shadow: none
+                - border: none
+                - padding: 8px 0 4px 0
+                - cursor: default
+              label:
+                - justify-self: start
+                - font-size: 11px
+                - letter-spacing: .6px
+                - color: "#8FB6C9"
+          - type: grid
+            columns: 2
+            square: false
+            cards:
+{% for e in slot.output %}
+              - type: custom:button-card
+                entity: {{ e }}
+                show_state: true
+                size: 20px
+                styles:
+                  card:
+                    - background: rgba(0,0,0,.22)
+                    - border: 1px solid rgba(0,229,255,.12)
+                    - border-radius: 12px
+                    - padding: 8px
+                  name:
+                    - font-size: 12px
+                    - color: "#DCEEF6"
+                  state:
+                    - font-size: 11px
+                    - color: "#00E5FF"
+                tap_action:
+                  action: more-info
+{% endfor %}
+{% else %}
+          # EN | A stream with nowhere to play it. Saying so is more useful
+          # EN | than an empty control the user would tap without result.
+          # FR | Un flux sans rien pour le diffuser. Le dire est plus utile
+          # FR | qu'un controle vide sur lequel l'utilisateur appuierait sans
+          # FR | resultat.
+          - type: custom:button-card
+            show_icon: true
+            show_name: false
+            show_state: false
+            show_label: true
+            icon: mdi:speaker-off
+            label: "{{ t('slot.audio_no_speaker') }}"
+            tap_action:
+              action: none
+            styles:
+              card:
+                - background: transparent
+                - box-shadow: none
+                - border: none
+                - padding: 10px 0
+                - cursor: default
+                - pointer-events: none
+              icon:
+                - color: rgba(143,182,201,0.45)
+                - "--mdc-icon-size": 28px
+              label:
+                - color: rgba(143,182,201,0.65)
+                - font-size: 12px
+                - margin-top: 6px
+{% endif %}
+
+{% else %}
+          # EN | CLIMATE / LIGHTS / SHUTTERS — one row per device, same
+          # EN | vocabulary as the appliances list but without the scrollbar:
+          # EN | these slots hold few entities by nature.
+          # FR | CLIMATE / LIGHTS / SHUTTERS — une ligne par appareil, meme
+          # FR | vocabulaire que la liste appliances mais sans ascenseur : ces
+          # FR | tableaux contiennent peu d'entites par nature.
+{% for e in slot.entities %}
+          - type: custom:button-card
+            entity: {{ e }}
+            show_state: true
+            size: 24px
+            styles:
+              grid:
+                - grid-template-areas: '"i n s"'
+                - grid-template-columns: 34px 1fr auto
+                - align-items: center
+                - column-gap: 10px
+              card:
+                - background: rgba(0,0,0,.22)
+                - border: 1px solid rgba(0,229,255,.12)
+                - border-radius: 12px
+                - padding: 10px 12px
+                - margin-bottom: 8px
+                - height: 52px
+              name:
+                - justify-self: start
+                - font-size: 13px
+                - color: "#DCEEF6"
+              state:
+                - justify-self: end
+                - font-size: 13px
+                - font-family: Orbitron, sans-serif
+                - color: "#00E5FF"
+              icon:
+                - color: "#00E5FF"
+{% if slot_id == 'shutters' %}
+            tap_action:
+              action: more-info
+{% else %}
+            tap_action:
+              action: toggle
+            hold_action:
+              action: more-info
+{% endif %}
+{% endfor %}
+{% endif %}
+
+{% endfor %}
