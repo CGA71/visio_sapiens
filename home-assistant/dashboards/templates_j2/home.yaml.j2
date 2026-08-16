@@ -55,8 +55,17 @@ title: {{ house.name | title }}
 path: visio-sapiens
 theme: {{ house.theme }}
 
-button_card_templates: !include templates/button_card_templates.yaml
-decluttering_templates: !include templates/decluttering_templates.yaml
+# EN | Paths relative to dashboards/views/, where every generated dashboard
+# EN | now lives. The hand-written home.yaml sat one level up, in
+# EN | dashboards/, and used `templates/...`; keeping all outputs in one
+# EN | directory means one include convention instead of two.
+# FR | Chemins relatifs a dashboards/views/, ou vivent desormais tous les
+# FR | dashboards generes. Le home.yaml ecrit a la main etait un niveau
+# FR | au-dessus, dans dashboards/, et utilisait `templates/...` ; regrouper
+# FR | toutes les sorties dans un seul repertoire donne une seule convention
+# FR | d'include au lieu de deux.
+button_card_templates: !include ../templates/button_card_templates.yaml
+decluttering_templates: !include ../templates/decluttering_templates.yaml
 
 views:
   # =====================================================================
@@ -617,7 +626,7 @@ views:
       # --- Dashboards systeme (hors pieces) -------------------------------
       # ENERGY et CORE ne dependent d'aucune piece : ils ne passent pas
       # par le formulaire du wizard. Carte dediee, chargee a part.
-      - !include admin/system_dashboards.yaml
+      - !include ../admin/system_dashboards.yaml
 
       # --- Footer --------------------------------------------------------
       - type: custom:osv-footer-card
