@@ -78,6 +78,18 @@ lovelace:
       icon: mdi:server
       show_in_sidebar: false
       filename: dashboards/views/core.yaml
+    # EN | Mobile variant of CORE. It was missing while house.yaml's
+    # EN | nav_system already pointed at it — the rail had a dead link that
+    # EN | did nothing when clicked, with no error anywhere.
+    # FR | Variante mobile de CORE. Elle manquait alors que le nav_system de
+    # FR | house.yaml pointait deja dessus — le bandeau avait un lien mort qui
+    # FR | ne faisait rien au clic, sans erreur nulle part.
+    visio-sapiens-core-m:
+      mode: yaml
+      title: __T:dashboard.core.title__
+      icon: mdi:server
+      show_in_sidebar: false
+      filename: dashboards/views/core_mobile.yaml
     visio-sapiens-computer:
       mode: yaml
       title: __T:dashboard.computer.title__
