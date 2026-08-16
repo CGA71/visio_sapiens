@@ -1,0 +1,139 @@
+########################################################################
+# Visio Sapiens — CORE Dashboard
+#
+# EN | *** GENERATED FILE — DO NOT EDIT BY HAND ***
+# EN | Source: core.yaml.j2 + model/house.yaml + locales/<code>.yaml
+# EN | Regenerate with: python3 generate_dashboards.py
+# FR | *** FICHIER GENERE — NE PAS EDITER A LA MAIN ***
+# FR | Source : core.yaml.j2 + model/house.yaml + locales/<code>.yaml
+# FR | Regenerer avec : python3 generate_dashboards.py
+#
+# EN | A STANDALONE Lovelace dashboard, declared in configuration.yaml under
+# EN | `lovelace: dashboards:` with url_path "visio-sapiens-core". It keeps
+# EN | the full `title: / views: [...]` wrapper at root level — without it
+# EN | Lovelace loads no card at all (black screen, only the dark theme
+# EN | showing). It must NEVER be pulled into another dashboard with
+# EN | `!include`: the two usages are mutually exclusive.
+# FR | Dashboard Lovelace AUTONOME, declare dans configuration.yaml sous
+# FR | `lovelace: dashboards:` avec l'url_path « visio-sapiens-core ». Il
+# FR | garde le wrapper complet `title: / views: [...]` au niveau racine —
+# FR | sans lui, Lovelace ne charge aucune carte (ecran noir, seul le theme
+# FR | sombre visible). Il ne doit JAMAIS etre tire dans un autre dashboard
+# FR | par `!include` : les deux usages sont exclusifs.
+#
+# EN | THE CONTENT AREA IS ONLY AN IFRAME — deliberately.
+# EN | core.html already builds every gauge, chart, temperature and k3s panel
+# EN | in JavaScript. An earlier version of this view ALSO carried native HA
+# EN | cards doing the same thing, so the page displayed two superimposed
+# EN | versions of the same content. The native duplicates were removed; what
+# EN | remains is the rail, the header band and the iframe.
+# FR | LA ZONE DE CONTENU N'EST QU'UNE IFRAME — volontairement.
+# FR | core.html construit deja en JavaScript toutes les jauges, graphes,
+# FR | temperatures et panneaux k3s. Une version anterieure de cette vue
+# FR | portait EN PLUS des cartes HA natives faisant la meme chose, si bien
+# FR | que la page affichait deux versions superposees du meme contenu. Les
+# FR | doublons natifs ont ete retires ; il reste le bandeau, l'en-tete et
+# FR | l'iframe.
+#
+# EN | FIXED WHILE TEMPLATING — the page header used to navigate to
+# EN | /vssp-core/core, an url_path that is not declared anywhere:
+# EN | config-fragment.yaml declares `visio-sapiens-core`. Tapping the title
+# EN | led to a dashboard that does not exist. The path now comes from the
+# EN | model, so it cannot drift from the declaration again.
+# FR | CORRIGE A LA TEMPLATISATION — l'en-tete de page naviguait vers
+# FR | /vssp-core/core, un url_path declare nulle part :
+# FR | config-fragment.yaml declare « visio-sapiens-core ». Taper le titre
+# FR | menait a un dashboard inexistant. Le chemin vient desormais du modele,
+# FR | il ne peut donc plus diverger de la declaration.
+########################################################################
+
+{# EN | Plain {% ... %}, never {%- ... -%}. The environment already sets
+   EN | trim_blocks and lstrip_blocks, so a tag alone on its line disappears
+   EN | cleanly. Adding the `-` markers strips the surrounding newlines too,
+   EN | which glued `title:` onto the closing #### line of the header comment
+   EN | — the key ended up inside a comment and every generated dashboard
+   EN | silently lost its title.
+   FR | {% ... %} simple, jamais {%- ... -%}. L'environnement pose deja
+   FR | trim_blocks et lstrip_blocks, donc une balise seule sur sa ligne
+   FR | disparait proprement. Ajouter les marqueurs `-` supprime aussi les
+   FR | sauts de ligne alentour, ce qui a colle `title:` sur la ligne ####
+   FR | fermant le commentaire d'en-tete — la cle s'est retrouvee dans un
+   FR | commentaire et chaque dashboard genere a perdu son titre en silence. #}
+{# EN | The rail entry for this dashboard, so the header and the navigation
+    EN | always agree on where CORE lives.
+    FR | L'entree de bandeau de ce dashboard, pour que l'en-tete et la
+    FR | navigation s'accordent toujours sur l'emplacement de CORE. #}
+{% set core_nav = (nav | selectattr('id', 'equalto', 'core') | list | first) %}
+
+title: {{ t('system.core') }}
+theme: {{ house.theme }}
+
+# EN | Without these includes every custom:button-card shows "Configuration
+# EN | error" — the vssp_* templates (nav_button, page_header, sidebar_logo)
+# EN | live in that shared file. Path is relative to dashboards/views/.
+# FR | Sans ces includes, chaque custom:button-card affiche « Erreur de
+# FR | configuration » — les templates vssp_* (nav_button, page_header,
+# FR | sidebar_logo) vivent dans ce fichier partage. Chemin relatif a
+# FR | dashboards/views/.
+button_card_templates: !include ../templates/button_card_templates.yaml
+decluttering_templates: !include ../templates/decluttering_templates.yaml
+
+views:
+  - title: {{ t('page.core.name') }}
+    path: core
+    subview: false
+    type: custom:grid-layout
+    layout:
+      grid-template-columns: minmax(200px, auto) 1fr 1fr 1fr 1fr 1fr
+      grid-template-rows: 105px auto
+      grid-template-areas: |
+        "nav header header header header header"
+        "nav content content content content content"
+      margin: 12px
+      grid-gap: 14px 14px
+    cards:
+      # ═══════════════════════════════════════════════════════════════
+      # EN | HEADER BAND — shared partial, identical on every dashboard
+      # FR | BANDEAU HORIZONTAL — partial partage, identique partout
+      # ═══════════════════════════════════════════════════════════════
+{% set page_title = t('page.core.name') %}
+{% set page_subtitle = t('page.core.subtitle') %}
+{% set page_path = core_nav.path %}
+{% include '_header.j2' %}
+
+      # ═══════════════════════════════════════════════════════════════
+      # EN | NAVIGATION RAIL — shared partial, dynamic
+      # FR | BANDEAU DE NAVIGATION — partial partage, dynamique
+      # ═══════════════════════════════════════════════════════════════
+{% include '_nav.j2' %}
+
+      # ═══════════════════════════════════════════════════════════════
+      # EN | CENTRAL CONTENT — core.html
+      # FR | CONTENU CENTRAL — core.html
+      # ═══════════════════════════════════════════════════════════════
+      # EN | The frame is NOT drawn here: an iframe card ignores card_mod
+      # EN | borders. It is drawn INSIDE core.html (fixed body::before rule).
+      # EN | Here we only set the height; core.html scrolls internally.
+      # FR | L'encadrement n'est PAS dessine ici : une carte iframe ignore les
+      # FR | bordures card_mod. Il est dessine DANS core.html (regle
+      # FR | body::before fixe). Ici, uniquement la hauteur ; core.html defile
+      # FR | a l'interieur.
+      - type: iframe
+        url: /local/vssp/core.html
+        view_layout:
+          grid-area: content
+        card_mod:
+          style: |
+            ha-card {
+              background: transparent !important;
+              border: none !important;
+              box-shadow: none !important;
+              overflow: hidden;
+              height: calc(100vh - 160px);
+              border-radius: 20px;
+            }
+            iframe {
+              width: 100%;
+              height: 100% !important;
+              border: none;
+            }
