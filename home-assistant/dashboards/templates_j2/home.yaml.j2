@@ -470,13 +470,20 @@ views:
     type: custom:grid-layout
     layout:
       grid-template-columns: 1fr 1fr 1fr
-      grid-template-rows: auto auto auto auto auto
+      grid-template-rows: auto auto auto auto
+      # EN | No footer row. The osv-footer-card that used to sit here printed
+      # EN | a brand line plus the time and date BELOW the panel, outside the
+      # EN | dark surface — a second clock on a page whose header already
+      # EN | shows one.
+      # FR | Pas de ligne de pied de page. L'osv-footer-card qui s'y trouvait
+      # FR | affichait une ligne de marque plus l'heure et la date SOUS le
+      # FR | panneau, hors de la surface sombre — une seconde horloge sur une
+      # FR | page dont l'en-tete en montre deja une.
       grid-template-areas: |
         "header header header"
         "generation generation generation"
         "discovery upgrade delete"
         "system system system"
-        "footer footer footer"
       margin: 24px
       grid-gap: 18px 18px
     cards:
@@ -628,11 +635,6 @@ views:
       # par le formulaire du wizard. Carte dediee, chargee a part.
       - !include ../admin/system_dashboards.yaml
 
-      # --- Footer --------------------------------------------------------
-      - type: custom:osv-footer-card
-        label: "{{ house.name }} // {{ t('admin.console_title') | upper }}"
-        view_layout:
-          grid-area: footer
 
     card_mod:
       style: |
