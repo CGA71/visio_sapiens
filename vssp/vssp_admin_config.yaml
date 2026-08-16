@@ -1,44 +1,92 @@
 ########################################################################
-# Visio Sapiens — Configuration ADMIN
-# A inclure dans configuration.yaml, ex:
-#   input_text: !include vssp/vssp_admin_config_input_text.yaml
-# ou a fusionner directement dans configuration.yaml / scripts.yaml.
+# Visio Sapiens — ADMIN configuration
 #
-# Cree aussi le dossier de sauvegarde sur le pod :
+# EN | To include from configuration.yaml, e.g.:
+# EN |   input_text: !include vssp/vssp_admin_config_input_text.yaml
+# EN | or to merge directly into configuration.yaml / scripts.yaml.
+# FR | A inclure depuis configuration.yaml, ex. :
+# FR |   input_text: !include vssp/vssp_admin_config_input_text.yaml
+# FR | ou a fusionner directement dans configuration.yaml / scripts.yaml.
+#
+# EN | Also create the backup folder on the pod:
+# FR | Creer aussi le dossier de sauvegarde sur le pod :
 #   mkdir -p /config/vssp/backups
 ########################################################################
 
 # --------------------------------------------------------------------
-# HELPERS (Parametres > Appareils et services > Aides, ou via ce YAML)
+# EN | HELPERS (Settings > Devices and services > Helpers, or via this YAML)
+# FR | HELPERS (Parametres > Appareils et services > Aides, ou via ce YAML)
 # --------------------------------------------------------------------
 input_text:
   vssp_admin_pin:
-    name: "Visio Sapiens — Code admin (reference)"
+    name: "Visio Sapiens — Admin code (reference)"
     mode: password
     max: 20
   vssp_pin_entry:
-    name: "Visio Sapiens — Saisie du code"
+    name: "Visio Sapiens — Code entry"
     mode: password
     max: 20
-  # Jeton longue duree utilise par vssp_discovery.py et
-  # vssp_energy_sync.py (Profil > Jetons d'acces longue duree).
-  # Sans ce helper, les shell_command correspondants s'executent avec un
-  # token vide et le panneau affiche « Entite non trouvee ».
+  # EN | Long-lived token used by vssp_discovery.py and vssp_energy_sync.py
+  # EN | (Profile > Long-lived access tokens). Without this helper the
+  # EN | matching shell_commands run with an empty token and the panel shows
+  # EN | "Entity not found".
+  # FR | Jeton longue duree utilise par vssp_discovery.py et
+  # FR | vssp_energy_sync.py (Profil > Jetons d'acces longue duree). Sans ce
+  # FR | helper, les shell_command correspondants s'executent avec un token
+  # FR | vide et le panneau affiche « Entite non trouvee ».
   vssp_ha_token:
-    name: "Visio Sapiens — Jeton API Home Assistant"
+    name: "Visio Sapiens — Home Assistant API token"
     mode: password
     max: 255
 
 # --------------------------------------------------------------------
-# ETAT DES DASHBOARDS SYSTEME (ENERGY, CORE)
+# EN | ADMIN CONSOLE SELECTORS — language and format
+# FR | SELECTEURS DE LA CONSOLE ADMIN — langue et format
 # --------------------------------------------------------------------
-# ENERGY et CORE ne sont pas rattaches a une piece Home Assistant : ils
-# ne passent donc jamais par le formulaire creation/modification/
-# suppression du wizard. Le panneau ADMIN a besoin de savoir s'ils
-# existent pour proposer soit CREER, soit REGENERER.
+# EN | CRITICAL — the OPTION VALUES stay in English in every language. They
+# EN | are identifiers, compared inside templates and passed as arguments to
+# EN | generate_dashboards.py. Translating the stored state would break those
+# EN | comparisons. Only the DISPLAYED label is translated, by the card that
+# EN | renders the selector.
+# FR | CRITIQUE — les VALEURS D'OPTIONS restent en anglais dans toutes les
+# FR | langues. Ce sont des identifiants, compares dans les templates et
+# FR | passes en argument a generate_dashboards.py. Traduire l'etat stocke
+# FR | casserait ces comparaisons. Seul le LIBELLE AFFICHE est traduit, par la
+# FR | carte qui rend le selecteur.
+input_select:
+  vssp_language:
+    name: "Visio Sapiens — Interface language"
+    options:
+      - en
+      - fr
+    initial: en
+    icon: mdi:translate
+  vssp_format:
+    name: "Visio Sapiens — Target format"
+    options:
+      - tablet
+      - mobile
+      - both
+    initial: tablet
+    icon: mdi:tablet-cellphone
+
+# --------------------------------------------------------------------
+# EN | SYSTEM DASHBOARD STATE (HOME, CORE, ENERGY, ADMIN)
+# FR | ETAT DES DASHBOARDS SYSTEME (HOME, CORE, ENERGY, ADMIN)
+# --------------------------------------------------------------------
+# EN | The four system dashboards are not attached to any Home Assistant area:
+# EN | they never go through the room create/modify/delete form. The ADMIN
+# EN | console needs to know whether they exist, to offer either CREATE or
+# EN | REGENERATE.
+# FR | Les quatre dashboards systeme ne sont rattaches a aucune piece Home
+# FR | Assistant : ils ne passent jamais par le formulaire creation/
+# FR | modification/suppression des pieces. La console ADMIN a besoin de savoir
+# FR | s'ils existent pour proposer soit CREER, soit REGENERER.
 #
-# `command_line` est une integration de premier niveau : si votre
-# configuration.yaml en a deja une, fusionnez seulement les entrees.
+# EN | `command_line` is a top-level integration: if your configuration.yaml
+# EN | already has one, merge only the entries.
+# FR | `command_line` est une integration de premier niveau : si votre
+# FR | configuration.yaml en a deja une, fusionnez seulement les entrees.
 command_line:
   - binary_sensor:
       name: "VSSP Dashboard Energy Present"
@@ -48,8 +96,10 @@ command_line:
         && echo ON || echo OFF
       payload_on: "ON"
       payload_off: "OFF"
-      # Pas de device_class : « on » signifie ici « present », pas
-      # « probleme ». Un device_class: problem inverserait le sens.
+      # EN | No device_class: "on" means "present" here, not "problem". A
+      # EN | device_class: problem would invert the meaning.
+      # FR | Pas de device_class : « on » signifie ici « present », pas
+      # FR | « probleme ». Un device_class: problem inverserait le sens.
       scan_interval: 60
 
   - binary_sensor:
@@ -60,21 +110,56 @@ command_line:
         && echo ON || echo OFF
       payload_on: "ON"
       payload_off: "OFF"
-      # Pas de device_class : « on » signifie ici « present », pas
-      # « probleme ». Un device_class: problem inverserait le sens.
+      # EN | No device_class: "on" means "present" here, not "problem".
+      # FR | Pas de device_class : « on » signifie ici « present », pas
+      # FR | « probleme ».
       scan_interval: 60
 
-  # Date de derniere generation, pour l'affichage du panneau ADMIN.
+  # EN | Last generation date, for the ADMIN console display.
+  # FR | Date de derniere generation, pour l'affichage de la console ADMIN.
   - sensor:
-      name: "VSSP Dashboard Energy Modifie"
+      name: "VSSP Dashboard Energy Modified"
       unique_id: vssp_dashboard_energy_mtime
       command: >-
         date -r /config/home-assistant/dashboards/views/energy.yaml
-        "+%d/%m %H:%M" 2>/dev/null || echo "jamais genere"
+        "+%d/%m %H:%M" 2>/dev/null || echo "never generated"
+      scan_interval: 300
+
+  # EN | Language actually deployed, written by the CI build into
+  # EN | /config/VSSP_LOCALE. Comparing it with input_select.vssp_language
+  # EN | tells you whether a regeneration is pending.
+  # FR | Langue reellement deployee, ecrite par le build CI dans
+  # FR | /config/VSSP_LOCALE. La comparer a input_select.vssp_language dit si
+  # FR | une regeneration est en attente.
+  - sensor:
+      name: "VSSP Deployed Locale"
+      unique_id: vssp_deployed_locale
+      command: >-
+        cat /config/VSSP_LOCALE 2>/dev/null || echo "unknown"
+      scan_interval: 300
+
+  # EN | Guard sensor: counts unrendered translation markers left in the
+  # EN | deployed fragment. Anything above 0 means the fragment reached
+  # EN | /config without passing through vssp_i18n.py, and the patcher will
+  # EN | refuse it. Surfacing the number in the ADMIN console turns a silent
+  # EN | failure into a visible one.
+  # FR | Capteur garde-fou : compte les marqueurs de traduction non rendus
+  # FR | restant dans le fragment deploye. Toute valeur superieure a 0 signifie
+  # FR | que le fragment est arrive dans /config sans passer par vssp_i18n.py,
+  # FR | et le patcher le refusera. Afficher ce nombre dans la console ADMIN
+  # FR | transforme une panne silencieuse en panne visible.
+  - sensor:
+      name: "VSSP Unrendered Placeholders"
+      unique_id: vssp_unrendered_placeholders
+      command: >-
+        grep -Eoc "__T:[A-Za-z0-9_.]+__" /config/config-fragment.yaml
+        2>/dev/null || echo 0
+      unit_of_measurement: "markers"
       scan_interval: 300
 
 # --------------------------------------------------------------------
-# SHELL COMMANDS — executent les scripts Python sur le pod HA lui-meme
+# EN | SHELL COMMANDS — run the Python scripts on the HA pod itself
+# FR | SHELL COMMANDS — executent les scripts Python sur le pod HA lui-meme
 # --------------------------------------------------------------------
 shell_command:
   vssp_discovery: >-
@@ -90,46 +175,94 @@ shell_command:
     /config/vssp/backups/home_$(date +%Y%m%d_%H%M%S).yaml"
   vssp_delete_dashboard: >-
     rm -f /config/home-assistant/dashboards/home.yaml
-  # Generation des dashboards depuis le modele metier (etape 5).
-  # Fusionne automatiquement model/house_rooms.yaml (produit par le
-  # Discovery Wizard, phase 3) s'il est present, puis rend les
-  # templates Jinja2 vers dashboards/views/ (validation YAML avant
-  # ecriture : jamais de dashboard casse deploye).
+
+  # ------------------------------------------------------------------
+  # EN | LANGUAGE — render the fragment before patching configuration.yaml
+  # FR | LANGUE — rendre le fragment avant de patcher configuration.yaml
+  # ------------------------------------------------------------------
+  # EN | config-fragment.yaml holds __T:key__ markers. vssp_apply_config.py
+  # EN | REFUSES a fragment that still holds them, because a raw marker would
+  # EN | show up as a dashboard title in the sidebar. These two commands are
+  # EN | the ADMIN-side equivalent of what the CI build job does.
+  # FR | config-fragment.yaml porte des marqueurs __T:cle__. vssp_apply_config.py
+  # FR | REFUSE un fragment qui en contient encore, car un marqueur brut
+  # FR | apparaitrait comme titre de dashboard dans la sidebar. Ces deux
+  # FR | commandes sont l'equivalent cote ADMIN de ce que fait le job build.
+  vssp_render_fragment: >-
+    python3 /config/vssp/vssp_i18n.py
+    --locales-dir /config/home-assistant/dashboards/locales
+    render --locale {{ states('input_select.vssp_language') }}
+    --in /config/config-fragment.yaml
+    --out /config/vssp/config-fragment.rendered.yaml
+
+  vssp_apply_fragment: >-
+    python3 /config/vssp/vssp_apply_config.py
+    --config /config/configuration.yaml
+    --fragment /config/vssp/config-fragment.rendered.yaml
+
+  # EN | Dashboard generation from the home model (step 5). Automatically
+  # EN | merges model/house_rooms.yaml (produced by the discovery wizard,
+  # EN | phase 3) when present, then renders the Jinja2 templates into
+  # EN | dashboards/views/ (YAML validated before writing: a broken dashboard
+  # EN | is never deployed). Language and format come from the console
+  # EN | selectors, so switching language never rewrites house.yaml.
+  # FR | Generation des dashboards depuis le modele metier (etape 5). Fusionne
+  # FR | automatiquement model/house_rooms.yaml (produit par le Discovery
+  # FR | Wizard, phase 3) s'il est present, puis rend les templates Jinja2 vers
+  # FR | dashboards/views/ (validation YAML avant ecriture : jamais de
+  # FR | dashboard casse deploye). La langue et le format viennent des
+  # FR | selecteurs de la console, donc changer de langue ne reecrit jamais
+  # FR | house.yaml.
   vssp_generate_dashboards: >-
     python3 /config/vssp/generate_dashboards.py
     --model /config/home-assistant/dashboards/model/house.yaml
     --rooms /config/home-assistant/dashboards/model/house_rooms.yaml
     --devices /config/home-assistant/dashboards/model/energy_devices.yaml
     --templates /config/home-assistant/dashboards/templates_j2
+    --locales-dir /config/home-assistant/dashboards/locales
+    --locale {{ states('input_select.vssp_language') }}
+    --format {{ states('input_select.vssp_format') }}
     --out /config/home-assistant/dashboards/views
     --status-file /config/www/vssp/preview_status.json
 
   # ------------------------------------------------------------------
-  # DASHBOARDS SYSTEME — creation / regeneration
+  # EN | SYSTEM DASHBOARDS — create / regenerate
+  # FR | DASHBOARDS SYSTEME — creation / regeneration
   # ------------------------------------------------------------------
-  # CREER : --if-missing garantit qu'un dashboard deja en place n'est
-  # JAMAIS ecrase. Le bouton est donc sans risque, meme clique par
-  # erreur sur une installation deja configuree.
+  # EN | CREATE: --if-missing guarantees an existing dashboard is NEVER
+  # EN | overwritten. The button is therefore harmless, even clicked by
+  # EN | mistake on an already configured installation.
+  # FR | CREER : --if-missing garantit qu'un dashboard deja en place n'est
+  # FR | JAMAIS ecrase. Le bouton est donc sans risque, meme clique par erreur
+  # FR | sur une installation deja configuree.
   vssp_create_energy: >-
     python3 /config/vssp/generate_dashboards.py
     --only energy --if-missing
     --model /config/home-assistant/dashboards/model/house.yaml
     --devices /config/home-assistant/dashboards/model/energy_devices.yaml
     --templates /config/home-assistant/dashboards/templates_j2
+    --locales-dir /config/home-assistant/dashboards/locales
+    --locale {{ states('input_select.vssp_language') }}
+    --format {{ states('input_select.vssp_format') }}
     --out /config/home-assistant/dashboards/views
     --status-file /config/www/vssp/energy_generate_status.json
 
-  # REGENERER : ecrase volontairement (apres sauvegarde par le script).
+  # EN | REGENERATE: deliberately overwrites (after the script's backup).
+  # FR | REGENERER : ecrase volontairement (apres sauvegarde par le script).
   vssp_regenerate_energy: >-
     python3 /config/vssp/generate_dashboards.py
     --only energy
     --model /config/home-assistant/dashboards/model/house.yaml
     --devices /config/home-assistant/dashboards/model/energy_devices.yaml
     --templates /config/home-assistant/dashboards/templates_j2
+    --locales-dir /config/home-assistant/dashboards/locales
+    --locale {{ states('input_select.vssp_language') }}
+    --format {{ states('input_select.vssp_format') }}
     --out /config/home-assistant/dashboards/views
     --status-file /config/www/vssp/energy_generate_status.json
 
-  # Sauvegarde ciblee du seul dashboard ENERGY.
+  # EN | Targeted backup of the ENERGY dashboard alone.
+  # FR | Sauvegarde ciblee du seul dashboard ENERGY.
   vssp_backup_energy: >-
     sh -c "mkdir -p /config/vssp/backups &&
     [ -f /config/home-assistant/dashboards/views/energy.yaml ] &&
@@ -137,11 +270,15 @@ shell_command:
     /config/vssp/backups/energy_$(date +%Y%m%d_%H%M%S).yaml || true"
 
   # ------------------------------------------------------------------
-  # ENERGY — synchronisation du parc d'appareils mesures
+  # EN | ENERGY — measured device fleet synchronisation
+  # FR | ENERGY — synchronisation du parc d'appareils mesures
   # ------------------------------------------------------------------
-  # Scanne HA, apparie les capteurs *_puissance / *_energie, met a jour
-  # model/energy_devices.yaml (ajouts + circuits du tableau electrique).
-  # SANS --prune : un appareil momentanement hors ligne reste affiche.
+  # EN | Scans HA, pairs the *_power / *_energy sensors, updates
+  # EN | model/energy_devices.yaml (additions + breaker panel circuits).
+  # EN | WITHOUT --prune: a device temporarily offline stays displayed.
+  # FR | Scanne HA, apparie les capteurs *_puissance / *_energie, met a jour
+  # FR | model/energy_devices.yaml (ajouts + circuits du tableau electrique).
+  # FR | SANS --prune : un appareil momentanement hors ligne reste affiche.
   vssp_energy_sync: >-
     python3 /config/vssp/vssp_energy_sync.py
     --url http://localhost:8123
@@ -149,7 +286,8 @@ shell_command:
     --devices /config/home-assistant/dashboards/model/energy_devices.yaml
     --status-file /config/www/vssp/energy_sync_status.json
 
-  # Idem, mais applique reellement les retraits (bouton PRUNE de l'ADMIN).
+  # EN | Same, but actually applies removals (ADMIN PRUNE button).
+  # FR | Idem, mais applique reellement les retraits (bouton PRUNE de l'ADMIN).
   vssp_energy_sync_prune: >-
     python3 /config/vssp/vssp_energy_sync.py
     --url http://localhost:8123
@@ -158,7 +296,8 @@ shell_command:
     --status-file /config/www/vssp/energy_sync_status.json
     --prune
 
-  # Diff seul : rien n'est ecrit, le rapport dit ce qui changerait.
+  # EN | Diff only: nothing is written, the report says what would change.
+  # FR | Diff seul : rien n'est ecrit, le rapport dit ce qui changerait.
   vssp_energy_sync_dryrun: >-
     python3 /config/vssp/vssp_energy_sync.py
     --url http://localhost:8123
@@ -168,119 +307,172 @@ shell_command:
     --dry-run
 
   # ------------------------------------------------------------------
-  # APERCU — chaine de TEST, totalement isolee du staging
+  # EN | PREVIEW — TEST chain, fully isolated from staging
+  # FR | APERCU — chaine de TEST, totalement isolee du staging
   # ------------------------------------------------------------------
-  # 1) Ecrit le modele du wizard dans un fichier *.preview.yaml dedie.
-  #    Le contenu arrive en base64 (variable content_b64) : pas de
-  #    probleme de quoting ni d'accents dans les noms de pieces.
+  # EN | 1) Writes the console's model into a dedicated *.preview.yaml file.
+  # EN |    The content arrives base64-encoded (content_b64 variable): no
+  # EN |    quoting or accent trouble in room names.
+  # FR | 1) Ecrit le modele de la console dans un fichier *.preview.yaml dedie.
+  # FR |    Le contenu arrive en base64 (variable content_b64) : pas de
+  # FR |    probleme de quoting ni d'accents dans les noms de pieces.
   vssp_write_preview_model: >-
     sh -c "mkdir -p /config/home-assistant/dashboards/model &&
     printf '%s' '{{ content_b64 }}' | base64 -d
     > /config/home-assistant/dashboards/model/house_rooms.preview.yaml"
 
-  # 2) Genere energy_preview.yaml (url vssp-energy-preview) a partir du
-  #    modele d'apercu. --preview garantit qu'aucun fichier de staging
-  #    n'est ecrit : le nom de sortie et l'url_path sont suffixes.
+  # EN | 2) Generates energy_preview.yaml (url vssp-energy-preview) from the
+  # EN |    preview model. --preview guarantees no staging file is written:
+  # EN |    both the output name and the url_path are suffixed.
+  # FR | 2) Genere energy_preview.yaml (url vssp-energy-preview) a partir du
+  # FR |    modele d'apercu. --preview garantit qu'aucun fichier de staging
+  # FR |    n'est ecrit : le nom de sortie et l'url_path sont suffixes.
   vssp_generate_preview: >-
     python3 /config/vssp/generate_dashboards.py
     --model /config/home-assistant/dashboards/model/house.yaml
     --rooms /config/home-assistant/dashboards/model/house_rooms.preview.yaml
     --templates /config/home-assistant/dashboards/templates_j2
+    --locales-dir /config/home-assistant/dashboards/locales
+    --locale {{ states('input_select.vssp_language') }}
+    --format {{ states('input_select.vssp_format') }}
     --out /config/home-assistant/dashboards/views
     --preview
     --status-file /config/www/vssp/preview_status.json
 
-  # 3) Validation seule : ne produit aucun fichier, juste le rapport.
+  # EN | 3) Validation only: produces no file, just the report.
+  # FR | 3) Validation seule : ne produit aucun fichier, juste le rapport.
   vssp_validate_preview: >-
     python3 /config/vssp/generate_dashboards.py
     --model /config/home-assistant/dashboards/model/house.yaml
     --rooms /config/home-assistant/dashboards/model/house_rooms.preview.yaml
     --templates /config/home-assistant/dashboards/templates_j2
+    --locales-dir /config/home-assistant/dashboards/locales
+    --locale {{ states('input_select.vssp_language') }}
+    --format {{ states('input_select.vssp_format') }}
     --out /config/home-assistant/dashboards/views
     --preview --dry-run
     --status-file /config/www/vssp/preview_status.json
 
-  # 4) Nettoyage des fichiers d'apercu (jamais ceux du staging).
+  # EN | 4) Cleans the preview files (never the staging ones).
+  # FR | 4) Nettoyage des fichiers d'apercu (jamais ceux du staging).
   vssp_clean_preview: >-
     sh -c "rm -f /config/home-assistant/dashboards/views/energy_preview.yaml
     /config/home-assistant/dashboards/model/house_rooms.preview.yaml
     /config/www/vssp/preview_status.json"
 
 # --------------------------------------------------------------------
-# SCRIPTS — la logique appelee par les boutons du dashboard ADMIN
+# EN | SCRIPTS — the logic behind the ADMIN console buttons
+# FR | SCRIPTS — la logique appelee par les boutons de la console ADMIN
 # --------------------------------------------------------------------
 script:
   vssp_run_discovery:
-    alias: "Visio Sapiens — Lancer la découverte"
+    alias: "Visio Sapiens — Run discovery"
     sequence:
       - service: shell_command.vssp_discovery
       - service: persistent_notification.create
         data:
-          title: "Visio Sapiens — Découverte terminée"
+          title: "Visio Sapiens — Discovery finished"
           message: >
-            Rapport généré dans /config/vssp/report.json.
-            Consulte-le pour voir les nouvelles entités par pièce.
+            Report written to /config/vssp/report.json.
+            Open it to see the new entities per room.
 
   vssp_run_upgrade:
-    alias: "Visio Sapiens — Mettre à jour le dashboard"
+    alias: "Visio Sapiens — Update the dashboard"
     sequence:
       - service: shell_command.vssp_backup_dashboard
       - service: shell_command.vssp_upgrade
       - service: persistent_notification.create
         data:
-          title: "Visio Sapiens — Mise à jour appliquée"
+          title: "Visio Sapiens — Update applied"
           message: >
-            Le dashboard a été régénéré à partir des dernières entités
-            découvertes. Une sauvegarde de l'ancienne version a été
-            conservée dans /config/vssp/backups/.
+            The dashboard was regenerated from the latest discovered
+            entities. A backup of the previous version was kept in
+            /config/vssp/backups/.
 
-  # Appele par la phase 5 du Discovery Wizard, ou par un futur bouton
-  # GENERATE du panneau ADMIN (template: vssp_admin_button).
+  # EN | APPLY LANGUAGE — renders the fragment, then patches
+  # EN | configuration.yaml. Order matters: the patcher refuses an unrendered
+  # EN | fragment, so a failed render stops the chain instead of pushing raw
+  # EN | markers into the sidebar. Dashboard titles are read at startup only,
+  # EN | hence the restart prompt in the message.
+  # FR | APPLIQUER LA LANGUE — rend le fragment, puis patche
+  # FR | configuration.yaml. L'ordre compte : le patcher refuse un fragment non
+  # FR | rendu, donc un rendu en echec arrete la chaine au lieu de pousser des
+  # FR | marqueurs bruts dans la sidebar. Les titres de dashboards ne sont lus
+  # FR | qu'au demarrage, d'ou l'invitation a redemarrer dans le message.
+  vssp_apply_language:
+    alias: "Visio Sapiens — Apply the interface language"
+    sequence:
+      - service: shell_command.vssp_render_fragment
+      - service: shell_command.vssp_apply_fragment
+      - service: shell_command.vssp_generate_dashboards
+      - service: lovelace.reload
+      - service: persistent_notification.create
+        data:
+          title: "Visio Sapiens — Language applied"
+          message: >
+            Interface generated in
+            {{ states('input_select.vssp_language') }},
+            format {{ states('input_select.vssp_format') }}.
+            Dashboard titles in the sidebar are only re-read at startup:
+            restart Home Assistant to see them change.
+
+  # EN | Called by phase 5 of the discovery wizard, or by the GENERATE button
+  # EN | of the ADMIN console (template: vssp_admin_button).
+  # FR | Appele par la phase 5 du Discovery Wizard, ou par le bouton GENERATE
+  # FR | de la console ADMIN (template : vssp_admin_button).
   vssp_run_generate:
-    alias: "Visio Sapiens — Régénérer les dashboards"
+    alias: "Visio Sapiens — Regenerate the dashboards"
     sequence:
       - service: shell_command.vssp_backup_dashboard
       - service: shell_command.vssp_generate_dashboards
+      - service: lovelace.reload
       - service: persistent_notification.create
         data:
-          title: "Visio Sapiens — Dashboards régénérés"
+          title: "Visio Sapiens — Dashboards regenerated"
           message: >
-            energy.yaml a été régénéré depuis model/house.yaml
-            (+ house_rooms.yaml du wizard s'il existe).
-            Rechargez Lovelace pour voir le résultat.
+            Dashboards regenerated from model/house.yaml
+            (+ house_rooms.yaml from the wizard when present), in
+            {{ states('input_select.vssp_language') }}.
+            Reload Lovelace to see the result.
 
-  # Bouton CREER LE DASHBOARD ENERGY du panneau ADMIN.
-  # Idempotent : si le dashboard existe deja, il n'est pas touche et le
-  # script se contente de le dire.
+  # EN | CREATE ENERGY DASHBOARD button of the ADMIN console. Idempotent: if
+  # EN | the dashboard already exists it is left untouched and the script just
+  # EN | says so.
+  # FR | Bouton CREER LE DASHBOARD ENERGY de la console ADMIN. Idempotent : si
+  # FR | le dashboard existe deja, il n'est pas touche et le script se contente
+  # FR | de le dire.
   vssp_create_energy_dashboard:
-    alias: "Visio Sapiens — Créer le dashboard ENERGY"
+    alias: "Visio Sapiens — Create the ENERGY dashboard"
     sequence:
-      # 1. Partir du parc d'appareils reel plutot que d'un modele vide
+      # EN | 1. Start from the real device fleet rather than an empty model
+      # FR | 1. Partir du parc d'appareils reel plutot que d'un modele vide
       - service: shell_command.vssp_energy_sync
         continue_on_error: true
-      # 2. Generer uniquement s'il manque
+      # EN | 2. Generate only if missing / FR | 2. Generer uniquement s'il manque
       - service: shell_command.vssp_create_energy
       - service: lovelace.reload
-      # 3. Laisser le capteur d'existence se rafraichir avant le message
+      # EN | 3. Let the presence sensor refresh before the message
+      # FR | 3. Laisser le capteur d'existence se rafraichir avant le message
       - delay: "00:00:05"
       - service: persistent_notification.create
         data:
-          title: "Visio Sapiens — Dashboard ENERGY"
+          title: "Visio Sapiens — ENERGY dashboard"
           message: >
             {% if is_state('binary_sensor.vssp_dashboard_energy_present', 'on') %}
-              Dashboard ENERGY disponible sur /vssp-energy/energy
-              ({{ states('sensor.vssp_dashboard_energy_modifie') }}).
-              Si l'entree n'apparait pas dans la barre laterale, verifiez
-              que vssp-energy est bien declare dans config-fragment.yaml.
+              ENERGY dashboard available at /vssp-energy/energy
+              ({{ states('sensor.vssp_dashboard_energy_modified') }}).
+              If the entry does not appear in the sidebar, check that
+              vssp-energy is declared in config-fragment.yaml.
             {% else %}
-              La generation a echoue. Consultez
-              /config/www/vssp/energy_generate_status.json pour le detail
-              des erreurs de validation du modele.
+              Generation failed. See
+              /config/www/vssp/energy_generate_status.json for the model
+              validation errors.
             {% endif %}
 
-  # Bouton REGENERER : ecrase le dashboard existant, apres sauvegarde.
+  # EN | REGENERATE button: overwrites the existing dashboard, after backup.
+  # FR | Bouton REGENERER : ecrase le dashboard existant, apres sauvegarde.
   vssp_regenerate_energy_dashboard:
-    alias: "Visio Sapiens — Régénérer le dashboard ENERGY"
+    alias: "Visio Sapiens — Regenerate the ENERGY dashboard"
     sequence:
       - service: shell_command.vssp_backup_energy
       - service: shell_command.vssp_energy_sync
@@ -289,21 +481,23 @@ script:
       - service: lovelace.reload
       - service: persistent_notification.create
         data:
-          title: "Visio Sapiens — Dashboard ENERGY régénéré"
+          title: "Visio Sapiens — ENERGY dashboard regenerated"
           message: >
-            Tableaux mis a jour depuis le parc reel
-            ({{ states('sensor.vssp_appareils_mesures') }} appareils mesures).
-            Une sauvegarde de la version precedente est dans
-            /config/vssp/backups/.
+            Panels updated from the real fleet
+            ({{ states('sensor.vssp_appareils_mesures') }} measured devices).
+            A backup of the previous version is in /config/vssp/backups/.
 
-  # Bouton SYNC ENERGY du panneau ADMIN : resynchronise les tableaux
-  # « Consommation par appareil » et « Tableau electrique » avec les
-  # appareils reellement presents dans Home Assistant.
+  # EN | SYNC ENERGY button of the ADMIN console: resynchronises the
+  # EN | "Per-Device Consumption" and "Breaker Panel" tables with the devices
+  # EN | actually present in Home Assistant.
+  # FR | Bouton SYNC ENERGY de la console ADMIN : resynchronise les tableaux
+  # FR | « Consommation par appareil » et « Tableau electrique » avec les
+  # FR | appareils reellement presents dans Home Assistant.
   vssp_run_energy_sync:
-    alias: "Visio Sapiens — Synchroniser ENERGY"
+    alias: "Visio Sapiens — Synchronise ENERGY"
     fields:
       prune:
-        description: "true = retirer aussi les appareils absents de HA"
+        description: "true = also remove devices absent from HA"
         example: false
     sequence:
       - service: shell_command.vssp_backup_dashboard
@@ -318,24 +512,27 @@ script:
       - service: lovelace.reload
       - service: persistent_notification.create
         data:
-          title: "Visio Sapiens — ENERGY synchronise"
+          title: "Visio Sapiens — ENERGY synchronised"
           message: >
-            Tableaux regeneres —
-            {{ states('sensor.vssp_appareils_mesures') }} appareils mesures
-            detectes dans Home Assistant. Rapport detaille dans
+            Panels regenerated —
+            {{ states('sensor.vssp_appareils_mesures') }} measured devices
+            detected in Home Assistant. Detailed report in
             /config/www/vssp/energy_sync_status.json.
 
-  # Appele par la phase 4 du Discovery Wizard (bouton APERCU).
-  # Boucle d'iteration : on peut le relancer autant de fois que voulu,
-  # il ne touche que les fichiers *_preview / *.preview.yaml.
+  # EN | Called by phase 4 of the discovery wizard (PREVIEW button). Iteration
+  # EN | loop: it can be run as many times as wanted, it only touches the
+  # EN | *_preview / *.preview.yaml files.
+  # FR | Appele par la phase 4 du Discovery Wizard (bouton APERCU). Boucle
+  # FR | d'iteration : on peut le relancer autant de fois que voulu, il ne
+  # FR | touche que les fichiers *_preview / *.preview.yaml.
   vssp_preview_dashboards:
-    alias: "Visio Sapiens — Générer l'aperçu de test"
+    alias: "Visio Sapiens — Generate the test preview"
     fields:
       content_b64:
-        description: "Modèle rooms (house_rooms.yaml) encodé en base64"
+        description: "Rooms model (house_rooms.yaml) base64-encoded"
         example: "cm9vbXM6Cg=="
       dry_run:
-        description: "true = valider seulement, sans écrire de dashboard"
+        description: "true = validate only, write no dashboard"
         example: false
     sequence:
       - service: shell_command.vssp_write_preview_model
@@ -348,12 +545,14 @@ script:
           - service: shell_command.vssp_validate_preview
         else:
           - service: shell_command.vssp_generate_preview
-          # Recharge Lovelace pour que l'apercu apparaisse tout de suite.
-          # Sans effet sur le contenu des dashboards de staging.
+          # EN | Reload Lovelace so the preview shows up right away. No effect
+          # EN | on the staging dashboards' content.
+          # FR | Recharge Lovelace pour que l'apercu apparaisse tout de suite.
+          # FR | Sans effet sur le contenu des dashboards de staging.
           - service: lovelace.reload
 
   vssp_delete_dashboard:
-    alias: "Visio Sapiens — Supprimer le dashboard (protégé par code)"
+    alias: "Visio Sapiens — Delete the dashboard (code protected)"
     sequence:
       - if:
           - condition: template
@@ -365,29 +564,33 @@ script:
           - service: shell_command.vssp_delete_dashboard
           - service: persistent_notification.create
             data:
-              title: "Visio Sapiens — Dashboard supprimé"
+              title: "Visio Sapiens — Dashboard deleted"
               message: >
-                Une sauvegarde a été conservée dans
-                /config/vssp/backups/ avant suppression.
+                A backup was kept in /config/vssp/backups/ before deletion.
         else:
           - service: persistent_notification.create
             data:
-              title: "Visio Sapiens — Échec de suppression"
-              message: "Code incorrect. Aucune action effectuée."
-      # Toujours vider le champ de saisie, succes ou echec (hygiene de securite)
+              title: "Visio Sapiens — Deletion failed"
+              message: "Wrong code. No action taken."
+      # EN | Always clear the entry field, success or failure (security hygiene)
+      # FR | Toujours vider le champ de saisie, succes ou echec (hygiene de securite)
       - service: input_text.set_value
         target:
           entity_id: input_text.vssp_pin_entry
         data:
           value: ""
 
-  # A lancer UNE SEULE FOIS a la main pour definir ton code admin,
-  # puis supprime/desactive ce script pour eviter qu'il soit relance.
+  # EN | Run ONCE by hand to set your admin code, then delete/disable this
+  # EN | script so it cannot be run again.
+  # FR | A lancer UNE SEULE FOIS a la main pour definir ton code admin, puis
+  # FR | supprime/desactive ce script pour eviter qu'il soit relance.
   vssp_set_admin_pin:
-    alias: "Visio Sapiens — Définir le code admin (à usage unique)"
+    alias: "Visio Sapiens — Set the admin code (one-shot)"
     sequence:
       - service: input_text.set_value
         target:
           entity_id: input_text.vssp_admin_pin
         data:
-          value: "CHANGE_MOI_1234"  # <-- remplace par ton vrai code avant de lancer
+          # EN | replace with your real code before running
+          # FR | remplace par ton vrai code avant de lancer
+          value: "CHANGE_ME_1234"
