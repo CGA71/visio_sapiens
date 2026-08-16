@@ -78,24 +78,6 @@ lovelace:
       icon: mdi:server
       show_in_sidebar: false
       filename: dashboards/views/core.yaml
-    # EN | Mobile variant of CORE. It was missing while house.yaml's
-    # EN | nav_system already pointed at it — the rail had a dead link that
-    # EN | did nothing when clicked, with no error anywhere.
-    # FR | Variante mobile de CORE. Elle manquait alors que le nav_system de
-    # FR | house.yaml pointait deja dessus — le bandeau avait un lien mort qui
-    # FR | ne faisait rien au clic, sans erreur nulle part.
-    visio-sapiens-core-m:
-      mode: yaml
-      title: __T:dashboard.core.title__
-      icon: mdi:server
-      show_in_sidebar: false
-      filename: dashboards/views/core_mobile.yaml
-    visio-sapiens-computer:
-      mode: yaml
-      title: __T:dashboard.computer.title__
-      icon: mdi:desktop-tower-monitor
-      show_in_sidebar: false
-      filename: dashboards/views/computer.yaml
     visio-sapiens-energy:
       mode: yaml
       title: __T:dashboard.energy.title__
@@ -114,47 +96,30 @@ lovelace:
       icon: mdi:lightning-bolt
       show_in_sidebar: false
       filename: dashboards/views/energy_mobile.yaml
-    visio-sapiens-technical:
-      mode: yaml
-      title: __T:dashboard.technical.title__
-      icon: mdi:tools
-      show_in_sidebar: false
-      filename: dashboards/views/technical_room.yaml
-    visio-sapiens-technical-m:
-      mode: yaml
-      title: __T:dashboard.technical.title__
-      icon: mdi:cellphone-cog
-      show_in_sidebar: false
-      filename: dashboards/views/technical_room_mobile.yaml
 
 # ── PREVIEW — test chain, not deployed ──────────────────────────────
-# EN | ⚠ TWO ISSUES TO SETTLE, left untouched by the translation pass:
-# EN |   1. The key is `vssp-energy-preview` while every other dashboard uses
-# EN |      the `visio-sapiens-` prefix. The validate job checks keys against
-# EN |      OSV_PREFIX in vssp_apply_config.py — this one is very likely being
-# EN |      silently skipped by the patcher, so the preview never reaches
-# EN |      configuration.yaml. Rename it `visio-sapiens-energy-preview`.
-# EN |   2. `filename` is repo-relative, not /config-relative. Every other
-# EN |      entry starts at `dashboards/`; this one starts at
-# EN |      `home-assistant/dashboards/` and will not resolve on the HA side.
-# FR | ⚠ DEUX PROBLEMES A TRANCHER, laisses intacts par la traduction :
-# FR |   1. La cle est `vssp-energy-preview` alors que tous les autres
-# FR |      dashboards utilisent le prefixe `visio-sapiens-`. Le job validate
-# FR |      compare les cles a OSV_PREFIX dans vssp_apply_config.py — celle-ci
-# FR |      est tres probablement ignoree en silence par le patcher, donc
-# FR |      l'apercu n'arrive jamais dans configuration.yaml. La renommer
-# FR |      `visio-sapiens-energy-preview`.
-# FR |   2. `filename` est relatif au depot, pas a /config. Toutes les autres
-# FR |      entrees commencent a `dashboards/` ; celle-ci commence a
-# FR |      `home-assistant/dashboards/` et ne sera pas resolue cote HA.
-    vssp-energy-preview:
+# EN | Produced by `generate_dashboards.py --preview`, which suffixes both
+# EN | the output file and the url_path so the preview can never overwrite a
+# EN | staging dashboard.
+# EN | Two long-standing bugs fixed here: the key used the `vssp-` prefix, so
+# EN | vssp_apply_config.py skipped it silently and it never reached
+# EN | configuration.yaml; and `filename` was repo-relative instead of
+# EN | /config-relative, so it would not have resolved anyway.
+# FR | Produit par `generate_dashboards.py --preview`, qui suffixe le fichier
+# FR | de sortie ET l'url_path : l'apercu ne peut jamais ecraser un dashboard
+# FR | de staging.
+# FR | Deux bugs de longue date corriges ici : la cle utilisait le prefixe
+# FR | `vssp-`, donc vssp_apply_config.py l'ignorait en silence et elle
+# FR | n'atteignait jamais configuration.yaml ; et `filename` etait relatif au
+# FR | depot au lieu de /config, donc elle n'aurait de toute facon pas resolu.
+    visio-sapiens-energy-preview:
       mode: yaml
       title: __T:dashboard.preview.title__
       icon: mdi:flask-outline
       # EN | Set to false to hide it from other users.
       # FR | Passer a false pour le masquer aux autres utilisateurs.
       show_in_sidebar: true
-      filename: home-assistant/dashboards/views/energy_preview.yaml
+      filename: dashboards/views/energy_preview.yaml
       # EN | Visible to admin accounts only.
       # FR | Visible uniquement par les comptes admin.
       require_admin: true
