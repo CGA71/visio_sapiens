@@ -1,0 +1,476 @@
+########################################################################
+# Visio Sapiens — ROOM Dashboard, MOBILE format
+#
+# EN | *** GENERATED FILE — DO NOT EDIT BY HAND ***
+# EN | Source: room_mobile.yaml.j2 + model/house.yaml + locales/<code>.yaml
+# EN | Regenerate with: python3 generate_dashboards.py --format mobile
+# FR | *** FICHIER GENERE — NE PAS EDITER A LA MAIN ***
+# FR | Source : room_mobile.yaml.j2 + model/house.yaml + locales/<code>.yaml
+# FR | Regenerer avec : python3 generate_dashboards.py --format mobile
+#
+# EN | WHY A SEPARATE FILE RATHER THAN BRANCHES IN room.yaml.j2
+# EN | A phone is not a narrow tablet. Four things differ, and none of them
+# EN | is a width adjustment:
+# EN |   1. NAVIGATION — the vertical rail becomes a horizontally scrolling
+# EN |      chip bar (_nav_mobile.j2).
+# EN |   2. GRID — a single column, `minmax(0, 1fr)`, one slot per row. There
+# EN |      is no slot-set-specific layout here: with one column, a reduced
+# EN |      slot set simply means fewer rows.
+# EN |   3. READING ORDER — the tablet grid order is not the right vertical
+# EN |      order. `lights` and `climate` come first: nobody should scroll to
+# EN |      switch on a lamp.
+# EN |   4. TYPE SCALE — smaller titles, shorter lists, one-column mosaics.
+# FR | POURQUOI UN FICHIER SEPARE PLUTOT QUE DES BRANCHES DANS room.yaml.j2
+# FR | Un telephone n'est pas une tablette etroite. Quatre choses different,
+# FR | et aucune n'est un ajustement de largeur :
+# FR |   1. NAVIGATION — le bandeau vertical devient une barre de chips
+# FR |      defilant horizontalement (_nav_mobile.j2).
+# FR |   2. GRILLE — une seule colonne, `minmax(0, 1fr)`, un tableau par
+# FR |      ligne. Aucune disposition propre au jeu de tableaux ici : avec une
+# FR |      colonne, un jeu reduit signifie simplement moins de lignes.
+# FR |   3. ORDRE DE LECTURE — l'ordre de la grille tablette n'est pas le bon
+# FR |      ordre vertical. `lights` et `climate` passent en premier :
+# FR |      personne ne doit scroller pour allumer une lampe.
+# FR |   4. ECHELLE TYPO — titres plus petits, listes plus courtes,
+# FR |      mosaiques sur une colonne.
+#
+# EN | Slot states (filled / empty / filler) are decided by
+# EN | generate_dashboards.py and behave exactly as on tablet.
+# FR | Les etats des tableaux (filled / empty / filler) sont decides par
+# FR | generate_dashboards.py et se comportent exactement comme en tablette.
+########################################################################
+
+{#- EN | Vertical reading order — deliberately NOT the tablet grid order.
+    FR | Ordre de lecture vertical — volontairement PAS l'ordre de la grille
+    FR | tablette. #}
+{%- set mobile_order = ['lights', 'climate', 'security', 'appliances', 'shutters', 'audio'] -%}
+{%- set shown = [] -%}
+{%- for slot_id in mobile_order if slot_id in room.slots -%}
+{%- set _ = shown.append(slot_id) -%}
+{%- endfor -%}
+{%- set filler_media = house.filler_animation | default('/local/vssp/images/vssp_loop.gif', true) -%}
+
+title: {{ room.label }}
+theme: {{ house.theme }}
+
+# EN | Without these includes every custom:button-card shows "Configuration
+# EN | error". Path is relative to dashboards/views/.
+# FR | Sans ces includes, chaque custom:button-card affiche « Erreur de
+# FR | configuration ». Chemin relatif a dashboards/views/.
+button_card_templates: !include ../templates/button_card_templates.yaml
+decluttering_templates: !include ../templates/decluttering_templates.yaml
+
+views:
+  - title: {{ room.label }}
+    path: {{ room.id }}
+    subview: false
+    type: custom:grid-layout
+    layout:
+      # EN | minmax(0,1fr), not 1fr: `1fr` means minmax(auto,1fr) and refuses
+      # EN | to go below the natural width of its content, so one wide element
+      # EN | (the scrolling nav, a chart) would widen the whole page — the
+      # EN | "tablet look" on a phone. minmax(0,1fr) locks the column to the
+      # EN | screen width whatever it contains.
+      # FR | minmax(0,1fr) et non 1fr : `1fr` vaut minmax(auto,1fr) et refuse
+      # FR | de descendre sous la largeur naturelle de son contenu, donc un
+      # FR | element large (la nav defilante, un graphe) elargirait toute la
+      # FR | page — l'effet « format tablette » sur telephone. minmax(0,1fr)
+      # FR | verrouille la colonne a la largeur de l'ecran quoi qu'elle
+      # FR | contienne.
+      grid-template-columns: minmax(0, 1fr)
+      grid-template-rows: auto
+      grid-template-areas: |
+        "header"
+        "nav"
+{% for slot_id in shown %}
+        "{{ slot_id }}"
+{% endfor %}
+      margin: 8px
+      grid-gap: 12px 0px
+    cards:
+      # ═══════════════════════════════════════════════════════════════
+      # EN | COMPACT HEADER — title + time on a single card
+      # FR | HEADER COMPACT — titre + heure sur une seule carte
+      # ═══════════════════════════════════════════════════════════════
+{% set page_title = room.name %}
+{% set page_subtitle = room.label %}
+{% set page_icon = room.icon %}
+{% set page_path = room.path_mobile %}
+{% include '_header_mobile.j2' %}
+
+      # ═══════════════════════════════════════════════════════════════
+      # EN | NAVIGATION — one-line scrolling chip bar
+      # FR | NAVIGATION — barre de chips defilante sur une ligne
+      # ═══════════════════════════════════════════════════════════════
+{% include '_nav_mobile.j2' %}
+
+{% for slot_id in shown %}
+{% set slot = room.slots[slot_id] %}
+      # ═══════════════════════════════════════════════════════════════
+      # EN | SLOT {{ loop.index }} — {{ slot_id | upper }} ({{ slot.state }})
+      # FR | TABLEAU {{ loop.index }} — {{ slot_id | upper }} ({{ slot.state }})
+      # ═══════════════════════════════════════════════════════════════
+      - type: vertical-stack
+        view_layout:
+          grid-area: {{ slot_id }}
+        card_mod:
+          style: |
+            :host {
+              display: block;
+              width: 100%;
+              background: rgba(8,18,28,0.75);
+              border-radius: 18px;
+              border: 1px solid rgba(0,229,255,0.28);
+              backdrop-filter: blur(12px);
+              box-shadow: 0 0 18px rgba(0,229,255,.15);
+              padding: 12px 14px;
+              overflow: hidden;
+            }
+        cards:
+          # EN | Smaller section title than on tablet — the shared
+          # EN | vssp_section_title is sized for a 6-panel HUD.
+          # FR | Titre de section plus petit qu'en tablette — le
+          # FR | vssp_section_title partage est calibre pour un HUD a 6 cases.
+          - type: custom:button-card
+            template: vssp_section_title
+            name: "{{ t('slot.' ~ slot_id) }}"
+            card_mod:
+              style: |
+                ha-card { padding: 0 0 6px 0 !important; }
+                #name { font-size: 12px !important; letter-spacing: 1px !important; }
+
+{% if slot.state == 'empty' %}
+          - type: custom:button-card
+            show_icon: true
+            show_name: false
+            show_state: false
+            show_label: true
+            icon: mdi:tray-remove
+            label: "{{ t('slot.empty') }}"
+            tap_action:
+              action: none
+            styles:
+              card:
+                - background: transparent
+                - box-shadow: none
+                - border: none
+                - padding: 10px 0
+                - cursor: default
+                - pointer-events: none
+              icon:
+                - color: rgba(143,182,201,0.35)
+                - "--mdc-icon-size": 28px
+              label:
+                - color: rgba(143,182,201,0.55)
+                - font-size: 11px
+                - margin-top: 6px
+
+{% elif slot.state == 'filler' %}
+          - type: custom:button-card
+            show_icon: false
+            show_name: false
+            show_state: false
+            tap_action:
+              action: none
+            custom_fields:
+              anim: >
+                <img src="{{ filler_media }}"
+                     style="width:100%;height:120px;object-fit:cover;border-radius:12px;opacity:.75;mix-blend-mode:screen;" />
+            styles:
+              card:
+                - background: transparent
+                - box-shadow: none
+                - border: none
+                - padding: 0
+                - cursor: default
+                - pointer-events: none
+              grid:
+                - grid-template-areas: '"anim"'
+              custom_fields:
+                anim:
+                  - width: 100%
+
+{% elif slot_id == 'appliances' %}
+          # EN | Line by line with an internal scrollbar, capped shorter than
+          # EN | on tablet: on a phone the panel competes with the whole page
+          # EN | for vertical space, and a 320px list would push everything
+          # EN | below it out of reach.
+          # FR | Ligne par ligne avec un ascenseur interne, plafonne plus bas
+          # FR | qu'en tablette : sur telephone le panneau se dispute l'espace
+          # FR | vertical avec toute la page, et une liste de 320px repousserait
+          # FR | hors de portee tout ce qui suit.
+          - type: custom:button-card
+            show_icon: false
+            show_name: false
+            show_state: false
+            tap_action:
+              action: none
+            styles:
+              grid:
+                - grid-template-areas: '"list"'
+              card:
+                - background: transparent
+                - box-shadow: none
+                - border: none
+                - border-radius: 0
+                - padding: 0
+                - cursor: default
+              custom_fields:
+                list:
+                  - display: block
+                  - width: 100%
+                  - height: 210px
+                  - overflow-y: auto
+                  - overflow-x: hidden
+                  - touch-action: pan-y
+                  - "-webkit-overflow-scrolling": touch
+                  - padding-right: 4px
+                  - scrollbar-width: none
+            custom_fields:
+              list:
+                card:
+                  type: vertical-stack
+                  cards:
+{% for e in slot.entities %}
+                    - type: custom:button-card
+                      entity: {{ e }}
+                      show_state: true
+                      size: 18px
+                      styles:
+                        grid:
+                          - grid-template-areas: '"i n s"'
+                          - grid-template-columns: 26px 1fr auto
+                          - align-items: center
+                          - column-gap: 8px
+                        card:
+                          - background: rgba(0,0,0,.22)
+                          - border: 1px solid rgba(0,229,255,.12)
+                          - border-radius: 10px
+                          - padding: 6px 10px
+                          - margin-bottom: 6px
+                          - height: 42px
+                        name:
+                          - justify-self: start
+                          - font-size: 11px
+                          - color: "#DCEEF6"
+                          - white-space: nowrap
+                          - overflow: hidden
+                          - text-overflow: ellipsis
+                        state:
+                          - justify-self: end
+                          - font-size: 11px
+                          - color: "#00E5FF"
+                        icon:
+                          - color: "#00E5FF"
+                      tap_action:
+                        action: toggle
+                      hold_action:
+                        action: more-info
+{% endfor %}
+
+{% elif slot_id == 'security' %}
+          # EN | One column on a phone. Two side-by-side camera feeds on a
+          # EN | 380px screen give 180px each — too small to recognise anyone
+          # EN | at the door, which is the whole point of the intercom.
+          # FR | Une colonne sur telephone. Deux flux camera cote a cote sur un
+          # FR | ecran de 380px donnent 180px chacun — trop petit pour
+          # FR | reconnaitre qui sonne, ce qui est tout l'interet de
+          # FR | l'interphone.
+{% set alarms = slot.by_domain.get('alarm_control_panel', []) %}
+{% set cameras = slot.by_domain.get('camera', []) %}
+{% set others = slot.entities | reject('in', alarms + cameras) | list %}
+{% for e in alarms %}
+          - type: custom:button-card
+            entity: {{ e }}
+            show_state: true
+            show_name: true
+            size: 24px
+            state:
+              - value: "disarmed"
+                color: "#8FB6C9"
+                icon: mdi:shield-off-outline
+              - value: "triggered"
+                color: "#FF4D6D"
+                icon: mdi:shield-alert
+              - operator: default
+                color: "#00FFC3"
+                icon: mdi:shield-check
+            styles:
+              grid:
+                - grid-template-areas: '"i n" "i s"'
+                - grid-template-columns: 40px 1fr
+                - align-items: center
+              card:
+                - background: rgba(0,0,0,.28)
+                - border: 1px solid rgba(0,229,255,.18)
+                - border-radius: 12px
+                - padding: 8px 10px
+                - margin-bottom: 8px
+                - height: 58px
+              name:
+                - justify-self: start
+                - font-size: 11px
+                - color: "#8FB6C9"
+              state:
+                - justify-self: start
+                - font-size: 13px
+                - font-family: Orbitron, sans-serif
+                - text-transform: uppercase
+            tap_action:
+              action: more-info
+{% endfor %}
+{% for e in cameras %}
+          - type: picture-entity
+            entity: {{ e }}
+            camera_view: live
+            show_name: true
+            show_state: false
+            card_mod:
+              style: |
+                ha-card {
+                  background: rgba(0,0,0,.35) !important;
+                  border: 1px solid rgba(0,229,255,.18) !important;
+                  border-radius: 12px !important;
+                  overflow: hidden;
+                  margin-bottom: 8px;
+                }
+{% endfor %}
+{% if others %}
+          - type: grid
+            columns: 2
+            square: false
+            cards:
+{% for e in others %}
+              - type: custom:button-card
+                entity: {{ e }}
+                show_state: true
+                size: 18px
+                styles:
+                  card:
+                    - background: rgba(0,0,0,.22)
+                    - border: 1px solid rgba(0,229,255,.12)
+                    - border-radius: 10px
+                    - padding: 6px
+                  name:
+                    - font-size: 10px
+                    - color: "#DCEEF6"
+                  state:
+                    - font-size: 10px
+                    - color: "#00E5FF"
+                tap_action:
+                  action: more-info
+{% endfor %}
+{% endif %}
+
+{% elif slot_id == 'audio' %}
+{% for e in slot.source %}
+          - type: media-control
+            entity: {{ e }}
+            card_mod:
+              style: |
+                ha-card {
+                  background: rgba(0,0,0,.28) !important;
+                  border: 1px solid rgba(0,229,255,.18) !important;
+                  border-radius: 12px !important;
+                }
+{% endfor %}
+{% if slot.has_speaker %}
+          - type: grid
+            columns: 2
+            square: false
+            cards:
+{% for e in slot.output %}
+              - type: custom:button-card
+                entity: {{ e }}
+                show_state: true
+                size: 16px
+                styles:
+                  card:
+                    - background: rgba(0,0,0,.22)
+                    - border: 1px solid rgba(0,229,255,.12)
+                    - border-radius: 10px
+                    - padding: 6px
+                  name:
+                    - font-size: 10px
+                    - color: "#DCEEF6"
+                  state:
+                    - font-size: 10px
+                    - color: "#00E5FF"
+                tap_action:
+                  action: more-info
+{% endfor %}
+{% else %}
+          - type: custom:button-card
+            show_icon: true
+            show_name: false
+            show_state: false
+            show_label: true
+            icon: mdi:speaker-off
+            label: "{{ t('slot.audio_no_speaker') }}"
+            tap_action:
+              action: none
+            styles:
+              card:
+                - background: transparent
+                - box-shadow: none
+                - border: none
+                - padding: 8px 0
+                - cursor: default
+                - pointer-events: none
+              icon:
+                - color: rgba(143,182,201,0.45)
+                - "--mdc-icon-size": 22px
+              label:
+                - color: rgba(143,182,201,0.65)
+                - font-size: 11px
+                - margin-top: 4px
+{% endif %}
+
+{% else %}
+          # EN | CLIMATE / LIGHTS / SHUTTERS — one row per device.
+          # FR | CLIMATE / LIGHTS / SHUTTERS — une ligne par appareil.
+{% for e in slot.entities %}
+          - type: custom:button-card
+            entity: {{ e }}
+            show_state: true
+            size: 20px
+            styles:
+              grid:
+                - grid-template-areas: '"i n s"'
+                - grid-template-columns: 28px 1fr auto
+                - align-items: center
+                - column-gap: 8px
+              card:
+                - background: rgba(0,0,0,.22)
+                - border: 1px solid rgba(0,229,255,.12)
+                - border-radius: 10px
+                - padding: 8px 10px
+                - margin-bottom: 6px
+                - height: 46px
+              name:
+                - justify-self: start
+                - font-size: 12px
+                - color: "#DCEEF6"
+                - white-space: nowrap
+                - overflow: hidden
+                - text-overflow: ellipsis
+              state:
+                - justify-self: end
+                - font-size: 12px
+                - font-family: Orbitron, sans-serif
+                - color: "#00E5FF"
+              icon:
+                - color: "#00E5FF"
+{% if slot_id == 'shutters' %}
+            tap_action:
+              action: more-info
+{% else %}
+            tap_action:
+              action: toggle
+            hold_action:
+              action: more-info
+{% endif %}
+{% endfor %}
+{% endif %}
+
+{% endfor %}
