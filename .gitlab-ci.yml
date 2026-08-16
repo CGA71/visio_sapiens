@@ -417,14 +417,60 @@ build:
     # FR | build. Si l'etape de rendu a ete sautee ou a echoue en silence,
     # FR | `__T:` arrive dans configuration.yaml et Home Assistant affiche le
     # FR | marqueur brut comme titre de dashboard dans la sidebar. On echoue ici.
+    #
+    # EN | TWO EXCLUSIONS, both deliberate:
+    # EN |   1. dist/vssp/ — the tooling DOCUMENTS this very syntax
+    # EN |      (vssp_i18n.py explains __T:key__ in its comments and help text).
+    # EN |      Those files are Python scripts and reference YAML; Home
+    # EN |      Assistant never renders them as configuration.
+    # EN |   2. comment lines — a marker inside a `#` comment is inert.
+    # EN | Scanning them anyway would make the guard fire on the code that
+    # EN | implements it, which is exactly what happened the first time.
+    # FR | DEUX EXCLUSIONS, toutes deux volontaires :
+    # FR |   1. dist/vssp/ — l'outillage DOCUMENTE cette syntaxe meme
+    # FR |      (vssp_i18n.py explique __T:cle__ dans ses commentaires et son
+    # FR |      aide). Ce sont des scripts Python et du YAML de reference ;
+    # FR |      Home Assistant ne les rend jamais comme configuration.
+    # FR |   2. les lignes de commentaire — un marqueur dans un `#` est inerte.
+    # FR | Les scanner ferait se declencher le garde-fou sur le code qui
+    # FR | l'implemente, ce qui est exactement ce qui s'est produit la
+    # FR | premiere fois.
     - |
-      if grep -rEn '__T:[A-Za-z0-9_.]+__' dist/ ; then
-        echo "[ERR] Unsubstituted translation placeholder(s) in the package."
-        echo "      The locale rendering step did not run, or did not cover"
-        echo "      these files. Nothing must reach /config with a raw __T: marker."
-        exit 1
-      fi
-      echo "[OK] no unsubstituted __T: placeholder in the package"
+      python3 - <<'PY'
+      import re, sys
+      from pathlib import Path
+
+      PLACEHOLDER = re.compile(r'__T:[A-Za-z0-9_.]+__')
+      # EN | Only what Home Assistant actually loads as configuration.
+      # FR | Uniquement ce que Home Assistant charge reellement comme config.
+      TARGETS = ['config-fragment.yaml', 'dashboards', 'packages',
+                 'themes', 'www']
+
+      bad = []
+      for target in TARGETS:
+          root = Path('dist') / target
+          paths = [root] if root.is_file() else sorted(
+              p for p in root.rglob('*') if p.is_file()) if root.exists() else []
+          for path in paths:
+              try:
+                  lines = path.read_text(encoding='utf-8').splitlines()
+              except (UnicodeDecodeError, OSError):
+                  continue
+              for n, line in enumerate(lines, 1):
+                  if line.lstrip().startswith(('#', '//')):
+                      continue
+                  for hit in PLACEHOLDER.findall(line):
+                      bad.append((path, n, hit))
+
+      for path, n, hit in bad:
+          print(f"[ERR] {path}:{n} unsubstituted placeholder -> {hit}")
+      if bad:
+          print(f"[ERR] {len(bad)} unsubstituted placeholder(s) in the package.")
+          print("      The locale rendering step did not run, or did not cover")
+          print("      these files. Nothing must reach /config with a raw marker.")
+          sys.exit(1)
+      print("[OK] no unsubstituted __T: placeholder in the deployed configuration")
+      PY
     # EN | Record the language inside the package so the deployed instance can
     # EN | report which locale it is actually running.
     # FR | Trace la langue dans le paquet pour que l'instance deployee puisse
