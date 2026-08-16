@@ -252,9 +252,16 @@ validate:
     # EN | Every __T:key__ used anywhere in the repo must resolve in the
     # EN | reference catalogue. Catching this here beats discovering an
     # EN | unreplaced placeholder in the Home Assistant sidebar.
+    # EN | COMMENT LINES ARE SKIPPED: a marker behind a `#` is inert, and the
+    # EN | files that document this very syntax are full of them. Scanning
+    # EN | them made the check fire on the code that explains it.
     # FR | Chaque __T:cle__ utilisee dans le depot doit se resoudre dans le
     # FR | catalogue de reference. Le detecter ici vaut mieux que de decouvrir
     # FR | une substitution non remplacee dans la barre laterale de HA.
+    # FR | LES LIGNES DE COMMENTAIRE SONT IGNOREES : un marqueur derriere un
+    # FR | `#` est inerte, et les fichiers qui documentent cette syntaxe meme
+    # FR | en sont remplis. Les scanner faisait se declencher le controle sur
+    # FR | le code qui l'explique.
     - |
       python3 - <<'PY'
       import re, sys, glob, yaml
@@ -277,6 +284,8 @@ validate:
               continue
           with open(f, encoding='utf-8') as fh:
               for n, line in enumerate(fh, 1):
+                  if line.lstrip().startswith(('#', '//')):
+                      continue
                   for key in PLACEHOLDER.findall(line):
                       if not has(key):
                           bad.append((f, n, key))
