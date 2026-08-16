@@ -231,6 +231,36 @@ validate:
     # EN | i18n engine: catalogues + engine must ship with the package
     # FR | Moteur i18n : catalogues + moteur doivent partir avec le paquet
     - test -f vssp/vssp_i18n.py || { echo "[ERR] vssp/vssp_i18n.py missing"; exit 1; }
+    - test -f vssp/generate_dashboards.py || { echo "[ERR] vssp/generate_dashboards.py missing"; exit 1; }
+    # EN | VERSION SKEW GUARD. This pipeline calls the generator with flags a
+    # EN | previous version did not have. When only one of the two is
+    # EN | committed, the build fails halfway through with an argparse usage
+    # EN | dump that says nothing about the real cause. Checking here names it.
+    # FR | GARDE-FOU DE DECALAGE DE VERSION. Ce pipeline appelle le generateur
+    # FR | avec des options qu'une version anterieure n'avait pas. Quand un
+    # FR | seul des deux est committe, le build echoue a mi-chemin sur un
+    # FR | usage argparse qui ne dit rien de la cause reelle. Le controler ici
+    # FR | la nomme.
+    - |
+      MISSING=""
+      HELP=$(python3 vssp/generate_dashboards.py --help 2>&1 || true)
+      # EN | Tokenise before matching: a substring test would accept
+      # EN | `--legacy--locale` as `--locale` and report a skew that is not
+      # EN | there — or worse, miss one that is.
+      # FR | Tokeniser avant de comparer : un test de sous-chaine accepterait
+      # FR | `--legacy--locale` comme `--locale` et signalerait un decalage
+      # FR | inexistant — ou pire, en manquerait un reel.
+      TOKENS=$(echo "$HELP" | tr -cs 'A-Za-z0-9-' '\n')
+      for flag in --locale --format --locales-dir --static-fragment --rooms-fragment; do
+        echo "$TOKENS" | grep -qx -- "$flag" || MISSING="$MISSING $flag"
+      done
+      if [ -n "$MISSING" ]; then
+        echo "[ERR] vssp/generate_dashboards.py does not support:$MISSING"
+        echo "      The committed generator is older than this .gitlab-ci.yml."
+        echo "      Commit the matching version of vssp/generate_dashboards.py."
+        exit 1
+      fi
+      echo "[OK] generate_dashboards.py supports every flag this pipeline uses"
     - test -f home-assistant/dashboards/locales/en.yaml || { echo "[ERR] locales/en.yaml missing (reference locale)"; exit 1; }
     - test -f "home-assistant/dashboards/locales/${VSSP_LOCALE}.yaml" || { echo "[ERR] locales/${VSSP_LOCALE}.yaml missing - VSSP_LOCALE=${VSSP_LOCALE} has no catalogue"; exit 1; }
     # EN | The router password must NEVER be committed.
