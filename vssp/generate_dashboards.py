@@ -180,6 +180,26 @@ FILLER_PRIORITY = ["shutters", "audio"]
 T_PLACEHOLDER = re.compile(r"__T:[A-Za-z0-9_.]+__")
 
 
+def slug(value: str) -> str:
+    """
+    EN | Turns a room id into a Home Assistant dashboard url_path.
+    EN | HA requires the url_path to contain a hyphen and rejects some
+    EN | characters; underscores in particular are a known source of silently
+    EN | unreachable dashboards. `living_room` therefore becomes
+    EN | `visio-sapiens-living-room`, while the VIEW path keeps the raw id —
+    EN | view paths have no such restriction, and the id stays the single
+    EN | identifier used everywhere else.
+    FR | Transforme un id de piece en url_path de dashboard Home Assistant.
+    FR | HA exige que l'url_path contienne un tiret et rejette certains
+    FR | caracteres ; les underscores en particulier sont une source connue de
+    FR | dashboards silencieusement inatteignables. `living_room` devient donc
+    FR | `visio-sapiens-living-room`, tandis que le chemin de VUE garde l'id
+    FR | brut — les chemins de vue n'ont pas cette restriction, et l'id reste
+    FR | l'identifiant unique utilise partout ailleurs.
+    """
+    return str(value).replace("_", "-").lower()
+
+
 class HaLoader(yaml.SafeLoader):
     """
     EN | SafeLoader tolerating Home Assistant tags (!include, etc.).
@@ -437,6 +457,15 @@ def build_rooms(model: dict, ctx_t) -> list:
         if index:
             label = f"{label} {index}"
 
+        # EN | url_path and the nav target must be derived from the SAME
+        # EN | slug, otherwise the rail links to a dashboard that does not
+        # EN | exist and the click silently does nothing.
+        # FR | L'url_path et la cible de navigation doivent venir du MEME
+        # FR | slug, sinon le bandeau pointe vers un dashboard inexistant et
+        # FR | le clic ne fait rien, en silence.
+        url_path = room.get("url_path") or f"visio-sapiens-{slug(rid)}"
+        url_path_mobile = room.get("url_path_mobile") or f"{url_path}-m"
+
         rooms.append({
             "id": rid,
             "type": rtype,
@@ -446,9 +475,10 @@ def build_rooms(model: dict, ctx_t) -> list:
             "icon": room.get("icon") or icons.get(rtype, "mdi:home-outline"),
             "slot_set": room.get("slot_set", "default"),
             "slots": normalise_slots(room, slot_sets),
-            "path": room.get("path") or f"/visio-sapiens-{rid}/{rid}",
-            "path_mobile": room.get("path_mobile")
-                           or f"/visio-sapiens-{rid}-m/{rid}",
+            "url_path": url_path,
+            "url_path_mobile": url_path_mobile,
+            "path": room.get("path") or f"/{url_path}/{rid}",
+            "path_mobile": room.get("path_mobile") or f"/{url_path_mobile}/{rid}",
         })
     return rooms
 
@@ -518,6 +548,137 @@ def preview_context(context: dict) -> dict:
     return ctx
 
 
+def write_rooms_fragment(path, rooms: list, formats: list, out_dir: Path,
+                         locale: str) -> dict:
+    """
+    EN | Writes the `lovelace.dashboards` entries for the generated room
+    EN | dashboards. Without this, every room dashboard exists on disk and is
+    EN | linked from the navigation rail, but Home Assistant knows none of
+    EN | those URLs — clicking a room does nothing at all.
+    FR | Ecrit les entrees `lovelace.dashboards` des dashboards de piece
+    FR | generes. Sans cela, chaque dashboard de piece existe sur le disque et
+    FR | est lie depuis le bandeau de navigation, mais Home Assistant ne
+    FR | connait aucune de ces URL — cliquer sur une piece ne fait rien.
+    #
+    EN | Three deliberate choices:
+    EN |   - the key is prefixed `visio-sapiens-`, because vssp_apply_config.py
+    EN |     only merges keys matching OSV_PREFIX and silently skips the rest;
+    EN |   - `filename` is relative to /config, like every other entry;
+    EN |   - the title is written already translated. This fragment is
+    EN |     generated in a known locale, so it carries no __T: marker and
+    EN |     needs no rendering step.
+    FR | Trois choix volontaires :
+    FR |   - la cle est prefixee `visio-sapiens-`, car vssp_apply_config.py ne
+    FR |     fusionne que les cles correspondant a OSV_PREFIX et ignore le
+    FR |     reste en silence ;
+    FR |   - `filename` est relatif a /config, comme toutes les autres entrees ;
+    FR |   - le titre est ecrit deja traduit. Ce fragment est genere dans une
+    FR |     langue connue, il ne porte donc aucun marqueur __T: et n'a besoin
+    FR |     d'aucune etape de rendu.
+    """
+    dashboards = {}
+    for room in rooms:
+        for target_format in formats:
+            mobile = target_format == "mobile"
+            key = room["url_path_mobile"] if mobile else room["url_path"]
+            name = f"{room['id']}_mobile.yaml" if mobile else f"{room['id']}.yaml"
+            # EN | Only declare a dashboard whose file actually exists.
+            # FR | Ne declarer qu'un dashboard dont le fichier existe vraiment.
+            if not (out_dir / name).is_file():
+                continue
+            dashboards[key] = {
+                "mode": "yaml",
+                "title": room["label"],
+                "icon": room["icon"],
+                # EN | Hidden from the Home Assistant sidebar: navigation goes
+                # EN | through the Visio Sapiens rail, and 15 extra entries
+                # EN | would drown the native sidebar.
+                # FR | Masque de la barre laterale Home Assistant : la
+                # FR | navigation passe par le bandeau Visio Sapiens, et 15
+                # FR | entrees de plus noieraient la sidebar native.
+                "show_in_sidebar": False,
+                "filename": f"dashboards/views/{name}",
+            }
+
+    header = (
+        "########################################################################\n"
+        "# Visio Sapiens — Room dashboards fragment\n"
+        "#\n"
+        "# *** GENERATED FILE — DO NOT EDIT BY HAND ***\n"
+        "# *** FICHIER GENERE — NE PAS EDITER A LA MAIN ***\n"
+        "#\n"
+        "# EN | Written by generate_dashboards.py. Merged into\n"
+        "# EN | configuration.yaml by vssp_apply_config.py, alongside the\n"
+        "# EN | static config-fragment.yaml which declares the system\n"
+        "# EN | dashboards.\n"
+        "# FR | Ecrit par generate_dashboards.py. Fusionne dans\n"
+        "# FR | configuration.yaml par vssp_apply_config.py, a cote du\n"
+        "# FR | config-fragment.yaml statique qui declare les dashboards\n"
+        "# FR | systeme.\n"
+        "#\n"
+        f"# EN | Locale: {locale} — regenerate after changing the language.\n"
+        f"# FR | Langue : {locale} — regenerer apres un changement de langue.\n"
+        "#\n"
+        "# EN | Removing a room from house.yaml removes it here, but NOT from\n"
+        "# EN | configuration.yaml: the patcher never deletes on its own. Use\n"
+        "# EN | vssp_apply_config.py --prune-dashboards to clear stale entries.\n"
+        "# FR | Retirer une piece de house.yaml la retire d'ici, mais PAS de\n"
+        "# FR | configuration.yaml : le patcher ne supprime jamais de lui-meme.\n"
+        "# FR | Utiliser vssp_apply_config.py --prune-dashboards pour nettoyer\n"
+        "# FR | les entrees obsoletes.\n"
+        "########################################################################\n\n"
+    )
+
+    body = yaml.safe_dump({"lovelace": {"dashboards": dashboards}},
+                          sort_keys=False, allow_unicode=True, default_flow_style=False)
+    p = Path(path)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    p.write_text(header + body, encoding="utf-8")
+    return dashboards
+
+
+def check_nav_targets(nav: list, declared: set, static_fragment,
+                      formats: list) -> list:
+    """
+    EN | Every navigation target must correspond to a declared dashboard.
+    EN | A rail entry pointing at an undeclared url_path is a link that does
+    EN | nothing when clicked — no error, no log, the page simply never opens.
+    EN | This is the navigation counterpart of the grid-area check: both catch
+    EN | a reference that resolves to nothing.
+    FR | Chaque cible de navigation doit correspondre a un dashboard declare.
+    FR | Une entree de bandeau pointant vers un url_path non declare est un
+    FR | lien qui ne fait rien au clic — aucune erreur, aucun log, la page ne
+    FR | s'ouvre simplement jamais. C'est le pendant navigation du controle
+    FR | des grid-area : tous deux attrapent une reference qui ne resout rien.
+    """
+    known = set(declared)
+    path = Path(static_fragment) if static_fragment else None
+    if path and path.is_file():
+        try:
+            loader = yaml.SafeLoader
+            loader.add_multi_constructor("!", lambda l, s_, n: None)
+            doc = yaml.load(path.read_text(encoding="utf-8"), Loader=loader) or {}
+            known |= set(((doc.get("lovelace") or {}).get("dashboards") or {}))
+        except (yaml.YAMLError, OSError) as exc:
+            print(f"[warn] {path} unreadable, nav check partial: {exc}")
+
+    wanted = []
+    for item in nav:
+        wanted.append(item.get("path"))
+        if "mobile" in formats:
+            wanted.append(item.get("path_mobile"))
+
+    missing = []
+    for target in wanted:
+        if not target:
+            continue
+        url = str(target).lstrip("/").split("/", 1)[0]
+        if url and url not in known:
+            missing.append(url)
+
+    return sorted(set(missing))
+
+
 def write_status(path, status: dict) -> None:
     """
     EN | JSON report read by the admin console (served under /local/vssp/...).
@@ -573,6 +734,16 @@ def main() -> int:
                          "(CREATE button of the ADMIN console).")
     ap.add_argument("--dry-run", action="store_true",
                     help="Validates the model and the render, writes nothing")
+    ap.add_argument("--static-fragment",
+                    default="home-assistant/config-fragment.yaml",
+                    help="Static fragment declaring the system dashboards. "
+                         "Read only, to check that every navigation target "
+                         "resolves.")
+    ap.add_argument("--rooms-fragment",
+                    default="home-assistant/config-fragment-rooms.yaml",
+                    help="Where to write the lovelace.dashboards entries of "
+                         "the generated room dashboards. Pass an empty string "
+                         "to skip.")
     ap.add_argument("--status-file", default=None,
                     help="Writes a JSON report (readable by the console at "
                          "/local/vssp/preview_status.json)")
@@ -793,7 +964,38 @@ def main() -> int:
                 "lines": len(rendered.splitlines()),
             })
 
+    # --- EN | Declare the generated room dashboards to Home Assistant ----
+    # --- FR | Declarer les dashboards de piece generes a Home Assistant --
+    # EN | Skipped in preview and dry-run: neither should touch what
+    # EN | production actually serves.
+    # FR | Saute en apercu et en dry-run : ni l'un ni l'autre ne doit toucher
+    # FR | a ce que la production sert reellement.
+    fragment_entries = {}
+    if args.rooms_fragment and not args.preview and not args.dry_run:
+        fragment_entries = write_rooms_fragment(
+            args.rooms_fragment, rooms, formats, out_dir, locale)
+        print(f"[OK] {args.rooms_fragment}: "
+              f"{len(fragment_entries)} room dashboard(s) declared")
+        if rooms and not fragment_entries:
+            print("[warn] no room dashboard declared — room.yaml.j2 is "
+                  "probably missing, so no room file was generated")
+
+        orphans = check_nav_targets(model["nav"], set(fragment_entries),
+                                    args.static_fragment, formats)
+        if orphans:
+            print(f"[warn] {len(orphans)} navigation target(s) declared in no "
+                  f"fragment — clicking them will do nothing:")
+            for url in orphans:
+                print(f"         - {url}")
+            print("       Declare them in config-fragment.yaml, or remove the "
+                  "entry from nav_system in house.yaml.")
+            status["warnings"].append(
+                f"navigation targets not declared: {', '.join(orphans)}")
+        else:
+            print("[OK] every navigation target resolves to a declared dashboard")
+
     status["ok"] = True
+    status["rooms_fragment"] = sorted(fragment_entries)
     status["locale"] = locale
     status["formats"] = formats
     status["rooms"] = len(rooms)
