@@ -46,6 +46,7 @@ room:
   jacuzzi: Jacuzzi
   roof: Toit de la maison
   computer: Bureau & salle informatique
+  secret: Pièce secrète
 
 # EN | Slot labels. The keys stay in English — only the labels change.
 # FR | Libelles des tableaux. Les cles restent en anglais — seuls les
