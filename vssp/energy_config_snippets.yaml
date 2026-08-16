@@ -42,13 +42,39 @@
 # ══════════════════════════════════════════════════════════════════════
 
 input_select:
+  # EN | ⚠ BREAKING CHANGE — the option VALUES moved from French to English.
+  # EN | They are identifiers, not labels: the JS in energy.yaml.j2 compares
+  # EN | them (state === 'Day'). The displayed tab label is translated
+  # EN | separately through t('energy.tab.day'), so a French interface still
+  # EN | reads Jour / Mois / Annee while the stored state stays Day.
+  # EN |
+  # EN | MIGRATION — the helper keeps its old state until you act:
+  # EN |   1. apply this file, then restart Home Assistant
+  # EN |   2. the helper still holds "Jour", which is no longer a valid
+  # EN |      option, so the tabs will match nothing and the charts stay empty
+  # EN |   3. set it once to Day (from the dashboard, Developer tools, or
+  # EN |      Settings > Helpers) and it is done for good
+  # FR | ⚠ CHANGEMENT CASSANT — les VALEURS d'options passent du francais a
+  # FR | l'anglais. Ce sont des identifiants, pas des libelles : le JS de
+  # FR | energy.yaml.j2 les compare (state === 'Day'). Le libelle d'onglet
+  # FR | affiche est traduit separement via t('energy.tab.day'), donc une
+  # FR | interface francaise affiche toujours Jour / Mois / Annee tandis que
+  # FR | l'etat stocke reste Day.
+  # FR |
+  # FR | MIGRATION — le helper garde son ancien etat tant qu'on n'agit pas :
+  # FR |   1. appliquer ce fichier, puis redemarrer Home Assistant
+  # FR |   2. le helper contient encore « Jour », qui n'est plus une option
+  # FR |      valide : les onglets ne correspondront a rien et les graphes
+  # FR |      resteront vides
+  # FR |   3. le repositionner une fois sur Day (depuis le dashboard, les
+  # FR |      outils de developpement ou Parametres > Aides) et c'est regle
   vssp_energy_period:
-    name: Visio Sapiens — Période énergie
+    name: "Visio Sapiens — Energy period"
     options:
-      - Jour
-      - Mois
-      - Année
-    initial: Jour
+      - Day
+      - Month
+      - Year
+    initial: Day
     icon: mdi:calendar-clock
 
 input_number:
