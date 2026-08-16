@@ -1,0 +1,78 @@
+{# =====================================================================
+   Visio Sapiens — MOBILE HEADER (shared partial)
+   Include:  {% raw %}{% include '_header_mobile.j2' %}{% endraw %}
+
+   EN | The mobile header is NOT the tablet header made narrower. On a phone
+   EN | three separate cards (title / weather / time) would each get a third
+   EN | of the width and become unreadable, so everything collapses into ONE
+   EN | card: icon + title + subtitle on the left, time + short date on the
+   EN | right. Weather does not fit here and lives in its own row instead.
+   FR | Le header mobile n'est PAS le header tablette retreci. Sur telephone,
+   FR | trois cartes separees (titre / meteo / heure) prendraient chacune un
+   FR | tiers de la largeur et deviendraient illisibles, donc tout se
+   FR | rassemble dans UNE carte : icone + titre + sous-titre a gauche,
+   FR | heure + date courte a droite. La meteo n'y tient pas et vit dans sa
+   FR | propre ligne.
+
+   EN | EXPECTED CONTEXT / FR | CONTEXTE ATTENDU
+     house, page_title, page_subtitle, page_path, page_icon, locale_tag
+
+   EN | The date uses Intl with the SHORT weekday and month, matching what
+   EN | the hardcoded ['Dim','Lun',...] arrays used to produce — except it
+   EN | now works in any language.
+   FR | La date utilise Intl avec le jour et le mois COURTS, ce que
+   FR | produisaient les tableaux ['Dim','Lun',...] codes en dur — sauf que
+   FR | cela fonctionne desormais dans toutes les langues.
+   ================================================================== #}
+      - type: custom:button-card
+        view_layout:
+          grid-area: header
+        entity: {{ house.time_entity }}
+        show_name: false
+        show_icon: false
+        show_state: false
+        show_label: true
+        tap_action:
+          action: navigate
+          navigation_path: {{ page_path }}
+        label: |
+          [[[
+            const LOCALE = '{{ locale_tag }}';
+            const d = new Date();
+            const time = new Intl.DateTimeFormat(LOCALE, {
+              hour: '2-digit', minute: '2-digit', hour12: false
+            }).format(d);
+            const date = new Intl.DateTimeFormat(LOCALE, {
+              weekday: 'short', day: 'numeric', month: 'short'
+            }).format(d);
+            return `
+              <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+                <div style="display:flex;align-items:center;gap:10px;min-width:0;">
+                  <ha-icon icon="{{ page_icon }}"
+                    style="--mdc-icon-size:24px;color:#00E5FF;flex:none;"></ha-icon>
+                  <div style="min-width:0;">
+                    <div style="font-family:Orbitron,sans-serif;font-size:17px;
+                      letter-spacing:2px;color:#FFFFFF;line-height:1;
+                      white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ page_title }}</div>
+                    <div style="font-size:10px;color:#8FB6C9;letter-spacing:.5px;
+                      margin-top:3px;white-space:nowrap;overflow:hidden;
+                      text-overflow:ellipsis;">{{ page_subtitle }}</div>
+                  </div>
+                </div>
+                <div style="text-align:right;flex:none;padding-left:8px;">
+                  <div style="font-family:Orbitron,sans-serif;font-size:20px;
+                    color:#00E5FF;line-height:1;">${time}</div>
+                  <div style="font-size:10px;color:#8FB6C9;margin-top:3px;
+                    text-transform:capitalize;">${date}</div>
+                </div>
+              </div>`;
+          ]]]
+        styles:
+          card:
+            - background: rgba(16,27,39,0.85)
+            - border: 1px solid rgba(0,229,255,0.28)
+            - border-radius: 18px
+            - box-shadow: 0 0 18px rgba(0,229,255,.12)
+            - padding: 14px 16px
+          label:
+            - width: 100%
