@@ -503,6 +503,16 @@ def build_rooms(model: dict, ctx_t) -> list:
             "icon": room.get("icon") or icons.get(rtype, "mdi:home-outline"),
             "slot_set": room.get("slot_set", "default"),
             "slots": normalise_slots(room, slot_sets),
+            # EN | Home Assistant area id, used by anything that targets an
+            # EN | area (the HOME logbook, area-scoped automations). Defaults
+            # EN | to the room id; override in house.yaml when the HA area is
+            # EN | named differently — they drift apart easily.
+            # FR | Identifiant de zone Home Assistant, utilise par tout ce qui
+            # FR | cible une zone (le journal de HOME, les automatisations par
+            # FR | zone). Vaut l'id de la piece par defaut ; a surcharger dans
+            # FR | house.yaml quand la zone HA porte un autre nom — les deux
+            # FR | divergent facilement.
+            "area_id": room.get("area_id") or rid,
             "url_path": url_path,
             "url_path_mobile": url_path_mobile,
             "path": room.get("path") or f"/{url_path}/{rid}",
