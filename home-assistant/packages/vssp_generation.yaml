@@ -1,0 +1,157 @@
+########################################################################
+# Visio Sapiens — GENERATION package
+#
+# EN | WHY THIS FILE EXISTS
+# EN | The ADMIN console's GENERATION panel references four entities. They
+# EN | were written into vssp/vssp_admin_config.yaml, which is a REFERENCE
+# EN | file: Home Assistant never loads it. What HA loads is this directory,
+# EN | through `homeassistant: packages: !include_dir_named packages` in
+# EN | config-fragment.yaml. Anything the dashboards reference must therefore
+# EN | live in home-assistant/packages/, not in vssp/.
+# EN | Symptom when it does not: four "Entity not found" cards, with no error
+# EN | in the logs — the dashboard renders fine, it just points at nothing.
+# FR | POURQUOI CE FICHIER EXISTE
+# FR | Le panneau GENERATION de la console ADMIN reference quatre entites.
+# FR | Elles etaient ecrites dans vssp/vssp_admin_config.yaml, qui est un
+# FR | fichier de REFERENCE : Home Assistant ne le charge jamais. Ce que HA
+# FR | charge, c'est ce repertoire, via
+# FR | `homeassistant: packages: !include_dir_named packages` dans
+# FR | config-fragment.yaml. Tout ce que les dashboards referencent doit donc
+# FR | vivre dans home-assistant/packages/, pas dans vssp/.
+# FR | Symptome sinon : quatre cartes « Entite non trouvee », sans erreur dans
+# FR | les logs — le dashboard s'affiche tres bien, il pointe juste vers rien.
+#
+# EN | BEFORE DEPLOYING — check for duplicate keys. Home Assistant refuses to
+# EN | start when two packages define the same key. If packages/vssp_admin.yaml
+# EN | already declares any of the names below, keep ONE of the two:
+# FR | AVANT DE DEPLOYER — verifier les cles en double. Home Assistant refuse
+# FR | de demarrer quand deux packages definissent la meme cle. Si
+# FR | packages/vssp_admin.yaml declare deja l'un des noms ci-dessous, n'en
+# FR | garder QU'UN des deux :
+#
+#   grep -n "vssp_language\|vssp_format\|vssp_render_fragment\|\
+# vssp_apply_fragment\|vssp_apply_language" home-assistant/packages/*.yaml
+########################################################################
+
+# ----------------------------------------------------------------------
+# EN | THE TWO SELECTORS THAT DRIVE EVERY GENERATED DASHBOARD
+# FR | LES DEUX SELECTEURS QUI PILOTENT TOUS LES DASHBOARDS GENERES
+# ----------------------------------------------------------------------
+# EN | CRITICAL — the option VALUES stay in English in every language. They
+# EN | are identifiers passed on a command line to generate_dashboards.py,
+# EN | not labels. Only the displayed name is translated, by the card that
+# EN | renders the selector.
+# FR | CRITIQUE — les VALEURS d'options restent en anglais dans toutes les
+# FR | langues. Ce sont des identifiants passes en ligne de commande a
+# FR | generate_dashboards.py, pas des libelles. Seul le nom affiche est
+# FR | traduit, par la carte qui rend le selecteur.
+input_select:
+  vssp_language:
+    name: "Visio Sapiens — Interface language"
+    options:
+      - en
+      - fr
+    initial: en
+    icon: mdi:translate
+
+  vssp_format:
+    name: "Visio Sapiens — Target format"
+    options:
+      - tablet
+      - mobile
+      - both
+    initial: tablet
+    icon: mdi:tablet-cellphone
+
+# ----------------------------------------------------------------------
+# EN | DIAGNOSTIC SENSORS
+# FR | CAPTEURS DE DIAGNOSTIC
+# ----------------------------------------------------------------------
+command_line:
+  # EN | The language actually deployed, written by the CI build into
+  # EN | /config/VSSP_LOCALE. When it differs from input_select.vssp_language,
+  # EN | a regeneration is pending — that gap is the whole point of showing it.
+  # FR | La langue reellement deployee, ecrite par le build CI dans
+  # FR | /config/VSSP_LOCALE. Quand elle differe de
+  # FR | input_select.vssp_language, une regeneration est en attente — cet
+  # FR | ecart est tout l'interet de l'afficher.
+  - sensor:
+      name: "VSSP Deployed Locale"
+      unique_id: vssp_deployed_locale
+      command: >-
+        cat /config/VSSP_LOCALE 2>/dev/null || echo "unknown"
+      scan_interval: 300
+
+  # EN | Counts unrendered translation markers left in the deployed fragment.
+  # EN | Anything above 0 means the fragment reached /config without passing
+  # EN | through vssp_i18n.py, and vssp_apply_config.py will refuse it.
+  # EN | Surfacing the number turns a silent failure into a visible one.
+  # FR | Compte les marqueurs de traduction non rendus restant dans le
+  # FR | fragment deploye. Toute valeur superieure a 0 signifie que le fragment
+  # FR | est arrive dans /config sans passer par vssp_i18n.py, et
+  # FR | vssp_apply_config.py le refusera. Afficher ce nombre transforme une
+  # FR | panne silencieuse en panne visible.
+  - sensor:
+      name: "VSSP Unrendered Placeholders"
+      unique_id: vssp_unrendered_placeholders
+      command: >-
+        grep -Eoc "__T:[A-Za-z0-9_.]+__" /config/config-fragment.yaml
+        2>/dev/null || echo 0
+      unit_of_measurement: "markers"
+      scan_interval: 300
+
+# ----------------------------------------------------------------------
+# EN | LANGUAGE CHAIN — render, then patch
+# FR | CHAINE DE LANGUE — rendre, puis patcher
+# ----------------------------------------------------------------------
+# EN | Order matters: vssp_apply_config.py REFUSES a fragment that still holds
+# EN | __T: markers, so a failed render stops the chain instead of pushing raw
+# EN | markers into the Home Assistant sidebar.
+# EN | Paths are /config-relative: the deploy job unpacks
+# EN | home-assistant/dashboards/ to /config/dashboards/, because /config IS
+# EN | the Home Assistant configuration root.
+# FR | L'ordre compte : vssp_apply_config.py REFUSE un fragment contenant
+# FR | encore des marqueurs __T:, donc un rendu en echec arrete la chaine au
+# FR | lieu de pousser des marqueurs bruts dans la barre laterale.
+# FR | Les chemins sont relatifs a /config : le job de deploiement deballe
+# FR | home-assistant/dashboards/ vers /config/dashboards/, car /config EST la
+# FR | racine de configuration de Home Assistant.
+shell_command:
+  vssp_render_fragment: >-
+    python3 /config/vssp/vssp_i18n.py
+    --locales-dir /config/dashboards/locales
+    render --locale {{ states('input_select.vssp_language') }}
+    --in /config/config-fragment.yaml
+    --out /config/vssp/config-fragment.rendered.yaml
+
+  vssp_apply_fragment: >-
+    python3 /config/vssp/vssp_apply_config.py
+    --config /config/configuration.yaml
+    --fragment /config/vssp/config-fragment.rendered.yaml
+    /config/config-fragment-rooms.yaml
+    --prune-dashboards
+
+script:
+  # EN | Dashboard titles in the sidebar are read from configuration.yaml at
+  # EN | startup only, hence the restart prompt in the message. The dashboard
+  # EN | CONTENT, on the other hand, is picked up by lovelace.reload.
+  # FR | Les titres de dashboards dans la barre laterale sont lus depuis
+  # FR | configuration.yaml uniquement au demarrage, d'ou l'invitation a
+  # FR | redemarrer dans le message. Le CONTENU des dashboards, lui, est pris
+  # FR | en compte par lovelace.reload.
+  vssp_apply_language:
+    alias: "Visio Sapiens — Apply the interface language"
+    sequence:
+      - service: shell_command.vssp_render_fragment
+      - service: shell_command.vssp_apply_fragment
+      - service: shell_command.vssp_generate_dashboards
+      - service: lovelace.reload
+      - service: persistent_notification.create
+        data:
+          title: "Visio Sapiens — Language applied"
+          message: >
+            Interface generated in
+            {{ states('input_select.vssp_language') }},
+            format {{ states('input_select.vssp_format') }}.
+            Dashboard titles in the sidebar are only re-read at startup:
+            restart Home Assistant to see them change.
