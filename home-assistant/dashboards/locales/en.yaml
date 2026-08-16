@@ -69,6 +69,7 @@ room:
   # FR | Piece historique, conservee pour le dashboard computer.yaml
   # FR | existant. Non proposee par le formulaire de la console admin.
   computer: Desk & server room
+  secret: Secret room
 
 # ----------------------------------------------------------------------
 # EN | SLOTS — the six fixed panels of a room dashboard. The KEY is the
