@@ -11,6 +11,26 @@
 # EN | Also create the backup folder on the pod:
 # FR | Creer aussi le dossier de sauvegarde sur le pod :
 #   mkdir -p /config/vssp/backups
+#
+# EN | PATHS ON THE POD — read this before editing any command below.
+# EN | The repository layout and the deployed layout are NOT the same. In git
+# EN | the dashboards live under `home-assistant/dashboards/`; the deploy job
+# EN | unpacks that directory to `/config/dashboards/`, because /config IS the
+# EN | Home Assistant configuration root. Every path here must therefore start
+# EN | at /config/dashboards, never /config/home-assistant/dashboards — the
+# EN | latter does not exist on the pod, and a shell_command pointing at it
+# EN | fails silently: the button appears to work, nothing happens, and the
+# EN | presence sensors report the dashboard as missing forever.
+# FR | CHEMINS SUR LE POD — a lire avant de modifier une commande ci-dessous.
+# FR | L'arborescence du depot et celle du deploiement ne sont PAS les memes.
+# FR | Dans git, les dashboards vivent sous `home-assistant/dashboards/` ; le
+# FR | job de deploiement deballe ce repertoire vers `/config/dashboards/`,
+# FR | car /config EST la racine de configuration de Home Assistant. Tout
+# FR | chemin ici doit donc commencer par /config/dashboards, jamais
+# FR | /config/home-assistant/dashboards — ce dernier n'existe pas sur le pod,
+# FR | et un shell_command qui le vise echoue en silence : le bouton semble
+# FR | fonctionner, rien ne se passe, et les capteurs de presence signalent le
+# FR | dashboard comme absent indefiniment.
 ########################################################################
 
 # --------------------------------------------------------------------
@@ -92,7 +112,7 @@ command_line:
       name: "VSSP Dashboard Energy Present"
       unique_id: vssp_dashboard_energy_present
       command: >-
-        test -s /config/home-assistant/dashboards/views/energy.yaml
+        test -s /config/dashboards/views/energy.yaml
         && echo ON || echo OFF
       payload_on: "ON"
       payload_off: "OFF"
@@ -106,7 +126,7 @@ command_line:
       name: "VSSP Dashboard Core Present"
       unique_id: vssp_dashboard_core_present
       command: >-
-        test -s /config/home-assistant/dashboards/views/core.yaml
+        test -s /config/dashboards/views/core.yaml
         && echo ON || echo OFF
       payload_on: "ON"
       payload_off: "OFF"
@@ -121,7 +141,7 @@ command_line:
       name: "VSSP Dashboard Energy Modified"
       unique_id: vssp_dashboard_energy_mtime
       command: >-
-        date -r /config/home-assistant/dashboards/views/energy.yaml
+        date -r /config/dashboards/views/energy.yaml
         "+%d/%m %H:%M" 2>/dev/null || echo "never generated"
       scan_interval: 300
 
@@ -171,10 +191,10 @@ shell_command:
     python3 /config/vssp/vssp_upgrade.py
   vssp_backup_dashboard: >-
     sh -c "mkdir -p /config/vssp/backups &&
-    cp /config/home-assistant/dashboards/home.yaml
+    cp /config/dashboards/views/home.yaml
     /config/vssp/backups/home_$(date +%Y%m%d_%H%M%S).yaml"
   vssp_delete_dashboard: >-
-    rm -f /config/home-assistant/dashboards/home.yaml
+    rm -f /config/dashboards/views/home.yaml
 
   # ------------------------------------------------------------------
   # EN | LANGUAGE — render the fragment before patching configuration.yaml
@@ -190,7 +210,7 @@ shell_command:
   # FR | commandes sont l'equivalent cote ADMIN de ce que fait le job build.
   vssp_render_fragment: >-
     python3 /config/vssp/vssp_i18n.py
-    --locales-dir /config/home-assistant/dashboards/locales
+    --locales-dir /config/dashboards/locales
     render --locale {{ states('input_select.vssp_language') }}
     --in /config/config-fragment.yaml
     --out /config/vssp/config-fragment.rendered.yaml
@@ -215,14 +235,14 @@ shell_command:
   # FR | house.yaml.
   vssp_generate_dashboards: >-
     python3 /config/vssp/generate_dashboards.py
-    --model /config/home-assistant/dashboards/model/house.yaml
-    --rooms /config/home-assistant/dashboards/model/house_rooms.yaml
-    --devices /config/home-assistant/dashboards/model/energy_devices.yaml
-    --templates /config/home-assistant/dashboards/templates_j2
-    --locales-dir /config/home-assistant/dashboards/locales
+    --model /config/dashboards/model/house.yaml
+    --rooms /config/dashboards/model/house_rooms.yaml
+    --devices /config/dashboards/model/energy_devices.yaml
+    --templates /config/dashboards/templates_j2
+    --locales-dir /config/dashboards/locales
     --locale {{ states('input_select.vssp_language') }}
     --format {{ states('input_select.vssp_format') }}
-    --out /config/home-assistant/dashboards/views
+    --out /config/dashboards/views
     --status-file /config/www/vssp/preview_status.json
 
   # ------------------------------------------------------------------
@@ -238,13 +258,13 @@ shell_command:
   vssp_create_energy: >-
     python3 /config/vssp/generate_dashboards.py
     --only energy --if-missing
-    --model /config/home-assistant/dashboards/model/house.yaml
-    --devices /config/home-assistant/dashboards/model/energy_devices.yaml
-    --templates /config/home-assistant/dashboards/templates_j2
-    --locales-dir /config/home-assistant/dashboards/locales
+    --model /config/dashboards/model/house.yaml
+    --devices /config/dashboards/model/energy_devices.yaml
+    --templates /config/dashboards/templates_j2
+    --locales-dir /config/dashboards/locales
     --locale {{ states('input_select.vssp_language') }}
     --format {{ states('input_select.vssp_format') }}
-    --out /config/home-assistant/dashboards/views
+    --out /config/dashboards/views
     --status-file /config/www/vssp/energy_generate_status.json
 
   # EN | REGENERATE: deliberately overwrites (after the script's backup).
@@ -252,21 +272,21 @@ shell_command:
   vssp_regenerate_energy: >-
     python3 /config/vssp/generate_dashboards.py
     --only energy
-    --model /config/home-assistant/dashboards/model/house.yaml
-    --devices /config/home-assistant/dashboards/model/energy_devices.yaml
-    --templates /config/home-assistant/dashboards/templates_j2
-    --locales-dir /config/home-assistant/dashboards/locales
+    --model /config/dashboards/model/house.yaml
+    --devices /config/dashboards/model/energy_devices.yaml
+    --templates /config/dashboards/templates_j2
+    --locales-dir /config/dashboards/locales
     --locale {{ states('input_select.vssp_language') }}
     --format {{ states('input_select.vssp_format') }}
-    --out /config/home-assistant/dashboards/views
+    --out /config/dashboards/views
     --status-file /config/www/vssp/energy_generate_status.json
 
   # EN | Targeted backup of the ENERGY dashboard alone.
   # FR | Sauvegarde ciblee du seul dashboard ENERGY.
   vssp_backup_energy: >-
     sh -c "mkdir -p /config/vssp/backups &&
-    [ -f /config/home-assistant/dashboards/views/energy.yaml ] &&
-    cp /config/home-assistant/dashboards/views/energy.yaml
+    [ -f /config/dashboards/views/energy.yaml ] &&
+    cp /config/dashboards/views/energy.yaml
     /config/vssp/backups/energy_$(date +%Y%m%d_%H%M%S).yaml || true"
 
   # ------------------------------------------------------------------
@@ -283,7 +303,7 @@ shell_command:
     python3 /config/vssp/vssp_energy_sync.py
     --url http://localhost:8123
     --token {{ states('input_text.vssp_ha_token') }}
-    --devices /config/home-assistant/dashboards/model/energy_devices.yaml
+    --devices /config/dashboards/model/energy_devices.yaml
     --status-file /config/www/vssp/energy_sync_status.json
 
   # EN | Same, but actually applies removals (ADMIN PRUNE button).
@@ -292,7 +312,7 @@ shell_command:
     python3 /config/vssp/vssp_energy_sync.py
     --url http://localhost:8123
     --token {{ states('input_text.vssp_ha_token') }}
-    --devices /config/home-assistant/dashboards/model/energy_devices.yaml
+    --devices /config/dashboards/model/energy_devices.yaml
     --status-file /config/www/vssp/energy_sync_status.json
     --prune
 
@@ -302,7 +322,7 @@ shell_command:
     python3 /config/vssp/vssp_energy_sync.py
     --url http://localhost:8123
     --token {{ states('input_text.vssp_ha_token') }}
-    --devices /config/home-assistant/dashboards/model/energy_devices.yaml
+    --devices /config/dashboards/model/energy_devices.yaml
     --status-file /config/www/vssp/energy_sync_status.json
     --dry-run
 
@@ -317,9 +337,9 @@ shell_command:
   # FR |    Le contenu arrive en base64 (variable content_b64) : pas de
   # FR |    probleme de quoting ni d'accents dans les noms de pieces.
   vssp_write_preview_model: >-
-    sh -c "mkdir -p /config/home-assistant/dashboards/model &&
+    sh -c "mkdir -p /config/dashboards/model &&
     printf '%s' '{{ content_b64 }}' | base64 -d
-    > /config/home-assistant/dashboards/model/house_rooms.preview.yaml"
+    > /config/dashboards/model/house_rooms.preview.yaml"
 
   # EN | 2) Generates energy_preview.yaml (url vssp-energy-preview) from the
   # EN |    preview model. --preview guarantees no staging file is written:
@@ -329,13 +349,13 @@ shell_command:
   # FR |    n'est ecrit : le nom de sortie et l'url_path sont suffixes.
   vssp_generate_preview: >-
     python3 /config/vssp/generate_dashboards.py
-    --model /config/home-assistant/dashboards/model/house.yaml
-    --rooms /config/home-assistant/dashboards/model/house_rooms.preview.yaml
-    --templates /config/home-assistant/dashboards/templates_j2
-    --locales-dir /config/home-assistant/dashboards/locales
+    --model /config/dashboards/model/house.yaml
+    --rooms /config/dashboards/model/house_rooms.preview.yaml
+    --templates /config/dashboards/templates_j2
+    --locales-dir /config/dashboards/locales
     --locale {{ states('input_select.vssp_language') }}
     --format {{ states('input_select.vssp_format') }}
-    --out /config/home-assistant/dashboards/views
+    --out /config/dashboards/views
     --preview
     --status-file /config/www/vssp/preview_status.json
 
@@ -343,21 +363,21 @@ shell_command:
   # FR | 3) Validation seule : ne produit aucun fichier, juste le rapport.
   vssp_validate_preview: >-
     python3 /config/vssp/generate_dashboards.py
-    --model /config/home-assistant/dashboards/model/house.yaml
-    --rooms /config/home-assistant/dashboards/model/house_rooms.preview.yaml
-    --templates /config/home-assistant/dashboards/templates_j2
-    --locales-dir /config/home-assistant/dashboards/locales
+    --model /config/dashboards/model/house.yaml
+    --rooms /config/dashboards/model/house_rooms.preview.yaml
+    --templates /config/dashboards/templates_j2
+    --locales-dir /config/dashboards/locales
     --locale {{ states('input_select.vssp_language') }}
     --format {{ states('input_select.vssp_format') }}
-    --out /config/home-assistant/dashboards/views
+    --out /config/dashboards/views
     --preview --dry-run
     --status-file /config/www/vssp/preview_status.json
 
   # EN | 4) Cleans the preview files (never the staging ones).
   # FR | 4) Nettoyage des fichiers d'apercu (jamais ceux du staging).
   vssp_clean_preview: >-
-    sh -c "rm -f /config/home-assistant/dashboards/views/energy_preview.yaml
-    /config/home-assistant/dashboards/model/house_rooms.preview.yaml
+    sh -c "rm -f /config/dashboards/views/energy_preview.yaml
+    /config/dashboards/model/house_rooms.preview.yaml
     /config/www/vssp/preview_status.json"
 
 # --------------------------------------------------------------------
