@@ -144,6 +144,17 @@ energy:
     self_consumption: Autoconsommation
     export_revenue: Revenu de revente
     total: Total
+  flow:
+    solar_panels: Panneaux solaires
+    inverter: Onduleur
+    home: Maison
+    grid: Réseau
+    current_production: Production actuelle
+    current_consumption: Consommation actuelle
+    status: Statut
+    status_unknown: Statut inconnu
+    running: En fonctionnement
+    stopped: À l'arrêt
   helper:
     period_name: "Visio Sapiens — Période énergie"
     solar_capacity_name: "Visio Sapiens — Capacité solaire annuelle"
