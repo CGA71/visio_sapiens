@@ -210,6 +210,8 @@ Three consumers, one catalogue:
 | Plain files (`config-fragment.yaml`, JS, CSS) | `__T:dashboard.energy.title__` |
 | Admin console | reads the merged catalogue as JSON |
 
+Two files look like they should hold translations and cannot. `templates/button_card_templates.yaml` and `decluttering_templates.yaml` are read as-is by Home Assistant through `!include`, so `t()` does not work there — displayed text must be passed in by the calling dashboard, already translated. Likewise, anything a dashboard *references* must be declared in `packages/`, which Home Assistant loads, and not in `vssp/`, which it never reads.
+
 Two rules keep this from breaking a working dashboard:
 
 1. **Stored state stays English.** `input_select` option values remain
@@ -286,33 +288,37 @@ by the dashboard generator and the i18n layer.
 └── home-assistant/
     ├── config-fragment.yaml     desired state of the Visio Sapiens keys
     │                            (lovelace, resources) — uses __VTOKEN__ and __T:key__
-    ├── packages/                vssp_energy_totaux.yaml (dynamic totals), …
+    ├── config-fragment-rooms.yaml   ← GENERATED — room dashboard declarations
+    ├── packages/                loaded by !include_dir_named — ANYTHING the
+    │   │                        dashboards reference must live here
+    │   ├── vssp_admin.yaml          ADMIN helpers, scripts, shell_command
+    │   ├── vssp_energy_totaux.yaml  dynamic totals
+    │   └── vssp_generation.yaml ← NEW — language and format selectors,
+    │                                deployed-locale and placeholder sensors
     ├── templates/               button_card_templates.yaml, decluttering_templates.yaml
     ├── dashboards/
-    │   ├── home.yaml            main dashboard /visio-sapiens (+ ADMIN view)
-    │   ├── home_mobile.yaml     mobile variant /visio-sapiens-m
     │   ├── admin/
     │   │   └── system_dashboards.yaml   ADMIN "system dashboards" card
     │   │                                (CORE/ENERGY, outside the room cycle)
-    │   ├── locales/            ← NEW
+    │   ├── locales/
     │   │   ├── en.yaml            reference catalogue — the contract
     │   │   └── fr.yaml            French overlay
-    │   ├── views/               generated room dashboards + system views
-    │   │   ├── core.yaml
-    │   │   ├── computer.yaml
-    │   │   ├── energy.yaml          ← GENERATED — do not edit by hand
-    │   │   ├── energy_mobile.yaml
-    │   │   ├── technical_room.yaml
-    │   │   └── technical_room_mobile.yaml
     │   ├── model/
-    │   │   └── house.yaml         source of truth: locale, format, rooms, devices, nav
-    │   └── templates_j2/        Jinja2 templates, mobile and tablet variants
-    │       ├── home.yaml.j2       ┐
-    │       ├── core.yaml.j2       │ the four system dashboards,
-    │       ├── energy.yaml.j2     │ generated at creation
-    │       ├── admin.yaml.j2      ┘
-    │       ├── room.yaml.j2       shared template, one render per room
-    │       └── nav.yaml.j2        dynamic navigation rail
+    │   │   └── house.yaml         source of truth: locale, format, rooms, slots, nav
+    │   ├── templates_j2/        one template per dashboard AND per format
+    │   │   ├── _header.j2         shared header band (tablet)
+    │   │   ├── _header_mobile.j2  compact header, title + clock in one card
+    │   │   ├── _nav.j2            dynamic vertical rail
+    │   │   ├── _nav_mobile.j2     scrolling chip bar
+    │   │   ├── home.yaml.j2       main dashboard — holds BOTH the HOME and
+    │   │   │                      ADMIN views, hence no admin.yaml.j2
+    │   │   ├── home_mobile.yaml.j2  HOME only; the console is a desk task
+    │   │   ├── energy.yaml.j2
+    │   │   ├── room.yaml.j2       shared template, one render per room
+    │   │   └── room_mobile.yaml.j2  single column, one slot per row
+    │   └── views/              ← GENERATED — do not edit by hand
+    │                              every rendered dashboard lands here, so a
+    │                              single include convention (../templates/)
     └── www/vssp/                CSS/JS engine, components, admin console, assets
         ├── css/  js/  components/  fonts/  icons/
         ├── wizard/              web form backing the admin console
