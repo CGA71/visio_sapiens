@@ -637,6 +637,43 @@ def write_rooms_fragment(path, rooms: list, formats: list, out_dir: Path,
     return dashboards
 
 
+def static_dashboards(static_fragment) -> set:
+    """
+    EN | Dashboard keys declared by the static fragment (the system ones).
+    FR | Cles de dashboards declarees par le fragment statique (les systeme).
+    """
+    path = Path(static_fragment) if static_fragment else None
+    if not path or not path.is_file():
+        return set()
+    try:
+        loader = yaml.SafeLoader
+        loader.add_multi_constructor("!", lambda l, s_, n: None)
+        doc = yaml.load(path.read_text(encoding="utf-8"), Loader=loader) or {}
+    except (yaml.YAMLError, OSError) as exc:
+        print(f"[warn] {path} unreadable: {exc}")
+        return set()
+    return set(((doc.get("lovelace") or {}).get("dashboards") or {}))
+
+
+def check_fragment_collisions(room_keys: set, static_keys: set) -> list:
+    """
+    EN | A key declared by BOTH fragments is merged twice, and the rooms
+    EN | fragment wins because it is applied second. The static declaration is
+    EN | silently replaced — a hand-written dashboard can be swapped for a
+    EN | generated one with no warning anywhere. Same failure shape as the
+    EN | grid-area and navigation checks: a reference that quietly resolves to
+    EN | something other than what was intended.
+    FR | Une cle declaree par les DEUX fragments est fusionnee deux fois, et
+    FR | le fragment des pieces gagne car il est applique en second. La
+    FR | declaration statique est remplacee en silence — un dashboard ecrit a
+    FR | la main peut etre echange contre un dashboard genere sans le moindre
+    FR | avertissement. Meme forme de defaillance que les controles des
+    FR | grid-area et de la navigation : une reference qui resout
+    FR | discretement vers autre chose que ce qui etait voulu.
+    """
+    return sorted(room_keys & static_keys)
+
+
 def check_nav_targets(nav: list, declared: set, static_fragment,
                       formats: list) -> list:
     """
@@ -979,6 +1016,22 @@ def main() -> int:
         if rooms and not fragment_entries:
             print("[warn] no room dashboard declared — room.yaml.j2 is "
                   "probably missing, so no room file was generated")
+
+        clashes = check_fragment_collisions(
+            set(fragment_entries), static_dashboards(args.static_fragment))
+        if clashes:
+            print(f"[ERR] {len(clashes)} dashboard key(s) declared by BOTH the "
+                  f"static fragment and the generated one:")
+            for key in clashes:
+                print(f"         - {key}")
+            print("       The generated declaration would silently replace the "
+                  "static one.")
+            print("       Either remove the entry from config-fragment.yaml, "
+                  "or rename the room id in house.yaml.")
+            status["errors"].append(
+                f"fragment key collision: {', '.join(clashes)}")
+            write_status(args.status_file, status)
+            return 1
 
         orphans = check_nav_targets(model["nav"], set(fragment_entries),
                                     args.static_fragment, formats)
