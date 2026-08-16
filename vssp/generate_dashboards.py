@@ -712,6 +712,54 @@ def check_fragment_collisions(room_keys: set, static_keys: set) -> list:
     return sorted(room_keys & static_keys)
 
 
+def check_declared_files(static_fragment, out_dir: Path, repo_root: Path) -> list:
+    """
+    EN | Every dashboard the static fragment declares must have a file. A
+    EN | declaration pointing at a file nothing generates gives Home Assistant
+    EN | a dashboard it cannot open: the sidebar entry exists, the URL exists,
+    EN | and clicking it produces an error page. Nothing in the pipeline
+    EN | notices, because the declaration is valid YAML and the file is simply
+    EN | absent.
+    EN | This is the third check of the same family — grid areas, navigation
+    EN | targets, dashboard keys — and it closes the last gap: a reference
+    EN | that resolves to no file at all.
+    FR | Chaque dashboard declare par le fragment statique doit avoir un
+    FR | fichier. Une declaration pointant vers un fichier que rien ne genere
+    FR | donne a Home Assistant un dashboard qu'il ne peut pas ouvrir :
+    FR | l'entree existe, l'URL existe, et cliquer produit une page d'erreur.
+    FR | Rien dans le pipeline ne le remarque, car la declaration est du YAML
+    FR | valide et le fichier est simplement absent.
+    FR | C'est le troisieme controle de la meme famille — zones de grille,
+    FR | cibles de navigation, cles de dashboards — et il ferme le dernier
+    FR | trou : une reference qui ne resout vers aucun fichier.
+    """
+    path = Path(static_fragment) if static_fragment else None
+    if not path or not path.is_file():
+        return []
+    try:
+        loader = yaml.SafeLoader
+        loader.add_multi_constructor("!", lambda l, s_, n: None)
+        doc = yaml.load(path.read_text(encoding="utf-8"), Loader=loader) or {}
+    except (yaml.YAMLError, OSError):
+        return []
+
+    missing = []
+    for key, entry in (((doc.get("lovelace") or {}).get("dashboards") or {})).items():
+        filename = (entry or {}).get("filename")
+        if not filename:
+            continue
+        # EN | `filename` is relative to /config; out_dir is where this run
+        # EN | writes. Compare on the basename, which is what actually has to
+        # EN | exist next to the other generated dashboards.
+        # FR | `filename` est relatif a /config ; out_dir est l'endroit ou ce
+        # FR | run ecrit. On compare sur le nom de fichier, qui est ce qui doit
+        # FR | reellement exister a cote des autres dashboards generes.
+        name = Path(filename).name
+        if not (out_dir / name).is_file():
+            missing.append((key, filename))
+    return missing
+
+
 def check_nav_targets(nav: list, declared: set, static_fragment,
                       formats: list) -> list:
     """
@@ -1027,11 +1075,38 @@ def main() -> int:
             # EN | YAML validation BEFORE writing
             # FR | Validation YAML AVANT ecriture
             try:
-                yaml.load(rendered, Loader=HaLoader)
+                doc = yaml.load(rendered, Loader=HaLoader)
             except yaml.YAMLError as exc:
                 msg = f"{name}: invalid YAML after render — not written"
                 print(f"[ERR] {msg}\n{exc}")
                 status["errors"].append(f"{msg} — {exc}")
+                write_status(args.status_file, status)
+                return 1
+
+            # EN | STRUCTURAL CHECK — parsing is not enough. A whitespace
+            # EN | mishap in a template can glue a key onto the previous line
+            # EN | and turn it into a comment: the result still parses, and the
+            # EN | key is simply gone. That is exactly how twenty dashboards
+            # EN | lost their `title` without a single error. A Lovelace
+            # EN | dashboard is a mapping with `title` and `views`; anything
+            # EN | else means the render was damaged.
+            # FR | CONTROLE STRUCTUREL — parser ne suffit pas. Un accident
+            # FR | d'espacement dans un template peut coller une cle sur la
+            # FR | ligne precedente et la transformer en commentaire : le
+            # FR | resultat parse toujours, et la cle a simplement disparu.
+            # FR | C'est exactement ainsi que vingt dashboards ont perdu leur
+            # FR | `title` sans la moindre erreur. Un dashboard Lovelace est
+            # FR | un mapping avec `title` et `views` ; toute autre forme
+            # FR | signifie que le rendu est abime.
+            required = [k for k in ("title", "views") if not isinstance(doc, dict)
+                        or k not in doc]
+            if required:
+                msg = (f"{name}: rendered YAML is missing "
+                       f"{', '.join(required)} — not written")
+                print(f"[ERR] {msg}")
+                print("      A key was probably absorbed into a comment. Check "
+                      "for {%- or -%} whitespace stripping in the template.")
+                status["errors"].append(msg)
                 write_status(args.status_file, status)
                 return 1
 
@@ -1082,6 +1157,20 @@ def main() -> int:
                 f"fragment key collision: {', '.join(clashes)}")
             write_status(args.status_file, status)
             return 1
+
+        no_file = check_declared_files(args.static_fragment, out_dir,
+                                       Path(args.model).parent)
+        if no_file:
+            print(f"[warn] {len(no_file)} declared dashboard(s) have no file — "
+                  f"opening them in Home Assistant will show an error page:")
+            for key, filename in no_file:
+                print(f"         - {key} -> {filename}")
+            print("       Either write the missing template, or remove the "
+                  "entry from config-fragment.yaml.")
+            status["warnings"].append(
+                f"declared but not generated: {', '.join(k for k, _ in no_file)}")
+        else:
+            print("[OK] every declared dashboard has a generated file")
 
         orphans = check_nav_targets(model["nav"], set(fragment_entries),
                                     args.static_fragment, formats)
