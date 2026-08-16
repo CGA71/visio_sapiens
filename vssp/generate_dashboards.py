@@ -63,12 +63,40 @@ SYSTEM_DASHBOARDS = [
     ("admin",  "admin.yaml.j2",  "admin.yaml",  {"active_nav": "admin"}),
 ]
 
-# EN | One shared template renders every room. The differences live in the
-# EN | data (slot set, device lists), never in a second template.
-# FR | Un unique template partage rend toutes les pieces. Les differences
-# FR | vivent dans la donnee (jeu de tableaux, listes d'appareils), jamais dans
-# FR | un second template.
+# EN | One shared template renders every room OF A GIVEN FORMAT. The
+# EN | differences between rooms live in the data (slot set, device lists),
+# EN | never in a second template.
+# EN | Formats are a different matter: a phone is not a narrow tablet. The
+# EN | navigation rail becomes a scrolling chip bar, the grid collapses to a
+# EN | single column with one slot per row, and the type scale shrinks. Trying
+# EN | to express that with `{% if format == 'mobile' %}` inside one file
+# EN | produces a template that is hard to read and, worse, silently renders a
+# EN | tablet layout under a mobile filename when a branch is missing.
+# EN | So: one template per format, and the generator refuses to substitute
+# EN | one for the other.
+# FR | Un unique template partage rend toutes les pieces D'UN FORMAT DONNE.
+# FR | Les differences entre pieces vivent dans la donnee (jeu de tableaux,
+# FR | listes d'appareils), jamais dans un second template.
+# FR | Les formats sont un autre sujet : un telephone n'est pas une tablette
+# FR | etroite. Le bandeau de navigation devient une barre de chips
+# FR | defilante, la grille s'effondre en une colonne avec un tableau par
+# FR | ligne, et l'echelle typographique diminue. Exprimer cela avec des
+# FR | `{% if format == 'mobile' %}` dans un seul fichier produit un template
+# FR | illisible et, pire, rend en silence une disposition tablette sous un
+# FR | nom de fichier mobile quand une branche manque.
+# FR | Donc : un template par format, et le generateur refuse de substituer
+# FR | l'un a l'autre.
 ROOM_TEMPLATE = "room.yaml.j2"
+
+
+def template_for(tpl_name: str, target_format: str) -> str:
+    """
+    EN | `room.yaml.j2` -> `room_mobile.yaml.j2` for the mobile format.
+    FR | `room.yaml.j2` -> `room_mobile.yaml.j2` pour le format mobile.
+    """
+    if target_format != "mobile":
+        return tpl_name
+    return tpl_name.replace(".yaml.j2", "_mobile.yaml.j2")
 
 # EN | Canonical slot order. The identifier is used as the key in house.yaml,
 # EN | as the CSS grid-area and as the section name in the template — the three
@@ -949,11 +977,23 @@ def main() -> int:
             # EN | project ships them one at a time. Reported, then skipped.
             # FR | Un template pas encore ecrit n'est pas une erreur : le projet
             # FR | les livre un par un. Signale, puis saute.
+            wanted_tpl = template_for(tpl_name, target_format)
             try:
-                template = env.get_template(tpl_name)
+                template = env.get_template(wanted_tpl)
             except TemplateNotFound:
-                print(f"[skip] {tpl_name} not found — {dash_id} not generated")
-                status["skipped"].append(f"{dash_id} ({tpl_name} missing)")
+                # EN | No fallback to the tablet template. Rendering a tablet
+                # EN | layout into a *_mobile.yaml file would produce a
+                # EN | dashboard that loads, looks broken on a phone, and
+                # EN | reports nothing. Skipping says what is missing.
+                # FR | Aucun repli sur le template tablette. Rendre une
+                # FR | disposition tablette dans un fichier *_mobile.yaml
+                # FR | produirait un dashboard qui se charge, s'affiche mal
+                # FR | sur telephone, et ne signale rien. Sauter dit ce qui
+                # FR | manque.
+                print(f"[skip] {wanted_tpl} not found — {dash_id} "
+                      f"({target_format}) not generated")
+                status["skipped"].append(
+                    f"{dash_id}/{target_format} ({wanted_tpl} missing)")
                 continue
 
             rendered = template.render(**context)
