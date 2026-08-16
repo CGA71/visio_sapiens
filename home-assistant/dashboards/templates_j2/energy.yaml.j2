@@ -1,42 +1,78 @@
 ########################################################################
 # Visio Sapiens — ENERGY Dashboard
 #
-# *** FICHIER GÉNÉRÉ — NE PAS ÉDITER À LA MAIN ***
-# Source : energy.yaml.j2 + model/house.yaml
-# Régénérer avec : python3 generate_dashboards.py
+# *** GENERATED FILE — DO NOT EDIT BY HAND ***
+# *** FICHIER GENERE — NE PAS EDITER A LA MAIN ***
 #
-# Emplacement attendu dans le repo :
+# EN | Source: energy.yaml.j2 + model/house.yaml + locales/<code>.yaml
+# FR | Source : energy.yaml.j2 + model/house.yaml + locales/<code>.yaml
+# EN | Regenerate with: python3 generate_dashboards.py
+# FR | Regenerer avec : python3 generate_dashboards.py
+#
+# EN | Expected location in the repo:
+# FR | Emplacement attendu dans le depot :
 #   home-assistant/dashboards/views/energy.yaml
 #
-# Même principe que core.yaml : dashboard Lovelace AUTONOME, déclaré dans
-# configuration.yaml sous `lovelace: dashboards:` avec url_path
-# "vssp-energy". Il garde donc le wrapper complet "title: / views: [...]"
-# au niveau racine — sans lui, Lovelace n'affiche plus aucune carte.
+# EN | Same principle as core.yaml: a STANDALONE Lovelace dashboard,
+# EN | declared in configuration.yaml under `lovelace: dashboards:` with
+# EN | url_path "vssp-energy". It therefore keeps the full
+# EN | "title: / views: [...]" wrapper at root level — without it Lovelace
+# EN | displays no card at all.
+# FR | Meme principe que core.yaml : dashboard Lovelace AUTONOME, declare
+# FR | dans configuration.yaml sous `lovelace: dashboards:` avec url_path
+# FR | "vssp-energy". Il garde donc le wrapper complet
+# FR | "title: / views: [...]" au niveau racine — sans lui, Lovelace
+# FR | n'affiche plus aucune carte.
 #
-# Structure conservée à l'identique de core.yaml :
-#   - bandeau vertical (sidebar nav, grid-area "nav")
-#   - première ligne du bandeau header (page_header + avatar OS)
-# Seule la zone de contenu change : elle reprend la maquette énergie
-# (production solaire, consommation par appareil, consommation totale,
-# schéma de fonctionnement, excédent/revente EDF, tableau électrique).
+# EN | The header band and the navigation rail now come from the shared
+# EN | partials _header.j2 and _nav.j2. They used to be ~165 duplicated
+# EN | lines here. Two consequences worth knowing:
+# EN |   - the date is produced by Intl.DateTimeFormat(locale_tag), so it
+# EN |     follows the language with no hardcoded weekday arrays;
+# EN |   - the rail is dynamic: 4 system entries + the declared rooms.
+# FR | Le bandeau horizontal et le bandeau de navigation viennent desormais
+# FR | des partials partages _header.j2 et _nav.j2. C'etait auparavant ~165
+# FR | lignes dupliquees ici. Deux consequences a connaitre :
+# FR |   - la date est produite par Intl.DateTimeFormat(locale_tag), elle
+# FR |     suit donc la langue sans tableau de jours code en dur ;
+# FR |   - le bandeau est dynamique : 4 entrees systeme + les pieces
+# FR |     declarees.
 #
-# ── PRÉREQUIS ─────────────────────────────────────────────────────────
-# 1. Ajouter les templates du fichier
-#      button_card_templates_energy_append.yaml
-#    À LA FIN de templates/button_card_templates.yaml
-# 2. Créer les helpers + capteurs du fichier
-#      energy_config_snippets.yaml
-# 3. Les entités, pièces, appareils et circuits sont définis dans
-#    model/house.yaml — c'est LÀ qu'on ajoute un nouvel objet, jamais ici.
+# EN | Every displayed string goes through t('key'). Nothing is hardcoded
+# EN | in one language — including the input_select tab labels, whose
+# EN | STORED VALUES stay Day/Month/Year because the JS below compares
+# EN | them. See the migration note in energy_config_snippets.yaml.
+# FR | Toute chaine affichee passe par t('cle'). Rien n'est code en dur
+# FR | dans une langue — y compris les libelles d'onglets de l'input_select,
+# FR | dont les VALEURS STOCKEES restent Day/Month/Year car le JS ci-dessous
+# FR | les compare. Voir la note de migration dans
+# FR | energy_config_snippets.yaml.
 #
-# Cartes HACS utilisées : button-card, card-mod, layout-card,
-# apexcharts-card, mini-graph-card, config-template-card.
+# EN | PREREQUISITES / FR | PREREQUIS
+# EN | 1. Append the templates from button_card_templates_energy_append.yaml
+# EN |    TO THE END of templates/button_card_templates.yaml
+# EN | 2. Create the helpers and sensors from energy_config_snippets.yaml
+# EN | 3. Entities, rooms, devices and circuits are defined in
+# EN |    model/house.yaml — that is where a new object is added, never here.
+# FR | 1. Ajouter les templates du fichier
+# FR |    button_card_templates_energy_append.yaml A LA FIN de
+# FR |    templates/button_card_templates.yaml
+# FR | 2. Creer les helpers + capteurs du fichier energy_config_snippets.yaml
+# FR | 3. Les entites, pieces, appareils et circuits sont definis dans
+# FR |    model/house.yaml — c'est LA qu'on ajoute un nouvel objet, jamais ici.
+#
+# EN | HACS cards used: button-card, card-mod, layout-card,
+# EN | apexcharts-card, mini-graph-card, config-template-card.
+# FR | Cartes HACS utilisees : button-card, card-mod, layout-card,
+# FR | apexcharts-card, mini-graph-card, config-template-card.
 ########################################################################
 title: {{ energy.title }}
 theme: {{ house.theme }}
 
-# Indispensable : sans ces includes, chaque custom:button-card affiche
-# « Erreur de configuration ». Chemin relatif à dashboards/views/.
+# EN | Required: without these includes every custom:button-card shows
+# EN | "Configuration error". Path is relative to dashboards/views/.
+# FR | Indispensable : sans ces includes, chaque custom:button-card affiche
+# FR | « Erreur de configuration ». Chemin relatif a dashboards/views/.
 button_card_templates: !include ../templates/button_card_templates.yaml
 decluttering_templates: !include ../templates/decluttering_templates.yaml
 
@@ -57,177 +93,35 @@ views:
       grid-gap: 14px 14px
     cards:
       # ═══════════════════════════════════════════════════════════════
-      # LIGNE 1 — HEADER : titre / météo / heure + logo
+      # EN | HEADER BAND — shared partial, identical on every dashboard
+      # FR | BANDEAU HORIZONTAL — partial partage, identique partout
       # ═══════════════════════════════════════════════════════════════
-      - type: horizontal-stack
-        view_layout:
-          grid-area: header
-        cards:
-
-          # ── Case 1 : titre ────────────────────────────────────────
-          - type: custom:button-card
-            template: vssp_page_header
-            icon: mdi:chevron-left
-            name: {{ energy.title }}
-            label: "{{ energy.subtitle }}"
-            tap_action:
-              action: navigate
-              navigation_path: /{{ energy.url_path }}/{{ energy.view_path }}
-            card_mod:
-              style: |
-                :host { flex: 1 1 0; }
-                ha-card {
-                  background: rgba(16,27,39,0.85) !important;
-                  border: 1px solid rgba(0,229,255,0.28) !important;
-                  border-radius: 20px !important;
-                  box-shadow: 0 0 18px rgba(0,229,255,.12) !important;
-                  height: 100px
-                }
-
-          # ── Case 2 : météo (carte NATIVE, toujours disponible) ─────
-          - type: custom:simple-weather-card
-            entity: {{ house.weather_entity }}
-            show_name: true
-            tap_action:
-              action: more-info
-            primary_info:
-              - extrema
-            secondary_info:
-              - precipitation
-            state_content: state
-            forecast_type: daily
-            custom: []
-            animated_icons: true
-            backdrop:
-              day: "#7cbfee"
-              night: "#a6aae8"
-              text: "#ffffff"
-              bg: true
-              fade: false
-            card_mod:
-              style: |
-                :host { flex: 1 1 0; }
-                ha-card {
-                  background: rgba(16,27,39,0.85) !important;
-                  border: 1px solid rgba(0,229,255,0.28) !important;
-                  border-radius: 20px !important;
-                  box-shadow: 0 0 18px rgba(0,229,255,.12) !important;
-                  height: 100px
-                }
-
-          # ── Case 3 : heure (button-card autonome, sans dépendance) ─
-          - type: custom:button-card
-            entity: {{ house.time_entity }}                                  # {{ house.time_entity }} (intégration "time_date")
-            show_name: false
-            show_icon: false
-            show_state: false
-            show_label: true
-            label: |
-              [[[
-                const d = new Date();
-                const h = String(d.getHours()).padStart(2,'0');
-                const m = String(d.getMinutes()).padStart(2,'0');
-                const jours = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
-                const mois = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
-                return `<div style="font-family:Orbitron,sans-serif;font-size:24px;color:#00E5FF;line-height:1;">${h}:${m}</div>
-                        <div style="font-size:11px;color:#8FB6C9;letter-spacing:.5px;margin-top:4px;">
-                          ${jours[d.getDay()]} ${d.getDate()} ${mois[d.getMonth()]} ${d.getFullYear()}</div>`;
-              ]]]
-            styles:
-              card:
-                - background: rgba(16,27,39,0.85)
-                - border: 1px solid rgba(0,229,255,0.28)
-                - border-radius: 20px
-                - box-shadow: 0 0 18px rgba(0,229,255,.12)
-                - padding: 0 20px
-              label:
-                - justify-self: start
-                - text-align: left
-            card_mod:
-              style: |
-                :host { flex: 1 1 0; }
-                ha-card {
-                  background: rgba(16,27,39,0.85) !important;
-                  border: 1px solid rgba(0,229,255,0.28) !important;
-                  border-radius: 20px !important;
-                  box-shadow: 0 0 18px rgba(0,229,255,.12) !important;
-                  height: 100px
-                }
+      # EN | Was ~95 lines duplicated here. Extracting it means the date now
+      # EN | comes from Intl.DateTimeFormat(locale_tag) instead of hardcoded
+      # EN | French weekday and month arrays — one change, every language.
+      # FR | C'etait ~95 lignes dupliquees ici. L'extraire fait que la date
+      # FR | vient desormais d'Intl.DateTimeFormat(locale_tag) au lieu de
+      # FR | tableaux de jours et de mois francais codes en dur — un seul
+      # FR | changement, toutes les langues.
+{% set page_title = energy.title %}
+{% set page_subtitle = t('page.energy.subtitle') %}
+{% set page_path = '/' ~ energy.url_path ~ '/' ~ energy.view_path %}
+{% include '_header.j2' %}
 
       # ═══════════════════════════════════════════════════════════════
-      # SIDEBAR NAV — identique à core.yaml, ENERGY passe en actif
+      # EN | NAVIGATION RAIL — shared partial, dynamic
+      # FR | BANDEAU DE NAVIGATION — partial partage, dynamique
       # ═══════════════════════════════════════════════════════════════
-      - type: vertical-stack
-        view_layout:
-          grid-area: nav
-        card_mod:
-          style: |
-            :host {
-              display: flex;
-              flex-direction: column;
-              height: 100%;
-              width: 100%;
-              min-width: 200px;
-              background: rgba(5,11,18,0.85);
-              border-radius: 20px;
-              border: 1px solid rgba(0,229,255,0.18);
-              padding: 16px 10px;
-              box-shadow: 0 0 18px rgba(0,229,255,.12);
-            }
-        cards:
-          - type: custom:button-card
-            template: vssp_sidebar_logo
-            icon: mdi:hexagon-outline
-            name: "VISIO SAPIENS"
-            label: "Smart Home OS"
-
-{% for item in nav %}
-          - type: custom:button-card
-            template: vssp_nav_button
-            icon: {{ item.icon }}
-            name: {{ item.name }}
-            label: "{{ item.label }}"
-{% if item.id == active_nav %}
-            variables:
-              active: true
-{% endif %}
-            tap_action:
-              action: navigate
-              navigation_path: {{ item.path }}
-
-{% endfor %}
-          - type: custom:button-card
-            show_icon: false
-            show_name: false
-            show_label: false
-            tap_action:
-              action: none
-            custom_fields:
-              logo: >
-                <img src="/local/vssp/images/logo_VS-Sapiens.png"
-                     style="width:100%;max-width:160px;display:block;margin:0 auto;mix-blend-mode:screen;filter:drop-shadow(0 0 8px rgba(0,229,255,.28));" />
-            styles:
-              card:
-                - background: transparent
-                - border: none
-                - box-shadow: none
-                - padding: 12px 6px 4px 6px
-              grid:
-                - grid-template-areas: '"logo"'
-              custom_fields:
-                logo:
-                  - width: 100%
-            card_mod:
-              style: |
-                :host { margin-top: auto; }
-                ha-card {
-                  background: transparent !important;
-                  border: none !important;
-                  box-shadow: none !important;
-                }
+      # EN | The rail length is now 4 system entries + the declared rooms.
+      # EN | It used to be a fixed hand-maintained list.
+      # FR | La longueur du bandeau vaut desormais 4 entrees systeme + les
+      # FR | pieces declarees. C'etait auparavant une liste fixe maintenue
+      # FR | a la main.
+{% include '_nav.j2' %}
 
       # ═══════════════════════════════════════════════════════════════
-      # PANNEAU 1 — PRODUCTION SOLAIRE
+      # EN | PANEL 1 — SOLAR PRODUCTION
+      # FR | PANNEAU 1 — PRODUCTION SOLAIRE
       # ═══════════════════════════════════════════════════════════════
       - type: vertical-stack
         view_layout:
@@ -249,7 +143,7 @@ views:
         cards:
           - type: custom:button-card
             template: vssp_section_title
-            name: "Production Solaire"
+            name: "{{ t('energy.panel.solar_production') }}"
 
           # ── Haut : capacité + illustration | jauge + cumuls ─────────
           - type: horizontal-stack
@@ -262,7 +156,7 @@ views:
                   - type: custom:button-card
                     template: vssp_energy_stat
                     entity: {{ energy.solar.capacity_helper }}
-                    label: "Capacité maximale"
+                    label: "{{ t('energy.stat.annual_capacity') }}"
                     variables:
                       accent: "#00FFC3"
                       size: "20px"
@@ -381,46 +275,51 @@ views:
                     card_mod:
                       style: |
                         :host { flex: 1.4 1 0; display: flex; align-items: center; }
-                  # Onglets Jour / Mois / Année (pilotent l'input_select)
+                  # EN | Day / Month / Year tabs (they drive the input_select).
+          # EN | The DISPLAYED label is translated; the STORED value stays
+          # EN | English because the JS below compares it.
+          # FR | Onglets Jour / Mois / Annee (pilotent l'input_select).
+          # FR | Le libelle AFFICHE est traduit ; la valeur STOCKEE reste
+          # FR | en anglais car le JS ci-dessous la compare.
                   - type: custom:button-card
                     template: vssp_energy_tab
                     entity: {{ energy.period_helper }}
-                    name: Jour
+                    name: "{{ t('energy.tab.day') }}"
                     icon: mdi:weather-sunny
                     variables:
-                      period: Jour
+                      period: Day
                     tap_action:
                       action: call-service
                       service: input_select.select_option
                       service_data:
                         entity_id: {{ energy.period_helper }}
-                        option: Jour
+                        option: Day
                   - type: custom:button-card
                     template: vssp_energy_tab
                     entity: {{ energy.period_helper }}
-                    name: Mois
+                    name: "{{ t('energy.tab.month') }}"
                     icon: mdi:calendar-month
                     variables:
-                      period: Mois
+                      period: Month
                     tap_action:
                       action: call-service
                       service: input_select.select_option
                       service_data:
                         entity_id: {{ energy.period_helper }}
-                        option: Mois
+                        option: Month
                   - type: custom:button-card
                     template: vssp_energy_tab
                     entity: {{ energy.period_helper }}
-                    name: Année
+                    name: "{{ t('energy.tab.year') }}"
                     icon: mdi:calendar
                     variables:
-                      period: Année
+                      period: Year
                     tap_action:
                       action: call-service
                       service: input_select.select_option
                       service_data:
                         entity_id: {{ energy.period_helper }}
-                        option: Année
+                        option: Year
 
               # Courbe : la période suit l'input_select via config-template-card
               - type: custom:config-template-card
@@ -431,12 +330,12 @@ views:
                   header:
                     show: false
                   graph_span: >-
-                    ${ states['{{ energy.period_helper }}'].state === 'Jour' ? '24h'
-                       : states['{{ energy.period_helper }}'].state === 'Mois' ? '30d' : '365d' }
+                    ${ states['{{ energy.period_helper }}'].state === 'Day' ? '24h'
+                       : states['{{ energy.period_helper }}'].state === 'Month' ? '30d' : '365d' }
                   span:
                     start: >-
-                      ${ states['{{ energy.period_helper }}'].state === 'Jour' ? 'day'
-                         : states['{{ energy.period_helper }}'].state === 'Mois' ? 'month' : 'year' }
+                      ${ states['{{ energy.period_helper }}'].state === 'Day' ? 'day'
+                         : states['{{ energy.period_helper }}'].state === 'Month' ? 'month' : 'year' }
                   series:
                     - entity: {{ energy.solar.power }}
                       name: "Production solaire"
@@ -445,8 +344,8 @@ views:
                       group_by:
                         func: avg
                         duration: >-
-                          ${ states['{{ energy.period_helper }}'].state === 'Jour' ? '30min'
-                             : states['{{ energy.period_helper }}'].state === 'Mois' ? '1d' : '30d' }
+                          ${ states['{{ energy.period_helper }}'].state === 'Day' ? '30min'
+                             : states['{{ energy.period_helper }}'].state === 'Month' ? '1d' : '30d' }
                   apex_config:
                     chart:
                       height: 132
@@ -489,19 +388,21 @@ views:
                 custom_fields:
                   cap: |
                     [[[
+                      const LOCALE = '{{ locale_tag }}';
                       const c = states['{{ energy.solar.capacity_helper }}'];
                       const cap = c ? Number(c.state) : 12500;
-                      return '<span style="color:#56707E;font-size:11px">Capacité annuelle : ' +
-                             cap.toLocaleString('fr-FR') + ' kWh</span>';
+                      return '<span style="color:#56707E;font-size:11px">{{ t('energy.stat.annual_capacity') }}: ' +
+                             cap.toLocaleString(LOCALE) + ' kWh</span>';
                     ]]]
                   goal: |
                     [[[
+                      const LOCALE = '{{ locale_tag }}';
                       const c = states['{{ energy.solar.capacity_helper }}'];
                       const cap = c ? Number(c.state) : 12500;
                       const y = entity && !isNaN(Number(entity.state)) ? Number(entity.state) : 0;
                       const pct = cap > 0 ? (y / cap * 100) : 0;
                       return '<span style="color:#00E5FF;font-size:11px;font-weight:600">' +
-                             pct.toLocaleString('fr-FR', { maximumFractionDigits: 1 }) +
+                             pct.toLocaleString(LOCALE, { maximumFractionDigits: 1 }) +
                              '% de l\'objectif annuel</span>';
                     ]]]
                 styles:
@@ -525,7 +426,8 @@ views:
                       - justify-self: end
 
       # ═══════════════════════════════════════════════════════════════
-      # PANNEAU 2 — CONSOMMATION PAR APPAREIL
+      # EN | PANEL 2 — PER-DEVICE CONSUMPTION
+      # FR | PANNEAU 2 — CONSOMMATION PAR APPAREIL
       # ═══════════════════════════════════════════════════════════════
       - type: vertical-stack
         view_layout:
@@ -548,7 +450,7 @@ views:
         cards:
           - type: custom:button-card
             template: vssp_section_title
-            name: "Consommation par appareil"
+            name: "{{ t('energy.panel.per_device') }}"
 
           # ── En-têtes de colonnes ───────────────────────────────────
           - type: custom:button-card
@@ -559,7 +461,7 @@ views:
               c1: '<span style="color:#56707E;font-size:11px">Appareil</span>'
               cr: '<span style="color:#8FB6C9;font-size:11px;display:block;text-align:right">Pièce</span>'
               c2: >
-                <span style="color:#8FB6C9;font-size:11px;display:block;text-align:right">Consommation<br>
+                <span style="color:#8FB6C9;font-size:11px;display:block;text-align:right">{{ t('energy.panel.total_consumption') }}<br>
                 <span style="color:#56707E;font-size:9px">(actuelle)</span></span>
               c3: >
                 <span style="color:#8FB6C9;font-size:11px;display:block;text-align:right">Énergie<br>
@@ -628,7 +530,8 @@ views:
                   type: vertical-stack
                   cards:
                     # ── Lignes appareils ──────────────────────────────
-                    # Liste PLATE : le dashboard ENERGY n'est pas un
+                    # EN | FLAT list: the ENERGY dashboard is not a room
+            # FR | Liste PLATE : le dashboard ENERGY n'est pas un
                     # dashboard de pièce. `room` n'est qu'un libellé de
                     # provenance affiché sous le nom de l'appareil.
                     # Alimentée par vssp_energy_sync.py (ajout/retrait
@@ -659,14 +562,15 @@ views:
                         room: "—"
                         model: "vssp_energy_sync.py"
 {% endif %}
-          # ── Total ──────────────────────────────────────────────────
+          # ── EN | Total / FR | Total ───────────────────────────────
           - type: custom:button-card
             template: vssp_energy_total_row
             entity: {{ energy.totals.power }}
-            name: "Consommation totale actuelle"
+            name: "{{ t('energy.stat.total') }}"
 
       # ═══════════════════════════════════════════════════════════════
-      # PANNEAU 3 — CONSOMMATION TOTALE
+      # EN | PANEL 3 — TOTAL CONSUMPTION
+      # FR | PANNEAU 3 — CONSOMMATION TOTALE
       # ═══════════════════════════════════════════════════════════════
       - type: vertical-stack
         view_layout:
@@ -688,7 +592,7 @@ views:
         cards:
           - type: custom:button-card
             template: vssp_section_title
-            name: "Consommation Totale"
+            name: "{{ t('energy.panel.total_consumption') }}"
 
           # Onglets (partagent le même input_select que la production)
           - type: horizontal-stack
@@ -696,42 +600,42 @@ views:
               - type: custom:button-card
                 template: vssp_energy_tab
                 entity: {{ energy.period_helper }}
-                name: Jour
+                name: "{{ t('energy.tab.day') }}"
                 icon: mdi:weather-sunny
                 variables:
-                  period: Jour
+                  period: Day
                 tap_action:
                   action: call-service
                   service: input_select.select_option
                   service_data:
                     entity_id: {{ energy.period_helper }}
-                    option: Jour
+                    option: Day
               - type: custom:button-card
                 template: vssp_energy_tab
                 entity: {{ energy.period_helper }}
-                name: Mois
+                name: "{{ t('energy.tab.month') }}"
                 icon: mdi:calendar-month
                 variables:
-                  period: Mois
+                  period: Month
                 tap_action:
                   action: call-service
                   service: input_select.select_option
                   service_data:
                     entity_id: {{ energy.period_helper }}
-                    option: Mois
+                    option: Month
               - type: custom:button-card
                 template: vssp_energy_tab
                 entity: {{ energy.period_helper }}
-                name: Année
+                name: "{{ t('energy.tab.year') }}"
                 icon: mdi:calendar
                 variables:
-                  period: Année
+                  period: Year
                 tap_action:
                   action: call-service
                   service: input_select.select_option
                   service_data:
                     entity_id: {{ energy.period_helper }}
-                    option: Année
+                    option: Year
 
           - type: custom:button-card
             template: vssp_energy_kpi
@@ -795,10 +699,11 @@ views:
             custom_fields:
               diagram: |
                 [[[
+                  const LOCALE = '{{ locale_tag }}';
                   const val = (id, dec) => {
                     const s = states[id];
                     if (!s || isNaN(Number(s.state))) return '—';
-                    return Number(s.state).toLocaleString('fr-FR', { minimumFractionDigits: dec, maximumFractionDigits: dec });
+                    return Number(s.state).toLocaleString(LOCALE, { minimumFractionDigits: dec, maximumFractionDigits: dec });
                   };
                   const node = (icon, title, sub, subColor, val, valColor) =>
                     '<div style="display:flex;flex-direction:column;align-items:center;gap:6px;min-width:96px;">' +
@@ -816,11 +721,11 @@ views:
                       '<ha-icon icon="mdi:menu-right" style="--mdc-icon-size:20px;color:' + color + ';margin-left:-8px;"></ha-icon>' +
                     '</div>';
                   const inv = states['{{ energy.solar.inverter_running }}'];
-                  const invTxt = !inv ? 'Statut inconnu' : (inv.state === 'on' ? 'En fonctionnement' : 'À l\'arrêt');
+                  const invTxt = !inv ? '{{ t("energy.flow.status_unknown") }}' : (inv.state === 'on' ? '{{ t("energy.flow.running") }}' : '{{ t("energy.flow.stopped") }}');
                   const invCol = (inv && inv.state === 'on') ? '#00FFC3' : '#FF3D71';
                   const exch =
                     '<div style="flex:1.2;display:flex;flex-direction:column;justify-content:center;gap:10px;padding-top:22px;min-width:86px;">' +
-                      '<div style="text-align:center;color:#FFD700;font-size:10px;">Excédent<br>' +
+                      '<div style="text-align:center;color:#FFD700;font-size:10px;">{{ t('energy.stat.exported') }}<br>' +
                         '<b style="font-size:13px;">' + val('{{ energy.grid.export_power }}', 2) + ' kW</b></div>' +
                       '<div style="display:flex;align-items:center;">' +
                         '<div style="height:2px;width:100%;background:linear-gradient(90deg,transparent,#FFD700);"></div>' +
@@ -839,18 +744,18 @@ views:
                       '<span style="color:#8FB6C9;font-size:10px;">' + txt + '</span></div>';
                   return '<div style="width:100%;">' +
                     '<div style="display:flex;align-items:flex-start;justify-content:space-between;width:100%;gap:4px;">' +
-                      node('mdi:solar-panel-large', 'Panneaux Solaires', 'Production actuelle', '#56707E', val('{{ energy.solar.power }}', 2) + ' kW', '#00FFC3') +
+                      node('mdi:solar-panel-large', '{{ t("energy.flow.solar_panels") }}', '{{ t("energy.flow.current_production") }}', '#56707E', val('{{ energy.solar.power }}', 2) + ' kW', '#00FFC3') +
                       arrow('#00FFC3') +
-                      node('mdi:power-plug-battery', 'Onduleur', 'Statut', '#56707E', invTxt, invCol) +
+                      node('mdi:power-plug-battery', '{{ t("energy.flow.inverter") }}', '{{ t("energy.flow.status") }}', '#56707E', invTxt, invCol) +
                       arrow('#00E5FF') +
-                      node('mdi:home-lightning-bolt', 'Maison', 'Consommation actuelle', '#56707E', val('{{ energy.totals.power }}', 2) + ' kW', '#00E5FF') +
+                      node('mdi:home-lightning-bolt', '{{ t("energy.flow.home") }}', '{{ t("energy.flow.current_consumption") }}', '#56707E', val('{{ energy.totals.power }}', 2) + ' kW', '#00E5FF') +
                       exch +
-                      node('mdi:transmission-tower', 'Réseau EDF', '\u00A0', '#56707E', '\u00A0', '#8FB6C9') +
+                      node('mdi:transmission-tower', '{{ t("energy.flow.grid") }}', '\u00A0', '#56707E', '\u00A0', '#8FB6C9') +
                     '</div>' +
                     '<div style="display:flex;gap:20px;justify-content:center;margin-top:12px;padding-top:10px;' +
                       'border-top:1px solid rgba(0,229,255,0.10);">' +
-                      legend('#00FFC3', 'Production') + legend('#00E5FF', 'Consommation') +
-                      legend('#FFD700', 'Excédent') + legend('#FF9800', 'Import') +
+                      legend('#00FFC3', '{{ t("energy.stat.produced") }}') + legend('#00E5FF', '{{ t("energy.stat.consumed") }}') +
+                      legend('#FFD700', '{{ t("energy.stat.exported") }}') + legend('#FF9800', '{{ t("energy.stat.imported") }}') +
                     '</div></div>';
                 ]]]
             styles:
@@ -890,21 +795,21 @@ views:
         cards:
           - type: custom:button-card
             template: vssp_section_title
-            name: "Excédent & Revente EDF"
+            name: "{{ t('energy.panel.grid') }}"
 
           - type: horizontal-stack
             cards:
               - type: custom:button-card
                 template: vssp_energy_stat
                 entity: {{ energy.grid.export_today }}
-                label: "Excédent aujourd'hui"
+                label: "{{ t('energy.stat.exported') }}"
                 variables:
                   accent: "#00FFC3"
                   size: "22px"
               - type: custom:button-card
                 template: vssp_energy_stat
                 entity: {{ energy.grid.export_month }}
-                label: "Excédent ce mois-ci"
+                label: "{{ t('energy.stat.export_revenue') }}"
                 variables:
                   accent: "#00FFC3"
                   size: "22px"
@@ -920,8 +825,9 @@ views:
               period: '<span style="color:#8FB6C9;font-size:12px;">Ce mois-ci</span>'
               tarif: |
                 [[[
+                  const LOCALE = '{{ locale_tag }}';
                   const t = states['{{ energy.solar.tarif_helper }}'];
-                  const v = t ? Number(t.state).toLocaleString('fr-FR', { minimumFractionDigits: 2 }) : '0,20';
+                  const v = t ? Number(t.state).toLocaleString(LOCALE, { minimumFractionDigits: 2 }) : '0,20';
                   return '<span style="color:#00E5FF;font-size:11px;border:1px solid rgba(0,229,255,.35);' +
                          'border-radius:8px;padding:4px 8px;background:rgba(0,229,255,.08);">' +
                          v + ' \u20AC/kWh</span>';
@@ -1011,7 +917,7 @@ views:
         cards:
           - type: custom:button-card
             template: vssp_section_title
-            name: "Tableau Électrique — Contrôle des Circuits (Shelly)"
+            name: "{{ t('energy.panel.breaker_panel') }}"
 
           # ── Circuits (générés depuis house.yaml, par rangées) ──────
 {% if not circuits %}
