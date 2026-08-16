@@ -303,6 +303,14 @@ admin:
   delete_dashboard: DELETE DASHBOARD
   pin_prompt: Enter the PIN code
   backup_created: Backup created
+  wizard: DISCOVERY WIZARD
+  wizard_hint: Define rooms and assign devices
+  discovery_hint: Scan Home Assistant entities (writes report.json)
+  upgrade_hint: Compare the dashboard with the discovered entities
+  delete_hint: Danger zone — code and confirmation required
+  generation: GENERATION
+  apply_language: APPLY LANGUAGE
+  apply_language_hint: Render the fragment, patch the config, regenerate
   system_dashboards: System dashboards
   select_language: Interface language
   select_format: Target format
@@ -310,6 +318,32 @@ admin:
   add_room: Add a room
   remove_room: Remove
   generated_at: Last generated
+
+# ----------------------------------------------------------------------
+# EN | HOME dashboard.
+# FR | Dashboard HOME.
+# ----------------------------------------------------------------------
+home:
+  intercom: Intercom
+  audio_stream: Audio stream
+  production_consumption: "PRODUCTION & CONSUMPTION"
+  kpi:
+    system_status: SYSTEM STATUS
+    system_status_hint: CORE metrics status
+    active_rooms: ACTIVE ROOMS
+    active_rooms_hint: Currently active
+    energy_status: ENERGY STATUS
+    energy_status_hint: ENERGY metrics status
+    connections: CONNECTIONS
+    connections_hint: Connected devices
+  alarm:
+    ok: All clear
+    alert: ALERT
+    armed: Armed
+    not_configured: Not configured
+    no_entity: Entity not configured
+    intrusion: Intrusion detected
+    no_alert: No alert
 
 wizard:
   # EN | Phase 0 — the two selectors that drive the whole generation.
