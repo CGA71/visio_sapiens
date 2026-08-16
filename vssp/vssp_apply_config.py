@@ -341,19 +341,50 @@ def merge(config, fragment, prune_resources=False):
     return changed
 
 
+def prune_dashboards(config, declared):
+    """
+    EN | Removes the Visio Sapiens dashboards that no fragment declares any
+    EN | more. Only keys matching OSV_PREFIX are ever considered — the user's
+    EN | own dashboards are never touched.
+    FR | Retire les dashboards Visio Sapiens qu'aucun fragment ne declare
+    FR | plus. Seules les cles correspondant a OSV_PREFIX sont considerees —
+    FR | les dashboards propres a l'utilisateur ne sont jamais touches.
+    """
+    lova = config.get("lovelace")
+    if not isinstance(lova, CommentedMap):
+        return False
+    dboards = lova.get("dashboards")
+    if not isinstance(dboards, CommentedMap):
+        return False
+    stale = [k for k in dboards
+             if str(k).startswith(OSV_PREFIX) and k not in declared]
+    for key in stale:
+        del dboards[key]
+        print(f"[OK] pruned stale dashboard: {key}")
+    return bool(stale)
+
+
 def main():
     ap = argparse.ArgumentParser(
         description="Idempotent configuration.yaml patcher (Visio Sapiens).")
     ap.add_argument("--config", required=True,
                     help="Path to the destination configuration.yaml")
-    ap.add_argument("--fragment", required=True,
-                    help="Path to the source config-fragment.yaml")
+    ap.add_argument("--fragment", required=True, nargs="+",
+                    help="One or more source fragments, merged in order. The "
+                         "static config-fragment.yaml declares the system "
+                         "dashboards; config-fragment-rooms.yaml, written by "
+                         "generate_dashboards.py, declares the room ones.")
     ap.add_argument("--vtoken", default="",
                     help="Version token (replaces __VTOKEN__)")
     ap.add_argument("--dry-run", action="store_true",
                     help="Print without writing")
     ap.add_argument("--prune-resources", action="store_true",
                     help="Drop Visio Sapiens resources absent from the fragment")
+    ap.add_argument("--prune-dashboards", action="store_true",
+                    help="Remove Visio Sapiens dashboards absent from the "
+                         "fragments. Needed after deleting a room: the merge "
+                         "alone never deletes, so its entry would linger in "
+                         "configuration.yaml and keep a dead sidebar item.")
     ap.add_argument("--allow-placeholders", action="store_true",
                     help="Merge a fragment that still holds __T: markers. "
                          "They will appear verbatim in the HA sidebar — only "
@@ -363,28 +394,49 @@ def main():
     if not os.path.isfile(args.config):
         sys.stderr.write(f"[ERR] Not found: {args.config}\n")
         sys.exit(1)
-    if not os.path.isfile(args.fragment):
-        sys.stderr.write(f"[ERR] Not found: {args.fragment}\n")
-        sys.exit(1)
-
-    # EN | Before anything else: a fragment that was never rendered must not
-    # EN | reach configuration.yaml.
-    # FR | Avant toute chose : un fragment jamais rendu ne doit pas atteindre
-    # FR | configuration.yaml.
-    check_placeholders(args.fragment, allow=args.allow_placeholders)
+    for frag in args.fragment:
+        if not os.path.isfile(frag):
+            sys.stderr.write(f"[ERR] Not found: {frag}\n")
+            sys.exit(1)
+        # EN | Before anything else: a fragment that was never rendered must
+        # EN | not reach configuration.yaml.
+        # FR | Avant toute chose : un fragment jamais rendu ne doit pas
+        # FR | atteindre configuration.yaml.
+        check_placeholders(frag, allow=args.allow_placeholders)
 
     y = _yaml()
     config = _load(args.config, y)
-    fragment = _load(args.fragment, y)
 
     if not isinstance(config, CommentedMap):
         sys.stderr.write(
             "[ERR] The target configuration.yaml is not a YAML mapping.\n")
         sys.exit(1)
 
-    _apply_vtoken(fragment, args.vtoken)
+    changed = False
+    declared = set()
+    for frag in args.fragment:
+        fragment = _load(frag, y)
+        _apply_vtoken(fragment, args.vtoken)
+        lova = fragment.get("lovelace")
+        if isinstance(lova, CommentedMap) and isinstance(lova.get("dashboards"), dict):
+            declared |= set(lova["dashboards"])
+        print(f"[i] merging {frag}")
+        if merge(config, fragment, prune_resources=args.prune_resources):
+            changed = True
 
-    changed = merge(config, fragment, prune_resources=args.prune_resources)
+    # EN | Deleting a room removes it from the fragment, but a merge never
+    # EN | deletes: without this, its dashboard entry stays in
+    # EN | configuration.yaml forever, pointing at a file that no longer
+    # EN | exists. Opt-in, because pruning is the one destructive operation
+    # EN | here and it must be a deliberate choice.
+    # FR | Supprimer une piece la retire du fragment, mais une fusion ne
+    # FR | supprime jamais : sans ceci, son entree de dashboard reste
+    # FR | indefiniment dans configuration.yaml, pointant vers un fichier qui
+    # FR | n'existe plus. Sur demande, car c'est la seule operation
+    # FR | destructive ici et elle doit etre un choix delibere.
+    if args.prune_dashboards and declared:
+        if prune_dashboards(config, declared):
+            changed = True
 
     if not changed:
         print("[OK] configuration.yaml already compliant — no change.")
