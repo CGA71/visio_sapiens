@@ -1,0 +1,100 @@
+{# =====================================================================
+   Visio Sapiens — NAVIGATION RAIL (shared partial)
+   Include:  {% raw %}{% include '_nav.j2' %}{% endraw %}
+
+   EN | The rail is DYNAMIC: it is rendered from the `nav` list composed by
+   EN | generate_dashboards.py as
+   EN |     nav_system.before_rooms + declared rooms + nav_system.after_rooms
+   EN | so its length is always 4 system entries + the number of rooms.
+   EN | Adding a bathroom in the admin console adds its entry to the rail on
+   EN | every dashboard at once. No navigation block is maintained by hand
+   EN | anywhere in the repository.
+   FR | Le bandeau est DYNAMIQUE : il est rendu depuis la liste `nav` composee
+   FR | par generate_dashboards.py comme
+   FR |     nav_system.before_rooms + pieces declarees + nav_system.after_rooms
+   FR | donc sa longueur vaut toujours 4 entrees systeme + le nombre de pieces.
+   FR | Ajouter une salle de bain dans la console admin ajoute son entree au
+   FR | bandeau sur tous les dashboards d'un coup. Aucun bloc de navigation
+   FR | n'est maintenu a la main dans le depot.
+
+   EN | EXPECTED CONTEXT / FR | CONTEXTE ATTENDU
+     house       - name, tagline, logo
+     nav         - composed entry list
+     active_nav  - id of the current dashboard, highlighted
+     format      - 'tablet' | 'mobile', selects path vs path_mobile
+   ================================================================== #}
+      - type: vertical-stack
+        view_layout:
+          grid-area: nav
+        card_mod:
+          style: |
+            :host {
+              display: flex;
+              flex-direction: column;
+              height: 100%;
+              width: 100%;
+              min-width: 200px;
+              background: rgba(5,11,18,0.85);
+              border-radius: 20px;
+              border: 1px solid rgba(0,229,255,0.18);
+              padding: 16px 10px;
+              box-shadow: 0 0 18px rgba(0,229,255,.12);
+              overflow-y: auto;
+              scrollbar-width: thin;
+              scrollbar-color: rgba(0,229,255,0.35) rgba(0,229,255,0.06);
+            }
+        cards:
+          - type: custom:button-card
+            template: vssp_sidebar_logo
+            icon: mdi:hexagon-outline
+            name: "{{ house.name }}"
+            label: "{{ house.tagline }}"
+
+{% for item in nav %}
+          - type: custom:button-card
+            template: vssp_nav_button
+            icon: {{ item.icon }}
+            name: {{ item.name }}
+            label: "{{ item.label }}"
+{% if item.id == active_nav %}
+            variables:
+              active: true
+{% endif %}
+            tap_action:
+              action: navigate
+{% if format == 'mobile' %}
+              navigation_path: {{ item.path_mobile }}
+{% else %}
+              navigation_path: {{ item.path }}
+{% endif %}
+
+{% endfor %}
+          - type: custom:button-card
+            show_icon: false
+            show_name: false
+            show_label: false
+            tap_action:
+              action: none
+            custom_fields:
+              logo: >
+                <img src="{{ house.logo }}"
+                     style="width:100%;max-width:160px;display:block;margin:0 auto;mix-blend-mode:screen;filter:drop-shadow(0 0 8px rgba(0,229,255,.28));" />
+            styles:
+              card:
+                - background: transparent
+                - border: none
+                - box-shadow: none
+                - padding: 12px 6px 4px 6px
+              grid:
+                - grid-template-areas: '"logo"'
+              custom_fields:
+                logo:
+                  - width: 100%
+            card_mod:
+              style: |
+                :host { margin-top: auto; }
+                ha-card {
+                  background: transparent !important;
+                  border: none !important;
+                  box-shadow: none !important;
+                }
