@@ -204,6 +204,14 @@ admin:
   delete_dashboard: SUPPRIMER LE DASHBOARD
   pin_prompt: Saisissez le code PIN
   backup_created: Sauvegarde créée
+  wizard: ASSISTANT DE DÉCOUVERTE
+  wizard_hint: Définir les pièces et assigner les appareils
+  discovery_hint: Scanner les entités Home Assistant (génère report.json)
+  upgrade_hint: Comparer le dashboard aux entités découvertes
+  delete_hint: Zone dangereuse — code et confirmation requis
+  generation: GÉNÉRATION
+  apply_language: APPLIQUER LA LANGUE
+  apply_language_hint: Rendre le fragment, patcher la config, regénérer
   system_dashboards: Dashboards système
   select_language: Langue de l'interface
   select_format: Format cible
@@ -211,6 +219,28 @@ admin:
   add_room: Ajouter une pièce
   remove_room: Retirer
   generated_at: Dernière génération
+
+home:
+  intercom: Interphone
+  audio_stream: Flux audio
+  production_consumption: "PRODUCTION & CONSOMMATION"
+  kpi:
+    system_status: SYSTEM STATUS
+    system_status_hint: Statut métriques CORE
+    active_rooms: PIÈCES ACTIVES
+    active_rooms_hint: En activité
+    energy_status: ENERGY STATUS
+    energy_status_hint: Statut métriques ENERGY
+    connections: CONNEXIONS
+    connections_hint: Appareils connectés
+  alarm:
+    ok: Parfait
+    alert: ALERTE
+    armed: Armée
+    not_configured: Non configuré
+    no_entity: Entité non configurée
+    intrusion: Intrusion détectée
+    no_alert: Aucune alerte
 
 wizard:
   language_step_title: Langue de l'interface
