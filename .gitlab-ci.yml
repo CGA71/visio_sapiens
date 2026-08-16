@@ -373,40 +373,67 @@ validate:
           print("[OK] %d fragment dashboard(s) covered by OSV_PREFIX=%r"
                 % (len(dboards), prefix))
       PY
-    # EN | A .yaml file holding Jinja syntax is a template saved in the wrong
-    # EN | place. The YAML parser reports it as "found character '%' that
-    # EN | cannot start any token", which says nothing about the real cause.
-    # EN | Templates belong in dashboards/templates_j2/ with a .j2 extension;
-    # EN | .yaml files under home-assistant/ are what Home Assistant loads
-    # EN | directly and must be plain YAML.
-    # FR | Un fichier .yaml contenant du Jinja est un template enregistre au
-    # FR | mauvais endroit. Le parser YAML le signale par « found character
-    # FR | '%' that cannot start any token », ce qui ne dit rien de la cause
-    # FR | reelle. Les templates vont dans dashboards/templates_j2/ avec
-    # FR | l'extension .j2 ; les fichiers .yaml sous home-assistant/ sont ceux
-    # FR | que Home Assistant charge directement et doivent etre du YAML pur.
+    # EN | A .yaml file holding a Visio Sapiens Jinja TEMPLATE is a template
+    # EN | saved in the wrong place. The YAML parser reports it as "found
+    # EN | character '%' that cannot start any token", which says nothing
+    # EN | about the real cause.
+    # EN |
+    # EN | CRITICAL — this must NOT test for Jinja syntax in general. Home
+    # EN | Assistant uses Jinja natively and legitimately: template sensors,
+    # EN | shell_command arguments, automations and even markdown cards are
+    # EN | full of `{% set %}` and `{{ states(...) }}`. Flagging those would
+    # EN | fail the build on perfectly correct files.
+    # EN | So we look for OUR OWN signatures instead — the partials and the
+    # EN | context variables only generate_dashboards.py provides. Those never
+    # EN | appear in a file Home Assistant loads directly.
+    # FR | Un fichier .yaml contenant un TEMPLATE Jinja Visio Sapiens est un
+    # FR | template enregistre au mauvais endroit. Le parser YAML le signale
+    # FR | par « found character '%' that cannot start any token », ce qui ne
+    # FR | dit rien de la cause reelle.
+    # FR |
+    # FR | CRITIQUE — ceci ne doit PAS tester la syntaxe Jinja en general.
+    # FR | Home Assistant utilise Jinja nativement et legitimement : capteurs
+    # FR | template, arguments de shell_command, automatisations et meme
+    # FR | cartes markdown sont pleins de `{% set %}` et `{{ states(...) }}`.
+    # FR | Les signaler ferait echouer le build sur des fichiers parfaitement
+    # FR | corrects.
+    # FR | On cherche donc NOS PROPRES signatures — les partials et les
+    # FR | variables de contexte que seul generate_dashboards.py fournit.
+    # FR | Elles n'apparaissent jamais dans un fichier charge directement par
+    # FR | Home Assistant.
     - |
       python3 - <<'PY'
       import re, sys, glob
-      JINJA = re.compile(r'\{%|\{\{')
+      SIGNATURES = [
+          (re.compile(r"\{%\s*include\s+'_"), "Visio Sapiens partial include"),
+          (re.compile(r"\{\{\s*t\("),          "t() translation call"),
+          (re.compile(r"\{\{\s*house\."),      "house.* context variable"),
+          (re.compile(r"\{\{\s*room\."),       "room.* context variable"),
+          (re.compile(r"\{\{\s*locale_tag"),   "locale_tag context variable"),
+          (re.compile(r"\{%\s*set\s+page_"),   "page_* template variable"),
+      ]
       bad = []
       for f in sorted(glob.glob('home-assistant/**/*.yaml', recursive=True)):
           with open(f, encoding='utf-8') as fh:
               for n, line in enumerate(fh, 1):
                   if line.lstrip().startswith('#'):
                       continue
-                  if JINJA.search(line):
-                      bad.append((f, n, line.strip()[:60]))
-                      break
-      for f, n, snippet in bad:
-          print(f"[ERR] {f}:{n} contains Jinja syntax -> {snippet}")
+                  for pattern, what in SIGNATURES:
+                      if pattern.search(line):
+                          bad.append((f, n, what, line.strip()[:60]))
+                          break
+                  else:
+                      continue
+                  break
+      for f, n, what, snippet in bad:
+          print(f"[ERR] {f}:{n} holds a {what} -> {snippet}")
       if bad:
-          print("      A template was saved as .yaml instead of .j2.")
+          print("      A generator template was saved as .yaml instead of .j2.")
           print("      Move it to home-assistant/dashboards/templates_j2/<name>.yaml.j2")
           print("      and delete the .yaml copy — the generator writes the")
           print("      rendered file itself.")
           sys.exit(1)
-      print("[OK] no Jinja syntax in plain YAML files")
+      print("[OK] no generator template saved as plain YAML")
       PY
     - |
       if [ -d home-assistant/themes ]; then
