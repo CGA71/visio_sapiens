@@ -1,0 +1,132 @@
+{# =====================================================================
+   Visio Sapiens — HEADER BAND (shared partial)
+   Include:  {% raw %}{% include '_header.j2' %}{% endraw %}
+
+   EN | The horizontal band every dashboard opens with — room and system
+   EN | alike: dashboard name, weather, date and time. Extracted from
+   EN | energy.yaml.j2 so it exists once instead of being copied into each
+   EN | template.
+   FR | Le bandeau horizontal par lequel s'ouvre chaque dashboard — de piece
+   FR | comme systeme : nom du dashboard, meteo, date et heure. Extrait de
+   FR | energy.yaml.j2 pour qu'il existe une seule fois au lieu d'etre
+   FR | recopie dans chaque template.
+
+   EN | EXPECTED CONTEXT / FR | CONTEXTE ATTENDU
+     house           - global identity (weather_entity, time_entity)
+     page_title      - large title, already translated by the caller
+     page_subtitle   - subtitle line, already translated
+     page_path       - navigation target when the title is tapped
+     locale_tag      - BCP-47 tag ('fr-FR', 'en-US') injected by the generator
+
+   EN | The date is produced by Intl.DateTimeFormat(locale_tag), NOT by
+   EN | hardcoded arrays. That single change is what makes the band say
+   EN | "Monday 4 August" or "lundi 4 août" with no translation work, and it
+   EN | keeps working for any language added later.
+   FR | La date est produite par Intl.DateTimeFormat(locale_tag), PAS par des
+   FR | tableaux codes en dur. Ce seul changement fait dire au bandeau
+   FR | « lundi 4 août » ou « Monday 4 August » sans aucun travail de
+   FR | traduction, et il continuera de fonctionner pour toute langue
+   FR | ajoutee plus tard.
+   ================================================================== #}
+      - type: horizontal-stack
+        view_layout:
+          grid-area: header
+        cards:
+
+          {# EN | Cell 1: title / FR | Case 1 : titre #}
+          - type: custom:button-card
+            template: vssp_page_header
+            icon: mdi:chevron-left
+            name: {{ page_title }}
+            label: "{{ page_subtitle }}"
+            tap_action:
+              action: navigate
+              navigation_path: {{ page_path }}
+            card_mod:
+              style: |
+                :host { flex: 1 1 0; }
+                ha-card {
+                  background: rgba(16,27,39,0.85) !important;
+                  border: 1px solid rgba(0,229,255,0.28) !important;
+                  border-radius: 20px !important;
+                  box-shadow: 0 0 18px rgba(0,229,255,.12) !important;
+                  height: 100px
+                }
+
+          {# EN | Cell 2: weather (native card, always available)
+             FR | Case 2 : meteo (carte native, toujours disponible) #}
+          - type: custom:simple-weather-card
+            entity: {{ house.weather_entity }}
+            show_name: true
+            tap_action:
+              action: more-info
+            primary_info:
+              - extrema
+            secondary_info:
+              - precipitation
+            state_content: state
+            forecast_type: daily
+            custom: []
+            animated_icons: true
+            backdrop:
+              day: "#7cbfee"
+              night: "#a6aae8"
+              text: "#ffffff"
+              bg: true
+              fade: false
+            card_mod:
+              style: |
+                :host { flex: 1 1 0; }
+                ha-card {
+                  background: rgba(16,27,39,0.85) !important;
+                  border: 1px solid rgba(0,229,255,0.28) !important;
+                  border-radius: 20px !important;
+                  box-shadow: 0 0 18px rgba(0,229,255,.12) !important;
+                  height: 100px
+                }
+
+          {# EN | Cell 3: time (standalone button-card, no dependency)
+             FR | Case 3 : heure (button-card autonome, sans dependance) #}
+          - type: custom:button-card
+            entity: {{ house.time_entity }}
+            show_name: false
+            show_icon: false
+            show_state: false
+            show_label: true
+            label: |
+              [[[
+                // EN | The locale tag comes from the generator: one constant,
+                // EN | and Intl handles every language on its own.
+                // FR | L'etiquette de langue vient du generateur : une seule
+                // FR | constante, et Intl gere toutes les langues tout seul.
+                const LOCALE = '{{ locale_tag }}';
+                const d = new Date();
+                const time = new Intl.DateTimeFormat(LOCALE, {
+                  hour: '2-digit', minute: '2-digit', hour12: false
+                }).format(d);
+                const date = new Intl.DateTimeFormat(LOCALE, {
+                  weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+                }).format(d);
+                return `<div style="font-family:Orbitron,sans-serif;font-size:24px;color:#00E5FF;line-height:1;">${time}</div>
+                        <div style="font-size:11px;color:#8FB6C9;letter-spacing:.5px;margin-top:4px;text-transform:capitalize;">${date}</div>`;
+              ]]]
+            styles:
+              card:
+                - background: rgba(16,27,39,0.85)
+                - border: 1px solid rgba(0,229,255,0.28)
+                - border-radius: 20px
+                - box-shadow: 0 0 18px rgba(0,229,255,.12)
+                - padding: 0 20px
+              label:
+                - justify-self: start
+                - text-align: left
+            card_mod:
+              style: |
+                :host { flex: 1 1 0; }
+                ha-card {
+                  background: rgba(16,27,39,0.85) !important;
+                  border: 1px solid rgba(0,229,255,0.28) !important;
+                  border-radius: 20px !important;
+                  box-shadow: 0 0 18px rgba(0,229,255,.12) !important;
+                  height: 100px
+                }
