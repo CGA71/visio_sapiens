@@ -1,17 +1,38 @@
 ########################################################################
 # Visio Sapiens — Decluttering-card Templates
-# Included from every dashboard via:
+#
+# EN | Included from every dashboard via:
+# FR | Inclus depuis chaque dashboard via :
 #   decluttering_templates: !include templates/decluttering_templates.yaml
+#
+# EN | Like button_card_templates.yaml, this file is NOT a Jinja template:
+# EN | Home Assistant reads it as-is through !include, so t('key') does not
+# EN | work here. Any displayed text must be passed in by the caller through
+# EN | a [[variable]], already translated by the generated dashboard.
+# FR | Comme button_card_templates.yaml, ce fichier n'est PAS un template
+# FR | Jinja : Home Assistant le lit tel quel via !include, donc t('cle') n'y
+# FR | fonctionne pas. Tout texte affiche doit etre fourni par l'appelant via
+# FR | une [[variable]], deja traduit par le dashboard genere.
 ########################################################################
 
 # ---------------------------------------------------------------------
 # vssp_gauge
-# Neon radial gauge built on apexcharts-card. One template, N reuses,
-# so adding/removing a metric (Storage, Network...) is a one-line change.
 #
-# Usage:
+# EN | Neon radial gauge built on apexcharts-card. One template, N reuses,
+# EN | so adding or removing a metric (Storage, Network...) is a one-line
+# EN | change instead of a copied block.
+# FR | Jauge radiale neon basee sur apexcharts-card. Un template, N
+# FR | reutilisations : ajouter ou retirer une metrique (Storage, Network...)
+# FR | est un changement d'une ligne au lieu d'un bloc recopie.
+#
+# EN | `name` is displayed, so pass it already translated — from the
+# EN | generated dashboard, that means t('...'), never a hardcoded string.
+# FR | `name` est affiche : le passer deja traduit — depuis le dashboard
+# FR | genere, cela veut dire t('...'), jamais une chaine en dur.
+#
+# EN | USAGE / FR | UTILISATION
 #   type: custom:decluttering-card
-#   template: osvision_gauge
+#   template: vssp_gauge
 #   variables:
 #     - entity: sensor.192_168_1_11_cpu_load
 #     - name: CPU
