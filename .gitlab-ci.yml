@@ -373,8 +373,41 @@ validate:
           print("[OK] %d fragment dashboard(s) covered by OSV_PREFIX=%r"
                 % (len(dboards), prefix))
       PY
-    # EN | Single source for the theme: themes/ at the repo root (HACS rule).
-    # FR | Source unique du theme : themes/ a la racine (impose par HACS).
+    # EN | A .yaml file holding Jinja syntax is a template saved in the wrong
+    # EN | place. The YAML parser reports it as "found character '%' that
+    # EN | cannot start any token", which says nothing about the real cause.
+    # EN | Templates belong in dashboards/templates_j2/ with a .j2 extension;
+    # EN | .yaml files under home-assistant/ are what Home Assistant loads
+    # EN | directly and must be plain YAML.
+    # FR | Un fichier .yaml contenant du Jinja est un template enregistre au
+    # FR | mauvais endroit. Le parser YAML le signale par « found character
+    # FR | '%' that cannot start any token », ce qui ne dit rien de la cause
+    # FR | reelle. Les templates vont dans dashboards/templates_j2/ avec
+    # FR | l'extension .j2 ; les fichiers .yaml sous home-assistant/ sont ceux
+    # FR | que Home Assistant charge directement et doivent etre du YAML pur.
+    - |
+      python3 - <<'PY'
+      import re, sys, glob
+      JINJA = re.compile(r'\{%|\{\{')
+      bad = []
+      for f in sorted(glob.glob('home-assistant/**/*.yaml', recursive=True)):
+          with open(f, encoding='utf-8') as fh:
+              for n, line in enumerate(fh, 1):
+                  if line.lstrip().startswith('#'):
+                      continue
+                  if JINJA.search(line):
+                      bad.append((f, n, line.strip()[:60]))
+                      break
+      for f, n, snippet in bad:
+          print(f"[ERR] {f}:{n} contains Jinja syntax -> {snippet}")
+      if bad:
+          print("      A template was saved as .yaml instead of .j2.")
+          print("      Move it to home-assistant/dashboards/templates_j2/<name>.yaml.j2")
+          print("      and delete the .yaml copy — the generator writes the")
+          print("      rendered file itself.")
+          sys.exit(1)
+      print("[OK] no Jinja syntax in plain YAML files")
+      PY
     - |
       if [ -d home-assistant/themes ]; then
         echo "[ERR] home-assistant/themes/ still exists and creates a duplicate source."
