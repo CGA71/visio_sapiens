@@ -212,7 +212,13 @@ validate:
   stage: validate
   image: alpine:latest
   script:
-    - apk add --no-cache python3 py3-yaml >/dev/null
+    # EN | py3-jinja2 is required even though this job renders nothing:
+    # EN | generate_dashboards.py imports jinja2 at module load, so `--help`
+    # EN | itself fails without it.
+    # FR | py3-jinja2 est necessaire meme si ce job ne rend rien :
+    # FR | generate_dashboards.py importe jinja2 au chargement du module, donc
+    # FR | `--help` lui-meme echoue sans lui.
+    - apk add --no-cache python3 py3-yaml py3-jinja2 >/dev/null
     - echo "Structural validation"
     - test -d home-assistant/dashboards || { echo "[ERR] home-assistant/dashboards missing"; exit 1; }
     - test -d home-assistant/templates  || { echo "[ERR] home-assistant/templates missing"; exit 1; }
@@ -243,7 +249,24 @@ validate:
     # FR | la nomme.
     - |
       MISSING=""
-      HELP=$(python3 vssp/generate_dashboards.py --help 2>&1 || true)
+      # EN | Separate the two failure modes. A script that cannot even start
+      # EN | (missing import, syntax error) prints no usage at all, so every
+      # EN | flag looks absent and the guard would blame a version skew that
+      # EN | does not exist. Check the exit code first and report what really
+      # EN | happened.
+      # FR | Separer les deux modes de defaillance. Un script qui ne demarre
+      # FR | meme pas (import manquant, erreur de syntaxe) n'affiche aucun
+      # FR | usage, donc toutes les options semblent absentes et le garde-fou
+      # FR | accuserait un decalage de version inexistant. On controle
+      # FR | d'abord le code de sortie et on signale ce qui s'est vraiment
+      # FR | produit.
+      if ! HELP=$(python3 vssp/generate_dashboards.py --help 2>&1); then
+        echo "[ERR] vssp/generate_dashboards.py cannot run at all:"
+        echo "$HELP" | sed 's/^/        /'
+        echo "      This is NOT a version skew — the script fails to start."
+        echo "      Usual cause: a missing Python dependency in this job's image."
+        exit 1
+      fi
       # EN | Tokenise before matching: a substring test would accept
       # EN | `--legacy--locale` as `--locale` and report a skew that is not
       # EN | there — or worse, miss one that is.
