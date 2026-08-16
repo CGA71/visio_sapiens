@@ -1,0 +1,102 @@
+########################################################################
+# Visio Sapiens — CORE Dashboard, MOBILE format
+#
+# EN | *** GENERATED FILE — DO NOT EDIT BY HAND ***
+# EN | Source: core_mobile.yaml.j2 + model/house.yaml + locales/<code>.yaml
+# EN | Regenerate with: python3 generate_dashboards.py --format mobile
+# FR | *** FICHIER GENERE — NE PAS EDITER A LA MAIN ***
+# FR | Source : core_mobile.yaml.j2 + model/house.yaml + locales/<code>.yaml
+# FR | Regenerer avec : python3 generate_dashboards.py --format mobile
+#
+# EN | CORE is the one dashboard where the mobile variant is nearly the same
+# EN | file, because its content is a single iframe and core.html handles its
+# EN | own responsive layout. Three things still differ, and they are the same
+# EN | three as everywhere else: the chip bar replaces the vertical rail, the
+# EN | header merges title and clock into one card, and the grid is a single
+# EN | column.
+# FR | CORE est le seul dashboard dont la variante mobile est presque le meme
+# FR | fichier, car son contenu est une unique iframe et core.html gere
+# FR | lui-meme sa mise en page responsive. Trois choses different quand meme,
+# FR | et ce sont les trois memes que partout ailleurs : la barre de chips
+# FR | remplace le bandeau vertical, l'en-tete fusionne titre et heure en une
+# FR | carte, et la grille est une seule colonne.
+#
+# EN | The iframe height is computed differently from tablet: the compact
+# EN | header (~76px) plus the chip bar (~40px) plus the margins leave less
+# EN | room than the 105px header of the tablet layout. Getting this wrong
+# EN | either clips core.html or leaves dead space under it.
+# FR | La hauteur de l'iframe est calculee differemment de la tablette :
+# FR | l'en-tete compact (~76px) plus la barre de chips (~40px) plus les
+# FR | marges laissent moins de place que l'en-tete de 105px de la
+# FR | disposition tablette. Se tromper ici rogne core.html ou laisse un vide
+# FR | dessous.
+########################################################################
+
+{% set core_nav = (nav | selectattr('id', 'equalto', 'core') | list | first) %}
+
+title: {{ t('system.core') }}
+theme: {{ house.theme }}
+
+# EN | Path relative to dashboards/views/, where every generated dashboard
+# EN | now lives.
+# FR | Chemin relatif a dashboards/views/, ou vivent desormais tous les
+# FR | dashboards generes.
+button_card_templates: !include ../templates/button_card_templates.yaml
+decluttering_templates: !include ../templates/decluttering_templates.yaml
+
+views:
+  - title: {{ t('page.core.name') }}
+    path: core
+    subview: false
+    type: custom:grid-layout
+    layout:
+      # EN | minmax(0,1fr), not 1fr — see room_mobile.yaml.j2 for why.
+      # FR | minmax(0,1fr) et non 1fr — voir room_mobile.yaml.j2 pour la raison.
+      grid-template-columns: minmax(0, 1fr)
+      grid-template-rows: auto
+      grid-template-areas: |
+        "header"
+        "nav"
+        "content"
+      margin: 8px
+      grid-gap: 12px 0px
+    cards:
+      # ═══════════════════════════════════════════════════════════════
+      # EN | COMPACT HEADER — title + clock on a single card
+      # FR | HEADER COMPACT — titre + heure sur une seule carte
+      # ═══════════════════════════════════════════════════════════════
+{% set page_title = t('page.core.name') %}
+{% set page_subtitle = t('page.core.subtitle') %}
+{% set page_icon = core_nav.icon %}
+{% set page_path = core_nav.path_mobile %}
+{% include '_header_mobile.j2' %}
+
+      # ═══════════════════════════════════════════════════════════════
+      # EN | NAVIGATION — one-line scrolling chip bar
+      # FR | NAVIGATION — barre de chips defilante sur une ligne
+      # ═══════════════════════════════════════════════════════════════
+{% include '_nav_mobile.j2' %}
+
+      # ═══════════════════════════════════════════════════════════════
+      # EN | CENTRAL CONTENT — core.html
+      # FR | CONTENU CENTRAL — core.html
+      # ═══════════════════════════════════════════════════════════════
+      - type: iframe
+        url: /local/vssp/core.html
+        view_layout:
+          grid-area: content
+        card_mod:
+          style: |
+            ha-card {
+              background: transparent !important;
+              border: none !important;
+              box-shadow: none !important;
+              overflow: hidden;
+              height: calc(100vh - 190px);
+              border-radius: 16px;
+            }
+            iframe {
+              width: 100%;
+              height: 100% !important;
+              border: none;
+            }
