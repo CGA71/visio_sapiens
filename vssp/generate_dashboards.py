@@ -82,10 +82,93 @@ SLOTS = ["climate", "lights", "appliances", "shutters", "security", "audio"]
 # EN | Slot sets. `default` applies unless the room says otherwise.
 # FR | Jeux de tableaux. `default` s'applique sauf mention contraire.
 DEFAULT_SLOT_SETS = {
-    "default": SLOTS,
-    "toilet":  ["climate", "lights", "shutters", "audio"],
-    "garden":  ["climate", "lights", "appliances", "security", "audio"],
+    "default":  SLOTS,
+    "toilet":   ["climate", "lights", "shutters", "audio"],
+    "garden":   ["climate", "lights", "appliances", "security", "audio"],
+    "utility":  ["climate", "lights", "appliances", "security"],
+    "entrance": ["climate", "lights", "security"],
+    "minimal":  ["lights", "security"],
 }
+
+# ----------------------------------------------------------------------------
+# EN | GRID LAYOUTS — one per slot set, overridable from house.yaml.
+# EN | Written by hand rather than computed: collapsing a grid algorithmically
+# EN | produces layouts nobody chose. The fewer slots a room has, the more room
+# EN | the remaining ones get — an entrance with three slots can give `security`
+# EN | four columns and two rows, which is what an intercom feed plus a camera
+# EN | mosaic actually needs.
+# FR | GABARITS DE GRILLE — un par jeu de tableaux, surchargeable depuis
+# FR | house.yaml. Ecrits a la main plutot que calcules : effondrer une grille
+# FR | algorithmiquement produit des dispositions que personne n'a choisies.
+# FR | Moins une piece a de tableaux, plus les restants ont de place — une
+# FR | entree a trois tableaux peut donner a `security` quatre colonnes et deux
+# FR | lignes, ce dont un flux d'interphone plus une mosaique de cameras a
+# FR | reellement besoin.
+# ----------------------------------------------------------------------------
+DEFAULT_LAYOUTS = {
+    "default": {
+        "rows": "105px 260px 300px 220px",
+        "areas": [
+            "nav header   header   header   header   header",
+            "nav climate  climate  lights   lights   appliances",
+            "nav security security security shutters appliances",
+            "nav security security security audio    audio",
+        ],
+    },
+    "toilet": {
+        "rows": "105px 300px 300px",
+        "areas": [
+            "nav header   header   header   header   header",
+            "nav climate  climate  climate  lights   lights",
+            "nav shutters shutters shutters audio    audio",
+        ],
+    },
+    "garden": {
+        "rows": "105px 280px 320px",
+        "areas": [
+            "nav header   header   header   header   header",
+            "nav climate  climate  lights   lights   appliances",
+            "nav security security security audio    appliances",
+        ],
+    },
+    "utility": {
+        "rows": "105px 280px 320px",
+        "areas": [
+            "nav header   header   header   header    header",
+            "nav climate  climate  lights   lights    appliances",
+            "nav security security security security  appliances",
+        ],
+    },
+    # EN | Three slots: `security` takes four columns over two rows. An
+    # EN | entrance is where the intercom lives — it deserves the space that
+    # EN | the absent slots free up.
+    # FR | Trois tableaux : `security` prend quatre colonnes sur deux lignes.
+    # FR | Une entree est l'endroit ou vit l'interphone — il merite la place
+    # FR | que liberent les tableaux absents.
+    "entrance": {
+        "rows": "105px 300px 300px",
+        "areas": [
+            "nav header   header   header   header   header",
+            "nav security security security security lights",
+            "nav security security security security climate",
+        ],
+    },
+    # EN | Two slots: `security` fills almost the whole view.
+    # FR | Deux tableaux : `security` occupe presque toute la vue.
+    "minimal": {
+        "rows": "105px 620px",
+        "areas": [
+            "nav header   header   header   header   header",
+            "nav security security security security lights",
+        ],
+    },
+}
+
+# EN | Grid areas that are not slots. Everything else in a layout must match a
+# EN | slot of the corresponding set.
+# FR | Zones de grille qui ne sont pas des tableaux. Tout le reste d'un gabarit
+# FR | doit correspondre a un tableau du jeu concerne.
+NON_SLOT_AREAS = {"nav", "header"}
 
 # EN | At most one Visio Sapiens filler animation per dashboard, on the first
 # EN | slot of this list that is in the room's set and holds no device.
@@ -183,6 +266,65 @@ def validate_model(model: dict) -> tuple[list, list]:
     return errors, warnings
 
 
+def validate_layouts(model: dict) -> tuple[list, list]:
+    """
+    EN | Checks each layout against its slot set. This catches the one failure
+    EN | mode a rendered dashboard will never report: a slot present in the set
+    EN | but absent from the grid areas produces a card with a `grid-area` that
+    EN | does not exist, so the panel is simply NOT DISPLAYED — no error, no
+    EN | log, nothing. The reverse (an area with no slot) leaves a hole in the
+    EN | grid, which is visible but still unintended.
+    FR | Verifie chaque gabarit face a son jeu de tableaux. Cela attrape le seul
+    FR | mode de defaillance qu'un dashboard rendu ne signalera jamais : un
+    FR | tableau present dans le jeu mais absent des zones de grille produit une
+    FR | carte avec un `grid-area` inexistant, donc le panneau n'est tout
+    FR | simplement PAS AFFICHE — aucune erreur, aucun log, rien. L'inverse
+    FR | (une zone sans tableau) laisse un trou dans la grille, visible mais
+    FR | tout aussi involontaire.
+    """
+    errors: list = []
+    warnings: list = []
+
+    slot_sets = {**DEFAULT_SLOT_SETS, **(model.get("slot_sets") or {})}
+    layouts = {**DEFAULT_LAYOUTS, **(model.get("layouts") or {})}
+
+    # EN | Only check the sets actually used by a declared room.
+    # FR | Ne verifier que les jeux reellement utilises par une piece declaree.
+    used = {r.get("slot_set", "default") for r in (model.get("rooms") or [])}
+
+    for set_name in sorted(used):
+        if set_name not in slot_sets:
+            # EN | Already reported by validate_model / FR | Deja signale
+            continue
+        if set_name not in layouts:
+            warnings.append(
+                f"Slot set `{set_name}` has no grid layout — falling back to "
+                f"`default`, which may not match its slots")
+            continue
+
+        declared = set(slot_sets[set_name])
+        areas = set()
+        for line in layouts[set_name].get("areas", []):
+            areas.update(str(line).split())
+        areas -= NON_SLOT_AREAS
+
+        invisible = sorted(declared - areas)
+        orphan = sorted(areas - declared)
+
+        if invisible:
+            errors.append(
+                f"Slot set `{set_name}`: slot(s) {', '.join(invisible)} have no "
+                f"grid area in layout `{set_name}` — their panel would not be "
+                f"displayed at all")
+        if orphan:
+            warnings.append(
+                f"Slot set `{set_name}`: layout declares area(s) "
+                f"{', '.join(orphan)} that are not slots of the set — they "
+                f"leave an empty cell in the grid")
+
+    return errors, warnings
+
+
 # ----------------------------------------------------------------------------
 # EN | Room and navigation composition
 # FR | Composition des pieces et de la navigation
@@ -234,6 +376,26 @@ def normalise_slots(room: dict, slot_sets: dict) -> dict:
             entities = list(value or [])
             entry = {"id": slot_id, "entities": entities,
                      "state": "filled" if entities else "empty"}
+
+        # EN | Entities grouped by Home Assistant domain, order preserved.
+        # EN | The `security` slot needs this: an alarm state, an intercom
+        # EN | video feed and a camera mosaic are three different visual
+        # EN | natures that cannot share one card. Classifying here rather
+        # EN | than in the template keeps the template about presentation —
+        # EN | and Jinja has no regex test, so doing it there would mean an
+        # EN | awkward workaround anyway.
+        # FR | Entites groupees par domaine Home Assistant, ordre preserve.
+        # FR | Le tableau `security` en a besoin : un etat d'alarme, un flux
+        # FR | video d'interphone et une mosaique de cameras sont trois
+        # FR | natures visuelles differentes qui ne peuvent pas partager une
+        # FR | seule carte. Classer ici plutot que dans le template garde le
+        # FR | template sur la presentation — et Jinja n'a pas de test regex,
+        # FR | donc le faire la-bas imposerait un contournement de toute facon.
+        by_domain = {}
+        for ent in entry["entities"]:
+            domain = str(ent).split(".", 1)[0]
+            by_domain.setdefault(domain, []).append(ent)
+        entry["by_domain"] = by_domain
 
         out[slot_id] = entry
 
@@ -481,10 +643,12 @@ def main() -> int:
         model["energy_devices"] = flatten_rooms(model.get("rooms", []))
 
     errors, warns = validate_model(model)
+    layout_errors, layout_warns = validate_layouts(model)
+    errors += layout_errors
+    warns += layout_warns
     status["warnings"] = warns
     if warns:
-        print(f"[warn] {len(warns)} field(s) to complete in "
-              f"model/energy_devices.yaml:")
+        print(f"[warn] {len(warns)} point(s) to review:")
         for w in warns[:5]:
             print(f"  - {w}")
         if len(warns) > 5:
@@ -503,6 +667,14 @@ def main() -> int:
     model["rooms_rendered"] = rooms
     model["nav"] = build_nav(model, rooms)
     model["slots"] = SLOTS
+    # EN | Layouts reach the template as data, so a grid can be tuned in
+    # EN | house.yaml without touching room.yaml.j2 — and so validate_layouts
+    # EN | can check the very same values the template will use.
+    # FR | Les gabarits arrivent au template comme donnee, donc une grille se
+    # FR | regle dans house.yaml sans toucher a room.yaml.j2 — et
+    # FR | validate_layouts controle exactement les valeurs que le template
+    # FR | utilisera.
+    model["layouts"] = {**DEFAULT_LAYOUTS, **(model.get("layouts") or {})}
     print(f"[i] navigation: {len(model['nav'])} entries "
           f"({len(model['nav']) - len(rooms)} system + {len(rooms)} room(s))")
 
