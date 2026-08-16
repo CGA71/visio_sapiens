@@ -370,7 +370,7 @@ build:
   stage: build
   image: alpine:latest
   script:
-    - apk add --no-cache python3 py3-yaml >/dev/null
+    - apk add --no-cache python3 py3-yaml py3-jinja2 >/dev/null
     - export OSV_VERSION="${CI_COMMIT_TAG:-dev-${CI_COMMIT_SHORT_SHA}}"
     - echo "Build $OSV_VERSION - locale ${VSSP_LOCALE}"
     - mkdir -p dist/dashboards/templates dist/themes dist/www
@@ -401,6 +401,39 @@ build:
     - rm -f  dist/vssp/.gitkeep
     - chmod +x dist/vssp/*.py
     - echo "[i] Bundled scripts:" && ls -1 dist/vssp/
+    # --- EN | DASHBOARD GENERATION — the build is the single source --------
+    # --- FR | GENERATION DES DASHBOARDS — le build est la source unique -----
+    # EN | Generating here rather than relying on committed views guarantees
+    # EN | the deliverable's language matches VSSP_LOCALE. A committed view
+    # EN | carries the language of whoever last ran the generator, which will
+    # EN | sooner or later contradict the variable. It also produces
+    # EN | config-fragment-rooms.yaml, without which the room dashboards exist
+    # EN | on disk but Home Assistant knows none of their URLs.
+    # FR | Generer ici plutot que se fier aux vues committees garantit que la
+    # FR | langue du livrable correspond a VSSP_LOCALE. Une vue committee porte
+    # FR | la langue de qui a lance le generateur en dernier, ce qui finira par
+    # FR | contredire la variable. Cela produit aussi
+    # FR | config-fragment-rooms.yaml, sans lequel les dashboards de piece
+    # FR | existent sur le disque mais Home Assistant ne connait aucune de
+    # FR | leurs URL.
+    - |
+      python3 vssp/generate_dashboards.py \
+        --model     home-assistant/dashboards/model/house.yaml \
+        --devices   home-assistant/dashboards/model/energy_devices.yaml \
+        --templates home-assistant/dashboards/templates_j2 \
+        --locales-dir home-assistant/dashboards/locales \
+        --static-fragment home-assistant/config-fragment.yaml \
+        --locale "$VSSP_LOCALE" \
+        --out dist/dashboards/views \
+        --rooms-fragment dist/config-fragment-rooms.yaml \
+        || { echo "[ERR] dashboard generation failed"; exit 1; }
+    - |
+      if [ ! -s dist/config-fragment-rooms.yaml ]; then
+        echo "[ERR] dist/config-fragment-rooms.yaml is empty or missing."
+        echo "      Room dashboards would be unreachable in Home Assistant."
+        exit 1
+      fi
+
     # --- EN | LOCALE RENDERING — must run BEFORE cache-busting --------------
     # --- FR | RENDU DE LA LANGUE — doit tourner AVANT le cache-busting ------
     # EN | Substitutes every __T:key__ in the fragment with the chosen
@@ -499,7 +532,7 @@ build:
       # EN | destination in /config. They are neither packaged nor reported.
       # FR | Marqueurs inertes : presents pour Git ou la lecture humaine, sans
       # FR | destination dans /config. Ils ne sont ni packages ni signales.
-      KNOWN=" dashboards templates www packages config-fragment.yaml .gitkeep .gitignore README.md "
+      KNOWN=" dashboards templates www packages config-fragment.yaml config-fragment-rooms.yaml .gitkeep .gitignore README.md "
       UNHANDLED=""
       for e in home-assistant/* home-assistant/.[!.]*; do
         [ -e "$e" ] || continue
@@ -676,6 +709,7 @@ deploy:staging:
         rm -rf /config/.osv_stage/vssp
         chmod +x /config/vssp/*.py
         mv /config/.osv_stage/config-fragment.yaml /config/config-fragment.yaml
+        mv /config/.osv_stage/config-fragment-rooms.yaml /config/config-fragment-rooms.yaml
         # EN | Packages (additive: does not overwrite non-vssp packages)
         # FR | Packages (additif : n ecrase pas d eventuels packages non-vssp)
         mkdir -p /config/packages
@@ -735,7 +769,8 @@ deploy:staging:
         pip install ruamel.yaml --quiet 2>/dev/null || pip install ruamel.yaml --quiet --break-system-packages 2>/dev/null
         python3 /config/vssp/vssp_apply_config.py \
           --config   /config/configuration.yaml \
-          --fragment /config/config-fragment.yaml \
+          --fragment /config/config-fragment.yaml /config/config-fragment-rooms.yaml \
+          --prune-dashboards \
           --vtoken   "'"$OSV_VERSION"'"
         # EN | The patcher does not handle the homeassistant domain: this
         # EN | script sets (idempotently) the packages key loading /config/packages/
@@ -881,6 +916,7 @@ deploy:production:
         rm -rf $HA_CFG/.osv_stage/vssp
         chmod +x $HA_CFG/vssp/*.py
         mv $HA_CFG/.osv_stage/config-fragment.yaml $HA_CFG/config-fragment.yaml
+        mv $HA_CFG/.osv_stage/config-fragment-rooms.yaml $HA_CFG/config-fragment-rooms.yaml
         # EN | Packages (additive: does not overwrite non-vssp packages)
         # FR | Packages (additif : n ecrase pas d eventuels packages non-vssp)
         mkdir -p $HA_CFG/packages
@@ -933,7 +969,7 @@ deploy:production:
     # FR | Meme garde-fou qu en staging : refuser de patcher la production
     # FR | depuis un fragment contenant encore des marqueurs __T: bruts.
     - |
-      if grep -En '__T:[A-Za-z0-9_.]+__' /tmp/osv_pkg/config-fragment.yaml; then
+      if grep -En '__T:[A-Za-z0-9_.]+__' /tmp/osv_pkg/config-fragment.yaml /tmp/osv_pkg/config-fragment-rooms.yaml; then
         echo "[ERR] The packaged fragment still holds translation placeholders."
         echo "      Rebuild: the locale rendering step did not run."
         exit 1
@@ -945,7 +981,8 @@ deploy:production:
     - |
       python3 /tmp/osv_pkg/vssp/vssp_apply_config.py \
         --config   /tmp/prod_configuration.yaml \
-        --fragment /tmp/osv_pkg/config-fragment.yaml \
+        --fragment /tmp/osv_pkg/config-fragment.yaml /tmp/osv_pkg/config-fragment-rooms.yaml \
+        --prune-dashboards \
         --vtoken   "$CI_COMMIT_TAG" || { echo "[ERR] configuration.yaml patch failed"; exit 1; }
     # EN | The patcher does not handle the homeassistant domain: set packages key
     # FR | Le patcher ne gere pas le domaine homeassistant : poser la cle packages
