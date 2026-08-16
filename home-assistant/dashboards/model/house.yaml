@@ -77,7 +77,15 @@ nav_system:
       label: "Central system"
       icon: mdi:server
       path: /visio-sapiens-core/core
-      path_mobile: /visio-sapiens-core-m/core
+      # EN | No mobile CORE dashboard yet: core.yaml.j2 has no mobile branch,
+      # EN | so the tablet view is the target for now. Point this at
+      # EN | /visio-sapiens-core-m/core once it exists AND is declared in
+      # EN | config-fragment.yaml — the generator checks both.
+      # FR | Pas encore de dashboard CORE mobile : core.yaml.j2 n'a pas de
+      # FR | branche mobile, la vue tablette est donc la cible pour l'instant.
+      # FR | Pointer vers /visio-sapiens-core-m/core quand il existera ET sera
+      # FR | declare dans config-fragment.yaml — le generateur controle les deux.
+      path_mobile: /visio-sapiens-core/core
     - id: energy
       name: ENERGY
       label: "Energy management"
