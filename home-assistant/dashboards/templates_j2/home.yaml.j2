@@ -1,0 +1,632 @@
+########################################################################
+# Visio Sapiens — HOME Dashboard (main dashboard, two views)
+#
+# EN | *** GENERATED FILE — DO NOT EDIT BY HAND ***
+# EN | Source: home.yaml.j2 + model/house.yaml + locales/<code>.yaml
+# EN | Regenerate with: python3 generate_dashboards.py
+# FR | *** FICHIER GENERE — NE PAS EDITER A LA MAIN ***
+# FR | Source : home.yaml.j2 + model/house.yaml + locales/<code>.yaml
+# FR | Regenerer avec : python3 generate_dashboards.py
+#
+# EN | This file holds TWO views, which is why there is no separate
+# EN | admin.yaml.j2:
+# EN |   /visio-sapiens/home    HUD, KPI row, central video, energy, events
+# EN |   /visio-sapiens/admin   the admin console (hidden, direct URL only)
+# FR | Ce fichier porte DEUX vues, c'est pourquoi il n'existe pas de
+# FR | admin.yaml.j2 separe :
+# FR |   /visio-sapiens/home    HUD, ligne KPI, video centrale, energie, evenements
+# FR |   /visio-sapiens/admin   la console d'administration (cachee, URL directe)
+#
+# EN | TWO FIXES APPLIED WHILE TEMPLATING — read before comparing with the
+# EN | previous hand-written file:
+# EN |   1. The weather card and the clock card were indented INSIDE the ad
+# EN |      banner's `ads:` list. They were passed as advertisement entries
+# EN |      instead of being cards, so neither ever rendered, and grid areas
+# EN |      header3..header6 stayed empty. Both are restored through the
+# EN |      shared _header.j2 partial.
+# EN |   2. The header row is now a single `header` area spanning the width
+# EN |      (title + weather + clock), instead of six one-cell areas of which
+# EN |      four were unused.
+# EN |   3. The scrolling ad banner is gone, along with its grid area and its
+# EN |      osv-ad-banner-card.js resource. It only ever existed on the tablet
+# EN |      view.
+# FR | DEUX CORRECTIONS APPLIQUEES A LA TEMPLATISATION — a lire avant de
+# FR | comparer avec l'ancien fichier ecrit a la main :
+# FR |   1. La carte meteo et la carte heure etaient indentees A L'INTERIEUR
+# FR |      de la liste `ads:` du bandeau publicitaire. Elles etaient passees
+# FR |      comme entrees de publicite au lieu d'etre des cartes, donc
+# FR |      aucune des deux ne s'affichait, et les zones header3..header6
+# FR |      restaient vides. Les deux sont retablies via le partial partage
+# FR |      _header.j2.
+# FR |   2. La ligne d'en-tete est desormais une seule zone `header` sur
+# FR |      toute la largeur (titre + meteo + heure), au lieu de six zones
+# FR |      d'une cellule dont quatre inutilisees.
+# FR |   3. Le bandeau publicitaire defilant est supprime, avec sa zone de
+# FR |      grille et sa ressource osv-ad-banner-card.js. Il n'a jamais
+# FR |      existe que sur la vue tablette.
+#
+# EN | Lovelace dependencies (HACS + declared in resources):
+# FR | Dependances Lovelace (HACS + declarees dans resources) :
+#   button-card, card-mod, layout-card, custom:stack-in-card,
+#   apexcharts-card, config-template-card, decluttering-card, browser_mod
+########################################################################
+
+title: {{ house.name | title }}
+path: visio-sapiens
+theme: {{ house.theme }}
+
+button_card_templates: !include templates/button_card_templates.yaml
+decluttering_templates: !include templates/decluttering_templates.yaml
+
+views:
+  # =====================================================================
+  # EN | HOME — the hub / FR | HOME — le hub
+  # =====================================================================
+  - title: {{ t('page.home.name') }}
+    path: home
+    subview: true
+    type: custom:grid-layout
+    layout:
+      grid-template-columns: minmax(200px, auto) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) 565px
+      grid-template-rows: 105px 113px 444px 400px
+      grid-template-areas: |
+        "nav header header header header header header"
+        "nav kpi1 kpi2 kpi3 kpi4 kpi5 kpi5"
+        "nav floor floor floor floor floor right"
+        "nav egy1 egy1 egy2 events events meteo"
+      margin: 12px
+      grid-gap: 14px 14px
+    cards:
+      # ═══════════════════════════════════════════════════════════════
+      # EN | HEADER BAND — shared partial (title / weather / clock)
+      # FR | BANDEAU HORIZONTAL — partial partage (titre / meteo / heure)
+      # ═══════════════════════════════════════════════════════════════
+{% set page_title = t('page.home.name') %}
+{% set page_subtitle = t('page.home.subtitle') %}
+{% set page_path = '/visio-sapiens/home' %}
+{% include '_header.j2' %}
+
+      # ═══════════════════════════════════════════════════════════════
+      # EN | NAVIGATION RAIL — shared partial, dynamic
+      # FR | BANDEAU DE NAVIGATION — partial partage, dynamique
+      # ═══════════════════════════════════════════════════════════════
+{% include '_nav.j2' %}
+
+      # --- KPI row (System Status / Pièces actives / Energy Status / Sécurité / Connexions) ----
+      - type: horizontal-stack
+        view_layout:
+          grid-area: kpi1
+          grid-column: kpi1 / kpi5
+        cards:
+          # Case 1 — System Status : voyant vert reflétant l'état des métriques du dashboard CORE
+          - type: custom:button-card
+            template: vssp_status_indicator
+            name: "{{ t('home.kpi.system_status') }}"
+            label: "{{ t('home.kpi.system_status_hint') }}"
+            entity: binary_sensor.vssp_core_health  # TODO: capteur agrégé à créer (ex: template sensor combinant CPU/GPU/RAM/etc.)
+
+          # Case 2 — Pièces actives
+          - type: custom:button-card
+            template: vssp_kpi_card
+            icon: mdi:door-open
+            name: "{{ t('home.kpi.active_rooms') }}"
+            entity: sensor.vssp_pieces_actives
+            state_display: >
+              [[[
+                const s = states['sensor.vssp_pieces_actives'];
+                if (!s) return "- / -";
+                return s.state + " / " + (s.attributes.total_areas ?? "-");
+              ]]]
+            label: "{{ t('home.kpi.active_rooms_hint') }}"
+            variables:
+              icon_color: "#3AA7FF"
+              value_color: "#3AA7FF"
+
+          # Case 3 — Energy Status : voyant vert reflétant l'état des métriques du dashboard ENERGY
+          - type: custom:button-card
+            template: vssp_status_indicator
+            name: "{{ t('home.kpi.energy_status') }}"
+            label: "{{ t('home.kpi.energy_status_hint') }}"
+            entity: binary_sensor.vssp_energy_health  # TODO: capteur agrégé à créer (ex: template sensor sur production/consommation)
+
+          # Case 4 — Sécurité / Alarme
+          - type: custom:button-card
+            template: vssp_kpi_card
+            icon: mdi:shield-lock
+            name: "{{ t('common.security') }}"
+            entity: alarm_control_panel.maison  # TODO: remplacer par votre entité alarme
+            state_display: >
+              [[[
+                if (!entity) return '{{ t("home.alarm.not_configured") }}';
+                switch (entity.state) {
+                  case "disarmed": return '{{ t("home.alarm.ok") }}';
+                  case "triggered": return '{{ t("home.alarm.alert") }}';
+                  case "armed_home": return '{{ t("home.alarm.armed") }}';
+                  case "armed_away": return '{{ t("home.alarm.armed") }}';
+                  default: return entity.state;
+                }
+              ]]]
+            label: >
+              [[[
+                if (!entity) return '{{ t("home.alarm.no_entity") }}';
+                return entity.state === "triggered" ? '{{ t("home.alarm.intrusion") }}' : '{{ t("home.alarm.no_alert") }}';
+              ]]]
+            variables:
+              icon_color: "#00FFC3"
+              value_color: "#00FFC3"
+
+          # Case 5 — Connexions (total appareils enregistrés dans HA)
+          - type: custom:button-card
+            template: vssp_kpi_card
+            icon: mdi:vector-polygon
+            name: "{{ t('home.kpi.connections') }}"
+            entity: sensor.vssp_total_appareils
+            label: "{{ t('home.kpi.connections_hint') }}"
+            variables:
+              icon_color: "#B084FF"
+              value_color: "#B084FF"
+
+      # --- Video centrale VISIO SAPIENS (remplace le floorplan) -----------
+      # Lecture auto, en boucle, sans son.
+      # Fichier a deposer dans : /config/www/vssp/movies/vs-sp.mp4
+      - type: custom:button-card
+        view_layout:
+          grid-area: floor
+        show_icon: false
+        show_name: false
+        show_label: false
+        tap_action:
+          action: none
+        custom_fields:
+          video: >
+            <video autoplay muted loop playsinline
+              style="width:100%;height:100%;object-fit:cover;display:block;">
+              <source src="/local/vssp/movies/vs-sp.mp4" type="video/mp4" />
+            </video>
+        styles:
+          card:
+            - padding: 0
+            - background: transparent
+            - border: 1px solid rgba(0,229,255,0.28)
+            - box-shadow: 0 0 24px rgba(0,229,255,.12)
+            - border-radius: 20px
+            - overflow: hidden
+            - height: 100%
+          grid:
+            - grid-template-areas: '"video"'
+            - height: 100%
+          custom_fields:
+            video:
+              - height: 100%
+              - width: 100%
+        card_mod:
+          style: |
+            :host { height: 100%; }
+            ha-card { height: 100% !important; overflow: hidden; border-radius: 20px; }
+
+      - type: horizontal-stack
+        view_layout:
+          grid-area: egy1
+          grid-column: egy1 / egy2
+        card_mod:
+          style: |
+            :host {
+              height: 100%;
+              display: block;
+            }
+            #root {
+              height: 100%;
+              align-items: stretch;
+            }
+        cards:
+          # Cadre 1 — courbe production solaire vs consommation (carte native apexcharts)
+          - type: custom:apexcharts-card
+            header:
+              show: true
+              title: "{{ t('home.production_consumption') }}"
+              show_states: false
+            graph_span: 24h
+            card_mod:
+              style: |
+                :host { flex: 1.8 1 0; align-self: stretch; }
+                ha-card {
+                  background: var(--osv-panel) !important;
+                  height: 100%;
+                  max-height: 100%;
+                  overflow: hidden;
+                }
+            series:
+              - entity: sensor.solar_power_production  # TODO: remplacer par votre entité production solaire
+                name: Production
+                type: area
+                color: "#00FFC3"
+                stroke_width: 2
+                opacity: 0.15
+              - entity: sensor.home_power_consumption  # TODO: remplacer par votre entité consommation
+                name: Consommation
+                type: line
+                color: "#00E5FF"
+                stroke_width: 2
+
+          # Cadre 2 — synthèse kW production / consommation (squelette, entités à brancher)
+          - type: vertical-stack
+            card_mod:
+              style: |
+                :host {
+                  flex: 0.8 1 0;
+                  align-self: stretch;
+                  height: 100%;
+                }
+                #root {
+                  height: 100%;
+                }
+                #root > * {
+                  flex: 1 1 0;
+                }
+            cards:
+              - type: custom:button-card
+                template: vssp_metric
+                show_icon: true
+                icon: mdi:solar-power
+                name: PRODUCTION
+                entity: sensor.solar_power_production  # TODO: remplacer par votre entité production solaire
+              - type: custom:button-card
+                template: vssp_metric
+                show_icon: true
+                icon: mdi:flash
+                name: CONSOMMATION
+                entity: sensor.home_power_consumption  # TODO: remplacer par votre entité consommation
+
+      # --- Événements récents (aligné avec le bas de la sidebar) --------
+      - type: logbook
+        title: "Événements récents"
+        hours_to_show: 24
+        view_layout:
+          grid-area: events
+        target:
+          # EN | Generated from the declared rooms rather than hardcoded. The
+          # EN | hand-written list already named areas that no longer match
+          # EN | house.yaml (kitchen, garden_1, livingroom...), so the logbook
+          # EN | silently dropped events for any room added since.
+          # EN | `area_id` defaults to the room id; set it explicitly in
+          # EN | house.yaml when the Home Assistant area is named differently.
+          # FR | Genere depuis les pieces declarees plutot que code en dur. La
+          # FR | liste ecrite a la main nommait deja des zones qui ne
+          # FR | correspondent plus a house.yaml (kitchen, garden_1,
+          # FR | livingroom...), donc le journal ignorait en silence les
+          # FR | evenements de toute piece ajoutee depuis.
+          # FR | `area_id` vaut l'id de la piece par defaut ; le definir
+          # FR | explicitement dans house.yaml quand la zone Home Assistant
+          # FR | porte un autre nom.
+          area_id:
+{% for r in rooms_rendered %}
+            - {{ r.area_id }}
+{% endfor %}
+        card_mod:
+          style: |
+            :host {
+              height: 100%;
+              display: block;
+              overflow: hidden;
+            }
+            ha-card {
+              background: var(--osv-panel) !important;
+              height: 100% !important;
+              min-height: 0;
+              display: flex;
+              flex-direction: column;
+              overflow: hidden;
+              --primary-text-color: #B8E8F5 !important;
+              --secondary-text-color: #8FB6C9 !important;
+              --primary-color: #00E5FF !important;
+              --text-primary-color: #FFFFFF !important;
+              --card-background-color: var(--osv-panel) !important;
+            }
+            ha-card .card-header {
+              color: #FFFFFF !important;
+            }
+            ha-logbook {
+              flex: 1 1 0;
+              min-height: 0;
+              overflow-y: auto;
+            }
+
+      # --- Météo et prévisions (alignée avec le bas de la sidebar) ------
+      - type: custom:dynamic-weather-card
+        entity: weather.meteo_france_forecast_for_city_sausset_les_pins_provence_alpes_cote_d_azur_13_fr_sausset_les_pins
+        name: Sausset les Pins
+        height: 400
+        show_feels_like: true
+        show_wind: true
+        show_wind_gust: true
+        show_wind_direction: true
+        show_humidity: true
+        show_min_temp: true
+        show_hourly_forecast: false
+        hourly_forecast_hours: 5
+        show_daily_forecast: true
+        daily_forecast_days: 5
+        show_sunrise_sunset: false
+        show_clock: false
+        clock_position: top
+        clock_format: 24h
+        overlay_opacity: 0.1
+        language: fr
+        wind_speed_unit: ms
+        sunrise_entity: ""
+        sunset_entity: ""        
+        view_layout:
+          grid-area: meteo
+        card_mod:
+          style: |
+            :host {
+              height: 100%;
+              display: block;
+              overflow: hidden;
+            }
+            ha-card {
+              background: var(--osv-panel) !important;
+              height: 100% !important;
+              min-height: 0;
+              display: flex;
+              flex-direction: column;
+              overflow: hidden;
+            }
+
+      # --- Zone droite (INTERPHONE + AUDIO STREAM) ----------------------
+      - type: vertical-stack
+        view_layout:
+          grid-area: right
+        cards:
+          - type: custom:button-card
+            template: vssp_panel
+            show_name: true
+            name: "{{ t('home.intercom') }}"
+            icon: mdi:doorbell-video
+            show_icon: true
+            styles:
+              card:
+                - height: 50%
+                - justify-content: center
+                - align-items: center
+              name:
+                - color: "#B8E8F5"
+                - font-size: 14px
+                - letter-spacing: 2px
+              icon:
+                - color: "#00E5FF"
+                - "--mdc-icon-size": 36px
+
+          - type: custom:button-card
+            template: vssp_panel
+            show_name: true
+            name: AUDIO STREAM
+            icon: mdi:music-note
+            show_icon: true
+            styles:
+              card:
+                - height: 50%
+                - justify-content: center
+                - align-items: center
+              name:
+                - color: "#B8E8F5"
+                - font-size: 14px
+                - letter-spacing: 2px
+              icon:
+                - color: "#00E5FF"
+                - "--mdc-icon-size": 36px
+
+
+
+    card_mod:
+      style: |
+        hui-view {
+          background: center / cover no-repeat fixed url("/local/vssp/backgrounds/home.png");
+        }
+
+  # =====================================================================
+  # EN | REMOVED: `- !include views/core.yaml` and the commented-out room
+  # EN | includes that followed it.
+  # EN | core.yaml is a STANDALONE dashboard — it carries its own
+  # EN | `title: / views: [...]` wrapper and is declared in
+  # EN | configuration.yaml under its own url_path. Including it here made
+  # EN | Lovelace parse a whole dashboard as if it were a single view, which
+  # EN | is exactly what energy_config_snippets.yaml warns against. The two
+  # EN | usages are mutually exclusive.
+  # EN | Room views are no longer included either: each room is its own
+  # EN | generated dashboard, declared in config-fragment-rooms.yaml.
+  # FR | SUPPRIME : `- !include views/core.yaml` et les includes de pieces
+  # FR | commentes qui suivaient.
+  # FR | core.yaml est un dashboard AUTONOME — il porte son propre wrapper
+  # FR | `title: / views: [...]` et est declare dans configuration.yaml sous
+  # FR | son propre url_path. L'inclure ici faisait analyser par Lovelace un
+  # FR | dashboard entier comme s'il s'agissait d'une seule vue, ce que
+  # FR | energy_config_snippets.yaml deconseille explicitement. Les deux
+  # FR | usages sont exclusifs.
+  # FR | Les vues de pieces ne sont plus incluses non plus : chaque piece est
+  # FR | son propre dashboard genere, declare dans config-fragment-rooms.yaml.
+  # =====================================================================
+
+  # =====================================================================
+  # ADMIN (panneau caché — non lié dans la sidebar de navigation).
+  # Accessible uniquement via l'URL directe /visio-sapiens/admin.
+  # Recommandé : restreindre la visibilité à ton seul utilisateur admin
+  # via la clé "visible" ci-dessous (remplace USER_ID_ADMIN).
+  # =====================================================================
+  - title: ADMIN
+    path: admin
+    subview: true
+    visible:
+      - user: USER_ID_ADMIN  # TODO: remplace par ton user_id HA (Paramètres > Personnes)
+    type: custom:grid-layout
+    layout:
+      grid-template-columns: 1fr 1fr 1fr
+      grid-template-rows: auto auto auto auto auto
+      grid-template-areas: |
+        "header header header"
+        "generation generation generation"
+        "discovery upgrade delete"
+        "system system system"
+        "footer footer footer"
+      margin: 24px
+      grid-gap: 18px 18px
+    cards:
+      - type: custom:button-card
+        template: vssp_title
+        name: "{{ house.name }} — {{ t('admin.console_title') }}"
+        view_layout:
+          grid-area: header
+
+      # --- Discovery ------------------------------------------------------
+      # ═══════════════════════════════════════════════════════════════
+      # EN | GENERATION — the two selectors that drive every dashboard
+      # FR | GENERATION — les deux selecteurs qui pilotent tous les dashboards
+      # ═══════════════════════════════════════════════════════════════
+      # EN | Language and format are read by generate_dashboards.py as
+      # EN | arguments, so switching either never rewrites house.yaml.
+      # EN | The option VALUES stay in English in every language: they are
+      # EN | identifiers passed on a command line, not labels.
+      # EN | `Deployed locale` shows what /config/VSSP_LOCALE actually holds —
+      # EN | when it differs from the selector, a regeneration is pending.
+      # FR | La langue et le format sont lus par generate_dashboards.py comme
+      # FR | arguments, donc en changer ne reecrit jamais house.yaml.
+      # FR | Les VALEURS d'options restent en anglais dans toutes les langues :
+      # FR | ce sont des identifiants passes en ligne de commande, pas des
+      # FR | libelles.
+      # FR | « Langue deployee » montre ce que contient reellement
+      # FR | /config/VSSP_LOCALE — quand elle differe du selecteur, une
+      # FR | regeneration est en attente.
+      - type: vertical-stack
+        view_layout:
+          grid-area: generation
+        cards:
+          - type: custom:button-card
+            template: vssp_title
+            name: "{{ t('admin.generation') }}"
+          - type: entities
+            entities:
+              - entity: input_select.vssp_language
+                name: "{{ t('admin.select_language') }}"
+              - entity: input_select.vssp_format
+                name: "{{ t('admin.select_format') }}"
+              - entity: sensor.vssp_deployed_locale
+                name: "{{ t('admin.generated_at') }}"
+              - entity: sensor.vssp_unrendered_placeholders
+                name: "Unrendered markers"
+            card_mod:
+              style: |
+                ha-card {
+                  background: rgba(8,18,28,0.75) !important;
+                  border: 1px solid rgba(0,229,255,0.28) !important;
+                  border-radius: 20px !important;
+                }
+          - type: custom:button-card
+            template: vssp_admin_button
+            icon: mdi:translate
+            name: "{{ t('admin.apply_language') }}"
+            label: "{{ t('admin.apply_language_hint') }}"
+            tap_action:
+              action: call-service
+              service: script.vssp_apply_language
+          - type: custom:button-card
+            template: vssp_admin_button
+            icon: mdi:cog-sync
+            name: "{{ t('admin.generate') }}"
+            label: "{{ t('admin.wizard_hint') }}"
+            tap_action:
+              action: call-service
+              service: script.vssp_run_generate
+
+      - type: vertical-stack
+        view_layout:
+          grid-area: discovery
+        cards:
+          # Bouton 1 — Wizard (ouvre le formulaire dans un nouvel onglet)
+          - type: custom:button-card
+            template: vssp_admin_button
+            icon: mdi:magnify-scan
+            name: "{{ t('admin.wizard') }}"
+            label: "{{ t('admin.wizard_hint') }}"
+            tap_action:
+              action: url
+              url_path: /local/vssp/wizard/vssp_wizard.html
+              target: _blank
+
+          # Bouton 2 — Scan HA (génère report.json côté serveur)
+          - type: custom:button-card
+            template: vssp_admin_button
+            icon: mdi:radar
+            name: "{{ t('admin.discovery') }}"
+            label: "{{ t('admin.discovery_hint') }}"
+            confirmation:
+              text: "Lancer une découverte des capteurs dans toutes les zones ?"
+            tap_action:
+              action: call-service
+              service: script.vssp_run_discovery
+
+      # --- Upgrade ----------------------------------------------------------
+      - type: custom:button-card
+        template: vssp_admin_button
+        icon: mdi:rocket-launch
+        name: "{{ t('admin.upgrade') }}"
+        label: "{{ t('admin.upgrade_hint') }}"
+        confirmation:
+          text: "Analyser les écarts entre le dashboard actuel et les dernières entités découvertes ? Une sauvegarde sera créée par précaution."
+        tap_action:
+          action: call-service
+          service: script.vssp_run_upgrade
+        view_layout:
+          grid-area: upgrade
+
+      # --- Delete (protégé : code + confirmation + sauvegarde auto) -------
+      - type: vertical-stack
+        view_layout:
+          grid-area: delete
+        card_mod:
+          style: |
+            :host {
+              display: block;
+              border: 1px solid rgba(255,61,113,0.35);
+              border-radius: 18px;
+              padding: 4px;
+            }
+        cards:
+          - type: custom:button-card
+            template: vssp_admin_button
+            icon: mdi:delete-alert
+            name: "{{ t('admin.delete_dashboard') }}"
+            label: "{{ t('admin.delete_hint') }}"
+            variables:
+              danger: true
+
+          - type: entities
+            entities:
+              - entity: input_text.vssp_pin_entry
+                name: "Code de confirmation"
+
+          - type: custom:button-card
+            template: vssp_quick_action
+            icon: mdi:trash-can-outline
+            name: CONFIRMER LA SUPPRESSION
+            confirmation:
+              text: "Action IRRÉVERSIBLE sans restauration manuelle de la sauvegarde. Le code doit être correct. Continuer ?"
+            tap_action:
+              action: call-service
+              service: script.vssp_delete_dashboard
+
+      # --- Dashboards systeme (hors pieces) -------------------------------
+      # ENERGY et CORE ne dependent d'aucune piece : ils ne passent pas
+      # par le formulaire du wizard. Carte dediee, chargee a part.
+      - !include admin/system_dashboards.yaml
+
+      # --- Footer --------------------------------------------------------
+      - type: custom:osv-footer-card
+        label: "{{ house.name }} // {{ t('admin.console_title') | upper }}"
+        view_layout:
+          grid-area: footer
+
+    card_mod:
+      style: |
+        hui-view {
+          background: #02050B;
+        }
