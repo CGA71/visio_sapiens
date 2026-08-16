@@ -219,6 +219,8 @@ Trois consommateurs, un seul catalogue :
 | Fichiers simples (`config-fragment.yaml`, JS, CSS) | `__T:dashboard.energy.title__` |
 | Console admin | lit le catalogue fusionné en JSON |
 
+Deux fichiers ont l'air de devoir porter des traductions et ne le peuvent pas. `templates/button_card_templates.yaml` et `decluttering_templates.yaml` sont lus tels quels par Home Assistant via `!include`, donc `t()` n'y fonctionne pas — le texte affiché doit être fourni par le dashboard appelant, déjà traduit. De même, tout ce qu'un dashboard *référence* doit être déclaré dans `packages/`, que Home Assistant charge, et non dans `vssp/`, qu'il ne lit jamais.
+
 Deux règles empêchent ce mécanisme de casser un dashboard qui fonctionne :
 
 1. **L'état stocké reste en anglais.** Les valeurs d'options des
@@ -298,33 +300,37 @@ i18n.
 └── home-assistant/
     ├── config-fragment.yaml     état désiré des clés Visio Sapiens
     │                            (lovelace, resources) — utilise __VTOKEN__ et __T:cle__
-    ├── packages/                vssp_energy_totaux.yaml (totaux dynamiques), …
+    ├── config-fragment-rooms.yaml   ← GÉNÉRÉ — déclarations des dashboards de pièce
+    ├── packages/                chargé par !include_dir_named — TOUT ce que les
+    │   │                        dashboards référencent doit vivre ici
+    │   ├── vssp_admin.yaml          helpers, scripts, shell_command ADMIN
+    │   ├── vssp_energy_totaux.yaml  totaux dynamiques
+    │   └── vssp_generation.yaml ← NOUVEAU — sélecteurs langue et format,
+    │                                capteurs langue déployée et marqueurs
     ├── templates/               button_card_templates.yaml, decluttering_templates.yaml
     ├── dashboards/
-    │   ├── home.yaml            dashboard principal /visio-sapiens (+ vue ADMIN)
-    │   ├── home_mobile.yaml     variante mobile /visio-sapiens-m
     │   ├── admin/
     │   │   └── system_dashboards.yaml   carte ADMIN « dashboards système »
     │   │                                (CORE/ENERGY, hors cycle des pièces)
-    │   ├── locales/            ← NOUVEAU
+    │   ├── locales/
     │   │   ├── en.yaml            catalogue de référence — le contrat
     │   │   └── fr.yaml            surcouche française
-    │   ├── views/               dashboards de pièce générés + vues système
-    │   │   ├── core.yaml
-    │   │   ├── computer.yaml
-    │   │   ├── energy.yaml          ← GÉNÉRÉ — ne plus éditer à la main
-    │   │   ├── energy_mobile.yaml
-    │   │   ├── technical_room.yaml
-    │   │   └── technical_room_mobile.yaml
     │   ├── model/
-    │   │   └── house.yaml         source de vérité : locale, format, pièces, appareils, nav
-    │   └── templates_j2/        templates Jinja2, variantes mobile et tablette
-    │       ├── home.yaml.j2       ┐
-    │       ├── core.yaml.j2       │ les quatre dashboards système,
-    │       ├── energy.yaml.j2     │ générés à la création
-    │       ├── admin.yaml.j2      ┘
-    │       ├── room.yaml.j2       template partagé, un rendu par pièce
-    │       └── nav.yaml.j2        bandeau de navigation dynamique
+    │   │   └── house.yaml         source de vérité : locale, format, pièces, tableaux, nav
+    │   ├── templates_j2/        un template par dashboard ET par format
+    │   │   ├── _header.j2         bandeau horizontal partagé (tablette)
+    │   │   ├── _header_mobile.j2  header compact, titre + heure en une carte
+    │   │   ├── _nav.j2            bandeau vertical dynamique
+    │   │   ├── _nav_mobile.j2     barre de chips défilante
+    │   │   ├── home.yaml.j2       dashboard principal — porte les DEUX vues
+    │   │   │                      HOME et ADMIN, d'où l'absence d'admin.yaml.j2
+    │   │   ├── home_mobile.yaml.j2  HOME seule ; la console est un travail de bureau
+    │   │   ├── energy.yaml.j2
+    │   │   ├── room.yaml.j2       template partagé, un rendu par pièce
+    │   │   └── room_mobile.yaml.j2  une colonne, un tableau par ligne
+    │   └── views/              ← GÉNÉRÉ — ne plus éditer à la main
+    │                              tous les dashboards rendus atterrissent ici,
+    │                              donc une seule convention (../templates/)
     └── www/vssp/                CSS/JS Engine, composants, console admin, assets
         ├── css/  js/  components/  fonts/  icons/
         ├── wizard/              formulaire web derrière la console admin
