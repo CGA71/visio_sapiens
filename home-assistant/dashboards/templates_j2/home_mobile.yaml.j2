@@ -1,0 +1,393 @@
+########################################################################
+# Visio Sapiens — HOME Dashboard, MOBILE format
+#
+# EN | *** GENERATED FILE — DO NOT EDIT BY HAND ***
+# EN | Source: home_mobile.yaml.j2 + model/house.yaml + locales/<code>.yaml
+# EN | Regenerate with: python3 generate_dashboards.py --format mobile
+# FR | *** FICHIER GENERE — NE PAS EDITER A LA MAIN ***
+# FR | Source : home_mobile.yaml.j2 + model/house.yaml + locales/<code>.yaml
+# FR | Regenerer avec : python3 generate_dashboards.py --format mobile
+#
+# EN | A separate file from home.yaml.j2, not a branch inside it: the
+# EN | navigation is a scrolling chip bar, the grid is a single column, the
+# EN | header merges title and clock into one card, and the type scale is
+# EN | smaller. See room_mobile.yaml.j2 for the same reasoning.
+# FR | Un fichier separe de home.yaml.j2, pas une branche a l'interieur : la
+# FR | navigation est une barre de chips defilante, la grille est une seule
+# FR | colonne, l'en-tete fusionne titre et heure en une carte, et l'echelle
+# FR | typographique est plus petite. Voir room_mobile.yaml.j2 pour le meme
+# FR | raisonnement.
+#
+# EN | The ADMIN view is NOT duplicated here. It lives in home.yaml.j2 only:
+# EN | the admin console is a desk task — declaring rooms, assigning devices,
+# EN | regenerating — and a phone is the wrong place for it. The mobile
+# EN | dashboard therefore has one view.
+# FR | La vue ADMIN n'est PAS dupliquee ici. Elle vit uniquement dans
+# FR | home.yaml.j2 : la console d'administration est un travail de bureau —
+# FR | declarer les pieces, assigner les appareils, regenerer — et un
+# FR | telephone est le mauvais endroit pour cela. Le dashboard mobile n'a
+# FR | donc qu'une seule vue.
+########################################################################
+
+title: {{ house.name | title }}
+path: visio-sapiens-m
+theme: {{ house.theme }}
+
+# EN | Path relative to dashboards/views/, where every generated dashboard
+# EN | now lives.
+# FR | Chemin relatif a dashboards/views/, ou vivent desormais tous les
+# FR | dashboards generes.
+button_card_templates: !include ../templates/button_card_templates.yaml
+decluttering_templates: !include ../templates/decluttering_templates.yaml
+
+views:
+  - title: {{ t('page.home.name') }}
+    path: home
+    subview: false
+    type: custom:grid-layout
+    layout:
+      # EN | minmax(0,1fr), not 1fr: `1fr` means minmax(auto,1fr) and refuses
+      # EN | to go below the natural width of its content, so one wide element
+      # EN | (the scrolling nav, a chart) would widen the whole page — the
+      # EN | "tablet look" on a phone.
+      # FR | minmax(0,1fr) et non 1fr : `1fr` vaut minmax(auto,1fr) et refuse
+      # FR | de descendre sous la largeur naturelle de son contenu, donc un
+      # FR | element large (la nav defilante, un graphe) elargirait toute la
+      # FR | page — l'effet « format tablette » sur telephone.
+      grid-template-columns: minmax(0, 1fr)
+      grid-template-rows: auto
+      grid-template-areas: |
+        "header"
+        "nav"
+        "kpi"
+        "video"
+        "energy"
+        "events"
+        "meteo"
+        "right"
+      margin: 8px
+      grid-gap: 12px 0px
+    cards:
+
+      # ═══════════════════════════════════════════════════════════════
+      # EN | COMPACT HEADER — title + clock on a single card
+      # FR | HEADER COMPACT — titre + heure sur une seule carte
+      # ═══════════════════════════════════════════════════════════════
+{% set page_title = t('page.home.name') %}
+{% set page_subtitle = house.name ~ ' — ' ~ house.tagline %}
+{% set page_icon = 'mdi:view-dashboard' %}
+{% set page_path = '/visio-sapiens-m/home' %}
+{% include '_header_mobile.j2' %}
+
+      # ═══════════════════════════════════════════════════════════════
+      # EN | NAVIGATION — one-line scrolling chip bar
+      # FR | NAVIGATION — barre de chips defilante sur une ligne
+      # ═══════════════════════════════════════════════════════════════
+{% include '_nav_mobile.j2' %}
+
+      # ═══════════════════════════════════════════════════════════════
+      # KPI — grille 2 colonnes (5 cases du desktop repliées)
+      # ═══════════════════════════════════════════════════════════════
+      - type: vertical-stack
+        view_layout:
+          grid-area: kpi
+        cards:
+          - type: horizontal-stack
+            cards:
+              # Case 1 — System Status
+              - type: custom:button-card
+                template: vssp_status_indicator
+                name: "{{ t('home.kpi.system_status') }}"
+                label: "{{ t('home.kpi.system_status_hint') }}"
+                entity: binary_sensor.vssp_core_health   # TODO
+              # Case 2 — Pièces actives
+              - type: custom:button-card
+                template: vssp_kpi_card
+                icon: mdi:door-open
+                name: "{{ t('home.kpi.active_rooms') }}"
+                entity: sensor.vssp_pieces_actives
+                state_display: >
+                  [[[
+                    const s = states['sensor.vssp_pieces_actives'];
+                    if (!s) return "- / -";
+                    return s.state + " / " + (s.attributes.total_areas ?? "-");
+                  ]]]
+                label: "{{ t('home.kpi.active_rooms_hint') }}"
+                variables:
+                  icon_color: "#3AA7FF"
+                  value_color: "#3AA7FF"
+
+          - type: horizontal-stack
+            cards:
+              # Case 3 — Energy Status
+              - type: custom:button-card
+                template: vssp_status_indicator
+                name: "{{ t('home.kpi.energy_status') }}"
+                label: "{{ t('home.kpi.energy_status_hint') }}"
+                entity: binary_sensor.vssp_energy_health  # TODO
+              # Case 4 — Sécurité / Alarme
+              - type: custom:button-card
+                template: vssp_kpi_card
+                icon: mdi:shield-lock
+                name: "{{ t('common.security') }}"
+                entity: alarm_control_panel.maison            # TODO
+                state_display: >
+                  [[[
+                    if (!entity) return '{{ t("home.alarm.not_configured") }}';
+                    switch (entity.state) {
+                      case "disarmed": return '{{ t("home.alarm.ok") }}';
+                      case "triggered": return '{{ t("home.alarm.alert") }}';
+                      case "armed_home": return '{{ t("home.alarm.armed") }}';
+                      case "armed_away": return '{{ t("home.alarm.armed") }}';
+                      default: return entity.state;
+                    }
+                  ]]]
+                label: >
+                  [[[
+                    if (!entity) return '{{ t("home.alarm.no_entity") }}';
+                    return entity.state === "triggered" ? '{{ t("home.alarm.intrusion") }}' : '{{ t("home.alarm.no_alert") }}';
+                  ]]]
+                variables:
+                  icon_color: "#00FFC3"
+                  value_color: "#00FFC3"
+
+          # Case 5 — Connexions (pleine largeur)
+          - type: custom:button-card
+            template: vssp_kpi_card
+            icon: mdi:vector-polygon
+            name: "{{ t('home.kpi.connections') }}"
+            entity: sensor.vssp_total_appareils
+            label: "{{ t('home.kpi.connections_hint') }}"
+            variables:
+              icon_color: "#B084FF"
+              value_color: "#B084FF"
+
+      # ═══════════════════════════════════════════════════════════════
+      # VIDÉO CENTRALE VISIO SAPIENS (16:9)
+      # ═══════════════════════════════════════════════════════════════
+      - type: custom:button-card
+        view_layout:
+          grid-area: video
+        show_icon: false
+        show_name: false
+        show_label: false
+        tap_action:
+          action: none
+        custom_fields:
+          video: >
+            <video autoplay muted loop playsinline
+              style="width:100%;display:block;aspect-ratio:16/9;object-fit:cover;">
+              <source src="/local/vssp/movies/vs-sp.mp4" type="video/mp4" />
+            </video>
+        styles:
+          card:
+            - padding: 0
+            - background: transparent
+            - border: 1px solid rgba(0,229,255,0.28)
+            - box-shadow: 0 0 24px rgba(0,229,255,.12)
+            - border-radius: 20px
+            - overflow: hidden
+          grid:
+            - grid-template-areas: '"video"'
+          custom_fields:
+            video:
+              - width: 100%
+        card_mod:
+          style: |
+            ha-card { overflow: hidden; border-radius: 20px; }
+
+      # ═══════════════════════════════════════════════════════════════
+      # ÉNERGIE — courbe production/consommation + synthèse (empilées)
+      # ═══════════════════════════════════════════════════════════════
+      - type: vertical-stack
+        view_layout:
+          grid-area: energy
+        cards:
+          # Courbe production solaire vs consommation
+          - type: custom:apexcharts-card
+            header:
+              show: true
+              title: "{{ t('home.production_consumption') }}"
+              show_states: false
+            graph_span: 24h
+            card_mod:
+              style: |
+                ha-card {
+                  background: var(--osv-panel) !important;
+                  overflow: hidden;
+                }
+            apex_config:
+              chart:
+                height: 180
+            series:
+              - entity: sensor.solar_power_production          # TODO
+                name: Production
+                type: area
+                color: "#00FFC3"
+                stroke_width: 2
+                opacity: 0.15
+              - entity: sensor.home_power_consumption          # TODO
+                name: Consommation
+                type: line
+                color: "#00E5FF"
+                stroke_width: 2
+
+          # Synthèse kW production / consommation (côte à côte)
+          - type: horizontal-stack
+            cards:
+              - type: custom:button-card
+                template: vssp_metric
+                show_icon: true
+                icon: mdi:solar-power
+                name: PRODUCTION
+                entity: sensor.solar_power_production          # TODO
+              - type: custom:button-card
+                template: vssp_metric
+                show_icon: true
+                icon: mdi:flash
+                name: CONSOMMATION
+                entity: sensor.home_power_consumption          # TODO
+
+      # ═══════════════════════════════════════════════════════════════
+      # ÉVÉNEMENTS RÉCENTS (logbook, hauteur fixe défilante)
+      # ═══════════════════════════════════════════════════════════════
+      - type: logbook
+        title: "Événements récents"
+        hours_to_show: 24
+        view_layout:
+          grid-area: events
+        target:
+          # EN | Generated from the declared rooms, like the tablet view.
+          # FR | Genere depuis les pieces declarees, comme la vue tablette.
+          area_id:
+{% for r in rooms_rendered %}
+            - {{ r.area_id }}
+{% endfor %}
+        card_mod:
+          style: |
+            :host {
+              display: block;
+              overflow: hidden;
+            }
+            ha-card {
+              background: var(--osv-panel) !important;
+              height: 320px !important;
+              min-height: 0;
+              display: flex;
+              flex-direction: column;
+              overflow: hidden;
+              --primary-text-color: #B8E8F5 !important;
+              --secondary-text-color: #8FB6C9 !important;
+              --primary-color: #00E5FF !important;
+              --text-primary-color: #FFFFFF !important;
+              --card-background-color: var(--osv-panel) !important;
+            }
+            ha-card .card-header {
+              color: #FFFFFF !important;
+            }
+            ha-logbook {
+              flex: 1 1 0;
+              min-height: 0;
+              overflow-y: auto;
+              -webkit-overflow-scrolling: touch;
+            }
+
+      # ═══════════════════════════════════════════════════════════════
+      # MÉTÉO ET PRÉVISIONS
+      # ═══════════════════════════════════════════════════════════════
+      - type: custom:dynamic-weather-card
+        entity: weather.meteo_france_forecast_for_city_sausset_les_pins_provence_alpes_cote_d_azur_13_fr_sausset_les_pins
+        name: Sausset les Pins
+        height: 360
+        show_feels_like: true
+        show_wind: true
+        show_wind_gust: true
+        show_wind_direction: true
+        show_humidity: true
+        show_min_temp: true
+        show_hourly_forecast: false
+        hourly_forecast_hours: 5
+        show_daily_forecast: true
+        daily_forecast_days: 5
+        show_sunrise_sunset: false
+        show_clock: false
+        clock_position: top
+        clock_format: 24h
+        overlay_opacity: 0.1
+        language: fr
+        wind_speed_unit: ms
+        sunrise_entity: ""
+        sunset_entity: ""
+        view_layout:
+          grid-area: meteo
+        card_mod:
+          style: |
+            :host {
+              display: block;
+              overflow: hidden;
+            }
+            ha-card {
+              background: var(--osv-panel) !important;
+              min-height: 0;
+              display: flex;
+              flex-direction: column;
+              overflow: hidden;
+            }
+
+      # ═══════════════════════════════════════════════════════════════
+      # INTERPHONE + AUDIO STREAM (côte à côte)
+      # ═══════════════════════════════════════════════════════════════
+      - type: horizontal-stack
+        view_layout:
+          grid-area: right
+        cards:
+          - type: custom:button-card
+            template: vssp_panel
+            show_name: true
+            name: "{{ t('home.intercom') }}"
+            icon: mdi:doorbell-video
+            show_icon: true
+            styles:
+              card:
+                - height: 120px
+                - justify-content: center
+                - align-items: center
+              name:
+                - color: "#B8E8F5"
+                - font-size: 13px
+                - letter-spacing: 2px
+              icon:
+                - color: "#00E5FF"
+                - "--mdc-icon-size": 34px
+
+          - type: custom:button-card
+            template: vssp_panel
+            show_name: true
+            name: AUDIO STREAM
+            icon: mdi:music-note
+            show_icon: true
+            styles:
+              card:
+                - height: 120px
+                - justify-content: center
+                - align-items: center
+              name:
+                - color: "#B8E8F5"
+                - font-size: 13px
+                - letter-spacing: 2px
+              icon:
+                - color: "#00E5FF"
+                - "--mdc-icon-size": 34px
+
+    # ── Fond de vue (même image que la version desktop) ──────────────
+    card_mod:
+      style: |
+        hui-view {
+          /* PAS de background-attachment:fixed : cassé sur iOS/Safari,
+             l'image ne couvrait pas la longueur du dashboard. Sans
+             `fixed`, l'image est peinte sur TOUTE la hauteur de la vue
+             (cover s'étire sur la longueur totale du contenu) et
+             défile avec la page. */
+          min-height: 100%;
+          background: center top / cover no-repeat url("/local/vssp/backgrounds/home.png");
+        }
