@@ -71,7 +71,7 @@ lovelace:
       title: __T:dashboard.main.title__
       icon: mdi:hexagon-outline
       show_in_sidebar: true
-      filename: dashboards/home.yaml
+      filename: dashboards/views/home.yaml
     visio-sapiens-core:
       mode: yaml
       title: __T:dashboard.core.title__
@@ -89,7 +89,7 @@ lovelace:
       title: __T:dashboard.main.title__
       icon: mdi:hexagon-outline
       show_in_sidebar: true
-      filename: dashboards/home_mobile.yaml
+      filename: dashboards/views/home_mobile.yaml
     visio-sapiens-energy-m:
       mode: yaml
       title: __T:dashboard.energy.title__
@@ -158,6 +158,4 @@ lovelace:
     - url: /local/vssp/components/osv-card.js?v=__VTOKEN__
       type: module
     - url: /local/vssp/components/osv-datetime-card.js?v=__VTOKEN__
-      type: module
-    - url: /local/vssp/components/osv-ad-banner-card.js?v=__VTOKEN__
       type: module
