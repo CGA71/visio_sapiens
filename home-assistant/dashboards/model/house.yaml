@@ -1,107 +1,215 @@
 ########################################################################
-# Visio Sapiens — MODÈLE MÉTIER DE LA MAISON (source de vérité)
+# Visio Sapiens — HOME MODEL (source of truth)
 #
-# Emplacement suggéré : home-assistant/dashboards/model/house.yaml
+# EN | Location: home-assistant/dashboards/model/house.yaml
+# FR | Emplacement : home-assistant/dashboards/model/house.yaml
 #
-# Ce fichier est LA donnée d'entrée du générateur de dashboards.
-# C'est lui que votre futur processus admin (formulaire dans home.yaml)
-# mettra à jour :
-#   étape 2 — le formulaire écrit/complète `rooms:`
-#   étape 3 — le scan des nouveaux objets ajoute des entrées `devices:`
-#   étape 4 — l'assignation déplace un device dans la bonne pièce
-#   étape 5 — le générateur rend energy.yaml.j2 avec ce modèle
+# EN | This file is THE input of the dashboard generator. The admin console
+# EN | keeps it up to date:
+# EN |   step 0 — the language and format selectors set house.locale / house.format
+# EN |   step 1 — the room form writes/completes `rooms:`
+# EN |   step 2 — the scan adds newly discovered entities
+# EN |   step 3 — the assignment puts each device in a room AND a slot
+# EN |   step 5 — the generator renders the templates with this model
+# FR | Ce fichier est LA donnee d'entree du generateur de dashboards. La
+# FR | console admin le tient a jour :
+# FR |   etape 0 — les selecteurs langue et format posent house.locale / house.format
+# FR |   etape 1 — le formulaire de pieces ecrit/complete `rooms:`
+# FR |   etape 2 — le scan ajoute les entites nouvellement decouvertes
+# FR |   etape 3 — l'assignation place chaque appareil dans une piece ET un tableau
+# FR |   etape 5 — le generateur rend les templates avec ce modele
 #
-# Toute modification ici + `python3 generate_dashboards.py` régénère
-# les dashboards. Ne modifiez plus energy.yaml à la main.
+# EN | Any change here + `python3 generate_dashboards.py` regenerates the
+# EN | dashboards. Never edit the generated views by hand.
+# FR | Toute modification ici + `python3 generate_dashboards.py` regenere les
+# FR | dashboards. Ne modifiez plus les vues generees a la main.
 ########################################################################
 
-# ── Identité / chartre graphique globale ──────────────────────────────
+# ── EN | Identity and global design system ────────────────────────────
+# ── FR | Identite et charte graphique globale ─────────────────────────
 house:
   name: "VISIO SAPIENS"
   tagline: "Smart Home OS"
   theme: "Visio Sapiens"
   logo: /local/vssp/images/logo_VS-Sapiens.png
   weather_entity: weather.maison
-  time_entity: sensor.time            # intégration "time_date"
+  # EN | "time_date" integration / FR | integration « time_date »
+  time_entity: sensor.time
 
-# ── Navigation — ordre = ordre d'affichage ───────────────────────────
-# `path` : sidebar desktop (home.yaml) ; `path_mobile` : tuiles du
-# dashboard mobile (home_mobile.yaml, urls en -m).
-nav:
-  - id: home
-    name: HOME
-    label: "Vue d'ensemble"
-    icon: mdi:view-dashboard
-    path: /visio-sapiens/home
-    path_mobile: /visio-sapiens-m/home
-  - id: core
-    name: CORE
-    label: "Systeme central"
-    icon: mdi:server
-    path: /visio-sapiens-core/core
-    path_mobile: /visio-sapiens-core-m/core
-  - id: livingroom
-    name: LIVING ROOM
-    label: "Salon"
-    icon: mdi:sofa
-    path: /visio-sapiens-livingroom/livingroom
-    path_mobile: /visio-sapiens-livingroom-m/livingroom
-  - id: bedroom1
-    name: BEDROOM-1
-    label: "Chambre principale"
-    icon: mdi:bed
-    path: /visio-sapiens-bedroom1/bedroom1
-    path_mobile: /visio-sapiens-bedroom1-m/bedroom1
-  - id: bedroom2
-    name: BEDROOM-2
-    label: "Chambre 2"
-    icon: mdi:bed-outline
-    path: /visio-sapiens-bedroom2/bedroom2
-    path_mobile: /visio-sapiens-bedroom2-m/bedroom2
-  - id: bathroom
-    name: BATHROOM
-    label: "Salle de bain"
-    icon: mdi:shower
-    path: /visio-sapiens-bathroom/bathroom
-    path_mobile: /visio-sapiens-bathroom-m/bathroom
+  # EN | Interface language. English is the reference: any key missing from
+  # EN | another catalogue falls back to it, so a partial translation is safe.
+  # EN | `generate_dashboards.py --locale <code>` overrides this value, which
+  # EN | is how the admin console switches language without rewriting this file.
+  # FR | Langue d'interface. L'anglais est la reference : toute cle absente
+  # FR | d'un autre catalogue y retombe, donc une traduction partielle ne
+  # FR | casse rien. `generate_dashboards.py --locale <code>` surcharge cette
+  # FR | valeur : c'est ainsi que la console admin change de langue sans
+  # FR | reecrire ce fichier.
+  locale: fr
+
+  # EN | Target layout: tablet | mobile | both. Overridden by --format.
+  # FR | Disposition cible : tablet | mobile | both. Surcharge par --format.
+  format: tablet
+
+# ── EN | Navigation rail — system entries only ────────────────────────
+# ── FR | Bandeau de navigation — entrees systeme uniquement ───────────
+# EN | The declared rooms are inserted BETWEEN before_rooms and after_rooms by
+# EN | the generator. That is what makes the rail dynamic: its length is always
+# EN | 4 + the number of rooms, and no room entry is maintained by hand here.
+# EN | `path` drives the tablet rail; `path_mobile` the mobile tiles (-m urls).
+# FR | Les pieces declarees sont inserees ENTRE before_rooms et after_rooms par
+# FR | le generateur. C'est ce qui rend le bandeau dynamique : sa longueur vaut
+# FR | toujours 4 + le nombre de pieces, et aucune entree de piece n'est
+# FR | maintenue a la main ici.
+# FR | `path` pilote le bandeau tablette ; `path_mobile` les tuiles mobiles
+# FR | (urls en -m).
+nav_system:
+  before_rooms:
+    - id: home
+      name: HOME
+      label: "Overview"
+      icon: mdi:view-dashboard
+      path: /visio-sapiens/home
+      path_mobile: /visio-sapiens-m/home
+  after_rooms:
+    - id: core
+      name: CORE
+      label: "Central system"
+      icon: mdi:server
+      path: /visio-sapiens-core/core
+      path_mobile: /visio-sapiens-core-m/core
+    - id: energy
+      name: ENERGY
+      label: "Energy management"
+      icon: mdi:lightning-bolt
+      path: /visio-sapiens-energy/energy
+      path_mobile: /visio-sapiens-energy-m/energy
+    - id: admin
+      name: ADMIN
+      label: "Admin console"
+      icon: mdi:shield-crown
+      path: /visio-sapiens/admin
+      path_mobile: /visio-sapiens-m/admin
+
+# ── EN | Slot sets — which panels a room may hold ─────────────────────
+# ── FR | Jeux de tableaux — quels panneaux une piece peut porter ──────
+# EN | A slot set says which slots are CANDIDATES, not what the room contains
+# EN | today. A bathroom keeps `shutters` in its set even with no shutter
+# EN | installed: tomorrow one is added through the form, with no
+# EN | reconfiguration. The slot then shows slot.empty in the meantime.
+# EN | A slot OUTSIDE the set is not rendered at all — it collapses and its
+# EN | neighbours expand. That is the whole difference between "not yet" and
+# EN | "never".
+# FR | Un jeu de tableaux dit quels tableaux sont CANDIDATS, pas ce que la
+# FR | piece contient aujourd'hui. Une salle de bain garde `shutters` dans son
+# FR | jeu meme sans volet installe : demain on en ajoute un via le
+# FR | formulaire, sans reconfiguration. Le tableau affiche slot.empty en
+# FR | attendant. Un tableau HORS du jeu n'est pas rendu du tout — il
+# FR | s'effondre et ses voisins s'etendent. C'est toute la difference entre
+# FR | « pas encore » et « jamais ».
+slot_sets:
+  default: [climate, lights, appliances, shutters, security, audio]
+  toilet:  [climate, lights, shutters, audio]
+  garden:  [climate, lights, appliances, security, audio]
+
+# ── EN | Default icon per room type ───────────────────────────────────
+# ── FR | Icone par defaut selon le type de piece ──────────────────────
+room_icons:
+  kitchen: mdi:countertop
+  living_room: mdi:sofa
+  dining_room: mdi:silverware-fork-knife
+  entrance: mdi:door-open
+  laundry: mdi:washing-machine
+  technical: mdi:tools
+  garage: mdi:garage
+  cellar: mdi:stairs-down
+  bedroom: mdi:bed
+  bathroom: mdi:shower
+  toilet: mdi:toilet
+  garden: mdi:flower
+  pool: mdi:pool
+  jacuzzi: mdi:hot-tub
+  roof: mdi:home-roof
+  computer: mdi:desktop-tower-monitor
+  secret: mdi:key
+
+# ── EN | Rooms — the structure of the home ────────────────────────────
+# ── FR | Pieces — la structure de la maison ───────────────────────────
+# EN | Written by the admin console. One entry per room INSTANCE:
+# EN |   id       unique, never translated — feeds paths and file names
+# EN |   type     key of the room catalogue (locales/*.yaml, room.<type>)
+# EN |   index    for (n) rooms: bedroom 1, bedroom 2...
+# EN |   slot_set which slots are candidates (see above)
+# EN |   slots    device list per slot, IN THE FORM'S ORDER — you decide the
+# EN |            TV comes before the console without renaming an entity
+# EN | `audio` is the one slot with two roles: a stream exists independently of
+# EN | its output. With a source but no output, the panel shows the player and
+# EN | slot.audio_no_speaker.
+# FR | Ecrit par la console admin. Une entree par INSTANCE de piece :
+# FR |   id       unique, jamais traduit — alimente les chemins et noms de fichiers
+# FR |   type     cle du catalogue de pieces (locales/*.yaml, room.<type>)
+# FR |   index    pour les pieces (n) : chambre 1, chambre 2...
+# FR |   slot_set quels tableaux sont candidats (voir ci-dessus)
+# FR |   slots    liste d'appareils par tableau, DANS L'ORDRE DU FORMULAIRE —
+# FR |            tu decides que la TV passe avant la console sans renommer
+# FR |            d'entite
+# FR | `audio` est le seul tableau a deux roles : un flux existe independamment
+# FR | de sa sortie. Avec une source mais aucune sortie, le panneau affiche le
+# FR | lecteur et slot.audio_no_speaker.
+rooms:
+  - id: living_room
+    type: living_room
+    slot_set: default
+    slots:
+      climate: []
+      lights: []
+      appliances: []
+      shutters: []
+      security: []
+      audio:
+        source: []
+        output: []
+
+  - id: bedroom_1
+    type: bedroom
+    index: 1
+    slot_set: default
+    slots: {}
+
+  - id: bedroom_2
+    type: bedroom
+    index: 2
+    slot_set: default
+    slots: {}
+
+  - id: bathroom_1
+    type: bathroom
+    index: 1
+    slot_set: default
+    slots: {}
+
   - id: computer
-    name: COMPUTER ROOM
-    label: "Salle informatique"
-    icon: mdi:desktop-tower-monitor
-    path: /visio-sapiens-computer/computer
-    path_mobile: /visio-sapiens-computer-m/computer
-  - id: technical
-    name: TECHNICAL ROOM
-    label: "Local technique"
-    icon: mdi:tools
-    path: /visio-sapiens-technical/technical
-    path_mobile: /visio-sapiens-technical-m/technical
-  - id: secret
-    name: SECRET ROOM
-    label: "Piece secrete"
-    icon: mdi:key
-    path: /visio-sapiens-secret/secret
-    path_mobile: /visio-sapiens-secret-m/secret
-  - id: garden
-    name: GARDEN
-    label: "Jardin"
-    icon: mdi:flower
-    path: /visio-sapiens-garden/garden
-    path_mobile: /visio-sapiens-garden-m/garden
-  - id: energy
-    name: ENERGY
-    label: "Gestion energie"
-    icon: mdi:lightning-bolt
-    path: /visio-sapiens-energy/energy
-    path_mobile: /visio-sapiens-energy-m/energy
-  - id: admin
-    name: ADMIN
-    label: "Panneau administration"
-    icon: mdi:shield-crown
-    path: /visio-sapiens/admin
-    path_mobile: /visio-sapiens-m/admin
+    type: computer
+    slot_set: default
+    slots: {}
 
-# ── Paramètres du dashboard ENERGY ────────────────────────────────────
+  - id: technical
+    type: technical
+    slot_set: default
+    slots: {}
+
+  - id: secret
+    type: secret
+    slot_set: default
+    slots: {}
+
+  - id: garden
+    type: garden
+    slot_set: garden
+    slots: {}
+
+# ── EN | ENERGY dashboard settings ────────────────────────────────────
+# ── FR | Parametres du dashboard ENERGY ───────────────────────────────
 energy:
   title: ENERGY
   subtitle: "Energy Management"
@@ -130,31 +238,36 @@ energy:
     export_power: sensor.grid_export_power
     export_today: sensor.grid_export_energy_today
     export_month: sensor.grid_export_energy_this_month
-    revenue_month: sensor.vssp_revente_mois       # template sensor
-    revenue_year: sensor.vssp_revente_annee       # template sensor
+    # EN | template sensors / FR | capteurs template
+    revenue_month: sensor.vssp_revente_mois
+    revenue_year: sensor.vssp_revente_annee
 
-# ── Pièces (structure de la maison) ──────────────────────────────────
-# Renseigné par le wizard (phase 1). Le dashboard ENERGY ne s'en sert
-# PAS : il n'est lié à aucune pièce. Ces données servent aux futurs
-# dashboards de pièce (livingroom, bedroom…).
-rooms: []
+# ── EN | ENERGY dashboard devices ─────────────────────────────────────
+# ── FR | Appareils du dashboard ENERGY ────────────────────────────────
+# EN | DELIBERATELY ABSENT FROM HERE.
+# EN | The list lives in model/energy_devices.yaml, maintained by
+# EN | vssp/vssp_energy_sync.py from the entities actually present in Home
+# EN | Assistant. Hardcoding devices here would make a fictional fleet
+# EN | reappear as soon as the sync fails, hiding the breakage instead of
+# EN | reporting it.
+# EN | If the "Per-Device Consumption" panel is empty, the sync did not run —
+# EN | see the message shown in the card.
+# FR | VOLONTAIREMENT ABSENTS D'ICI.
+# FR | La liste vit dans model/energy_devices.yaml, maintenue par
+# FR | vssp/vssp_energy_sync.py a partir des entites reellement presentes dans
+# FR | Home Assistant. Y remettre des appareils en dur ferait reapparaitre un
+# FR | parc fictif des que le sync echoue, ce qui masquerait la panne au lieu
+# FR | de la signaler.
+# FR | Si le tableau « Consommation par appareil » est vide, c'est que le sync
+# FR | n'a pas tourne — voir le message affiche dans la carte.
 
-# ── Appareils du dashboard ENERGY ────────────────────────────────────
-# VOLONTAIREMENT ABSENTS D'ICI.
-#
-# La liste vit dans model/energy_devices.yaml, maintenue par
-# vssp/vssp_energy_sync.py à partir des entités réellement présentes
-# dans Home Assistant. Y remettre des appareils en dur ferait
-# réapparaître un parc fictif dès que le sync échoue, ce qui masquerait
-# la panne au lieu de la signaler.
-#
-# Si le tableau « Consommation par appareil » est vide, c'est que le
-# sync n'a pas tourné — voir le message affiché dans la carte.
-
-# ── Tableau électrique ───────────────────────────────────────────────
-# Même principe : les circuits sont découverts (switch.*) par le sync
-# et écrits dans model/energy_devices.yaml, avec leur modèle Shelly.
-# Seul le calibre (amp) est à renseigner à la main — il est ensuite
-# préservé à chaque scan.
+# ── EN | Breaker panel / FR | Tableau electrique ──────────────────────
+# EN | Same principle: circuits are discovered (switch.*) by the sync and
+# EN | written into model/energy_devices.yaml with their Shelly model. Only the
+# EN | rating (amp) is filled in by hand — it is then preserved at every scan.
+# FR | Meme principe : les circuits sont decouverts (switch.*) par le sync et
+# FR | ecrits dans model/energy_devices.yaml, avec leur modele Shelly. Seul le
+# FR | calibre (amp) est a renseigner a la main — il est ensuite preserve a
+# FR | chaque scan.
 circuits_per_row: 6
 circuits: []
