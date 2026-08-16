@@ -229,6 +229,19 @@ energy:
     self_consumption: Self-consumption
     export_revenue: Export revenue
     total: Total
+  # EN | Energy flow diagram — node names and status wording.
+  # FR | Schema de flux energetique — noms des noeuds et libelles de statut.
+  flow:
+    solar_panels: Solar panels
+    inverter: Inverter
+    home: Home
+    grid: Grid
+    current_production: Current production
+    current_consumption: Current consumption
+    status: Status
+    status_unknown: Status unknown
+    running: Running
+    stopped: Stopped
   helper:
     period_name: "Visio Sapiens — Energy period"
     solar_capacity_name: "Visio Sapiens — Annual solar capacity"
