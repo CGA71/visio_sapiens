@@ -8,14 +8,12 @@
 # FR | Source : home.yaml.j2 + model/house.yaml + locales/<code>.yaml
 # FR | Regenerer avec : python3 generate_dashboards.py
 #
-# EN | This file holds TWO views, which is why there is no separate
-# EN | admin.yaml.j2:
-# EN |   /visio-sapiens/home    HUD, KPI row, central video, energy, events
-# EN |   /visio-sapiens/admin   the admin console (hidden, direct URL only)
-# FR | Ce fichier porte DEUX vues, c'est pourquoi il n'existe pas de
-# FR | admin.yaml.j2 separe :
-# FR |   /visio-sapiens/home    HUD, ligne KPI, video centrale, energie, evenements
-# FR |   /visio-sapiens/admin   la console d'administration (cachee, URL directe)
+# EN | ONE view: /visio-sapiens/home — HUD, KPI row, central video, energy,
+# EN | events. The admin console used to be a second view here; it now lives
+# EN | in admin.yaml.j2 as its own dashboard.
+# FR | UNE vue : /visio-sapiens/home — HUD, ligne KPI, video centrale,
+# FR | energie, evenements. La console d administration etait une seconde vue
+# FR | ici ; elle vit desormais dans admin.yaml.j2, comme son propre dashboard.
 #
 # EN | TWO FIXES APPLIED WHILE TEMPLATING — read before comparing with the
 # EN | previous hand-written file:
@@ -457,244 +455,20 @@ views:
   # =====================================================================
 
   # =====================================================================
-  # ADMIN (panneau caché — non lié dans la sidebar de navigation).
-  # Accessible uniquement via l'URL directe /visio-sapiens/admin.
-  # Recommandé : restreindre la visibilité à ton seul utilisateur admin
-  # via la clé "visible" ci-dessous (remplace USER_ID_ADMIN).
+  # EN | THE ADMIN VIEW MOVED OUT of this file into its own dashboard,
+  # EN | admin.yaml.j2, reachable at /visio-sapiens-admin/menu.
+  # EN | Three reasons: every change to the console forced a regeneration of
+  # EN | HOME; the console could not grow past one screen without crowding
+  # EN | this file; and `require_admin` protects a dashboard, not a view
+  # EN | inside another one, so hiding the console meant hiding a view of a
+  # EN | dashboard used daily.
+  # EN | home.yaml therefore has ONE view again.
+  # FR | LA VUE ADMIN A QUITTE ce fichier pour son propre dashboard,
+  # FR | admin.yaml.j2, joignable en /visio-sapiens-admin/menu.
+  # FR | Trois raisons : chaque modification de la console forcait une
+  # FR | regeneration de HOME ; la console ne pouvait pas depasser un ecran
+  # FR | sans encombrer ce fichier ; et `require_admin` protege un dashboard,
+  # FR | pas une vue a l interieur d un autre, donc masquer la console
+  # FR | revenait a masquer une vue d un dashboard utilise tous les jours.
+  # FR | home.yaml n a donc de nouveau qu UNE seule vue.
   # =====================================================================
-  - title: ADMIN
-    path: admin
-    subview: true
-    visible:
-      - user: USER_ID_ADMIN  # TODO: remplace par ton user_id HA (Paramètres > Personnes)
-    type: custom:grid-layout
-    layout:
-      grid-template-columns: 1fr 1fr 1fr
-      grid-template-rows: auto auto auto auto auto
-      # EN | No footer row. The osv-footer-card that used to sit here printed
-      # EN | a brand line plus the time and date BELOW the panel, outside the
-      # EN | dark surface — a second clock on a page whose header already
-      # EN | shows one.
-      # FR | Pas de ligne de pied de page. L'osv-footer-card qui s'y trouvait
-      # FR | affichait une ligne de marque plus l'heure et la date SOUS le
-      # FR | panneau, hors de la surface sombre — une seconde horloge sur une
-      # FR | page dont l'en-tete en montre deja une.
-      grid-template-areas: |
-        "header header header"
-        "generation generation generation"
-        "discovery upgrade delete"
-        "assign assign assign"
-        "system system system"
-      margin: 24px
-      grid-gap: 18px 18px
-    cards:
-      - type: custom:button-card
-        template: vssp_title
-        name: "{{ house.name }} — {{ t('admin.console_title') }}"
-        view_layout:
-          grid-area: header
-
-      # --- Discovery ------------------------------------------------------
-      # ═══════════════════════════════════════════════════════════════
-      # EN | GENERATION — the two selectors that drive every dashboard
-      # FR | GENERATION — les deux selecteurs qui pilotent tous les dashboards
-      # ═══════════════════════════════════════════════════════════════
-      # EN | Language and format are read by generate_dashboards.py as
-      # EN | arguments, so switching either never rewrites house.yaml.
-      # EN | The option VALUES stay in English in every language: they are
-      # EN | identifiers passed on a command line, not labels.
-      # EN | `Deployed locale` shows what /config/VSSP_LOCALE actually holds —
-      # EN | when it differs from the selector, a regeneration is pending.
-      # FR | La langue et le format sont lus par generate_dashboards.py comme
-      # FR | arguments, donc en changer ne reecrit jamais house.yaml.
-      # FR | Les VALEURS d'options restent en anglais dans toutes les langues :
-      # FR | ce sont des identifiants passes en ligne de commande, pas des
-      # FR | libelles.
-      # FR | « Langue deployee » montre ce que contient reellement
-      # FR | /config/VSSP_LOCALE — quand elle differe du selecteur, une
-      # FR | regeneration est en attente.
-      - type: vertical-stack
-        view_layout:
-          grid-area: generation
-        cards:
-          - type: custom:button-card
-            template: vssp_title
-            name: "{{ t('admin.generation') }}"
-          - type: entities
-            entities:
-              - entity: input_select.vssp_language
-                name: "{{ t('admin.select_language') }}"
-              - entity: input_select.vssp_format
-                name: "{{ t('admin.select_format') }}"
-              # EN | The deployed language, read from /config/VSSP_LOCALE.
-              # EN | When it differs from the selector above, a regeneration is
-              # EN | pending — that gap is the reason to show it at all.
-              # FR | La langue reellement deployee, lue depuis
-              # FR | /config/VSSP_LOCALE. Quand elle differe du selecteur
-              # FR | ci-dessus, une regeneration est en attente — cet ecart est
-              # FR | toute la raison de l afficher.
-              - entity: sensor.vssp_deployed_locale
-                name: "{{ t('admin.deployed_locale') }}"
-              # EN | Anything above 0 means a fragment reached /config without
-              # EN | passing through vssp_i18n.py, and the patcher will refuse
-              # EN | it. Was hardcoded English here — now translated like the
-              # EN | rest.
-              # FR | Toute valeur superieure a 0 signifie qu un fragment est
-              # FR | arrive dans /config sans passer par vssp_i18n.py, et le
-              # FR | patcher le refusera. Etait code en anglais ici — traduit
-              # FR | comme le reste desormais.
-              - entity: sensor.vssp_unrendered_placeholders
-                name: "{{ t('admin.unrendered_markers') }}"
-            card_mod:
-              style: |
-                ha-card {
-                  background: rgba(8,18,28,0.75) !important;
-                  border: 1px solid rgba(0,229,255,0.28) !important;
-                  border-radius: 20px !important;
-                }
-          - type: custom:button-card
-            template: vssp_admin_button
-            icon: mdi:translate
-            name: "{{ t('admin.apply_language') }}"
-            label: "{{ t('admin.apply_language_hint') }}"
-            tap_action:
-              action: call-service
-              service: script.vssp_apply_language
-          - type: custom:button-card
-            template: vssp_admin_button
-            icon: mdi:cog-sync
-            name: "{{ t('admin.generate') }}"
-            label: "{{ t('admin.wizard_hint') }}"
-            tap_action:
-              action: call-service
-              service: script.vssp_run_generate
-
-      - type: vertical-stack
-        view_layout:
-          grid-area: discovery
-        cards:
-          # Bouton 1 — Wizard (ouvre le formulaire dans un nouvel onglet)
-          - type: custom:button-card
-            template: vssp_admin_button
-            icon: mdi:magnify-scan
-            name: "{{ t('admin.wizard') }}"
-            label: "{{ t('admin.wizard_hint') }}"
-            tap_action:
-              action: url
-              url_path: /local/vssp/wizard/vssp_wizard.html
-              target: _blank
-
-          # Bouton 2 — Scan HA (génère report.json côté serveur)
-          - type: custom:button-card
-            template: vssp_admin_button
-            icon: mdi:radar
-            name: "{{ t('admin.discovery') }}"
-            label: "{{ t('admin.discovery_hint') }}"
-            confirmation:
-              text: "{{ t('home.discovery_confirm') }}"
-            tap_action:
-              action: call-service
-              service: script.vssp_scan_and_prepare
-
-      # --- Upgrade ----------------------------------------------------------
-      - type: custom:button-card
-        template: vssp_admin_button
-        icon: mdi:rocket-launch
-        name: "{{ t('admin.upgrade') }}"
-        label: "{{ t('admin.upgrade_hint') }}"
-        confirmation:
-          text: "{{ t('home.upgrade_confirm') }}"
-        tap_action:
-          action: call-service
-          service: script.vssp_run_upgrade
-        view_layout:
-          grid-area: upgrade
-
-      # --- Delete (protégé : code + confirmation + sauvegarde auto) -------
-      - type: vertical-stack
-        view_layout:
-          grid-area: delete
-        card_mod:
-          style: |
-            :host {
-              display: block;
-              border: 1px solid rgba(255,61,113,0.35);
-              border-radius: 18px;
-              padding: 4px;
-            }
-        cards:
-          - type: custom:button-card
-            template: vssp_admin_button
-            icon: mdi:delete-alert
-            name: "{{ t('admin.delete_dashboard') }}"
-            label: "{{ t('admin.delete_hint') }}"
-            variables:
-              danger: true
-
-          - type: entities
-            entities:
-              - entity: input_text.vssp_pin_entry
-                name: "Code de confirmation"
-
-          - type: custom:button-card
-            template: vssp_quick_action
-            icon: mdi:trash-can-outline
-            name: CONFIRMER LA SUPPRESSION
-            confirmation:
-              text: "{{ t('home.delete_confirm') }}"
-            tap_action:
-              action: call-service
-              service: script.vssp_delete_dashboard
-
-      # --- Dashboards systeme (hors pieces) -------------------------------
-      # ENERGY et CORE ne dependent d'aucune piece : ils ne passent pas
-      # par le formulaire du wizard. Carte dediee, chargee a part.
-      # ═══════════════════════════════════════════════════════════════
-      # EN | DEVICE ASSIGNMENT — the missing link between scan and generator
-      # FR | ASSIGNATION DES APPAREILS — le maillon manquant entre scan et generateur
-      # ═══════════════════════════════════════════════════════════════
-      # EN | An iframe rather than native cards: assigning eighty entities
-      # EN | needs a filterable table with two dependent dropdowns per row, and
-      # EN | Lovelace has no card for that. The page posts to a local-only
-      # EN | webhook, so no API token ever reaches the browser.
-      # EN | Run DISCOVERY SCAN first — it is what writes assign_data.json.
-      # FR | Une iframe plutot que des cartes natives : assigner
-      # FR | quatre-vingts entites demande un tableau filtrable avec deux
-      # FR | listes dependantes par ligne, et Lovelace n a pas de carte pour
-      # FR | cela. La page poste vers un webhook local uniquement, donc aucun
-      # FR | jeton d API n atteint le navigateur.
-      # FR | Lancer DISCOVERY SCAN d abord — c est lui qui ecrit
-      # FR | assign_data.json.
-      - type: vertical-stack
-        view_layout:
-          grid-area: assign
-        cards:
-          - type: custom:button-card
-            template: vssp_title
-            name: "{{ t('admin.assignment') }}"
-          - type: iframe
-            url: /local/vssp/wizard/assign.html
-            card_mod:
-              style: |
-                ha-card {
-                  background: transparent !important;
-                  border: none !important;
-                  box-shadow: none !important;
-                  overflow: hidden;
-                  height: 640px;
-                  border-radius: 16px;
-                }
-                iframe {
-                  width: 100%;
-                  height: 100% !important;
-                  border: none;
-                }
-
-      - !include ../admin/system_dashboards.yaml
-
-
-    card_mod:
-      style: |
-        hui-view {
-          background: #02050B;
-        }
