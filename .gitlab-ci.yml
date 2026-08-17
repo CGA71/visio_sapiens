@@ -830,6 +830,25 @@ deploy:staging:
       fi
       echo "[OK] /config is mounted and writable"
     - kubectl cp $PACKAGE_NAME.tar.gz $K3S_NAMESPACE/$HA_POD:/config/.osv.tar.gz -c $K3S_CONTAINER
+    # EN | APOSTROPHES ARE FORBIDDEN in the remote shell block below.
+    # EN | The whole script is passed as `sh -c '...'`, a single-quoted string
+    # EN | in the runner's shell. One apostrophe inside — including in a
+    # EN | comment — closes that string, and everything after it is reparsed
+    # EN | as different arguments. The remote command then does something
+    # EN | other than what it reads like: the failure surfaced as
+    # EN |     mkdir: cannot create directory '/config': Permission denied
+    # EN | on a pod where /config was perfectly mounted and writable.
+    # EN | Write "n a", "c est", "l instance" without the apostrophe.
+    # FR | LES APOSTROPHES SONT INTERDITES dans le bloc shell distant
+    # FR | ci-dessous. Tout le script est passe comme `sh -c '...'`, une
+    # FR | chaine entre quotes simples dans le shell du runner. Une seule
+    # FR | apostrophe a l interieur — y compris dans un commentaire — ferme
+    # FR | cette chaine, et tout ce qui suit est reanalyse comme d autres
+    # FR | arguments. La commande distante fait alors autre chose que ce
+    # FR | qu elle donne a lire : la panne est apparue sous la forme
+    # FR |     mkdir: cannot create directory '/config': Permission denied
+    # FR | sur un pod ou /config etait parfaitement monte et inscriptible.
+    # FR | Ecrire "n a", "c est", "l instance" sans apostrophe.
     - |
       kubectl exec -n $K3S_NAMESPACE $HA_POD -c $K3S_CONTAINER -- sh -c '
         set -e
@@ -857,7 +876,7 @@ deploy:staging:
         # EN | has no authority over it.
         # FR | ETAT COTE POD — preserve entre les deploiements.
         # FR | `dashboards/` est REMPLACE en bloc (mv), contrairement a vssp/
-        # FR | et packages/ copies en additif. C'est correct pour les vues
+        # FR | et packages/ copies en additif. Correct pour les vues
         # FR | generees, mais deux fichiers de model/ ne sont pas livres par le
         # FR | depot du tout — ils sont ECRITS SUR LE POD :
         # FR |   energy_devices.yaml  par vssp_energy_sync.py (le parc mesure
@@ -869,9 +888,9 @@ deploy:staging:
         # FR | Remplacer le repertoire detruisait les deux a chaque
         # FR | deploiement. Le dashboard ENERGY se regenerait alors depuis un
         # FR | modele vide et les tableaux revenaient blancs — avec un message
-        # FR | accusant le jeton API, qui n'y etait pour rien.
-        # FR | La version du pod gagne toujours : c'est de la donnee
-        # FR | decouverte, le depot n'a aucune autorite dessus.
+        # FR | accusant le jeton API, qui n y etait pour rien.
+        # FR | La version du pod gagne toujours : donnee
+        # FR | decouverte, le depot n a aucune autorite dessus.
         for f in model/energy_devices.yaml model/house_rooms.yaml; do
           if [ -f /config/dashboards.old/$f ]; then
             mkdir -p /config/dashboards/$(dirname $f)
