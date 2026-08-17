@@ -22,9 +22,9 @@ the generator   ->  dashboards/views/    the decision, rendered
 | `vssp/vssp_assign_apply.py` | new | `72c5d285aaf67bdd2aecb5f06a27e57d` |
 | `home-assistant/www/vssp/wizard/assign.html` | new | `588a17009f7f62e0d3f5038d49d66c0a` |
 | `home-assistant/packages/vssp_assign.yaml` | new | `08e35fad6b341d12360e8a6354452830` |
-| `home-assistant/dashboards/templates_j2/home.yaml.j2` | modified | `58fc7fd57538f1545d61281d507cc6e1` |
-| `home-assistant/dashboards/locales/en.yaml` | modified | `ea2413cf43a88e8f7fa790690a4cfd9d` |
-| `home-assistant/dashboards/locales/fr.yaml` | modified | `4c0d2b1fd9f8b25b1d3bea48edd3cce5` |
+| `home-assistant/dashboards/templates_j2/home.yaml.j2` | modified | `7a543ef4c1f75811766aefea025b2e70` |
+| `home-assistant/dashboards/locales/en.yaml` | modified | `35f552320118c6561d34bb9c2063f619` |
+| `home-assistant/dashboards/locales/fr.yaml` | modified | `f49b34e48f0ede1c90780f1a734bb144` |
 
 Check before committing:
 
