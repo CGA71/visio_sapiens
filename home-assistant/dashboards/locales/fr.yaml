@@ -123,12 +123,26 @@ energy:
     total_consumption: Consommation totale
     breaker_panel: Tableau électrique
     grid: Réseau
+    flow: Schéma de fonctionnement
     security: Sécurité
   # EN | Display labels only — the stored input_select values stay Day /
   # EN | Month / Year in French too. See the note in en.yaml.
   # FR | Libellés d'affichage uniquement — les valeurs stockées de
   # FR | l'input_select restent Day / Month / Year même en français.
   # FR | Voir la note dans en.yaml.
+  col:
+    device: Appareil
+    room: Pièce
+    power_hint: "(actuelle)"
+    energy: Énergie
+    energy_hint: "(aujourd'hui)"
+  legend:
+    state_on: "Allumé"
+    state_off: "Éteint"
+  empty:
+    devices: Aucun appareil détecté
+    devices_hint: lancez vssp_energy_sync.py
+    circuits: Aucun circuit détecté — lancez vssp_energy_sync.py
   tab:
     day: Jour
     month: Mois
@@ -144,6 +158,11 @@ energy:
     self_consumption: Autoconsommation
     export_revenue: Revenu de revente
     total: Total
+    today: Aujourd'hui
+    this_month: Ce mois-ci
+    this_year: Cette année
+    estimate_month: Estimation de revente
+    estimate_year: Estimation cette année
   flow:
     solar_panels: Panneaux solaires
     inverter: Onduleur
@@ -170,8 +189,8 @@ technical:
   disconnected: Déconnecté
 
 common:
-  on: "Marche"
-  off: "Arrêt"
+  state_on: "Marche"
+  state_off: "Arrêt"
   open: Ouvert
   closed: Fermé
   unavailable: Indisponible
