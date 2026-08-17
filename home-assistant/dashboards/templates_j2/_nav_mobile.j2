@@ -37,6 +37,17 @@
    EN | EXPECTED CONTEXT / FR | CONTEXTE ATTENDU
      nav, active_nav
    ================================================================== #}
+{# EN | An entry with `mobile: false` is dropped: the admin console is desk
+       work and a phone has room for only a handful of chips. The width and
+       column count below are computed from the FILTERED list, otherwise the
+       bar would reserve space for a chip it never draws.
+   FR | Une entree avec `mobile: false` est ecartee : la console admin est un
+       travail de bureau et un telephone n a de place que pour une poignee de
+       chips. La largeur et le nombre de colonnes ci-dessous sont calcules sur
+       la liste FILTREE, sinon la barre reserverait la place d un chip qu elle
+       ne dessine jamais. #}
+{% set mobile_nav = nav | rejectattr('mobile', 'defined') | list
+                  + nav | selectattr('mobile', 'defined') | selectattr('mobile') | list %}
 {% set chip_width = 104 %}
       - type: custom:button-card
         view_layout:
@@ -72,15 +83,15 @@
           custom_fields:
             chips:
               - display: block
-              - width: {{ nav | length * chip_width }}px
+              - width: {{ mobile_nav | length * chip_width }}px
         custom_fields:
           chips:
             card:
               type: grid
-              columns: {{ nav | length }}
+              columns: {{ mobile_nav | length }}
               square: false
               cards:
-{% for item in nav %}
+{% for item in mobile_nav %}
                 - type: custom:button-card
                   name: "{{ item.name }}"
                   icon: {{ item.icon }}
