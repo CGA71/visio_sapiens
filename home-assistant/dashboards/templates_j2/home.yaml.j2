@@ -526,10 +526,25 @@ views:
                 name: "{{ t('admin.select_language') }}"
               - entity: input_select.vssp_format
                 name: "{{ t('admin.select_format') }}"
+              # EN | The deployed language, read from /config/VSSP_LOCALE.
+              # EN | When it differs from the selector above, a regeneration is
+              # EN | pending — that gap is the reason to show it at all.
+              # FR | La langue reellement deployee, lue depuis
+              # FR | /config/VSSP_LOCALE. Quand elle differe du selecteur
+              # FR | ci-dessus, une regeneration est en attente — cet ecart est
+              # FR | toute la raison de l afficher.
               - entity: sensor.vssp_deployed_locale
-                name: "{{ t('admin.generated_at') }}"
+                name: "{{ t('admin.deployed_locale') }}"
+              # EN | Anything above 0 means a fragment reached /config without
+              # EN | passing through vssp_i18n.py, and the patcher will refuse
+              # EN | it. Was hardcoded English here — now translated like the
+              # EN | rest.
+              # FR | Toute valeur superieure a 0 signifie qu un fragment est
+              # FR | arrive dans /config sans passer par vssp_i18n.py, et le
+              # FR | patcher le refusera. Etait code en anglais ici — traduit
+              # FR | comme le reste desormais.
               - entity: sensor.vssp_unrendered_placeholders
-                name: "Unrendered markers"
+                name: "{{ t('admin.unrendered_markers') }}"
             card_mod:
               style: |
                 ha-card {
