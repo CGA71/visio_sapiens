@@ -786,6 +786,49 @@ deploy:staging:
     - export HA_POD=$(kubectl get pod -n $K3S_NAMESPACE -l app=homeassistant -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
     - '[ -z "$HA_POD" ] && export HA_POD=$(kubectl get pods -n $K3S_NAMESPACE -o jsonpath="{.items[0].metadata.name}")'
     - echo "Target pod ->" "$HA_POD"
+    # --- EN | PREFLIGHT — is /config actually mounted and writable? -------
+    # --- FR | PRE-VOL — /config est-il monte et inscriptible ? -------------
+    # EN | Everything below assumes /config is the Home Assistant
+    # EN | configuration root, on a persistent volume. When the volume is not
+    # EN | mounted, the very first mkdir fails with
+    # EN |     mkdir: cannot create directory '/config': Permission denied
+    # EN | which reads like a permissions problem but means the directory does
+    # EN | not exist at all — mkdir walked up to / and found it read-only.
+    # EN | Checking here names the real cause instead of leaving a misleading
+    # EN | message halfway through a deployment.
+    # FR | Tout ce qui suit suppose que /config est la racine de configuration
+    # FR | Home Assistant, sur un volume persistant. Quand le volume n'est pas
+    # FR | monte, le tout premier mkdir echoue sur
+    # FR |     mkdir: cannot create directory '/config': Permission denied
+    # FR | ce qui se lit comme un probleme de droits mais signifie que le
+    # FR | repertoire n'existe pas du tout — mkdir est remonte a / et l'a
+    # FR | trouve en lecture seule.
+    # FR | Le controler ici nomme la vraie cause au lieu de laisser un message
+    # FR | trompeur au milieu d'un deploiement.
+    - |
+      if ! kubectl exec -n $K3S_NAMESPACE $HA_POD -c $K3S_CONTAINER -- \
+           sh -c 'test -d /config && test -w /config'; then
+        echo "[ERR] /config is not a writable directory in pod $HA_POD"
+        echo "      container: $K3S_CONTAINER"
+        echo ""
+        echo "      What the pod actually has at its root:"
+        kubectl exec -n $K3S_NAMESPACE $HA_POD -c $K3S_CONTAINER -- ls -la / || true
+        echo ""
+        echo "      Mounted volumes declared on the pod:"
+        kubectl get pod -n $K3S_NAMESPACE $HA_POD \
+          -o jsonpath='{range .spec.containers[*]}{.name}{":\n"}{range .volumeMounts[*]}  {.mountPath}{" <- "}{.name}{"\n"}{end}{end}' || true
+        echo ""
+        echo "      Usual causes:"
+        echo "        - the config PersistentVolumeClaim is not bound, so the"
+        echo "          pod started without its volume;"
+        echo "        - the deployment mounts the config elsewhere"
+        echo "          (/homeassistant, /data...), in which case update the"
+        echo "          paths in this job;"
+        echo "        - K3S_CONTAINER points at a sidecar rather than at Home"
+        echo "          Assistant itself."
+        exit 1
+      fi
+      echo "[OK] /config is mounted and writable"
     - kubectl cp $PACKAGE_NAME.tar.gz $K3S_NAMESPACE/$HA_POD:/config/.osv.tar.gz -c $K3S_CONTAINER
     - |
       kubectl exec -n $K3S_NAMESPACE $HA_POD -c $K3S_CONTAINER -- sh -c '
