@@ -1,0 +1,296 @@
+########################################################################
+# Visio Sapiens — ADMIN Dashboard (standalone)
+#
+# EN | *** GENERATED FILE — DO NOT EDIT BY HAND ***
+# EN | Source: admin.yaml.j2 + model/house.yaml + locales/<code>.yaml
+# EN | Regenerate with: python3 generate_dashboards.py
+# FR | *** FICHIER GENERE — NE PAS EDITER A LA MAIN ***
+# FR | Source : admin.yaml.j2 + model/house.yaml + locales/<code>.yaml
+# FR | Regenerer avec : python3 generate_dashboards.py
+#
+# EN | ITS OWN DASHBOARD, NOT A VIEW OF HOME
+# EN | The console used to be the second view of home.yaml, reachable at
+# EN | /visio-sapiens/admin. That coupling had three costs: every change to
+# EN | the console forced a regeneration of HOME; the admin work could not
+# EN | grow past one screen without crowding the file; and hiding the console
+# EN | meant hiding a view of a dashboard people use daily.
+# EN | It is now url_path "visio-sapiens-admin", with `require_admin: true`
+# EN | on the declaration — the protection belongs to the dashboard, not to a
+# EN | view inside another one.
+# FR | SON PROPRE DASHBOARD, PAS UNE VUE DE HOME
+# FR | La console etait la seconde vue de home.yaml, joignable en
+# FR | /visio-sapiens/admin. Ce couplage coutait trois choses : chaque
+# FR | modification de la console forcait une regeneration de HOME ; le
+# FR | travail d administration ne pouvait pas depasser un ecran sans
+# FR | encombrer le fichier ; et masquer la console revenait a masquer une vue
+# FR | d un dashboard utilise tous les jours.
+# FR | Il est desormais url_path « visio-sapiens-admin », avec
+# FR | `require_admin: true` sur la declaration — la protection appartient au
+# FR | dashboard, pas a une vue a l interieur d un autre.
+#
+# EN | SHAPE — a menu and five screens, per the agreed diagram:
+# FR | FORME — un menu et cinq ecrans, selon le schema convenu :
+#   menu        the hub, one card per screen
+#   rooms       declare rooms and floors
+#   assign      send discovered devices to a room and a slot
+#   energy      measured fleet and breaker panel
+#   theme       import / export the CSS design system
+#   dashboards  list, regenerate, delete
+#
+# EN | DISCOVERY SCAN is shared, not a screen. The diagram draws it feeding
+# EN | three forms, so it appears as a card inside each of them rather than as
+# EN | a sixth entry: a scan is a step you take while filling a form, not a
+# EN | place you go.
+# FR | Le SCAN DE DECOUVERTE est partage, pas un ecran. Le schema le montre
+# FR | alimentant trois formulaires : il apparait donc comme une carte dans
+# FR | chacun d eux plutot que comme une sixieme entree — un scan est une
+# FR | etape qu on fait en remplissant un formulaire, pas un endroit ou on va.
+#
+# EN | THREE SCREENS ARE NOT BUILT YET (rooms, energy, theme). Their view
+# EN | exists and says so plainly. An empty menu entry that leads nowhere is
+# EN | worse than one that states what it will do.
+# FR | TROIS ECRANS NE SONT PAS ENCORE CONSTRUITS (pieces, energie, theme).
+# FR | Leur vue existe et le dit franchement. Une entree de menu qui ne mene
+# FR | nulle part vaut moins qu une qui annonce ce qu elle fera.
+########################################################################
+
+{% set admin_path = '/visio-sapiens-admin' %}
+{% set screens = [
+  ('rooms',      'mdi:floor-plan',        'rooms'),
+  ('assign',     'mdi:transit-connection-variant', 'assign'),
+  ('energy',     'mdi:lightning-bolt',    'energy'),
+  ('theme',      'mdi:palette',           'theme'),
+  ('dashboards', 'mdi:view-dashboard-variant', 'dashboards'),
+] %}
+
+title: {{ t('adminmenu.title') }}
+theme: {{ house.theme }}
+
+# EN | Paths relative to dashboards/views/, where every generated dashboard
+# EN | lives.
+# FR | Chemins relatifs a dashboards/views/, ou vivent tous les dashboards
+# FR | generes.
+button_card_templates: !include ../templates/button_card_templates.yaml
+decluttering_templates: !include ../templates/decluttering_templates.yaml
+
+views:
+  # =====================================================================
+  # EN | MENU — the hub / FR | MENU — le hub
+  # =====================================================================
+  - title: {{ t('adminmenu.title') }}
+    path: menu
+    subview: false
+    type: custom:grid-layout
+    layout:
+      grid-template-columns: minmax(200px, auto) 1fr 1fr 1fr
+      grid-template-rows: 105px auto
+      grid-template-areas: |
+        "nav header header header"
+        "nav tiles tiles tiles"
+      margin: 12px
+      grid-gap: 14px 14px
+    cards:
+{% set page_title = t('adminmenu.title') %}
+{% set page_subtitle = t('adminmenu.subtitle') %}
+{% set page_path = admin_path ~ '/menu' %}
+{% include '_header.j2' %}
+
+{% include '_nav.j2' %}
+
+      - type: grid
+        columns: 3
+        square: false
+        view_layout:
+          grid-area: tiles
+        cards:
+{% for screen, icon, key in screens %}
+          - type: custom:button-card
+            template: vssp_admin_button
+            icon: {{ icon }}
+            name: "{{ t('adminmenu.section.' ~ key) }}"
+            label: "{{ t('adminmenu.section.' ~ key ~ '_hint') }}"
+            tap_action:
+              action: navigate
+              navigation_path: {{ admin_path }}/{{ screen }}
+{% endfor %}
+
+{% for screen, icon, key in screens %}
+  # =====================================================================
+  # EN | SCREEN — {{ key | upper }}
+  # FR | ECRAN — {{ key | upper }}
+  # =====================================================================
+  - title: "{{ t('adminmenu.section.' ~ key) }}"
+    path: {{ screen }}
+    # EN | subview: true hides it from the dashboard tab strip. The menu is
+    # EN | the only way in, which is what makes this a console rather than
+    # EN | six loose tabs.
+    # FR | subview: true la masque de la barre d onglets du dashboard. Le menu
+    # FR | est la seule entree, ce qui fait de ceci une console plutot que six
+    # FR | onglets en vrac.
+    subview: true
+    type: custom:grid-layout
+    layout:
+      grid-template-columns: minmax(200px, auto) 1fr 1fr 1fr
+      grid-template-rows: 105px auto
+      grid-template-areas: |
+        "nav header header header"
+        "nav body body body"
+      margin: 12px
+      grid-gap: 14px 14px
+    cards:
+{% set page_title = t('adminmenu.section.' ~ key) %}
+{% set page_subtitle = t('adminmenu.back') %}
+{% set page_path = admin_path ~ '/menu' %}
+{% include '_header.j2' %}
+
+{% include '_nav.j2' %}
+
+      - type: vertical-stack
+        view_layout:
+          grid-area: body
+        cards:
+{% if screen == 'assign' %}
+          # EN | The one screen that is fully built. An iframe rather than
+          # EN | native cards: assigning eighty entities needs a filterable
+          # EN | table with two dependent dropdowns per row, and Lovelace has
+          # EN | no card for that. The page posts to a local-only webhook, so
+          # EN | no API token ever reaches the browser.
+          # FR | Le seul ecran entierement construit. Une iframe plutot que des
+          # FR | cartes natives : assigner quatre-vingts entites demande un
+          # FR | tableau filtrable avec deux listes dependantes par ligne, et
+          # FR | Lovelace n a pas de carte pour cela. La page poste vers un
+          # FR | webhook local uniquement, donc aucun jeton d API n atteint le
+          # FR | navigateur.
+          - type: custom:button-card
+            template: vssp_admin_button
+            icon: mdi:radar
+            name: "{{ t('adminmenu.scan') }}"
+            label: "{{ t('adminmenu.scan_hint') }}"
+            tap_action:
+              action: call-service
+              service: script.vssp_scan_and_prepare
+          - type: iframe
+            url: /local/vssp/wizard/assign.html
+            card_mod:
+              style: |
+                ha-card {
+                  background: transparent !important;
+                  border: none !important;
+                  box-shadow: none !important;
+                  overflow: hidden;
+                  height: calc(100vh - 260px);
+                  min-height: 520px;
+                  border-radius: 16px;
+                }
+                iframe { width: 100%; height: 100% !important; border: none; }
+
+{% elif screen == 'dashboards' %}
+          # EN | Generation controls, moved here from the old HOME view.
+          # FR | Controles de generation, deplaces ici depuis l ancienne vue HOME.
+          - type: entities
+            entities:
+              - entity: input_select.vssp_language
+                name: "{{ t('admin.select_language') }}"
+              - entity: input_select.vssp_format
+                name: "{{ t('admin.select_format') }}"
+              - entity: sensor.vssp_deployed_locale
+                name: "{{ t('admin.deployed_locale') }}"
+              - entity: sensor.vssp_unrendered_placeholders
+                name: "{{ t('admin.unrendered_markers') }}"
+            card_mod:
+              style: |
+                ha-card {
+                  background: rgba(8,18,28,0.75) !important;
+                  border: 1px solid rgba(0,229,255,0.28) !important;
+                  border-radius: 20px !important;
+                }
+          - type: grid
+            columns: 2
+            square: false
+            cards:
+              - type: custom:button-card
+                template: vssp_admin_button
+                icon: mdi:translate
+                name: "{{ t('admin.apply_language') }}"
+                label: "{{ t('admin.apply_language_hint') }}"
+                tap_action:
+                  action: call-service
+                  service: script.vssp_apply_language
+              - type: custom:button-card
+                template: vssp_admin_button
+                icon: mdi:cog-sync
+                name: "{{ t('admin.generate') }}"
+                label: "{{ t('adminmenu.section.dashboards_hint') }}"
+                tap_action:
+                  action: call-service
+                  service: script.vssp_run_generate
+              - type: custom:button-card
+                template: vssp_admin_button
+                icon: mdi:rocket-launch
+                name: "{{ t('admin.upgrade') }}"
+                label: "{{ t('admin.upgrade_hint') }}"
+                tap_action:
+                  action: call-service
+                  service: script.vssp_run_upgrade
+              - type: custom:button-card
+                template: vssp_admin_button
+                icon: mdi:delete
+                name: "{{ t('admin.delete_dashboard') }}"
+                label: "{{ t('admin.delete_hint') }}"
+                variables:
+                  danger: true
+                tap_action:
+                  action: call-service
+                  service: script.vssp_delete_dashboard
+                  confirmation:
+                    text: "{{ t('home.delete_confirm') }}"
+          # EN | The generated dashboards, listed from the model rather than
+          # EN | typed here — the list cannot drift from what exists.
+          # FR | Les dashboards generes, listes depuis le modele plutot que
+          # FR | saisis ici — la liste ne peut pas diverger de ce qui existe.
+          - type: custom:button-card
+            template: vssp_title
+            name: "{{ t('admin.system_dashboards') }}"
+          - type: grid
+            columns: 3
+            square: false
+            cards:
+{% for r in rooms_rendered %}
+              - type: custom:button-card
+                template: vssp_quick_action
+                icon: {{ r.icon }}
+                name: "{{ r.label }}"
+                tap_action:
+                  action: navigate
+                  navigation_path: {{ r.path }}
+{% endfor %}
+
+{% else %}
+          # EN | Placeholder, and it says so. Naming what is missing is more
+          # EN | useful than an empty panel that looks broken.
+          # FR | Ecran non construit, et il le dit. Nommer ce qui manque est
+          # FR | plus utile qu un panneau vide qui semble casse.
+          - type: custom:button-card
+            template: vssp_alert
+            icon: mdi:hammer-wrench
+            name: "{{ t('adminmenu.not_built') }}"
+            label: "{{ t('adminmenu.not_built_hint') }}"
+            variables:
+              level: info
+            tap_action:
+              action: none
+{% if screen in ['rooms', 'energy'] %}
+          # EN | The scan feeds this screen too, per the diagram.
+          # FR | Le scan alimente aussi cet ecran, selon le schema.
+          - type: custom:button-card
+            template: vssp_admin_button
+            icon: mdi:radar
+            name: "{{ t('adminmenu.scan') }}"
+            label: "{{ t('adminmenu.scan_hint') }}"
+            tap_action:
+              action: call-service
+              service: script.vssp_scan_and_prepare
+{% endif %}
+{% endif %}
+
+{% endfor %}
