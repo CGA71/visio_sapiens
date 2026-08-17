@@ -90,6 +90,22 @@ lovelace:
       icon: mdi:server
       show_in_sidebar: false
       filename: dashboards/views/core_mobile.yaml
+    # EN | The admin console, its own dashboard since it left home.yaml.
+    # EN | `require_admin: true` is the point of the move: it protects a
+    # EN | DASHBOARD, which a view inside another dashboard can never be.
+    # EN | `show_in_sidebar: false` — the Visio Sapiens rail is the way in.
+    # FR | La console d administration, son propre dashboard depuis qu elle a
+    # FR | quitte home.yaml. `require_admin: true` est tout l interet du
+    # FR | deplacement : il protege un DASHBOARD, ce qu une vue a l interieur
+    # FR | d un autre dashboard ne peut jamais etre.
+    # FR | `show_in_sidebar: false` — le bandeau Visio Sapiens est l entree.
+    visio-sapiens-admin:
+      mode: yaml
+      title: __T:adminmenu.title__
+      icon: mdi:shield-crown
+      show_in_sidebar: false
+      require_admin: true
+      filename: dashboards/views/admin.yaml
     visio-sapiens-energy:
       mode: yaml
       title: __T:dashboard.energy.title__
