@@ -1,0 +1,629 @@
+########################################################################
+# Visio Sapiens — ENERGY Dashboard, MOBILE format
+#
+# EN | *** GENERATED FILE — DO NOT EDIT BY HAND ***
+# EN | Source: energy_mobile.yaml.j2 + model/house.yaml + locales/<code>.yaml
+# EN | Regenerate with: python3 generate_dashboards.py --format mobile
+# FR | *** FICHIER GENERE — NE PAS EDITER A LA MAIN ***
+# FR | Source : energy_mobile.yaml.j2 + model/house.yaml + locales/<code>.yaml
+# FR | Regenerer avec : python3 generate_dashboards.py --format mobile
+#
+# EN | ONE PANEL IS DELIBERATELY ABSENT — the energy flow diagram.
+# EN | On tablet it lays five nodes side by side (panels, inverter, home,
+# EN | exchange, grid) across the full width. On a 380px screen each node
+# EN | would get about 70px, which turns the diagram into unreadable
+# EN | pictograms. Rather than shrink it into uselessness, the mobile view
+# EN | drops it: the same figures are already visible as KPI values in the
+# EN | production and consumption panels, so nothing is lost but the drawing.
+# FR | UN PANNEAU EST VOLONTAIREMENT ABSENT — le schema de flux energetique.
+# FR | En tablette il aligne cinq noeuds cote a cote (panneaux, onduleur,
+# FR | maison, echange, reseau) sur toute la largeur. Sur un ecran de 380px,
+# FR | chaque noeud disposerait d'environ 70px, ce qui transforme le schema en
+# FR | pictogrammes illisibles. Plutot que de le reduire jusqu'a l'inutilite,
+# FR | la vue mobile l'abandonne : les memes chiffres sont deja visibles comme
+# FR | valeurs KPI dans les panneaux production et consommation, donc on ne
+# FR | perd que le dessin.
+#
+# EN | The period tabs drive the SAME input_select as the tablet view. Its
+# EN | stored values stay Day / Month / Year in every language, because the
+# EN | JavaScript compares them; only the displayed label is translated.
+# FR | Les onglets de periode pilotent le MEME input_select que la vue
+# FR | tablette. Ses valeurs stockees restent Day / Month / Year dans toutes
+# FR | les langues, car le JavaScript les compare ; seul le libelle affiche
+# FR | est traduit.
+########################################################################
+
+{% set energy_nav = (nav | selectattr('id', 'equalto', 'energy') | list | first) %}
+
+title: {{ t('system.energy') }}
+theme: {{ house.theme }}
+
+# EN | Path relative to dashboards/views/, where every generated dashboard
+# EN | lives.
+# FR | Chemin relatif a dashboards/views/, ou vivent tous les dashboards
+# FR | generes.
+button_card_templates: !include ../templates/button_card_templates.yaml
+decluttering_templates: !include ../templates/decluttering_templates.yaml
+
+views:
+  - title: {{ t('page.energy.name') }}
+    path: {{ energy.view_path }}
+    subview: false
+    type: custom:grid-layout
+    layout:
+      # EN | minmax(0,1fr), not 1fr — see room_mobile.yaml.j2 for why.
+      # FR | minmax(0,1fr) et non 1fr — voir room_mobile.yaml.j2 pour la raison.
+      grid-template-columns: minmax(0, 1fr)
+      grid-template-rows: auto
+      grid-template-areas: |
+        "header"
+        "nav"
+        "tabs"
+        "solar"
+        "total"
+        "devices"
+        "edf"
+        "board"
+      margin: 8px
+      grid-gap: 12px 0px
+    cards:
+      # ═══════════════════════════════════════════════════════════════
+      # EN | COMPACT HEADER — title + clock on a single card
+      # FR | HEADER COMPACT — titre + heure sur une seule carte
+      # ═══════════════════════════════════════════════════════════════
+{% set page_title = t('page.energy.name') %}
+{% set page_subtitle = t('page.energy.subtitle') %}
+{% set page_icon = energy_nav.icon %}
+{% set page_path = energy_nav.path_mobile %}
+{% include '_header_mobile.j2' %}
+
+      # ═══════════════════════════════════════════════════════════════
+      # EN | NAVIGATION — one-line scrolling chip bar
+      # FR | NAVIGATION — barre de chips defilante sur une ligne
+      # ═══════════════════════════════════════════════════════════════
+{% include '_nav_mobile.j2' %}
+
+      # ═══════════════════════════════════════════════════════════════
+      # EN | PERIOD TABS — hoisted to their own row
+      # FR | ONGLETS DE PERIODE — remontes sur leur propre ligne
+      # ═══════════════════════════════════════════════════════════════
+      # EN | On tablet the tabs are repeated inside the production and the
+      # EN | consumption panels, because those sit side by side and each needs
+      # EN | its own control within reach. Stacked vertically on a phone, two
+      # EN | identical tab rows driving the SAME helper would look like two
+      # EN | independent filters. One row, once, above everything it affects.
+      # FR | En tablette, les onglets sont repetes dans le panneau production
+      # FR | et dans celui de consommation, car ils sont cote a cote et chacun
+      # FR | a besoin de son controle a portee. Empilees verticalement sur un
+      # FR | telephone, deux lignes d'onglets identiques pilotant le MEME
+      # FR | helper ressembleraient a deux filtres independants. Une ligne, une
+      # FR | fois, au-dessus de tout ce qu'elle affecte.
+      - type: horizontal-stack
+        view_layout:
+          grid-area: tabs
+        cards:
+{% for tab, icon in [('day', 'mdi:weather-sunny'), ('month', 'mdi:calendar-month'), ('year', 'mdi:calendar')] %}
+          - type: custom:button-card
+            template: vssp_energy_tab
+            entity: {{ energy.period_helper }}
+            name: "{{ t('energy.tab.' ~ tab) }}"
+            icon: {{ icon }}
+            variables:
+              period: {{ tab | capitalize }}
+            tap_action:
+              action: call-service
+              service: input_select.select_option
+              service_data:
+                entity_id: {{ energy.period_helper }}
+                option: {{ tab | capitalize }}
+{% endfor %}
+
+      # ═══════════════════════════════════════════════════════════════
+      # EN | PANEL 1 — SOLAR PRODUCTION
+      # FR | PANNEAU 1 — PRODUCTION SOLAIRE
+      # ═══════════════════════════════════════════════════════════════
+      - type: vertical-stack
+        view_layout:
+          grid-area: solar
+        card_mod:
+          style: |
+            :host {
+              display: block;
+              width: 100%;
+              background: rgba(8,18,28,0.75);
+              border-radius: 18px;
+              border: 1px solid rgba(0,229,255,0.28);
+              backdrop-filter: blur(12px);
+              box-shadow: 0 0 18px rgba(0,229,255,.15);
+              padding: 12px 14px;
+              overflow: hidden;
+            }
+        cards:
+          - type: custom:button-card
+            template: vssp_section_title
+            name: "{{ t('energy.panel.solar_production') }}"
+            card_mod:
+              style: |
+                ha-card { padding: 0 0 6px 0 !important; }
+                #name { font-size: 12px !important; letter-spacing: 1px !important; }
+
+          - type: horizontal-stack
+            cards:
+              - type: custom:button-card
+                template: vssp_energy_stat
+                entity: {{ energy.solar.power }}
+                label: "{{ t('energy.flow.current_production') }}"
+                variables:
+                  accent: "#00FFC3"
+                  size: "20px"
+              - type: custom:button-card
+                template: vssp_energy_stat
+                entity: {{ energy.solar.today }}
+                label: "{{ t('energy.stat.today') }}"
+                variables:
+                  accent: "#00FFC3"
+                  size: "20px"
+
+          - type: horizontal-stack
+            cards:
+              - type: custom:button-card
+                template: vssp_energy_stat
+                entity: {{ energy.solar.month }}
+                label: "{{ t('energy.stat.this_month') }}"
+                variables:
+                  accent: "#00FFC3"
+                  size: "18px"
+              - type: custom:button-card
+                template: vssp_energy_stat
+                entity: {{ energy.solar.year }}
+                label: "{{ t('energy.stat.this_year') }}"
+                variables:
+                  accent: "#00FFC3"
+                  size: "18px"
+
+          # EN | Annual capacity and progress toward the target.
+          # FR | Capacite annuelle et progression vers l'objectif.
+          - type: custom:button-card
+            show_icon: false
+            show_name: false
+            show_state: false
+            tap_action:
+              action: none
+            custom_fields:
+              cap: |
+                [[[
+                  const LOCALE = '{{ locale_tag }}';
+                  const c = states['{{ energy.solar.capacity_helper }}'];
+                  const cap = c ? Number(c.state) : 0;
+                  return '<span style="color:#56707E;font-size:10px">{{ t("energy.stat.annual_capacity") }}: ' +
+                         cap.toLocaleString(LOCALE) + ' kWh</span>';
+                ]]]
+              goal: |
+                [[[
+                  const LOCALE = '{{ locale_tag }}';
+                  const c = states['{{ energy.solar.capacity_helper }}'];
+                  const y = states['{{ energy.solar.year }}'];
+                  const cap = c ? Number(c.state) : 0;
+                  const prod = y ? Number(y.state) : 0;
+                  const pct = cap > 0 ? (prod / cap * 100) : 0;
+                  return '<span style="color:#00FFC3;font-size:11px;font-weight:700">' +
+                         pct.toLocaleString(LOCALE, { maximumFractionDigits: 1 }) +
+                         ' {{ t("energy.stat.of_annual_target") }}</span>';
+                ]]]
+            styles:
+              grid:
+                - grid-template-areas: '"cap goal"'
+                - grid-template-columns: 1fr auto
+                - align-items: center
+              card:
+                - background: transparent
+                - box-shadow: none
+                - border: none
+                - border-top: 1px solid rgba(0,229,255,0.10)
+                - border-radius: 0
+                - padding: 8px 0 0 0
+                - cursor: default
+                - pointer-events: none
+              custom_fields:
+                cap:
+                  - justify-self: start
+                goal:
+                  - justify-self: end
+
+      # ═══════════════════════════════════════════════════════════════
+      # EN | PANEL 2 — TOTAL CONSUMPTION
+      # FR | PANNEAU 2 — CONSOMMATION TOTALE
+      # ═══════════════════════════════════════════════════════════════
+      - type: vertical-stack
+        view_layout:
+          grid-area: total
+        card_mod:
+          style: |
+            :host {
+              display: block;
+              width: 100%;
+              background: rgba(8,18,28,0.75);
+              border-radius: 18px;
+              border: 1px solid rgba(0,229,255,0.28);
+              backdrop-filter: blur(12px);
+              box-shadow: 0 0 18px rgba(0,229,255,.15);
+              padding: 12px 14px;
+              overflow: hidden;
+            }
+        cards:
+          - type: custom:button-card
+            template: vssp_section_title
+            name: "{{ t('energy.panel.total_consumption') }}"
+            card_mod:
+              style: |
+                ha-card { padding: 0 0 6px 0 !important; }
+                #name { font-size: 12px !important; letter-spacing: 1px !important; }
+
+          - type: horizontal-stack
+            cards:
+              - type: custom:button-card
+                template: vssp_energy_stat
+                entity: {{ energy.totals.power }}
+                label: "{{ t('energy.flow.current_consumption') }}"
+                variables:
+                  accent: "#00E5FF"
+                  size: "20px"
+              - type: custom:button-card
+                template: vssp_energy_stat
+                entity: {{ energy.totals.today }}
+                label: "{{ t('energy.stat.today') }}"
+                variables:
+                  accent: "#00E5FF"
+                  size: "20px"
+
+          - type: horizontal-stack
+            cards:
+              - type: custom:button-card
+                template: vssp_energy_stat
+                entity: {{ energy.totals.month }}
+                label: "{{ t('energy.stat.this_month') }}"
+                variables:
+                  accent: "#00E5FF"
+                  size: "18px"
+              - type: custom:button-card
+                template: vssp_energy_stat
+                entity: {{ energy.totals.year }}
+                label: "{{ t('energy.stat.this_year') }}"
+                variables:
+                  accent: "#00E5FF"
+                  size: "18px"
+
+      # ═══════════════════════════════════════════════════════════════
+      # EN | PANEL 3 — PER-DEVICE CONSUMPTION
+      # FR | PANNEAU 3 — CONSOMMATION PAR APPAREIL
+      # ═══════════════════════════════════════════════════════════════
+      - type: vertical-stack
+        view_layout:
+          grid-area: devices
+        card_mod:
+          style: |
+            :host {
+              display: block;
+              width: 100%;
+              background: rgba(8,18,28,0.75);
+              border-radius: 18px;
+              border: 1px solid rgba(0,229,255,0.28);
+              backdrop-filter: blur(12px);
+              box-shadow: 0 0 18px rgba(0,229,255,.15);
+              padding: 12px 14px;
+              overflow: hidden;
+            }
+        cards:
+          - type: custom:button-card
+            template: vssp_section_title
+            name: "{{ t('energy.panel.per_device') }}"
+            card_mod:
+              style: |
+                ha-card { padding: 0 0 6px 0 !important; }
+                #name { font-size: 12px !important; letter-spacing: 1px !important; }
+
+          # EN | No column headers on mobile: four labels over 380px would
+          # EN | wrap and cost more height than they explain. vssp_energy_device_row
+          # EN | already labels its own values.
+          # FR | Pas d'en-tetes de colonnes en mobile : quatre libelles sur
+          # FR | 380px se replieraient et couteraient plus de hauteur qu'ils
+          # FR | n'expliquent. vssp_energy_device_row etiquette deja ses
+          # FR | propres valeurs.
+          - type: custom:button-card
+            show_icon: false
+            show_name: false
+            show_state: false
+            tap_action:
+              action: none
+            styles:
+              grid:
+                - grid-template-areas: '"list"'
+              card:
+                - background: transparent
+                - box-shadow: none
+                - border: none
+                - border-radius: 0
+                - padding: 0
+                - cursor: default
+              custom_fields:
+                list:
+                  - display: block
+                  - width: 100%
+                  - height: 260px
+                  - overflow-y: auto
+                  - overflow-x: hidden
+                  # EN | pan-y so the inner list scrolls without fighting the
+                  # EN | page scroll — the mirror of the pan-x used by the
+                  # EN | chip bar.
+                  # FR | pan-y pour que la liste interne defile sans se battre
+                  # FR | avec le defilement de la page — le miroir du pan-x de
+                  # FR | la barre de chips.
+                  - touch-action: pan-y
+                  - "-webkit-overflow-scrolling": touch
+                  - padding-right: 4px
+                  - scrollbar-width: none
+            custom_fields:
+              list:
+                card:
+                  type: vertical-stack
+                  cards:
+{% for d in energy_devices %}
+                    - type: custom:button-card
+                      template: vssp_energy_device_row
+                      entity: {{ d.power_entity }}
+                      name: "{{ d.name }}"
+                      icon: {{ d.icon }}
+                      variables:
+                        room: "{{ d.room }}"
+                        model: "{{ d.model | default('—', true) }}"
+                        energy_entity: {{ d.energy_entity }}
+                      tap_action:
+                        action: more-info
+{% endfor %}
+{% if not energy_devices %}
+                    - type: custom:button-card
+                      template: vssp_energy_device_row
+                      name: "{{ t('energy.empty.devices') }}"
+                      icon: mdi:help-circle-outline
+                      variables:
+                        room: "—"
+                        model: "{{ t('energy.empty.devices_hint') }}"
+{% endif %}
+
+          - type: custom:button-card
+            template: vssp_energy_total_row
+            entity: {{ energy.totals.power }}
+            name: "{{ t('energy.stat.total') }}"
+
+      # ═══════════════════════════════════════════════════════════════
+      # EN | PANEL 4 — EXPORT AND BUY-BACK
+      # FR | PANNEAU 4 — EXCEDENT ET REVENTE
+      # ═══════════════════════════════════════════════════════════════
+      - type: vertical-stack
+        view_layout:
+          grid-area: edf
+        card_mod:
+          style: |
+            :host {
+              display: block;
+              width: 100%;
+              background: rgba(8,18,28,0.75);
+              border-radius: 18px;
+              border: 1px solid rgba(0,229,255,0.28);
+              backdrop-filter: blur(12px);
+              box-shadow: 0 0 18px rgba(0,229,255,.15);
+              padding: 12px 14px;
+              overflow: hidden;
+            }
+        cards:
+          - type: custom:button-card
+            template: vssp_section_title
+            name: "{{ t('energy.panel.grid') }}"
+            card_mod:
+              style: |
+                ha-card { padding: 0 0 6px 0 !important; }
+                #name { font-size: 12px !important; letter-spacing: 1px !important; }
+
+          - type: horizontal-stack
+            cards:
+              - type: custom:button-card
+                template: vssp_energy_stat
+                entity: {{ energy.grid.export_power }}
+                label: "{{ t('energy.stat.exported') }}"
+                variables:
+                  accent: "#FFD700"
+                  size: "20px"
+              - type: custom:button-card
+                template: vssp_energy_stat
+                entity: {{ energy.grid.import_power }}
+                label: "{{ t('energy.stat.imported') }}"
+                variables:
+                  accent: "#FF9800"
+                  size: "20px"
+
+          - type: custom:button-card
+            show_icon: false
+            show_name: true
+            show_state: true
+            entity: {{ energy.grid.revenue_month }}
+            name: "{{ t('energy.stat.estimate_month') }}"
+            styles:
+              grid:
+                - grid-template-areas: '"n s"'
+                - grid-template-columns: 1fr auto
+                - align-items: center
+              card:
+                - background: transparent
+                - box-shadow: none
+                - border: none
+                - border-top: 1px solid rgba(0,229,255,0.10)
+                - border-radius: 0
+                - padding: 10px 2px 2px 2px
+                - margin-top: 6px
+                - cursor: default
+                - pointer-events: none
+              name:
+                - color: "#8FB6C9"
+                - font-size: 11px
+                - justify-self: start
+              state:
+                - color: "#00FFC3"
+                - font-size: 20px
+                - font-weight: 700
+                - justify-self: end
+
+          - type: custom:button-card
+            show_icon: false
+            show_name: true
+            show_state: true
+            entity: {{ energy.grid.revenue_year }}
+            name: "{{ t('energy.stat.estimate_year') }}"
+            styles:
+              grid:
+                - grid-template-areas: '"n s"'
+                - grid-template-columns: 1fr auto
+                - align-items: center
+              card:
+                - background: transparent
+                - box-shadow: none
+                - border: none
+                - border-top: 1px solid rgba(0,229,255,0.10)
+                - border-radius: 0
+                - padding: 10px 2px 2px 2px
+                - cursor: default
+                - pointer-events: none
+              name:
+                - color: "#8FB6C9"
+                - font-size: 11px
+                - justify-self: start
+              state:
+                - color: "#FFFFFF"
+                - font-size: 18px
+                - font-weight: 700
+                - justify-self: end
+
+      # ═══════════════════════════════════════════════════════════════
+      # EN | PANEL 5 — BREAKER PANEL
+      # FR | PANNEAU 5 — TABLEAU ELECTRIQUE
+      # ═══════════════════════════════════════════════════════════════
+      # EN | One horizontally scrolling row instead of the tablet's grid of
+      # EN | rows. Same mechanism as the chip bar: a custom field WIDER than
+      # EN | the screen, capped by a viewport-unit max-width so the bar cannot
+      # EN | claim its full inner width from the page, with touch-action:pan-x.
+      # EN | Width and column count come from the circuit list, never
+      # EN | hardcoded — a fixed count would wrap the last circuits onto rows
+      # EN | nobody can see as soon as one is added.
+      # FR | Une ligne defilant horizontalement au lieu de la grille de rangees
+      # FR | de la tablette. Meme mecanisme que la barre de chips : un champ
+      # FR | custom PLUS LARGE que l'ecran, plafonne par un max-width en unite
+      # FR | viewport pour que la barre ne puisse pas reclamer sa largeur
+      # FR | interne a la page, avec touch-action:pan-x.
+      # FR | La largeur et le nombre de colonnes viennent de la liste des
+      # FR | circuits, jamais codes en dur — un nombre fixe replierait les
+      # FR | derniers circuits sur des lignes invisibles des qu'on en ajoute un.
+{% set circuit_width = 132 %}
+      - type: vertical-stack
+        view_layout:
+          grid-area: board
+        card_mod:
+          style: |
+            :host {
+              display: block;
+              width: 100%;
+              background: rgba(8,18,28,0.75);
+              border-radius: 18px;
+              border: 1px solid rgba(0,229,255,0.28);
+              backdrop-filter: blur(12px);
+              box-shadow: 0 0 18px rgba(0,229,255,.15);
+              padding: 12px 14px;
+              overflow: hidden;
+            }
+        cards:
+          - type: custom:button-card
+            template: vssp_section_title
+            name: "{{ t('energy.panel.breaker_panel') }}"
+            card_mod:
+              style: |
+                ha-card { padding: 0 0 6px 0 !important; }
+                #name { font-size: 12px !important; letter-spacing: 1px !important; }
+
+{% if not circuits %}
+          - type: custom:button-card
+            template: vssp_section_title
+            name: "{{ t('energy.empty.circuits') }}"
+{% else %}
+          - type: custom:button-card
+            show_icon: false
+            show_name: false
+            show_state: false
+            tap_action:
+              action: none
+            styles:
+              grid:
+                - grid-template-areas: '"circuits"'
+              card:
+                - background: transparent
+                - box-shadow: none
+                - border: none
+                - border-radius: 0
+                - padding: 0
+                - max-width: calc(100vw - 60px)
+                - overflow-x: auto
+                - overflow-y: hidden
+                - touch-action: pan-x
+                - "-webkit-overflow-scrolling": touch
+                - scrollbar-width: none
+                - cursor: default
+              custom_fields:
+                circuits:
+                  - display: block
+                  - width: {{ circuits | length * circuit_width }}px
+            custom_fields:
+              circuits:
+                card:
+                  type: grid
+                  columns: {{ circuits | length }}
+                  square: false
+                  cards:
+{% for c in circuits %}
+                    - type: custom:button-card
+                      template: vssp_circuit_switch
+                      entity: {{ c.entity }}
+                      name: "{{ c.name }}"
+                      icon: {{ c.icon }}
+                      variables:
+                        model: "{{ c.model | default('', true) }}"
+                        amp: "{{ c.amp | default('—', true) }}"
+{% endfor %}
+{% endif %}
+
+          - type: custom:button-card
+            show_icon: false
+            show_name: false
+            show_state: false
+            tap_action:
+              action: none
+            custom_fields:
+              legend: >
+                <div style="display:flex;gap:18px;justify-content:center;padding-top:10px;">
+                  <div style="display:flex;align-items:center;gap:5px;">
+                    <div style="width:8px;height:8px;border-radius:50%;background:#00FFC3;
+                      box-shadow:0 0 8px rgba(0,255,195,.6);"></div>
+                    <span style="color:#8FB6C9;font-size:10px;">{{ t('energy.legend.state_on') }}</span></div>
+                  <div style="display:flex;align-items:center;gap:5px;">
+                    <div style="width:8px;height:8px;border-radius:50%;background:#56707E;"></div>
+                    <span style="color:#8FB6C9;font-size:10px;">{{ t('energy.legend.state_off') }}</span></div>
+                </div>
+            styles:
+              grid:
+                - grid-template-areas: '"legend"'
+              card:
+                - background: transparent
+                - box-shadow: none
+                - border: none
+                - padding: 0
+                - cursor: default
+                - pointer-events: none
+              custom_fields:
+                legend:
+                  - width: 100%
