@@ -40,15 +40,15 @@
 # FR | generate_dashboards.py et se comportent exactement comme en tablette.
 ########################################################################
 
-{#- EN | Vertical reading order — deliberately NOT the tablet grid order.
+{# EN | Vertical reading order — deliberately NOT the tablet grid order.
     FR | Ordre de lecture vertical — volontairement PAS l'ordre de la grille
     FR | tablette. #}
-{%- set mobile_order = ['lights', 'climate', 'security', 'appliances', 'shutters', 'audio'] -%}
-{%- set shown = [] -%}
-{%- for slot_id in mobile_order if slot_id in room.slots -%}
-{%- set _ = shown.append(slot_id) -%}
-{%- endfor -%}
-{%- set filler_media = house.filler_animation | default('/local/vssp/images/vssp_loop.gif', true) -%}
+{% set mobile_order = ['lights', 'climate', 'security', 'appliances', 'shutters', 'audio'] %}
+{% set shown = [] %}
+{% for slot_id in mobile_order if slot_id in room.slots %}
+{% set _ = shown.append(slot_id) %}
+{% endfor %}
+{% set filler_media = house.filler_animation | default('/local/vssp/images/vssp_loop.gif', true) %}
 
 title: {{ room.label }}
 theme: {{ house.theme }}
