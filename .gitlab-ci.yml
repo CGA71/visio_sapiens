@@ -947,6 +947,54 @@ deploy:staging:
         echo "[i] Actual content of /config/vssp:"
         ls -1 /config/vssp
       '
+    # --- EN | REGENERATE ON THE POD — the model lives there ---------------
+    # --- FR | REGENERER SUR LE POD — le modele y vit ----------------------
+    # EN | The build already rendered every dashboard, which validates the
+    # EN | templates and guarantees the locale matches VSSP_LOCALE. But two
+    # EN | model files exist only on the instance:
+    # EN |   energy_devices.yaml  written by vssp_energy_sync.py
+    # EN |   house_rooms.yaml     written by the discovery wizard
+    # EN | The CI cannot know them, so its ENERGY render shows an empty fleet
+    # EN | even when the pod has just discovered ten devices — exactly the
+    # EN | symptom of "No device detected" right after a successful sync.
+    # EN | Re-rendering here, with the pod model and the deployed locale,
+    # EN | reconciles both: the build stays the validation step, the pod
+    # EN | produces what is actually served.
+    # FR | Le build a deja rendu tous les dashboards, ce qui valide les
+    # FR | templates et garantit que la langue correspond a VSSP_LOCALE. Mais
+    # FR | deux fichiers du modele nexistent que sur linstance :
+    # FR |   energy_devices.yaml  ecrit par vssp_energy_sync.py
+    # FR |   house_rooms.yaml     ecrit par le Discovery Wizard
+    # FR | La CI ne peut pas les connaitre, donc son rendu ENERGY affiche un
+    # FR | parc vide meme quand le pod vient de decouvrir dix appareils —
+    # FR | exactement le symptome du « Aucun appareil detecte » juste apres
+    # FR | un sync reussi.
+    # FR | Re-rendre ici, avec le modele du pod et la langue deployee,
+    # FR | reconcilie les deux : le build reste letape de validation, le pod
+    # FR | produit ce qui est reellement servi.
+    #
+    # EN | NON-FATAL on purpose. If it fails, the build render stays in place:
+    # EN | valid dashboards, just an ENERGY panel without the discovered
+    # EN | fleet. Blocking the whole deployment over it would be worse than
+    # EN | the degradation, provided the degradation is stated loudly.
+    # FR | NON BLOQUANT volontairement. En cas dechec, le rendu du build reste
+    # FR | en place : des dashboards valides, avec un panneau ENERGY sans le
+    # FR | parc decouvert. Bloquer tout le deploiement pour cela serait pire
+    # FR | que la degradation, a condition de lannoncer clairement.
+    - |
+      kubectl exec -n $K3S_NAMESPACE $HA_POD -c $K3S_CONTAINER -- sh -c '
+        LOCALE=$(cat /config/VSSP_LOCALE 2>/dev/null || echo en)
+        echo "[i] regenerating on the pod, locale $LOCALE"
+        python3 /config/vssp/generate_dashboards.py           --model      /config/dashboards/model/house.yaml           --rooms      /config/dashboards/model/house_rooms.yaml           --devices    /config/dashboards/model/energy_devices.yaml           --templates  /config/dashboards/templates_j2           --locales-dir /config/dashboards/locales           --static-fragment /config/config-fragment.yaml           --rooms-fragment  /config/config-fragment-rooms.yaml           --locale "$LOCALE"           --out /config/dashboards/views
+      ' || {
+        echo "[WARN] pod-side regeneration failed."
+        echo "       The dashboards rendered by the build stay in place and are"
+        echo "       valid, but ENERGY will show the repository model, which"
+        echo "       holds no discovered device."
+        echo "       Usual cause: jinja2 missing in the Home Assistant image."
+        echo "       Re-run SYNC ENERGY from the ADMIN console to fix it in place."
+      }
+
     # --- EN | Router secret: written from the masked CI/CD variable ---------
     # --- FR | SECRET Livebox : ecrit depuis la variable CI/CD masquee -------
     # EN | The password is passed as an ARGUMENT to the remote shell ($1),
