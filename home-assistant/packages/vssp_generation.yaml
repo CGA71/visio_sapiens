@@ -94,9 +94,24 @@ command_line:
   - sensor:
       name: "VSSP Unrendered Placeholders"
       unique_id: vssp_unrendered_placeholders
+      # EN | awk, not grep. `grep -c` prints its count AND exits 1 when it
+      # EN | finds nothing, so `grep -c ... || echo 0` emits "0" twice in the
+      # EN | normal case — two lines, which Home Assistant rejects, leaving the
+      # EN | sensor permanently unavailable. The guard meant to make a silent
+      # EN | failure visible was itself silently failing.
+      # EN | awk always exits 0 and prints one number, and gsub counts
+      # EN | occurrences rather than matching lines.
+      # FR | awk, pas grep. `grep -c` affiche son compte ET sort en code 1
+      # FR | quand il ne trouve rien, donc `grep -c ... || echo 0` emet « 0 »
+      # FR | deux fois dans le cas normal — deux lignes, que Home Assistant
+      # FR | rejette, laissant le capteur indisponible en permanence. Le
+      # FR | garde-fou cense rendre visible une panne silencieuse echouait
+      # FR | lui-meme en silence.
+      # FR | awk sort toujours en code 0 et affiche un seul nombre, et gsub
+      # FR | compte les occurrences plutot que les lignes correspondantes.
       command: >-
-        grep -Eoc "__T:[A-Za-z0-9_.]+__" /config/config-fragment.yaml
-        2>/dev/null || echo 0
+        awk '{ n += gsub(/__T:[A-Za-z0-9_.]+__/, "") } END { print n + 0 }'
+        /config/config-fragment.yaml 2>/dev/null || echo 0
       unit_of_measurement: "markers"
       scan_interval: 300
 
