@@ -340,6 +340,8 @@ admin:
   upgrade_hint: Compare the dashboard with the discovered entities
   delete_hint: Danger zone — code and confirmation required
   assignment: DEVICE ASSIGNMENT
+  deployed_locale: Deployed language
+  unrendered_markers: Unrendered markers
   generation: GENERATION
   apply_language: APPLY LANGUAGE
   apply_language_hint: Render the fragment, patch the config, regenerate
