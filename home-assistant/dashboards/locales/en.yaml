@@ -339,6 +339,7 @@ admin:
   discovery_hint: Scan Home Assistant entities (writes report.json)
   upgrade_hint: Compare the dashboard with the discovered entities
   delete_hint: Danger zone — code and confirmation required
+  assignment: DEVICE ASSIGNMENT
   generation: GENERATION
   apply_language: APPLY LANGUAGE
   apply_language_hint: Render the fragment, patch the config, regenerate
@@ -375,6 +376,10 @@ home:
     no_entity: Entity not configured
     intrusion: Intrusion detected
     no_alert: No alert
+  events_recent: Recent events
+  discovery_confirm: "Run a sensor discovery across every area?"
+  upgrade_confirm: "Compare the current dashboard with the latest discovered entities? A backup will be created as a precaution."
+  delete_confirm: "IRREVERSIBLE action without a manual restore from the backup. The code must be correct. Continue?"
 
 wizard:
   # EN | Phase 0 — the two selectors that drive the whole generation.
