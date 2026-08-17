@@ -52,7 +52,19 @@
 #    vssp_section_title, vssp_energy_device_row).
 ########################################################################
 
-{#- =====================================================================
+{# EN | Plain {% ... %}, never {%- ... -%}. The environment already sets
+   EN | trim_blocks and lstrip_blocks, so a tag alone on its line disappears
+   EN | cleanly. Adding the `-` markers strips the surrounding newlines too,
+   EN | which glued `title:` onto the closing #### line of the header comment
+   EN | — the key ended up inside a comment and every generated dashboard
+   EN | silently lost its title.
+   FR | {% ... %} simple, jamais {%- ... -%}. L'environnement pose deja
+   FR | trim_blocks et lstrip_blocks, donc une balise seule sur sa ligne
+   FR | disparait proprement. Ajouter les marqueurs `-` supprime aussi les
+   FR | sauts de ligne alentour, ce qui a colle `title:` sur la ligne ####
+   FR | fermant le commentaire d'en-tete — la cle s'est retrouvee dans un
+   FR | commentaire et chaque dashboard genere a perdu son titre en silence. #}
+{# =====================================================================
     EN | GRID LAYOUT — comes from the data (house.yaml `layouts:`, merged
     EN | with the defaults in generate_dashboards.py), NOT from this file.
     EN | Two reasons: a grid can be tuned without touching the template, and
@@ -68,8 +80,8 @@
     FR | jeu mais absent des zones ci-dessous produirait une carte au
     FR | grid-area inexistant — le panneau ne s'afficherait pas, en silence.
     ================================================================== #}
-{%- set layout = layouts.get(room.slot_set, layouts['default']) -%}
-{%- set filler_media = house.filler_animation | default('/local/vssp/images/vssp_loop.gif', true) -%}
+{% set layout = layouts.get(room.slot_set, layouts['default']) %}
+{% set filler_media = house.filler_animation | default('/local/vssp/images/vssp_loop.gif', true) %}
 
 title: {{ room.label }}
 theme: {{ house.theme }}
