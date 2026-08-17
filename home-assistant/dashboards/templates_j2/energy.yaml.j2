@@ -190,7 +190,7 @@ views:
                       show: false
                     series:
                       - entity: {{ energy.solar.power }}
-                        name: "Production actuelle"
+                        name: "{{ t('energy.flow.current_production') }}"
                         min: 0
                         max: 10                                  # TODO : puissance crête kW
                     apex_config:
@@ -228,14 +228,14 @@ views:
                       - type: custom:button-card
                         template: vssp_energy_stat
                         entity: {{ energy.solar.today }}
-                        label: "Aujourd'hui"
+                        label: "{{ t('energy.stat.today') }}"
                         variables:
                           accent: "#FFFFFF"
                           size: "18px"
                       - type: custom:button-card
                         template: vssp_energy_stat
                         entity: {{ energy.solar.month }}
-                        label: "Ce mois-ci"
+                        label: "{{ t('energy.stat.this_month') }}"
                         variables:
                           accent: "#FFFFFF"
                           size: "18px"
@@ -243,7 +243,7 @@ views:
                   - type: custom:button-card
                     template: vssp_energy_stat
                     entity: {{ energy.solar.year }}
-                    label: "Cette année"
+                    label: "{{ t('energy.stat.this_year') }}"
                     variables:
                       accent: "#00FFC3"
                       size: "18px"
@@ -338,7 +338,7 @@ views:
                          : states['{{ energy.period_helper }}'].state === 'Month' ? 'month' : 'year' }
                   series:
                     - entity: {{ energy.solar.power }}
-                      name: "Production solaire"
+                      name: "{{ t('energy.panel.solar_production') }}"
                       type: column
                       color: "#00FFC3"
                       group_by:
@@ -458,14 +458,14 @@ views:
             show_name: false
             show_state: false
             custom_fields:
-              c1: '<span style="color:#56707E;font-size:11px">Appareil</span>'
-              cr: '<span style="color:#8FB6C9;font-size:11px;display:block;text-align:right">Pièce</span>'
+              c1: '<span style="color:#56707E;font-size:11px">{{ t('energy.col.device') }}</span>'
+              cr: '<span style="color:#8FB6C9;font-size:11px;display:block;text-align:right">{{ t('energy.col.room') }}</span>'
               c2: >
                 <span style="color:#8FB6C9;font-size:11px;display:block;text-align:right">{{ t('energy.panel.total_consumption') }}<br>
-                <span style="color:#56707E;font-size:9px">(actuelle)</span></span>
+                <span style="color:#56707E;font-size:9px">{{ t('energy.col.power_hint') }}</span></span>
               c3: >
-                <span style="color:#8FB6C9;font-size:11px;display:block;text-align:right">Énergie<br>
-                <span style="color:#56707E;font-size:9px">(aujourd'hui)</span></span>
+                <span style="color:#8FB6C9;font-size:11px;display:block;text-align:right">{{ t('energy.col.energy') }}<br>
+                <span style="color:#56707E;font-size:9px">{{ t('energy.col.energy_hint') }}</span></span>
             styles:
               grid:
                 - grid-template-areas: '"c1 cr c2 c3 pad"'
@@ -556,7 +556,7 @@ views:
                     # model/energy_devices.yaml.
                     - type: custom:button-card
                       template: vssp_energy_device_row
-                      name: "Aucun appareil detecte"
+                      name: "{{ t('energy.empty.devices') }}"
                       icon: mdi:help-circle-outline
                       variables:
                         room: "—"
@@ -641,7 +641,7 @@ views:
             template: vssp_energy_kpi
             entity: {{ energy.totals.today }}
             icon: mdi:chart-bar
-            label: "Aujourd'hui"
+            label: "{{ t('energy.stat.today') }}"
             variables:
               accent: "#00E5FF"
 
@@ -649,7 +649,7 @@ views:
             template: vssp_energy_kpi
             entity: {{ energy.totals.month }}
             icon: mdi:calendar-month
-            label: "Ce mois-ci"
+            label: "{{ t('energy.stat.this_month') }}"
             variables:
               accent: "#00E5FF"
 
@@ -657,7 +657,7 @@ views:
             template: vssp_energy_kpi
             entity: {{ energy.totals.year }}
             icon: mdi:calendar-star
-            label: "Cette année"
+            label: "{{ t('energy.stat.this_year') }}"
             variables:
               accent: "#00E5FF"
 
@@ -684,7 +684,7 @@ views:
         cards:
           - type: custom:button-card
             template: vssp_section_title
-            name: "Schéma de fonctionnement"
+            name: "{{ t('energy.panel.flow') }}"
 
           - type: custom:button-card
             show_icon: false
@@ -735,7 +735,7 @@ views:
                         '<ha-icon icon="mdi:menu-left" style="--mdc-icon-size:18px;color:#FF9800;margin-right:-8px;"></ha-icon>' +
                         '<div style="height:2px;width:100%;background:linear-gradient(90deg,#FF9800,transparent);"></div>' +
                       '</div>' +
-                      '<div style="text-align:center;color:#FF9800;font-size:10px;">Import<br>' +
+                      '<div style="text-align:center;color:#FF9800;font-size:10px;">{{ t("energy.stat.imported") }}<br>' +
                         '<b style="font-size:13px;">' + val('{{ energy.grid.import_power }}', 2) + ' kW</b></div>' +
                     '</div>';
                   const legend = (color, txt) =>
@@ -820,9 +820,9 @@ views:
             show_state: true
             show_label: true
             entity: {{ energy.grid.revenue_month }}
-            label: "Estimation de revente"
+            label: "{{ t('energy.stat.estimate_month') }}"
             custom_fields:
-              period: '<span style="color:#8FB6C9;font-size:12px;">Ce mois-ci</span>'
+              period: '<span style="color:#8FB6C9;font-size:12px;">{{ t("energy.stat.this_month") }}</span>'
               tarif: |
                 [[[
                   const LOCALE = '{{ locale_tag }}';
@@ -870,7 +870,7 @@ views:
             show_name: true
             show_state: true
             entity: {{ energy.grid.revenue_year }}
-            name: "Estimation cette année"
+            name: "{{ t('energy.stat.estimate_year') }}"
             styles:
               grid:
                 - grid-template-areas: '"n s"'
@@ -923,7 +923,7 @@ views:
 {% if not circuits %}
           - type: custom:button-card
             template: vssp_section_title
-            name: "Aucun circuit detecte — lancez vssp_energy_sync.py"
+            name: "{{ t('energy.empty.circuits') }}"
 {% endif %}
 {% for row in circuits | batch(circuits_per_row | default(6)) %}
           - type: horizontal-stack
@@ -951,10 +951,10 @@ views:
                   <div style="display:flex;align-items:center;gap:6px;">
                     <div style="width:9px;height:9px;border-radius:50%;background:#00FFC3;
                       box-shadow:0 0 8px rgba(0,255,195,.6);"></div>
-                    <span style="color:#8FB6C9;font-size:11px;">Allumé</span></div>
+                    <span style="color:#8FB6C9;font-size:11px;">{{ t('energy.legend.state_on') }}</span></div>
                   <div style="display:flex;align-items:center;gap:6px;">
                     <div style="width:9px;height:9px;border-radius:50%;background:#56707E;"></div>
-                    <span style="color:#8FB6C9;font-size:11px;">Éteint</span></div>
+                    <span style="color:#8FB6C9;font-size:11px;">{{ t('energy.legend.state_off') }}</span></div>
                 </div>
             styles:
               grid:
