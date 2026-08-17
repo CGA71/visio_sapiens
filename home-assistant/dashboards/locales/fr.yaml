@@ -268,6 +268,26 @@ home:
   upgrade_confirm: "Analyser les écarts entre le dashboard actuel et les dernières entités découvertes ? Une sauvegarde sera créée par précaution."
   delete_confirm: "Action IRRÉVERSIBLE sans restauration manuelle de la sauvegarde. Le code doit être correct. Continuer ?"
 
+adminmenu:
+  title: Console d'administration
+  subtitle: Configurer, générer, maintenir
+  back: Retour au menu
+  section:
+    rooms: PIÈCES & ÉTAGES
+    rooms_hint: Déclarer les pièces de la maison et leurs étages
+    assign: ASSIGNATION DES APPAREILS
+    assign_hint: Envoyer chaque appareil découvert vers une pièce et un tableau
+    energy: APPAREILS ÉNERGIE
+    energy_hint: Créer ou mettre à jour le parc mesuré et le tableau électrique
+    theme: TEMPLATE GRAPHIQUE
+    theme_hint: Importer ou exporter la charte graphique CSS
+    dashboards: DASHBOARDS
+    dashboards_hint: Lister, regénérer et supprimer les dashboards générés
+  scan: SCAN DE DÉCOUVERTE
+  scan_hint: Lit toutes les entités Home Assistant, écrit report.json
+  not_built: Pas encore construit
+  not_built_hint: Cet écran est prévu — l'entrée de menu existe pour que la forme de la console soit visible
+
 wizard:
   language_step_title: Langue de l'interface
   language_step_help: >-
