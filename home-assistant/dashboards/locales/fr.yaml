@@ -229,6 +229,8 @@ admin:
   upgrade_hint: Comparer le dashboard aux entités découvertes
   delete_hint: Zone dangereuse — code et confirmation requis
   assignment: ASSIGNATION DES APPAREILS
+  deployed_locale: Langue déployée
+  unrendered_markers: Marqueurs non rendus
   generation: GÉNÉRATION
   apply_language: APPLIQUER LA LANGUE
   apply_language_hint: Rendre le fragment, patcher la config, regénérer
