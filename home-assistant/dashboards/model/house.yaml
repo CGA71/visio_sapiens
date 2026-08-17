@@ -48,8 +48,16 @@ house:
   locale: fr
 
   # EN | Target layout: tablet | mobile | both. Overridden by --format.
+  # EN | `both` is the sensible default now that home, core and room all have
+  # EN | a *_mobile.yaml.j2: config-fragment.yaml declares the -m dashboards
+  # EN | unconditionally, so a tablet-only build would leave those
+  # EN | declarations pointing at files nothing writes.
   # FR | Disposition cible : tablet | mobile | both. Surcharge par --format.
-  format: tablet
+  # FR | `both` est le defaut raisonnable maintenant que home, core et room
+  # FR | ont tous un *_mobile.yaml.j2 : config-fragment.yaml declare les
+  # FR | dashboards -m sans condition, donc un build tablette seule laisserait
+  # FR | ces declarations pointer vers des fichiers que rien n'ecrit.
+  format: both
 
 # ── EN | Navigation rail — system entries only ────────────────────────
 # ── FR | Bandeau de navigation — entrees systeme uniquement ───────────
@@ -77,15 +85,7 @@ nav_system:
       label: "Central system"
       icon: mdi:server
       path: /visio-sapiens-core/core
-      # EN | No mobile CORE dashboard yet: core.yaml.j2 has no mobile branch,
-      # EN | so the tablet view is the target for now. Point this at
-      # EN | /visio-sapiens-core-m/core once it exists AND is declared in
-      # EN | config-fragment.yaml — the generator checks both.
-      # FR | Pas encore de dashboard CORE mobile : core.yaml.j2 n'a pas de
-      # FR | branche mobile, la vue tablette est donc la cible pour l'instant.
-      # FR | Pointer vers /visio-sapiens-core-m/core quand il existera ET sera
-      # FR | declare dans config-fragment.yaml — le generateur controle les deux.
-      path_mobile: /visio-sapiens-core/core
+      path_mobile: /visio-sapiens-core-m/core
     - id: energy
       name: ENERGY
       label: "Energy management"
@@ -96,8 +96,20 @@ nav_system:
       name: ADMIN
       label: "Admin console"
       icon: mdi:shield-crown
-      path: /visio-sapiens/admin
-      path_mobile: /visio-sapiens-m/admin
+      path: /visio-sapiens-admin/menu
+      path_mobile: /visio-sapiens-admin/menu
+      # EN | Hidden from the mobile chip bar. The console is desk work —
+      # EN | declaring rooms, assigning eighty devices, importing a stylesheet
+      # EN | — and a phone is the wrong place for all of it. The entry stays
+      # EN | reachable by URL; it just does not take one of the few chip slots
+      # EN | a phone screen can show.
+      # FR | Masque de la barre de chips mobile. La console est un travail de
+      # FR | bureau — declarer des pieces, assigner quatre-vingts appareils,
+      # FR | importer une feuille de style — et un telephone est le mauvais
+      # FR | endroit pour tout cela. L entree reste joignable par URL ; elle ne
+      # FR | prend simplement pas une des rares places de chip qu un ecran de
+      # FR | telephone peut afficher.
+      mobile: false
 
 # ── EN | Slot sets — which panels a room may hold ─────────────────────
 # ── FR | Jeux de tableaux — quels panneaux une piece peut porter ──────
