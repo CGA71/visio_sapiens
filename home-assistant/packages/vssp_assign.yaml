@@ -1,0 +1,169 @@
+########################################################################
+# Visio Sapiens — ASSIGNMENT package
+#
+# EN | Wires the device assignment form into Home Assistant. It closes the gap
+# EN | between the discovery scan and the generator:
+# EN |   DISCOVERY SCAN  -> report.json          (what exists)
+# EN |   this package    -> assign_data.json     (what exists + where it sits)
+# EN |   the form        -> webhook              (where it should go)
+# EN |   this package    -> house.yaml           (the decision, recorded)
+# EN |   the generator   -> dashboards/views/    (the decision, rendered)
+# FR | Branche le formulaire d assignation des appareils dans Home Assistant.
+# FR | Il ferme l ecart entre le scan de decouverte et le generateur :
+# FR |   DISCOVERY SCAN  -> report.json          (ce qui existe)
+# FR |   ce package      -> assign_data.json     (ce qui existe + ou il est)
+# FR |   le formulaire   -> webhook              (ou cela doit aller)
+# FR |   ce package      -> house.yaml           (la decision, enregistree)
+# FR |   le generateur   -> dashboards/views/    (la decision, rendue)
+#
+# EN | BEFORE DEPLOYING — check for duplicate keys. Home Assistant refuses to
+# EN | start when two packages define the same key:
+# FR | AVANT DE DEPLOYER — verifier les cles en double. Home Assistant refuse
+# FR | de demarrer quand deux packages definissent la meme cle :
+#
+#   grep -n "vssp_assign" home-assistant/packages/*.yaml
+#
+# EN | Dependency on the pod: ruamel.yaml, so vssp_assign_apply.py can rewrite
+# EN | house.yaml without stripping its comments.
+# FR | Dependance sur le pod : ruamel.yaml, pour que vssp_assign_apply.py
+# FR | puisse reecrire house.yaml sans supprimer ses commentaires.
+#   pip install ruamel.yaml --break-system-packages
+########################################################################
+
+shell_command:
+  # EN | Turns report.json + house.yaml into the single file the form reads.
+  # EN | Must run after every scan, which is why the script below chains them.
+  # FR | Transforme report.json + house.yaml en l unique fichier que le
+  # FR | formulaire lit. Doit tourner apres chaque scan, d ou l enchainement
+  # FR | dans le script ci-dessous.
+  vssp_assign_prepare: >-
+    python3 /config/vssp/vssp_assign_prepare.py
+    --report /config/vssp/report.json
+    --model /config/dashboards/model/house.yaml
+    --locales /config/dashboards/locales
+    --out /config/www/vssp/assign_data.json
+
+  # EN | Writes the assignment into house.yaml. The payload arrives base64
+  # EN | encoded: room labels carry accents and apostrophes, and passing them
+  # EN | raw through a shell is exactly what breaks silently.
+  # FR | Ecrit l assignation dans house.yaml. Le payload arrive encode en
+  # FR | base64 : les libelles de pieces portent des accents et des
+  # FR | apostrophes, et les passer bruts a travers un shell est precisement
+  # FR | ce qui casse en silence.
+  vssp_assign_apply: >-
+    python3 /config/vssp/vssp_assign_apply.py
+    --model /config/dashboards/model/house.yaml
+    --json-b64 "{{ content_b64 }}"
+    --status-file /config/www/vssp/assign_status.json
+
+# ----------------------------------------------------------------------
+# EN | WEBHOOK — how the form talks back to Home Assistant
+# FR | WEBHOOK — comment le formulaire parle a Home Assistant
+# ----------------------------------------------------------------------
+# EN | The form runs in an iframe, so it cannot reach the `hass` object of the
+# EN | parent page, and the REST API would require a Bearer token. Storing a
+# EN | long-lived token in the browser to send one list would put a credential
+# EN | controlling the whole instance into localStorage.
+# EN | A webhook needs no token. `local_only: true` restricts it to the LAN, so
+# EN | the webhook id is a secret that never leaves the local network.
+# EN | If you expose Home Assistant to the internet, keep local_only: true —
+# EN | this endpoint writes to your model and regenerates your dashboards.
+# FR | Le formulaire tourne dans une iframe, il ne peut donc pas atteindre
+# FR | l objet `hass` de la page parente, et l API REST exigerait un jeton
+# FR | Bearer. Stocker un jeton longue duree dans le navigateur pour envoyer
+# FR | une liste placerait dans localStorage un identifiant qui controle toute
+# FR | l instance.
+# FR | Un webhook n exige aucun jeton. `local_only: true` le restreint au
+# FR | reseau local, donc l identifiant du webhook est un secret qui ne quitte
+# FR | jamais ce reseau.
+# FR | Si vous exposez Home Assistant sur internet, gardez local_only: true —
+# FR | ce point d entree ecrit dans votre modele et regenere vos dashboards.
+automation:
+  - alias: "Visio Sapiens — Receive device assignment"
+    id: vssp_receive_assignment
+    mode: single
+    triggers:
+      - trigger: webhook
+        webhook_id: vssp_assign
+        local_only: true
+        allowed_methods:
+          - POST
+    actions:
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.json.content_b64 is defined }}"
+            sequence:
+              - action: shell_command.vssp_assign_apply
+                data:
+                  content_b64: "{{ trigger.json.content_b64 }}"
+                response_variable: applied
+              # EN | Only regenerate when the write succeeded. Regenerating
+              # EN | after a rejected payload would rebuild the dashboards from
+              # EN | the unchanged model and look exactly like success.
+              # FR | Ne regenerer que si l ecriture a reussi. Regenerer apres
+              # FR | un payload refuse reconstruirait les dashboards depuis le
+              # FR | modele inchange et ressemblerait exactement a un succes.
+              - if:
+                  - condition: template
+                    value_template: "{{ applied.returncode == 0 }}"
+                then:
+                  - action: shell_command.vssp_generate_dashboards
+                  - action: shell_command.vssp_assign_prepare
+                  - action: lovelace.reload
+                  - action: persistent_notification.create
+                    data:
+                      title: "Visio Sapiens — Assignment saved"
+                      message: >
+                        Devices assigned and dashboards regenerated.
+                        Reload the tab to see the result.
+                else:
+                  - action: persistent_notification.create
+                    data:
+                      title: "Visio Sapiens — Assignment refused"
+                      message: >
+                        The assignment was rejected and NOTHING was written.
+                        See /local/vssp/assign_status.json for the reason —
+                        usually a slot the room does not have, or an audio
+                        device without a source/output role.
+        default:
+          - action: persistent_notification.create
+            data:
+              title: "Visio Sapiens — Malformed assignment"
+              message: >
+                The webhook received a payload without content_b64.
+                Nothing was written.
+
+script:
+  # EN | DISCOVERY SCAN button. Chains the scan with the preparation, because a
+  # EN | scan whose result the form cannot read is a scan that appears to do
+  # EN | nothing.
+  # FR | Bouton DISCOVERY SCAN. Enchaine le scan et la preparation, car un scan
+  # FR | dont le formulaire ne peut pas lire le resultat est un scan qui semble
+  # FR | ne rien faire.
+  vssp_scan_and_prepare:
+    alias: "Visio Sapiens — Scan and prepare the assignment form"
+    sequence:
+      - action: shell_command.vssp_discovery
+        continue_on_error: true
+      - action: shell_command.vssp_assign_prepare
+      - action: persistent_notification.create
+        data:
+          title: "Visio Sapiens — Scan finished"
+          message: >
+            The assignment form is up to date. Open the ADMIN console to
+            assign the discovered devices to a room and a slot.
+
+  # EN | Refreshes the form without rescanning — useful after editing rooms in
+  # EN | house.yaml, when the entity list has not changed but the room list has.
+  # FR | Rafraichit le formulaire sans rescanner — utile apres avoir modifie
+  # FR | les pieces dans house.yaml, quand la liste des entites n a pas change
+  # FR | mais celle des pieces oui.
+  vssp_refresh_assignment_form:
+    alias: "Visio Sapiens — Refresh the assignment form"
+    sequence:
+      - action: shell_command.vssp_assign_prepare
+      - action: persistent_notification.create
+        data:
+          title: "Visio Sapiens — Form refreshed"
+          message: "Rooms and current assignment reloaded."
