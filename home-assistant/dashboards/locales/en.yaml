@@ -204,6 +204,7 @@ energy:
     total_consumption: Total Consumption
     breaker_panel: Breaker Panel
     grid: Grid
+    flow: Energy flow diagram
     security: Security
   # EN | IMPORTANT — these are DISPLAY labels only. The underlying
   # EN | input_select option values stay in English (Day/Month/Year) in
@@ -214,6 +215,21 @@ energy:
   # FR | (Day/Month/Year) dans toutes les langues, car ce sont des
   # FR | identifiants compares dans le JS. Traduire l'etat stocke
   # FR | casserait les comparaisons.
+  # EN | Column headers of the per-device table.
+  # FR | En-tetes de colonnes du tableau par appareil.
+  col:
+    device: Device
+    room: Room
+    power_hint: "(current)"
+    energy: Energy
+    energy_hint: "(today)"
+  legend:
+    state_on: "On"
+    state_off: "Off"
+  empty:
+    devices: No device detected
+    devices_hint: run vssp_energy_sync.py
+    circuits: No circuit detected — run vssp_energy_sync.py
   tab:
     day: Day
     month: Month
@@ -229,6 +245,11 @@ energy:
     self_consumption: Self-consumption
     export_revenue: Export revenue
     total: Total
+    today: Today
+    this_month: This month
+    this_year: This year
+    estimate_month: Export estimate
+    estimate_year: Estimate this year
   # EN | Energy flow diagram — node names and status wording.
   # FR | Schema de flux energetique — noms des noeuds et libelles de statut.
   flow:
@@ -265,8 +286,18 @@ technical:
 # FR | Vocabulaire commun reutilise dans toutes les vues.
 # ----------------------------------------------------------------------
 common:
-  on: "On"
-  off: "Off"
+  # EN | `state_on` / `state_off`, NOT `on` / `off`. In YAML 1.1 an unquoted
+  # EN | `on:` key is parsed as the boolean true, so `t('common.on')` looks up
+  # EN | a key that does not exist and the render dies with KeyError. Quoting
+  # EN | would work, but a name that cannot be misread is safer than a rule
+  # EN | everyone has to remember.
+  # FR | `state_on` / `state_off`, PAS `on` / `off`. En YAML 1.1, une cle `on:`
+  # FR | non quotee est analysee comme le booleen vrai, donc `t('common.on')`
+  # FR | cherche une cle inexistante et le rendu meurt sur KeyError. Quoter
+  # FR | fonctionnerait, mais un nom qu'on ne peut pas mal lire vaut mieux
+  # FR | qu'une regle dont tout le monde doit se souvenir.
+  state_on: "On"
+  state_off: "Off"
   open: Open
   closed: Closed
   unavailable: Unavailable
