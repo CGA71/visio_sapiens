@@ -383,6 +383,30 @@ home:
   upgrade_confirm: "Compare the current dashboard with the latest discovered entities? A backup will be created as a precaution."
   delete_confirm: "IRREVERSIBLE action without a manual restore from the backup. The code must be correct. Continue?"
 
+# ----------------------------------------------------------------------
+# EN | ADMIN dashboard — its own dashboard, no longer a view of HOME.
+# FR | Dashboard ADMIN — son propre dashboard, plus une vue de HOME.
+# ----------------------------------------------------------------------
+adminmenu:
+  title: Admin console
+  subtitle: Configure, generate, maintain
+  back: Back to the menu
+  section:
+    rooms: ROOMS & FLOORS
+    rooms_hint: Declare the rooms of the home and their floors
+    assign: DEVICE ASSIGNMENT
+    assign_hint: Send each discovered device to a room and a slot
+    energy: ENERGY DEVICES
+    energy_hint: Create or update the measured fleet and the breaker panel
+    theme: GRAPHIC TEMPLATE
+    theme_hint: Import or export the CSS design system
+    dashboards: DASHBOARDS
+    dashboards_hint: List, regenerate and delete the generated dashboards
+  scan: DISCOVERY SCAN
+  scan_hint: Read every Home Assistant entity, writes report.json
+  not_built: Not built yet
+  not_built_hint: This screen is planned — the menu entry exists so the shape of the console is visible
+
 wizard:
   # EN | Phase 0 — the two selectors that drive the whole generation.
   # FR | Phase 0 — les deux selecteurs qui pilotent toute la generation.
