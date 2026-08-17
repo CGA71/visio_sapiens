@@ -88,6 +88,28 @@ SYSTEM_DASHBOARDS = [
 # FR | l'un a l'autre.
 ROOM_TEMPLATE = "room.yaml.j2"
 
+# EN | Dashboards that exist in the tablet format ONLY, by design.
+# EN | The admin console is desk work — declaring rooms, assigning eighty
+# EN | devices, importing a stylesheet — and a phone is the wrong place for
+# EN | all of it. There is therefore no admin_mobile.yaml.j2 and there is not
+# EN | meant to be one.
+# EN | Listing it here rather than letting the template simply be missing is
+# EN | the difference between a decision and an oversight: without this, every
+# EN | build printed `[skip] admin_mobile.yaml.j2 not found`, a warning about
+# EN | something nobody intends to fix. A guard that cries wolf on purpose is
+# EN | a guard people learn to ignore.
+# FR | Dashboards qui n existent qu au format tablette, par conception.
+# FR | La console d administration est un travail de bureau — declarer des
+# FR | pieces, assigner quatre-vingts appareils, importer une feuille de style
+# FR | — et un telephone est le mauvais endroit pour tout cela. Il n existe
+# FR | donc pas d admin_mobile.yaml.j2, et il n est pas prevu d en avoir un.
+# FR | Le lister ici plutot que de laisser le template simplement absent fait
+# FR | la difference entre une decision et un oubli : sans cela, chaque build
+# FR | affichait `[skip] admin_mobile.yaml.j2 not found`, un avertissement sur
+# FR | quelque chose que personne ne compte corriger. Un garde-fou qui crie au
+# FR | loup volontairement est un garde-fou qu on apprend a ignorer.
+TABLET_ONLY = {"admin"}
+
 
 def template_for(tpl_name: str, target_format: str) -> str:
     """
@@ -755,6 +777,23 @@ def check_declared_files(static_fragment, out_dir: Path, repo_root: Path) -> lis
         # FR | run ecrit. On compare sur le nom de fichier, qui est ce qui doit
         # FR | reellement exister a cote des autres dashboards generes.
         name = Path(filename).name
+        # EN | Preview dashboards are produced ONLY by --preview, on demand.
+        # EN | Their declaration is permanent so the url_path stays reserved
+        # EN | and the preview can appear the moment it is generated, but the
+        # EN | file is absent the rest of the time — by design, not by
+        # EN | accident. Reporting it would print the same warning on every
+        # EN | single build about something nobody intends to fix, and a
+        # EN | warning that always fires is a warning that stops being read.
+        # FR | Les dashboards d apercu ne sont produits QUE par --preview, a la
+        # FR | demande. Leur declaration est permanente pour que l url_path
+        # FR | reste reserve et que l apercu apparaisse des sa generation, mais
+        # FR | le fichier est absent le reste du temps — par conception, pas
+        # FR | par accident. Le signaler afficherait le meme avertissement a
+        # FR | chaque build sur quelque chose que personne ne compte corriger,
+        # FR | et un avertissement qui se declenche toujours est un
+        # FR | avertissement qu on cesse de lire.
+        if "_preview" in name:
+            continue
         if not (out_dir / name).is_file():
             missing.append((key, filename))
     return missing
@@ -1010,6 +1049,13 @@ def main() -> int:
             continue
 
         for target_format in formats:
+            # EN | Silent by design: see TABLET_ONLY. This is not a missing
+            # EN | template, it is a dashboard that has no mobile form.
+            # FR | Silencieux par conception : voir TABLET_ONLY. Ce n est pas
+            # FR | un template manquant, c est un dashboard qui n a pas de
+            # FR | forme mobile.
+            if target_format == "mobile" and dash_id in TABLET_ONLY:
+                continue
             context = {**model, **i18n, **extra, "format": target_format}
             name = out_name
             if target_format == "mobile":
