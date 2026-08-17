@@ -189,12 +189,55 @@ def render_text(text: str, catalog: dict, strict: bool = True) -> tuple[str, lis
 # EN | CI guard — every locale must cover every reference key
 # FR | Garde-fou CI — chaque langue doit couvrir toutes les cles de reference
 # ----------------------------------------------------------------------------
+def find_boolean_keys(node, prefix: str = "") -> list:
+    """
+    EN | Finds keys YAML 1.1 turned into booleans. `on:`, `off:`, `yes:`,
+    EN | `no:` and their capitalised forms are parsed as true/false unless
+    EN | quoted, so a catalogue that reads `on: "On"` produces the key True.
+    EN | t('common.on') then looks up a key that does not exist and the render
+    EN | dies with KeyError — at generation time, on a file that looks
+    EN | perfectly correct.
+    EN | Quoting fixes it; renaming to state_on/state_off removes the trap.
+    FR | Repere les cles que YAML 1.1 a transformees en booleens. `on:`,
+    FR | `off:`, `yes:`, `no:` et leurs formes capitalisees sont analysees
+    FR | comme true/false sauf si elles sont quotees, donc un catalogue qui
+    FR | contient `on: "On"` produit la cle True. t('common.on') cherche alors
+    FR | une cle inexistante et le rendu meurt sur KeyError — au moment de la
+    FR | generation, sur un fichier qui a l'air parfaitement correct.
+    FR | Quoter corrige ; renommer en state_on/state_off supprime le piege.
+    """
+    found = []
+    if not isinstance(node, dict):
+        return found
+    for key, value in node.items():
+        if isinstance(key, bool):
+            found.append(f"{prefix}<{key}>")
+        elif isinstance(value, dict):
+            found.extend(find_boolean_keys(value, f"{prefix}{key}."))
+    return found
+
+
 def check(locales_dir: Path = DEFAULT_LOCALES_DIR) -> int:
     locales_dir = Path(locales_dir)
     base = flatten(_read_yaml(locales_dir / f"{BASE_LOCALE}.yaml"))
     status = 0
 
     print(f"[i] Reference locale '{BASE_LOCALE}': {len(base)} key(s)")
+
+    # EN | Boolean keys first: they make every other check misleading, since
+    # EN | the key simply is not where it looks like it is.
+    # FR | Les cles booleennes d'abord : elles rendent tout autre controle
+    # FR | trompeur, la cle n'etant tout simplement pas la ou elle en a l'air.
+    for path in sorted(locales_dir.glob("*.yaml")):
+        booleans = find_boolean_keys(_read_yaml(path))
+        if booleans:
+            status = 1
+            print(f"[ERR] {path.name}: {len(booleans)} key(s) parsed as YAML "
+                  f"booleans instead of strings:")
+            for item in booleans:
+                print(f"         - {item}")
+            print("       An unquoted on/off/yes/no key becomes true/false.")
+            print("       Rename it (state_on, state_off) or quote it.")
 
     for path in sorted(locales_dir.glob("*.yaml")):
         code = path.stem
