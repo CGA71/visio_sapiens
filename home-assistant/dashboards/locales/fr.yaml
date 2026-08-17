@@ -228,6 +228,7 @@ admin:
   discovery_hint: Scanner les entités Home Assistant (génère report.json)
   upgrade_hint: Comparer le dashboard aux entités découvertes
   delete_hint: Zone dangereuse — code et confirmation requis
+  assignment: ASSIGNATION DES APPAREILS
   generation: GÉNÉRATION
   apply_language: APPLIQUER LA LANGUE
   apply_language_hint: Rendre le fragment, patcher la config, regénérer
@@ -260,6 +261,10 @@ home:
     no_entity: Entité non configurée
     intrusion: Intrusion détectée
     no_alert: Aucune alerte
+  events_recent: Événements récents
+  discovery_confirm: "Lancer une découverte des capteurs dans toutes les zones ?"
+  upgrade_confirm: "Analyser les écarts entre le dashboard actuel et les dernières entités découvertes ? Une sauvegarde sera créée par précaution."
+  delete_confirm: "Action IRRÉVERSIBLE sans restauration manuelle de la sauvegarde. Le code doit être correct. Continuer ?"
 
 wizard:
   language_step_title: Langue de l'interface
