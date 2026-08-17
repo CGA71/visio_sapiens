@@ -78,6 +78,18 @@ lovelace:
       icon: mdi:server
       show_in_sidebar: false
       filename: dashboards/views/core.yaml
+    # EN | Mobile variant of CORE. Declared again now that
+    # EN | core_mobile.yaml.j2 exists — it was removed when it pointed at a
+    # EN | file nothing generated.
+    # FR | Variante mobile de CORE. De nouveau declaree maintenant que
+    # FR | core_mobile.yaml.j2 existe — elle avait ete retiree quand elle
+    # FR | pointait vers un fichier que rien ne generait.
+    visio-sapiens-core-m:
+      mode: yaml
+      title: __T:dashboard.core.title__
+      icon: mdi:server
+      show_in_sidebar: false
+      filename: dashboards/views/core_mobile.yaml
     visio-sapiens-energy:
       mode: yaml
       title: __T:dashboard.energy.title__
@@ -134,15 +146,23 @@ lovelace:
       type: module
     - url: /hacsfiles/lovelace-layout-card/layout-card.js
       type: module
-    - url: /hacsfiles/lovelace-hui-element/stack-in-card.js
+    - url: /hacsfiles/vertical-stack-in-card/vertical-stack-in-card.js
       type: module
     - url: /hacsfiles/apexcharts-card/apexcharts-card.js
       type: module
     - url: /hacsfiles/mini-graph-card/mini-graph-card-bundle.js
       type: module
-    - url: /hacsfiles/lovelace-config-template-card/config-template-card.js
+    - url: /hacsfiles/config-template-card/config-template-card.js
       type: module
-    - url: /hacsfiles/lovelace-decluttering-card/decluttering-card.js
+    - url: /hacsfiles/decluttering-card/decluttering-card.js
+      type: module
+    # EN | Both are used by home.yaml.j2 (weather cell of the header band and
+    # EN | the meteo panel) and were missing from this list.
+    # FR | Les deux sont utilisees par home.yaml.j2 (case meteo du bandeau et
+    # FR | panneau meteo) et manquaient dans cette liste.
+    - url: /hacsfiles/simple-weather-card/simple-weather-card.js
+      type: module
+    - url: /hacsfiles/dynamic-weather-card/dynamic-weather-card.js
       type: module
     # EN | Visio Sapiens engine — ?v=__VTOKEN__ is replaced at apply time so
     # EN | browsers pick up a new build instead of serving a stale cache.
