@@ -287,7 +287,6 @@ adminmenu:
   scan_hint: Lit toutes les entités Home Assistant, écrit report.json
   not_built: Pas encore construit
   not_built_hint: Cet écran est prévu — l'entrée de menu existe pour que la forme de la console soit visible
-  open_wizard: OUVRIR L'ASSISTANT
 
 wizard:
   language_step_title: Langue de l'interface

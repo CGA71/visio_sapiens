@@ -192,17 +192,25 @@ views:
 {% elif screen == 'rooms' %}
           # EN | Language and format are phase-0 choices in the wizard diagram
           # EN | — they drive what gets generated, so they sit on one row
-          # EN | above the form itself: pick language, pick format, then open
-          # EN | the wizard. The row shows the two input_selects directly
-          # EN | (their visible value IS the current selection), not a
-          # EN | separate read-only echo of each.
+          # EN | above the form: interface language, target format, and the
+          # EN | two diagnostic sensors (deployed locale, unrendered
+          # EN | placeholders) that show whether what's live matches the
+          # EN | selection. No separate OPEN WIZARD button — the iframe below
+          # EN | IS the wizard, so a link to the same page would be redundant.
+          # EN | The language input_select is read live by the iframe itself
+          # EN | (its own WebSocket subscription), so changing it here
+          # EN | retranslates the form below without a page reload.
           # FR | La langue et le format sont des choix de phase 0 dans le
-          # FR | schema du wizard — ils pilotent ce qui est genere, donc ils
-          # FR | vivent sur une ligne au-dessus du formulaire lui-meme :
-          # FR | choisir la langue, choisir le format, puis ouvrir le wizard.
-          # FR | La ligne montre les deux input_select directement (leur
-          # FR | valeur visible EST la selection courante), pas un echo en
-          # FR | lecture seule separe.
+          # FR | schema du wizard — ils vivent sur une ligne au-dessus du
+          # FR | formulaire : langue d'interface, format cible, et les deux
+          # FR | capteurs de diagnostic (locale deployee, placeholders non
+          # FR | rendus) qui montrent si ce qui est en ligne correspond a la
+          # FR | selection. Pas de bouton OPEN WIZARD separe — l'iframe en
+          # FR | dessous EST le wizard, un lien vers la meme page serait
+          # FR | redondant. Le selecteur de langue est lu en direct par
+          # FR | l'iframe elle-meme (son propre abonnement WebSocket), donc le
+          # FR | changer ici retraduit le formulaire en dessous sans recharger
+          # FR | la page.
           - type: horizontal-stack
             cards:
               - type: entities
@@ -227,25 +235,28 @@ views:
                       border: 1px solid rgba(0,229,255,0.28) !important;
                       border-radius: 20px !important;
                     }
-              - type: custom:button-card
-                template: vssp_admin_button
-                icon: mdi:floor-plan
-                name: "{{ t('adminmenu.open_wizard') }}"
-                label: "{{ t('adminmenu.section.rooms_hint') }}"
-                tap_action:
-                  action: url
-                  url_path: /local/vssp/wizard/vssp_rooms_floors.html
-          # EN | The rooms & floors wizard embedded inline, same iframe
-          # EN | pattern as ASSIGN: it is a self-contained page with its own
-          # EN | WebSocket auth, so it works as well inside a frame as it does
-          # EN | full-page — the OPEN WIZARD button above remains for the
-          # EN | full-screen route when the frame feels cramped.
-          # FR | L assistant pieces & etages integre en ligne, meme motif
-          # FR | d iframe que ASSIGN : c est une page autonome avec sa propre
-          # FR | authentification WebSocket, elle fonctionne donc aussi bien
-          # FR | dans un cadre qu en plein ecran — le bouton OPEN WIZARD
-          # FR | au-dessus reste disponible pour la route plein ecran quand le
-          # FR | cadre semble trop etroit.
+              - type: entities
+                entities:
+                  - entity: sensor.vssp_deployed_locale
+                    name: "{{ t('admin.deployed_locale') }}"
+                card_mod:
+                  style: |
+                    ha-card {
+                      background: rgba(8,18,28,0.75) !important;
+                      border: 1px solid rgba(0,229,255,0.28) !important;
+                      border-radius: 20px !important;
+                    }
+              - type: entities
+                entities:
+                  - entity: sensor.vssp_unrendered_placeholders
+                    name: "{{ t('admin.unrendered_markers') }}"
+                card_mod:
+                  style: |
+                    ha-card {
+                      background: rgba(8,18,28,0.75) !important;
+                      border: 1px solid rgba(0,229,255,0.28) !important;
+                      border-radius: 20px !important;
+                    }
           - type: iframe
             url: /local/vssp/wizard/vssp_rooms_floors.html
             card_mod:

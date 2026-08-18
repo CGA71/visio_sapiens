@@ -123,17 +123,17 @@
     <div class="logo">⬡</div>
     <div>
       <h1>VISIO SAPIENS</h1>
-      <p>PIÈCES &amp; ÉTAGES</p>
+      <p id="page-subtitle">PIÈCES &amp; ÉTAGES</p>
     </div>
     <div class="ha-url" id="ha-url"></div>
   </div>
 
   <div class="steps">
-    <div class="step active" id="s1"><div class="step-bar"></div><div class="step-label">1. STRUCTURE</div></div>
-    <div class="step" id="s2"><div class="step-bar"></div><div class="step-label">2. APPAREILS</div></div>
-    <div class="step" id="s3"><div class="step-bar"></div><div class="step-label">3. GÉNÉRATION IA</div></div>
-    <div class="step" id="s4"><div class="step-bar"></div><div class="step-label">4. GIT PUSH</div></div>
-    <div class="step" id="s5"><div class="step-bar"></div><div class="step-label">5. DASHBOARD</div></div>
+    <div class="step active" id="s1"><div class="step-bar"></div><div class="step-label" id="s1-label">1. STRUCTURE</div></div>
+    <div class="step" id="s2"><div class="step-bar"></div><div class="step-label" id="s2-label">2. APPAREILS</div></div>
+    <div class="step" id="s3"><div class="step-bar"></div><div class="step-label" id="s3-label">3. GÉNÉRATION IA</div></div>
+    <div class="step" id="s4"><div class="step-bar"></div><div class="step-label" id="s4-label">4. GIT PUSH</div></div>
+    <div class="step" id="s5"><div class="step-bar"></div><div class="step-label" id="s5-label">5. DASHBOARD</div></div>
   </div>
 
   <div id="content"></div>
@@ -167,10 +167,189 @@ const DEFAULT_COLOR = "#0A2030";
 document.getElementById("ha-url").textContent = HA_URL;
 
 // ═══════════════════════════════════════════════════════════════════════════
+// I18N — mirrors input_select.vssp_language ("en"/"fr"), read live from HA so
+// this page follows the selector on the admin ROOMS & FLOORS row instead of
+// carrying its own separate language state.
+// UI chrome only. Never translate stored data (room/floor names, the
+// EXTERIOR_TYPES chip values, the "Non classé" virtual-floor sentinel) —
+// those are compared by string equality against what's saved in the HA
+// registry, so translating them would break that matching when the
+// interface language changes.
+// ═══════════════════════════════════════════════════════════════════════════
+const I18N = {
+  fr: {
+    doc_title: "Visio Sapiens — Pièces & Étages",
+    page_subtitle: "PIÈCES & ÉTAGES",
+    step1_label: "1. STRUCTURE", step2_label: "2. APPAREILS",
+    step3_label: "3. GÉNÉRATION IA", step4_label: "4. GIT PUSH", step5_label: "5. DASHBOARD",
+    conn_title: "CONNEXION HOME ASSISTANT",
+    conn_sub: "Jeton d'accès longue durée — Profil → Sécurité → Jetons d'accès longue durée.",
+    conn_connect: "Se connecter",
+    busy_connecting: "Connexion à Home Assistant…",
+    busy_reloading: "Relecture du registre…",
+    busy_applying: "Application des modifications…",
+    err_no_token: "Colle un jeton d'accès longue durée.",
+    notice_registry_read: "Registre lu : {floors} étage(s), {areas} pièce(s).",
+    notice_registry_reloaded: "Registre rechargé.",
+    diff_nothing_to_apply: "Rien à appliquer — la structure est déjà à jour.",
+    confirm_apply_header: "Appliquer {total} modification(s) au registre Home Assistant ?",
+    confirm_apply_rooms_deleted: "\n\n{n} pièce(s) seront supprimées",
+    confirm_apply_entities_unassigned: " — {risk} entité(s) seront désassignées (les entités elles-mêmes ne sont pas supprimées).",
+    notice_applied: "✓ Structure appliquée — {total} modification(s).",
+    err_apply_failed: "Échec de l'application : {msg} — le registre peut être partiellement modifié, relance une lecture.",
+    confirm_delete_selected_header: "Retirer {n} pièce(s) de la structure ?\n\n{names}",
+    confirm_delete_selected_entities: "\n\n{n} entité(s) y sont rattachées et seront désassignées.",
+    confirm_delete_selected_footer: "\n\nRien n'est écrit dans Home Assistant tant que tu n'as pas cliqué « Appliquer ».",
+    notice_rooms_removed_draft: "Pièces retirées du brouillon. Clique « Appliquer » pour les supprimer dans HA.",
+    prompt_reset_header: "REPARTIR DE ZÉRO\n\n{floors} étage(s) et {areas} pièce(s) seront supprimés de Home Assistant.\n{ent} entité(s) perdront leur pièce (les entités et appareils ne sont pas supprimés).\n\nTape {word} pour confirmer :",
+    reset_confirm_word: "SUPPRIMER",
+    notice_reset_cancelled: "Réinitialisation annulée.",
+    notice_draft_cleared: "Brouillon vidé. Clique « Appliquer » pour effacer la structure dans Home Assistant, puis reconstruis-la ci-dessous.",
+    confirm_del_floor: "Retirer « {name} » et ses {n} pièce(s) ?",
+    act_reload: "↻ Relire HA",
+    act_export: "⬇ Exporter JSON",
+    act_next_assign: "Suivant → Assignation des appareils",
+    inv_title: "CE QUI EXISTE DANS HOME ASSISTANT",
+    inv_sub: "Lecture du registre : étages, pièces et entités déjà rattachées.",
+    badge_floors: "{n} étage(s)",
+    badge_rooms: "{n} pièce(s)",
+    badge_entities_assigned: "{n} entité(s) assignée(s)",
+    btn_remove_selection: "✕ Retirer la sélection ({n})",
+    btn_delete_all: "⟲ Tout supprimer",
+    inv_empty: "Aucune pièce dans Home Assistant. Construis la structure ci-dessous, puis applique-la.",
+    select_all: "Tout sélectionner",
+    floor_no_floor: "Sans étage",
+    badge_ent_short: "{n} ent.",
+    editor_title: "STRUCTURE DE LA MAISON",
+    editor_sub: "Ajoute, renomme ou retire des étages et des pièces. Les modifications ne partent dans Home Assistant qu'au clic sur « Appliquer ».",
+    editor_no_floors: "Aucun étage. Commence par en ajouter un.",
+    badge_level: "Niv. {fi}",
+    placeholder_floor_name: "Nom de l'étage",
+    badge_existing: "existant",
+    badge_new: "nouveau",
+    title_remove_floor: "Retirer l'étage",
+    editor_no_rooms: "Aucune pièce à cet étage.",
+    placeholder_room_name: "Nom de la pièce",
+    title_room_color: "Couleur du plan",
+    badge_new_room: "nouvelle",
+    title_remove_room: "Retirer la pièce",
+    btn_add_room: "+ Pièce",
+    btn_add_floor: "+ Étage",
+    ext_title: "ESPACES EXTÉRIEURS",
+    ext_sub: "Créés dans Home Assistant sous un étage « Extérieur ».",
+    placeholder_custom_ext: "Autre espace…",
+    diff_title: "MODIFICATIONS EN ATTENTE",
+    diff_match: "Le brouillon correspond au registre Home Assistant.",
+    diff_add_floor: "+ étage",
+    diff_upd_floor: "~ étage",
+    diff_add_room: "+ pièce",
+    diff_upd_room: "~ pièce",
+    diff_del_room: "− pièce",
+    diff_del_floor: "− étage",
+    diff_no_floor: "sans étage",
+    diff_entities_unassigned: " ({n} entité(s) désassignée(s))",
+    diff_risk_warning: "{risk} entité(s) vont perdre leur pièce. Les entités et appareils restent dans Home Assistant : seule l'assignation disparaît.",
+    btn_apply: "✓ Appliquer dans Home Assistant ({n})",
+    btn_cancel_changes: "Annuler les changements"
+  },
+  en: {
+    doc_title: "Visio Sapiens — Rooms & Floors",
+    page_subtitle: "ROOMS & FLOORS",
+    step1_label: "1. STRUCTURE", step2_label: "2. DEVICES",
+    step3_label: "3. AI GENERATION", step4_label: "4. GIT PUSH", step5_label: "5. DASHBOARD",
+    conn_title: "HOME ASSISTANT CONNECTION",
+    conn_sub: "Long-lived access token — Profile → Security → Long-lived access tokens.",
+    conn_connect: "Connect",
+    busy_connecting: "Connecting to Home Assistant…",
+    busy_reloading: "Reloading the registry…",
+    busy_applying: "Applying changes…",
+    err_no_token: "Paste a long-lived access token.",
+    notice_registry_read: "Registry read: {floors} floor(s), {areas} room(s).",
+    notice_registry_reloaded: "Registry reloaded.",
+    diff_nothing_to_apply: "Nothing to apply — the structure is already up to date.",
+    confirm_apply_header: "Apply {total} change(s) to the Home Assistant registry?",
+    confirm_apply_rooms_deleted: "\n\n{n} room(s) will be deleted",
+    confirm_apply_entities_unassigned: " — {risk} entity(ies) will be unassigned (the entities themselves are not deleted).",
+    notice_applied: "✓ Structure applied — {total} change(s).",
+    err_apply_failed: "Apply failed: {msg} — the registry may be partially modified, reload it.",
+    confirm_delete_selected_header: "Remove {n} room(s) from the structure?\n\n{names}",
+    confirm_delete_selected_entities: "\n\n{n} entity(ies) are attached and will be unassigned.",
+    confirm_delete_selected_footer: "\n\nNothing is written to Home Assistant until you click \"Apply\".",
+    notice_rooms_removed_draft: "Rooms removed from the draft. Click \"Apply\" to delete them in HA.",
+    prompt_reset_header: "START OVER\n\n{floors} floor(s) and {areas} room(s) will be deleted from Home Assistant.\n{ent} entity(ies) will lose their room (entities and devices are not deleted).\n\nType {word} to confirm:",
+    reset_confirm_word: "DELETE",
+    notice_reset_cancelled: "Reset cancelled.",
+    notice_draft_cleared: "Draft cleared. Click \"Apply\" to erase the structure in Home Assistant, then rebuild it below.",
+    confirm_del_floor: "Remove \"{name}\" and its {n} room(s)?",
+    act_reload: "↻ Reload HA",
+    act_export: "⬇ Export JSON",
+    act_next_assign: "Next → Device assignment",
+    inv_title: "WHAT EXISTS IN HOME ASSISTANT",
+    inv_sub: "Registry read: floors, rooms, and already-linked entities.",
+    badge_floors: "{n} floor(s)",
+    badge_rooms: "{n} room(s)",
+    badge_entities_assigned: "{n} entity(ies) assigned",
+    btn_remove_selection: "✕ Remove selection ({n})",
+    btn_delete_all: "⟲ Delete all",
+    inv_empty: "No rooms in Home Assistant. Build the structure below, then apply it.",
+    select_all: "Select all",
+    floor_no_floor: "No floor",
+    badge_ent_short: "{n} ent.",
+    editor_title: "HOUSE STRUCTURE",
+    editor_sub: "Add, rename, or remove floors and rooms. Changes are only sent to Home Assistant when you click \"Apply\".",
+    editor_no_floors: "No floors. Start by adding one.",
+    badge_level: "Lvl. {fi}",
+    placeholder_floor_name: "Floor name",
+    badge_existing: "existing",
+    badge_new: "new",
+    title_remove_floor: "Remove floor",
+    editor_no_rooms: "No rooms on this floor.",
+    placeholder_room_name: "Room name",
+    title_room_color: "Floor plan color",
+    badge_new_room: "new",
+    title_remove_room: "Remove room",
+    btn_add_room: "+ Room",
+    btn_add_floor: "+ Floor",
+    ext_title: "OUTDOOR SPACES",
+    ext_sub: "Created in Home Assistant under an \"Outdoor\" floor.",
+    placeholder_custom_ext: "Other space…",
+    diff_title: "PENDING CHANGES",
+    diff_match: "The draft matches the Home Assistant registry.",
+    diff_add_floor: "+ floor",
+    diff_upd_floor: "~ floor",
+    diff_add_room: "+ room",
+    diff_upd_room: "~ room",
+    diff_del_room: "− room",
+    diff_del_floor: "− floor",
+    diff_no_floor: "no floor",
+    diff_entities_unassigned: " ({n} entity(ies) unassigned)",
+    diff_risk_warning: "{risk} entity(ies) will lose their room. The entities and devices remain in Home Assistant: only the assignment disappears.",
+    btn_apply: "✓ Apply to Home Assistant ({n})",
+    btn_cancel_changes: "Cancel changes"
+  }
+};
+function t(key, vars){
+  let s = (I18N[state.lang] && I18N[state.lang][key]) || I18N.fr[key] || key;
+  if (vars) Object.keys(vars).forEach(k => { s = s.split("{"+k+"}").join(vars[k]); });
+  return s;
+}
+function applyLang(v){
+  state.lang = (v === "en") ? "en" : "fr";
+  document.documentElement.lang = state.lang;
+  document.title = t("doc_title");
+  document.getElementById("page-subtitle").textContent = t("page_subtitle");
+  ["s1","s2","s3","s4","s5"].forEach((id,i) => {
+    const el = document.getElementById(id+"-label");
+    if (el) el.textContent = t("step"+(i+1)+"_label");
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // STATE
 // ═══════════════════════════════════════════════════════════════════════════
 let state = {
   token: localStorage.getItem(LS_TOKEN) || "",
+  lang: "fr",
   connected: false,
   loading: false,
   error: "",
@@ -188,6 +367,7 @@ let state = {
 // ═══════════════════════════════════════════════════════════════════════════
 let ws = null, msgId = 1;
 const pending = {};
+const subscriptions = {};   // id -> callback(event), for subscribe_events messages
 
 function wsConnect(token){
   return new Promise((resolve,reject)=>{
@@ -208,6 +388,9 @@ function wsConnect(token){
         if (!p) return;
         delete pending[m.id];
         m.success ? p.resolve(m.result) : p.reject(new Error(m.error && m.error.message || "Erreur HA"));
+      } else if (m.type === "event"){
+        const cb = subscriptions[m.id];
+        if (cb) cb(m.event);
       }
     };
     sock.onerror = () => { if(!settled){ settled = true; reject(new Error("WebSocket injoignable.")); } };
@@ -226,6 +409,42 @@ function wsCall(type, payload){
     pending[id] = {resolve,reject};
     ws.send(JSON.stringify(Object.assign({id, type}, payload || {})));
   });
+}
+
+// Long-lived subscription (e.g. subscribe_events): resolves once HA acks the
+// subscription, then invokes `callback` for every matching event afterwards.
+function wsSubscribe(type, payload, callback){
+  return new Promise((resolve,reject)=>{
+    if (!ws) return reject(new Error("Non connecté à Home Assistant."));
+    const id = msgId++;
+    subscriptions[id] = callback;
+    pending[id] = {resolve,reject};
+    ws.send(JSON.stringify(Object.assign({id, type}, payload || {})));
+  });
+}
+
+// EN | Mirrors the interface language selected on the admin ROOMS & FLOORS
+// EN | row (input_select.vssp_language) so this page updates live instead of
+// EN | needing a reload — subscribe once, react to every state_changed.
+// FR | Reflete la langue d'interface choisie sur la ligne ROOMS & FLOORS de
+// FR | l'admin (input_select.vssp_language) pour que cette page se mette a
+// FR | jour en direct au lieu de necessiter un rechargement — on s'abonne
+// FR | une fois, on reagit a chaque state_changed.
+async function loadLanguage(){
+  try{
+    const states = await wsCall("get_states");
+    const ent = states.find(s => s.entity_id === "input_select.vssp_language");
+    if (ent) applyLang(ent.state);
+  }catch(_){ /* garde le fr par defaut si la lecture echoue */ }
+}
+function subscribeLanguage(){
+  wsSubscribe("subscribe_events", {event_type:"state_changed"}, ev => {
+    const d = ev && ev.data;
+    if (d && d.entity_id === "input_select.vssp_language" && d.new_state){
+      applyLang(d.new_state.state);
+      render();
+    }
+  }).catch(()=>{});
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -366,17 +585,17 @@ function entitiesAtRisk(diff){
 // ═══════════════════════════════════════════════════════════════════════════
 async function applyDiff(){
   const diff = computeDiff();
-  if (!diff.total){ state.notice = "Rien à appliquer — la structure est déjà à jour."; return render(); }
+  if (!diff.total){ state.notice = t("diff_nothing_to_apply"); return render(); }
 
   const risk = entitiesAtRisk(diff);
-  let msg = `Appliquer ${diff.total} modification(s) au registre Home Assistant ?`;
+  let msg = t("confirm_apply_header", {total: diff.total});
   if (diff.areasDelete.length){
-    msg += `\n\n${diff.areasDelete.length} pièce(s) seront supprimées`;
-    if (risk) msg += ` — ${risk} entité(s) seront désassignées (les entités elles-mêmes ne sont pas supprimées).`;
+    msg += t("confirm_apply_rooms_deleted", {n: diff.areasDelete.length});
+    if (risk) msg += t("confirm_apply_entities_unassigned", {risk});
   }
   if (!confirm(msg)) return;
 
-  setBusy(true, "Application des modifications…");
+  setBusy(true, t("busy_applying"));
   try{
     // 1. Étages à créer → on récupère leurs ids pour les pièces qui les visent
     const newFloorId = {};
@@ -419,9 +638,9 @@ async function applyDiff(){
     localStorage.setItem(LS_COLORS, JSON.stringify(state.colors));
     await loadRegistry();
     saveHouse();
-    state.notice = `✓ Structure appliquée — ${diff.total} modification(s).`;
+    state.notice = t("notice_applied", {total: diff.total});
   }catch(e){
-    state.error = "Échec de l'application : " + e.message + " — le registre peut être partiellement modifié, relance une lecture.";
+    state.error = t("err_apply_failed", {msg: e.message});
   }finally{
     setBusy(false);
   }
@@ -439,9 +658,9 @@ function deleteSelected(){
   });
   let n = 0;
   state.selection.forEach(id => { n += (state.ha.counts[id] || {total:0}).total; });
-  const txt = `Retirer ${names.length} pièce(s) de la structure ?\n\n${names.join(", ")}` +
-              (n ? `\n\n${n} entité(s) y sont rattachées et seront désassignées.` : "") +
-              `\n\nRien n'est écrit dans Home Assistant tant que tu n'as pas cliqué « Appliquer ».`;
+  const txt = t("confirm_delete_selected_header", {n: names.length, names: names.join(", ")}) +
+              (n ? t("confirm_delete_selected_entities", {n}) : "") +
+              t("confirm_delete_selected_footer");
   if (!confirm(txt)) return;
   state.draft.floors.forEach(f => { f.rooms = f.rooms.filter(r => !state.selection.has(r.area_id)); });
   const extNames = new Set();
@@ -451,21 +670,19 @@ function deleteSelected(){
   });
   state.draft.exteriors = state.draft.exteriors.filter(e => !extNames.has(e));
   state.selection = new Set();
-  state.notice = "Pièces retirées du brouillon. Clique « Appliquer » pour les supprimer dans HA.";
+  state.notice = t("notice_rooms_removed_draft");
   render();
 }
 
 function resetAll(){
   const nAreas = state.ha.areas.length, nFloors = state.ha.floors.length;
   let ent = 0; Object.values(state.ha.counts).forEach(c => ent += c.total);
-  const answer = prompt(
-    `REPARTIR DE ZÉRO\n\n${nFloors} étage(s) et ${nAreas} pièce(s) seront supprimés de Home Assistant.\n` +
-    `${ent} entité(s) perdront leur pièce (les entités et appareils ne sont pas supprimés).\n\n` +
-    `Tape SUPPRIMER pour confirmer :`);
-  if (answer !== "SUPPRIMER") { state.notice = "Réinitialisation annulée."; return render(); }
+  const word = t("reset_confirm_word");
+  const answer = prompt(t("prompt_reset_header", {floors: nFloors, areas: nAreas, ent, word}));
+  if (answer !== word) { state.notice = t("notice_reset_cancelled"); return render(); }
   state.draft = { floors: [], exteriors: [] };
   state.selection = new Set();
-  state.notice = "Brouillon vidé. Clique « Appliquer » pour effacer la structure dans Home Assistant, puis reconstruis-la ci-dessous.";
+  state.notice = t("notice_draft_cleared");
   render();
 }
 
@@ -479,7 +696,7 @@ function addFloor(){
 }
 function delFloor(fi){
   const f = state.draft.floors[fi];
-  if (f.rooms.length && !confirm(`Retirer « ${f.name} » et ses ${f.rooms.length} pièce(s) ?`)) return;
+  if (f.rooms.length && !confirm(t("confirm_del_floor", {name: f.name, n: f.rooms.length}))) return;
   state.draft.floors.splice(fi,1); render();
 }
 function updFloorName(fi,v){ state.draft.floors[fi].name = v; }
@@ -557,22 +774,24 @@ function goPhase2(){
 async function connect(){
   const inp = document.getElementById("token-input");
   if (inp) state.token = inp.value.trim();
-  if (!state.token){ state.error = "Colle un jeton d'accès longue durée."; return render(); }
+  if (!state.token){ state.error = t("err_no_token"); return render(); }
   localStorage.setItem(LS_TOKEN, state.token);
-  setBusy(true, "Connexion à Home Assistant…");
+  setBusy(true, t("busy_connecting"));
   try{
     await wsConnect(state.token);
     state.connected = true;
     await loadRegistry();
-    state.notice = `Registre lu : ${state.ha.floors.length} étage(s), ${state.ha.areas.length} pièce(s).`;
+    await loadLanguage();
+    subscribeLanguage();
+    state.notice = t("notice_registry_read", {floors: state.ha.floors.length, areas: state.ha.areas.length});
   }catch(e){
     state.connected = false;
     state.error = e.message;
   }finally{ setBusy(false); }
 }
 async function reload(){
-  setBusy(true, "Relecture du registre…");
-  try{ await loadRegistry(); state.notice = "Registre rechargé."; }
+  setBusy(true, t("busy_reloading"));
+  try{ await loadRegistry(); state.notice = t("notice_registry_reloaded"); }
   catch(e){ state.error = e.message; }
   finally{ setBusy(false); }
 }
@@ -604,11 +823,11 @@ function render(){
   if (!state.connected){
     html += `
     <div class="card">
-      <div class="card-title">CONNEXION HOME ASSISTANT</div>
-      <div class="card-sub">Jeton d'accès longue durée — Profil → Sécurité → Jetons d'accès longue durée.</div>
+      <div class="card-title">${t("conn_title")}</div>
+      <div class="card-sub">${t("conn_sub")}</div>
       <div class="row" style="margin-top:14px">
         <input type="text" id="token-input" class="flex1" placeholder="eyJhbGciOi…" value="${esc(state.token)}"/>
-        <button class="btn" onclick="connect()">Se connecter</button>
+        <button class="btn" onclick="connect()">${t("conn_connect")}</button>
       </div>
     </div>`;
     c.innerHTML = html;
@@ -622,11 +841,11 @@ function render(){
   const rc = roomCount();
   html += `
     <div class="actions">
-      <button class="btn btn-ghost" onclick="reload()">↻ Relire HA</button>
+      <button class="btn btn-ghost" onclick="reload()">${t("act_reload")}</button>
       <div class="actions-right">
-        <button class="btn btn-ghost" onclick="exportHouse()">⬇ Exporter JSON</button>
+        <button class="btn btn-ghost" onclick="exportHouse()">${t("act_export")}</button>
         <button class="btn" onclick="goPhase2()" ${rc ? "" : "disabled"}>
-          Suivant → Assignation des appareils
+          ${t("act_next_assign")}
         </button>
       </div>
     </div>`;
@@ -640,31 +859,31 @@ function renderInventory(){
 
   let h = `
   <div class="card">
-    <div class="card-title">CE QUI EXISTE DANS HOME ASSISTANT</div>
-    <div class="card-sub">Lecture du registre : étages, pièces et entités déjà rattachées.</div>
+    <div class="card-title">${t("inv_title")}</div>
+    <div class="card-sub">${t("inv_sub")}</div>
     <div class="row" style="margin-top:12px;flex-wrap:wrap">
-      <span class="badge badge-cyan">${floors.length} étage(s)</span>
-      <span class="badge badge-cyan">${areas.length} pièce(s)</span>
-      <span class="badge badge-${ent ? "green" : "mut"}">${ent} entité(s) assignée(s)</span>
+      <span class="badge badge-cyan">${t("badge_floors",{n:floors.length})}</span>
+      <span class="badge badge-cyan">${t("badge_rooms",{n:areas.length})}</span>
+      <span class="badge badge-${ent ? "green" : "mut"}">${t("badge_entities_assigned",{n:ent})}</span>
       <span class="flex1"></span>
       <button class="btn btn-sm btn-danger" onclick="deleteSelected()" ${state.selection.size ? "" : "disabled"}>
-        ✕ Retirer la sélection (${state.selection.size})
+        ${t("btn_remove_selection",{n:state.selection.size})}
       </button>
       <button class="btn btn-sm btn-danger" onclick="resetAll()" ${areas.length || floors.length ? "" : "disabled"}>
-        ⟲ Tout supprimer
+        ${t("btn_delete_all")}
       </button>
     </div>`;
 
   if (!areas.length){
     h += `<div class="status status-warn" style="margin-top:14px">
-      Aucune pièce dans Home Assistant. Construis la structure ci-dessous, puis applique-la.</div></div>`;
+      ${t("inv_empty")}</div></div>`;
     return h;
   }
 
   h += `<div class="row" style="margin-top:14px">
     <label style="display:flex;gap:8px;align-items:center;color:var(--dim);font-size:12px;cursor:pointer">
       <input type="checkbox" ${state.selection.size === areas.length ? "checked" : ""}
-        onchange="toggleSelAll(this.checked)"/> Tout sélectionner
+        onchange="toggleSelAll(this.checked)"/> ${t("select_all")}
     </label>
   </div>`;
 
@@ -673,7 +892,7 @@ function renderInventory(){
 
   const floorOrder = floors.slice().sort((x,y)=>(x.level ?? 0)-(y.level ?? 0));
   const groups = floorOrder.map(f => [f.name, byFloor[f.floor_id] || []])
-    .concat(byFloor["__none__"] ? [["Sans étage", byFloor["__none__"]]] : []);
+    .concat(byFloor["__none__"] ? [[t("floor_no_floor"), byFloor["__none__"]]] : []);
 
   groups.forEach(([fname, list]) => {
     if (!list.length) return;
@@ -688,7 +907,7 @@ function renderInventory(){
           onchange="toggleSel('${esc(a.area_id)}',this.checked)"/>
         <div class="inv-name">${esc(a.name)}</div>
         <div class="inv-meta">${esc(doms || "—")}</div>
-        <span class="badge badge-${cnt.total ? "cyan" : "mut"}">${cnt.total} ent.</span>
+        <span class="badge badge-${cnt.total ? "cyan" : "mut"}">${t("badge_ent_short",{n:cnt.total})}</span>
       </div>`;
     });
   });
@@ -700,52 +919,52 @@ function renderInventory(){
 function renderEditor(){
   const h0 = `
   <div class="card">
-    <div class="card-title">STRUCTURE DE LA MAISON</div>
-    <div class="card-sub">Ajoute, renomme ou retire des étages et des pièces. Les modifications ne partent dans Home Assistant qu'au clic sur « Appliquer ».</div>`;
+    <div class="card-title">${t("editor_title")}</div>
+    <div class="card-sub">${t("editor_sub")}</div>`;
 
   let h = h0;
   if (!state.draft.floors.length){
-    h += `<div class="ghost" style="margin-left:0">Aucun étage. Commence par en ajouter un.</div>`;
+    h += `<div class="ghost" style="margin-left:0">${t("editor_no_floors")}</div>`;
   }
 
   state.draft.floors.forEach((f, fi) => {
     h += `
     <div class="floor-block">
       <div class="row">
-        <span class="badge badge-cyan">Niv. ${fi}</span>
-        <input type="text" class="flex1" value="${esc(f.name)}" placeholder="Nom de l'étage"
+        <span class="badge badge-cyan">${t("badge_level",{fi})}</span>
+        <input type="text" class="flex1" value="${esc(f.name)}" placeholder="${t("placeholder_floor_name")}"
           oninput="updFloorName(${fi},this.value)"/>
-        ${f.floor_id ? `<span class="badge badge-green">existant</span>` : `<span class="badge badge-orange">nouveau</span>`}
-        <button class="btn btn-sm btn-danger" onclick="delFloor(${fi})" title="Retirer l'étage">✕</button>
+        ${f.floor_id ? `<span class="badge badge-green">${t("badge_existing")}</span>` : `<span class="badge badge-orange">${t("badge_new")}</span>`}
+        <button class="btn btn-sm btn-danger" onclick="delFloor(${fi})" title="${t("title_remove_floor")}">✕</button>
       </div>`;
 
     if (!f.rooms.length){
-      h += `<div class="ghost">Aucune pièce à cet étage.</div>`;
+      h += `<div class="ghost">${t("editor_no_rooms")}</div>`;
     }
     f.rooms.forEach((r, ri) => {
       const cnt = r.area_id ? (state.ha.counts[r.area_id] || {total:0}).total : 0;
       h += `
       <div class="row room-row">
-        <input type="text" class="flex1" value="${esc(r.name)}" placeholder="Nom de la pièce"
+        <input type="text" class="flex1" value="${esc(r.name)}" placeholder="${t("placeholder_room_name")}"
           oninput="updRoom(${fi},${ri},'name',this.value)"/>
-        <input type="color" value="${esc(r.color || DEFAULT_COLOR)}" title="Couleur du plan"
+        <input type="color" value="${esc(r.color || DEFAULT_COLOR)}" title="${t("title_room_color")}"
           onchange="updRoom(${fi},${ri},'color',this.value)"/>
-        ${r.area_id ? `<span class="badge badge-${cnt?"cyan":"mut"}">${cnt} ent.</span>`
-                    : `<span class="badge badge-orange">nouvelle</span>`}
-        <button class="btn btn-sm btn-danger" onclick="delRoom(${fi},${ri})" title="Retirer la pièce">✕</button>
+        ${r.area_id ? `<span class="badge badge-${cnt?"cyan":"mut"}">${t("badge_ent_short",{n:cnt})}</span>`
+                    : `<span class="badge badge-orange">${t("badge_new_room")}</span>`}
+        <button class="btn btn-sm btn-danger" onclick="delRoom(${fi},${ri})" title="${t("title_remove_room")}">✕</button>
       </div>`;
     });
 
-    h += `<button class="btn btn-sm" style="margin:8px 0 0 18px" onclick="addRoom(${fi})">+ Pièce</button>
+    h += `<button class="btn btn-sm" style="margin:8px 0 0 18px" onclick="addRoom(${fi})">${t("btn_add_room")}</button>
     </div>`;
   });
 
-  h += `<button class="btn btn-sm" onclick="addFloor()">+ Étage</button>
+  h += `<button class="btn btn-sm" onclick="addFloor()">${t("btn_add_floor")}</button>
   </div>
 
   <div class="card">
-    <div class="card-title">ESPACES EXTÉRIEURS</div>
-    <div class="card-sub">Créés dans Home Assistant sous un étage « Extérieur ».</div>
+    <div class="card-title">${t("ext_title")}</div>
+    <div class="card-sub">${t("ext_sub")}</div>
     <div style="margin-top:12px">`;
   const customs = state.draft.exteriors.filter(e => !EXTERIOR_TYPES.includes(e));
   EXTERIOR_TYPES.concat(customs).forEach(e => {
@@ -754,7 +973,7 @@ function renderEditor(){
   });
   h += `</div>
     <div class="row" style="margin-top:12px">
-      <input type="text" id="custom-ext" class="flex1" placeholder="Autre espace…" onkeydown="addCustomExt(event)"/>
+      <input type="text" id="custom-ext" class="flex1" placeholder="${t("placeholder_custom_ext")}" onkeydown="addCustomExt(event)"/>
       <button class="btn btn-sm" onclick="addCustomExtBtn()">+</button>
     </div>
   </div>`;
@@ -766,34 +985,34 @@ function renderDiff(){
   const risk = entitiesAtRisk(d);
 
   let h = `<div class="card">
-    <div class="card-title">MODIFICATIONS EN ATTENTE</div>`;
+    <div class="card-title">${t("diff_title")}</div>`;
 
   if (!d.total){
-    h += `<div class="card-sub" style="margin-top:8px">Le brouillon correspond au registre Home Assistant.</div></div>`;
+    h += `<div class="card-sub" style="margin-top:8px">${t("diff_match")}</div></div>`;
     return h;
   }
 
   h += `<div class="diff" style="margin-top:12px">`;
-  d.floorsCreate.forEach(f => h += `<div class="add">+ étage &nbsp;${esc(f.name)}</div>`);
-  d.floorsUpdate.forEach(f => h += `<div class="upd">~ étage &nbsp;${esc(f.name)}</div>`);
-  d.areasCreate.forEach(a  => h += `<div class="add">+ pièce &nbsp;${esc(a.name)} <span style="color:var(--mut)">(${esc(a.floorName||"sans étage")})</span></div>`);
-  d.areasUpdate.forEach(a  => h += `<div class="upd">~ pièce &nbsp;${esc(a.name)} <span style="color:var(--mut)">(${esc(a.floorName||"sans étage")})</span></div>`);
+  d.floorsCreate.forEach(f => h += `<div class="add">${t("diff_add_floor")} &nbsp;${esc(f.name)}</div>`);
+  d.floorsUpdate.forEach(f => h += `<div class="upd">${t("diff_upd_floor")} &nbsp;${esc(f.name)}</div>`);
+  d.areasCreate.forEach(a  => h += `<div class="add">${t("diff_add_room")} &nbsp;${esc(a.name)} <span style="color:var(--mut)">(${esc(a.floorName||t("diff_no_floor"))})</span></div>`);
+  d.areasUpdate.forEach(a  => h += `<div class="upd">${t("diff_upd_room")} &nbsp;${esc(a.name)} <span style="color:var(--mut)">(${esc(a.floorName||t("diff_no_floor"))})</span></div>`);
   d.areasDelete.forEach(a  => {
     const n = (state.ha.counts[a.area_id]||{total:0}).total;
-    h += `<div class="del">− pièce &nbsp;${esc(a.name)}${n?` <span style="color:var(--mut)">(${n} entité(s) désassignée(s))</span>`:""}</div>`;
+    h += `<div class="del">${t("diff_del_room")} &nbsp;${esc(a.name)}${n?`<span style="color:var(--mut)">${t("diff_entities_unassigned",{n})}</span>`:""}</div>`;
   });
-  d.floorsDelete.forEach(f => h += `<div class="del">− étage &nbsp;${esc(f.name)}</div>`);
+  d.floorsDelete.forEach(f => h += `<div class="del">${t("diff_del_floor")} &nbsp;${esc(f.name)}</div>`);
   h += `</div>`;
 
   if (risk){
     h += `<div class="status status-warn" style="margin-top:14px">
-      ${risk} entité(s) vont perdre leur pièce. Les entités et appareils restent dans Home Assistant : seule l'assignation disparaît.
+      ${t("diff_risk_warning",{risk})}
     </div>`;
   }
 
   h += `<div class="row" style="margin-top:14px">
-    <button class="btn btn-ok" onclick="applyDiff()">✓ Appliquer dans Home Assistant (${d.total})</button>
-    <button class="btn btn-ghost btn-sm" onclick="reload()">Annuler les changements</button>
+    <button class="btn btn-ok" onclick="applyDiff()">${t("btn_apply",{n:d.total})}</button>
+    <button class="btn btn-ghost btn-sm" onclick="reload()">${t("btn_cancel_changes")}</button>
   </div></div>`;
   return h;
 }
@@ -801,6 +1020,7 @@ function renderDiff(){
 // ═══════════════════════════════════════════════════════════════════════════
 // BOOT
 // ═══════════════════════════════════════════════════════════════════════════
+applyLang(state.lang);
 render();
 if (state.token) connect();
 </script>
