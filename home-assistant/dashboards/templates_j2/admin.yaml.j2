@@ -268,17 +268,60 @@ views:
 {% else %}
           # EN | Placeholder, and it says so. Naming what is missing is more
           # EN | useful than an empty panel that looks broken.
-          # FR | Ecran non construit, et il le dit. Nommer ce qui manque est
-          # FR | plus utile qu un panneau vide qui semble casse.
+          # EN |
+          # EN | Styled inline rather than with the vssp_alert template. That
+          # EN | template sets a CSS class (`osv-alert info`) defined in the
+          # EN | style engine; when the class does not apply, the card falls
+          # EN | back to the default Home Assistant rendering — a white
+          # EN | surface — and the icon, having no size constraint, fills the
+          # EN | whole panel. A template whose result depends on a stylesheet
+          # EN | this file cannot see is a template to avoid here.
+          # FR | Stylise en ligne plutot qu avec le template vssp_alert. Ce
+          # FR | template pose une classe CSS (`osv-alert info`) definie dans
+          # FR | le moteur de styles ; quand la classe ne s applique pas, la
+          # FR | carte retombe sur le rendu Home Assistant par defaut — une
+          # FR | surface blanche — et l icone, sans contrainte de taille,
+          # FR | remplit tout le panneau. Un template dont le resultat depend
+          # FR | d une feuille de style que ce fichier ne voit pas est un
+          # FR | template a eviter ici.
           - type: custom:button-card
-            template: vssp_alert
+            show_icon: true
+            show_name: true
+            show_label: true
+            show_state: false
             icon: mdi:hammer-wrench
             name: "{{ t('adminmenu.not_built') }}"
-            label: "{{ t('adminmenu.not_built_hint') }}"
-            variables:
-              level: info
+            label: "{{ t('adminmenu.section.' ~ key ~ '_hint') }}"
             tap_action:
               action: none
+            styles:
+              grid:
+                - grid-template-areas: '"i n" "i l"'
+                - grid-template-columns: 56px 1fr
+                - align-items: center
+                - column-gap: 14px
+              card:
+                - background: rgba(8,18,28,0.75)
+                - border: 1px solid rgba(0,229,255,0.28)
+                - border-radius: 18px
+                - box-shadow: 0 0 18px rgba(0,229,255,.15)
+                - padding: 20px 22px
+                - cursor: default
+                - pointer-events: none
+              icon:
+                - color: rgba(143,182,201,0.45)
+                - "--mdc-icon-size": 34px
+              name:
+                - justify-self: start
+                - font-family: Orbitron, sans-serif
+                - font-size: 13px
+                - letter-spacing: 1px
+                - color: "#8FB6C9"
+              label:
+                - justify-self: start
+                - font-size: 11px
+                - color: rgba(143,182,201,0.65)
+                - margin-top: 4px
 {% if screen in ['rooms', 'energy'] %}
           # EN | The scan feeds this screen too, per the diagram.
           # FR | Le scan alimente aussi cet ecran, selon le schema.
