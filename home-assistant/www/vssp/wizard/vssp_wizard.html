@@ -193,10 +193,22 @@ const LS = {token:"osv_ha_token", house:"vssp_house", colors:"vssp_room_colors",
 /* ═══════════════════════════════════════════════════════════════════════════
    STATE
    ═══════════════════════════════════════════════════════════════════════════ */
+// EN | vssp_rooms_floors.html hands off with ?phase=2 once its own "Appliquer"
+// EN | has written the rooms to the HA registry. Read it so the wizard opens
+// EN | straight on step 2 instead of restarting at step 1.
+// FR | vssp_rooms_floors.html passe la main avec ?phase=2 une fois que son
+// FR | propre « Appliquer » a écrit les pièces dans le registre HA. On le lit
+// FR | pour que le wizard s'ouvre directement à l'étape 2 plutôt que de
+// FR | repartir de l'étape 1.
+const REQUESTED_STEP = (()=>{
+  const n = parseInt(new URLSearchParams(location.search).get("phase"), 10);
+  return (n>=1 && n<=3) ? n : 1;
+})();
+
 let state = {
   token: localStorage.getItem(LS.token) || "",
   connected: false, loading:false, busyLabel:"", error:"", notice:"",
-  step: 1,
+  step: REQUESTED_STEP,
   settings: JSON.parse(localStorage.getItem(LS.settings) || "{}"),
   status: {locale:null, placeholders:null},
   ha: {floors:[], areas:[], counts:{}},
@@ -512,7 +524,12 @@ async function connect(){
   try{
     await wsConnect(state.token); state.connected=true;
     await Promise.all([loadRegistry(),loadStatus()]);
-    state.notice=`Registre lu : ${state.ha.floors.length} étage(s), ${state.ha.areas.length} pièce(s).`;
+    if(state.step>1 && !roomCount()){
+      state.step=1;
+      state.notice="Déclare au moins une pièce avant de continuer.";
+    }else{
+      state.notice=`Registre lu : ${state.ha.floors.length} étage(s), ${state.ha.areas.length} pièce(s).`;
+    }
   }catch(e){state.connected=false;state.error=e.message;}
   finally{setBusy(false);}
 }

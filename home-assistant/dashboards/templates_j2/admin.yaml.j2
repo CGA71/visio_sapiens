@@ -191,49 +191,75 @@ views:
 
 {% elif screen == 'rooms' %}
           # EN | Language and format are phase-0 choices in the wizard diagram
-          # EN | — they drive what gets generated, so they belong before the
-          # EN | first phase, not buried in the DASHBOARDS screen. Language
-          # EN | leads, format follows, per the agreed order; the two sensors
-          # EN | ride along since they are the same table as DASHBOARDS.
+          # EN | — they drive what gets generated, so they sit on one row
+          # EN | above the form itself: pick language, pick format, then open
+          # EN | the wizard. The row shows the two input_selects directly
+          # EN | (their visible value IS the current selection), not a
+          # EN | separate read-only echo of each.
           # FR | La langue et le format sont des choix de phase 0 dans le
           # FR | schema du wizard — ils pilotent ce qui est genere, donc ils
-          # FR | appartiennent avant la premiere phase, pas enfouis dans
-          # FR | l ecran DASHBOARDS. La langue en tete, le format ensuite,
-          # FR | selon l ordre convenu ; les deux capteurs suivent car c est
-          # FR | le meme tableau que DASHBOARDS.
-          - type: entities
-            entities:
-              - entity: input_select.vssp_language
-                name: "{{ t('admin.select_language') }}"
-              - entity: input_select.vssp_format
-                name: "{{ t('admin.select_format') }}"
-              - entity: sensor.vssp_deployed_locale
-                name: "{{ t('admin.deployed_locale') }}"
-              - entity: sensor.vssp_unrendered_placeholders
-                name: "{{ t('admin.unrendered_markers') }}"
+          # FR | vivent sur une ligne au-dessus du formulaire lui-meme :
+          # FR | choisir la langue, choisir le format, puis ouvrir le wizard.
+          # FR | La ligne montre les deux input_select directement (leur
+          # FR | valeur visible EST la selection courante), pas un echo en
+          # FR | lecture seule separe.
+          - type: horizontal-stack
+            cards:
+              - type: entities
+                entities:
+                  - entity: input_select.vssp_language
+                    name: "{{ t('admin.select_language') }}"
+                card_mod:
+                  style: |
+                    ha-card {
+                      background: rgba(8,18,28,0.75) !important;
+                      border: 1px solid rgba(0,229,255,0.28) !important;
+                      border-radius: 20px !important;
+                    }
+              - type: entities
+                entities:
+                  - entity: input_select.vssp_format
+                    name: "{{ t('admin.select_format') }}"
+                card_mod:
+                  style: |
+                    ha-card {
+                      background: rgba(8,18,28,0.75) !important;
+                      border: 1px solid rgba(0,229,255,0.28) !important;
+                      border-radius: 20px !important;
+                    }
+              - type: custom:button-card
+                template: vssp_admin_button
+                icon: mdi:floor-plan
+                name: "{{ t('adminmenu.open_wizard') }}"
+                label: "{{ t('adminmenu.section.rooms_hint') }}"
+                tap_action:
+                  action: url
+                  url_path: /local/vssp/wizard/vssp_rooms_floors.html
+          # EN | The rooms & floors wizard embedded inline, same iframe
+          # EN | pattern as ASSIGN: it is a self-contained page with its own
+          # EN | WebSocket auth, so it works as well inside a frame as it does
+          # EN | full-page — the OPEN WIZARD button above remains for the
+          # EN | full-screen route when the frame feels cramped.
+          # FR | L assistant pieces & etages integre en ligne, meme motif
+          # FR | d iframe que ASSIGN : c est une page autonome avec sa propre
+          # FR | authentification WebSocket, elle fonctionne donc aussi bien
+          # FR | dans un cadre qu en plein ecran — le bouton OPEN WIZARD
+          # FR | au-dessus reste disponible pour la route plein ecran quand le
+          # FR | cadre semble trop etroit.
+          - type: iframe
+            url: /local/vssp/wizard/vssp_rooms_floors.html
             card_mod:
               style: |
                 ha-card {
-                  background: rgba(8,18,28,0.75) !important;
-                  border: 1px solid rgba(0,229,255,0.28) !important;
-                  border-radius: 20px !important;
+                  background: transparent !important;
+                  border: none !important;
+                  box-shadow: none !important;
+                  overflow: hidden;
+                  height: calc(100vh - 260px);
+                  min-height: 520px;
+                  border-radius: 16px;
                 }
-          # EN | The rooms & floors wizard is a standalone page — its own
-          # EN | header, step bar, styling — rather than a card, so it opens
-          # EN | as a link instead of living inside an iframe with a
-          # EN | duplicate header.
-          # FR | L assistant pieces & etages est une page autonome — son
-          # FR | propre en-tete, barre d etapes, style — plutot qu une carte,
-          # FR | donc il s ouvre en lien plutot que de vivre dans une iframe
-          # FR | avec un en-tete duplique.
-          - type: custom:button-card
-            template: vssp_admin_button
-            icon: mdi:floor-plan
-            name: "{{ t('adminmenu.open_wizard') }}"
-            label: "{{ t('adminmenu.section.rooms_hint') }}"
-            tap_action:
-              action: url
-              url_path: /local/vssp/wizard/vssp_rooms_floors.html
+                iframe { width: 100%; height: 100% !important; border: none; }
 
 {% elif screen == 'dashboards' %}
           # EN | Generation controls, moved here from the old HOME view.
