@@ -1,4 +1,6 @@
-# Intégration TECHNICAL ROOM au repo `visio-sapiens`
+# Étude de cas : intégration de TECHNICAL ROOM au repo `visio-sapiens`
+
+**Français** · [English](Integration_Case_Study.md)
 
 > **Statut : l'intégration est faite.** Les fichiers sont en place, le fragment
 > déclare les deux dashboards, le pipeline embarque la sonde LAN et le secret
@@ -7,7 +9,7 @@
 
 ---
 
-## 1. Fichiers en place - projet VSSP
+## 1. Fichiers en place — projet VSSP
 
 | Fichier | Chemin dans le repo | Chemin final dans `/config` | État |
 |---|---|---|---|

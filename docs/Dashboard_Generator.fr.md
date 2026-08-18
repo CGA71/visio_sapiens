@@ -1,5 +1,7 @@
 # Visio Sapiens — Générateur de dashboards (étape 5 du processus admin)
 
+**Français** · [English](Dashboard_Generator.md)
+
 ## Principe
 
 `views/energy.yaml` n'est plus édité à la main. Il est **généré** à

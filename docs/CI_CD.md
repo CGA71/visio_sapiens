@@ -1,18 +1,21 @@
-# Visio Sapiens — CI/CD, référence complète
+# Visio Sapiens — CI/CD, complete reference
 
-Document de référence du pipeline `.gitlab-ci.yml` **tel qu'il est réellement
-dans le dépôt**, suivi des trous restants et de leurs correctifs.
+**English** · [Français](CI_CD.fr.md)
 
-Il remplace `CI_INTEGRATION.md`, qui ne décrivait qu'une seule évolution (le
-patch de `configuration.yaml`) et qui utilisait encore l'ancienne nomenclature
-`osvision/`.
+Reference document for the `.gitlab-ci.yml` pipeline **as it actually stands
+in the repository**, followed by the remaining gaps and their fixes.
+
+This document folds in and supersedes `CI_Integration.md`, which described a
+single earlier evolution (the `configuration.yaml` patch) and still used the
+old `osvision/` naming. A short summary of that design decision is kept at
+the end, under [Design history](#design-history--how-we-got-here).
 
 ---
 
-## 1. Vue d'ensemble
+## 1. Overview
 
-Un paquet est construit **une seule fois** et déployé tel quel sur les deux
-cibles ; seul le canal de transport change.
+A package is built **exactly once** and deployed as-is to both targets; only
+the transport channel changes.
 
 ```
                           ┌──────────────┐
@@ -23,15 +26,15 @@ cibles ; seul le canal de transport change.
                           └──────────────┘
 ```
 
-| Stage | Jobs | Déclencheur |
+| Stage | Jobs | Trigger |
 |---|---|---|
 | `validate` | `validate` | MR, `master`, tag |
-| `build` | `build`, `package:hacs` | `build` : MR/master/tag · `package:hacs` : tag |
-| `deploy` | `deploy:staging`, `deploy:production` | staging : MR/master · prod : tag + **gate manuelle** |
-| `test` | `test:staging`, `test:production`, `rollback:production` | idem, rollback manuel |
+| `build` | `build`, `package:hacs` | `build`: MR/master/tag · `package:hacs`: tag |
+| `deploy` | `deploy:staging`, `deploy:production` | staging: MR/master · prod: tag + **manual gate** |
+| `test` | `test:staging`, `test:production`, `rollback:production` | same, rollback manual |
 | `release` | `release` | tag |
 
-### Règle `workflow:` — le piège nº 1
+### The `workflow:` rule — pitfall #1
 
 ```yaml
 workflow:
@@ -42,193 +45,197 @@ workflow:
     - when: never
 ```
 
-Un push sur `fix/*` ou `features/*` **sans MR ouverte ne lance aucun pipeline**.
-C'est le premier réflexe de diagnostic quand « rien ne bouge en staging ».
+A push to `fix/*` or `features/*` **with no open MR triggers no pipeline at
+all**. This is the first thing to check when diagnosing "nothing's moving on
+staging".
 
-### Variables versionnées (`variables:`)
+### Versioned variables (`variables:`)
 
 `PACKAGE_NAME: visio-sapiens` · `K3S_NAMESPACE: homeassistant` ·
 `K3S_CONTAINER: homeassistant` · `STAGING_URL: http://192.168.1.11:8123` ·
 `HA_HOST: 192.168.1.26` · `HA_SSH_PORT: 22222` · `HA_SSH_USER: root` ·
 `PROD_URL: http://192.168.1.26:8123` · `PROD_RESTART_CORE: "true"`
 
-### Variables CI/CD à créer (Settings → CI/CD → Variables)
+### CI/CD variables to create (Settings → CI/CD → Variables)
 
-| Clé | Type | Options | Rôle |
+| Key | Type | Options | Role |
 |---|---|---|---|
-| `HA_SSH_KEY` | File | Protected ✔ | clé privée vers HAOS |
-| `HA_TOKEN_STAGING` | masquée | — | jeton longue durée k3s (restart + smoke test) |
-| `HA_TOKEN_PROD` | masquée | — | jeton longue durée HAOS (smoke test) |
-| `LIVEBOX_PASSWORD` | masquée | Masked ✔ | mot de passe admin Livebox |
+| `HA_SSH_KEY` | File | Protected ✔ | private key to reach HAOS |
+| `HA_TOKEN_STAGING` | masked | — | long-lived k3s token (restart + smoke test) |
+| `HA_TOKEN_PROD` | masked | — | long-lived HAOS token (smoke test) |
+| `LIVEBOX_PASSWORD` | masked | Masked ✔ | Livebox admin password |
 
-> **Attention à l'option « Protected » sur `LIVEBOX_PASSWORD`.** Une variable
-> protégée n'est exposée qu'aux branches et tags protégés. Or le staging se
-> déploie depuis des MR sur `fix/*` / `features/*`, qui ne sont pas protégées :
-> la variable sera systématiquement vide et le job affichera
-> `[avert] LIVEBOX_PASSWORD absente`. En production (tags protégés) elle passe.
-> Deux choix : décocher **Protected** (le secret devient lisible par tout
-> committer autorisé à ouvrir une MR), ou accepter que les sondes Livebox
-> restent en démonstration sur le staging. C'est un arbitrage, pas un bug.
+> **Watch the "Protected" option on `LIVEBOX_PASSWORD`.** A protected
+> variable is only exposed to protected branches and tags. But staging
+> deploys from MRs on `fix/*` / `features/*`, which are not protected: the
+> variable will always come through empty and the job will print
+> `[avert] LIVEBOX_PASSWORD absente`. In production (protected tags) it goes
+> through fine. Two options: uncheck **Protected** (the secret becomes
+> readable by any committer allowed to open an MR), or accept that the
+> Livebox probes stay in demo mode on staging. That's a trade-off, not a bug.
 
 ---
 
 ## 2. Job `validate`
 
-Image `alpine`, `python3 + py3-yaml`. Il vérifie, dans l'ordre :
+`alpine` image, `python3 + py3-yaml`. It checks, in order:
 
-1. **Structure** : `home-assistant/dashboards`, `home-assistant/templates`,
-   `themes/visio_sapiens.yaml` (à la **racine**, imposé par HACS),
+1. **Structure**: `home-assistant/dashboards`, `home-assistant/templates`,
+   `themes/visio_sapiens.yaml` (at the **repo root**, required by HACS),
    `home-assistant/www/vssp`, `hacs.json`, `repository.yaml`.
-2. **Patch config** : `home-assistant/config-fragment.yaml`,
+2. **Config patch**: `home-assistant/config-fragment.yaml`,
    `vssp/vssp_apply_config.py`, `vssp/vssp_ensure_packages.py`,
    `vssp/vssp_sanitize_resources.py`.
-3. **Sonde LAN** : `vssp/vssp_lan_probe.py`, `vssp/livebox.env`.
-4. **Fuite de secret** : échoue si `vssp/.livebox.env` est versionné.
-5. **Cohérence `OSV_PREFIX`** (non bloquant) : lit le préfixe dans
-   `vssp_apply_config.py`, le compare aux clés `lovelace.dashboards` du
-   fragment, et liste celles qui seraient ignorées.
-6. **Thème unique** : échoue si `home-assistant/themes/` existe encore
-   (source dupliquée avec `themes/` racine).
-7. **Syntaxe YAML** de `home-assistant/**/*.yaml` + `themes/*.yaml`, avec un
-   multi-constructeur qui accepte les tags HA (`!include`, `!secret`, …) sans
-   les interpréter.
+3. **LAN probe**: `vssp/vssp_lan_probe.py`, `vssp/livebox.env`.
+4. **Secret leak**: fails if `vssp/.livebox.env` is checked in.
+5. **`OSV_PREFIX` consistency** (non-blocking): reads the prefix from
+   `vssp_apply_config.py`, compares it to the `lovelace.dashboards` keys in
+   the fragment, and lists the ones that would be ignored.
+6. **Single theme source**: fails if `home-assistant/themes/` still exists
+   (duplicate source alongside the root-level `themes/`).
+7. **YAML syntax** of `home-assistant/**/*.yaml` + `themes/*.yaml`, using a
+   multi-constructor that accepts HA tags (`!include`, `!secret`, …) without
+   interpreting them.
 
 ---
 
 ## 3. Job `build`
 
-Produit `dist/`, image miroir de `/config` :
+Produces `dist/`, a mirror image of `/config`:
 
 ```
 dist/
-├── dashboards/            ← home-assistant/dashboards/. (dont views/, model/, templates_j2/)
-│   └── templates/         ← home-assistant/templates/.   (cible des !include ../templates/)
-├── themes/                ← themes/.  (racine)
+├── dashboards/            ← home-assistant/dashboards/. (incl. views/, model/, templates_j2/)
+│   └── templates/         ← home-assistant/templates/.   (target of !include ../templates/)
+├── themes/                ← themes/.  (root)
 ├── www/                   ← home-assistant/www/.
 ├── packages/              ← home-assistant/packages/.
-├── vssp/                  ← patchers + sonde LAN + livebox.env
+├── vssp/                  ← patchers + LAN probe + livebox.env
 ├── config-fragment.yaml
 └── OSVISION_VERSION
 ```
 
-Points à connaître :
+Points worth knowing:
 
-- **Cache-busting** : `find dist -name '*.yaml' ! -name 'config-fragment.yaml'`
-  remplace `?v=…` dans les URL `/local/vssp/…`. Le fragment est **exclu** car il
-  utilise le placeholder `__VTOKEN__`, substitué plus tard par `--vtoken`.
-- **Contrôle des `!include`** : un script Python parcourt `dist/**/*.yaml` et
-  vérifie que chaque cible d'`!include` / `!include_dir_*` existe **dans
-  l'arborescence telle qu'elle sera sur `/config`**, pas dans le dépôt. C'est ce
-  qui justifie la copie de `home-assistant/templates/` vers `dist/dashboards/templates/`.
-- **Artefacts** : `visio-sapiens.tar.gz` + `.osv_version` (30 jours).
+- **Cache-busting**: `find dist -name '*.yaml' ! -name 'config-fragment.yaml'`
+  replaces `?v=…` in the `/local/vssp/…` URLs. The fragment is **excluded**
+  since it uses the `__VTOKEN__` placeholder, substituted later by
+  `--vtoken`.
+- **`!include` check**: a Python script walks `dist/**/*.yaml` and verifies
+  that every `!include` / `!include_dir_*` target exists **in the tree as it
+  will be laid out on `/config`**, not in the repo. That's why
+  `home-assistant/templates/` is copied to `dist/dashboards/templates/`.
+- **Artifacts**: `visio-sapiens.tar.gz` + `.osv_version` (30 days).
 
-`package:hacs` (tags seulement) construit un paquet distinct, purement thème :
-`themes/`, `hacs.json`, `repository.yaml`, `README.md`, `CHANGELOG.md`, `VERSION`.
+`package:hacs` (tags only) builds a separate, theme-only package:
+`themes/`, `hacs.json`, `repository.yaml`, `README.md`, `CHANGELOG.md`,
+`VERSION`.
 
 ---
 
 ## 4. Job `deploy:staging` (k3s)
 
-Image `bitnami/kubectl`. Séquence réelle :
+`bitnami/kubectl` image. Actual sequence:
 
-1. résolution du pod (`-l app=homeassistant`, repli sur le premier pod du namespace) ;
-2. `kubectl cp` du paquet vers `/config/.osv.tar.gz` ;
-3. `kubectl exec` : untar dans `/config/.osv_stage`, bascule
-   `dashboards`/`themes` (avec `.old` de secours), remplacement de
-   `/config/www/vssp`, copie des scripts `vssp/`, de `config-fragment.yaml`,
-   `chmod +x` sur la sonde, copie **additive** de `packages/` ;
-4. écriture du secret Livebox — le mot de passe est passé en **argument** du
-   shell distant (`sh "$LIVEBOX_PASSWORD"` → `$1`), jamais dans la ligne de
-   commande : invisible dans `ps` et dans les logs ;
-5. `vssp_apply_config.py` → `vssp_ensure_packages.py` → `vssp_sanitize_resources.py` ;
-6. `hass --script check_config` ; en cas d'échec : restauration de
-   `dashboards`/`themes` depuis `.old` **et** de `configuration.yaml` depuis le
-   dernier `/config/backups/configuration_*.bak`, puis `exit 1` ;
-7. nettoyage des `.old` / `.osv_stage` ;
-8. **redémarrage de Home Assistant** : `POST /api/services/homeassistant/restart`
-   avec `HA_TOKEN_STAGING`, repli sur `kubectl delete pod` si le token manque ou
-   si le code HTTP n'est pas 200 ;
-9. attente du retour de l'API (36 × 5 s) pour que `test:staging` ne parte pas sur
-   une instance en cours de démarrage ;
-10. trace de la version réellement présente dans le conteneur.
+1. resolve the pod (`-l app=homeassistant`, falling back to the first pod in
+   the namespace);
+2. `kubectl cp` the package to `/config/.osv.tar.gz`;
+3. `kubectl exec`: untar into `/config/.osv_stage`, swap `dashboards`/`themes`
+   (with an `.old` safety copy), replace `/config/www/vssp`, copy the
+   `vssp/` scripts, `config-fragment.yaml`, `chmod +x` the probe, **additive**
+   copy of `packages/`;
+4. write the Livebox secret — the password is passed as a shell **argument**
+   on the remote side (`sh "$LIVEBOX_PASSWORD"` → `$1`), never inline in the
+   command: invisible in `ps` and in the logs;
+5. `vssp_apply_config.py` → `vssp_ensure_packages.py` →
+   `vssp_sanitize_resources.py`;
+6. `hass --script check_config`; on failure: restore `dashboards`/`themes`
+   from `.old` **and** `configuration.yaml` from the latest
+   `/config/backups/configuration_*.bak`, then `exit 1`;
+7. clean up the `.old` / `.osv_stage` leftovers;
+8. **restart Home Assistant**: `POST /api/services/homeassistant/restart`
+   with `HA_TOKEN_STAGING`, falling back to `kubectl delete pod` if the token
+   is missing or the HTTP code isn't 200;
+9. wait for the API to come back (36 × 5 s) so that `test:staging` doesn't
+   run against an instance that's still starting up;
+10. log the version actually present in the container.
 
-L'étape 8 est indispensable : `lovelace.dashboards` et `homeassistant.packages`
-ne sont **pas** rechargeables à chaud (voir `DIAGNOSTIC_staging.md`).
+Step 8 is essential: `lovelace.dashboards` and `homeassistant.packages`
+**cannot** be hot-reloaded (see `DIAGNOSTIC_staging.md`).
 
 ---
 
 ## 5. Job `deploy:production` (HAOS via SSH)
 
-Tags uniquement, `when: manual`.
+Tags only, `when: manual`.
 
-1. `HA_CFG` détecté (`/homeassistant` sinon `/config`) ;
-2. `ha backups new --name pre-$CI_COMMIT_TAG` ;
-3. paquet envoyé par `cat … | ssh ha "tar xzf -"` ;
-4. même bascule de dossiers, plus la copie de `vssp_lan_probe.py` et
-   `livebox.env` côté HAOS — obligatoire, puisque ce sont les capteurs
-   `command_line` de HA qui l'exécutent (les patchers, eux, tournent dans le
-   runner) ;
-5. secret Livebox transmis par **stdin** (`printf … | ssh ha "cat > …"`) ;
-6. patch de `configuration.yaml` **dans le runner** : `scp` du fichier,
+1. `HA_CFG` detected (`/homeassistant` or `/config`);
+2. `ha backups new --name pre-$CI_COMMIT_TAG`;
+3. package sent via `cat … | ssh ha "tar xzf -"`;
+4. same folder swap, plus copying `vssp_lan_probe.py` and `livebox.env` to
+   the HAOS side — mandatory, since it's HA's own `command_line` sensors
+   that execute it (the patchers themselves run in the runner);
+5. Livebox secret sent via **stdin** (`printf … | ssh ha "cat > …"`);
+6. `configuration.yaml` patched **inside the runner**: `scp` the file down,
    `vssp_apply_config.py` + `vssp_ensure_packages.py` +
-   `vssp_sanitize_resources.py`, `scp` retour. Plus fiable que d'installer
-   `ruamel.yaml` dans HAOS ;
-7. `ha core check` ; en cas d'échec, rollback des dossiers + restauration du
-   `configuration.yaml` pré-patch conservé côté runner ;
-8. `ha core restart` (ou `ha core reload` si `PROD_RESTART_CORE != "true"`) ;
-9. nettoyage.
+   `vssp_sanitize_resources.py`, `scp` it back up. More reliable than
+   installing `ruamel.yaml` on HAOS;
+7. `ha core check`; on failure, roll back the folders and restore the
+   pre-patch `configuration.yaml` kept on the runner;
+8. `ha core restart` (or `ha core reload` if `PROD_RESTART_CORE != "true"`);
+9. cleanup.
 
-`rollback:production` (manuel) retrouve le slug du backup `pre-$CI_COMMIT_TAG`
-via `ha backups --raw-json` + `jq` et le restaure.
-
----
-
-## 6. Tests de fumée
-
-`.smoke_test` boucle jusqu'à 12 × 5 s sur `$TARGET_URL/api/` avec le jeton
-correspondant, puis vérifie que le moteur JS et le moteur CSS sont servis, et
-compte les entités `unavailable`.
+`rollback:production` (manual) looks up the `pre-$CI_COMMIT_TAG` backup slug
+via `ha backups --raw-json` + `jq` and restores it.
 
 ---
 
-# Ce qui manque encore — patchs à appliquer
+## 6. Smoke tests
 
-Les cinq points suivants sont des trous réels du pipeline actuel. Les deux
-premiers cassent quelque chose aujourd'hui.
+`.smoke_test` loops up to 12 × 5 s on `$TARGET_URL/api/` with the matching
+token, then checks that the JS engine and the CSS engine are served, and
+counts `unavailable` entities.
 
 ---
 
-## G1 — Les URL de ressources ne correspondent plus aux fichiers (corrigé : issue 124) 🟢
+# What's still missing — patches to apply
 
-État constaté dans le dépôt :
+The following five points are real gaps in the current pipeline. The first
+two are actively broken today.
 
-| Déclaré dans `config-fragment.yaml` | Fichier réel |
+---
+
+## G1 — Resource URLs no longer match the files (fixed: issue 124) 🟢
+
+Observed state in the repo:
+
+| Declared in `config-fragment.yaml` | Actual file |
 |---|---|
 | `/local/vssp/css/osvision.css` | `home-assistant/www/vssp/css/**vssp.css**` |
 | `/local/vssp/js/osvision.js` | `home-assistant/www/vssp/js/**osvision.js**` |
 
-Et dans `.smoke_test` :
+And in `.smoke_test`:
 
 ```sh
-curl -sfI "$TARGET_URL/local/vssp/js/vssp.js"    # ← ce fichier n'existe pas
-curl -sfI "$TARGET_URL/local/vssp/css/vssp.css"  # ← celui-ci existe
+curl -sfI "$TARGET_URL/local/vssp/js/vssp.js"    # ← this file doesn't exist
+curl -sfI "$TARGET_URL/local/vssp/css/vssp.css"  # ← this one does
 ```
 
-La migration de nommage a renommé le CSS mais pas son URL, et l'URL du JS dans
-le test mais pas le fichier. Conséquences : **le moteur CSS part en 404 à chaque
-chargement de dashboard**, et le smoke test échoue sur le JS (`curl -sf … && echo`
-retourne non-zéro, donc le job `test:staging` tombe en rouge).
+The naming migration renamed the CSS file but not its URL, and renamed the
+JS URL in the test but not the file. Consequences: **the CSS engine 404s on
+every dashboard load**, and the smoke test fails on the JS
+(`curl -sf … && echo` returns non-zero, so `test:staging` goes red).
 
-**Correctif — deux lignes de renommage, puis un garde-fou.**
+**Fix — two renames, then a guardrail.**
 
-1. Choisir un nom et s'y tenir. Le plus cohérent avec le reste (`www/vssp/`,
-   `/local/vssp/`, templates `vssp_*`) :
+1. Pick one name and stick with it. The most consistent with the rest
+   (`www/vssp/`, `/local/vssp/`, `vssp_*` templates):
 
 ```sh
 git mv home-assistant/www/vssp/js/osvision.js home-assistant/www/vssp/js/vssp.js
 ```
 
-et dans `config-fragment.yaml` :
+and in `config-fragment.yaml`:
 
 ```yaml
     - url: /local/vssp/css/vssp.css?v=__VTOKEN__
@@ -237,15 +244,15 @@ et dans `config-fragment.yaml` :
       type: module
 ```
 
-> Le `sanitize_resources` déduplique par URL de base : les anciennes entrées
-> `osvision.css` / `osvision.js` déjà présentes dans le `configuration.yaml` de
-> prod ne seront **pas** retirées automatiquement. Passer une fois
-> `--prune-resources`, ou les supprimer à la main.
+> `sanitize_resources` deduplicates by base URL: the old `osvision.css` /
+> `osvision.js` entries already present in prod's `configuration.yaml` will
+> **not** be removed automatically. Run `--prune-resources` once, or remove
+> them by hand.
 
-2. Ajouter dans `validate` un contrôle qui rend ce genre d'écart impossible :
+2. Add a check to `validate` that makes this kind of drift impossible:
 
 ```yaml
-    # Chaque resource /local/vssp/... du fragment doit exister dans www/vssp/
+    # Every /local/vssp/... resource in the fragment must exist under www/vssp/
     - |
       python3 - <<'PY'
       import sys, os, yaml
@@ -268,7 +275,7 @@ et dans `config-fragment.yaml` :
       PY
 ```
 
-3. Et faire lire les URL au smoke test au lieu de les coder en dur :
+3. And have the smoke test read the URLs instead of hard-coding them:
 
 ```yaml
     - |
@@ -283,32 +290,33 @@ et dans `config-fragment.yaml` :
 
 ---
 
-## G2 — Le panneau ADMIN n'est jamais déployé (upgrade fix) 🟠
+## G2 — The ADMIN panel is never deployed (upgrade fix) 🟠
 
-`build` ne copie que `vssp_apply_config.py`, `vssp_ensure_packages.py`,
-`vssp_sanitize_resources.py`, `vssp_lan_probe.py` et `livebox.env`.
+`build` only copies `vssp_apply_config.py`, `vssp_ensure_packages.py`,
+`vssp_sanitize_resources.py`, `vssp_lan_probe.py` and `livebox.env`.
 
-Ne partent donc **jamais** dans le paquet : `vssp_discovery.py`,
-`vssp_upgrade.py`, `vssp_patch_dashboard.py`, `vssp_admin_config.yaml`. Les
-boutons DISCOVERY / UPGRADE / GENERATE du panneau ADMIN appellent des
-`shell_command` qui pointent sur `/config/vssp/vssp_*.py` — fichiers absents en
-staging comme en production. Ils ne fonctionnent que si on les a déposés
-manuellement.
+So the following **never** ship in the package: `vssp_discovery.py`,
+`vssp_upgrade.py`, `vssp_patch_dashboard.py`, `vssp_admin_config.yaml`. The
+DISCOVERY / UPGRADE / GENERATE buttons in the ADMIN panel call
+`shell_command`s that point at `/config/vssp/vssp_*.py` — files absent on
+both staging and production. They only work if someone dropped them in by
+hand.
 
-**Patch `build`** — remplacer les `cp` unitaires par une copie de tout le dossier :
+**Patch for `build`** — replace the individual `cp`s with a copy of the
+whole folder:
 
 ```yaml
-    # Scripts vssp/ : patchers, sonde LAN, outils admin, generateur
+    # vssp/ scripts: patchers, LAN probe, admin tools, generator
     - mkdir -p dist/vssp
     - cp vssp/*.py   dist/vssp/
     - cp vssp/*.yaml dist/vssp/ 2>/dev/null || true
     - cp vssp/livebox.env dist/vssp/
-    # Le secret ne doit jamais entrer dans le paquet
+    # The secret must never enter the package
     - rm -f dist/vssp/.livebox.env
 ```
 
-**Patch `deploy:staging`**, dans le `kubectl exec`, en remplacement des `cp`
-unitaires vers `/config/vssp/` :
+**Patch for `deploy:staging`**, in the `kubectl exec`, replacing the
+individual `cp`s to `/config/vssp/`:
 
 ```sh
         mkdir -p /config/vssp
@@ -318,7 +326,7 @@ unitaires vers `/config/vssp/` :
         chmod +x /config/vssp/*.py
 ```
 
-**Patch `deploy:production`**, dans le bloc `ssh ha "set -e …"` :
+**Patch for `deploy:production`**, in the `ssh ha "set -e …"` block:
 
 ```sh
         mkdir -p $HA_CFG/vssp
@@ -328,35 +336,36 @@ unitaires vers `/config/vssp/` :
         chmod +x $HA_CFG/vssp/*.py
 ```
 
-**Patch `validate`** — pour que le paquet ne reparte jamais sans eux :
+**Patch for `validate`** — so the package can never ship without them again:
 
 ```yaml
     - test -f vssp/vssp_discovery.py || { echo "[ERR] vssp/vssp_discovery.py manquant"; exit 1; }
     - test -f vssp/vssp_upgrade.py   || { echo "[ERR] vssp/vssp_upgrade.py manquant"; exit 1; }
 ```
 
-> Voir aussi le point 5 de `Generator_templating.md` : `vssp_admin_config.yaml`
-> pointe sur `/config/home-assistant/dashboards/home.yaml`, chemin qui n'existe
-> pas sur le pod (le déploiement met les dashboards en `/config/dashboards/`).
-> La sauvegarde et la suppression sont donc actuellement des no-ops.
+> See also point 5 of `Generator_templating.md`: `vssp_admin_config.yaml`
+> points at `/config/home-assistant/dashboards/home.yaml`, a path that
+> doesn't exist on the pod (the deployment lays dashboards out under
+> `/config/dashboards/`). Backup and deletion are therefore currently no-ops.
 
 ---
 
-## G3 — Le générateur de dashboards n'est pas intégré au pipeline 🟠
+## G3 — The dashboard generator isn't wired into the pipeline 🟠
 
-`cp -r home-assistant/dashboards/.` embarque bien `model/` et `templates_j2/`
-s'ils existent — donc le modèle et les templates arrivent sur `/config`. Mais :
+`cp -r home-assistant/dashboards/.` does bring along `model/` and
+`templates_j2/` if they exist — so the model and templates do reach
+`/config`. But:
 
-- `vssp/generate_dashboards.py` n'est pas copié (couvert par G2 si le patch
-  `cp vssp/*.py` est appliqué) ;
-- **rien ne garantit que `views/energy.yaml` versionné correspond au modèle
-  versionné.** Si quelqu'un édite `model/house.yaml` sans relancer le
-  générateur, le dépôt part avec un dashboard périmé et le pipeline ne dit rien ;
-- les fichiers d'aperçu (`*_preview.yaml`, `*.preview.yaml`,
-  `preview_status.json`) partiraient en `dist/` s'ils étaient commités par
-  mégarde.
+- `vssp/generate_dashboards.py` isn't copied (covered by G2 once the
+  `cp vssp/*.py` patch is applied);
+- **nothing guarantees that the checked-in `views/energy.yaml` matches the
+  checked-in model.** If someone edits `model/house.yaml` without re-running
+  the generator, the repo ships a stale dashboard and the pipeline says
+  nothing;
+- preview files (`*_preview.yaml`, `*.preview.yaml`, `preview_status.json`)
+  would end up in `dist/` if accidentally committed.
 
-**Patch `validate` — garde anti-dérive** (à placer après le contrôle de syntaxe) :
+**`validate` patch — anti-drift guard** (to place after the syntax check):
 
 ```yaml
     # Le dashboard genere doit correspondre au modele versionne
@@ -382,13 +391,13 @@ s'ils existent — donc le modèle et les templates arrivent sur `/config`. Mais
       fi
 ```
 
-**Patch `build` — ne jamais empaqueter un aperçu :**
+**`build` patch — never package a preview:**
 
 ```yaml
     - find dist -name '*_preview.yaml' -o -name '*.preview.yaml' -o -name 'preview_status.json' | xargs -r rm -f
 ```
 
-**Patch `validate` — refuser un aperçu versionné :**
+**`validate` patch — reject a checked-in preview:**
 
 ```yaml
     - |
@@ -401,14 +410,14 @@ s'ils existent — donc le modèle et les templates arrivent sur `/config`. Mais
 
 ---
 
-## G4 — Reliquats de nommage `OSVISION` (fix uprgade : issue 125)🟢
+## G4 — Leftover `OSVISION` naming (upgrade fix: issue 125) 🟢
 
-Le pipeline écrit toujours `dist/OSVISION_VERSION`, copié en
-`/config/OSVISION_VERSION`. Les commandes de diagnostic qui lisent
-`/config/VSSP_VERSION` échouent donc — ce n'est pas le paquet qui manque, c'est
-le nom du fichier.
+The pipeline still writes `dist/OSVISION_VERSION`, copied to
+`/config/OSVISION_VERSION`. Diagnostic commands that read
+`/config/VSSP_VERSION` therefore fail — it's not that the package is
+missing, it's that the file is misnamed.
 
-**Patch `build` :**
+**`build` patch:**
 
 ```yaml
     - |
@@ -422,15 +431,15 @@ le nom du fichier.
     - cp dist/VSSP_VERSION dist/OSVISION_VERSION   # transition, a retirer plus tard
 ```
 
-Puis dans les deux jobs de déploiement, copier `VSSP_VERSION` à côté de
-l'existant, et basculer les `cat /config/OSVISION_VERSION` des traces et de la
-doc. Retirer la ligne de transition une fois les deux cibles redéployées.
+Then in both deploy jobs, copy `VSSP_VERSION` alongside the existing file,
+and switch the `cat /config/OSVISION_VERSION` calls in the logs and docs.
+Remove the transition line once both targets have been redeployed.
 
 ---
 
-## G5 — Robustesse des jobs de déploiement 🟡
+## G5 — Deploy job robustness 🟡
 
-Trois ajouts qui ne changent rien au comportement nominal :
+Three additions that don't change nominal behavior:
 
 ```yaml
 deploy:staging:
@@ -442,33 +451,67 @@ deploy:production:
   interruptible: false
 ```
 
-Et sur `.smoke_test`, remplacer les `curl … && echo` par une forme explicite
-(voir G1) : aujourd'hui un 404 fait tomber le job sans message lisible.
+And on `.smoke_test`, replace the `curl … && echo` calls with an explicit
+form (see G1): today a 404 fails the job with no readable message.
 
 ---
 
-## Ordre d'application recommandé
+## Recommended application order
 
-1. **G1** — renommage JS/CSS + contrôle `validate` (débloque le smoke test et le
-   moteur CSS).
-2. **G2** — copie de `vssp/*` (débloque le panneau ADMIN).
-3. **G4** — `VSSP_VERSION` (rend les diagnostics exacts).
-4. **G3** — garde anti-dérive du générateur, quand `model/` et `templates_j2/`
-   seront versionnés.
-5. **G5** — confort.
+1. **G1** — JS/CSS rename + `validate` check (unblocks the smoke test and
+   the CSS engine).
+2. **G2** — copy `vssp/*` (unblocks the ADMIN panel).
+3. **G4** — `VSSP_VERSION` (makes diagnostics accurate).
+4. **G3** — generator anti-drift guard, once `model/` and `templates_j2/`
+   are checked in.
+5. **G5** — quality of life.
 
-Chacun est indépendant et peut partir dans sa propre MR.
+Each is independent and can ship in its own MR.
 
 ---
 
-## Résumé du comportement obtenu (patch `configuration.yaml`)
+## Resulting behavior summary (`configuration.yaml` patch)
 
-| Situation | Résultat |
+| Situation | Result |
 |---|---|
-| 1er déploiement | Entrées `visio-sapiens-*` ajoutées, reste de `configuration.yaml` intact |
-| Re-déploiement identique | `[OK] déjà conforme` — aucune écriture |
-| Chemin/titre changé dans le fragment | Mis à jour, backup `.bak` créé |
-| Dashboard/resource perso de l'utilisateur | **Toujours préservé** |
-| Échec `check_config` / `ha core check` | Rollback dossiers + restauration du `.bak` / backup HAOS |
-| Resource retirée du fragment | Conservée par défaut ; retirée avec `--prune-resources` |
-| Ressource renommée (G1) | **Ancienne entrée conservée** tant qu'on ne prune pas |
+| First deployment | `visio-sapiens-*` entries added, rest of `configuration.yaml` untouched |
+| Identical redeploy | `[OK] déjà conforme` — no write |
+| Path/title changed in the fragment | Updated, `.bak` backup created |
+| User's own custom dashboard/resource | **Always preserved** |
+| `check_config` / `ha core check` failure | Folder rollback + restore from `.bak` / HAOS backup |
+| Resource removed from the fragment | Kept by default; removed with `--prune-resources` |
+| Renamed resource (G1) | **Old entry kept** until pruned |
+
+---
+
+## Design history — how we got here
+
+Before this pipeline patched `configuration.yaml` automatically, the
+`lovelace.dashboards`, `lovelace.resources`, `input_text`, `shell_command`
+and `template` entries that Visio Sapiens needs had to be merged into each
+target's `configuration.yaml` by hand — a manual, error-prone step on every
+release. The original design added `home-assistant/config-fragment.yaml`
+(the desired state, in the `vssp/` scripts' repo-root layout, not under
+`home-assistant/`) and a single patcher, `vssp_apply_config.py`, invoked from
+both `deploy:staging` and `deploy:production` to merge that fragment into the
+live `configuration.yaml` idempotently, with a `.bak` backup on every write.
+
+Two more scripts were added once that patcher was in production, to cover
+what it deliberately leaves alone:
+
+- **`vssp_ensure_packages.py`** — the patcher only touches `lovelace`,
+  `input_text`, `shell_command` and `template`; the `homeassistant:` domain
+  (and therefore `packages: !include_dir_named packages`) is out of scope by
+  design, as a guardrail. This script sets that key idempotently.
+- **`vssp_sanitize_resources.py`** — the patcher deduplicates `resources` by
+  **full** URL. Since the `?v=` cache-busting token changes on every build,
+  every deployment was adding six more duplicate entries. This script
+  cleans the list up by deduplicating on the base URL instead.
+
+This design record — including the original repo layout, the specific
+`build`/`deploy:staging`/`deploy:production`/`validate` diffs, and the
+rationale for patching `configuration.yaml` from the runner rather than
+installing `ruamel.yaml` on HAOS itself — used to live in a standalone
+document, `CI_Integration.md`. That document is now **superseded**: every
+piece of it that's still current is folded into sections 2–5 above, and the
+G1–G5 gaps it flagged as follow-up work are tracked here in full.

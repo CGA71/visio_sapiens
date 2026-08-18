@@ -1,6 +1,8 @@
-# core.html — Dashboard Système (Visio Sapiens)
+# core.html — Dashboard Système Visio Sapiens
 
-Documentation du processus de fonctionnement : d'où viennent les métriques, comment elles
+**Français** · [English](Core_Dashboard.md)
+
+Documentation du fonctionnement réel de la page : d'où viennent les métriques, comment elles
 remontent jusqu'à la page, et à quelle fréquence.
 
 **Emplacement réel dans le dépôt :** `home-assistant/www/vssp/core.html`
@@ -227,7 +229,7 @@ var k3r = await fetch(HA_URL+'/local/osvision_v2/k3s_stats.json?t='+Date.now());
 l'erreur, et le panneau affiche en permanence *« K3s stats non disponibles. Installez le
 cron k3s_stats.sh sur le host. »* — même quand le cron tourne parfaitement.
 
-**Correctif, une ligne dans `core.html` :**
+**Correctif, une ligne dans `core.html`:**
 
 ```js
 var k3r = await fetch(HA_URL+'/local/vssp/k3s_stats.json?t='+Date.now());
