@@ -190,6 +190,34 @@ views:
                 iframe { width: 100%; height: 100% !important; border: none; }
 
 {% elif screen == 'rooms' %}
+          # EN | Language and format are phase-0 choices in the wizard diagram
+          # EN | — they drive what gets generated, so they belong before the
+          # EN | first phase, not buried in the DASHBOARDS screen. Language
+          # EN | leads, format follows, per the agreed order; the two sensors
+          # EN | ride along since they are the same table as DASHBOARDS.
+          # FR | La langue et le format sont des choix de phase 0 dans le
+          # FR | schema du wizard — ils pilotent ce qui est genere, donc ils
+          # FR | appartiennent avant la premiere phase, pas enfouis dans
+          # FR | l ecran DASHBOARDS. La langue en tete, le format ensuite,
+          # FR | selon l ordre convenu ; les deux capteurs suivent car c est
+          # FR | le meme tableau que DASHBOARDS.
+          - type: entities
+            entities:
+              - entity: input_select.vssp_language
+                name: "{{ t('admin.select_language') }}"
+              - entity: input_select.vssp_format
+                name: "{{ t('admin.select_format') }}"
+              - entity: sensor.vssp_deployed_locale
+                name: "{{ t('admin.deployed_locale') }}"
+              - entity: sensor.vssp_unrendered_placeholders
+                name: "{{ t('admin.unrendered_markers') }}"
+            card_mod:
+              style: |
+                ha-card {
+                  background: rgba(8,18,28,0.75) !important;
+                  border: 1px solid rgba(0,229,255,0.28) !important;
+                  border-radius: 20px !important;
+                }
           # EN | The rooms & floors wizard is a standalone page — its own
           # EN | header, step bar, styling — rather than a card, so it opens
           # EN | as a link instead of living inside an iframe with a
