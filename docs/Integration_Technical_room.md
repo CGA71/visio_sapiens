@@ -7,7 +7,7 @@
 
 ---
 
-## 1. Fichiers en place
+## 1. Fichiers en place - projet VSSP
 
 | Fichier | Chemin dans le repo | Chemin final dans `/config` | État |
 |---|---|---|---|
