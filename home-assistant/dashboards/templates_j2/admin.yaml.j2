@@ -257,8 +257,23 @@ views:
                       border: 1px solid rgba(0,229,255,0.28) !important;
                       border-radius: 20px !important;
                     }
+          # EN | ?v=0 is a placeholder the build's cache-busting sed step
+          # EN | rewrites to ?v=<VTOKEN> on every build (see .gitlab-ci.yml,
+          # EN | "Automatic cache-busting of Lovelace resources"). Without it
+          # EN | this exact URL never changes between deployments, so a
+          # EN | browser that already cached vssp_rooms_floors.html once keeps
+          # EN | serving that copy forever — which is indistinguishable from
+          # EN | "the fix didn't deploy" when it actually did.
+          # FR | ?v=0 est un placeholder que l'etape sed de cache-busting du
+          # FR | build reecrit en ?v=<VTOKEN> a chaque build (voir
+          # FR | .gitlab-ci.yml, "Automatic cache-busting of Lovelace
+          # FR | resources"). Sans lui cette URL ne change jamais entre deux
+          # FR | deploiements, donc un navigateur qui a deja mis en cache
+          # FR | vssp_rooms_floors.html continue de servir cette copie
+          # FR | indefiniment — ce qui est indiscernable de "le correctif n'a
+          # FR | pas ete deploye" alors qu'il l'a ete.
           - type: iframe
-            url: /local/vssp/wizard/vssp_rooms_floors.html
+            url: /local/vssp/wizard/vssp_rooms_floors.html?v=0
             card_mod:
               style: |
                 ha-card {
