@@ -406,6 +406,7 @@ adminmenu:
   scan_hint: Read every Home Assistant entity, writes report.json
   not_built: Not built yet
   not_built_hint: This screen is planned — the menu entry exists so the shape of the console is visible
+  open_wizard: OPEN WIZARD
 
 wizard:
   # EN | Phase 0 — the two selectors that drive the whole generation.

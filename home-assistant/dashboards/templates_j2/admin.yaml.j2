@@ -38,20 +38,25 @@
 #   dashboards  list, regenerate, delete
 #
 # EN | DISCOVERY SCAN is shared, not a screen. The diagram draws it feeding
-# EN | three forms, so it appears as a card inside each of them rather than as
-# EN | a sixth entry: a scan is a step you take while filling a form, not a
-# EN | place you go.
+# EN | two forms (assign, energy), so it appears as a card inside each of them
+# EN | rather than as a sixth entry: a scan is a step you take while filling a
+# EN | form, not a place you go. Rooms & floors is manual declaration, not
+# EN | device discovery, so it does not carry the scan card.
 # FR | Le SCAN DE DECOUVERTE est partage, pas un ecran. Le schema le montre
-# FR | alimentant trois formulaires : il apparait donc comme une carte dans
-# FR | chacun d eux plutot que comme une sixieme entree — un scan est une
-# FR | etape qu on fait en remplissant un formulaire, pas un endroit ou on va.
+# FR | alimentant deux formulaires (assign, energie) : il apparait donc comme
+# FR | une carte dans chacun d eux plutot que comme une sixieme entree — un
+# FR | scan est une etape qu on fait en remplissant un formulaire, pas un
+# FR | endroit ou on va. Pieces & etages est une declaration manuelle, pas une
+# FR | decouverte d appareils, donc elle ne porte pas la carte de scan.
 #
-# EN | THREE SCREENS ARE NOT BUILT YET (rooms, energy, theme). Their view
-# EN | exists and says so plainly. An empty menu entry that leads nowhere is
-# EN | worse than one that states what it will do.
-# FR | TROIS ECRANS NE SONT PAS ENCORE CONSTRUITS (pieces, energie, theme).
-# FR | Leur vue existe et le dit franchement. Une entree de menu qui ne mene
-# FR | nulle part vaut moins qu une qui annonce ce qu elle fera.
+# EN | TWO SCREENS ARE NOT BUILT YET (energy, theme). Their view exists and
+# EN | says so plainly. An empty menu entry that leads nowhere is worse than
+# EN | one that states what it will do. ROOMS opens the standalone rooms &
+# EN | floors wizard instead.
+# FR | DEUX ECRANS NE SONT PAS ENCORE CONSTRUITS (energie, theme). Leur vue
+# FR | existe et le dit franchement. Une entree de menu qui ne mene nulle part
+# FR | vaut moins qu une qui annonce ce qu elle fera. PIECES ouvre a la place
+# FR | l assistant autonome pieces & etages.
 ########################################################################
 
 {% set admin_path = '/visio-sapiens-admin' %}
@@ -183,6 +188,24 @@ views:
                   border-radius: 16px;
                 }
                 iframe { width: 100%; height: 100% !important; border: none; }
+
+{% elif screen == 'rooms' %}
+          # EN | The rooms & floors wizard is a standalone page — its own
+          # EN | header, step bar, styling — rather than a card, so it opens
+          # EN | as a link instead of living inside an iframe with a
+          # EN | duplicate header.
+          # FR | L assistant pieces & etages est une page autonome — son
+          # FR | propre en-tete, barre d etapes, style — plutot qu une carte,
+          # FR | donc il s ouvre en lien plutot que de vivre dans une iframe
+          # FR | avec un en-tete duplique.
+          - type: custom:button-card
+            template: vssp_admin_button
+            icon: mdi:floor-plan
+            name: "{{ t('adminmenu.open_wizard') }}"
+            label: "{{ t('adminmenu.section.rooms_hint') }}"
+            tap_action:
+              action: url
+              url_path: /local/vssp/wizard/vssp_rooms_floors.html
 
 {% elif screen == 'dashboards' %}
           # EN | Generation controls, moved here from the old HOME view.
@@ -322,7 +345,7 @@ views:
                 - font-size: 11px
                 - color: rgba(143,182,201,0.65)
                 - margin-top: 4px
-{% if screen in ['rooms', 'energy'] %}
+{% if screen == 'energy' %}
           # EN | The scan feeds this screen too, per the diagram.
           # FR | Le scan alimente aussi cet ecran, selon le schema.
           - type: custom:button-card
