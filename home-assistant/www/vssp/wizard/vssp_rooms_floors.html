@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Visio Sapiens — Pièces &amp; Étages</title>
+<style>
+  :root{
+    --cy:#00E5FF; --cy-dim:rgba(0,229,255,.25); --gr:#00FFC3;
+    --or:#FF9800; --rd:#FF3D71; --txt:#FFFFFF; --dim:#8FB6C9; --mut:#56707E;
+    --bg:#050B12; --panel:rgba(8,18,28,.72);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:'Rajdhani','Segoe UI',system-ui,sans-serif;font-size:14px;
+    background-image:radial-gradient(circle at 20% 0%,rgba(0,229,255,.07),transparent 55%)}
+  .page{max-width:1100px;margin:0 auto;padding:24px 18px 80px}
+
+  /* Header */
+  .header{display:flex;align-items:center;gap:14px;margin-bottom:22px}
+  .logo{width:42px;height:42px;border-radius:12px;border:1px solid var(--cy-dim);
+    display:grid;place-items:center;color:var(--cy);font-size:20px;
+    box-shadow:0 0 18px rgba(0,229,255,.18)}
+  .header h1{margin:0;font-family:'Orbitron','Courier New',monospace;font-size:17px;
+    letter-spacing:3px;color:var(--cy)}
+  .header p{margin:2px 0 0;font-size:11px;letter-spacing:2px;color:var(--mut)}
+  .ha-url{margin-left:auto;font-size:11px;color:var(--mut)}
+
+  /* Step bar */
+  .steps{display:flex;gap:10px;margin-bottom:22px}
+  .step{flex:1}
+  .step-bar{height:3px;border-radius:2px;background:rgba(0,229,255,.12)}
+  .step.active .step-bar{background:var(--cy);box-shadow:0 0 10px rgba(0,229,255,.5)}
+  .step.done .step-bar{background:var(--gr)}
+  .step-label{margin-top:6px;font-family:'Orbitron',monospace;font-size:9px;
+    letter-spacing:1.5px;color:var(--mut)}
+  .step.active .step-label{color:var(--cy)}
+  .step.done .step-label{color:var(--gr)}
+
+  /* Cards */
+  .card{background:var(--panel);border:1px solid var(--cy-dim);border-radius:18px;
+    padding:18px;margin-bottom:16px;backdrop-filter:blur(12px)}
+  .card-title{font-family:'Orbitron',monospace;font-size:12px;letter-spacing:2px;color:var(--cy)}
+  .card-sub{font-size:12px;color:var(--dim);margin-top:4px}
+
+  /* Controls */
+  input[type=text],select{background:rgba(0,0,0,.35);border:1px solid rgba(0,229,255,.22);
+    border-radius:10px;color:var(--txt);padding:9px 12px;font-size:13px;font-family:inherit;outline:none}
+  input[type=text]:focus,select:focus{border-color:var(--cy);box-shadow:0 0 0 2px rgba(0,229,255,.12)}
+  input[type=color]{width:38px;height:36px;padding:2px;background:transparent;
+    border:1px solid rgba(0,229,255,.22);border-radius:10px;cursor:pointer}
+  .btn{background:rgba(0,229,255,.10);border:1px solid rgba(0,229,255,.45);color:var(--cy);
+    border-radius:12px;padding:10px 18px;font-family:'Orbitron',monospace;font-size:11px;
+    letter-spacing:1.5px;cursor:pointer;transition:.2s}
+  .btn:hover:not(:disabled){background:rgba(0,229,255,.2);box-shadow:0 0 16px rgba(0,229,255,.25)}
+  .btn:disabled{opacity:.35;cursor:not-allowed}
+  .btn:focus-visible{outline:2px solid var(--cy);outline-offset:2px}
+  .btn-sm{padding:6px 12px;font-size:10px}
+  .btn-ghost{background:transparent;border-color:rgba(143,182,201,.3);color:var(--dim)}
+  .btn-danger{background:rgba(255,61,113,.10);border-color:rgba(255,61,113,.5);color:var(--rd)}
+  .btn-danger:hover:not(:disabled){background:rgba(255,61,113,.2);box-shadow:0 0 16px rgba(255,61,113,.25)}
+  .btn-ok{background:rgba(0,255,195,.10);border-color:rgba(0,255,195,.5);color:var(--gr)}
+
+  .row{display:flex;gap:10px;align-items:center;margin-bottom:8px}
+  .flex1{flex:1;min-width:0}
+  .actions{display:flex;justify-content:space-between;gap:12px;margin-top:20px}
+  .actions-right{display:flex;gap:12px;margin-left:auto}
+
+  /* Chips */
+  .chip{display:inline-block;padding:5px 14px;border-radius:20px;font-size:12px;letter-spacing:1px;
+    cursor:pointer;margin:0 6px 6px 0;border:1px solid rgba(0,229,255,.3);color:var(--dim);transition:.2s}
+  .chip.on{background:rgba(0,229,255,.15);border-color:var(--cy);color:var(--cy)}
+
+  /* Badges */
+  .badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;margin-left:6px;white-space:nowrap}
+  .badge-cyan{background:rgba(0,229,255,.15);border:1px solid rgba(0,229,255,.4);color:var(--cy)}
+  .badge-green{background:rgba(0,255,195,.15);border:1px solid rgba(0,255,195,.4);color:var(--gr)}
+  .badge-orange{background:rgba(255,152,0,.15);border:1px solid rgba(255,152,0,.4);color:var(--or)}
+  .badge-red{background:rgba(255,61,113,.15);border:1px solid rgba(255,61,113,.4);color:var(--rd)}
+  .badge-mut{background:rgba(86,112,126,.15);border:1px solid rgba(86,112,126,.4);color:var(--mut)}
+
+  /* Status */
+  .status{padding:12px 16px;border-radius:10px;font-size:13px;margin-bottom:14px}
+  .status-info{background:rgba(0,229,255,.08);border:1px solid rgba(0,229,255,.3);color:var(--cy)}
+  .status-ok{background:rgba(0,255,195,.08);border:1px solid rgba(0,255,195,.3);color:var(--gr)}
+  .status-warn{background:rgba(255,152,0,.08);border:1px solid rgba(255,152,0,.3);color:var(--or)}
+  .status-error{background:rgba(255,61,113,.08);border:1px solid rgba(255,61,113,.3);color:var(--rd)}
+
+  /* Inventory table */
+  .inv-row{display:grid;grid-template-columns:26px 1fr auto auto;gap:10px;align-items:center;
+    padding:8px 4px;border-bottom:1px solid rgba(0,229,255,.08)}
+  .inv-name{font-size:13px;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .inv-meta{font-size:11px;color:var(--mut)}
+  .inv-floor{font-family:'Orbitron',monospace;font-size:10px;letter-spacing:1.5px;color:var(--cy);
+    padding:10px 4px 4px;border-top:1px solid rgba(0,229,255,.1)}
+  input[type=checkbox]{accent-color:#00E5FF;width:16px;height:16px;cursor:pointer}
+
+  /* Editor */
+  .floor-block{border:1px solid rgba(0,229,255,.15);border-radius:14px;padding:14px;margin-bottom:12px;
+    background:rgba(0,0,0,.2)}
+  .room-row{margin-left:18px}
+  .ghost{color:var(--mut);font-size:12px;font-style:italic;margin:6px 0 6px 18px}
+
+  /* Diff preview */
+  .diff{font-family:'Courier New',monospace;font-size:12px;line-height:1.7}
+  .diff .add{color:var(--gr)}
+  .diff .upd{color:var(--or)}
+  .diff .del{color:var(--rd)}
+
+  /* Spinner */
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(0,229,255,.2);
+    border-top-color:var(--cy);border-radius:50%;animation:spin .8s linear infinite;
+    vertical-align:middle;margin-right:8px}
+  @media (prefers-reduced-motion:reduce){.spinner{animation:none}}
+  @media (max-width:640px){.inv-row{grid-template-columns:26px 1fr auto}.inv-meta{display:none}}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div class="logo">⬡</div>
+    <div>
+      <h1>VISIO SAPIENS</h1>
+      <p>PIÈCES &amp; ÉTAGES</p>
+    </div>
+    <div class="ha-url" id="ha-url"></div>
+  </div>
+
+  <div class="steps">
+    <div class="step active" id="s1"><div class="step-bar"></div><div class="step-label">1. STRUCTURE</div></div>
+    <div class="step" id="s2"><div class="step-bar"></div><div class="step-label">2. APPAREILS</div></div>
+    <div class="step" id="s3"><div class="step-bar"></div><div class="step-label">3. GÉNÉRATION IA</div></div>
+    <div class="step" id="s4"><div class="step-bar"></div><div class="step-label">4. GIT PUSH</div></div>
+    <div class="step" id="s5"><div class="step-bar"></div><div class="step-label">5. DASHBOARD</div></div>
+  </div>
+
+  <div id="content"></div>
+</div>
+
+<script>
+"use strict";
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CONFIG
+// ═══════════════════════════════════════════════════════════════════════════
+const HA_URL   = window.location.origin;
+const NEXT_URL = "/local/vssp/wizard/vssp_wizard.html?phase=2"; // ← phase 2 (assignation)
+const LS_TOKEN = "osv_ha_token";
+const LS_HOUSE = "vssp_house";
+const LS_COLORS= "vssp_room_colors";
+
+// Domaines considérés comme « appareils assignables » en phase 2.
+// Le même filtre est appliqué ici pour compter ce que contient chaque pièce.
+const DEVICE_DOMAINS = ["light","switch","climate","media_player","cover","camera",
+                        "alarm_control_panel","vacuum","fan","lock","input_boolean",
+                        "button","remote"];
+const DOMAIN_ICON = {light:"💡",switch:"🔌",climate:"🌡",media_player:"🎵",cover:"🪟",
+                     camera:"📷",alarm_control_panel:"🔒",vacuum:"🤖",fan:"💨",lock:"🔑",
+                     input_boolean:"🔘",button:"⏺",remote:"📱"};
+
+const EXTERIOR_TYPES = ["Jardin","Piscine","Jacuzzi","Garage","Terrasse","Véranda"];
+const EXTERIOR_FLOOR_NAMES = ["extérieur","exterieur","outdoor","extérieurs","exterieurs"];
+const DEFAULT_COLOR = "#0A2030";
+
+document.getElementById("ha-url").textContent = HA_URL;
+
+// ═══════════════════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════════════════
+let state = {
+  token: localStorage.getItem(LS_TOKEN) || "",
+  connected: false,
+  loading: false,
+  error: "",
+  notice: "",
+  // Photo instantanée du registre HA (source de vérité pour le diff)
+  ha: { floors: [], areas: [], counts: {} },
+  // Brouillon éditable
+  draft: { floors: [], exteriors: [] },
+  selection: new Set(),   // area_id cochés dans l'inventaire
+  colors: JSON.parse(localStorage.getItem(LS_COLORS) || "{}")
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// WEBSOCKET HA
+// ═══════════════════════════════════════════════════════════════════════════
+let ws = null, msgId = 1;
+const pending = {};
+
+function wsConnect(token){
+  return new Promise((resolve,reject)=>{
+    const proto = location.protocol === "https:" ? "wss:" : "ws:";
+    let settled = false;
+    const sock = new WebSocket(`${proto}//${location.host}/api/websocket`);
+    sock.onmessage = ev => {
+      const m = JSON.parse(ev.data);
+      if (m.type === "auth_required"){
+        sock.send(JSON.stringify({type:"auth", access_token:token}));
+      } else if (m.type === "auth_ok"){
+        ws = sock; settled = true; resolve(sock);
+      } else if (m.type === "auth_invalid"){
+        settled = true; sock.close();
+        reject(new Error("Token refusé par Home Assistant."));
+      } else if (m.type === "result"){
+        const p = pending[m.id];
+        if (!p) return;
+        delete pending[m.id];
+        m.success ? p.resolve(m.result) : p.reject(new Error(m.error && m.error.message || "Erreur HA"));
+      }
+    };
+    sock.onerror = () => { if(!settled){ settled = true; reject(new Error("WebSocket injoignable.")); } };
+    sock.onclose = () => {
+      ws = null; state.connected = false;
+      Object.keys(pending).forEach(k => { pending[k].reject(new Error("Connexion fermée")); delete pending[k]; });
+      if (!settled){ settled = true; reject(new Error("Connexion fermée avant authentification.")); }
+    };
+  });
+}
+
+function wsCall(type, payload){
+  return new Promise((resolve,reject)=>{
+    if (!ws) return reject(new Error("Non connecté à Home Assistant."));
+    const id = msgId++;
+    pending[id] = {resolve,reject};
+    ws.send(JSON.stringify(Object.assign({id, type}, payload || {})));
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// LECTURE DU REGISTRE — « ce qui existe déjà »
+// ═══════════════════════════════════════════════════════════════════════════
+async function loadRegistry(){
+  const [floors, areas, entities, devices] = await Promise.all([
+    wsCall("config/floor_registry/list").catch(()=>[]),   // HA < 2024.4 : pas d'étages
+    wsCall("config/area_registry/list"),
+    wsCall("config/entity_registry/list"),
+    wsCall("config/device_registry/list")
+  ]);
+
+  // area_id effectif d'une entité : le sien, sinon celui de son appareil
+  const devArea = {};
+  devices.forEach(d => { devArea[d.id] = d.area_id || null; });
+
+  const counts = {};   // area_id -> {total, byDomain:{}}
+  entities.forEach(e => {
+    const aid = e.area_id || (e.device_id ? devArea[e.device_id] : null);
+    if (!aid) return;
+    const dom = String(e.entity_id).split(".")[0];
+    if (!counts[aid]) counts[aid] = {total:0, byDomain:{}};
+    counts[aid].total++;
+    if (DEVICE_DOMAINS.includes(dom)){
+      counts[aid].byDomain[dom] = (counts[aid].byDomain[dom] || 0) + 1;
+    }
+  });
+
+  state.ha = {
+    floors: floors.map(f => ({floor_id:f.floor_id, name:f.name, level:f.level, icon:f.icon})),
+    areas:  areas.map(a  => ({area_id:a.area_id, name:a.name, floor_id:a.floor_id || null, icon:a.icon})),
+    counts
+  };
+  state.selection = new Set();
+  buildDraftFromRegistry();
+}
+
+// Le brouillon reflète le registre : l'admin voit l'existant et l'édite.
+function buildDraftFromRegistry(){
+  const isExtFloor = f => EXTERIOR_FLOOR_NAMES.includes(String(f.name||"").toLowerCase());
+  const extFloorIds = new Set(state.ha.floors.filter(isExtFloor).map(f => f.floor_id));
+
+  const floors = state.ha.floors
+    .filter(f => !extFloorIds.has(f.floor_id))
+    .sort((a,b)=> (a.level ?? 0) - (b.level ?? 0))
+    .map(f => ({
+      floor_id: f.floor_id, name: f.name, level: f.level ?? 0,
+      rooms: state.ha.areas.filter(a => a.floor_id === f.floor_id)
+        .map(a => ({area_id:a.area_id, name:a.name, color: state.colors[a.area_id] || DEFAULT_COLOR}))
+    }));
+
+  // Pièces sans étage → regroupées dans « Non classé » pour ne rien perdre
+  const orphans = state.ha.areas.filter(a =>
+    !a.floor_id && !extFloorIds.has(a.floor_id));
+  if (orphans.length){
+    floors.push({
+      floor_id: null, name: "Non classé", level: floors.length,
+      rooms: orphans.map(a => ({area_id:a.area_id, name:a.name,
+        color: state.colors[a.area_id] || DEFAULT_COLOR}))
+    });
+  }
+
+  const exteriors = state.ha.areas
+    .filter(a => extFloorIds.has(a.floor_id))
+    .map(a => a.name);
+
+  state.draft = { floors, exteriors };
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// DIFF — ce qui sera créé / renommé / supprimé
+// ═══════════════════════════════════════════════════════════════════════════
+function computeDiff(){
+  const d = {floorsCreate:[], floorsUpdate:[], floorsDelete:[],
+             areasCreate:[], areasUpdate:[], areasDelete:[]};
+
+  const draftFloorIds = new Set(state.draft.floors.map(f => f.floor_id).filter(Boolean));
+  const draftAreaIds  = new Set();
+  state.draft.floors.forEach(f => f.rooms.forEach(r => r.area_id && draftAreaIds.add(r.area_id)));
+
+  const isExtFloor = f => EXTERIOR_FLOOR_NAMES.includes(String(f.name||"").toLowerCase());
+  const extFloor   = state.ha.floors.find(isExtFloor) || null;
+  const extAreas   = extFloor ? state.ha.areas.filter(a => a.floor_id === extFloor.floor_id) : [];
+  const extNames   = state.draft.exteriors.map(e => e.trim()).filter(Boolean);
+  extAreas.forEach(a => { if (extNames.includes(a.name)) draftAreaIds.add(a.area_id); });
+
+  // Étages
+  state.draft.floors.forEach((f, i) => {
+    const name = f.name.trim();
+    if (!name || f.name === "Non classé") return;
+    if (!f.floor_id){ d.floorsCreate.push({name, level:i}); return; }
+    const ref = state.ha.floors.find(x => x.floor_id === f.floor_id);
+    if (ref && (ref.name !== name || (ref.level ?? 0) !== i)){
+      d.floorsUpdate.push({floor_id:f.floor_id, name, level:i});
+    }
+  });
+  state.ha.floors.forEach(f => {
+    if (isExtFloor(f)) return;
+    if (!draftFloorIds.has(f.floor_id)) d.floorsDelete.push(f);
+  });
+
+  // Pièces
+  state.draft.floors.forEach(f => {
+    f.rooms.forEach(r => {
+      const name = r.name.trim();
+      if (!name) return;
+      if (!r.area_id){ d.areasCreate.push({name, floorName:f.name.trim(), floor_id:f.floor_id||null, color:r.color}); return; }
+      const ref = state.ha.areas.find(a => a.area_id === r.area_id);
+      if (!ref) return;
+      const targetFloor = (f.name === "Non classé") ? null : (f.floor_id || null);
+      if (ref.name !== name || (ref.floor_id||null) !== targetFloor){
+        d.areasUpdate.push({area_id:r.area_id, name, floorName:f.name.trim(),
+                            floor_id:targetFloor, pendingFloorName:(!f.floor_id && f.name!=="Non classé") ? f.name.trim() : null});
+      }
+    });
+  });
+  extNames.forEach(n => {
+    if (!extAreas.some(a => a.name === n)) d.areasCreate.push({name:n, floorName:"Extérieur", exterior:true});
+  });
+  state.ha.areas.forEach(a => {
+    if (!draftAreaIds.has(a.area_id)) d.areasDelete.push(a);
+  });
+
+  d.total = d.floorsCreate.length + d.floorsUpdate.length + d.floorsDelete.length
+          + d.areasCreate.length + d.areasUpdate.length + d.areasDelete.length;
+  return d;
+}
+
+function entitiesAtRisk(diff){
+  let n = 0;
+  diff.areasDelete.forEach(a => { n += (state.ha.counts[a.area_id] || {total:0}).total; });
+  return n;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// APPLICATION DANS HOME ASSISTANT
+// ═══════════════════════════════════════════════════════════════════════════
+async function applyDiff(){
+  const diff = computeDiff();
+  if (!diff.total){ state.notice = "Rien à appliquer — la structure est déjà à jour."; return render(); }
+
+  const risk = entitiesAtRisk(diff);
+  let msg = `Appliquer ${diff.total} modification(s) au registre Home Assistant ?`;
+  if (diff.areasDelete.length){
+    msg += `\n\n${diff.areasDelete.length} pièce(s) seront supprimées`;
+    if (risk) msg += ` — ${risk} entité(s) seront désassignées (les entités elles-mêmes ne sont pas supprimées).`;
+  }
+  if (!confirm(msg)) return;
+
+  setBusy(true, "Application des modifications…");
+  try{
+    // 1. Étages à créer → on récupère leurs ids pour les pièces qui les visent
+    const newFloorId = {};
+    for (const f of diff.floorsCreate){
+      const res = await wsCall("config/floor_registry/create", {name:f.name, level:f.level});
+      newFloorId[f.name] = res.floor_id;
+    }
+    for (const f of diff.floorsUpdate){
+      await wsCall("config/floor_registry/update", {floor_id:f.floor_id, name:f.name, level:f.level});
+    }
+
+    // Étage « Extérieur » créé à la demande
+    let extFloorId = (state.ha.floors.find(f =>
+      EXTERIOR_FLOOR_NAMES.includes(String(f.name||"").toLowerCase())) || {}).floor_id || null;
+    if (!extFloorId && diff.areasCreate.some(a => a.exterior)){
+      const res = await wsCall("config/floor_registry/create", {name:"Extérieur", level:99, icon:"mdi:tree"});
+      extFloorId = res.floor_id;
+    }
+
+    // 2. Pièces
+    for (const a of diff.areasCreate){
+      const fid = a.exterior ? extFloorId : (a.floor_id || newFloorId[a.floorName] || null);
+      const res = await wsCall("config/area_registry/create", {name:a.name, floor_id:fid});
+      if (a.color && res && res.area_id){ state.colors[res.area_id] = a.color; }
+    }
+    for (const a of diff.areasUpdate){
+      const fid = a.floor_id || (a.pendingFloorName ? newFloorId[a.pendingFloorName] : null);
+      await wsCall("config/area_registry/update", {area_id:a.area_id, name:a.name, floor_id:fid});
+    }
+    for (const a of diff.areasDelete){
+      await wsCall("config/area_registry/delete", {area_id:a.area_id});
+      delete state.colors[a.area_id];
+    }
+
+    // 3. Étages supprimés en dernier (les pièces ont déjà été déplacées/supprimées)
+    for (const f of diff.floorsDelete){
+      await wsCall("config/floor_registry/delete", {floor_id:f.floor_id});
+    }
+
+    localStorage.setItem(LS_COLORS, JSON.stringify(state.colors));
+    await loadRegistry();
+    saveHouse();
+    state.notice = `✓ Structure appliquée — ${diff.total} modification(s).`;
+  }catch(e){
+    state.error = "Échec de l'application : " + e.message + " — le registre peut être partiellement modifié, relance une lecture.";
+  }finally{
+    setBusy(false);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ACTIONS DESTRUCTIVES
+// ═══════════════════════════════════════════════════════════════════════════
+function deleteSelected(){
+  if (!state.selection.size) return;
+  const names = [];
+  state.selection.forEach(id => {
+    const a = state.ha.areas.find(x => x.area_id === id);
+    if (a) names.push(a.name);
+  });
+  let n = 0;
+  state.selection.forEach(id => { n += (state.ha.counts[id] || {total:0}).total; });
+  const txt = `Retirer ${names.length} pièce(s) de la structure ?\n\n${names.join(", ")}` +
+              (n ? `\n\n${n} entité(s) y sont rattachées et seront désassignées.` : "") +
+              `\n\nRien n'est écrit dans Home Assistant tant que tu n'as pas cliqué « Appliquer ».`;
+  if (!confirm(txt)) return;
+  state.draft.floors.forEach(f => { f.rooms = f.rooms.filter(r => !state.selection.has(r.area_id)); });
+  const extNames = new Set();
+  state.selection.forEach(id => {
+    const a = state.ha.areas.find(x => x.area_id === id);
+    if (a) extNames.add(a.name);
+  });
+  state.draft.exteriors = state.draft.exteriors.filter(e => !extNames.has(e));
+  state.selection = new Set();
+  state.notice = "Pièces retirées du brouillon. Clique « Appliquer » pour les supprimer dans HA.";
+  render();
+}
+
+function resetAll(){
+  const nAreas = state.ha.areas.length, nFloors = state.ha.floors.length;
+  let ent = 0; Object.values(state.ha.counts).forEach(c => ent += c.total);
+  const answer = prompt(
+    `REPARTIR DE ZÉRO\n\n${nFloors} étage(s) et ${nAreas} pièce(s) seront supprimés de Home Assistant.\n` +
+    `${ent} entité(s) perdront leur pièce (les entités et appareils ne sont pas supprimés).\n\n` +
+    `Tape SUPPRIMER pour confirmer :`);
+  if (answer !== "SUPPRIMER") { state.notice = "Réinitialisation annulée."; return render(); }
+  state.draft = { floors: [], exteriors: [] };
+  state.selection = new Set();
+  state.notice = "Brouillon vidé. Clique « Appliquer » pour effacer la structure dans Home Assistant, puis reconstruis-la ci-dessous.";
+  render();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ÉDITION DU BROUILLON
+// ═══════════════════════════════════════════════════════════════════════════
+function addFloor(){
+  const n = state.draft.floors.length;
+  state.draft.floors.push({floor_id:null, name: n===0 ? "Rez-de-chaussée" : `Étage ${n}`, level:n, rooms:[]});
+  render();
+}
+function delFloor(fi){
+  const f = state.draft.floors[fi];
+  if (f.rooms.length && !confirm(`Retirer « ${f.name} » et ses ${f.rooms.length} pièce(s) ?`)) return;
+  state.draft.floors.splice(fi,1); render();
+}
+function updFloorName(fi,v){ state.draft.floors[fi].name = v; }
+function addRoom(fi){ state.draft.floors[fi].rooms.push({area_id:null, name:"", color:DEFAULT_COLOR}); render(); }
+function delRoom(fi,ri){ state.draft.floors[fi].rooms.splice(ri,1); render(); }
+function updRoom(fi,ri,k,v){
+  const r = state.draft.floors[fi].rooms[ri];
+  r[k] = v;
+  if (k === "color" && r.area_id){
+    state.colors[r.area_id] = v;
+    localStorage.setItem(LS_COLORS, JSON.stringify(state.colors));
+  }
+}
+function toggleExt(name){
+  const ex = state.draft.exteriors, i = ex.indexOf(name);
+  if (i >= 0) ex.splice(i,1); else ex.push(name);
+  render();
+}
+function addCustomExt(e){ if (e.key === "Enter") addCustomExtBtn(); }
+function addCustomExtBtn(){
+  const inp = document.getElementById("custom-ext");
+  const v = inp.value.trim();
+  if (v && !state.draft.exteriors.includes(v)){ state.draft.exteriors.push(v); inp.value = ""; render(); }
+}
+function toggleSel(area_id, on){
+  if (on) state.selection.add(area_id); else state.selection.delete(area_id);
+  render();
+}
+function toggleSelAll(on){
+  state.selection = on ? new Set(state.ha.areas.map(a => a.area_id)) : new Set();
+  render();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// SORTIE — modèle house pour la phase 2 et le générateur
+// ═══════════════════════════════════════════════════════════════════════════
+function buildHouse(){
+  return {
+    generated: new Date().toISOString(),
+    floors: state.draft.floors
+      .filter(f => f.name.trim())
+      .map(f => ({
+        name: f.name.trim(),
+        floor_id: f.floor_id,
+        rooms: f.rooms.filter(r => r.name.trim())
+          .map(r => ({name:r.name.trim(), area_id:r.area_id, color:r.color}))
+      })),
+    exteriors: state.draft.exteriors.slice()
+  };
+}
+function saveHouse(){
+  localStorage.setItem(LS_HOUSE, JSON.stringify(buildHouse()));
+}
+function exportHouse(){
+  saveHouse();
+  const blob = new Blob([JSON.stringify(buildHouse(),null,2)],{type:"application/json"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "vssp_house.json";
+  a.click();
+  URL.revokeObjectURL(a.href);
+}
+function roomCount(){
+  return state.draft.floors.reduce((n,f)=> n + f.rooms.filter(r=>r.name.trim()).length, 0)
+       + state.draft.exteriors.length;
+}
+function goPhase2(){
+  saveHouse();
+  window.location.href = NEXT_URL;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// CONNEXION
+// ═══════════════════════════════════════════════════════════════════════════
+async function connect(){
+  const inp = document.getElementById("token-input");
+  if (inp) state.token = inp.value.trim();
+  if (!state.token){ state.error = "Colle un jeton d'accès longue durée."; return render(); }
+  localStorage.setItem(LS_TOKEN, state.token);
+  setBusy(true, "Connexion à Home Assistant…");
+  try{
+    await wsConnect(state.token);
+    state.connected = true;
+    await loadRegistry();
+    state.notice = `Registre lu : ${state.ha.floors.length} étage(s), ${state.ha.areas.length} pièce(s).`;
+  }catch(e){
+    state.connected = false;
+    state.error = e.message;
+  }finally{ setBusy(false); }
+}
+async function reload(){
+  setBusy(true, "Relecture du registre…");
+  try{ await loadRegistry(); state.notice = "Registre rechargé."; }
+  catch(e){ state.error = e.message; }
+  finally{ setBusy(false); }
+}
+function setBusy(on, label){
+  state.loading = on;
+  state.busyLabel = label || "";
+  if (on){ state.error = ""; state.notice = ""; }
+  render();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// RENDU
+// ═══════════════════════════════════════════════════════════════════════════
+function esc(s){
+  return String(s == null ? "" : s)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+function render(){
+  const c = document.getElementById("content");
+  let html = "";
+
+  if (state.loading){
+    html += `<div class="status status-info"><span class="spinner"></span>${esc(state.busyLabel)}</div>`;
+  }
+  if (state.error)  html += `<div class="status status-error">${esc(state.error)}</div>`;
+  if (state.notice) html += `<div class="status status-ok">${esc(state.notice)}</div>`;
+
+  if (!state.connected){
+    html += `
+    <div class="card">
+      <div class="card-title">CONNEXION HOME ASSISTANT</div>
+      <div class="card-sub">Jeton d'accès longue durée — Profil → Sécurité → Jetons d'accès longue durée.</div>
+      <div class="row" style="margin-top:14px">
+        <input type="text" id="token-input" class="flex1" placeholder="eyJhbGciOi…" value="${esc(state.token)}"/>
+        <button class="btn" onclick="connect()">Se connecter</button>
+      </div>
+    </div>`;
+    c.innerHTML = html;
+    return;
+  }
+
+  html += renderInventory();
+  html += renderEditor();
+  html += renderDiff();
+
+  const rc = roomCount();
+  html += `
+    <div class="actions">
+      <button class="btn btn-ghost" onclick="reload()">↻ Relire HA</button>
+      <div class="actions-right">
+        <button class="btn btn-ghost" onclick="exportHouse()">⬇ Exporter JSON</button>
+        <button class="btn" onclick="goPhase2()" ${rc ? "" : "disabled"}>
+          Suivant → Assignation des appareils
+        </button>
+      </div>
+    </div>`;
+
+  c.innerHTML = html;
+}
+
+function renderInventory(){
+  const {floors, areas, counts} = state.ha;
+  let ent = 0; Object.values(counts).forEach(x => ent += x.total);
+
+  let h = `
+  <div class="card">
+    <div class="card-title">CE QUI EXISTE DANS HOME ASSISTANT</div>
+    <div class="card-sub">Lecture du registre : étages, pièces et entités déjà rattachées.</div>
+    <div class="row" style="margin-top:12px;flex-wrap:wrap">
+      <span class="badge badge-cyan">${floors.length} étage(s)</span>
+      <span class="badge badge-cyan">${areas.length} pièce(s)</span>
+      <span class="badge badge-${ent ? "green" : "mut"}">${ent} entité(s) assignée(s)</span>
+      <span class="flex1"></span>
+      <button class="btn btn-sm btn-danger" onclick="deleteSelected()" ${state.selection.size ? "" : "disabled"}>
+        ✕ Retirer la sélection (${state.selection.size})
+      </button>
+      <button class="btn btn-sm btn-danger" onclick="resetAll()" ${areas.length || floors.length ? "" : "disabled"}>
+        ⟲ Tout supprimer
+      </button>
+    </div>`;
+
+  if (!areas.length){
+    h += `<div class="status status-warn" style="margin-top:14px">
+      Aucune pièce dans Home Assistant. Construis la structure ci-dessous, puis applique-la.</div></div>`;
+    return h;
+  }
+
+  h += `<div class="row" style="margin-top:14px">
+    <label style="display:flex;gap:8px;align-items:center;color:var(--dim);font-size:12px;cursor:pointer">
+      <input type="checkbox" ${state.selection.size === areas.length ? "checked" : ""}
+        onchange="toggleSelAll(this.checked)"/> Tout sélectionner
+    </label>
+  </div>`;
+
+  const byFloor = {};
+  areas.forEach(a => { (byFloor[a.floor_id || "__none__"] ||= []).push(a); });
+
+  const floorOrder = floors.slice().sort((x,y)=>(x.level ?? 0)-(y.level ?? 0));
+  const groups = floorOrder.map(f => [f.name, byFloor[f.floor_id] || []])
+    .concat(byFloor["__none__"] ? [["Sans étage", byFloor["__none__"]]] : []);
+
+  groups.forEach(([fname, list]) => {
+    if (!list.length) return;
+    h += `<div class="inv-floor">${esc(fname)} <span class="badge badge-mut">${list.length}</span></div>`;
+    list.forEach(a => {
+      const cnt = counts[a.area_id] || {total:0, byDomain:{}};
+      const doms = Object.entries(cnt.byDomain)
+        .map(([d,n]) => `${DOMAIN_ICON[d]||"📦"} ${n}`).join(" · ");
+      h += `
+      <div class="inv-row">
+        <input type="checkbox" ${state.selection.has(a.area_id) ? "checked" : ""}
+          onchange="toggleSel('${esc(a.area_id)}',this.checked)"/>
+        <div class="inv-name">${esc(a.name)}</div>
+        <div class="inv-meta">${esc(doms || "—")}</div>
+        <span class="badge badge-${cnt.total ? "cyan" : "mut"}">${cnt.total} ent.</span>
+      </div>`;
+    });
+  });
+
+  h += `</div>`;
+  return h;
+}
+
+function renderEditor(){
+  const h0 = `
+  <div class="card">
+    <div class="card-title">STRUCTURE DE LA MAISON</div>
+    <div class="card-sub">Ajoute, renomme ou retire des étages et des pièces. Les modifications ne partent dans Home Assistant qu'au clic sur « Appliquer ».</div>`;
+
+  let h = h0;
+  if (!state.draft.floors.length){
+    h += `<div class="ghost" style="margin-left:0">Aucun étage. Commence par en ajouter un.</div>`;
+  }
+
+  state.draft.floors.forEach((f, fi) => {
+    h += `
+    <div class="floor-block">
+      <div class="row">
+        <span class="badge badge-cyan">Niv. ${fi}</span>
+        <input type="text" class="flex1" value="${esc(f.name)}" placeholder="Nom de l'étage"
+          oninput="updFloorName(${fi},this.value)"/>
+        ${f.floor_id ? `<span class="badge badge-green">existant</span>` : `<span class="badge badge-orange">nouveau</span>`}
+        <button class="btn btn-sm btn-danger" onclick="delFloor(${fi})" title="Retirer l'étage">✕</button>
+      </div>`;
+
+    if (!f.rooms.length){
+      h += `<div class="ghost">Aucune pièce à cet étage.</div>`;
+    }
+    f.rooms.forEach((r, ri) => {
+      const cnt = r.area_id ? (state.ha.counts[r.area_id] || {total:0}).total : 0;
+      h += `
+      <div class="row room-row">
+        <input type="text" class="flex1" value="${esc(r.name)}" placeholder="Nom de la pièce"
+          oninput="updRoom(${fi},${ri},'name',this.value)"/>
+        <input type="color" value="${esc(r.color || DEFAULT_COLOR)}" title="Couleur du plan"
+          onchange="updRoom(${fi},${ri},'color',this.value)"/>
+        ${r.area_id ? `<span class="badge badge-${cnt?"cyan":"mut"}">${cnt} ent.</span>`
+                    : `<span class="badge badge-orange">nouvelle</span>`}
+        <button class="btn btn-sm btn-danger" onclick="delRoom(${fi},${ri})" title="Retirer la pièce">✕</button>
+      </div>`;
+    });
+
+    h += `<button class="btn btn-sm" style="margin:8px 0 0 18px" onclick="addRoom(${fi})">+ Pièce</button>
+    </div>`;
+  });
+
+  h += `<button class="btn btn-sm" onclick="addFloor()">+ Étage</button>
+  </div>
+
+  <div class="card">
+    <div class="card-title">ESPACES EXTÉRIEURS</div>
+    <div class="card-sub">Créés dans Home Assistant sous un étage « Extérieur ».</div>
+    <div style="margin-top:12px">`;
+  const customs = state.draft.exteriors.filter(e => !EXTERIOR_TYPES.includes(e));
+  EXTERIOR_TYPES.concat(customs).forEach(e => {
+    const on = state.draft.exteriors.includes(e);
+    h += `<span class="chip${on?" on":""}" onclick="toggleExt('${esc(e).replace(/'/g,"\\'")}')">${esc(e)}</span>`;
+  });
+  h += `</div>
+    <div class="row" style="margin-top:12px">
+      <input type="text" id="custom-ext" class="flex1" placeholder="Autre espace…" onkeydown="addCustomExt(event)"/>
+      <button class="btn btn-sm" onclick="addCustomExtBtn()">+</button>
+    </div>
+  </div>`;
+  return h;
+}
+
+function renderDiff(){
+  const d = computeDiff();
+  const risk = entitiesAtRisk(d);
+
+  let h = `<div class="card">
+    <div class="card-title">MODIFICATIONS EN ATTENTE</div>`;
+
+  if (!d.total){
+    h += `<div class="card-sub" style="margin-top:8px">Le brouillon correspond au registre Home Assistant.</div></div>`;
+    return h;
+  }
+
+  h += `<div class="diff" style="margin-top:12px">`;
+  d.floorsCreate.forEach(f => h += `<div class="add">+ étage &nbsp;${esc(f.name)}</div>`);
+  d.floorsUpdate.forEach(f => h += `<div class="upd">~ étage &nbsp;${esc(f.name)}</div>`);
+  d.areasCreate.forEach(a  => h += `<div class="add">+ pièce &nbsp;${esc(a.name)} <span style="color:var(--mut)">(${esc(a.floorName||"sans étage")})</span></div>`);
+  d.areasUpdate.forEach(a  => h += `<div class="upd">~ pièce &nbsp;${esc(a.name)} <span style="color:var(--mut)">(${esc(a.floorName||"sans étage")})</span></div>`);
+  d.areasDelete.forEach(a  => {
+    const n = (state.ha.counts[a.area_id]||{total:0}).total;
+    h += `<div class="del">− pièce &nbsp;${esc(a.name)}${n?` <span style="color:var(--mut)">(${n} entité(s) désassignée(s))</span>`:""}</div>`;
+  });
+  d.floorsDelete.forEach(f => h += `<div class="del">− étage &nbsp;${esc(f.name)}</div>`);
+  h += `</div>`;
+
+  if (risk){
+    h += `<div class="status status-warn" style="margin-top:14px">
+      ${risk} entité(s) vont perdre leur pièce. Les entités et appareils restent dans Home Assistant : seule l'assignation disparaît.
+    </div>`;
+  }
+
+  h += `<div class="row" style="margin-top:14px">
+    <button class="btn btn-ok" onclick="applyDiff()">✓ Appliquer dans Home Assistant (${d.total})</button>
+    <button class="btn btn-ghost btn-sm" onclick="reload()">Annuler les changements</button>
+  </div></div>`;
+  return h;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// BOOT
+// ═══════════════════════════════════════════════════════════════════════════
+render();
+if (state.token) connect();
+</script>
+</body>
+</html>
