@@ -1,977 +1,758 @@
 <!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8"/>
-  <meta name="viewport" content="width=device-width,initial-scale=1.0"/>
-  <title>Visio Sapiens — Discovery Wizard</title>
-  <style>
-    /* Polices système de secours — pas de dépendance internet */
-    @font-face { font-family: 'Orbitron'; src: local('Orbitron'); }
-    @font-face { font-family: 'Rajdhani'; src: local('Rajdhani'); }
-  </style>
-  <style>
-    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-    body{background:#02050B;color:#fff;font-family:'Rajdhani','Segoe UI',system-ui,sans-serif;min-height:100vh}
-    input,select,button,textarea{font-family:inherit}
-    ::-webkit-scrollbar{width:4px}::-webkit-scrollbar-thumb{background:rgba(0,229,255,.3);border-radius:2px}
-    .page{max-width:960px;margin:0 auto;padding:24px}
-    .header{display:flex;align-items:center;gap:16px;margin-bottom:32px}
-    .logo{width:40px;height:40px;border-radius:50%;border:2px solid #00E5FF;display:flex;align-items:center;justify-content:center;color:#00E5FF;font-size:20px;flex-shrink:0}
-    .logo-text h1{font-family:'Orbitron','Courier New',monospace;color:#00E5FF;font-size:18px;letter-spacing:3px;margin:0}
-    .logo-text p{color:#56707E;font-size:11px;letter-spacing:1px;margin:0}
-    .ha-url{margin-left:auto;color:#56707E;font-size:11px}
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Visio Sapiens — Wizard</title>
+<style>
+  :root{
+    --cy:#00E5FF; --cy-dim:rgba(0,229,255,.25); --gr:#00FFC3; --or:#FF9800;
+    --rd:#FF3D71; --txt:#FFFFFF; --dim:#8FB6C9; --mut:#56707E;
+    --bg:#050B12; --panel:rgba(8,18,28,.72);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:'Rajdhani','Segoe UI',system-ui,sans-serif;font-size:14px;
+    background-image:radial-gradient(circle at 20% 0%,rgba(0,229,255,.07),transparent 55%)}
+  .page{max-width:1120px;margin:0 auto;padding:22px 18px 90px}
 
-    /* Step bar */
-    .steps{display:flex;gap:4px;margin-bottom:32px}
-    .step{flex:1}
-    .step-bar{height:4px;border-radius:2px;background:rgba(0,229,255,.2);transition:background .3s}
-    .step.active .step-bar{background:#00E5FF}
-    .step.done .step-bar{background:#00FFC3}
-    .step-label{font-size:10px;font-family:'Orbitron','Courier New',monospace;letter-spacing:1px;margin-top:4px;color:#56707E}
-    .step.active .step-label,.step.done .step-label{color:#00E5FF}
-    .step.done .step-label{color:#00FFC3}
+  .header{display:flex;align-items:center;gap:14px;margin-bottom:20px}
+  .logo{width:42px;height:42px;border-radius:12px;border:1px solid var(--cy-dim);
+    display:grid;place-items:center;color:var(--cy);font-size:20px;box-shadow:0 0 18px rgba(0,229,255,.18)}
+  .header h1{margin:0;font-family:'Orbitron','Courier New',monospace;font-size:16px;letter-spacing:3px;color:var(--cy)}
+  .header p{margin:2px 0 0;font-size:11px;letter-spacing:2px;color:var(--mut)}
+  .back{margin-left:auto}
 
-    /* Cards */
-    .card{background:rgba(8,18,28,.85);border:1px solid rgba(0,229,255,.3);border-radius:16px;padding:24px;margin-bottom:16px;backdrop-filter:blur(12px)}
-    .card-title{font-family:'Orbitron','Courier New',monospace;color:#00E5FF;font-size:14px;letter-spacing:2px;margin-bottom:4px}
-    .card-sub{color:#8FB6C9;font-size:13px;margin-bottom:16px}
+  /* Step bar */
+  .steps{display:flex;gap:10px;margin-bottom:22px}
+  .step{flex:1;cursor:pointer}
+  .step-bar{height:3px;border-radius:2px;background:rgba(0,229,255,.12)}
+  .step.active .step-bar{background:var(--cy);box-shadow:0 0 10px rgba(0,229,255,.5)}
+  .step.done .step-bar{background:var(--gr)}
+  .step-label{margin-top:6px;font-family:'Orbitron',monospace;font-size:9px;letter-spacing:1.5px;color:var(--mut)}
+  .step.active .step-label{color:var(--cy)}
+  .step.done .step-label{color:var(--gr)}
 
-    /* Form elements */
-    label{color:#8FB6C9;font-size:12px;letter-spacing:1px;display:block;margin-bottom:4px}
-    input[type=text],input[type=password],select{background:rgba(0,229,255,.06);border:1px solid rgba(0,229,255,.3);border-radius:8px;padding:8px 12px;color:#fff;font-size:14px;outline:none;width:100%;-webkit-appearance:none;appearance:none}
-    input[type=text]:focus,input[type=password]:focus,select:focus{border-color:#00E5FF}
-    input[type=color]{width:36px;height:36px;border:none;background:none;cursor:pointer;border-radius:6px;padding:0}
-    select option{background:#08121C !important;color:#fff !important}
-    select option:hover,select option:checked,select option:focus{background:#00E5FF !important;color:#02050B !important}
-    select::-ms-expand{display:none}
+  .card{background:var(--panel);border:1px solid var(--cy-dim);border-radius:18px;
+    padding:18px;margin-bottom:16px;backdrop-filter:blur(12px)}
+  .card-title{font-family:'Orbitron',monospace;font-size:12px;letter-spacing:2px;color:var(--cy)}
+  .card-sub{font-size:12px;color:var(--dim);margin-top:4px}
 
-    /* Buttons */
-    .btn{border-radius:10px;padding:10px 20px;font-family:'Orbitron','Courier New',monospace;font-size:12px;letter-spacing:1px;cursor:pointer;transition:all .2s;border:1px solid #00E5FF;background:rgba(0,229,255,.12);color:#00E5FF}
-    .btn:disabled{opacity:.4;cursor:not-allowed}
-    .btn:hover:not(:disabled){background:rgba(0,229,255,.22);box-shadow:0 0 12px rgba(0,229,255,.3)}
-    .btn-danger{border-color:#FF3D71;background:rgba(255,61,113,.1);color:#FF3D71}
-    .btn-green{border-color:#00FFC3;background:rgba(0,255,195,.1);color:#00FFC3}
-    .btn-sm{padding:6px 12px;font-size:10px}
-    .btn-ghost{background:transparent}
+  input[type=text],select{background:rgba(0,0,0,.35);border:1px solid rgba(0,229,255,.22);
+    border-radius:10px;color:var(--txt);padding:9px 12px;font-size:13px;font-family:inherit;outline:none}
+  input[type=text]:focus,select:focus{border-color:var(--cy);box-shadow:0 0 0 2px rgba(0,229,255,.12)}
+  input[type=color]{width:38px;height:36px;padding:2px;background:transparent;border:1px solid rgba(0,229,255,.22);border-radius:10px;cursor:pointer}
+  label.fld{display:block;font-size:11px;letter-spacing:1px;color:var(--mut);margin-bottom:6px;text-transform:uppercase}
 
-    /* Layout helpers */
-    .row{display:flex;gap:10px;align-items:center;margin-bottom:8px}
-    .flex1{flex:1}
-    .actions{display:flex;justify-content:space-between;margin-top:20px;gap:12px}
-    .actions-right{display:flex;gap:12px;margin-left:auto}
+  .btn{background:rgba(0,229,255,.10);border:1px solid rgba(0,229,255,.45);color:var(--cy);
+    border-radius:12px;padding:10px 18px;font-family:'Orbitron',monospace;font-size:11px;letter-spacing:1.5px;cursor:pointer;transition:.2s}
+  .btn:hover:not(:disabled){background:rgba(0,229,255,.2);box-shadow:0 0 16px rgba(0,229,255,.25)}
+  .btn:disabled{opacity:.35;cursor:not-allowed}
+  .btn:focus-visible{outline:2px solid var(--cy);outline-offset:2px}
+  .btn-sm{padding:6px 12px;font-size:10px}
+  .btn-ghost{background:transparent;border-color:rgba(143,182,201,.3);color:var(--dim)}
+  .btn-ok{background:rgba(0,255,195,.10);border-color:rgba(0,255,195,.5);color:var(--gr)}
+  .btn-ok:hover:not(:disabled){background:rgba(0,255,195,.2);box-shadow:0 0 16px rgba(0,255,195,.25)}
+  .btn-danger{background:rgba(255,61,113,.10);border-color:rgba(255,61,113,.5);color:var(--rd)}
+  .btn-danger:hover:not(:disabled){background:rgba(255,61,113,.2);box-shadow:0 0 16px rgba(255,61,113,.25)}
 
-    /* Chips */
-    .chip{display:inline-block;padding:4px 14px;border-radius:20px;font-size:12px;letter-spacing:1px;cursor:pointer;margin-right:6px;margin-bottom:6px;border:1px solid rgba(0,229,255,.3);color:#8FB6C9;transition:all .2s}
-    .chip.on{background:rgba(0,229,255,.15);border-color:#00E5FF;color:#00E5FF}
+  .row{display:flex;gap:10px;align-items:center;margin-bottom:8px}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .flex1{flex:1;min-width:0}
+  .actions{display:flex;justify-content:space-between;gap:12px;margin-top:20px}
+  .actions-right{display:flex;gap:12px;margin-left:auto}
 
-    /* Badge */
-    .badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;margin-left:6px}
-    .badge-cyan{background:rgba(0,229,255,.15);border:1px solid rgba(0,229,255,.4);color:#00E5FF}
-    .badge-green{background:rgba(0,255,195,.15);border:1px solid rgba(0,255,195,.4);color:#00FFC3}
-    .badge-orange{background:rgba(255,152,0,.15);border:1px solid rgba(255,152,0,.4);color:#FF9800}
+  .chip{display:inline-block;padding:5px 14px;border-radius:20px;font-size:12px;letter-spacing:1px;cursor:pointer;margin:0 6px 6px 0;border:1px solid rgba(0,229,255,.3);color:var(--dim);transition:.2s}
+  .chip.on{background:rgba(0,229,255,.15);border-color:var(--cy);color:var(--cy)}
 
-    /* Device list */
-    .device-row{display:flex;gap:12px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(0,229,255,.08)}
-    .device-info{flex:2;min-width:0}
-    .device-name{font-size:13px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .device-id{font-size:11px;color:#56707E;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
-    .device-select{flex:1;min-width:140px}
+  .badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:11px;margin-left:6px;white-space:nowrap}
+  .badge-cyan{background:rgba(0,229,255,.15);border:1px solid rgba(0,229,255,.4);color:var(--cy)}
+  .badge-green{background:rgba(0,255,195,.15);border:1px solid rgba(0,255,195,.4);color:var(--gr)}
+  .badge-orange{background:rgba(255,152,0,.15);border:1px solid rgba(255,152,0,.4);color:var(--or)}
+  .badge-red{background:rgba(255,61,113,.15);border:1px solid rgba(255,61,113,.4);color:var(--rd)}
+  .badge-mut{background:rgba(86,112,126,.15);border:1px solid rgba(86,112,126,.4);color:var(--mut)}
 
-    /* Status */
-    .status{padding:12px 16px;border-radius:10px;font-size:13px;margin-bottom:16px}
-    .status-info{background:rgba(0,229,255,.08);border:1px solid rgba(0,229,255,.3);color:#00E5FF}
-    .status-ok{background:rgba(0,255,195,.08);border:1px solid rgba(0,255,195,.3);color:#00FFC3}
-    .status-error{background:rgba(255,61,113,.08);border:1px solid rgba(255,61,113,.3);color:#FF3D71}
-    .status-warn{background:rgba(255,152,0,.08);border:1px solid rgba(255,152,0,.3);color:#FF9800}
+  .kpi{display:flex;gap:14px;flex-wrap:wrap}
+  .kpi-box{flex:1;min-width:180px;background:rgba(0,0,0,.25);border:1px solid rgba(0,229,255,.14);border-radius:14px;padding:14px 16px}
+  .kpi-lbl{font-size:10px;letter-spacing:1.5px;color:var(--mut);text-transform:uppercase}
+  .kpi-val{font-family:'Orbitron',monospace;font-size:22px;margin-top:6px;color:var(--cy)}
+  .kpi-val.warn{color:var(--or)} .kpi-val.ok{color:var(--gr)}
 
-    /* SVG preview */
-    .svg-preview{background:rgba(8,18,28,.9);border:1px solid rgba(0,229,255,.2);border-radius:12px;padding:12px;overflow:auto;max-height:420px}
+  .status{padding:12px 16px;border-radius:10px;font-size:13px;margin-bottom:14px}
+  .status-info{background:rgba(0,229,255,.08);border:1px solid rgba(0,229,255,.3);color:var(--cy)}
+  .status-ok{background:rgba(0,255,195,.08);border:1px solid rgba(0,255,195,.3);color:var(--gr)}
+  .status-warn{background:rgba(255,152,0,.08);border:1px solid rgba(255,152,0,.3);color:var(--or)}
+  .status-error{background:rgba(255,61,113,.08);border:1px solid rgba(255,61,113,.3);color:var(--rd)}
 
-    /* Domain section */
-    .domain-header{color:#00E5FF;font-family:'Orbitron','Courier New',monospace;font-size:11px;letter-spacing:1px;padding:8px 0 4px;border-top:1px solid rgba(0,229,255,.1);margin-top:12px;cursor:pointer;display:flex;align-items:center;justify-content:space-between;user-select:none}
-    .domain-header:hover{color:#fff}
-    .domain-arrow{transition:transform .2s;font-size:10px;color:#56707E}
-    .domain-arrow.open{transform:rotate(180deg)}
-    .domain-content{overflow:hidden;transition:max-height .3s ease}
-    .domain-content.collapsed{max-height:0!important}
-    /* Sensor sections styled differently */
-    .domain-sensor .domain-header{color:#56707E;font-size:10px}
-    .domain-sensor .domain-header:hover{color:#8FB6C9}
+  .floor-block{border:1px solid rgba(0,229,255,.15);border-radius:14px;padding:14px;margin-bottom:12px;background:rgba(0,0,0,.2)}
+  .room-row{margin-left:18px}
+  .ghost{color:var(--mut);font-size:12px;font-style:italic;margin:6px 0 6px 18px}
 
-    /* Progress */
-    .progress-bar{height:4px;background:rgba(0,229,255,.1);border-radius:2px;overflow:hidden;margin:8px 0}
-    .progress-fill{height:100%;background:#00E5FF;border-radius:2px;transition:width .3s}
+  /* Device table */
+  .dom-header{color:var(--cy);font-family:'Orbitron',monospace;font-size:11px;letter-spacing:1px;
+    padding:10px 0 6px;border-top:1px solid rgba(0,229,255,.1);margin-top:10px;cursor:pointer;
+    display:flex;align-items:center;justify-content:space-between;user-select:none}
+  .dom-header:hover{color:#fff}
+  .dom-arrow{font-size:10px;color:var(--mut);transition:transform .2s}
+  .dom-arrow.open{transform:rotate(180deg)}
+  .dom-body{overflow:hidden;transition:max-height .3s ease}
+  .dom-body.collapsed{max-height:0}
+  .dev-row{display:flex;gap:12px;align-items:center;padding:8px 0;border-bottom:1px solid rgba(0,229,255,.08)}
+  .dev-info{flex:2;min-width:0}
+  .dev-name{font-size:13px;color:#fff;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dev-id{font-size:11px;color:var(--mut);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .dev-sel{flex:1;min-width:150px}
+  .progress{height:4px;background:rgba(0,229,255,.1);border-radius:2px;overflow:hidden;margin:10px 0}
+  .progress-fill{height:100%;background:var(--cy);border-radius:2px;transition:width .3s}
 
-    /* Spinner */
-    @keyframes spin{to{transform:rotate(360deg)}}
-    .spinner{display:inline-block;width:20px;height:20px;border:2px solid rgba(0,229,255,.2);border-top-color:#00E5FF;border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle;margin-right:8px}
-  </style>
+  /* Dashboards */
+  .dash-row{display:grid;grid-template-columns:20px 1fr auto auto;gap:12px;align-items:center;
+    padding:11px 4px;border-bottom:1px solid rgba(0,229,255,.08)}
+  .dash-title{font-size:14px;color:#fff}
+  .dash-path{font-size:11px;color:var(--mut);font-family:'Courier New',monospace}
+  input[type=checkbox]{accent-color:#00E5FF;width:16px;height:16px;cursor:pointer}
+
+  @keyframes spin{to{transform:rotate(360deg)}}
+  .spinner{display:inline-block;width:16px;height:16px;border:2px solid rgba(0,229,255,.2);
+    border-top-color:var(--cy);border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle;margin-right:8px}
+  @media (prefers-reduced-motion:reduce){.spinner{animation:none}}
+  @media (max-width:640px){.grid2{grid-template-columns:1fr}.dev-id{display:none}}
+</style>
 </head>
 <body>
 <div class="page">
 
-  <!-- HEADER -->
   <div class="header">
     <div class="logo">⬡</div>
-    <div class="logo-text">
+    <div>
       <h1>VISIO SAPIENS</h1>
-      <p>DISCOVERY WIZARD</p>
+      <p>WIZARD</p>
     </div>
-    <div class="ha-url" id="ha-url"></div>
+    <button class="btn btn-ghost btn-sm back" onclick="backToMenu()">‹ Menu</button>
   </div>
 
-  <!-- STEP BAR -->
   <div class="steps">
-    <div class="step active" id="s1"><div class="step-bar"></div><div class="step-label">1. STRUCTURE</div></div>
-    <div class="step" id="s2"><div class="step-bar"></div><div class="step-label">2. APPAREILS</div></div>
-    <div class="step" id="s3"><div class="step-bar"></div><div class="step-label">3. MODÈLE</div></div>
-    <div class="step" id="s4"><div class="step-bar"></div><div class="step-label">4. APERÇU</div></div>
-    <div class="step" id="s5"><div class="step-bar"></div><div class="step-label">5. PUBLICATION</div></div>
+    <div class="step" id="s1" onclick="goStep(1)"><div class="step-bar"></div><div class="step-label">1. PIÈCES &amp; ÉTAGES</div></div>
+    <div class="step" id="s2" onclick="goStep(2)"><div class="step-bar"></div><div class="step-label">2. APPAREILS</div></div>
+    <div class="step" id="s3" onclick="goStep(3)"><div class="step-bar"></div><div class="step-label">3. DASHBOARDS</div></div>
   </div>
 
-  <!-- CONTENT -->
   <div id="content"></div>
-
 </div>
 
 <script>
-// ─── State ────────────────────────────────────────────────────────────────
-const HA_URL   = window.location.origin;
-const DOMAIN_ICON = {
-  light:"💡",switch:"🔌",sensor:"📡",binary_sensor:"🚨",
-  climate:"🌡",media_player:"🎵",cover:"🪟",camera:"📷",
-  alarm_control_panel:"🔒",vacuum:"🤖",fan:"💨",lock:"🔑",input_boolean:"🔘"
+"use strict";
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   CONFIG — adapte ces valeurs à ton installation
+   ═══════════════════════════════════════════════════════════════════════════ */
+const CFG = {
+  MENU_URL: "/visio-sapiens/admin",              // ‹ Menu  (chevron « Back to the menu »)
+  LOCALE_SENSOR: "sensor.vssp_deployed_locale",           // "VSSP deployed locale"
+  PLACEHOLDERS_SENSOR: "sensor.vssp_unrendered_placeholders", // "VSSP unrendered placeholders"
+  DISCOVERY_SERVICE: {domain:"script", service:"vssp_run_discovery"},      // écrit report.json
+  REGENERATE_SERVICE: {domain:"script", service:"vssp_regenerer_dashboards"}, // save + regenerate
+  // Suppression d'un dashboard YAML : shell_command qui reçoit l'id en variable.
+  // Laisse null si tu n'as pas (encore) branché la suppression côté serveur.
+  DELETE_DASHBOARD_SERVICE: {domain:"shell_command", service:"vssp_delete_dashboard"},
+  // Domaines listés comme « appareils » et regroupés en blocs dans l'étape 2.
+  DEVICE_DOMAINS: ["light","switch","climate","media_player","cover","camera",
+                   "alarm_control_panel","vacuum","fan","lock","input_boolean","button","remote"]
 };
+
+const DOMAIN_ICON = {light:"💡",switch:"🔌",climate:"🌡",media_player:"🎵",cover:"🪟",
+  camera:"📷",alarm_control_panel:"🔒",vacuum:"🤖",fan:"💨",lock:"🔑",input_boolean:"🔘",
+  button:"⏺",remote:"📱",sensor:"📡",binary_sensor:"🚨"};
+
+const LOCALES = [
+  {v:"fr-FR", t:"Français (France)"},
+  {v:"en-US", t:"English (US)"},
+  {v:"en-GB", t:"English (UK)"},
+  {v:"es-ES", t:"Español (España)"},
+  {v:"de-DE", t:"Deutsch"},
+  {v:"it-IT", t:"Italiano"},
+  {v:"nl-NL", t:"Nederlands"}
+];
+const DATE_FMTS = [
+  {v:"DMY", t:"JJ/MM/AAAA"},
+  {v:"MDY", t:"MM/JJ/AAAA"},
+  {v:"YMD", t:"AAAA-MM-JJ"}
+];
+const NUM_FMTS = [
+  {v:"comma_dot", t:"1 234,56 (virgule décimale)"},
+  {v:"dot_comma", t:"1,234.56 (point décimal)"}
+];
+
 const EXTERIOR_TYPES = ["Jardin","Piscine","Jacuzzi","Garage","Terrasse","Véranda"];
+const EXTERIOR_FLOOR_NAMES = ["extérieur","exterieur","outdoor","extérieurs","exterieurs"];
+const DEFAULT_COLOR = "#0A2030";
 
+const LS = {token:"osv_ha_token", house:"vssp_house", colors:"vssp_room_colors",
+            devices:"vssp_devices", settings:"vssp_settings"};
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   STATE
+   ═══════════════════════════════════════════════════════════════════════════ */
 let state = {
-  token: localStorage.getItem("osv_ha_token") || "",
-  step: 0,   // 0=token, 1-5=phases
-  house: { floors:[], exteriors:[] },
-  devices: [],
-  sensors: [],        // capteurs sensor.* relevés au scan (pour pairage énergie)
-  modelYaml: "",      // fragment rooms généré (house_rooms.yaml)
-  previewOk: false,   // un aperçu a-t-il été généré avec succès ?
-  gitlab: {
-    url: localStorage.getItem("osv_gitlab_url") || "http://192.168.1.11:10000",
-    projectId: localStorage.getItem("osv_gitlab_project") || "",
-    token: localStorage.getItem("osv_gitlab_token") || "",
-    branch: localStorage.getItem("osv_gitlab_branch") || "main",
-  },
+  token: localStorage.getItem(LS.token) || "",
+  connected: false, loading:false, busyLabel:"", error:"", notice:"",
+  step: 1,
+  settings: JSON.parse(localStorage.getItem(LS.settings) || "{}"),
+  status: {locale:null, placeholders:null},
+  ha: {floors:[], areas:[], counts:{}},
+  draft: {floors:[], exteriors:[]},
+  colors: JSON.parse(localStorage.getItem(LS.colors) || "{}"),
+  devices: JSON.parse(localStorage.getItem(LS.devices) || "[]"),
+  openDomains: {},
+  dashboards: [],
+  dashSel: new Set()
 };
+if (!state.settings.locale) state.settings.locale = "fr-FR";
+if (!state.settings.dateFmt) state.settings.dateFmt = "DMY";
+if (!state.settings.numFmt) state.settings.numFmt = "comma_dot";
 
-document.getElementById("ha-url").textContent = HA_URL;
-
-// ─── API ──────────────────────────────────────────────────────────────────
-async function haGet(path) {
-  const r = await fetch(`${HA_URL}/api/${path}`, {
-    headers:{ Authorization:`Bearer ${state.token}` }
+/* ═══════════════════════════════════════════════════════════════════════════
+   WEBSOCKET HA
+   ═══════════════════════════════════════════════════════════════════════════ */
+let ws=null, msgId=1; const pending={};
+function wsConnect(token){
+  return new Promise((resolve,reject)=>{
+    const proto = location.protocol==="https:"?"wss:":"ws:";
+    let settled=false;
+    const sock=new WebSocket(`${proto}//${location.host}/api/websocket`);
+    sock.onmessage=ev=>{
+      const m=JSON.parse(ev.data);
+      if(m.type==="auth_required") sock.send(JSON.stringify({type:"auth",access_token:token}));
+      else if(m.type==="auth_ok"){ws=sock;settled=true;resolve(sock);}
+      else if(m.type==="auth_invalid"){settled=true;sock.close();reject(new Error("Token refusé par Home Assistant."));}
+      else if(m.type==="result"){
+        const p=pending[m.id]; if(!p)return; delete pending[m.id];
+        m.success?p.resolve(m.result):p.reject(new Error(m.error&&m.error.message||"Erreur HA"));
+      }
+    };
+    sock.onerror=()=>{if(!settled){settled=true;reject(new Error("WebSocket injoignable."));}};
+    sock.onclose=()=>{ws=null;state.connected=false;
+      Object.keys(pending).forEach(k=>{pending[k].reject(new Error("Connexion fermée"));delete pending[k];});
+      if(!settled){settled=true;reject(new Error("Connexion fermée avant authentification."));}};
   });
-  if (!r.ok) throw new Error(`${path}: ${r.status} ${r.statusText}`);
+}
+function wsCall(type,payload){
+  return new Promise((resolve,reject)=>{
+    if(!ws)return reject(new Error("Non connecté à Home Assistant."));
+    const id=msgId++; pending[id]={resolve,reject};
+    ws.send(JSON.stringify(Object.assign({id,type},payload||{})));
+  });
+}
+async function haGet(path){
+  const r=await fetch(`${location.origin}/api/${path}`,{headers:{Authorization:`Bearer ${state.token}`}});
+  if(!r.ok)throw new Error(`${path}: ${r.status}`);
   return r.json();
 }
-
-async function haPost(path, data={}) {
-  const r = await fetch(`${HA_URL}/api/${path}`, {
-    method:"POST",
-    headers:{ Authorization:`Bearer ${state.token}`, "Content-Type":"application/json" },
-    body: JSON.stringify(data)
-  });
-  if (!r.ok) throw new Error(`${path}: ${r.status}`);
+async function callService(domain,service,data){
+  const r=await fetch(`${location.origin}/api/services/${domain}/${service}`,{
+    method:"POST",headers:{Authorization:`Bearer ${state.token}`,"Content-Type":"application/json"},
+    body:JSON.stringify(data||{})});
+  if(!r.ok)throw new Error(`${domain}.${service}: ${r.status}`);
   return r.json().catch(()=>({}));
 }
 
-async function callService(domain, service, data={}) {
-  return haPost(`services/${domain}/${service}`, data);
-}
-
-// ─── Step bar ─────────────────────────────────────────────────────────────
-function setStep(n) {
-  state.step = n;
-  [1,2,3,4,5].forEach(i => {
-    const el = document.getElementById(`s${i}`);
-    if (el) el.className = "step" + (i < n ? " done" : i === n ? " active" : "");
+/* ═══════════════════════════════════════════════════════════════════════════
+   LECTURE REGISTRE + STATUT
+   ═══════════════════════════════════════════════════════════════════════════ */
+async function loadRegistry(){
+  const [floors,areas,entities,devices]=await Promise.all([
+    wsCall("config/floor_registry/list").catch(()=>[]),
+    wsCall("config/area_registry/list"),
+    wsCall("config/entity_registry/list"),
+    wsCall("config/device_registry/list")
+  ]);
+  const devArea={}; devices.forEach(d=>devArea[d.id]=d.area_id||null);
+  const counts={};
+  entities.forEach(e=>{
+    const aid=e.area_id||(e.device_id?devArea[e.device_id]:null);
+    if(!aid)return;
+    const dom=String(e.entity_id).split(".")[0];
+    if(!counts[aid])counts[aid]={total:0,byDomain:{}};
+    counts[aid].total++;
+    if(CFG.DEVICE_DOMAINS.includes(dom))counts[aid].byDomain[dom]=(counts[aid].byDomain[dom]||0)+1;
   });
-}
-
-// ─── Render router ────────────────────────────────────────────────────────
-function render() {
-  const c = document.getElementById("content");
-  if (!state.token) { renderToken(c); return; }
-  if (state.step === 0) setStep(1);
-  if (state.step === 1) renderPhase1(c);
-  else if (state.step === 2) renderPhase2(c);
-  else if (state.step === 3) renderPhase3(c);
-  else if (state.step === 4) renderPhaseGit(c);
-  else if (state.step === 5) renderPhase4(c);
-}
-
-// ─── TOKEN SCREEN ─────────────────────────────────────────────────────────
-function renderToken(c) {
-  c.innerHTML = `
-    <div class="card" style="max-width:480px;margin:40px auto">
-      <div class="card-title">CONNEXION HOME ASSISTANT</div>
-      <div class="card-sub">Crée un jeton longue durée dans <em>Profil → Jetons d'accès longue durée</em>.</div>
-      <label>JETON D'ACCÈS</label>
-      <input type="password" id="tok" placeholder="eyJhbGciOi…" style="margin-bottom:16px"/>
-      <button class="btn" onclick="saveToken()">Connexion →</button>
-    </div>`;
-  const tok = document.getElementById("tok");
-  tok.value = state.token;
-  tok.addEventListener("keydown", e => e.key === "Enter" && saveToken());
-}
-
-async function saveToken() {
-  const t = document.getElementById("tok").value.trim();
-  if (!t) return;
-  try {
-    state.token = t;
-    await haGet("states?limit=1");
-    localStorage.setItem("osv_ha_token", t);
-    setStep(1);
-    render();
-  } catch(e) {
-    alert("Jeton invalide ou HA inaccessible : " + e.message);
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// PHASE 1 — Structure de la maison
-// ═══════════════════════════════════════════════════════════════════════════
-function renderPhase1(c) {
-  const h = state.house;
-  let html = `
-    <div class="card">
-      <div class="card-title">PHASE 1 — STRUCTURE DE LA MAISON</div>
-      <div class="card-sub">Définissez les étages, pièces et espaces extérieurs.</div>
-      <button class="btn btn-sm" onclick="addFloor()">+ Ajouter un étage</button>
-    </div>`;
-
-  h.floors.forEach((floor, fi) => {
-    html += `
-    <div class="card">
-      <div class="row">
-        <span style="color:#00E5FF;font-size:11px;font-family:'Orbitron','Courier New',monospace;white-space:nowrap">ÉTAGE ${fi+1}</span>
-        <input type="text" class="flex1" value="${esc(floor.name)}" oninput="updFloorName(${fi},this.value)" placeholder="Nom de l'étage"/>
-        <button class="btn btn-sm btn-danger" onclick="delFloor(${fi})">✕</button>
-      </div>
-      <div id="rooms-${fi}">`;
-    floor.rooms.forEach((r, ri) => {
-      html += `
-        <div class="row" style="margin-left:20px">
-          <input type="text" class="flex1" value="${esc(r.name)}" oninput="updRoom(${fi},${ri},'name',this.value)" placeholder="Nom de la pièce"/>
-          <input type="color" value="${r.color}" onchange="updRoom(${fi},${ri},'color',this.value)" title="Couleur"/>
-          <button class="btn btn-sm btn-danger" onclick="delRoom(${fi},${ri})">✕</button>
-        </div>`;
-    });
-    html += `</div>
-      <button class="btn btn-sm" style="margin-top:8px;margin-left:20px" onclick="addRoom(${fi})">+ Pièce</button>
-    </div>`;
-  });
-
-  html += `
-    <div class="card">
-      <div class="card-title" style="margin-bottom:12px">ESPACES EXTÉRIEURS</div>
-      <div id="ext-chips">`;
-  EXTERIOR_TYPES.forEach(e => {
-    const on = h.exteriors.includes(e);
-    html += `<span class="chip${on?' on':''}" onclick="toggleExt('${e}')">${e}</span>`;
-  });
-  html += `</div>
-      <div class="row" style="margin-top:12px">
-        <input type="text" id="custom-ext" class="flex1" placeholder="Autre espace…" onkeydown="addCustomExt(event)"/>
-        <button class="btn btn-sm" onclick="addCustomExtBtn()">+</button>
-      </div>
-    </div>
-    <div class="actions">
-      <div></div>
-      <div class="actions-right">
-        <button class="btn" onclick="goPhase2()" ${canGoPhase2()?'':'disabled'}>
-          Suivant → Découverte des appareils
-        </button>
-      </div>
-    </div>`;
-
-  c.innerHTML = html;
-}
-
-function canGoPhase2() {
-  return state.house.floors.some(f => f.rooms.some(r => r.name.trim()));
-}
-
-function addFloor() {
-  const n = state.house.floors.length;
-  state.house.floors.push({ name: n===0?"Rez-de-chaussée":`Étage ${n}`, rooms:[] });
-  render();
-}
-function delFloor(fi) { state.house.floors.splice(fi,1); render(); }
-function updFloorName(fi,v) { state.house.floors[fi].name=v; }
-function addRoom(fi) { state.house.floors[fi].rooms.push({name:"",color:"#0A2030"}); render(); }
-function delRoom(fi,ri) { state.house.floors[fi].rooms.splice(ri,1); render(); }
-function updRoom(fi,ri,k,v) { state.house.floors[fi].rooms[ri][k]=v; }
-function toggleExt(name) {
-  const ex = state.house.exteriors;
-  const i = ex.indexOf(name);
-  if (i>=0) ex.splice(i,1); else ex.push(name);
-  render();
-}
-function addCustomExt(e) { if(e.key==="Enter") addCustomExtBtn(); }
-function addCustomExtBtn() {
-  const inp = document.getElementById("custom-ext");
-  const v = inp.value.trim();
-  if (v && !state.house.exteriors.includes(v)) {
-    state.house.exteriors.push(v);
-    inp.value = "";
-    render();
-  }
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// PHASE 2 — Découverte + assignation
-// ═══════════════════════════════════════════════════════════════════════════
-function renderPhase2(c) {
-  const allRooms = getAllRooms();
-  const assigned = state.devices.filter(d=>d.room).length;
-
-  let html = `
-    <div class="card">
-      <div class="card-title">PHASE 2 — DÉCOUVERTE DES APPAREILS</div>
-      <div class="card-sub">Lancez le scan HA pour récupérer les appareils, puis assignez chacun à une pièce.</div>
-      <div class="status status-info" style="margin-bottom:16px">
-        💡 Assignez au moins un appareil à une pièce pour continuer. Les appareils non assignés seront ignorés lors de la génération du plan — vous pourrez les assigner plus tard via un nouveau scan.
-      </div>
-      <button class="btn" onclick="runDiscoveryScan()" id="btn-scan">
-        ⚡ Lancer le scan Home Assistant
-      </button>
-    </div>
-    <div id="scan-status"></div>`;
-
-  if (state.devices.length > 0) {
-    const pct = Math.round(assigned / state.devices.length * 100);
-    html += `
-    <div class="card">
-      <div class="row">
-        <span style="color:#fff;font-size:14px">${state.devices.length} appareils trouvés</span>
-        <span class="badge badge-cyan">${assigned} assignés</span>
-        <span class="badge badge-orange">${state.devices.length - assigned} non assignés</span>
-      </div>
-      <div class="progress-bar"><div class="progress-fill" style="width:${pct}%"></div></div>
-    </div>`;
-
-    // Grouper par domaine — appareils en premier, sensors en bas
-    const SENSOR_DOMAINS = ["sensor","binary_sensor"];
-    const byDomain = {};
-    state.devices.forEach(d => {
-      const dom = d.entity_id.split(".")[0];
-      if (!byDomain[dom]) byDomain[dom] = [];
-      byDomain[dom].push(d);
-    });
-
-    // Trier : appareils physiques d'abord, puis sensors
-    const sortedEntries = Object.entries(byDomain).sort(([a],[b]) => {
-      const aIsSensor = SENSOR_DOMAINS.includes(a);
-      const bIsSensor = SENSOR_DOMAINS.includes(b);
-      if (aIsSensor && !bIsSensor) return 1;
-      if (!aIsSensor && bIsSensor) return -1;
-      return a.localeCompare(b);
-    });
-
-    const roomOptions = `<option value="">— Non assigné —</option>` +
-      allRooms.map(r => `<option value="${esc(r)}">${esc(r)}</option>`).join("");
-
-    sortedEntries.forEach(([dom, devs]) => {
-      const isSensor = SENSOR_DOMAINS.includes(dom);
-      const domId = `dom-${dom}`;
-      const isOpen = !isSensor; // appareils ouverts, sensors repliés
-      html += `<div class="card${isSensor?' domain-sensor':''}">
-        <div class="domain-header" onclick="toggleDomain('${domId}')">
-          <span>${DOMAIN_ICON[dom]||"📦"} ${dom.toUpperCase().replace("_"," ")} <span class="badge badge-${isSensor?'orange':'cyan'}">${devs.length}</span></span>
-          ${isSensor?`<span class="domain-arrow" id="arr-${domId}">▼</span>`:''}
-        </div>
-        <div class="domain-content${isSensor?' collapsed':''}" id="${domId}" style="max-height:${isOpen?'9999px':'0'}">`;
-      devs.forEach(dev => {
-        const sel = roomOptions.replace(
-          `value="${esc(dev.room||'')}"`,
-          `value="${esc(dev.room||'')}" selected`
-        );
-        html += `
-        <div class="device-row">
-          <div class="device-info">
-            <div class="device-name">${esc(dev.friendly_name)}</div>
-            <div class="device-id">${esc(dev.entity_id)}</div>
-          </div>
-          <select class="device-select" onchange="assignDevice('${esc(dev.entity_id)}',this.value)">${sel}</select>
-        </div>`;
-      });
-      html += `</div></div>`;
-    });
-  }
-
-  html += `
-    <div class="actions">
-      <button class="btn btn-ghost" onclick="goPhase1()">← Retour</button>
-      <div class="actions-right">
-        <button class="btn" onclick="goPhase3()" ${assigned>0?'':'disabled'}>
-          Suivant → Générer le modèle
-        </button>
-      </div>
-    </div>`;
-
-  c.innerHTML = html;
-}
-
-async function runDiscoveryScan() {
-  const btn = document.getElementById("btn-scan");
-  const status = document.getElementById("scan-status");
-  btn.disabled = true;
-  btn.innerHTML = `<span class="spinner"></span>Scan en cours…`;
-
-  status.innerHTML = `<div class="status status-info"><span class="spinner"></span>Appel du script de découverte HA…</div>`;
-
-  try {
-    // 1. Lancer le script Python via HA service
-    await callService("script", "turn_on", { entity_id:"script.vssp_run_discovery" });
-    status.innerHTML = `<div class="status status-info"><span class="spinner"></span>Script lancé — récupération directe des entités…</div>`;
-
-    // 2. Récupérer directement les états HA (plus fiable)
-    await new Promise(r => setTimeout(r, 1500));
-    // Appareils physiques uniquement — on exclut sensor/binary_sensor
-    // (capteurs de mesure récupérés automatiquement par le dashboard)
-    // Appareils physiques uniquement
-    const DOMAINS = ["light","switch","climate","media_player","cover",
-                     "camera","alarm_control_panel","vacuum","fan","lock",
-                     "input_boolean","button","remote"];
-    const states = await haGet("states");
-    // Capteurs de mesure : gardés de côté pour le pairage puissance/énergie
-    state.sensors = states
-      .filter(s => s.entity_id.startsWith("sensor."))
-      .map(s => s.entity_id);
-    const devs = states
-      .filter(s => DOMAINS.includes(s.entity_id.split(".")[0]))
-      .map(s => ({
-        entity_id: s.entity_id,
-        friendly_name: s.attributes?.friendly_name || s.entity_id,
-        state: s.state,
-        room: null,
-      }));
-
-    state.devices = devs;
-    status.innerHTML = `<div class="status status-ok">✓ ${devs.length} appareils récupérés</div>`;
-    btn.innerHTML = `⚡ Relancer le scan`;
-    btn.disabled = false;
-    render();
-  } catch(e) {
-    status.innerHTML = `<div class="status status-error">Erreur : ${e.message}</div>`;
-    btn.innerHTML = `⚡ Lancer le scan Home Assistant`;
-    btn.disabled = false;
-  }
-}
-
-function assignDevice(entity_id, room) {
-  const dev = state.devices.find(d => d.entity_id === entity_id);
-  if (dev) dev.room = room || null;
-  // Mettre à jour le compteur sans re-render complet
-  const assigned = state.devices.filter(d=>d.room).length;
-  const pct = Math.round(assigned / state.devices.length * 100);
-  const progEl = document.querySelector(".progress-fill");
-  if (progEl) progEl.style.width = pct + "%";
-  const badges = document.querySelectorAll(".badge");
-  if (badges[0]) badges[0].textContent = assigned + " assignés";
-  if (badges[1]) badges[1].textContent = (state.devices.length - assigned) + " non assignés";
-  // Activer le bouton Suivant dès qu'au moins un appareil est assigné
-  const btnNext = document.querySelector(".actions-right .btn");
-  if (btnNext) btnNext.disabled = assigned === 0;
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// PHASE 3 — Génération du modèle (rooms → house_rooms.yaml)
-// ═══════════════════════════════════════════════════════════════════════════
-
-function slugify(name) {
-  return String(name).normalize("NFD").replace(/[\u0300-\u036f]/g, "")
-    .toLowerCase().replace(/[^a-z0-9]+/g, "_").replace(/^_+|_+$/g, "");
-}
-
-// Icône mdi devinée depuis le nom / domaine (modifiable ensuite dans le YAML)
-const ICON_RULES = [
-  [/aspirateur|vacuum/i, "mdi:vacuum"],
-  [/congel|freezer/i, "mdi:snowflake"],
-  [/frigo|refrigerat|fridge/i, "mdi:fridge"],
-  [/lave.?linge|washing/i, "mdi:washing-machine"],
-  [/seche.?linge|dryer/i, "mdi:tumble-dryer"],
-  [/lave.?vaisselle|dishwasher/i, "mdi:dishwasher"],
-  [/four|oven/i, "mdi:toaster-oven"],
-  [/alarme|alarm/i, "mdi:alarm"],
-  [/livebox|box|router|provider/i, "mdi:web"],
-  [/commutateur|switch|netgear|lan/i, "mdi:lan"],
-  [/synology|nas/i, "mdi:nas"],
-  [/tv|television/i, "mdi:television"],
-  [/clim|air.?cond/i, "mdi:air-conditioner"],
-  [/chauffe.?eau|boiler/i, "mdi:water-boiler"],
-  [/piscine|pool/i, "mdi:pool"],
-  [/lamp|light|eclairage|lumiere/i, "mdi:lightbulb-on-outline"],
-  [/bureau|desk/i, "mdi:desk-lamp"],
-  [/prise|plug|socket/i, "mdi:power-socket-fr"],
-];
-const DOMAIN_MDI = { light:"mdi:lightbulb-on-outline", switch:"mdi:power-socket-fr",
-  climate:"mdi:thermostat", media_player:"mdi:speaker", cover:"mdi:window-shutter",
-  camera:"mdi:cctv", alarm_control_panel:"mdi:shield-home", vacuum:"mdi:vacuum",
-  fan:"mdi:fan", lock:"mdi:lock" };
-
-function guessIcon(name, domain) {
-  for (const [re, icon] of ICON_RULES) if (re.test(name)) return icon;
-  return DOMAIN_MDI[domain] || "mdi:power-plug";
-}
-
-// Cherche les capteurs puissance/énergie liés à un appareil via son stem
-// (ex: switch.shelly_bureau → sensor.shelly_bureau_power / _energy_today)
-const POWER_RE = /_(power|puissance|watts?)$/;
-const ENERGY_RE = /_(energy_today|energy|energie|kwh)$/;
-
-function findEnergyPair(entity_id) {
-  const stem = entity_id.split(".")[1];
-  const related = state.sensors
-    .map(s => s.split(".")[1])
-    .filter(oid => oid === stem || oid.startsWith(stem + "_"));
-  const power = related.find(oid => POWER_RE.test(oid));
-  const energy = related.find(oid => ENERGY_RE.test(oid));
-  return {
-    power: power ? "sensor." + power : null,
-    energy: energy ? "sensor." + energy : null,
+  state.ha={
+    floors:floors.map(f=>({floor_id:f.floor_id,name:f.name,level:f.level})),
+    areas:areas.map(a=>({area_id:a.area_id,name:a.name,floor_id:a.floor_id||null})),
+    counts
   };
+  buildDraftFromRegistry();
+}
+function buildDraftFromRegistry(){
+  const isExt=f=>EXTERIOR_FLOOR_NAMES.includes(String(f.name||"").toLowerCase());
+  const extIds=new Set(state.ha.floors.filter(isExt).map(f=>f.floor_id));
+  const floors=state.ha.floors.filter(f=>!extIds.has(f.floor_id))
+    .sort((a,b)=>(a.level??0)-(b.level??0))
+    .map(f=>({floor_id:f.floor_id,name:f.name,level:f.level??0,
+      rooms:state.ha.areas.filter(a=>a.floor_id===f.floor_id)
+        .map(a=>({area_id:a.area_id,name:a.name,color:state.colors[a.area_id]||DEFAULT_COLOR}))}));
+  const orphans=state.ha.areas.filter(a=>!a.floor_id&&!extIds.has(a.floor_id));
+  if(orphans.length)floors.push({floor_id:null,name:"Non classé",level:floors.length,
+    rooms:orphans.map(a=>({area_id:a.area_id,name:a.name,color:state.colors[a.area_id]||DEFAULT_COLOR}))});
+  const exteriors=state.ha.areas.filter(a=>extIds.has(a.floor_id)).map(a=>a.name);
+  state.draft={floors,exteriors};
+}
+async function loadStatus(){
+  try{
+    const [loc,ph]=await Promise.all([
+      haGet(`states/${CFG.LOCALE_SENSOR}`).catch(()=>null),
+      haGet(`states/${CFG.PLACEHOLDERS_SENSOR}`).catch(()=>null)
+    ]);
+    state.status.locale=loc?loc.state:null;
+    state.status.placeholders=ph?ph.state:null;
+    if(loc&&loc.state&&LOCALES.some(l=>l.v===loc.state)) state.settings.locale=loc.state;
+  }catch(_){}
 }
 
-function buildModelYaml() {
-  const rooms = getAllRooms();
-  const now = new Date().toISOString().slice(0, 16).replace("T", " ");
-  let complete = 0, incomplete = 0;
-
-  let y = "";
-  y += "########################################################################\n";
-  y += "# Visio Sapiens — rooms générées par le Discovery Wizard (" + now + ")\n";
-  y += "# Fichier fusionné automatiquement par vssp/generate_dashboards.py :\n";
-  y += "# s'il existe, sa clé rooms: remplace celle de model/house.yaml.\n";
-  y += "# Compléter les champs model: et ajuster les icônes si besoin.\n";
-  y += "########################################################################\n";
-  y += "rooms:\n";
-
-  rooms.forEach(roomName => {
-    const devs = state.devices.filter(d => d.room === roomName);
-    y += "  - id: " + slugify(roomName) + "\n";
-    y += '    name: "' + roomName.replace(/"/g, "'") + '"\n';
-    y += "    devices:\n";
-    let emitted = 0;
-    devs.forEach(d => {
-      const pair = findEnergyPair(d.entity_id);
-      const name = (d.friendly_name || d.entity_id).replace(/"/g, "'");
-      const icon = guessIcon(name, d.entity_id.split(".")[0]);
-      if (pair.power && pair.energy) {
-        y += '      - name: "' + name + '"\n';
-        y += "        icon: " + icon + "\n";
-        y += '        model: "A COMPLETER"\n';
-        y += "        power_entity: " + pair.power + "\n";
-        y += "        energy_entity: " + pair.energy + "\n";
-        emitted++; complete++;
-      } else {
-        y += "      # TODO " + d.entity_id + ' ("' + name + '") : capteurs\n';
-        y += "      #      puissance/energie non trouves — a renseigner\n";
-        y += "      #      manuellement (power_entity / energy_entity)\n";
-        incomplete++;
-      }
-    });
-    if (emitted === 0) y += "      []\n";
+/* ═══════════════════════════════════════════════════════════════════════════
+   DIFF + APPLY (structure)
+   ═══════════════════════════════════════════════════════════════════════════ */
+function computeDiff(){
+  const d={floorsCreate:[],floorsUpdate:[],floorsDelete:[],areasCreate:[],areasUpdate:[],areasDelete:[]};
+  const draftFloorIds=new Set(state.draft.floors.map(f=>f.floor_id).filter(Boolean));
+  const draftAreaIds=new Set();
+  state.draft.floors.forEach(f=>f.rooms.forEach(r=>r.area_id&&draftAreaIds.add(r.area_id)));
+  const isExt=f=>EXTERIOR_FLOOR_NAMES.includes(String(f.name||"").toLowerCase());
+  const extFloor=state.ha.floors.find(isExt)||null;
+  const extAreas=extFloor?state.ha.areas.filter(a=>a.floor_id===extFloor.floor_id):[];
+  const extNames=state.draft.exteriors.map(e=>e.trim()).filter(Boolean);
+  extAreas.forEach(a=>{if(extNames.includes(a.name))draftAreaIds.add(a.area_id);});
+  state.draft.floors.forEach((f,i)=>{
+    const name=f.name.trim(); if(!name||f.name==="Non classé")return;
+    if(!f.floor_id){d.floorsCreate.push({name,level:i});return;}
+    const ref=state.ha.floors.find(x=>x.floor_id===f.floor_id);
+    if(ref&&(ref.name!==name||(ref.level??0)!==i))d.floorsUpdate.push({floor_id:f.floor_id,name,level:i});
   });
-
-  state.modelYaml = y.replace(/      \[\]\n/g, "");
-  // rooms sans device complet : devices: [] valide pour le générateur
-  state.modelYaml = state.modelYaml.replace(/    devices:\n(?=  - id:|$)/g, "    devices: []\n");
-  return { complete, incomplete };
+  state.ha.floors.forEach(f=>{if(isExt(f))return;if(!draftFloorIds.has(f.floor_id))d.floorsDelete.push(f);});
+  state.draft.floors.forEach(f=>f.rooms.forEach(r=>{
+    const name=r.name.trim(); if(!name)return;
+    if(!r.area_id){d.areasCreate.push({name,floorName:f.name.trim(),floor_id:f.floor_id||null,
+      color:r.color,pendingFloorName:(!f.floor_id&&f.name!=="Non classé")?f.name.trim():null});return;}
+    const ref=state.ha.areas.find(a=>a.area_id===r.area_id); if(!ref)return;
+    const target=(f.name==="Non classé")?null:(f.floor_id||null);
+    if(ref.name!==name||(ref.floor_id||null)!==target)
+      d.areasUpdate.push({area_id:r.area_id,name,floor_id:target,
+        pendingFloorName:(!f.floor_id&&f.name!=="Non classé")?f.name.trim():null});
+  }));
+  extNames.forEach(n=>{if(!extAreas.some(a=>a.name===n))d.areasCreate.push({name:n,floorName:"Extérieur",exterior:true});});
+  state.ha.areas.forEach(a=>{if(!draftAreaIds.has(a.area_id))d.areasDelete.push(a);});
+  d.total=d.floorsCreate.length+d.floorsUpdate.length+d.floorsDelete.length
+        +d.areasCreate.length+d.areasUpdate.length+d.areasDelete.length;
+  return d;
 }
-
-function renderPhase3(c) {
-  const rooms = getAllRooms();
-  const assigned = state.devices.filter(d => d.room).length;
-
-  let html = `
-    <div class="card">
-      <div class="card-title">PHASE 3 — GÉNÉRATION DU MODÈLE</div>
-      <div class="card-sub">
-        Construit le fragment <code style="color:#00E5FF">house_rooms.yaml</code>
-        (pièces + appareils avec leurs capteurs puissance/énergie) qui alimente
-        le générateur de dashboards.
-      </div>
-      <div class="row" style="margin-bottom:16px">
-        <span class="badge badge-cyan">${rooms.length} pièces</span>
-        <span class="badge badge-cyan">${assigned} appareils assignés</span>
-      </div>
-      <button class="btn" onclick="doBuildModel()" id="btn-model">⚙ Générer le modèle</button>
-    </div>
-    <div id="model-status"></div>
-    <div id="model-preview"></div>
-    <div class="actions">
-      <button class="btn btn-ghost" onclick="goPhase2()">← Retour</button>
-      <div class="actions-right">
-        <button class="btn" onclick="goPhaseGit()" ${state.modelYaml ? "" : "disabled"}>
-          Suivant → Aperçu de test
-        </button>
-      </div>
-    </div>`;
-  c.innerHTML = html;
-  if (state.modelYaml) showModelPreview({ complete: -1, incomplete: -1 });
-}
-
-function doBuildModel() {
-  const stats = buildModelYaml();
-  showModelPreview(stats);
-  const next = document.querySelector(".actions-right .btn");
-  if (next) next.disabled = false;
-}
-
-function showModelPreview(stats) {
-  const status = document.getElementById("model-status");
-  const prev = document.getElementById("model-preview");
-  if (stats.complete >= 0) {
-    status.innerHTML = `<div class="status ${stats.incomplete ? "status-warn" : "status-ok"}">
-      ✓ Modèle généré — ${stats.complete} appareil(s) avec capteurs énergie détectés` +
-      (stats.incomplete ? `, ${stats.incomplete} en TODO (pas de capteur puissance/énergie trouvé)` : "") +
-      `</div>`;
-  }
-  prev.innerHTML = `
-    <div class="card">
-      <div class="row" style="margin-bottom:8px">
-        <button class="btn btn-sm" onclick="copyModel()">📋 Copier</button>
-        <button class="btn btn-sm" onclick="downloadModel()">⬇ Télécharger house_rooms.yaml</button>
-      </div>
-      <pre class="svg-preview" style="white-space:pre-wrap;color:#8FB6C9;font-size:12px;line-height:1.5">${esc(state.modelYaml)}</pre>
-    </div>`;
-}
-
-function copyModel() {
-  navigator.clipboard.writeText(state.modelYaml)
-    .then(() => alert("Modèle copié dans le presse-papiers"));
-}
-
-function downloadModel() {
-  const blob = new Blob([state.modelYaml], { type: "text/yaml" });
-  const a = document.createElement("a");
-  a.href = URL.createObjectURL(blob);
-  a.download = "house_rooms.yaml";
-  a.click();
-  URL.revokeObjectURL(a.href);
-}
-
-// ═══════════════════════════════════════════════════════════════════════════
-// PHASE 4 — Aperçu (dashboard de test, staging intact)
-// ═══════════════════════════════════════════════════════════════════════════
-// Rien n'est commité et aucun dashboard existant n'est touché : le modèle
-// part dans house_rooms.preview.yaml et le rendu dans energy_preview.yaml,
-// servi sous l'url /vssp-energy-preview/energy.
-
-const PREVIEW_URL = "/vssp-energy-preview/energy";
-const PREVIEW_STATUS_URL = "/local/vssp/preview_status.json";
-
-function renderPhaseGit(c) {
-  var hasModel = !!state.modelYaml;
-
-  c.innerHTML = `
-    <div class="card">
-      <div class="card-title">PHASE 4 — APERÇU DE TEST</div>
-      <div class="card-sub">
-        Génère un dashboard <strong>isolé</strong> à partir du modèle, pour
-        itérer autant de fois que nécessaire.
-        <span style="color:#00FFC3">Aucun commit, aucun dashboard existant modifié.</span>
-      </div>
-      ${hasModel
-        ? '<div class="status status-ok">✓ Modèle prêt à être testé</div>'
-        : '<div class="status status-warn">⚠ Aucun modèle généré — retourne en phase 3</div>'}
-      <div class="card" style="background:rgba(0,229,255,.04);margin:16px 0 0">
-        <div style="color:#8FB6C9;font-size:13px;line-height:1.8">
-          <strong style="color:#00E5FF">Ce qui se passe sur le pod :</strong>
-          <ol style="margin:8px 0 0 20px">
-            <li>Écriture du modèle dans <code style="color:#00E5FF">model/house_rooms.preview.yaml</code></li>
-            <li>Rendu en <code style="color:#00E5FF">views/energy_preview.yaml</code> (url <code style="color:#00E5FF">${PREVIEW_URL}</code>)</li>
-            <li>Rafraichir l'onglet (le fichier est relu tout seul)</li>
-          </ol>
-          <div style="margin-top:10px;color:#00FFC3">
-            Vos fichiers <code>views/energy.yaml</code> et
-            <code>model/house_rooms.yaml</code> restent intacts.
-          </div>
-        </div>
-      </div>
-      <button class="btn" onclick="runPreview()" id="btn-preview" style="margin-top:16px"
-        ${hasModel ? "" : "disabled"}>
-        🔍 ${state.previewOk ? "Régénérer l'aperçu" : "Générer l'aperçu de test"}
-      </button>
-      <button class="btn btn-ghost btn-sm" onclick="runDryRun()" id="btn-dryrun"
-        style="margin-top:8px" ${hasModel ? "" : "disabled"}>
-        ✓ Valider seulement (aucune écriture)
-      </button>
-    </div>
-    <div id="preview-status"></div>
-    <div class="actions">
-      <button class="btn btn-ghost" onclick="goPhase3()">← Retour au modèle</button>
-      <div class="actions-right">
-        <button class="btn" onclick="goPhase4()" ${state.previewOk ? "" : "disabled"}>
-          Suivant → Publication
-        </button>
-      </div>
-    </div>`;
-
-  if (state.previewOk) showPreviewLink();
-}
-
-// Boucle d'itération : modifier le modèle → relancer l'aperçu, sans limite
-async function runPreview() { await doPreview(false); }
-async function runDryRun()  { await doPreview(true); }
-
-async function doPreview(dryRun) {
-  const btn = document.getElementById(dryRun ? "btn-dryrun" : "btn-preview");
-  const status = document.getElementById("preview-status");
-  const label = btn.innerHTML;
-  btn.disabled = true;
-  btn.innerHTML = `<span class="spinner"></span>${dryRun ? "Validation…" : "Génération…"}`;
-
-  try {
-    // 1. Modèle → pod, en base64 (UTF-8 safe pour les accents)
-    status.innerHTML = `<div class="status status-info"><span class="spinner"></span>Étape 1/3 — Envoi du modèle sur le pod…</div>`;
-    const b64 = btoa(unescape(encodeURIComponent(state.modelYaml)));
-    await callService("script", "vssp_preview_dashboards", {
-      content_b64: b64,
-      dry_run: dryRun,
-    });
-
-    // 2. Le script écrit puis génère ; on laisse le temps au shell_command
-    status.innerHTML = `<div class="status status-info"><span class="spinner"></span>Étape 2/3 — ${dryRun ? "Validation du rendu" : "Génération du dashboard de test"}…</div>`;
-    await new Promise(r => setTimeout(r, 2500));
-
-    // 3. Lire le rapport JSON écrit par le générateur
-    status.innerHTML = `<div class="status status-info"><span class="spinner"></span>Étape 3/3 — Lecture du rapport…</div>`;
-    const report = await fetchPreviewStatus();
-
-    if (!report) {
-      status.innerHTML = `<div class="status status-warn">
-        Rapport introuvable (${esc(PREVIEW_STATUS_URL)}).<br>
-        <span style="font-size:12px">Vérifie les notifications Home Assistant :
-        le script a peut-être échoué, ou le rapport n'est pas encore servi.</span></div>`;
-    } else if (!report.ok) {
-      status.innerHTML = `<div class="status status-error">
-        Génération refusée — le modèle est invalide :
-        <ul style="margin:8px 0 0 18px">${(report.errors||[]).map(e=>`<li>${esc(e)}</li>`).join("")}</ul>
-        <span style="font-size:12px">Corrige en phase 3 puis relance. Rien n'a été écrit.</span></div>`;
-    } else if (dryRun) {
-      status.innerHTML = `<div class="status status-ok">
-        ✓ Rendu valide — ${report.rooms} pièces, ${report.devices} appareils, ${report.circuits} circuits.
-        Aucun fichier écrit.</div>`;
-    } else {
-      state.previewOk = true;
-      status.innerHTML = `<div class="status status-ok">
-        ✓ Aperçu généré — ${report.rooms} pièces, ${report.devices} appareils, ${report.circuits} circuits`
-        + (report.todo_devices ? ` <span class="badge badge-orange">${report.todo_devices} appareil(s) en TODO</span>` : "")
-        + `</div>`;
-      showPreviewLink();
-      const next = document.querySelector(".actions-right .btn");
-      if (next) next.disabled = false;
+function entitiesAtRisk(diff){let n=0;diff.areasDelete.forEach(a=>n+=(state.ha.counts[a.area_id]||{total:0}).total);return n;}
+async function applyDiff(){
+  const diff=computeDiff();
+  if(!diff.total){state.notice="Structure déjà à jour.";return render();}
+  const risk=entitiesAtRisk(diff);
+  let msg=`Appliquer ${diff.total} modification(s) au registre Home Assistant ?`;
+  if(diff.areasDelete.length){msg+=`\n\n${diff.areasDelete.length} pièce(s) supprimées`;
+    if(risk)msg+=` — ${risk} entité(s) désassignées (les entités ne sont pas supprimées).`;}
+  if(!confirm(msg))return;
+  setBusy(true,"Application des modifications…");
+  try{
+    const newFloorId={};
+    for(const f of diff.floorsCreate){const r=await wsCall("config/floor_registry/create",{name:f.name,level:f.level});newFloorId[f.name]=r.floor_id;}
+    for(const f of diff.floorsUpdate)await wsCall("config/floor_registry/update",{floor_id:f.floor_id,name:f.name,level:f.level});
+    let extFloorId=(state.ha.floors.find(f=>EXTERIOR_FLOOR_NAMES.includes(String(f.name||"").toLowerCase()))||{}).floor_id||null;
+    if(!extFloorId&&diff.areasCreate.some(a=>a.exterior)){const r=await wsCall("config/floor_registry/create",{name:"Extérieur",level:99,icon:"mdi:tree"});extFloorId=r.floor_id;}
+    for(const a of diff.areasCreate){
+      const fid=a.exterior?extFloorId:(a.floor_id||(a.pendingFloorName?newFloorId[a.pendingFloorName]:null));
+      const r=await wsCall("config/area_registry/create",{name:a.name,floor_id:fid});
+      if(a.color&&r&&r.area_id)state.colors[r.area_id]=a.color;
     }
-    btn.innerHTML = dryRun ? "✓ Valider seulement (aucune écriture)" : "🔄 Régénérer l'aperçu";
-  } catch(e) {
-    status.innerHTML = `<div class="status status-error">Erreur : ${esc(e.message)}</div>`;
-    btn.innerHTML = label;
-  }
-  btn.disabled = false;
+    for(const a of diff.areasUpdate){const fid=a.floor_id||(a.pendingFloorName?newFloorId[a.pendingFloorName]:null);
+      await wsCall("config/area_registry/update",{area_id:a.area_id,name:a.name,floor_id:fid});}
+    for(const a of diff.areasDelete){await wsCall("config/area_registry/delete",{area_id:a.area_id});delete state.colors[a.area_id];}
+    for(const f of diff.floorsDelete)await wsCall("config/floor_registry/delete",{floor_id:f.floor_id});
+    localStorage.setItem(LS.colors,JSON.stringify(state.colors));
+    await loadRegistry(); saveHouse();
+    state.notice=`✓ Structure appliquée — ${diff.total} modification(s).`;
+  }catch(e){state.error="Échec : "+e.message+" — relance une lecture du registre.";}
+  finally{setBusy(false);}
 }
 
-// Cache-busting : le rapport change à chaque génération
-async function fetchPreviewStatus() {
-  try {
-    const r = await fetch(PREVIEW_STATUS_URL + "?t=" + Date.now(), { cache: "no-store" });
-    if (!r.ok) return null;
-    return await r.json();
-  } catch(e) { return null; }
+/* Actions destructives */
+function resetAll(){
+  const na=state.ha.areas.length,nf=state.ha.floors.length; let ent=0;
+  Object.values(state.ha.counts).forEach(c=>ent+=c.total);
+  if(prompt(`REPARTIR DE ZÉRO\n\n${nf} étage(s) et ${na} pièce(s) seront supprimés de HA.\n${ent} entité(s) perdront leur pièce.\n\nTape SUPPRIMER pour confirmer :`)!=="SUPPRIMER"){state.notice="Annulé.";return render();}
+  state.draft={floors:[],exteriors:[]};
+  state.notice="Brouillon vidé. Clique « Appliquer » pour effacer dans HA, puis reconstruis.";
+  render();
 }
 
-function showPreviewLink() {
-  const status = document.getElementById("preview-status");
-  if (!status) return;
-  status.innerHTML += `
-    <div class="card" style="margin-top:12px">
-      <div class="card-title" style="font-size:12px">DASHBOARD DE TEST</div>
-      <div style="color:#8FB6C9;font-size:13px;line-height:1.7;margin-bottom:12px">
-        Ouvre-le dans un nouvel onglet, vérifie le rendu, puis reviens ici :
-        corrige le modèle en phase 3 et relance l'aperçu autant de fois
-        que nécessaire. La publication reste une action séparée.
-      </div>
-      <a class="btn" href="${HA_URL}${PREVIEW_URL}" target="_blank"
-         style="display:inline-block;text-decoration:none">
-        ↗ Ouvrir ${esc(PREVIEW_URL)}
-      </a>
-    </div>`;
-}
+/* Édition brouillon */
+function addFloor(){const n=state.draft.floors.length;state.draft.floors.push({floor_id:null,name:n===0?"Rez-de-chaussée":`Étage ${n}`,level:n,rooms:[]});render();}
+function delFloor(fi){const f=state.draft.floors[fi];if(f.rooms.length&&!confirm(`Retirer « ${f.name} » et ses ${f.rooms.length} pièce(s) ?`))return;state.draft.floors.splice(fi,1);render();}
+function updFloorName(fi,v){state.draft.floors[fi].name=v;}
+function addRoom(fi){state.draft.floors[fi].rooms.push({area_id:null,name:"",color:DEFAULT_COLOR});render();}
+function delRoom(fi,ri){state.draft.floors[fi].rooms.splice(ri,1);render();}
+function updRoom(fi,ri,k,v){const r=state.draft.floors[fi].rooms[ri];r[k]=v;
+  if(k==="color"&&r.area_id){state.colors[r.area_id]=v;localStorage.setItem(LS.colors,JSON.stringify(state.colors));}}
+function toggleExt(name){const ex=state.draft.exteriors,i=ex.indexOf(name);if(i>=0)ex.splice(i,1);else ex.push(name);render();}
+function addCustomExt(e){if(e.key==="Enter")addCustomExtBtn();}
+function addCustomExtBtn(){const inp=document.getElementById("custom-ext");const v=inp.value.trim();
+  if(v&&!state.draft.exteriors.includes(v)){state.draft.exteriors.push(v);inp.value="";render();}}
 
-// ═══════════════════════════════════════════════════════════════════════════
-// PHASE 5 — Publication (GitLab → CI → staging)
-// ═══════════════════════════════════════════════════════════════════════════
-// Seule phase qui touche le staging. À ne lancer qu'après validation
-// de l'aperçu en phase 4.
+/* Réglages */
+function setSetting(k,v){state.settings[k]=v;localStorage.setItem(LS.settings,JSON.stringify(state.settings));}
 
-function renderPhase4(c) {
-  var g = state.gitlab;
-  var ready = state.previewOk;
-
-  c.innerHTML = '<div class="card">' +
-    '<div class="card-title">PHASE 5 — PUBLICATION</div>' +
-    '<div class="card-sub">Commit du modèle validé — ta chaîne CI le déploiera sur le staging.</div>' +
-    (ready ?
-      '<div class="status status-ok">✓ Aperçu validé — prêt à publier</div>' :
-      '<div class="status status-warn">⚠ Aucun aperçu généré — valide d\'abord le rendu en phase 4</div>') +
-    '<div style="margin-top:16px">' +
-      '<label>URL GITLAB</label>' +
-      '<input type="text" id="gl-url" value="' + esc(g.url) + '" style="margin-bottom:12px"/>' +
-      '<label>ID DU PROJET (visible sous le nom du repo)</label>' +
-      '<input type="text" id="gl-project" value="' + esc(g.projectId) + '" placeholder="ex: 2" style="margin-bottom:12px"/>' +
-      '<label>TOKEN D\'ACCÈS (scope: api)</label>' +
-      '<input type="password" id="gl-token" value="' + esc(g.token) + '" placeholder="glpat-…" style="margin-bottom:12px"/>' +
-      '<label>BRANCHE</label>' +
-      '<input type="text" id="gl-branch" value="' + esc(g.branch) + '" style="margin-bottom:12px"/>' +
-      '<label>CHEMIN DANS LE REPO</label>' +
-      '<input type="text" id="gl-path" value="home-assistant/dashboards/model/house_rooms.yaml" style="margin-bottom:16px"/>' +
-    '</div>' +
-    '<button class="btn" onclick="pushToGitLab()" id="btn-git-push"' + (ready ? '' : ' disabled') + '>' +
-      '🚀 Commit + Push le modèle' +
-    '</button>' +
-    '</div>' +
-    '<div id="git-status"></div>' +
-    '<div class="card" style="margin-top:16px">' +
-      '<div class="card-title" style="font-size:12px;margin-bottom:8px">NETTOYAGE (OPTIONNEL)</div>' +
-      '<div style="color:#8FB6C9;font-size:13px;line-height:1.7;margin-bottom:12px">' +
-        'Une fois publié, tu peux supprimer le dashboard d\'aperçu du pod ' +
-        '(views/energy_preview.yaml et model/house_rooms.preview.yaml).' +
-      '</div>' +
-      '<button class="btn btn-ghost btn-sm" onclick="cleanPreview()">🧹 Supprimer l\'aperçu</button>' +
-    '</div>' +
-    '<div class="actions">' +
-      '<button class="btn btn-ghost" onclick="goPhaseGit()">← Retour à l\'aperçu</button>' +
-    '</div>';
-}
-
-async function cleanPreview() {
-  try {
-    await callService("shell_command", "vssp_clean_preview");
-    state.previewOk = false;
-    document.getElementById("git-status").innerHTML =
-      '<div class="status status-ok">✓ Fichiers d\'aperçu supprimés du pod</div>';
-  } catch(e) {
-    document.getElementById("git-status").innerHTML =
-      '<div class="status status-error">Erreur : ' + esc(e.message) + '</div>';
-  }
-}
-
-async function pushToGitLab() {
-  var btn = document.getElementById('btn-git-push');
-  var status = document.getElementById('git-status');
-
-  state.gitlab.url = document.getElementById('gl-url').value.trim().replace(/\/$/, '');
-  state.gitlab.projectId = document.getElementById('gl-project').value.trim();
-  state.gitlab.token = document.getElementById('gl-token').value.trim();
-  state.gitlab.branch = document.getElementById('gl-branch').value.trim() || 'main';
-  var filePath = document.getElementById('gl-path').value.trim();
-
-  localStorage.setItem('osv_gitlab_url', state.gitlab.url);
-  localStorage.setItem('osv_gitlab_project', state.gitlab.projectId);
-  localStorage.setItem('osv_gitlab_token', state.gitlab.token);
-  localStorage.setItem('osv_gitlab_branch', state.gitlab.branch);
-
-  if (!state.gitlab.projectId || !state.gitlab.token) {
-    status.innerHTML = '<div class="status status-error">ID projet et token requis</div>';
-    return;
-  }
-
-  btn.disabled = true;
-  btn.innerHTML = '<span class="spinner"></span>Push en cours…';
-
-  try {
-    // 1. Encodage base64 (UTF-8 safe : accents des noms de pièces)
-    status.innerHTML = '<div class="status status-info"><span class="spinner"></span>Étape 1/2 — Encodage du modèle…</div>';
-    var base64 = btoa(unescape(encodeURIComponent(state.modelYaml)));
-
-    // 2. Commit via l'API GitLab (create or update)
-    status.innerHTML = '<div class="status status-info"><span class="spinner"></span>Étape 2/2 — Commit dans GitLab…</div>';
-    var apiUrl = state.gitlab.url + '/api/v4/projects/' + encodeURIComponent(state.gitlab.projectId) +
-                 '/repository/files/' + encodeURIComponent(filePath);
-
-    var body = {
-      branch: state.gitlab.branch,
-      content: base64,
-      encoding: 'base64',
-      commit_message: 'feat(vssp): update house model via Discovery Wizard'
-    };
-
-    // Essayer update (PUT) d'abord, sinon create (POST)
-    var resp = await fetch(apiUrl, {
-      method: 'PUT',
-      headers: { 'PRIVATE-TOKEN': state.gitlab.token, 'Content-Type': 'application/json' },
-      body: JSON.stringify(body)
-    });
-
-    if (resp.status === 400 || resp.status === 404) {
-      resp = await fetch(apiUrl, {
-        method: 'POST',
-        headers: { 'PRIVATE-TOKEN': state.gitlab.token, 'Content-Type': 'application/json' },
-        body: JSON.stringify(body)
-      });
-    }
-
-    if (!resp.ok) {
-      var errText = await resp.text();
-      throw new Error('GitLab API ' + resp.status + ': ' + errText.slice(0, 200));
-    }
-
-    status.innerHTML = '<div class="status status-ok">' +
-      '✓ Modèle commité dans <strong>' + esc(filePath) + '</strong> (branche ' + esc(state.gitlab.branch) + ')<br>' +
-      '<span style="font-size:12px">Ta chaîne CI va maintenant le déployer sur le staging.</span></div>';
-    btn.innerHTML = '✓ Publié';
-  } catch(e) {
-    status.innerHTML = '<div class="status status-error">Erreur : ' + esc(e.message) + '</div>';
-    btn.innerHTML = '🚀 Réessayer';
-    btn.disabled = false;
-  }
-}
-
-// ─── Navigation ───────────────────────────────────────────────────────────
-function goPhase1() { setStep(1); render(); }
-function goPhase2() { setStep(2); render(); }
-function goPhase3() { setStep(3); render(); }
-function goPhaseGit() { setStep(4); render(); }
-function goPhase4() { setStep(5); render(); }
-
-// ─── Helpers ──────────────────────────────────────────────────────────────
-function getAllRooms() {
-  const r = [];
-  state.house.floors.forEach(f => f.rooms.forEach(rm => rm.name && r.push(rm.name)));
-  state.house.exteriors.forEach(e => r.push(e));
+/* ═══════════════════════════════════════════════════════════════════════════
+   ÉTAPE 2 — DÉCOUVERTE + ASSIGNATION
+   ═══════════════════════════════════════════════════════════════════════════ */
+function getAllRooms(){
+  const r=[];
+  state.draft.floors.forEach(f=>f.rooms.forEach(rm=>rm.name.trim()&&r.push(rm.name.trim())));
+  state.draft.exteriors.forEach(e=>r.push(e));
   return r;
 }
-
-function esc(str) {
-  return String(str||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+async function runDiscovery(){
+  setBusy(true,"Scan Home Assistant…");
+  try{
+    try{ await callService(CFG.DISCOVERY_SERVICE.domain,CFG.DISCOVERY_SERVICE.service); }catch(_){}
+    const states=await haGet("states");
+    const prev={}; state.devices.forEach(d=>prev[d.entity_id]=d.room);
+    state.devices=states
+      .filter(s=>CFG.DEVICE_DOMAINS.includes(s.entity_id.split(".")[0]))
+      .map(s=>({entity_id:s.entity_id,friendly_name:s.attributes?.friendly_name||s.entity_id,
+        state:s.state,room:prev[s.entity_id]||null}));
+    localStorage.setItem(LS.devices,JSON.stringify(state.devices));
+    state.notice=`✓ ${state.devices.length} appareil(s) récupéré(s).`;
+  }catch(e){state.error="Scan échoué : "+e.message;}
+  finally{setBusy(false);}
+}
+function assignDevice(entity_id,room){
+  const d=state.devices.find(x=>x.entity_id===entity_id);
+  if(d)d.room=room||null;
+  localStorage.setItem(LS.devices,JSON.stringify(state.devices));
+  render();
+}
+function toggleDomain(dom){state.openDomains[dom]=!state.openDomains[dom];render();}
+async function saveRegenerate(){
+  saveHouse();
+  if(!confirm("Sauvegarder l'assignation et régénérer les dashboards ?"))return;
+  setBusy(true,"Régénération des dashboards…");
+  try{
+    await callService(CFG.REGENERATE_SERVICE.domain,CFG.REGENERATE_SERVICE.service,{
+      house: buildHouse(), devices: state.devices, settings: state.settings });
+    state.notice="✓ Dashboards régénérés. Recharge Lovelace si besoin.";
+    await loadDashboards();
+  }catch(e){state.error="Régénération échouée : "+e.message+" — vérifie le service "+CFG.REGENERATE_SERVICE.domain+"."+CFG.REGENERATE_SERVICE.service+".";}
+  finally{setBusy(false);}
 }
 
-function toggleDomain(id) {
-  const el = document.getElementById(id);
-  const arr = document.getElementById(`arr-${id}`);
-  if (!el) return;
-  if (el.classList.contains("collapsed")) {
-    el.classList.remove("collapsed");
-    el.style.maxHeight = "9999px";
-    if (arr) arr.classList.add("open");
-  } else {
-    el.classList.add("collapsed");
-    el.style.maxHeight = "0";
-    if (arr) arr.classList.remove("open");
+/* ═══════════════════════════════════════════════════════════════════════════
+   ÉTAPE 3 — DASHBOARDS
+   ═══════════════════════════════════════════════════════════════════════════ */
+async function loadDashboards(){
+  try{
+    // dashboards en mode UI (storage). Les dashboards YAML n'apparaissent pas ici.
+    const list=await wsCall("lovelace/dashboards/list").catch(()=>[]);
+    state.dashboards=(list||[]).map(d=>({
+      id:d.id||d.url_path, title:d.title||d.url_path, path:d.url_path, mode:d.mode||"storage"}));
+  }catch(_){ state.dashboards=[]; }
+  state.dashSel=new Set();
+}
+function toggleDash(id,on){if(on)state.dashSel.add(id);else state.dashSel.delete(id);render();}
+async function deleteDashboards(){
+  if(!state.dashSel.size)return;
+  const names=state.dashboards.filter(d=>state.dashSel.has(d.id)).map(d=>d.title);
+  if(!confirm(`Supprimer ${names.length} dashboard(s) ?\n\n${names.join(", ")}`))return;
+  setBusy(true,"Suppression…");
+  try{
+    for(const id of state.dashSel){
+      const d=state.dashboards.find(x=>x.id===id);
+      if(d&&d.mode==="storage"){
+        await wsCall("lovelace/dashboards/delete",{dashboard_id:id});
+      }else if(CFG.DELETE_DASHBOARD_SERVICE){
+        await callService(CFG.DELETE_DASHBOARD_SERVICE.domain,CFG.DELETE_DASHBOARD_SERVICE.service,{dashboard:id});
+      }
+    }
+    await loadDashboards();
+    state.notice="✓ Dashboard(s) supprimé(s).";
+  }catch(e){state.error="Suppression échouée : "+e.message;}
+  finally{setBusy(false);}
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MODÈLE HOUSE
+   ═══════════════════════════════════════════════════════════════════════════ */
+function buildHouse(){
+  return {generated:new Date().toISOString(), settings:state.settings,
+    floors:state.draft.floors.filter(f=>f.name.trim()).map(f=>({name:f.name.trim(),floor_id:f.floor_id,
+      rooms:f.rooms.filter(r=>r.name.trim()).map(r=>({name:r.name.trim(),area_id:r.area_id,color:r.color}))})),
+    exteriors:state.draft.exteriors.slice()};
+}
+function saveHouse(){localStorage.setItem(LS.house,JSON.stringify(buildHouse()));}
+function roomCount(){return state.draft.floors.reduce((n,f)=>n+f.rooms.filter(r=>r.name.trim()).length,0)+state.draft.exteriors.length;}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   NAVIGATION
+   ═══════════════════════════════════════════════════════════════════════════ */
+function backToMenu(){window.location.href=CFG.MENU_URL;}
+function goStep(n){
+  if(n>1&&!roomCount()){state.error="Déclare au moins une pièce avant de continuer.";return render();}
+  state.step=n; state.error=""; state.notice="";
+  if(n===3&&!state.dashboards.length)loadDashboards().then(render);
+  render();
+}
+function setBusy(on,label){state.loading=on;state.busyLabel=label||"";if(on){state.error="";state.notice="";}render();}
+
+async function connect(){
+  const inp=document.getElementById("token-input"); if(inp)state.token=inp.value.trim();
+  if(!state.token){state.error="Colle un jeton d'accès longue durée.";return render();}
+  localStorage.setItem(LS.token,state.token);
+  setBusy(true,"Connexion à Home Assistant…");
+  try{
+    await wsConnect(state.token); state.connected=true;
+    await Promise.all([loadRegistry(),loadStatus()]);
+    state.notice=`Registre lu : ${state.ha.floors.length} étage(s), ${state.ha.areas.length} pièce(s).`;
+  }catch(e){state.connected=false;state.error=e.message;}
+  finally{setBusy(false);}
+}
+async function reload(){setBusy(true,"Relecture…");try{await Promise.all([loadRegistry(),loadStatus()]);state.notice="Registre rechargé.";}catch(e){state.error=e.message;}finally{setBusy(false);}}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   RENDU
+   ═══════════════════════════════════════════════════════════════════════════ */
+function esc(s){return String(s==null?"":s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");}
+function opt(list,sel){return list.map(o=>`<option value="${esc(o.v)}"${o.v===sel?" selected":""}>${esc(o.t)}</option>`).join("");}
+
+function setStepBar(){
+  [1,2,3].forEach(i=>{const el=document.getElementById("s"+i);if(!el)return;
+    el.className="step"+(i<state.step?" done":i===state.step?" active":"");});
+}
+
+function render(){
+  const c=document.getElementById("content");
+  let html="";
+  if(state.loading)html+=`<div class="status status-info"><span class="spinner"></span>${esc(state.busyLabel)}</div>`;
+  if(state.error)html+=`<div class="status status-error">${esc(state.error)}</div>`;
+  if(state.notice)html+=`<div class="status status-ok">${esc(state.notice)}</div>`;
+
+  if(!state.connected){
+    html+=`<div class="card">
+      <div class="card-title">CONNEXION HOME ASSISTANT</div>
+      <div class="card-sub">Jeton d'accès longue durée — Profil → Sécurité → Jetons d'accès longue durée.</div>
+      <div class="row" style="margin-top:14px">
+        <input type="text" id="token-input" class="flex1" placeholder="eyJhbGciOi…" value="${esc(state.token)}"/>
+        <button class="btn" onclick="connect()">Se connecter</button>
+      </div></div>`;
+    c.innerHTML=html; setStepBar(); return;
   }
+
+  if(state.step===1)html+=renderStep1();
+  else if(state.step===2)html+=renderStep2();
+  else html+=renderStep3();
+
+  c.innerHTML=html; setStepBar();
 }
 
-// ─── Boot ─────────────────────────────────────────────────────────────────
+/* ---------- ÉTAPE 1 ---------- */
+function renderStep1(){
+  let h="";
+  // Réglages langue / format
+  h+=`<div class="card">
+    <div class="card-title">LANGUE &amp; FORMAT</div>
+    <div class="card-sub">Appliqués à la génération des dashboards.</div>
+    <div class="grid2" style="margin-top:14px">
+      <div><label class="fld">Langue</label>
+        <select class="flex1" style="width:100%" onchange="setSetting('locale',this.value)">${opt(LOCALES,state.settings.locale)}</select></div>
+      <div><label class="fld">Format de date</label>
+        <select class="flex1" style="width:100%" onchange="setSetting('dateFmt',this.value)">${opt(DATE_FMTS,state.settings.dateFmt)}</select></div>
+      <div><label class="fld">Format numérique</label>
+        <select class="flex1" style="width:100%" onchange="setSetting('numFmt',this.value)">${opt(NUM_FMTS,state.settings.numFmt)}</select></div>
+    </div>
+  </div>`;
+
+  // Statut déploiement
+  const loc=state.status.locale, ph=state.status.placeholders;
+  const phNum=ph!=null&&!isNaN(+ph)?+ph:null;
+  h+=`<div class="card">
+    <div class="card-title">STATUT DÉPLOIEMENT</div>
+    <div class="kpi" style="margin-top:14px">
+      <div class="kpi-box"><div class="kpi-lbl">VSSP deployed locale</div>
+        <div class="kpi-val ${loc?"ok":""}">${loc?esc(loc):"—"}</div></div>
+      <div class="kpi-box"><div class="kpi-lbl">VSSP unrendered placeholders</div>
+        <div class="kpi-val ${phNum===0?"ok":phNum>0?"warn":""}">${ph!=null?esc(ph):"—"}</div></div>
+    </div>
+    ${phNum>0?`<div class="status status-warn" style="margin-top:12px">${phNum} placeholder(s) non résolu(s) subsistent dans les dashboards — vérifie l'assignation des appareils.</div>`:""}
+  </div>`;
+
+  // Formulaire pièces & étages
+  h+=`<div class="card">
+    <div class="card-title">PIÈCES &amp; ÉTAGES</div>
+    <div class="card-sub">Déclare les étages et pièces de la maison. Écrit dans HA au clic sur « Appliquer ».</div>
+    <div class="row" style="margin-top:12px;flex-wrap:wrap">
+      <span class="badge badge-cyan">${state.ha.floors.length} étage(s) HA</span>
+      <span class="badge badge-cyan">${state.ha.areas.length} pièce(s) HA</span>
+      <span class="flex1"></span>
+      <button class="btn btn-sm btn-danger" onclick="resetAll()" ${state.ha.areas.length||state.ha.floors.length?"":"disabled"}>⟲ Tout supprimer</button>
+    </div>`;
+
+  if(!state.draft.floors.length)h+=`<div class="ghost" style="margin-left:0">Aucun étage. Ajoutes-en un.</div>`;
+  state.draft.floors.forEach((f,fi)=>{
+    h+=`<div class="floor-block">
+      <div class="row">
+        <span class="badge badge-cyan">Niv. ${fi}</span>
+        <input type="text" class="flex1" value="${esc(f.name)}" placeholder="Nom de l'étage" oninput="updFloorName(${fi},this.value)"/>
+        ${f.floor_id?`<span class="badge badge-green">existant</span>`:`<span class="badge badge-orange">nouveau</span>`}
+        <button class="btn btn-sm btn-danger" onclick="delFloor(${fi})">✕</button>
+      </div>`;
+    if(!f.rooms.length)h+=`<div class="ghost">Aucune pièce.</div>`;
+    f.rooms.forEach((r,ri)=>{
+      const cnt=r.area_id?(state.ha.counts[r.area_id]||{total:0}).total:0;
+      h+=`<div class="row room-row">
+        <input type="text" class="flex1" value="${esc(r.name)}" placeholder="Nom de la pièce" oninput="updRoom(${fi},${ri},'name',this.value)"/>
+        <input type="color" value="${esc(r.color||DEFAULT_COLOR)}" onchange="updRoom(${fi},${ri},'color',this.value)"/>
+        ${r.area_id?`<span class="badge badge-${cnt?"cyan":"mut"}">${cnt} ent.</span>`:`<span class="badge badge-orange">nouvelle</span>`}
+        <button class="btn btn-sm btn-danger" onclick="delRoom(${fi},${ri})">✕</button>
+      </div>`;
+    });
+    h+=`<button class="btn btn-sm" style="margin:8px 0 0 18px" onclick="addRoom(${fi})">+ Pièce</button></div>`;
+  });
+  h+=`<button class="btn btn-sm" onclick="addFloor()">+ Étage</button></div>`;
+
+  // Extérieurs
+  h+=`<div class="card">
+    <div class="card-title">ESPACES EXTÉRIEURS</div>
+    <div style="margin-top:12px">`;
+  const customs=state.draft.exteriors.filter(e=>!EXTERIOR_TYPES.includes(e));
+  EXTERIOR_TYPES.concat(customs).forEach(e=>{const on=state.draft.exteriors.includes(e);
+    h+=`<span class="chip${on?" on":""}" onclick="toggleExt('${esc(e).replace(/'/g,"\\'")}')">${esc(e)}</span>`;});
+  h+=`</div>
+    <div class="row" style="margin-top:12px">
+      <input type="text" id="custom-ext" class="flex1" placeholder="Autre espace…" onkeydown="addCustomExt(event)"/>
+      <button class="btn btn-sm" onclick="addCustomExtBtn()">+</button>
+    </div></div>`;
+
+  // Diff + actions
+  const diff=computeDiff(); const risk=entitiesAtRisk(diff);
+  if(diff.total){
+    h+=`<div class="card"><div class="card-title">MODIFICATIONS EN ATTENTE</div>
+      <div style="margin-top:10px;font-family:'Courier New',monospace;font-size:12px;line-height:1.7">`;
+    diff.floorsCreate.forEach(f=>h+=`<div style="color:var(--gr)">+ étage ${esc(f.name)}</div>`);
+    diff.floorsUpdate.forEach(f=>h+=`<div style="color:var(--or)">~ étage ${esc(f.name)}</div>`);
+    diff.areasCreate.forEach(a=>h+=`<div style="color:var(--gr)">+ pièce ${esc(a.name)} <span style="color:var(--mut)">(${esc(a.floorName||"—")})</span></div>`);
+    diff.areasUpdate.forEach(a=>h+=`<div style="color:var(--or)">~ pièce ${esc(a.name)}</div>`);
+    diff.areasDelete.forEach(a=>{const n=(state.ha.counts[a.area_id]||{total:0}).total;
+      h+=`<div style="color:var(--rd)">− pièce ${esc(a.name)}${n?` <span style="color:var(--mut)">(${n} ent.)</span>`:""}</div>`;});
+    diff.floorsDelete.forEach(f=>h+=`<div style="color:var(--rd)">− étage ${esc(f.name)}</div>`);
+    h+=`</div>`;
+    if(risk)h+=`<div class="status status-warn" style="margin-top:12px">${risk} entité(s) perdront leur pièce (entités conservées).</div>`;
+    h+=`<div class="row" style="margin-top:12px"><button class="btn btn-ok" onclick="applyDiff()">✓ Appliquer dans HA (${diff.total})</button>
+      <button class="btn btn-ghost btn-sm" onclick="reload()">Annuler</button></div></div>`;
+  }
+
+  const rc=roomCount();
+  h+=`<div class="actions">
+    <button class="btn btn-ghost" onclick="reload()">↻ Relire HA</button>
+    <div class="actions-right">
+      <button class="btn" onclick="goStep(2)" ${rc?"":"disabled"}>Suivant → Appareils</button>
+    </div></div>`;
+  return h;
+}
+
+/* ---------- ÉTAPE 2 ---------- */
+function renderStep2(){
+  const rooms=getAllRooms();
+  const assigned=state.devices.filter(d=>d.room).length;
+  let h=`<div class="card">
+    <div class="card-title">DÉCOUVERTE DES APPAREILS</div>
+    <div class="card-sub">Scanne Home Assistant, puis assigne chaque appareil à une pièce.</div>
+    <div class="row" style="margin-top:14px">
+      <button class="btn" onclick="runDiscovery()">⚡ ${state.devices.length?"Relancer le scan":"Lancer le scan"}</button>
+    </div></div>`;
+
+  if(state.devices.length){
+    const pct=Math.round(assigned/state.devices.length*100);
+    h+=`<div class="card">
+      <div class="row" style="flex-wrap:wrap">
+        <span style="color:#fff">${state.devices.length} appareil(s)</span>
+        <span class="badge badge-cyan">${assigned} assigné(s)</span>
+        <span class="badge badge-orange">${state.devices.length-assigned} non assigné(s)</span>
+      </div>
+      <div class="progress"><div class="progress-fill" style="width:${pct}%"></div></div>
+    </div>`;
+
+    // Groupement par bloc/domaine
+    const byDom={};
+    state.devices.forEach(d=>{const dom=d.entity_id.split(".")[0];(byDom[dom]||=[]).push(d);});
+    const roomOpts=`<option value="">— Non assigné —</option>`+rooms.map(r=>`<option value="${esc(r)}">${esc(r)}</option>`).join("");
+
+    Object.keys(byDom).sort().forEach(dom=>{
+      const devs=byDom[dom];
+      const open=state.openDomains[dom]!==false; // ouvert par défaut
+      const a=devs.filter(d=>d.room).length;
+      h+=`<div class="card">
+        <div class="dom-header" onclick="toggleDomain('${dom}')">
+          <span>${DOMAIN_ICON[dom]||"📦"} ${dom.toUpperCase().replace("_"," ")}
+            <span class="badge badge-cyan">${devs.length}</span>
+            <span class="badge badge-${a===devs.length?"green":"orange"}">${a}/${devs.length}</span></span>
+          <span class="dom-arrow ${open?"open":""}">▼</span>
+        </div>
+        <div class="dom-body ${open?"":"collapsed"}" style="max-height:${open?"9999px":"0"}">`;
+      devs.forEach(d=>{
+        const sel=roomOpts.replace(`value="${esc(d.room||"")}"`,`value="${esc(d.room||"")}" selected`);
+        h+=`<div class="dev-row">
+          <div class="dev-info"><div class="dev-name">${esc(d.friendly_name)}</div><div class="dev-id">${esc(d.entity_id)}</div></div>
+          <select class="dev-sel" onchange="assignDevice('${esc(d.entity_id)}',this.value)">${sel}</select>
+        </div>`;
+      });
+      h+=`</div></div>`;
+    });
+  }
+
+  h+=`<div class="actions">
+    <button class="btn btn-ghost" onclick="goStep(1)">← Pièces &amp; étages</button>
+    <div class="actions-right">
+      <button class="btn btn-ok" onclick="saveRegenerate()" ${assigned?"":"disabled"}>💾 Sauvegarder &amp; régénérer</button>
+      <button class="btn" onclick="goStep(3)">Suivant → Dashboards</button>
+    </div></div>`;
+  return h;
+}
+
+/* ---------- ÉTAPE 3 ---------- */
+function renderStep3(){
+  let h=`<div class="card">
+    <div class="card-title">DASHBOARDS GÉNÉRÉS</div>
+    <div class="card-sub">Liste des dashboards Lovelace. Sélectionne ceux à supprimer.</div>
+    <div class="row" style="margin-top:14px">
+      <button class="btn btn-ghost btn-sm" onclick="loadDashboards().then(render)">↻ Rafraîchir</button>
+      <span class="flex1"></span>
+      <button class="btn btn-sm btn-danger" onclick="deleteDashboards()" ${state.dashSel.size?"":"disabled"}>✕ Supprimer la sélection (${state.dashSel.size})</button>
+    </div>`;
+
+  if(!state.dashboards.length){
+    h+=`<div class="status status-warn" style="margin-top:14px">
+      Aucun dashboard listé. Les dashboards en mode YAML (définis dans configuration.yaml) n'apparaissent pas via l'API Lovelace — leur suppression passe par un shell_command côté serveur.</div>`;
+  }else{
+    state.dashboards.forEach(d=>{
+      h+=`<div class="dash-row">
+        <input type="checkbox" ${state.dashSel.has(d.id)?"checked":""} onchange="toggleDash('${esc(d.id)}',this.checked)"/>
+        <div><div class="dash-title">${esc(d.title)}</div><div class="dash-path">/${esc(d.path)}</div></div>
+        <span class="badge badge-${d.mode==="storage"?"cyan":"mut"}">${esc(d.mode)}</span>
+        <a class="btn btn-sm btn-ghost" href="/${esc(d.path)}" target="_blank">Ouvrir</a>
+      </div>`;
+    });
+  }
+  h+=`</div>
+    <div class="actions">
+      <button class="btn btn-ghost" onclick="goStep(2)">← Appareils</button>
+      <div class="actions-right"><button class="btn btn-ok" onclick="backToMenu()">✓ Terminer</button></div>
+    </div>`;
+  return h;
+}
+
+/* Boot */
 render();
+if(state.token)connect();
 </script>
 </body>
 </html>
