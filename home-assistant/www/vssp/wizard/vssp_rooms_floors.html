@@ -160,15 +160,33 @@
 // CONFIG
 // ═══════════════════════════════════════════════════════════════════════════
 const HA_URL   = window.location.origin;
-// EN | The real ASSIGN screen (room + slot, backed by house.yaml), not a
-// EN | file under /local/ — this page runs inside an iframe on the ADMIN
-// EN | dashboard, so the target is a sibling Lovelace view of the SAME
-// EN | dashboard (see admin.yaml.j2, url_path "visio-sapiens-admin").
-// FR | Le veritable ecran ASSIGN (piece + tableau, appuye sur house.yaml),
-// FR | pas un fichier sous /local/ — cette page tourne dans une iframe de
-// FR | la console ADMIN, donc la cible est une vue Lovelace soeur du meme
-// FR | dashboard (voir admin.yaml.j2, url_path « visio-sapiens-admin »).
-const NEXT_URL = "/visio-sapiens-admin/assign";
+// EN | The real ASSIGN screen's own FILE, not the Lovelace view path.
+// EN | This page runs inside a sandboxed iframe on the ADMIN dashboard —
+// EN | HA's built-in iframe card sets a sandbox with neither
+// EN | allow-top-navigation nor allow-top-navigation-by-user-activation,
+// EN | so navigating window.top (or an <a target="_top">, which is bound
+// EN | by the exact same sandbox flags) throws a SecurityError and does
+// EN | nothing. Navigating the iframe's OWN window.location is always
+// EN | allowed regardless of sandboxing — a sandboxed frame can only be
+// EN | stopped from navigating its ANCESTORS, never itself — so the fix is
+// EN | to load assign.html inside this same iframe instead of trying to
+// EN | escape it. The outer ADMIN chrome (sidebar, "ROOMS & FLOORS" title)
+// EN | stays put; only the iframe content changes, same as every other
+// EN | screen swap already works.
+// EN | No static ?v= here: the build's cache-busting sed step only
+// EN | rewrites *.yaml files (see .gitlab-ci.yml), so a token hardcoded in
+// EN | this .html file would never actually change between deploys — that
+// EN | would just be a permanently-stale cache key, not a fix. A
+// EN | timestamp appended at render time (see the "Next" button below)
+// EN | forces a fresh fetch on every page load instead.
+// FR | Pas de ?v= statique ici : l'etape sed de cache-busting du build ne
+// FR | reecrit que les fichiers *.yaml (voir .gitlab-ci.yml), donc un
+// FR | jeton fige dans ce fichier .html ne changerait jamais entre deux
+// FR | deploiements — ce serait juste une cle de cache perpetuellement
+// FR | perimee, pas un correctif. Un horodatage ajoute au moment du rendu
+// FR | (voir le bouton « Suivant » plus bas) force au contraire une
+// FR | lecture fraiche a chaque chargement de page.
+const NEXT_URL = "/local/vssp/wizard/assign.html";
 const LS_TOKEN = "osv_ha_token";
 const LS_HOUSE = "vssp_house";
 const LS_COLORS= "vssp_room_colors";
@@ -869,8 +887,22 @@ function render(){
   // FR | erreur console pour expliquer pourquoi le bouton « ne fait rien ».
   // FR | Un vrai clic de lien est le moyen standard, fiable, de sortir
   // FR | d une iframe.
+  // EN | No target="_top": see the NEXT_URL comment above — this frame is
+  // EN | sandboxed by HA's iframe card without allow-top-navigation, so
+  // EN | target="_top" would throw the exact same SecurityError as the
+  // EN | window.top assignment it replaces. Plain same-frame navigation,
+  // EN | with a timestamp so a browser that cached assign.html on an
+  // EN | earlier visit still fetches the current one.
+  // FR | Pas de target="_top" : voir le commentaire de NEXT_URL plus haut —
+  // FR | cette frame est sandboxee par la carte iframe de HA sans
+  // FR | allow-top-navigation, donc target="_top" leverait exactement la
+  // FR | meme SecurityError que l'assignation window.top qu'il remplace.
+  // FR | Navigation simple dans le meme cadre, avec un horodatage pour
+  // FR | qu'un navigateur ayant deja mis assign.html en cache lors d'une
+  // FR | visite precedente aille quand meme chercher la version actuelle.
+  const nextHref = NEXT_URL + "?t=" + Date.now();
   const nextBtn = rc
-    ? `<a class="btn" href="${esc(NEXT_URL)}" target="_top" onclick="saveHouse()">${t("act_next_assign")}</a>`
+    ? `<a class="btn" href="${esc(nextHref)}" onclick="saveHouse()">${t("act_next_assign")}</a>`
     : `<span class="btn" aria-disabled="true" style="opacity:.35;cursor:not-allowed">${t("act_next_assign")}</span>`;
   html += `
     <div class="actions">
