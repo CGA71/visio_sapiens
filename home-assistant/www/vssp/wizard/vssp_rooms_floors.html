@@ -128,12 +128,26 @@
     <div class="ha-url" id="ha-url"></div>
   </div>
 
+  <!--
+    EN | Three steps, matching the three real phases of the ADMIN console:
+    EN | this screen (structure), the ASSIGN screen (room + slot), and
+    EN | dashboard regeneration, which ASSIGN triggers on save. Only step 1
+    EN | is ever "active" here — steps 2 and 3 happen on other screens, so
+    EN | this page has no way to know if they are "done"; showing them as
+    EN | plain upcoming steps is honest, marking them done would not be.
+    FR | Trois etapes, qui correspondent aux trois phases reelles de la
+    FR | console ADMIN : cet ecran (structure), l'ecran ASSIGN (piece +
+    FR | tableau), et la regeneration des dashboards, declenchee par ASSIGN
+    FR | a l'enregistrement. Seule l'etape 1 est jamais « active » ici — les
+    FR | etapes 2 et 3 se passent sur d'autres ecrans, donc cette page n'a
+    FR | aucun moyen de savoir si elles sont « faites » ; les montrer comme
+    FR | de simples etapes a venir est honnete, les marquer faites ne le
+    FR | serait pas.
+  -->
   <div class="steps">
     <div class="step active" id="s1"><div class="step-bar"></div><div class="step-label" id="s1-label">1. STRUCTURE</div></div>
     <div class="step" id="s2"><div class="step-bar"></div><div class="step-label" id="s2-label">2. APPAREILS</div></div>
-    <div class="step" id="s3"><div class="step-bar"></div><div class="step-label" id="s3-label">3. GÉNÉRATION IA</div></div>
-    <div class="step" id="s4"><div class="step-bar"></div><div class="step-label" id="s4-label">4. GIT PUSH</div></div>
-    <div class="step" id="s5"><div class="step-bar"></div><div class="step-label" id="s5-label">5. DASHBOARD</div></div>
+    <div class="step" id="s3"><div class="step-bar"></div><div class="step-label" id="s3-label">3. DASHBOARDS</div></div>
   </div>
 
   <div id="content"></div>
@@ -146,7 +160,15 @@
 // CONFIG
 // ═══════════════════════════════════════════════════════════════════════════
 const HA_URL   = window.location.origin;
-const NEXT_URL = "/local/vssp/wizard/vssp_wizard.html?phase=2"; // ← phase 2 (assignation)
+// EN | The real ASSIGN screen (room + slot, backed by house.yaml), not a
+// EN | file under /local/ — this page runs inside an iframe on the ADMIN
+// EN | dashboard, so the target is a sibling Lovelace view of the SAME
+// EN | dashboard (see admin.yaml.j2, url_path "visio-sapiens-admin").
+// FR | Le veritable ecran ASSIGN (piece + tableau, appuye sur house.yaml),
+// FR | pas un fichier sous /local/ — cette page tourne dans une iframe de
+// FR | la console ADMIN, donc la cible est une vue Lovelace soeur du meme
+// FR | dashboard (voir admin.yaml.j2, url_path « visio-sapiens-admin »).
+const NEXT_URL = "/visio-sapiens-admin/assign";
 const LS_TOKEN = "osv_ha_token";
 const LS_HOUSE = "vssp_house";
 const LS_COLORS= "vssp_room_colors";
@@ -181,7 +203,7 @@ const I18N = {
     doc_title: "Visio Sapiens — Pièces & Étages",
     page_subtitle: "PIÈCES & ÉTAGES",
     step1_label: "1. STRUCTURE", step2_label: "2. APPAREILS",
-    step3_label: "3. GÉNÉRATION IA", step4_label: "4. GIT PUSH", step5_label: "5. DASHBOARD",
+    step3_label: "3. DASHBOARDS",
     conn_title: "CONNEXION HOME ASSISTANT",
     conn_sub: "Jeton d'accès longue durée — Profil → Sécurité → Jetons d'accès longue durée.",
     conn_connect: "Se connecter",
@@ -256,7 +278,7 @@ const I18N = {
     doc_title: "Visio Sapiens — Rooms & Floors",
     page_subtitle: "ROOMS & FLOORS",
     step1_label: "1. STRUCTURE", step2_label: "2. DEVICES",
-    step3_label: "3. AI GENERATION", step4_label: "4. GIT PUSH", step5_label: "5. DASHBOARD",
+    step3_label: "3. DASHBOARDS",
     conn_title: "HOME ASSISTANT CONNECTION",
     conn_sub: "Long-lived access token — Profile → Security → Long-lived access tokens.",
     conn_connect: "Connect",
@@ -338,7 +360,7 @@ function applyLang(v){
   document.documentElement.lang = state.lang;
   document.title = t("doc_title");
   document.getElementById("page-subtitle").textContent = t("page_subtitle");
-  ["s1","s2","s3","s4","s5"].forEach((id,i) => {
+  ["s1","s2","s3"].forEach((id,i) => {
     const el = document.getElementById(id+"-label");
     if (el) el.textContent = t("step"+(i+1)+"_label");
   });
@@ -763,9 +785,20 @@ function roomCount(){
   return state.draft.floors.reduce((n,f)=> n + f.rooms.filter(r=>r.name.trim()).length, 0)
        + state.draft.exteriors.length;
 }
+// EN | window.top, not window.location: this page is the content of an
+// EN | iframe card on the ADMIN dashboard. Navigating window.location would
+// EN | just swap what the iframe shows, leaving the surrounding HA chrome
+// EN | (sidebar, header) stuck on the ROOMS & FLOORS view. window.top makes
+// EN | the browser actually switch to the ASSIGN view.
+// FR | window.top, pas window.location : cette page est le contenu d'une
+// FR | carte iframe sur le dashboard ADMIN. Naviguer window.location ne
+// FR | ferait que changer ce que l'iframe affiche, en laissant le reste de
+// FR | l'interface HA (barre laterale, en-tete) bloque sur la vue PIECES &
+// FR | ETAGES. window.top fait vraiment basculer le navigateur vers la vue
+// FR | ASSIGN.
 function goPhase2(){
   saveHouse();
-  window.location.href = NEXT_URL;
+  window.top.location.href = NEXT_URL;
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
