@@ -272,6 +272,32 @@ views:
                       border: 1px solid rgba(0,229,255,0.28) !important;
                       border-radius: 20px !important;
                     }
+          # EN | Same DISCOVERY SCAN button as the ASSIGN screen, not just a
+          # EN | link to it: vssp_rooms_floors.html's "Next" button loads
+          # EN | assign.html INSIDE this same iframe (a sandboxed iframe can
+          # EN | navigate itself but not the parent frame — see that file's
+          # EN | NEXT_URL comment), which means a visitor can land on the
+          # EN | assignment table through this screen without ever reaching
+          # EN | the dedicated ASSIGN screen that normally carries this
+          # EN | button. Without it there, assign_data.json is 404 with no
+          # EN | way to produce it.
+          # FR | Meme bouton DISCOVERY SCAN que l'ecran ASSIGN, pas juste un
+          # FR | lien vers lui : le bouton « Suivant » de
+          # FR | vssp_rooms_floors.html charge assign.html DANS cette meme
+          # FR | iframe (une iframe sandboxee peut se naviguer elle-meme mais
+          # FR | pas la frame parente — voir le commentaire NEXT_URL de ce
+          # FR | fichier), ce qui veut dire qu'on peut atteindre le tableau
+          # FR | d'assignation par cet ecran sans jamais passer par l'ecran
+          # FR | ASSIGN dedie qui porte normalement ce bouton. Sans lui ici,
+          # FR | assign_data.json est en 404 sans aucun moyen de le produire.
+          - type: custom:button-card
+            template: vssp_admin_button
+            icon: mdi:radar
+            name: "{{ t('adminmenu.scan') }}"
+            label: "{{ t('adminmenu.scan_hint') }}"
+            tap_action:
+              action: call-service
+              service: script.vssp_scan_and_prepare
           # EN | ?v=0 is a placeholder the build's cache-busting sed step
           # EN | rewrites to ?v=<VTOKEN> on every build (see .gitlab-ci.yml,
           # EN | "Automatic cache-busting of Lovelace resources"). Without it
