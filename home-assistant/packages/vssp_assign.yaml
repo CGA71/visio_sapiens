@@ -148,8 +148,46 @@ script:
   vssp_scan_and_prepare:
     alias: "Visio Sapiens — Scan and prepare the assignment form"
     sequence:
+      # EN | response_variable, not just continue_on_error: a shell_command
+      # EN | doesn't raise on a non-zero exit code by default, so
+      # EN | continue_on_error alone was already enough to keep the chain
+      # EN | running — but it also meant a failed scan (bad/expired token,
+      # EN | vssp_discovery.py crashing on the first area) produced no
+      # EN | feedback at all. The next step would then run against whatever
+      # EN | report.json a PAST successful scan left behind, and the form
+      # EN | would keep showing that same stale, short list no matter how
+      # EN | many times "Relancer le scan" was clicked — indistinguishable
+      # EN | from "most devices genuinely aren't in an HA Area" unless the
+      # EN | failure itself is surfaced.
+      # FR | response_variable, pas seulement continue_on_error : un
+      # FR | shell_command ne leve pas d erreur sur un code de sortie non
+      # FR | nul par defaut, donc continue_on_error seul suffisait deja a
+      # FR | poursuivre la chaine — mais cela voulait aussi dire qu un scan
+      # FR | en echec (jeton invalide/expire, vssp_discovery.py qui plante
+      # FR | des la premiere zone) ne produisait aucun retour. L etape
+      # FR | suivante tournait alors sur le report.json laisse par un
+      # FR | ANCIEN scan reussi, et le formulaire continuait d afficher
+      # FR | cette meme liste courte et figee peu importe le nombre de clics
+      # FR | sur « Relancer le scan » — indiscernable de « la plupart des
+      # FR | appareils n ont vraiment pas de Zone HA » tant que l echec
+      # FR | lui-meme n est pas rendu visible.
       - action: shell_command.vssp_discovery
-        continue_on_error: true
+        response_variable: discovery
+      - if:
+          - condition: template
+            value_template: "{{ discovery.returncode != 0 }}"
+        then:
+          - action: persistent_notification.create
+            data:
+              title: "Visio Sapiens — Discovery scan failed"
+              message: >
+                vssp_discovery.py exited with code {{ discovery.returncode }}
+                — nothing new was scanned. The form below still shows
+                whatever report.json held from a previous run.
+                {{ discovery.stderr | default('') }}
+                Check input_text.vssp_ha_token (or /config/vssp/.ha_token)
+                holds a valid long-lived access token, and Settings > System
+                > Logs for vssp_discovery.py.
       - action: shell_command.vssp_assign_prepare
       - action: persistent_notification.create
         data:
