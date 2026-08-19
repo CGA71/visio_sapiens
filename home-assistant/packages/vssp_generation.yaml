@@ -149,18 +149,19 @@ shell_command:
 script:
   # EN | Dashboard titles in the sidebar are read from configuration.yaml at
   # EN | startup only, hence the restart prompt in the message. The dashboard
-  # EN | CONTENT, on the other hand, is picked up by lovelace.reload.
+  # EN | CONTENT, on the other hand, is re-read on its own next display — no
+  # EN | `lovelace.reload` service exists in Home Assistant to force it.
   # FR | Les titres de dashboards dans la barre laterale sont lus depuis
   # FR | configuration.yaml uniquement au demarrage, d'ou l'invitation a
-  # FR | redemarrer dans le message. Le CONTENU des dashboards, lui, est pris
-  # FR | en compte par lovelace.reload.
+  # FR | redemarrer dans le message. Le CONTENU des dashboards, lui, est relu
+  # FR | tout seul au prochain affichage — il n'existe pas de service
+  # FR | `lovelace.reload` dans Home Assistant pour le forcer.
   vssp_apply_language:
     alias: "Visio Sapiens — Apply the interface language"
     sequence:
       - service: shell_command.vssp_render_fragment
       - service: shell_command.vssp_apply_fragment
       - service: shell_command.vssp_generate_dashboards
-      - service: lovelace.reload
       - service: persistent_notification.create
         data:
           title: "Visio Sapiens — Language applied"

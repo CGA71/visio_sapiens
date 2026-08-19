@@ -110,7 +110,11 @@ automation:
                 then:
                   - action: shell_command.vssp_generate_dashboards
                   - action: shell_command.vssp_assign_prepare
-                  - action: lovelace.reload
+                  # Pas de service de rechargement : `lovelace.reload` n'existe pas
+                  # dans Home Assistant. Un dashboard en mode YAML est relu tout seul
+                  # au prochain affichage (HA compare la date du fichier). Seul
+                  # l'onglet deja ouvert garde l'ancienne version en memoire, d'ou
+                  # le message ci-dessous.
                   - action: persistent_notification.create
                     data:
                       title: "Visio Sapiens — Assignment saved"
