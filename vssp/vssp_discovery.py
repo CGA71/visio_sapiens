@@ -104,6 +104,51 @@ def get_state(base_url, token, entity_id):
     return resp.json()
 
 
+def get_all_states(base_url, token):
+    resp = requests.get(
+        f"{base_url}/api/states",
+        headers={"Authorization": f"Bearer {token}"},
+        timeout=30,
+    )
+    resp.raise_for_status()
+    return resp.json()
+
+
+# EN | area_entities() only ever returns what Home Assistant already has
+# EN | filed under an Area — nothing else. On an instance where devices
+# EN | haven't been organized into Areas yet, that makes the scan report
+# EN | "nothing found" for entities that plainly exist, which is exactly
+# EN | backwards for a tool whose whole job is helping assign devices to a
+# EN | room. This is the curated "assignable device" domain list (same one
+# EN | the old standalone wizard used before the area-scoped scan replaced
+# EN | it) for the area-LESS fallback below — deliberately narrower than
+# EN | the per-area scan above (which is unfiltered, sensors included: an
+# EN | Area is already a bounded, deliberately-organized set, so listing
+# EN | everything in it is fine, but doing that for the WHOLE instance
+# EN | would dump every integration's diagnostic/battery/signal sensor that
+# EN | has no Area, which is mostly noise here).
+# FR | area_entities() ne renvoie jamais que ce que Home Assistant a deja
+# FR | classe sous une Zone — rien d'autre. Sur une instance ou les
+# FR | appareils n'ont pas encore ete organises en Zones, cela fait dire au
+# FR | scan « rien trouve » pour des entites qui existent bel et bien, ce
+# FR | qui est exactement a l'envers pour un outil dont le travail est
+# FR | precisement d'aider a assigner des appareils a une piece. Voici la
+# FR | liste des domaines « appareil assignable » (la meme que l'ancien
+# FR | wizard autonome utilisait avant que le scan par zone ne le
+# FR | remplace) pour le repli SANS zone ci-dessous — deliberement plus
+# FR | etroite que le scan par zone ci-dessus (non filtre, capteurs
+# FR | compris : une Zone est deja un ensemble borne et organise
+# FR | deliberement, donc tout y lister ne pose pas de probleme, mais faire
+# FR | pareil pour TOUTE l'instance deverserait le capteur
+# FR | diagnostic/batterie/signal de chaque integration sans Zone, ce qui
+# FR | est surtout du bruit ici).
+UNASSIGNED_DOMAINS = [
+    "light", "switch", "climate", "media_player", "cover", "camera",
+    "alarm_control_panel", "vacuum", "fan", "lock", "input_boolean",
+    "button", "remote",
+]
+
+
 def main():
     args = get_config()
     print(f"Connexion a {args.url} ...")
@@ -117,6 +162,7 @@ def main():
         all_areas = {k: v for k, v in all_areas.items() if k in wanted}
 
     report = {}
+    seen_entities = set()
 
     for area_id, area_name in all_areas.items():
         print(f"\n=== {area_name} ({area_id}) ===")
@@ -127,6 +173,7 @@ def main():
             state = get_state(args.url, args.token, entity_id)
             if not state:
                 continue
+            seen_entities.add(entity_id)
             attrs = state.get("attributes", {})
             device_class = attrs.get("device_class") or f"(domaine: {entity_id.split('.')[0]})"
             by_device_class[device_class].append({
@@ -148,6 +195,47 @@ def main():
             for e in entities:
                 unit = f" {e['unit']}" if e["unit"] else ""
                 print(f"    - {e['entity_id']}  =>  {e['state']}{unit}   ({e['friendly_name']})")
+
+    # EN | Second pass, whole instance: anything of an assignable domain
+    # EN | that no Area claimed above. Only when scanning everything — a
+    # EN | caller who asked for --areas living_room,kitchen explicitly
+    # EN | wants just those, not every unareaed device on top.
+    # FR | Seconde passe, instance entiere : tout ce qui est d'un domaine
+    # FR | assignable et qu'aucune Zone n'a reclame ci-dessus. Seulement
+    # FR | quand on scanne tout — un appel avec --areas living_room,kitchen
+    # FR | veut explicitement seulement ca, pas tous les appareils sans
+    # FR | zone en plus.
+    if not args.areas:
+        print("\n=== (sans zone) ===")
+        by_device_class = defaultdict(list)
+        for state in get_all_states(args.url, args.token):
+            entity_id = state["entity_id"]
+            if entity_id in seen_entities:
+                continue
+            domain = entity_id.split(".", 1)[0]
+            if domain not in UNASSIGNED_DOMAINS:
+                continue
+            attrs = state.get("attributes", {})
+            device_class = attrs.get("device_class") or f"(domaine: {domain})"
+            by_device_class[device_class].append({
+                "entity_id": entity_id,
+                "friendly_name": attrs.get("friendly_name", entity_id),
+                "state": state.get("state"),
+                "unit": attrs.get("unit_of_measurement"),
+            })
+
+        if by_device_class:
+            report["__unassigned__"] = {
+                "name": "(sans zone)",
+                "entities_by_device_class": dict(by_device_class),
+            }
+            for device_class, entities in by_device_class.items():
+                print(f"  [{device_class}]")
+                for e in entities:
+                    unit = f" {e['unit']}" if e["unit"] else ""
+                    print(f"    - {e['entity_id']}  =>  {e['state']}{unit}   ({e['friendly_name']})")
+        else:
+            print("  (rien — tous les appareils assignables ont deja une zone)")
 
     with open(args.output, "w", encoding="utf-8") as f:
         json.dump(report, f, ensure_ascii=False, indent=2)
