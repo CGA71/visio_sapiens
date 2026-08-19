@@ -51,7 +51,7 @@
     border:1px solid rgba(0,229,255,.22);border-radius:10px;cursor:pointer}
   .btn{background:rgba(0,229,255,.10);border:1px solid rgba(0,229,255,.45);color:var(--cy);
     border-radius:12px;padding:10px 18px;font-family:'Orbitron',monospace;font-size:11px;
-    letter-spacing:1.5px;cursor:pointer;transition:.2s}
+    letter-spacing:1.5px;cursor:pointer;transition:.2s;text-decoration:none;display:inline-block}
   .btn:hover:not(:disabled){background:rgba(0,229,255,.2);box-shadow:0 0 16px rgba(0,229,255,.25)}
   .btn:disabled{opacity:.35;cursor:not-allowed}
   .btn:focus-visible{outline:2px solid var(--cy);outline-offset:2px}
@@ -785,22 +785,6 @@ function roomCount(){
   return state.draft.floors.reduce((n,f)=> n + f.rooms.filter(r=>r.name.trim()).length, 0)
        + state.draft.exteriors.length;
 }
-// EN | window.top, not window.location: this page is the content of an
-// EN | iframe card on the ADMIN dashboard. Navigating window.location would
-// EN | just swap what the iframe shows, leaving the surrounding HA chrome
-// EN | (sidebar, header) stuck on the ROOMS & FLOORS view. window.top makes
-// EN | the browser actually switch to the ASSIGN view.
-// FR | window.top, pas window.location : cette page est le contenu d'une
-// FR | carte iframe sur le dashboard ADMIN. Naviguer window.location ne
-// FR | ferait que changer ce que l'iframe affiche, en laissant le reste de
-// FR | l'interface HA (barre laterale, en-tete) bloque sur la vue PIECES &
-// FR | ETAGES. window.top fait vraiment basculer le navigateur vers la vue
-// FR | ASSIGN.
-function goPhase2(){
-  saveHouse();
-  window.top.location.href = NEXT_URL;
-}
-
 // ═══════════════════════════════════════════════════════════════════════════
 // CONNEXION
 // ═══════════════════════════════════════════════════════════════════════════
@@ -872,14 +856,28 @@ function render(){
   html += renderDiff();
 
   const rc = roomCount();
+  // EN | A real <a target="_top"> instead of a script-driven
+  // EN | window.top.location assignment: this page is an iframe on the
+  // EN | ADMIN dashboard, and some browsers silently swallow a top-level
+  // EN | navigation initiated from inside a script, with no console error
+  // EN | to explain why the button "did nothing". A genuine link click is
+  // EN | the standard, reliably-permitted way to escape an iframe.
+  // FR | Un vrai <a target="_top"> plutot qu une assignation
+  // FR | window.top.location pilotee par script : cette page est une
+  // FR | iframe sur le dashboard ADMIN, et certains navigateurs avalent en
+  // FR | silence une navigation top-level lancee depuis un script, sans
+  // FR | erreur console pour expliquer pourquoi le bouton « ne fait rien ».
+  // FR | Un vrai clic de lien est le moyen standard, fiable, de sortir
+  // FR | d une iframe.
+  const nextBtn = rc
+    ? `<a class="btn" href="${esc(NEXT_URL)}" target="_top" onclick="saveHouse()">${t("act_next_assign")}</a>`
+    : `<span class="btn" aria-disabled="true" style="opacity:.35;cursor:not-allowed">${t("act_next_assign")}</span>`;
   html += `
     <div class="actions">
       <button class="btn btn-ghost" onclick="reload()">${t("act_reload")}</button>
       <div class="actions-right">
         <button class="btn btn-ghost" onclick="exportHouse()">${t("act_export")}</button>
-        <button class="btn" onclick="goPhase2()" ${rc ? "" : "disabled"}>
-          ${t("act_next_assign")}
-        </button>
+        ${nextBtn}
       </div>
     </div>`;
 
