@@ -1,0 +1,105 @@
+########################################################################
+# Visio Sapiens — ROOM STRUCTURE SYNC package
+#
+# EN | Closes the gap between the room form and the model it claims to
+# EN | write:
+# EN |   PIECES & ETAGES  -> HA Area/Floor registry   (the structure, live)
+# EN |   this package     -> house.yaml `rooms:`       (the structure, recorded)
+# EN |   the ASSIGN form  -> reads house.yaml          (what it offers per device)
+# EN | Without it, vssp_rooms_floors.html's "Appliquer" only ever touched the
+# EN | HA registry, and house.yaml kept whatever room list it started with —
+# EN | so the ASSIGN screen's room dropdown could show rooms that no longer
+# EN | exist and miss ones that do.
+# FR | Ferme l ecart entre le formulaire de pieces et le modele qu il pretend
+# FR | ecrire :
+# FR |   PIECES & ETAGES  -> registre Zones/Etages HA  (la structure, en direct)
+# FR |   ce package       -> `rooms:` de house.yaml    (la structure, enregistree)
+# FR |   le formulaire ASSIGN -> lit house.yaml         (ce qu il propose par appareil)
+# FR | Sans lui, le bouton « Appliquer » de vssp_rooms_floors.html ne touchait
+# FR | que le registre HA, et house.yaml gardait la liste de pieces avec
+# FR | laquelle il avait demarre — donc le menu deroulant de pieces de l ecran
+# FR | ASSIGN pouvait afficher des pieces qui n existent plus et en manquer qui
+# FR | existent.
+#
+# EN | BEFORE DEPLOYING — check for duplicate keys, same as every other
+# EN | package here:
+# FR | AVANT DE DEPLOYER — verifier les cles en double, comme pour tout autre
+# FR | package ici :
+#
+#   grep -n "vssp_rooms" home-assistant/packages/*.yaml
+#
+# EN | Same pod dependency as vssp_assign.yaml: ruamel.yaml.
+# FR | Meme dependance pod que vssp_assign.yaml : ruamel.yaml.
+########################################################################
+
+shell_command:
+  # EN | Links or creates rooms in house.yaml from the HA Area registry.
+  # EN | Never touches an existing room's `slots:` — see the script header.
+  # FR | Relie ou cree des pieces dans house.yaml depuis le registre Zones
+  # FR | HA. Ne touche jamais aux `slots:` d une piece existante — voir
+  # FR | l en-tete du script.
+  vssp_rooms_apply: >-
+    python3 /config/vssp/vssp_rooms_apply.py
+    --model /config/dashboards/model/house.yaml
+    --json-b64 "{{ content_b64 }}"
+    --status-file /config/www/vssp/rooms_sync_status.json
+
+# ----------------------------------------------------------------------
+# EN | WEBHOOK — same reasoning as vssp_assign.yaml's: the form runs in an
+# EN | iframe with no access to `hass` or a Bearer token, so a local-only
+# EN | webhook is the entry point instead.
+# FR | WEBHOOK — meme raisonnement que celui de vssp_assign.yaml : le
+# FR | formulaire tourne dans une iframe sans acces a `hass` ni a un jeton
+# FR | Bearer, donc un webhook local uniquement sert de point d entree.
+# ----------------------------------------------------------------------
+automation:
+  - alias: "Visio Sapiens — Receive room structure sync"
+    id: vssp_receive_rooms_sync
+    mode: single
+    triggers:
+      - trigger: webhook
+        webhook_id: vssp_rooms_sync
+        local_only: true
+        allowed_methods:
+          - POST
+    actions:
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.json.content_b64 is defined }}"
+            sequence:
+              - action: shell_command.vssp_rooms_apply
+                data:
+                  content_b64: "{{ trigger.json.content_b64 }}"
+                response_variable: applied
+              - if:
+                  - condition: template
+                    value_template: "{{ applied.returncode == 0 }}"
+                then:
+                  # EN | New rooms need a dashboard view, so regenerate —
+                  # EN | same shell_command the ASSIGN webhook already
+                  # EN | calls after every successful save. Idempotent when
+                  # EN | nothing changed.
+                  # FR | Une piece nouvelle a besoin d une vue de dashboard,
+                  # FR | donc regenerer — le meme shell_command que le
+                  # FR | webhook ASSIGN appelle deja apres chaque
+                  # FR | enregistrement reussi. Idempotent quand rien n a
+                  # FR | change.
+                  - action: shell_command.vssp_generate_dashboards
+                  - action: shell_command.vssp_assign_prepare
+                else:
+                  - action: persistent_notification.create
+                    data:
+                      title: "Visio Sapiens — Room sync failed"
+                      message: >
+                        The room structure sync failed (exit code
+                        {{ applied.returncode }}). house.yaml was not
+                        written. Check Settings > System > Logs for
+                        vssp_rooms_apply.py.
+        default:
+          - action: persistent_notification.create
+            data:
+              title: "Visio Sapiens — Malformed room sync"
+              message: >
+                The webhook received a payload without content_b64.
+                Nothing was written.

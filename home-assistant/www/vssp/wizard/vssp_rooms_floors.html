@@ -190,6 +190,26 @@ const NEXT_URL = "/local/vssp/wizard/assign.html";
 const LS_TOKEN = "osv_ha_token";
 const LS_HOUSE = "vssp_house";
 const LS_COLORS= "vssp_room_colors";
+// EN | saveHouse() below only ever wrote to the BROWSER's localStorage —
+// EN | never to house.yaml on the server. house.yaml is what
+// EN | vssp_assign_prepare.py and the generator actually read, so the room
+// EN | list on the ASSIGN screen (and the room dropdown in it) kept
+// EN | showing house.yaml's old, hand-written room list, never what
+// EN | "Appliquer" had just written to the HA Area registry — same
+// EN | webhook pattern as assign.html's save, because this page is an
+// EN | iframe and cannot reach the `hass` object or a Bearer token any
+// EN | more than that one can.
+// FR | saveHouse() plus bas n a toujours ecrit que dans le localStorage du
+// FR | NAVIGATEUR — jamais dans house.yaml sur le serveur. Or house.yaml
+// FR | est ce que vssp_assign_prepare.py et le generateur lisent
+// FR | reellement, donc la liste de pieces sur l ecran ASSIGN (et son menu
+// FR | deroulant) continuait d afficher l ancienne liste ecrite a la main
+// FR | dans house.yaml, jamais ce que « Appliquer » venait d ecrire dans
+// FR | le registre Zones de HA — meme schema de webhook que
+// FR | l enregistrement d assign.html, car cette page est une iframe et ne
+// FR | peut pas plus atteindre l objet `hass` ou un jeton Bearer que
+// FR | celle-la.
+const WEBHOOK_ROOMS = "/api/webhook/vssp_rooms_sync";
 
 // Domaines considérés comme « appareils assignables » en phase 2.
 // Le même filtre est appliqué ici pour compter ce que contient chaque pièce.
@@ -236,6 +256,7 @@ const I18N = {
     confirm_apply_rooms_deleted: "\n\n{n} pièce(s) seront supprimées",
     confirm_apply_entities_unassigned: " — {risk} entité(s) seront désassignées (les entités elles-mêmes ne sont pas supprimées).",
     notice_applied: "✓ Structure appliquée — {total} modification(s).",
+    notice_sync_failed: "⚠ Le registre Home Assistant est à jour, mais la synchronisation vers house.yaml a échoué ({msg}). L'écran ASSIGN peut afficher une liste de pièces obsolète tant que ce n'est pas corrigé.",
     err_apply_failed: "Échec de l'application : {msg} — le registre peut être partiellement modifié, relance une lecture.",
     confirm_delete_selected_header: "Retirer {n} pièce(s) de la structure ?\n\n{names}",
     confirm_delete_selected_entities: "\n\n{n} entité(s) y sont rattachées et seront désassignées.",
@@ -311,6 +332,7 @@ const I18N = {
     confirm_apply_rooms_deleted: "\n\n{n} room(s) will be deleted",
     confirm_apply_entities_unassigned: " — {risk} entity(ies) will be unassigned (the entities themselves are not deleted).",
     notice_applied: "✓ Structure applied — {total} change(s).",
+    notice_sync_failed: "⚠ The Home Assistant registry is up to date, but syncing to house.yaml failed ({msg}). The ASSIGN screen may show a stale room list until this is fixed.",
     err_apply_failed: "Apply failed: {msg} — the registry may be partially modified, reload it.",
     confirm_delete_selected_header: "Remove {n} room(s) from the structure?\n\n{names}",
     confirm_delete_selected_entities: "\n\n{n} entity(ies) are attached and will be unassigned.",
@@ -678,12 +700,53 @@ async function applyDiff(){
     localStorage.setItem(LS_COLORS, JSON.stringify(state.colors));
     await loadRegistry();
     saveHouse();
-    state.notice = t("notice_applied", {total: diff.total});
+    // EN | Best-effort: the HA registry write above already succeeded and
+    // EN | is the part that must not be reported as failed. If the sync
+    // EN | webhook is unreachable or house.yaml rejects the payload, say
+    // EN | so in the notice but keep it a notice, not state.error — the
+    // EN | catch block below is for the registry write itself.
+    // FR | Best-effort : l ecriture dans le registre HA ci-dessus a deja
+    // FR | reussi, et c est elle qui ne doit pas etre rapportee comme
+    // FR | ratee. Si le webhook de synchronisation est injoignable ou que
+    // FR | house.yaml refuse le payload, le dire dans la notice mais sans
+    // FR | passer par state.error — le bloc catch plus bas concerne
+    // FR | l ecriture registre elle-meme.
+    try {
+      await syncRoomsToModel();
+      state.notice = t("notice_applied", {total: diff.total});
+    } catch (syncErr) {
+      state.notice = t("notice_applied", {total: diff.total})
+        + "\n" + t("notice_sync_failed", {msg: syncErr.message});
+    }
   }catch(e){
     state.error = t("err_apply_failed", {msg: e.message});
   }finally{
     setBusy(false);
   }
+}
+
+// EN | Sends the CURRENT HA registry state (just refreshed by
+// EN | loadRegistry() above) to the webhook that writes house.yaml's
+// EN | `rooms:` list. Base64, same reason as assign.html's save: room
+// EN | names carry accents, and passing them through a shell raw is
+// EN | exactly what breaks silently.
+// FR | Envoie l etat ACTUEL du registre HA (rafraichi par loadRegistry()
+// FR | juste au-dessus) au webhook qui ecrit la liste `rooms:` de
+// FR | house.yaml. Base64, meme raison que l enregistrement d
+// FR | assign.html : les noms de pieces portent des accents, et les
+// FR | passer bruts a travers un shell est precisement ce qui casse en
+// FR | silence.
+async function syncRoomsToModel(){
+  const payload = JSON.stringify({
+    rooms: state.ha.areas.map(a => ({area_id: a.area_id, name: a.name})),
+  });
+  const b64 = btoa(unescape(encodeURIComponent(payload)));
+  const res = await fetch(WEBHOOK_ROOMS, {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({content_b64: b64}),
+  });
+  if (!res.ok) throw new Error("HTTP " + res.status);
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
