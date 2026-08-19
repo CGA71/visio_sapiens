@@ -647,7 +647,20 @@ function entitiesAtRisk(diff){
 // ═══════════════════════════════════════════════════════════════════════════
 async function applyDiff(){
   const diff = computeDiff();
-  if (!diff.total){ state.notice = t("diff_nothing_to_apply"); return render(); }
+  if (!diff.total){
+    // EN | Nothing pending for the HA registry, but house.yaml can still
+    // EN | be behind it (rooms created in an earlier session, before
+    // EN | syncRoomsToModel() existed) — sync regardless of returning
+    // EN | early here.
+    // FR | Rien en attente pour le registre HA, mais house.yaml peut
+    // FR | quand meme etre en retard sur lui (pieces creees lors d une
+    // FR | session anterieure, avant que syncRoomsToModel() existe) —
+    // FR | synchroniser malgre le retour anticipe ici.
+    setBusy(true, t("busy_applying"));
+    state.notice = await syncRoomsBestEffort(t("diff_nothing_to_apply"));
+    setBusy(false);
+    return;
+  }
 
   const risk = entitiesAtRisk(diff);
   let msg = t("confirm_apply_header", {total: diff.total});
@@ -701,23 +714,12 @@ async function applyDiff(){
     await loadRegistry();
     saveHouse();
     // EN | Best-effort: the HA registry write above already succeeded and
-    // EN | is the part that must not be reported as failed. If the sync
-    // EN | webhook is unreachable or house.yaml rejects the payload, say
-    // EN | so in the notice but keep it a notice, not state.error — the
-    // EN | catch block below is for the registry write itself.
+    // EN | is the part that must not be reported as failed — see
+    // EN | syncRoomsBestEffort()'s comment.
     // FR | Best-effort : l ecriture dans le registre HA ci-dessus a deja
     // FR | reussi, et c est elle qui ne doit pas etre rapportee comme
-    // FR | ratee. Si le webhook de synchronisation est injoignable ou que
-    // FR | house.yaml refuse le payload, le dire dans la notice mais sans
-    // FR | passer par state.error — le bloc catch plus bas concerne
-    // FR | l ecriture registre elle-meme.
-    try {
-      await syncRoomsToModel();
-      state.notice = t("notice_applied", {total: diff.total});
-    } catch (syncErr) {
-      state.notice = t("notice_applied", {total: diff.total})
-        + "\n" + t("notice_sync_failed", {msg: syncErr.message});
-    }
+    // FR | ratee — voir le commentaire de syncRoomsBestEffort().
+    state.notice = await syncRoomsBestEffort(t("notice_applied", {total: diff.total}));
   }catch(e){
     state.error = t("err_apply_failed", {msg: e.message});
   }finally{
@@ -747,6 +749,37 @@ async function syncRoomsToModel(){
     body: JSON.stringify({content_b64: b64}),
   });
   if (!res.ok) throw new Error("HTTP " + res.status);
+}
+
+// EN | Wraps syncRoomsToModel() for the three callers that read the
+// EN | registry (connect, reload, applyDiff): appends a warning to
+// EN | `baseNotice` on failure instead of throwing, since by the time this
+// EN | runs the registry read/write it followed has already succeeded and
+// EN | must not be reported as failed over a sync hiccup.
+// EN | Called after EVERY registry read, not only inside applyDiff() when
+// EN | there is a pending diff to push to HA: a room created in an
+// EN | earlier session, before this sync existed, has nothing left to
+// EN | "Apply" (computeDiff() returns 0), so gating the sync on diff.total
+// EN | would mean it never runs for exactly the rooms that need it most.
+// FR | Enveloppe syncRoomsToModel() pour les trois appelants qui lisent le
+// FR | registre (connect, reload, applyDiff) : ajoute un avertissement a
+// FR | `baseNotice` en cas d echec plutot que de lever, puisqu a ce stade
+// FR | la lecture/ecriture registre qu il suit a deja reussi et ne doit
+// FR | pas etre rapportee comme ratee pour un accroc de synchronisation.
+// FR | Appele apres CHAQUE lecture du registre, pas seulement dans
+// FR | applyDiff() quand il y a un diff en attente a pousser vers HA : une
+// FR | piece creee lors d une session anterieure, avant que cette
+// FR | synchronisation existe, n a plus rien a « Appliquer »
+// FR | (computeDiff() renvoie 0), donc conditionner la synchronisation a
+// FR | diff.total ferait qu elle ne tourne jamais pour precisement les
+// FR | pieces qui en ont le plus besoin.
+async function syncRoomsBestEffort(baseNotice){
+  try {
+    await syncRoomsToModel();
+    return baseNotice;
+  } catch (syncErr) {
+    return baseNotice + "\n" + t("notice_sync_failed", {msg: syncErr.message});
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -881,7 +914,8 @@ async function connect(){
     await loadRegistry();
     await loadLanguage();
     subscribeLanguage();
-    state.notice = t("notice_registry_read", {floors: state.ha.floors.length, areas: state.ha.areas.length});
+    state.notice = await syncRoomsBestEffort(
+      t("notice_registry_read", {floors: state.ha.floors.length, areas: state.ha.areas.length}));
   }catch(e){
     state.connected = false;
     state.error = e.message;
@@ -889,7 +923,10 @@ async function connect(){
 }
 async function reload(){
   setBusy(true, t("busy_reloading"));
-  try{ await loadRegistry(); state.notice = t("notice_registry_reloaded"); }
+  try{
+    await loadRegistry();
+    state.notice = await syncRoomsBestEffort(t("notice_registry_reloaded"));
+  }
   catch(e){ state.error = e.message; }
   finally{ setBusy(false); }
 }
