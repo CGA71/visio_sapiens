@@ -114,6 +114,20 @@ Expect a long list: the discovery reports *every* entity of every area,
 sensors included. The filter field and the bulk assignment — which applies
 to the visible rows only — exist for that.
 
+**Visual check, once deployed.** Static review of the HTML/JS is not enough
+to catch a broken cross-screen handoff — that only shows up by actually
+clicking through it in a browser. After a deploy that touches the rooms ↔
+assign handoff (`vssp_rooms_floors.html`'s "Next" button, or anything under
+`/visio-sapiens-admin/`), open `/visio-sapiens-admin/rooms` and confirm:
+the "Next → Device assignment" button lands on `/visio-sapiens-admin/assign`
+(not a 404, not the retired `vssp_wizard.html`); toggling
+`input_select.vssp_language` between `fr` and `en` retranslates the rooms
+screen live; and `/local/vssp/wizard/vssp_wizard.html`, if still reachable,
+redirects to `/visio-sapiens-admin/rooms` instead of showing its old
+broken form. The `run` skill can drive this in a real browser and take
+screenshots — point it at the instance's actual URL, since this console
+lives on a deployed Home Assistant pod, not a local dev server.
+
 ## 6. What each guard refuses
 
 | Situation | Behaviour |

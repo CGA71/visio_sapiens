@@ -117,6 +117,22 @@ entités de chaque zone, capteurs compris. Le champ de filtre et
 l'assignation en masse — qui ne s'applique qu'aux lignes visibles —
 existent pour cela.
 
+**Contrôle visuel, une fois déployé.** Relire le HTML/JS ne suffit pas à
+repérer un renvoi cassé entre deux écrans — ça ne se voit qu'en cliquant
+vraiment dessus dans un navigateur. Après un déploiement qui touche le
+renvoi pièces ↔ assign (le bouton « Suivant » de `vssp_rooms_floors.html`,
+ou tout ce qui vit sous `/visio-sapiens-admin/`), ouvre
+`/visio-sapiens-admin/rooms` et vérifie : le bouton « Suivant →
+Assignation des appareils » atterrit bien sur
+`/visio-sapiens-admin/assign` (pas de 404, pas le `vssp_wizard.html`
+retiré) ; basculer `input_select.vssp_language` entre `fr` et `en`
+retraduit l'écran pièces en direct ; et `/local/vssp/wizard/vssp_wizard.html`,
+s'il reste joignable, redirige vers `/visio-sapiens-admin/rooms` au lieu
+d'afficher son ancien formulaire cassé. Le skill `run` peut piloter ça
+dans un vrai navigateur et prendre des captures d'écran — pointe-le vers
+l'URL réelle de l'instance, car cette console vit sur un pod Home
+Assistant déployé, pas un serveur de dev local.
+
 ## 6. Ce que chaque garde-fou refuse
 
 | Situation | Comportement |
