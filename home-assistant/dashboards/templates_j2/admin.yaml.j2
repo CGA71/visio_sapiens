@@ -136,7 +136,34 @@ views:
     type: custom:grid-layout
     layout:
       grid-template-columns: minmax(200px, auto) 1fr 1fr 1fr
-      grid-template-rows: 105px auto
+      # EN | 1fr, not auto, for the screens that end in a full-height iframe
+      # EN | (rooms, assign): auto sizes the row to its content's natural
+      # EN | height, which is exactly what left the iframe's own
+      # EN | calc(100vh - Npx) height stranded above a dead strip of page
+      # EN | background whenever N didn't match the real content above it —
+      # EN | a number that breaks every time a card is added or removed up
+      # EN | there (as it just did when the DISCOVERY SCAN button was added
+      # EN | to this screen). 1fr makes the row — and everything stretched
+      # EN | to fill it below — consume exactly what's left of the
+      # EN | viewport, no matter what sits above. Screens without a
+      # EN | fill-the-rest iframe (energy, theme, dashboards) keep auto:
+      # EN | their content should size to itself and let the page scroll,
+      # EN | not stretch to the window.
+      # FR | 1fr, pas auto, pour les ecrans qui se terminent par une iframe
+      # FR | pleine hauteur (rooms, assign) : auto dimensionne la ligne a la
+      # FR | hauteur naturelle de son contenu, ce qui est precisement ce qui
+      # FR | laissait la hauteur calc(100vh - Npx) de l'iframe echouee
+      # FR | au-dessus d'une bande morte de fond de page des que N ne
+      # FR | correspondait plus au contenu reel au-dessus — un nombre qui
+      # FR | casse a chaque carte ajoutee ou retiree la-haut (ce qui vient
+      # FR | de se produire avec l'ajout du bouton DISCOVERY SCAN sur cet
+      # FR | ecran). 1fr fait que la ligne — et tout ce qui s'y etire en
+      # FR | dessous — consomme exactement ce qu'il reste du viewport, quoi
+      # FR | qu'il y ait au-dessus. Les ecrans sans iframe a etirer
+      # FR | (energy, theme, dashboards) gardent auto : leur contenu doit se
+      # FR | dimensionner a lui-meme et laisser la page defiler, pas
+      # FR | s'etirer jusqu'a la fenetre.
+      grid-template-rows: 105px {{ '1fr' if screen in ['rooms', 'assign'] else 'auto' }}
       grid-template-areas: |
         "nav header header header"
         "nav body body body"
@@ -191,15 +218,34 @@ views:
           # FR | alors qu'il l'a ete.
           - type: iframe
             url: /local/vssp/wizard/assign.html?v=0
+            # EN | :host{flex:1 1 0} instead of a fixed calc(100vh-Npx): the
+            # EN | same pattern already used in _header.j2 to make a card
+            # EN | grow to fill its stack. This card is the last in a
+            # EN | vertical-stack whose row is now 1fr (see this screen's
+            # EN | grid-template-rows above), so it inherits exactly the
+            # EN | height left over after its siblings — no magic number to
+            # EN | keep recalculating by hand every time a card is added
+            # EN | above it.
+            # FR | :host{flex:1 1 0} plutot qu'un calc(100vh-Npx) fige : le
+            # FR | meme procede deja utilise dans _header.j2 pour faire
+            # FR | grandir une carte jusqu'a remplir son stack. Cette carte
+            # FR | est la derniere d'un vertical-stack dont la ligne est
+            # FR | maintenant 1fr (voir le grid-template-rows de cet ecran
+            # FR | plus haut), elle herite donc exactement de la hauteur
+            # FR | restante apres ses voisines — plus de nombre magique a
+            # FR | recalculer a la main a chaque carte ajoutee au-dessus.
             card_mod:
               style: |
+                :host {
+                  flex: 1 1 0;
+                  min-height: 520px;
+                }
                 ha-card {
                   background: transparent !important;
                   border: none !important;
                   box-shadow: none !important;
                   overflow: hidden;
-                  height: calc(100vh - 260px);
-                  min-height: 520px;
+                  height: 100%;
                   border-radius: 16px;
                 }
                 iframe { width: 100%; height: 100% !important; border: none; }
@@ -315,15 +361,34 @@ views:
           # FR | pas ete deploye" alors qu'il l'a ete.
           - type: iframe
             url: /local/vssp/wizard/vssp_rooms_floors.html?v=0
+            # EN | Same :host{flex:1 1 0} technique as the ASSIGN screen's
+            # EN | iframe — see the comment there. This card is the last in
+            # EN | a vertical-stack whose row is 1fr, so it grows to fill
+            # EN | whatever is left after the language/format row and the
+            # EN | DISCOVERY SCAN button above it, instead of a fixed
+            # EN | calc(100vh-260px) that fell out of date the moment that
+            # EN | button was added and left a gap of dead page background
+            # EN | below the card.
+            # FR | Meme technique :host{flex:1 1 0} que l'iframe de l'ecran
+            # FR | ASSIGN — voir le commentaire la-bas. Cette carte est la
+            # FR | derniere d'un vertical-stack dont la ligne est 1fr, elle
+            # FR | grandit donc pour combler ce qu'il reste apres la ligne
+            # FR | langue/format et le bouton DISCOVERY SCAN au-dessus,
+            # FR | plutot qu'un calc(100vh-260px) fige devenu obsolete des
+            # FR | l'ajout de ce bouton, laissant une bande de fond de page
+            # FR | morte sous la carte.
             card_mod:
               style: |
+                :host {
+                  flex: 1 1 0;
+                  min-height: 520px;
+                }
                 ha-card {
                   background: transparent !important;
                   border: none !important;
                   box-shadow: none !important;
                   overflow: hidden;
-                  height: calc(100vh - 260px);
-                  min-height: 520px;
+                  height: 100%;
                   border-radius: 16px;
                 }
                 iframe { width: 100%; height: 100% !important; border: none; }
