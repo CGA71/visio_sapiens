@@ -99,6 +99,27 @@
   .msg.ok  { display: block; background: rgba(0,255,195,.08); border: 1px solid rgba(0,255,195,.35); color: var(--green); }
   .msg.err { display: block; background: rgba(255,77,109,.08); border: 1px solid rgba(255,77,109,.35); color: var(--red); }
   .count { color: var(--muted); font-size: 11px; margin-left: auto; }
+  .recap { display: none; margin-top: 10px; }
+  .recap-grid {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 10px; padding: 12px;
+  }
+  .recap-room {
+    border: 1px solid var(--line-soft); border-radius: 10px;
+    padding: 8px 10px; background: rgba(0,0,0,.15);
+  }
+  .recap-room h3 {
+    margin: 0 0 6px 0; font-size: 12px; color: var(--cyan);
+    font-family: Orbitron, sans-serif; letter-spacing: 1px; text-transform: uppercase;
+  }
+  .recap-slot {
+    display: flex; justify-content: space-between; gap: 8px; padding: 3px 0;
+    font-size: 11px; border-bottom: 1px dashed rgba(255,255,255,.06);
+  }
+  .recap-slot:last-child { border-bottom: none; }
+  .recap-slot .label { color: var(--muted); }
+  .recap-slot .val { color: var(--text); text-align: right; }
+  .recap-slot .val.empty { color: var(--dim); font-style: italic; }
 </style>
 </head>
 <body>
@@ -129,8 +150,26 @@
   </div>
 </div>
 
+<!--
+  EN | Recap grouped by room / slot — lets the admin see what will actually
+  EN | land in the generated dashboards (one card per room, one line per
+  EN | slot) before hitting Save, instead of auditing eighty flat rows.
+  EN | Rebuilt from the live in-memory selection, so it reflects unsaved
+  EN | changes too.
+  FR | Recapitulatif groupe par piece / tableau — permet a l administrateur
+  FR | de voir ce qui atterrira reellement dans les dashboards generes (une
+  FR | carte par piece, une ligne par tableau) avant d enregistrer, plutot
+  FR | que d auditer quatre-vingts lignes a plat. Reconstruit a partir de la
+  FR | selection en memoire, donc reflete aussi les changements non
+  FR | enregistres.
+-->
+<div class="wrap recap" id="recap">
+  <div class="recap-grid" id="recapBody"></div>
+</div>
+
 <div class="bar" style="margin-top:12px">
   <button id="save">Save and regenerate</button>
+  <button class="ghost" id="toggleRecap">Preview by room</button>
   <button class="ghost" id="reload">Reload</button>
   <span class="count" id="pending"></span>
 </div>
@@ -255,6 +294,49 @@ function markPending() {
   const rows = [...el('rows').children];
   const n = rows.filter(r => r._get().room && r._get().slot).length;
   el('pending').textContent = n + ' / ' + rows.length + ' assigned';
+  if (el('recap').style.display !== 'none') renderRecap();
+}
+
+// EN | Groups the live selection by room then slot, using the same _get()
+// EN | each row already exposes for save — so the recap can never drift from
+// EN | what Save would actually send.
+// FR | Regroupe la selection en cours par piece puis par tableau, via le
+// FR | meme _get() que chaque ligne expose deja pour l enregistrement — le
+// FR | recapitulatif ne peut donc pas diverger de ce que Save enverrait.
+function renderRecap() {
+  if (!DATA) return;
+  const byRoomSlot = {};
+  [...el('rows').children].forEach(tr => {
+    const a = tr._get();
+    if (!a.room || !a.slot) return;
+    const name = tr.querySelector('.name').textContent + (a.role ? ' (' + a.role + ')' : '');
+    byRoomSlot[a.room] = byRoomSlot[a.room] || {};
+    (byRoomSlot[a.room][a.slot] = byRoomSlot[a.room][a.slot] || []).push(name);
+  });
+
+  const body = el('recapBody');
+  body.innerHTML = '';
+  DATA.rooms.forEach(r => {
+    const card = document.createElement('div');
+    card.className = 'recap-room';
+    const h3 = document.createElement('h3');
+    h3.textContent = r.label;
+    card.appendChild(h3);
+    r.slots.forEach(s => {
+      const row = document.createElement('div');
+      row.className = 'recap-slot';
+      const label = document.createElement('span');
+      label.className = 'label';
+      label.textContent = DATA.slot_labels[s] || s;
+      const val = document.createElement('span');
+      const names = (byRoomSlot[r.id] && byRoomSlot[r.id][s]) || [];
+      val.className = names.length ? 'val' : 'val empty';
+      val.textContent = names.length ? names.join(', ') : '—';
+      row.append(label, val);
+      card.appendChild(row);
+    });
+    body.appendChild(card);
+  });
 }
 
 function applyFilter() {
@@ -310,6 +392,13 @@ async function load() {
 
 el('filter').addEventListener('input', applyFilter);
 el('reload').addEventListener('click', load);
+el('toggleRecap').addEventListener('click', () => {
+  const w = el('recap');
+  const show = w.style.display === 'none' || !w.style.display;
+  w.style.display = show ? 'block' : 'none';
+  el('toggleRecap').textContent = show ? 'Hide preview' : 'Preview by room';
+  if (show) renderRecap();
+});
 
 // EN | Bulk assignment applies to the VISIBLE rows only. Filtering by
 // EN | "living" then assigning is how eighty entities become manageable, and
