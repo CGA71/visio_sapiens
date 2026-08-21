@@ -164,6 +164,8 @@ shell_command:
     --rooms /config/dashboards/model/house_rooms.yaml
     --devices /config/dashboards/model/energy_devices.yaml
     --templates /config/dashboards/templates_j2
+    --locales-dir /config/dashboards/locales
+    --rooms-fragment /config/config-fragment-rooms.yaml
     --out /config/dashboards/views
     --status-file /config/www/vssp/preview_status.json
 
@@ -187,6 +189,8 @@ shell_command:
     --model /config/dashboards/model/house.yaml
     --devices /config/dashboards/model/energy_devices.yaml
     --templates /config/dashboards/templates_j2
+    --locales-dir /config/dashboards/locales
+    --rooms-fragment /config/config-fragment-rooms.yaml
     --out /config/dashboards/views
     --status-file /config/www/vssp/energy_generate_status.json
 
@@ -197,6 +201,8 @@ shell_command:
     --model /config/dashboards/model/house.yaml
     --devices /config/dashboards/model/energy_devices.yaml
     --templates /config/dashboards/templates_j2
+    --locales-dir /config/dashboards/locales
+    --rooms-fragment /config/config-fragment-rooms.yaml
     --out /config/dashboards/views
     --status-file /config/www/vssp/energy_generate_status.json
 
@@ -259,6 +265,7 @@ shell_command:
     --model /config/dashboards/model/house.yaml
     --rooms /config/dashboards/model/house_rooms.preview.yaml
     --templates /config/dashboards/templates_j2
+    --locales-dir /config/dashboards/locales
     --out /config/dashboards/views
     --preview
     --status-file /config/www/vssp/preview_status.json
@@ -269,6 +276,7 @@ shell_command:
     --model /config/dashboards/model/house.yaml
     --rooms /config/dashboards/model/house_rooms.preview.yaml
     --templates /config/dashboards/templates_j2
+    --locales-dir /config/dashboards/locales
     --out /config/dashboards/views
     --preview --dry-run
     --status-file /config/www/vssp/preview_status.json
