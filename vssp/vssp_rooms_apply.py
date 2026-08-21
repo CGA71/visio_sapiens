@@ -27,23 +27,40 @@
 # FR | ENTREE — json, depuis un fichier ou en base64 en ligne de commande :
 #   {"rooms": [{"area_id": "living_room_ab12", "name": "Salon"}, ...]}
 #
-# EN | NEVER touches `slots:`. A room already linked to an area_id keeps its
-# EN | id, type and slots untouched — this script only adds rooms for areas
-# EN | it has not seen before, and best-effort LINKS an existing, still
-# EN | unlinked room to an area of the same name rather than creating a
-# EN | duplicate (house.yaml today has no area_id on any room — every room
-# EN | is "unlinked" the first time this runs). A room whose area was
-# EN | deleted in HA is left in place rather than removed: silently
-# EN | dropping a room could silently drop everything assigned to it.
-# FR | NE TOUCHE JAMAIS `slots:`. Une piece deja liee a un area_id garde son
-# FR | id, son type et ses slots intacts — ce script ne fait qu ajouter des
-# FR | pieces pour les zones qu il n a jamais vues, et RELIE en best-effort
-# FR | une piece existante pas encore liee a une zone de meme nom plutot que
-# FR | d en creer un doublon (house.yaml n a aujourd hui aucun area_id sur
-# FR | aucune piece — chaque piece est "non liee" au premier lancement).
-# FR | Une piece dont la zone a ete supprimee dans HA est laissee en place
-# FR | plutot que retiree : supprimer une piece en silence pourrait
-# FR | supprimer en silence tout ce qui lui est assigne.
+# EN | NEVER touches the `slots:` of a room it keeps. A room already linked
+# EN | to an area_id keeps its id, type and slots untouched — this script
+# EN | only adds rooms for areas it has not seen before, and best-effort
+# EN | LINKS an existing, still unlinked room to an area of the same name
+# EN | rather than creating a duplicate.
+# EN | A LINKED room whose area_id is absent from the incoming list IS
+# EN | removed. `incoming` is always the FULL current HA Area registry
+# EN | snapshot (vssp_rooms_floors.html sends every area it just read, never
+# EN | a partial list), so "linked but missing here" means the area was
+# EN | genuinely deleted in HA — and the admin already confirmed that
+# EN | deletion, with its own entity-count warning, before the registry
+# EN | write that produced this snapshot. Repeating that confirmation here
+# EN | would be redundant, and leaving the room behind would mean "Delete
+# EN | all" in the room editor never actually empties house.yaml, no matter
+# EN | how many times it's used. An UNLINKED room (no area_id yet) is never
+# EN | touched by this pass — it isn't this sync's concern.
+# FR | NE TOUCHE JAMAIS les `slots:` d une piece qu il garde. Une piece deja
+# FR | liee a un area_id garde son id, son type et ses slots intacts — ce
+# FR | script ne fait qu ajouter des pieces pour les zones qu il n a jamais
+# FR | vues, et RELIE en best-effort une piece existante pas encore liee a
+# FR | une zone de meme nom plutot que d en creer un doublon.
+# FR | Une piece LIEE dont l area_id est absent de la liste recue EST
+# FR | retiree. `incoming` est toujours l instantane COMPLET et actuel du
+# FR | registre Zones HA (vssp_rooms_floors.html envoie toutes les zones
+# FR | qu il vient de lire, jamais une liste partielle), donc "liee mais
+# FR | absente ici" signifie que la zone a vraiment ete supprimee dans HA —
+# FR | et l administrateur a deja confirme cette suppression, avec son
+# FR | propre avertissement sur le nombre d entites, avant l ecriture
+# FR | registre qui a produit cet instantane. Repeter cette confirmation ici
+# FR | serait redondant, et laisser la piece en place voudrait dire que
+# FR | « Tout supprimer » dans l editeur de pieces ne vide jamais vraiment
+# FR | house.yaml, quel que soit le nombre de fois qu on l utilise. Une piece
+# FR | NON LIEE (pas encore d area_id) n est jamais touchee par ce passage —
+# FR | ce n est pas le sujet de cette synchronisation.
 #
 # EN | Dependency: ruamel.yaml, same reason as vssp_assign_apply.py — house.yaml
 # EN | is heavily documented and a PyYAML round-trip would strip every comment.
@@ -162,23 +179,61 @@ def read_payload(args) -> dict:
 
 def sync_rooms(model, incoming: list) -> dict:
     """
-    EN | Returns a summary: {"linked": [...], "created": [...], "unchanged": n}.
-    EN | Mutates model["rooms"] in place, appending new entries — existing
-    EN | ones are only ever given an area_id, never rewritten otherwise.
-    FR | Renvoie un resume : {"linked": [...], "created": [...], "unchanged": n}.
-    FR | Modifie model["rooms"] sur place, en ajoutant de nouvelles entrees —
-    FR | les existantes ne reçoivent jamais qu un area_id, jamais reecrites
-    FR | autrement.
+    EN | Returns a summary:
+    EN |   {"linked": [...], "created": [...], "renamed": [...],
+    EN |    "removed": [...], "unchanged": n}.
+    EN | Mutates model["rooms"] in place: new entries are appended, a LINKED
+    EN | room missing from `incoming` is dropped (see the module docstring
+    EN | for why that is safe here), and `name` is kept up to date on every
+    EN | room this pass touches — so a rename in the HA Area registry
+    EN | reaches the rendered navigation rail on the next sync, the same way
+    EN | a deletion does. `id`, `type`, `slot_set` and `slots` are never
+    EN | rewritten once set: only `name` is a live mirror of the registry.
+    FR | Renvoie un resume :
+    FR |   {"linked": [...], "created": [...], "renamed": [...],
+    FR |    "removed": [...], "unchanged": n}.
+    FR | Modifie model["rooms"] sur place : les nouvelles entrees sont
+    FR | ajoutees, une piece LIEE absente de `incoming` est retiree (voir la
+    FR | docstring du module pour pourquoi c est sans risque ici), et `name`
+    FR | est tenu a jour sur chaque piece touchee par ce passage — pour
+    FR | qu un renommage dans le registre Zones HA atteigne le bandeau de
+    FR | navigation rendu au prochain sync, comme le fait deja une
+    FR | suppression. `id`, `type`, `slot_set` et `slots` ne sont jamais
+    FR | reecrits une fois poses : seul `name` est un miroir vivant du
+    FR | registre.
     """
     rooms = model.get("rooms")
     if rooms is None:
         rooms = model["rooms"] = []
 
+    incoming_area_ids = {
+        (area.get("area_id") or "").strip() for area in incoming
+    } - {""}
+
+    summary = {"linked": [], "created": [], "renamed": [], "removed": [], "unchanged": 0}
+
+    # EN | Prune first: a room whose area_id no longer appears in the fresh
+    # EN | registry snapshot was deleted in HA. Doing this before the
+    # EN | link/create pass below means a deleted-then-recreated area (same
+    # EN | name, new area_id) is treated as genuinely new, not confused with
+    # EN | the room being removed.
+    # FR | Retirer d abord : une piece dont l area_id n apparait plus dans l
+    # FR | instantane frais du registre a ete supprimee dans HA. Le faire
+    # FR | avant la passe lien/creation ci-dessous fait qu une zone supprimee
+    # FR | puis recreee (meme nom, nouvel area_id) est traitee comme
+    # FR | vraiment nouvelle, sans etre confondue avec la piece qu on retire.
+    kept = []
+    for r in rooms:
+        aid = r.get("area_id")
+        if aid and aid not in incoming_area_ids:
+            summary["removed"].append({"id": r.get("id"), "area_id": aid})
+            continue
+        kept.append(r)
+    rooms[:] = kept
+
     by_area_id = {r.get("area_id"): r for r in rooms if r.get("area_id")}
     unlinked = [r for r in rooms if not r.get("area_id")]
     taken_ids = {r.get("id") for r in rooms if r.get("id")}
-
-    summary = {"linked": [], "created": [], "unchanged": 0}
 
     for area in incoming:
         area_id = (area.get("area_id") or "").strip()
@@ -186,7 +241,15 @@ def sync_rooms(model, incoming: list) -> dict:
         if not area_id or not name:
             continue
         if area_id in by_area_id:
-            summary["unchanged"] += 1
+            room = by_area_id[area_id]
+            if room.get("name") != name:
+                old_name = room.get("name")
+                room["name"] = name
+                summary["renamed"].append(
+                    {"id": room.get("id"), "area_id": area_id,
+                     "from": old_name, "to": name})
+            else:
+                summary["unchanged"] += 1
             continue
 
         name_norm = normalize(name)
@@ -198,6 +261,7 @@ def sync_rooms(model, incoming: list) -> dict:
         )
         if match:
             match["area_id"] = area_id
+            match["name"] = name
             unlinked.remove(match)
             by_area_id[area_id] = match
             summary["linked"].append({"id": match.get("id"), "area_id": area_id, "name": name})
@@ -213,6 +277,7 @@ def sync_rooms(model, incoming: list) -> dict:
         new_room["type"] = rtype
         new_room["slot_set"] = slot_set
         new_room["area_id"] = area_id
+        new_room["name"] = name
         new_room["slots"] = CommentedMap()
         rooms.append(new_room)
         by_area_id[area_id] = new_room
@@ -254,11 +319,16 @@ def main() -> int:
         **summary,
     }
 
+    changed = (summary["linked"] or summary["created"]
+               or summary["renamed"] or summary["removed"])
+
     if args.dry_run:
         print(f"[dry-run] {len(summary['linked'])} would be linked, "
               f"{len(summary['created'])} would be created, "
+              f"{len(summary['renamed'])} would be renamed, "
+              f"{len(summary['removed'])} would be removed, "
               f"{summary['unchanged']} already in sync")
-    elif not summary["linked"] and not summary["created"]:
+    elif not changed:
         print(f"[OK] {model_path}: already in sync ({summary['unchanged']} room(s))")
     else:
         # EN | Backup before writing, same reflex as vssp_assign_apply.py:
@@ -281,11 +351,17 @@ def main() -> int:
         tmp.replace(model_path)
 
         print(f"[OK] {model_path}: {len(summary['linked'])} room(s) linked, "
-              f"{len(summary['created'])} room(s) created")
+              f"{len(summary['created'])} room(s) created, "
+              f"{len(summary['renamed'])} room(s) renamed, "
+              f"{len(summary['removed'])} room(s) removed")
         for r in summary["linked"]:
             print(f"       linked  {r['id']} <- {r['name']} ({r['area_id']})")
         for r in summary["created"]:
             print(f"       created {r['id']} (type={r['type']}, slot_set={r['slot_set']}) <- {r['name']}")
+        for r in summary["renamed"]:
+            print(f"       renamed {r['id']} ({r['area_id']}) {r['from']!r} -> {r['to']!r}")
+        for r in summary["removed"]:
+            print(f"       removed {r['id']} ({r['area_id']}) — area no longer in Home Assistant")
 
     if args.status_file:
         try:

@@ -254,6 +254,16 @@ def main() -> int:
         label = labels["room"].get(rtype, rtype)
         if room.get("index"):
             label = f"{label} {room['index']}"
+        # EN | A room synced from the HA Area registry carries its live
+        # EN | name (see vssp_rooms_apply.py) — preferred over the generic
+        # EN | type label so this dropdown matches the navigation rail
+        # EN | instead of showing a different name for the same room.
+        # FR | Une piece synchronisee depuis le registre Zones HA porte son
+        # FR | nom en direct (voir vssp_rooms_apply.py) — prefere au libelle
+        # FR | generique de type pour que ce menu deroulant corresponde au
+        # FR | bandeau de navigation au lieu d afficher un nom different pour
+        # FR | la meme piece.
+        label = room.get("name") or label
         set_name = room.get("slot_set", "default")
         rooms.append({
             "id": rid,
