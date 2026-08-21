@@ -147,20 +147,31 @@ Points worth knowing:
 4. write the Livebox secret — the password is passed as a shell **argument**
    on the remote side (`sh "$LIVEBOX_PASSWORD"` → `$1`), never inline in the
    command: invisible in `ps` and in the logs;
-5. `vssp_apply_config.py` → `vssp_ensure_packages.py` →
+5. verify `ruamel.yaml` imports on the pod, installing it
+   (`pip install ruamel.yaml --break-system-packages`) if it does not, and
+   failing the job if it still doesn't import afterward — needed by
+   `vssp_apply_config.py` next, and by `vssp_assign_apply.py` /
+   `vssp_rooms_apply.py` later at runtime;
+6. `vssp_apply_config.py` → `vssp_ensure_packages.py` →
    `vssp_sanitize_resources.py`;
-6. `hass --script check_config`; on failure: restore `dashboards`/`themes`
+7. `hass --script check_config`; on failure: restore `dashboards`/`themes`
    from `.old` **and** `configuration.yaml` from the latest
    `/config/backups/configuration_*.bak`, then `exit 1`;
-7. clean up the `.old` / `.osv_stage` leftovers;
-8. **restart Home Assistant**: `POST /api/services/homeassistant/restart`
+8. clean up the `.old` / `.osv_stage` leftovers;
+9. **restart Home Assistant**: `POST /api/services/homeassistant/restart`
    with `HA_TOKEN_STAGING`, falling back to `kubectl delete pod` if the token
    is missing or the HTTP code isn't 200;
-9. wait for the API to come back (36 × 5 s) so that `test:staging` doesn't
-   run against an instance that's still starting up;
-10. log the version actually present in the container.
+10. wait for the API to come back (36 × 5 s) so that `test:staging` doesn't
+    run against an instance that's still starting up;
+11. **re-resolve the pod name and re-verify `ruamel.yaml`**: the
+    `kubectl delete pod` fallback in step 9 recreates the pod from the
+    image, wiping whatever step 5 installed into the old one's filesystem.
+    Re-checking against whichever pod is serving now (same install-or-fail
+    logic as step 5) is what catches that case instead of leaving
+    `vssp_assign_apply.py` broken on a pod nobody suspects just restarted;
+12. log the version actually present in the container.
 
-Step 8 is essential: `lovelace.dashboards` and `homeassistant.packages`
+Step 9 is essential: `lovelace.dashboards` and `homeassistant.packages`
 **cannot** be hot-reloaded (see `DIAGNOSTIC_staging.md`).
 
 ---
@@ -183,7 +194,15 @@ Tags only, `when: manual`.
 7. `ha core check`; on failure, roll back the folders and restore the
    pre-patch `configuration.yaml` kept on the runner;
 8. `ha core restart` (or `ha core reload` if `PROD_RESTART_CORE != "true"`);
-9. cleanup.
+9. verify `ruamel.yaml` imports **inside the `homeassistant` Docker
+   container** (`docker exec homeassistant python3 -c "import ruamel.yaml"`,
+   reachable directly from this SSH session since HAOS's port 22222 lands
+   on the host with Docker access), installing it there if needed and
+   failing the job if it still doesn't import — this is a different
+   concern from step 6's runner-side install: `vssp_assign_apply.py` and
+   `vssp_rooms_apply.py` run inside HAOS at runtime, invoked by HA's own
+   `shell_command`, so what the runner has never reaches them;
+10. cleanup.
 
 `rollback:production` (manual) looks up the `pre-$CI_COMMIT_TAG` backup slug
 via `ha backups --raw-json` + `jq` and restores it.

@@ -144,19 +144,31 @@ Image `bitnami/kubectl`. Séquence réelle :
 4. écriture du secret Livebox — le mot de passe est passé en **argument** du
    shell distant (`sh "$LIVEBOX_PASSWORD"` → `$1`), jamais dans la ligne de
    commande : invisible dans `ps` et dans les logs ;
-5. `vssp_apply_config.py` → `vssp_ensure_packages.py` → `vssp_sanitize_resources.py` ;
-6. `hass --script check_config` ; en cas d'échec : restauration de
+5. vérification que `ruamel.yaml` s'importe sur le pod, installation
+   (`pip install ruamel.yaml --break-system-packages`) sinon, et échec du
+   job si l'import échoue toujours ensuite — nécessaire pour
+   `vssp_apply_config.py` juste après, et pour `vssp_assign_apply.py` /
+   `vssp_rooms_apply.py` plus tard à l'exécution ;
+6. `vssp_apply_config.py` → `vssp_ensure_packages.py` → `vssp_sanitize_resources.py` ;
+7. `hass --script check_config` ; en cas d'échec : restauration de
    `dashboards`/`themes` depuis `.old` **et** de `configuration.yaml` depuis le
    dernier `/config/backups/configuration_*.bak`, puis `exit 1` ;
-7. nettoyage des `.old` / `.osv_stage` ;
-8. **redémarrage de Home Assistant** : `POST /api/services/homeassistant/restart`
+8. nettoyage des `.old` / `.osv_stage` ;
+9. **redémarrage de Home Assistant** : `POST /api/services/homeassistant/restart`
    avec `HA_TOKEN_STAGING`, repli sur `kubectl delete pod` si le token manque ou
    si le code HTTP n'est pas 200 ;
-9. attente du retour de l'API (36 × 5 s) pour que `test:staging` ne parte pas sur
-   une instance en cours de démarrage ;
-10. trace de la version réellement présente dans le conteneur.
+10. attente du retour de l'API (36 × 5 s) pour que `test:staging` ne parte pas sur
+    une instance en cours de démarrage ;
+11. **nouvelle résolution du nom du pod et nouvelle vérification de
+    `ruamel.yaml`** : le repli `kubectl delete pod` de l'étape 9 recrée le
+    pod depuis l'image, effaçant ce que l'étape 5 avait installé dans
+    l'ancien. Revérifier contre le pod réellement en service maintenant
+    (même logique installer-ou-échouer qu'à l'étape 5) permet de rattraper
+    ce cas plutôt que de laisser `vssp_assign_apply.py` cassé sur un pod
+    dont personne ne soupçonne qu'il vient de redémarrer ;
+12. trace de la version réellement présente dans le conteneur.
 
-L'étape 8 est indispensable : `lovelace.dashboards` et `homeassistant.packages`
+L'étape 9 est indispensable : `lovelace.dashboards` et `homeassistant.packages`
 ne sont **pas** rechargeables à chaud (voir `DIAGNOSTIC_staging.md`).
 
 ---
@@ -180,7 +192,16 @@ Tags uniquement, `when: manual`.
 7. `ha core check` ; en cas d'échec, rollback des dossiers + restauration du
    `configuration.yaml` pré-patch conservé côté runner ;
 8. `ha core restart` (ou `ha core reload` si `PROD_RESTART_CORE != "true"`) ;
-9. nettoyage.
+9. vérification que `ruamel.yaml` s'importe **à l'intérieur du conteneur
+   Docker `homeassistant`** (`docker exec homeassistant python3 -c "import
+   ruamel.yaml"`, atteignable directement depuis cette session SSH puisque
+   le port 22222 de HAOS atterrit sur l'hôte avec accès Docker),
+   installation sur place si besoin, et échec du job si l'import échoue
+   encore — c'est un sujet différent de l'étape 6 (installation côté
+   runner) : `vssp_assign_apply.py` et `vssp_rooms_apply.py` tournent à
+   l'intérieur de HAOS à l'exécution, invoqués par le `shell_command` de HA
+   lui-même, donc ce que possède le runner ne les atteint jamais ;
+10. nettoyage.
 
 `rollback:production` (manuel) retrouve le slug du backup `pre-$CI_COMMIT_TAG`
 via `ha backups --raw-json` + `jq` et le restaure.

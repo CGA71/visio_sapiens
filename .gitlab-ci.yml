@@ -1028,7 +1028,37 @@ deploy:staging:
           echo "      It was deployed without passing through vssp_i18n.py render."
           exit 1
         fi
-        pip install ruamel.yaml --quiet 2>/dev/null || pip install ruamel.yaml --quiet --break-system-packages 2>/dev/null
+        # EN | Verified, not just attempted: vssp_assign_apply.py and
+        # EN | vssp_rooms_apply.py both exit immediately when ruamel.yaml is
+        # EN | absent, and that failure is otherwise invisible until someone
+        # EN | tries to save a room or a device assignment on the deployed
+        # EN | instance and gets a generic "rejected" notification with no
+        # EN | clue why. A plain `pip install` with its errors thrown away
+        # EN | cannot tell the difference between "already there" and
+        # EN | "failed silently".
+        # FR | Verifie, pas seulement tente : vssp_assign_apply.py et
+        # FR | vssp_rooms_apply.py quittent immediatement si ruamel.yaml est
+        # FR | absent, et cet echec reste invisible jusqu a ce que quelqu un
+        # FR | essaie d enregistrer une piece ou une assignation sur
+        # FR | l instance deployee et recoive une notification generique
+        # FR | "rejetee" sans aucun indice. Un simple `pip install` dont les
+        # FR | erreurs sont jetees ne peut pas distinguer "deja present" de
+        # FR | "echoue en silence".
+        if python3 -c "import ruamel.yaml" 2>/dev/null; then
+          echo "[OK] ruamel.yaml already present"
+        else
+          echo "[i] ruamel.yaml missing - installing (needed by vssp_assign_apply.py / vssp_rooms_apply.py)"
+          pip install ruamel.yaml --quiet --break-system-packages 2>/dev/null \
+            || pip install ruamel.yaml --quiet 2>/dev/null || true
+          if python3 -c "import ruamel.yaml" 2>/dev/null; then
+            echo "[OK] ruamel.yaml installed"
+          else
+            echo "[ERR] ruamel.yaml could not be installed on this pod."
+            echo "      ROOMS sync and ASSIGN save will reject every request"
+            echo "      until this is fixed. See docs/Deployment.md."
+            exit 1
+          fi
+        fi
         python3 /config/vssp/vssp_apply_config.py \
           --config   /config/configuration.yaml \
           --fragment /config/config-fragment.yaml /config/config-fragment-rooms.yaml \
@@ -1115,12 +1145,57 @@ deploy:staging:
       else
         sleep 45
       fi
+    # --- EN | RE-VERIFY ruamel.yaml ON WHATEVER POD IS SERVING NOW ----------
+    # --- FR | RE-VERIFIER ruamel.yaml SUR LE POD REELLEMENT EN SERVICE ------
+    # EN | The install above ran on $HA_POD BEFORE this restart step. If the
+    # EN | restart took the `homeassistant.restart` path, that is still the
+    # EN | same container filesystem and this is redundant but harmless. If
+    # EN | it fell back to `kubectl delete pod`, $HA_POD no longer exists — a
+    # EN | Deployment replaces it with a new pod, from the image, with none of
+    # EN | what was pip-installed into the old one's filesystem. Re-resolving
+    # EN | the pod name and checking again is the only way to know which case
+    # EN | happened and to fix it before the next Discovery Scan / Save
+    # EN | silently rejects everything on a pod nobody suspects just restarted.
+    # FR | L installation ci-dessus a tourne sur $HA_POD AVANT cette etape de
+    # FR | redemarrage. Si le redemarrage a pris le chemin
+    # FR | `homeassistant.restart`, c est toujours le meme systeme de fichiers
+    # FR | de conteneur et ceci est redondant mais inoffensif. S il est passe
+    # FR | par le repli `kubectl delete pod`, $HA_POD n existe plus — un
+    # FR | Deployment le remplace par un nouveau pod, depuis l image, sans rien
+    # FR | de ce qui avait ete pip-installe dans l ancien. Re-resoudre le nom
+    # FR | du pod et reverifier est le seul moyen de savoir quel cas s est
+    # FR | produit et de le corriger avant que le prochain Discovery Scan /
+    # FR | Save ne rejette tout en silence sur un pod dont personne ne
+    # FR | soupconne qu il vient de redemarrer.
+    - |
+      export HA_POD=$(kubectl get pod -n $K3S_NAMESPACE -l app=homeassistant -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
+      if [ -z "$HA_POD" ]; then
+        export HA_POD=$(kubectl get pods -n $K3S_NAMESPACE -o jsonpath='{.items[0].metadata.name}')
+      fi
+      echo "[i] Verifying ruamel.yaml on the pod actually serving now: $HA_POD"
+      kubectl exec -n $K3S_NAMESPACE $HA_POD -c $K3S_CONTAINER -- sh -c '
+        if python3 -c "import ruamel.yaml" 2>/dev/null; then
+          echo "[OK] ruamel.yaml present on $(hostname)"
+        else
+          echo "[i] ruamel.yaml missing on $(hostname) - installing (pod was recreated since the earlier install)"
+          pip install ruamel.yaml --quiet --break-system-packages 2>/dev/null \
+            || pip install ruamel.yaml --quiet 2>/dev/null || true
+          if python3 -c "import ruamel.yaml" 2>/dev/null; then
+            echo "[OK] ruamel.yaml installed"
+          else
+            echo "[ERR] ruamel.yaml could not be installed on this pod."
+            echo "      ROOMS sync and ASSIGN save will reject every request"
+            echo "      until this is fixed. See docs/Deployment.md."
+            exit 1
+          fi
+        fi
+      '
     # EN | Verification trace: what HA ACTUALLY loaded.
     # FR | Trace de verification : ce que HA a REELLEMENT charge.
     - |
       echo "[i] Version deployed inside the container:"
       kubectl exec -n $K3S_NAMESPACE $HA_POD -c $K3S_CONTAINER -- \
-        cat /config/VSSP_VERSION 2>/dev/null || echo "  (pod recreated, file readable on the next job)"
+        cat /config/VSSP_VERSION 2>/dev/null || echo "  (unexpected: $HA_POD was just re-resolved above)"
     - echo "[OK] Staging up to date"
 
 # ============================================================================
@@ -1285,6 +1360,50 @@ deploy:production:
       else
         ssh ha "ha core reload"
       fi
+    # --- EN | ruamel.yaml INSIDE THE homeassistant CONTAINER ITSELF ---------
+    # --- FR | ruamel.yaml DANS LE CONTENEUR homeassistant LUI-MEME ----------
+    # EN | Unlike the configuration.yaml patch above (which runs in the
+    # EN | runner - see the comment near the `apk add python3 py3-pip` step),
+    # EN | vssp_assign_apply.py and vssp_rooms_apply.py run INSIDE HAOS,
+    # EN | invoked by Home Assistant's own shell_command when the ROOMS or
+    # EN | ASSIGN webhook fires. That is the "homeassistant" Docker container
+    # EN | on the HAOS host (confirmed against the official debugging docs:
+    # EN | developers.home-assistant.io/docs/operating-system/debugging/),
+    # EN | reachable directly from this SSH session since HAOS's port 22222
+    # EN | drops onto the host OS with Docker access, not into a sandboxed
+    # EN | shell. Checked AFTER the restart above so this reflects whatever
+    # EN | container is actually running now, whether `ha core restart`
+    # EN | recreated it (a version update) or left it alone.
+    # FR | Contrairement au patch de configuration.yaml ci-dessus (qui tourne
+    # FR | dans le runner - voir le commentaire pres de l etape
+    # FR | `apk add python3 py3-pip`), vssp_assign_apply.py et
+    # FR | vssp_rooms_apply.py tournent A L INTERIEUR de HAOS, invoques par le
+    # FR | shell_command de Home Assistant lui-meme quand le webhook ROOMS ou
+    # FR | ASSIGN se declenche. C est le conteneur Docker "homeassistant" sur
+    # FR | l hote HAOS (confirme par la documentation officielle de debogage :
+    # FR | developers.home-assistant.io/docs/operating-system/debugging/),
+    # FR | atteignable directement depuis cette session SSH puisque le port
+    # FR | 22222 de HAOS atterrit sur le systeme hote avec acces Docker, pas
+    # FR | dans un shell isole. Verifie APRES le redemarrage ci-dessus pour
+    # FR | refleter le conteneur reellement en cours d execution maintenant,
+    # FR | qu il ait ete recree par `ha core restart` (mise a jour de version)
+    # FR | ou laisse tel quel.
+    - |
+      ssh ha "
+        if docker exec homeassistant python3 -c 'import ruamel.yaml' 2>/dev/null; then
+          echo '[OK] ruamel.yaml already present in the homeassistant container'
+        else
+          echo '[i] ruamel.yaml missing in the homeassistant container - installing'
+          docker exec homeassistant pip install ruamel.yaml --quiet --break-system-packages 2>/dev/null || docker exec homeassistant pip install ruamel.yaml --quiet 2>/dev/null || true
+          if docker exec homeassistant python3 -c 'import ruamel.yaml' 2>/dev/null; then
+            echo '[OK] ruamel.yaml installed in the homeassistant container'
+          else
+            echo '[ERR] ruamel.yaml could not be installed in the homeassistant container.'
+            echo '      ROOMS sync and ASSIGN save will reject every request until this is fixed.'
+            exit 1
+          fi
+        fi
+      "
     - ssh ha "rm -rf $HA_CFG/dashboards.old $HA_CFG/themes.old"
     - echo "[OK] $CI_COMMIT_TAG live in production"
 

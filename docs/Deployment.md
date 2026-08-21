@@ -65,12 +65,37 @@ grep -n "vssp_assign\|vssp_language\|vssp_format" home-assistant/packages/*.yaml
 Each name must appear once. If `vssp_admin.yaml` already declares one,
 keep a single definition.
 
-**ruamel.yaml on the pod.** `vssp_assign_apply.py` rewrites `house.yaml`
-and must not strip the comments that document it:
+**ruamel.yaml, on the pod AND in the HAOS container.** `vssp_assign_apply.py`
+and `vssp_rooms_apply.py` rewrite `house.yaml` and must not strip the
+comments that document it. Both `deploy:staging` and `deploy:production`
+now verify and, if needed, (re)install this dependency automatically,
+checked AFTER the restart in both jobs:
+
+- staging: also checked once before the restart, then re-resolved and
+  re-checked against whichever pod ends up serving afterward, since the
+  `kubectl delete pod` restart fallback recreates the pod from the image
+  and wipes anything installed into the previous one's filesystem;
+- production: checked inside the `homeassistant` Docker container itself
+  over the existing SSH session (`docker exec homeassistant python3 -c
+  "import ruamel.yaml"`), not inside the CI runner — the runner's own copy
+  of `ruamel.yaml` (installed separately, see the `CI_CD.md` note on
+  patching `configuration.yaml` from the runner) only serves that one
+  patch step and has nothing to do with what `vssp_assign_apply.py` sees
+  at runtime inside HAOS.
+
+Both jobs fail loudly if the module still cannot be imported after the
+install attempt.
+
+To check by hand:
 
 ```bash
+# staging (k3s)
 kubectl -n homeassistant exec <pod> -c homeassistant -- \
   python3 -c "import ruamel.yaml; print(ruamel.yaml.__version__)"
+
+# production (HAOS, SSH on port 22222)
+ssh root@<haos-host> -p 22222 \
+  docker exec homeassistant python3 -c "import ruamel.yaml; print(ruamel.yaml.__version__)"
 ```
 
 If it is missing:
@@ -78,6 +103,9 @@ If it is missing:
 ```bash
 kubectl -n homeassistant exec <pod> -c homeassistant -- \
   pip install ruamel.yaml --break-system-packages
+
+ssh root@<haos-host> -p 22222 \
+  docker exec homeassistant pip install ruamel.yaml --break-system-packages
 ```
 
 Without it the script stops immediately with a clear message — it does not
