@@ -66,6 +66,48 @@ cards:
 
   - type: horizontal-stack
     cards:
+      # ── HOME — CREER ──────────────────────────────────────────────
+      # S'affiche tant que le dashboard n'est pas confirme present :
+      # `state_not: "on"` couvre aussi le capteur absent, inconnu ou
+      # indisponible. Impossible d'ecraser un dashboard existant : le
+      # script appelle le generateur avec --if-missing (et HOME est de
+      # toute facon protege en permanence, voir generate_dashboards.py).
+      - type: conditional
+        conditions:
+          - entity: binary_sensor.vssp_dashboard_home_present
+            state_not: "on"
+        card:
+          type: custom:button-card
+          template: vssp_admin_button
+          icon: mdi:view-dashboard-outline
+          name: CREER HOME
+          label: "Dashboard absent — le generer depuis le template"
+          confirmation:
+            text: "Generer le dashboard HOME a partir du modele ?"
+          tap_action:
+            action: call-service
+            service: script.vssp_create_home_dashboard
+
+      # ── HOME — REGENERER ──────────────────────────────────────────
+      # Une fois cree, HOME n'est plus jamais regenere automatiquement
+      # (voir --protect-existing dans generate_dashboards.py) : c'est le
+      # seul bouton qui peut l'ecraser, deliberement et apres sauvegarde.
+      - type: conditional
+        conditions:
+          - entity: binary_sensor.vssp_dashboard_home_present
+            state: "on"
+        card:
+          type: custom:button-card
+          template: vssp_admin_button
+          icon: mdi:view-dashboard
+          name: REGENERER HOME
+          label: "Ecrase toute mise en page manuelle (sauvegarde auto)"
+          confirmation:
+            text: "Regenerer HOME ecrasera le dashboard actuel, y compris toute modification manuelle (une sauvegarde sera creee). Continuer ?"
+          tap_action:
+            action: call-service
+            service: script.vssp_regenerate_home_dashboard
+
       # ── ENERGY — CREER ────────────────────────────────────────────
       # S'affiche tant que le dashboard n'est pas confirme present :
       # `state_not: "on"` couvre aussi le capteur absent, inconnu ou

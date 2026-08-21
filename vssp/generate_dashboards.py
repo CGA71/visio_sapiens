@@ -63,6 +63,44 @@ SYSTEM_DASHBOARDS = [
     ("admin",  "admin.yaml.j2",  "admin.yaml",  {"active_nav": "admin"}),
 ]
 
+# EN | These three are created on demand from the ADMIN console (CREER
+# EN | HOME/ENERGY/CORE), not always present — so their nav entry must be
+# EN | conditional on the file actually existing, or the rail lies about
+# EN | what a fresh (or emptied) instance actually offers. `admin` is
+# EN | deliberately NOT in this set: it is the only way back into the
+# EN | console, so it must never be able to disappear from the rail.
+# FR | Ces trois sont crees a la demande depuis la console ADMIN (CREER
+# FR | HOME/ENERGY/CORE), pas toujours presents — leur entree de bandeau
+# FR | doit donc dependre de l existence reelle du fichier, sinon le bandeau
+# FR | ment sur ce qu une instance neuve (ou videe) offre vraiment. `admin`
+# FR | est deliberement EXCLU de cet ensemble : c est le seul chemin de
+# FR | retour vers la console, il ne doit jamais pouvoir disparaitre du
+# FR | bandeau.
+OPTIONAL_SYSTEM_NAV_IDS = {"home", "core", "energy"}
+
+# EN | HOME is the one system dashboard meant for manual Lovelace editing
+# EN | after creation — it must never be silently overwritten by a caller
+# EN | that has no reason to know that, unlike energy/core/admin/rooms
+# EN | which are always regenerated fresh from the model. This is the
+# EN | DEFAULT for --protect-existing (see argparse below): every routine
+# EN | caller (the ROOMS-sync / ASSIGN-save webhook automations, the CI
+# EN | build, the CI pod-side regeneration) gets it for free by not passing
+# EN | the flag at all. The one caller that must be allowed to overwrite —
+# EN | the explicit "REGENERATE HOME" admin button — passes
+# EN | --protect-existing "" to opt out for that one run.
+# FR | HOME est le seul dashboard systeme destine a une edition Lovelace
+# FR | manuelle apres creation — il ne doit jamais etre ecrase en silence
+# FR | par un appelant qui n a aucune raison de le savoir, contrairement a
+# FR | energy/core/admin/rooms toujours regeneres a neuf depuis le modele.
+# FR | C est la valeur PAR DEFAUT de --protect-existing (voir argparse plus
+# FR | bas) : chaque appelant routinier (les automations webhook sync ROOMS
+# FR | / enregistrement ASSIGN, le build CI, la regeneration cote pod du
+# FR | CI) l obtient gratuitement en ne passant pas l option du tout. Le
+# FR | seul appelant qui doit pouvoir ecraser — le bouton admin explicite
+# FR | « REGENERER HOME » — passe --protect-existing "" pour s en exempter
+# FR | le temps de ce run.
+DEFAULT_PROTECTED_DASHBOARD_IDS = "home"
+
 # EN | One shared template renders every room OF A GIVEN FORMAT. The
 # EN | differences between rooms live in the data (slot set, device lists),
 # EN | never in a second template.
@@ -543,20 +581,38 @@ def build_rooms(model: dict, ctx_t) -> list:
     return rooms
 
 
-def build_nav(model: dict, rooms: list) -> list:
+def build_nav(model: dict, rooms: list, out_dir: Path) -> list:
     """
     EN | Composes the navigation rail: the fixed system entries, with the
     EN | declared rooms inserted between them. This is what makes the rail
-    EN | dynamic — its length is always 4 + the number of rooms, and no
-    EN | navigation block is maintained by hand anywhere.
+    EN | dynamic — its length is always (present system entries) + the
+    EN | number of rooms, and no navigation block is maintained by hand
+    EN | anywhere.
+    EN | A system entry whose id is in OPTIONAL_SYSTEM_NAV_IDS is included
+    EN | only if `out_dir/<id>.yaml` actually exists — an on-demand
+    EN | dashboard (home/core/energy) that was never created, or was
+    EN | deleted, must not leave a dead tile in the rail. Every other
+    EN | entry (admin) is unconditional.
     FR | Compose le bandeau de navigation : les entrees systeme fixes, avec les
     FR | pieces declarees inserees entre elles. C'est ce qui rend le bandeau
-    FR | dynamique — sa longueur vaut toujours 4 + le nombre de pieces, et aucun
-    FR | bloc de navigation n'est maintenu a la main nulle part.
+    FR | dynamique — sa longueur vaut toujours (entrees systeme presentes) +
+    FR | le nombre de pieces, et aucun bloc de navigation n'est maintenu a la
+    FR | main nulle part.
+    FR | Une entree systeme dont l id figure dans OPTIONAL_SYSTEM_NAV_IDS
+    FR | n est incluse que si `out_dir/<id>.yaml` existe reellement — un
+    FR | dashboard a la demande (home/core/energy) jamais cree, ou supprime,
+    FR | ne doit pas laisser une tuile morte dans le bandeau. Toute autre
+    FR | entree (admin) est inconditionnelle.
     """
     nav_system = model.get("nav_system") or {}
-    before = list(nav_system.get("before_rooms") or [])
-    after = list(nav_system.get("after_rooms") or [])
+
+    def present(entries):
+        return [e for e in entries
+                if e.get("id") not in OPTIONAL_SYSTEM_NAV_IDS
+                or (out_dir / f"{e['id']}.yaml").is_file()]
+
+    before = present(nav_system.get("before_rooms") or [])
+    after = present(nav_system.get("after_rooms") or [])
 
     room_entries = [{
         "id": r["id"],
@@ -894,6 +950,12 @@ def main() -> int:
                     help="Generate only when the output file does not exist "
                          "yet. An existing dashboard is NEVER overwritten "
                          "(CREATE button of the ADMIN console).")
+    ap.add_argument("--protect-existing", default=DEFAULT_PROTECTED_DASHBOARD_IDS,
+                    help="Comma-separated dashboard ids treated as --if-missing "
+                         "regardless of the --if-missing flag (default: "
+                         f"'{DEFAULT_PROTECTED_DASHBOARD_IDS}'). Pass an empty "
+                         "string to allow overwriting them for this run — "
+                         "used by the explicit REGENERATE HOME button.")
     ap.add_argument("--dry-run", action="store_true",
                     help="Validates the model and the render, writes nothing")
     ap.add_argument("--static-fragment",
@@ -996,9 +1058,16 @@ def main() -> int:
 
     # --- EN | Rooms and dynamic navigation rail --------------------------
     # --- FR | Pieces et bandeau de navigation dynamique ------------------
+    # EN | out_dir computed here (ahead of its later mkdir/write use below)
+    # EN | because build_nav() needs it to check which on-demand system
+    # EN | dashboards actually exist on disk right now.
+    # FR | out_dir calcule ici (avant son mkdir/ecriture plus bas) car
+    # FR | build_nav() en a besoin pour verifier quels dashboards systeme a
+    # FR | la demande existent reellement sur le disque en ce moment.
+    out_dir = Path(args.out)
     rooms = build_rooms(model, i18n["t"])
     model["rooms_rendered"] = rooms
-    model["nav"] = build_nav(model, rooms)
+    model["nav"] = build_nav(model, rooms, out_dir)
     model["slots"] = SLOTS
     # EN | Layouts reach the template as data, so a grid can be tuned in
     # EN | house.yaml without touching room.yaml.j2 — and so validate_layouts
@@ -1021,7 +1090,6 @@ def main() -> int:
         keep_trailing_newline=True,
     )
 
-    out_dir = Path(args.out)
     out_dir.mkdir(parents=True, exist_ok=True)
     n_dev = len(model.get("energy_devices", []))
 
@@ -1032,6 +1100,8 @@ def main() -> int:
         jobs.append((room["id"], ROOM_TEMPLATE, f"{room['id']}.yaml",
                      {"active_nav": room["id"], "room": room,
                       "room_id": room["id"]}))
+
+    protected_ids = {s.strip() for s in args.protect_existing.split(",") if s.strip()}
 
     wanted = ({s.strip() for s in args.only.split(",") if s.strip()}
               if args.only else None)
@@ -1068,10 +1138,27 @@ def main() -> int:
             # EN | --if-missing: never overwrite an existing dashboard. The
             # EN | check uses the FINAL output name (including the _preview
             # EN | suffix), so a preview does not block creating the real one.
+            # EN | --protect-existing (home by default) gets this same
+            # EN | protection from EVERY caller that does not opt out — the
+            # EN | routine regeneration fired after every ROOMS sync / ASSIGN
+            # EN | save has no reason to know this dashboard is meant for
+            # EN | manual editing, so the script enforces it in their place.
+            # EN | Exempted in --preview: a preview file is disposable by
+            # EN | design and never what the user actually sees as home.yaml.
             # FR | --if-missing : ne jamais ecraser un dashboard existant. Le
             # FR | controle porte sur le nom de sortie FINAL (suffixe _preview
             # FR | compris), pour qu'un apercu ne bloque pas la creation du vrai.
-            if args.if_missing and (out_dir / name).exists():
+            # FR | --protect-existing (home par defaut) recoit cette meme
+            # FR | protection de la part de TOUT appelant qui ne s en
+            # FR | exempte pas — la regeneration routiniere declenchee apres
+            # FR | chaque sync ROOMS / enregistrement ASSIGN n a aucune
+            # FR | raison de savoir que ce dashboard est destine a une
+            # FR | edition manuelle, donc le script l impose a sa place.
+            # FR | Exempte en --preview : un fichier d apercu est jetable par
+            # FR | conception et n est jamais ce que l utilisateur voit
+            # FR | reellement comme home.yaml.
+            force_if_missing = dash_id in protected_ids and not args.preview
+            if (args.if_missing or force_if_missing) and (out_dir / name).exists():
                 print(f"= {out_dir / name} already exists — left intact "
                       f"(--if-missing)")
                 status["skipped"].append(str(out_dir / name))

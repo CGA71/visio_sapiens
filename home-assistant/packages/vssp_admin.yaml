@@ -182,7 +182,43 @@ shell_command:
   # ------------------------------------------------------------------
   # CREER : --if-missing garantit qu'un dashboard deja en place n'est
   # JAMAIS ecrase. Le bouton est donc sans risque, meme clique par
-  # erreur sur une installation deja configuree.
+  # erreur sur une installation deja configuree. HOME est de toute facon
+  # protege en permanence par generate_dashboards.py (--protect-existing
+  # vaut "home" par defaut), meme si --if-missing n'etait pas passe ici.
+  vssp_create_home: >-
+    python3 /config/vssp/generate_dashboards.py
+    --only home --if-missing
+    --model /config/dashboards/model/house.yaml
+    --devices /config/dashboards/model/energy_devices.yaml
+    --templates /config/dashboards/templates_j2
+    --locales-dir /config/dashboards/locales
+    --rooms-fragment /config/config-fragment-rooms.yaml
+    --out /config/dashboards/views
+    --status-file /config/www/vssp/preview_status.json
+
+  # REGENERER : ecrase volontairement (apres sauvegarde par le script) —
+  # seul moyen intentionnel d'ecraser HOME. --protect-existing "" est
+  # INDISPENSABLE ici : sans lui, la protection par defaut de HOME
+  # (activee par tous les autres appelants) bloquerait aussi ce bouton.
+  vssp_regenerate_home: >-
+    python3 /config/vssp/generate_dashboards.py
+    --only home
+    --protect-existing ""
+    --model /config/dashboards/model/house.yaml
+    --devices /config/dashboards/model/energy_devices.yaml
+    --templates /config/dashboards/templates_j2
+    --locales-dir /config/dashboards/locales
+    --rooms-fragment /config/config-fragment-rooms.yaml
+    --out /config/dashboards/views
+    --status-file /config/www/vssp/preview_status.json
+
+  # Sauvegarde ciblee du seul dashboard HOME.
+  vssp_backup_home: >-
+    sh -c "mkdir -p /config/vssp/backups &&
+    [ -f /config/dashboards/views/home.yaml ] &&
+    cp /config/dashboards/views/home.yaml
+    /config/vssp/backups/home_$(date +%Y%m%d_%H%M%S).yaml || true"
+
   vssp_create_energy: >-
     python3 /config/vssp/generate_dashboards.py
     --only energy --if-missing

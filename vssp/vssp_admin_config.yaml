@@ -109,6 +109,19 @@ input_select:
 # FR | configuration.yaml en a deja une, fusionnez seulement les entrees.
 command_line:
   - binary_sensor:
+      name: "VSSP Dashboard Home Present"
+      unique_id: vssp_dashboard_home_present
+      command: >-
+        test -s /config/dashboards/views/home.yaml
+        && echo ON || echo OFF
+      payload_on: "ON"
+      payload_off: "OFF"
+      # EN | No device_class: "on" means "present" here, not "problem".
+      # FR | Pas de device_class : « on » signifie ici « present », pas
+      # FR | « probleme ».
+      scan_interval: 60
+
+  - binary_sensor:
       name: "VSSP Dashboard Energy Present"
       unique_id: vssp_dashboard_energy_present
       command: >-
@@ -454,6 +467,61 @@ script:
             (+ house_rooms.yaml from the wizard when present), in
             {{ states('input_select.vssp_language') }}.
             Reload Lovelace to see the result.
+
+  # EN | CREATE HOME DASHBOARD button of the ADMIN console. Idempotent: if
+  # EN | the dashboard already exists it is left untouched and the script
+  # EN | just says so. Unlike ENERGY, HOME has no device fleet to sync first
+  # EN | — it is a blank Lovelace canvas for the admin to arrange by hand.
+  # FR | Bouton CREER LE DASHBOARD HOME de la console ADMIN. Idempotent : si
+  # FR | le dashboard existe deja, il n'est pas touche et le script se
+  # FR | contente de le dire. Contrairement a ENERGY, HOME n'a pas de parc
+  # FR | d'appareils a synchroniser d'abord — c'est une toile Lovelace vierge
+  # FR | que l'administrateur arrange a la main.
+  vssp_create_home_dashboard:
+    alias: "Visio Sapiens — Create the HOME dashboard"
+    sequence:
+      # EN | Generate only if missing / FR | Generer uniquement s'il manque
+      - service: shell_command.vssp_create_home
+      - service: lovelace.reload
+      # EN | Let the presence sensor refresh before the message
+      # FR | Laisser le capteur d'existence se rafraichir avant le message
+      - delay: "00:00:05"
+      - service: persistent_notification.create
+        data:
+          title: "Visio Sapiens — HOME dashboard"
+          message: >
+            {% if is_state('binary_sensor.vssp_dashboard_home_present', 'on') %}
+              HOME dashboard available at /visio-sapiens/home. It will
+              never be overwritten automatically from now on — use
+              REGENERATE HOME if you want to reset it from the model.
+            {% else %}
+              Generation failed. See
+              /config/www/vssp/preview_status.json for the model
+              validation errors.
+            {% endif %}
+
+  # EN | REGENERATE button: overwrites the existing dashboard, after backup.
+  # EN | HOME is otherwise protected from every automatic regeneration
+  # EN | (ROOMS sync, ASSIGN save, CI deploy) — this button is the only
+  # EN | intentional way to discard manual edits and reset it.
+  # FR | Bouton REGENERER : ecrase le dashboard existant, apres sauvegarde.
+  # FR | HOME est sinon protege de toute regeneration automatique (sync
+  # FR | ROOMS, enregistrement ASSIGN, deploiement CI) — ce bouton est le
+  # FR | seul moyen volontaire d'abandonner les modifications manuelles et
+  # FR | de le reinitialiser.
+  vssp_regenerate_home_dashboard:
+    alias: "Visio Sapiens — Regenerate the HOME dashboard"
+    sequence:
+      - service: shell_command.vssp_backup_home
+      - service: shell_command.vssp_regenerate_home
+      - service: lovelace.reload
+      - service: persistent_notification.create
+        data:
+          title: "Visio Sapiens — HOME dashboard regenerated"
+          message: >
+            HOME rebuilt from the model — any manual layout change is
+            gone. A backup of the previous version is in
+            /config/vssp/backups/.
 
   # EN | CREATE ENERGY DASHBOARD button of the ADMIN console. Idempotent: if
   # EN | the dashboard already exists it is left untouched and the script just

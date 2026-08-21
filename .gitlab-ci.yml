@@ -862,36 +862,54 @@ deploy:staging:
         # EN | POD-SIDE STATE — preserved across deployments.
         # EN | `dashboards/` is REPLACED wholesale (mv), unlike vssp/ and
         # EN | packages/ which are copied additively. That is correct for
-        # EN | generated views, but two files under model/ are not shipped by
-        # EN | the repository at all — they are WRITTEN ON THE POD:
-        # EN |   energy_devices.yaml  by vssp_energy_sync.py (the discovered
-        # EN |                        measured fleet, plus the breaker circuits
-        # EN |                        whose amp rating was filled in by hand)
-        # EN |   house_rooms.yaml     by the discovery wizard (room assignment)
-        # EN | Replacing the directory destroyed both at every deployment. The
-        # EN | ENERGY dashboard then regenerated from an empty model and the
-        # EN | panels came back blank — with a message blaming the API token,
-        # EN | which was never the cause.
-        # EN | The pod version always wins: it is discovered data, the repo
-        # EN | has no authority over it.
+        # EN | generated views, but some files are not shipped by the
+        # EN | repository at all — they are WRITTEN ON THE POD:
+        # EN |   model/energy_devices.yaml  by vssp_energy_sync.py (the
+        # EN |                              discovered measured fleet, plus
+        # EN |                              the breaker circuits whose amp
+        # EN |                              rating was filled in by hand)
+        # EN |   model/house_rooms.yaml     by the discovery wizard (room
+        # EN |                              assignment)
+        # EN |   views/home.yaml,           the one system dashboard meant
+        # EN |   views/home_mobile.yaml     for manual Lovelace editing after
+        # EN |                              creation (see --protect-existing
+        # EN |                              in generate_dashboards.py)
+        # EN | Replacing the directory destroyed all of them at every
+        # EN | deployment. The ENERGY dashboard then regenerated from an
+        # EN | empty model and the panels came back blank — with a message
+        # EN | blaming the API token, which was never the cause. A
+        # EN | hand-arranged HOME would have been silently wiped the same
+        # EN | way, defeating the whole point of it being the one editable
+        # EN | dashboard.
+        # EN | The pod version always wins: it is discovered/hand-made data,
+        # EN | the repo has no authority over it.
         # FR | ETAT COTE POD — preserve entre les deploiements.
         # FR | `dashboards/` est REMPLACE en bloc (mv), contrairement a vssp/
         # FR | et packages/ copies en additif. Correct pour les vues
-        # FR | generees, mais deux fichiers de model/ ne sont pas livres par le
+        # FR | generees, mais certains fichiers ne sont pas livres par le
         # FR | depot du tout — ils sont ECRITS SUR LE POD :
-        # FR |   energy_devices.yaml  par vssp_energy_sync.py (le parc mesure
-        # FR |                        decouvert, plus les circuits du tableau
-        # FR |                        electrique dont le calibre a ete
-        # FR |                        renseigne a la main)
-        # FR |   house_rooms.yaml     par le Discovery Wizard (assignation des
-        # FR |                        pieces)
-        # FR | Remplacer le repertoire detruisait les deux a chaque
+        # FR |   model/energy_devices.yaml  par vssp_energy_sync.py (le parc
+        # FR |                              mesure decouvert, plus les
+        # FR |                              circuits du tableau electrique
+        # FR |                              dont le calibre a ete renseigne a
+        # FR |                              la main)
+        # FR |   model/house_rooms.yaml     par le Discovery Wizard
+        # FR |                              (assignation des pieces)
+        # FR |   views/home.yaml,           le seul dashboard systeme destine
+        # FR |   views/home_mobile.yaml     a une edition Lovelace manuelle
+        # FR |                              apres creation (voir
+        # FR |                              --protect-existing dans
+        # FR |                              generate_dashboards.py)
+        # FR | Remplacer le repertoire les detruisait tous a chaque
         # FR | deploiement. Le dashboard ENERGY se regenerait alors depuis un
         # FR | modele vide et les tableaux revenaient blancs — avec un message
-        # FR | accusant le jeton API, qui n y etait pour rien.
-        # FR | La version du pod gagne toujours : donnee
-        # FR | decouverte, le depot n a aucune autorite dessus.
-        for f in model/energy_devices.yaml model/house_rooms.yaml; do
+        # FR | accusant le jeton API, qui n y etait pour rien. Un HOME
+        # FR | arrange a la main aurait ete efface en silence de la meme
+        # FR | facon, ruinant l interet meme d en faire le seul dashboard
+        # FR | modifiable.
+        # FR | La version du pod gagne toujours : donnee decouverte ou faite
+        # FR | a la main, le depot n a aucune autorite dessus.
+        for f in model/energy_devices.yaml model/house_rooms.yaml views/home.yaml views/home_mobile.yaml; do
           if [ -f /config/dashboards.old/$f ]; then
             mkdir -p /config/dashboards/$(dirname $f)
             cp /config/dashboards.old/$f /config/dashboards/$f
@@ -1226,11 +1244,15 @@ deploy:production:
           [ -d $HA_CFG/\$d ] && mv $HA_CFG/\$d $HA_CFG/\$d.old
           mv $HA_CFG/.osv_stage/\$d $HA_CFG/\$d
         done
-        # EN | Pod-side state, same rule as staging: energy_devices.yaml and
-        # EN | house_rooms.yaml are written on the instance, never shipped.
-        # FR | Etat cote pod, meme regle qu'en staging : energy_devices.yaml et
-        # FR | house_rooms.yaml sont ecrits sur l'instance, jamais livres.
-        for f in model/energy_devices.yaml model/house_rooms.yaml; do
+        # EN | Pod-side state, same rule as staging: energy_devices.yaml,
+        # EN | house_rooms.yaml and the hand-edited HOME dashboard are
+        # EN | written on the instance, never shipped — see the full
+        # EN | explanation on the staging job.
+        # FR | Etat cote pod, meme regle qu'en staging : energy_devices.yaml,
+        # FR | house_rooms.yaml et le dashboard HOME edite a la main sont
+        # FR | ecrits sur l'instance, jamais livres — voir l'explication
+        # FR | complete sur le job staging.
+        for f in model/energy_devices.yaml model/house_rooms.yaml views/home.yaml views/home_mobile.yaml; do
           if [ -f $HA_CFG/dashboards.old/\$f ]; then
             mkdir -p $HA_CFG/dashboards/\$(dirname \$f)
             cp $HA_CFG/dashboards.old/\$f $HA_CFG/dashboards/\$f
