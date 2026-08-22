@@ -221,6 +221,26 @@ const DOMAIN_ICON = {light:"💡",switch:"🔌",climate:"🌡",media_player:"�
                      input_boolean:"🔘",button:"⏺",remote:"📱"};
 
 const EXTERIOR_TYPES = ["Jardin","Piscine","Jacuzzi","Garage","Terrasse","Véranda"];
+// EN | Chip DISPLAY label only, keyed by the canonical value above. The
+// EN | value itself is never translated (see the big i18n comment below —
+// EN | it is what gets created/matched against the HA Area registry);
+// EN | only what the admin reads on the chip follows the interface
+// EN | language. Without this map every language showed the same French
+// EN | text regardless of the selector.
+// FR | Libelle AFFICHE seulement du chip, indexe par la valeur canonique
+// FR | ci-dessus. La valeur elle-meme n'est jamais traduite (voir le grand
+// FR | commentaire i18n plus bas — c'est elle qui est creee/comparee au
+// FR | registre Zones HA) ; seul ce que l administrateur lit sur le chip
+// FR | suit la langue d interface. Sans cette table, chaque langue
+// FR | affichait le meme texte francais quel que soit le selecteur.
+const EXTERIOR_LABELS = {
+  "Jardin":   {fr:"Jardin",   en:"Garden"},
+  "Piscine":  {fr:"Piscine",  en:"Pool"},
+  "Jacuzzi":  {fr:"Jacuzzi",  en:"Jacuzzi"},
+  "Garage":   {fr:"Garage",   en:"Garage"},
+  "Terrasse": {fr:"Terrasse", en:"Terrace"},
+  "Véranda":  {fr:"Véranda",  en:"Veranda"},
+};
 const EXTERIOR_FLOOR_NAMES = ["extérieur","exterieur","outdoor","extérieurs","exterieurs"];
 const DEFAULT_COLOR = "#0A2030";
 
@@ -1132,7 +1152,14 @@ function renderEditor(){
   const customs = state.draft.exteriors.filter(e => !EXTERIOR_TYPES.includes(e));
   EXTERIOR_TYPES.concat(customs).forEach(e => {
     const on = state.draft.exteriors.includes(e);
-    h += `<span class="chip${on?" on":""}" onclick="toggleExt('${esc(e).replace(/'/g,"\\'")}')">${esc(e)}</span>`;
+    // EN | A custom, hand-typed exterior (added via "Autre espace…") has no
+    // EN | entry in EXTERIOR_LABELS — it was never a translatable catalogue
+    // EN | value to start with, so it is shown exactly as typed.
+    // FR | Un espace exterieur personnalise (ajoute via "Autre espace…") n a
+    // FR | pas d entree dans EXTERIOR_LABELS — ce n a jamais ete une valeur
+    // FR | de catalogue traduisible, donc il s affiche tel quel.
+    const label = (EXTERIOR_LABELS[e] && EXTERIOR_LABELS[e][state.lang]) || e;
+    h += `<span class="chip${on?" on":""}" onclick="toggleExt('${esc(e).replace(/'/g,"\\'")}')">${esc(label)}</span>`;
   });
   h += `</div>
     <div class="row" style="margin-top:12px">
