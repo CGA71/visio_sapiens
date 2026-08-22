@@ -18,7 +18,7 @@
    EN | ends up in, so it can no longer highlight "the current page" the
    EN | way `active_nav` used to (a value only the per-dashboard render
    EN | knew). vssp_nav_button now does that highlighting itself, live in
-   EN | the browser, by comparing variables.path (set per instance below)
+   EN | the browser, by comparing its own tap_action.navigation_path
    EN | against window.location.pathname — see button_card_templates.yaml.
    FR | AUTONOME VOLONTAIREMENT. Ce fragment etait auparavant integre en
    FR | ligne dans chaque dashboard via `{% include '_nav.j2' %}`, ce qui
@@ -38,8 +38,8 @@
    FR | il finit, donc il ne peut plus surligner « la page courante » comme
    FR | le faisait `active_nav` (une valeur que seul le rendu par dashboard
    FR | connaissait). vssp_nav_button fait desormais ce surlignage lui-meme,
-   FR | en direct dans le navigateur, en comparant variables.path (pose
-   FR | par instance ci-dessous) a window.location.pathname — voir
+   FR | en direct dans le navigateur, en comparant son propre
+   FR | tap_action.navigation_path a window.location.pathname — voir
    FR | button_card_templates.yaml.
 
    EN | EXPECTED CONTEXT / FR | CONTEXTE ATTENDU
@@ -79,8 +79,6 @@ cards:
     icon: {{ item.icon }}
     name: {{ item.name }}
     label: "{{ item.label }}"
-    variables:
-      path: {{ item.path }}
     tap_action:
       action: navigate
       navigation_path: {{ item.path }}
