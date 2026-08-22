@@ -523,6 +523,45 @@ script:
             gone. A backup of the previous version is in
             /config/vssp/backups/.
 
+  # EN | CREATE CORE DASHBOARD button of the ADMIN console. Idempotent, same
+  # EN | reasoning as HOME above, except CORE is never protected afterward —
+  # EN | like ENERGY, it stays a plain projection of the model, never meant
+  # EN | for manual editing.
+  # FR | Bouton CREER LE DASHBOARD CORE de la console ADMIN. Idempotent,
+  # FR | meme raisonnement que HOME ci-dessus, sauf que CORE n'est jamais
+  # FR | protege ensuite — comme ENERGY, il reste une simple projection du
+  # FR | modele, jamais destine a une edition manuelle.
+  vssp_create_core_dashboard:
+    alias: "Visio Sapiens — Create the CORE dashboard"
+    sequence:
+      - service: shell_command.vssp_create_core
+      - service: lovelace.reload
+      - delay: "00:00:05"
+      - service: persistent_notification.create
+        data:
+          title: "Visio Sapiens — CORE dashboard"
+          message: >
+            {% if is_state('binary_sensor.vssp_dashboard_core_present', 'on') %}
+              CORE dashboard available at /visio-sapiens-core/core.
+            {% else %}
+              Generation failed. See
+              /config/www/vssp/preview_status.json for the model
+              validation errors.
+            {% endif %}
+
+  vssp_regenerate_core_dashboard:
+    alias: "Visio Sapiens — Regenerate the CORE dashboard"
+    sequence:
+      - service: shell_command.vssp_backup_core
+      - service: shell_command.vssp_regenerate_core
+      - service: lovelace.reload
+      - service: persistent_notification.create
+        data:
+          title: "Visio Sapiens — CORE dashboard regenerated"
+          message: >
+            CORE rebuilt from the model. A backup of the previous version
+            is in /config/vssp/backups/.
+
   # EN | CREATE ENERGY DASHBOARD button of the ADMIN console. Idempotent: if
   # EN | the dashboard already exists it is left untouched and the script just
   # EN | says so.

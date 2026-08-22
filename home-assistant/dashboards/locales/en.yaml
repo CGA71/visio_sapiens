@@ -346,6 +346,24 @@ admin:
   apply_language: APPLY LANGUAGE
   apply_language_hint: Render the fragment, patch the config, regenerate
   system_dashboards: System dashboards
+  create_home: CREATE HOME
+  create_home_hint: Dashboard absent — generate it from the template
+  create_home_confirm: Generate the HOME dashboard from the model?
+  regenerate_home: REGENERATE HOME
+  regenerate_home_hint: Overwrites any manual layout change (auto-backup)
+  regenerate_home_confirm: Regenerating HOME will overwrite the current dashboard, including any manual change (a backup will be created). Continue?
+  create_energy: CREATE ENERGY
+  create_energy_hint: Dashboard absent — generate it from the template
+  create_energy_confirm: Generate the ENERGY dashboard from the model and the detected device fleet?
+  regenerate_energy: REGENERATE ENERGY
+  regenerate_energy_hint: Overwrites the current dashboard (auto-backup)
+  regenerate_energy_confirm: Regenerating ENERGY will overwrite the current dashboard (a backup will be created). Continue?
+  create_core: CREATE CORE
+  create_core_hint: Dashboard absent — generate it from the template
+  create_core_confirm: Generate the CORE dashboard from the model?
+  regenerate_core: REGENERATE CORE
+  regenerate_core_hint: Overwrites the current dashboard (auto-backup)
+  regenerate_core_confirm: Regenerating CORE will overwrite the current dashboard (a backup will be created). Continue?
   select_language: Interface language
   select_format: Target format
   room_count: Number of rooms

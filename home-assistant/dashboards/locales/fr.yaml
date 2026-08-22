@@ -235,6 +235,24 @@ admin:
   apply_language: APPLIQUER LA LANGUE
   apply_language_hint: Rendre le fragment, patcher la config, regénérer
   system_dashboards: Dashboards système
+  create_home: CRÉER HOME
+  create_home_hint: Dashboard absent — le générer depuis le modèle
+  create_home_confirm: Générer le dashboard HOME à partir du modèle ?
+  regenerate_home: RÉGÉNÉRER HOME
+  regenerate_home_hint: Écrase toute mise en page manuelle (sauvegarde auto)
+  regenerate_home_confirm: Régénérer HOME écrasera le dashboard actuel, y compris toute modification manuelle (une sauvegarde sera créée). Continuer ?
+  create_energy: CRÉER ENERGY
+  create_energy_hint: Dashboard absent — le générer depuis le modèle
+  create_energy_confirm: Générer le dashboard ENERGY à partir du modèle et du parc d'appareils détecté ?
+  regenerate_energy: RÉGÉNÉRER ENERGY
+  regenerate_energy_hint: Écrase le dashboard actuel (sauvegarde auto)
+  regenerate_energy_confirm: Régénérer ENERGY écrasera le dashboard actuel (une sauvegarde sera créée). Continuer ?
+  create_core: CRÉER CORE
+  create_core_hint: Dashboard absent — le générer depuis le modèle
+  create_core_confirm: Générer le dashboard CORE à partir du modèle ?
+  regenerate_core: RÉGÉNÉRER CORE
+  regenerate_core_hint: Écrase le dashboard actuel (sauvegarde auto)
+  regenerate_core_confirm: Régénérer CORE écrasera le dashboard actuel (une sauvegarde sera créée). Continuer ?
   select_language: Langue de l'interface
   select_format: Format cible
   room_count: Nombre de pièces

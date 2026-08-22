@@ -453,6 +453,120 @@ views:
                   service: script.vssp_delete_dashboard
                   confirmation:
                     text: "{{ t('home.delete_confirm') }}"
+          # EN | HOME, ENERGY and CORE are on-demand dashboards, not
+          # EN | attached to any room, so they never go through the room
+          # EN | create/modify/delete form above. Each CREATE is
+          # EN | idempotent (--if-missing, enforced by generate_dashboards.py
+          # EN | even without the flag for HOME) and each REGENERATE
+          # EN | overwrites after a backup. `type: conditional` switches
+          # EN | between the two per dashboard from its own presence
+          # EN | sensor, so exactly one of the pair ever shows.
+          # FR | HOME, ENERGY et CORE sont des dashboards a la demande, non
+          # FR | rattaches a une piece, donc ils ne passent jamais par le
+          # FR | formulaire creation/modification/suppression de piece
+          # FR | ci-dessus. Chaque CREER est idempotent (--if-missing,
+          # FR | impose par generate_dashboards.py meme sans l option pour
+          # FR | HOME) et chaque REGENERER ecrase apres sauvegarde.
+          # FR | `type: conditional` bascule entre les deux par dashboard
+          # FR | depuis son propre capteur de presence, donc un seul des
+          # FR | deux s affiche jamais.
+          - type: custom:button-card
+            template: vssp_title
+            name: "{{ t('admin.system_dashboards') }}"
+          - type: grid
+            columns: 3
+            square: false
+            cards:
+              - type: conditional
+                conditions:
+                  - entity: binary_sensor.vssp_dashboard_home_present
+                    state_not: "on"
+                card:
+                  type: custom:button-card
+                  template: vssp_admin_button
+                  icon: mdi:view-dashboard-outline
+                  name: "{{ t('admin.create_home') }}"
+                  label: "{{ t('admin.create_home_hint') }}"
+                  confirmation:
+                    text: "{{ t('admin.create_home_confirm') }}"
+                  tap_action:
+                    action: call-service
+                    service: script.vssp_create_home_dashboard
+              - type: conditional
+                conditions:
+                  - entity: binary_sensor.vssp_dashboard_home_present
+                    state: "on"
+                card:
+                  type: custom:button-card
+                  template: vssp_admin_button
+                  icon: mdi:view-dashboard
+                  name: "{{ t('admin.regenerate_home') }}"
+                  label: "{{ t('admin.regenerate_home_hint') }}"
+                  confirmation:
+                    text: "{{ t('admin.regenerate_home_confirm') }}"
+                  tap_action:
+                    action: call-service
+                    service: script.vssp_regenerate_home_dashboard
+              - type: conditional
+                conditions:
+                  - entity: binary_sensor.vssp_dashboard_energy_present
+                    state_not: "on"
+                card:
+                  type: custom:button-card
+                  template: vssp_admin_button
+                  icon: mdi:lightning-bolt-outline
+                  name: "{{ t('admin.create_energy') }}"
+                  label: "{{ t('admin.create_energy_hint') }}"
+                  confirmation:
+                    text: "{{ t('admin.create_energy_confirm') }}"
+                  tap_action:
+                    action: call-service
+                    service: script.vssp_create_energy_dashboard
+              - type: conditional
+                conditions:
+                  - entity: binary_sensor.vssp_dashboard_energy_present
+                    state: "on"
+                card:
+                  type: custom:button-card
+                  template: vssp_admin_button
+                  icon: mdi:lightning-bolt
+                  name: "{{ t('admin.regenerate_energy') }}"
+                  label: "{{ t('admin.regenerate_energy_hint') }}"
+                  confirmation:
+                    text: "{{ t('admin.regenerate_energy_confirm') }}"
+                  tap_action:
+                    action: call-service
+                    service: script.vssp_regenerate_energy_dashboard
+              - type: conditional
+                conditions:
+                  - entity: binary_sensor.vssp_dashboard_core_present
+                    state_not: "on"
+                card:
+                  type: custom:button-card
+                  template: vssp_admin_button
+                  icon: mdi:server-outline
+                  name: "{{ t('admin.create_core') }}"
+                  label: "{{ t('admin.create_core_hint') }}"
+                  confirmation:
+                    text: "{{ t('admin.create_core_confirm') }}"
+                  tap_action:
+                    action: call-service
+                    service: script.vssp_create_core_dashboard
+              - type: conditional
+                conditions:
+                  - entity: binary_sensor.vssp_dashboard_core_present
+                    state: "on"
+                card:
+                  type: custom:button-card
+                  template: vssp_admin_button
+                  icon: mdi:server
+                  name: "{{ t('admin.regenerate_core') }}"
+                  label: "{{ t('admin.regenerate_core_hint') }}"
+                  confirmation:
+                    text: "{{ t('admin.regenerate_core_confirm') }}"
+                  tap_action:
+                    action: call-service
+                    service: script.vssp_regenerate_core_dashboard
           # EN | The generated dashboards, listed from the model rather than
           # EN | typed here — the list cannot drift from what exists.
           # FR | Les dashboards generes, listes depuis le modele plutot que

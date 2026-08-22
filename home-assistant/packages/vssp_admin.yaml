@@ -219,6 +219,38 @@ shell_command:
     cp /config/dashboards/views/home.yaml
     /config/vssp/backups/home_$(date +%Y%m%d_%H%M%S).yaml || true"
 
+  # CORE, contrairement a HOME, n'est jamais protege : comme ENERGY, il
+  # reste une projection automatique du modele, jamais destine a une
+  # edition manuelle.
+  vssp_create_core: >-
+    python3 /config/vssp/generate_dashboards.py
+    --only core --if-missing
+    --model /config/dashboards/model/house.yaml
+    --devices /config/dashboards/model/energy_devices.yaml
+    --templates /config/dashboards/templates_j2
+    --locales-dir /config/dashboards/locales
+    --rooms-fragment /config/config-fragment-rooms.yaml
+    --out /config/dashboards/views
+    --status-file /config/www/vssp/preview_status.json
+
+  vssp_regenerate_core: >-
+    python3 /config/vssp/generate_dashboards.py
+    --only core
+    --model /config/dashboards/model/house.yaml
+    --devices /config/dashboards/model/energy_devices.yaml
+    --templates /config/dashboards/templates_j2
+    --locales-dir /config/dashboards/locales
+    --rooms-fragment /config/config-fragment-rooms.yaml
+    --out /config/dashboards/views
+    --status-file /config/www/vssp/preview_status.json
+
+  # Sauvegarde ciblee du seul dashboard CORE.
+  vssp_backup_core: >-
+    sh -c "mkdir -p /config/vssp/backups &&
+    [ -f /config/dashboards/views/core.yaml ] &&
+    cp /config/dashboards/views/core.yaml
+    /config/vssp/backups/core_$(date +%Y%m%d_%H%M%S).yaml || true"
+
   vssp_create_energy: >-
     python3 /config/vssp/generate_dashboards.py
     --only energy --if-missing

@@ -1,4 +1,32 @@
 ########################################################################
+# *** ORPHELIN — NON UTILISE, NE PAS EDITER NI RE-INCLURE ***
+# *** ORPHANED — NOT WIRED IN, DO NOT EDIT OR RE-INCLUDE ***
+#
+# EN | The admin console moved out of home.yaml into its own generated
+# EN | dashboard (admin.yaml, rendered from templates_j2/admin.yaml.j2)
+# EN | some time after this file was written — the `!include` below never
+# EN | followed. Nothing in the current templates_j2/*.j2 references this
+# EN | path, so its content (originally CREATE/REGENERATE ENERGY) never
+# EN | reached any dashboard a user could open. The equivalent — CREATE/
+# EN | REGENERATE for HOME, ENERGY and CORE — now lives inline in
+# EN | templates_j2/admin.yaml.j2's "dashboards" screen (`{% elif screen ==
+# EN | 'dashboards' %}`), where it is actually rendered. This file is kept
+# EN | only because several docs still reference it; do not resurrect it
+# EN | by re-adding an !include somewhere — edit admin.yaml.j2 instead.
+# FR | La console admin a quitte home.yaml pour son propre dashboard
+# FR | genere (admin.yaml, rendu depuis templates_j2/admin.yaml.j2) a un
+# FR | moment donne apres l ecriture de ce fichier — le `!include`
+# FR | ci-dessous n a jamais suivi. Rien dans les templates_j2/*.j2
+# FR | actuels ne reference ce chemin, donc son contenu (a l origine
+# FR | CREER/REGENERER ENERGY) n a jamais atteint le moindre dashboard
+# FR | qu un utilisateur puisse ouvrir. L equivalent — CREER/REGENERER
+# FR | pour HOME, ENERGY et CORE — vit desormais en ligne dans l ecran
+# FR | "dashboards" de templates_j2/admin.yaml.j2 (`{% elif screen ==
+# FR | 'dashboards' %}`), la ou c est reellement rendu. Ce fichier n est
+# FR | garde que parce que plusieurs docs le referencent encore ; ne pas
+# FR | le ressusciter en rajoutant un !include quelque part — editer
+# FR | admin.yaml.j2 a la place.
+########################################################################
 # Visio Sapiens — carte « Dashboards systeme » du panneau ADMIN
 #
 # DESTINATION :
