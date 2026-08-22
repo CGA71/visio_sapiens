@@ -14,9 +14,12 @@
    EN | Consequence: since one render now serves every mobile dashboard,
    EN | it can no longer know which chip is "the current page" the way
    EN | `active_nav` used to (a value only the per-dashboard render knew).
-   EN | Each chip highlights itself live in the browser instead, comparing
-   EN | its own tap_action.navigation_path against window.location.pathname
-   EN | via button-card's [[[ ]]] JS templates.
+   EN | Each chip highlights itself live in the browser instead, via
+   EN | button-card's [[[ ]]] JS templates comparing variables.path (set
+   EN | per instance below, NOT read from the card's own config — button-
+   EN | card's JS templates do not expose a `config` binding; reaching for
+   EN | config.tap_action.navigation_path throws ButtonCardJSTemplateError
+   EN | on every single chip) against window.location.pathname.
    FR | AUTONOME VOLONTAIREMENT — meme raison que _nav.j2 (son pendant
    FR | tablette) : rendu une seule fois par execution dans
    FR | _nav_rail_mobile.yaml, ecrit sans condition (jamais protege, jamais
@@ -31,9 +34,13 @@
    FR | mobile, il ne peut plus savoir quel chip est « la page courante »
    FR | comme le faisait `active_nav` (une valeur que seul le rendu par
    FR | dashboard connaissait). Chaque chip se surligne desormais lui-meme
-   FR | en direct dans le navigateur, en comparant son propre
-   FR | tap_action.navigation_path a window.location.pathname via les
-   FR | templates JS [[[ ]]] de button-card.
+   FR | en direct dans le navigateur, via les templates JS [[[ ]]] de
+   FR | button-card qui comparent variables.path (pose par instance
+   FR | ci-dessous, PAS lu depuis la config propre de la carte —
+   FR | button-card n expose aucune liaison `config` dans ses templates JS ;
+   FR | aller chercher config.tap_action.navigation_path leve
+   FR | ButtonCardJSTemplateError sur chaque chip) a
+   FR | window.location.pathname.
 
    EN | EXPECTED CONTEXT / FR | CONTEXTE ATTENDU
      nav
@@ -97,6 +104,8 @@ custom_fields:
           name: "{{ item.name }}"
           icon: {{ item.icon }}
           size: 14px
+          variables:
+            path: {{ item.path_mobile }}
           tap_action:
             action: navigate
             navigation_path: {{ item.path_mobile }}
@@ -111,21 +120,21 @@ custom_fields:
               - padding: 0px 8px
               - border-radius: 12px
               - background: >
-                  [[[ return window.location.pathname === config.tap_action.navigation_path ? 'rgba(0,229,255,0.14)' : 'rgba(16,27,39,0.85)'; ]]]
+                  [[[ return window.location.pathname === variables.path ? 'rgba(0,229,255,0.14)' : 'rgba(16,27,39,0.85)'; ]]]
               - border: >
-                  [[[ return '1px solid ' + (window.location.pathname === config.tap_action.navigation_path ? 'rgba(0,229,255,0.55)' : 'rgba(0,229,255,0.18)'); ]]]
+                  [[[ return '1px solid ' + (window.location.pathname === variables.path ? 'rgba(0,229,255,0.55)' : 'rgba(0,229,255,0.18)'); ]]]
               - box-shadow: >
-                  [[[ return window.location.pathname === config.tap_action.navigation_path ? '0 0 12px rgba(0,229,255,.25)' : 'none'; ]]]
+                  [[[ return window.location.pathname === variables.path ? '0 0 12px rgba(0,229,255,.25)' : 'none'; ]]]
             icon:
               - width: 14px
               - color: >
-                  [[[ return window.location.pathname === config.tap_action.navigation_path ? '#00E5FF' : '#8FB6C9'; ]]]
+                  [[[ return window.location.pathname === variables.path ? '#00E5FF' : '#8FB6C9'; ]]]
             name:
               - font-family: Orbitron, sans-serif
               - font-size: 8px
               - letter-spacing: 0.5px
               - color: >
-                  [[[ return window.location.pathname === config.tap_action.navigation_path ? '#00E5FF' : '#8FB6C9'; ]]]
+                  [[[ return window.location.pathname === variables.path ? '#00E5FF' : '#8FB6C9'; ]]]
               - justify-self: start
               - white-space: nowrap
               - overflow: hidden

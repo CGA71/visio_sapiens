@@ -293,17 +293,23 @@ vssp_sidebar_logo:
 # EN | shared by every dashboard (see its own header for why), so it cannot
 # EN | know at render time which page it will end up on. Each instance
 # EN | highlights itself live in the browser instead, via button-card's
-# EN | [[[ ]]] JS templates comparing its own tap_action.navigation_path
-# EN | against window.location.pathname — same mechanism as the mobile chip
-# EN | bar in _nav_mobile.j2.
+# EN | [[[ ]]] JS templates comparing variables.path (set per instance by
+# EN | _nav.j2, NOT read from the card's own config — button-card's JS
+# EN | templates do not expose a `config` binding; reaching for
+# EN | config.tap_action.navigation_path throws ButtonCardJSTemplateError
+# EN | on every single nav button) against window.location.pathname — same
+# EN | mechanism as the mobile chip bar in _nav_mobile.j2.
 # FR | Rien a passer pour l etat actif : _nav_rail.yaml est un seul fichier
 # FR | partage par chaque dashboard (voir son propre en-tete pour la
 # FR | raison), donc il ne peut pas savoir au moment du rendu sur quelle
 # FR | page il finira. Chaque instance se surligne elle-meme en direct dans
 # FR | le navigateur, via les templates JS [[[ ]]] de button-card qui
-# FR | comparent son propre tap_action.navigation_path a
-# FR | window.location.pathname — meme mecanisme que la barre de chips
-# FR | mobile de _nav_mobile.j2.
+# FR | comparent variables.path (pose par instance par _nav.j2, PAS lu
+# FR | depuis la config propre de la carte — les templates JS de
+# FR | button-card n exposent aucune liaison `config` ; aller chercher
+# FR | config.tap_action.navigation_path leve ButtonCardJSTemplateError sur
+# FR | chaque bouton de nav) a window.location.pathname — meme mecanisme
+# FR | que la barre de chips mobile de _nav_mobile.j2.
 # EN |   template: vssp_nav_button
 # ---------------------------------------------------------------------
 vssp_nav_button:
@@ -327,12 +333,12 @@ vssp_nav_button:
       - align-items: center
     card:
       - background: >
-          [[[ return window.location.pathname === config.tap_action.navigation_path ? 'rgba(0,229,255,0.14)' : 'transparent'; ]]]
+          [[[ return window.location.pathname === variables.path ? 'rgba(0,229,255,0.14)' : 'transparent'; ]]]
       - border-radius: 12px
       - border: >
-          [[[ return '1px solid ' + (window.location.pathname === config.tap_action.navigation_path ? 'rgba(0,229,255,0.55)' : 'transparent'); ]]]
+          [[[ return '1px solid ' + (window.location.pathname === variables.path ? 'rgba(0,229,255,0.55)' : 'transparent'); ]]]
       - box-shadow: >
-          [[[ return window.location.pathname === config.tap_action.navigation_path ? '0 0 12px rgba(0,229,255,.25)' : 'none'; ]]]
+          [[[ return window.location.pathname === variables.path ? '0 0 12px rgba(0,229,255,.25)' : 'none'; ]]]
       - padding: 10px 12px
       - margin-bottom: 4px
       - width: 100%
@@ -341,7 +347,7 @@ vssp_nav_button:
       - transition: all .45s cubic-bezier(.4,0,.2,1)
     icon:
       - color: >
-          [[[ return window.location.pathname === config.tap_action.navigation_path ? '#00E5FF' : '#8FB6C9'; ]]]
+          [[[ return window.location.pathname === variables.path ? '#00E5FF' : '#8FB6C9'; ]]]
       - "--mdc-icon-size": 20px
       - align-self: start
       - margin-top: 2px
