@@ -1,0 +1,148 @@
+########################################################################
+# Visio Sapiens — Capteurs d'état du panneau KPI de HOME
+#
+# DESTINATION DANS LE REPO :
+#     home-assistant/packages/vssp_home_status.yaml
+#
+# CHEMIN FINAL SUR LE POD (pose par le CI) :
+#     /config/packages/vssp_home_status.yaml
+#
+# Charge AUTOMATIQUEMENT par la cle deja presente dans
+# config-fragment.yaml :
+#     homeassistant:
+#       packages: !include_dir_named packages
+#
+# EN | Fills the four KPI cards of HOME's second row (System Status,
+# EN | Energy Status, Active rooms, Connections) that home.yaml.j2 has
+# EN | always pointed at entities nobody ever defined — the TODO comments
+# EN | next to `entity: binary_sensor.vssp_core_health` etc. described
+# EN | this exact gap. `sensor.home_power_consumption` /
+# EN | `sensor.solar_power_production` (used by PRODUCTION/CONSOMMATION and
+# EN | their charts) already exist for real in vssp_energy_totaux.yaml —
+# EN | only these four were still missing.
+# FR | Alimente les quatre cartes KPI de la deuxieme ligne de HOME (System
+# FR | Status, Energy Status, Pieces actives, Connexions) que home.yaml.j2
+# FR | a toujours pointees vers des entites que personne n'avait jamais
+# FR | definies — les commentaires TODO a cote de
+# FR | `entity: binary_sensor.vssp_core_health` etc. decrivaient exactement
+# FR | ce manque. `sensor.home_power_consumption` /
+# FR | `sensor.solar_power_production` (utilises par PRODUCTION/CONSOMMATION
+# FR | et leurs courbes) existent deja pour de vrai dans
+# FR | vssp_energy_totaux.yaml — seuls ces quatre-la manquaient encore.
+########################################################################
+
+template:
+  - sensor:
+      # ── System Status : sante machine (CPU/RAM), 3 paliers ──────────
+      # EN | `sensor.processor_use` / `sensor.memory_use_percent` are the
+      # EN | default entity ids of Home Assistant's own core `systemmonitor`
+      # EN | integration — a reasonable default, same spirit as every other
+      # EN | "# TODO: remplacer par votre entité" placeholder in this
+      # EN | project, NOT a guarantee they exist on your instance. If the
+      # EN | machine actually running CORE's services (Zigbee/Z-Wave/MQTT
+      # EN | hub, NAS, etc.) is not the Home Assistant host itself, replace
+      # EN | both with whatever integration exposes ITS cpu/ram (Glances,
+      # EN | a Synology/Proxmox integration, SNMP...). Missing entities
+      # EN | resolve to "unknown", not an error.
+      # FR | `sensor.processor_use` / `sensor.memory_use_percent` sont les
+      # FR | identifiants par defaut de l'integration coeur `systemmonitor`
+      # FR | de Home Assistant lui-meme — un defaut raisonnable, meme esprit
+      # FR | que chaque autre "# TODO: remplacer par votre entité" de ce
+      # FR | projet, PAS une garantie qu'ils existent sur votre instance. Si
+      # FR | la machine qui fait reellement tourner les services de CORE
+      # FR | (hub Zigbee/Z-Wave/MQTT, NAS, etc.) n'est pas l'hote Home
+      # FR | Assistant lui-meme, remplacez les deux par ce qu'expose votre
+      # FR | integration (Glances, une integration Synology/Proxmox,
+      # FR | SNMP...). Une entite absente se resout en "unknown", pas en
+      # FR | erreur.
+      - name: "VSSP Core Health"
+        unique_id: vssp_core_health
+        state: >-
+          {%- set cpu = states('sensor.processor_use') | float(-1) -%}
+          {%- set ram = states('sensor.memory_use_percent') | float(-1) -%}
+          {%- if cpu < 0 and ram < 0 -%}
+          unknown
+          {%- elif cpu >= 90 or ram >= 90 -%}
+          critical
+          {%- elif cpu >= 70 or ram >= 70 -%}
+          degraded
+          {%- else -%}
+          ok
+          {%- endif -%}
+        attributes:
+          cpu_percent: "{{ states('sensor.processor_use') }}"
+          ram_percent: "{{ states('sensor.memory_use_percent') }}"
+
+      # ── Energy Status : production vs consommation ──────────────────
+      # EN | binary_sensor so it plugs into vssp_status_indicator's
+      # EN | existing on/off coloring unchanged: "on" (producing at least
+      # EN | as much as the house consumes) → green, "off" (net draw from
+      # EN | the grid) → red. No data on either side defaults to 0 on both,
+      # EN | i.e. "on"/green — matches this project's habit of never
+      # EN | defaulting a status indicator to red just because a sensor
+      # EN | isn't configured yet.
+      # FR | binary_sensor pour s'inserer sans y toucher dans le coloriage
+      # FR | on/off deja existant de vssp_status_indicator : "on" (on
+      # FR | produit au moins autant que la maison consomme) → vert, "off"
+      # FR | (on tire du reseau) → rouge. Aucune donnee des deux cotes vaut
+      # FR | 0 partout, donc "on"/vert — coherent avec l'habitude de ce
+      # FR | projet de ne jamais faire retomber un voyant sur rouge juste
+      # FR | parce qu'un capteur n'est pas encore configure.
+  - binary_sensor:
+      - name: "VSSP Energy Health"
+        unique_id: vssp_energy_health
+        state: >
+          {{ states('sensor.solar_power_production') | float(0)
+             >= states('sensor.home_power_consumption') | float(0) }}
+
+  - sensor:
+      # ── Pièces actives : zones HA avec au moins une lumière/prise allumée
+      # EN | area_entities()/areas() are core Home Assistant template
+      # EN | functions (stable since 2022.x) — no new integration needed.
+      # EN | "Active" here means at least one light.*/switch.* entity of
+      # EN | that area is currently "on"; adjust the domain list if your
+      # EN | idea of "active" should include climate/media_player/etc.
+      # FR | area_entities()/areas() sont des fonctions de template Home
+      # FR | Assistant natives (stables depuis 2022.x) — aucune nouvelle
+      # FR | integration necessaire. « Active » signifie ici qu'au moins une
+      # FR | entite light.*/switch.* de cette zone est actuellement "on" ;
+      # FR | ajustez la liste de domaines si votre notion d'« active » doit
+      # FR | inclure climate/media_player/etc.
+      - name: "VSSP Pieces Actives"
+        unique_id: vssp_pieces_actives
+        state: >
+          {% set ns = namespace(n=0) %}
+          {% for area in areas() %}
+            {% set on = area_entities(area)
+                        | select('match', '^(light|switch)\.')
+                        | map('states') | select('eq', 'on') | list %}
+            {% if on | count > 0 %}
+              {% set ns.n = ns.n + 1 %}
+            {% endif %}
+          {% endfor %}
+          {{ ns.n }}
+        attributes:
+          total_areas: "{{ areas() | count }}"
+
+      # ── Connexions : entités actuellement disponibles dans HA ────────
+      # EN | Entity count, not a unique-device count: Home Assistant's
+      # EN | template engine has no simple built-in "list every device"
+      # EN | function to lean on the way areas()/area_entities() exist for
+      # EN | areas, so counting entities (excluding unavailable/unknown) is
+      # EN | the honest, safely-documented option rather than guessing at
+      # EN | one. Adjust to states.<domain> | count if you want it scoped to
+      # EN | fewer domains.
+      # FR | Nombre d'ENTITES, pas d'appareils uniques : le moteur de
+      # FR | template de Home Assistant n'a pas de fonction "lister chaque
+      # FR | appareil" simple sur laquelle s'appuyer comme areas()/
+      # FR | area_entities() existent pour les zones, donc compter les
+      # FR | entites (en excluant unavailable/unknown) est l'option honnete
+      # FR | et documentee plutot que d'en deviner une. Ajustez vers
+      # FR | states.<domain> | count si vous voulez le restreindre a moins
+      # FR | de domaines.
+      - name: "VSSP Total Appareils"
+        unique_id: vssp_total_appareils
+        state_class: measurement
+        icon: mdi:vector-polygon
+        state: >
+          {{ states | selectattr('state', 'not_in', ['unavailable', 'unknown']) | list | count }}

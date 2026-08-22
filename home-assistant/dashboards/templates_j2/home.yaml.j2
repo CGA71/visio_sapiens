@@ -105,19 +105,23 @@ views:
           grid-area: kpi1
           grid-column: kpi1 / kpi5
         cards:
-          # Case 1 — System Status : voyant vert reflétant l'état des métriques du dashboard CORE
+          # Case 1 — System Status : vert nominal / orange dégradé / rouge
+          # redémarrage nécessaire, depuis sensor.vssp_core_health
+          # (vssp_home_status.yaml — CPU/RAM, seuils 70 % / 90 %).
           - type: custom:button-card
             template: vssp_status_indicator
             name: "{{ t('home.kpi.system_status') }}"
             label: "{{ t('home.kpi.system_status_hint') }}"
-            entity: binary_sensor.vssp_core_health  # TODO: capteur agrégé à créer (ex: template sensor combinant CPU/GPU/RAM/etc.)
+            entity: sensor.vssp_core_health
 
-          # Case 2 — Energy Status : voyant vert reflétant l'état des métriques du dashboard ENERGY
+          # Case 2 — Energy Status : vert si production >= consommation,
+          # rouge sinon, depuis binary_sensor.vssp_energy_health
+          # (vssp_home_status.yaml).
           - type: custom:button-card
             template: vssp_status_indicator
             name: "{{ t('home.kpi.energy_status') }}"
             label: "{{ t('home.kpi.energy_status_hint') }}"
-            entity: binary_sensor.vssp_energy_health  # TODO: capteur agrégé à créer (ex: template sensor sur production/consommation)
+            entity: binary_sensor.vssp_energy_health
 
           # Case 3 — Pièces actives
           - type: custom:button-card

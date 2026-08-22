@@ -601,10 +601,24 @@ vssp_kpi_card:
 # ---------------------------------------------------------------------
 # EN | Status indicator card (System Status / Energy Status) — title + round
 # FR | Carte d'indicateur d'etat (System Status / Energy Status) — titre + voyant
-# EN | coloured light + subtitle. Green by default; turns red when the linked
-# FR | rond colore + sous-titre. Vert par defaut ; passe au rouge si l'entite
-# EN | (optional) entity is in a state considered abnormal.
-# FR | liee (optionnelle) est dans un etat considere anormal.
+# EN | coloured light + subtitle. Three tiers, read off entity.state:
+# EN |   green  — "on"/"home"/"ok"/"true"/"problem_free" (binary_sensor-style)
+# EN |   orange — "degraded"/"warning" (3-tier sensor-style, e.g. vssp_core_health)
+# EN |   red    — anything else ("off", "critical", "problem", "alert"...)
+# EN | A binary_sensor (two states) and a plain sensor with an "ok" /
+# EN | "degraded" / "critical" string state both work unmodified — the
+# EN | orange tier just never triggers for a binary_sensor, since "off" is
+# EN | not in the orange list and falls through to red.
+# FR | rond colore + sous-titre. Trois paliers, lus sur entity.state :
+# FR |   vert   — "on"/"home"/"ok"/"true"/"problem_free" (type binary_sensor)
+# FR |   orange — "degraded"/"warning" (type sensor a 3 paliers, ex.
+# FR |            vssp_core_health)
+# FR |   rouge  — tout le reste ("off", "critical", "problem", "alert"...)
+# FR | Un binary_sensor (deux etats) et un sensor classique a etat chaine
+# FR | "ok" / "degraded" / "critical" fonctionnent tous les deux sans
+# FR | modification — le palier orange ne se declenche simplement jamais
+# FR | pour un binary_sensor, puisque "off" n'est pas dans la liste orange
+# FR | et retombe sur rouge.
 # EN |   template: vssp_status_indicator
 # EN |   entity: binary_sensor.vssp_core_health   # optional
 # ---------------------------------------------------------------------
@@ -612,6 +626,10 @@ vssp_status_indicator:
   show_state: false
   show_label: true
   icon: mdi:circle
+  variables:
+    color_ok: "#00FFC3"
+    color_warn: "#FFA726"
+    color_bad: "#FF3D71"
   styles:
     grid:
       - grid-template-areas: '"n" "i" "l"'
@@ -633,8 +651,10 @@ vssp_status_indicator:
     icon:
       - color: >
           [[[
-            if (!entity) return "#00FFC3";
-            return ["on","home","ok","true","problem_free"].includes(entity.state) ? "#00FFC3" : "#FF3D71";
+            if (!entity) return variables.color_ok;
+            if (["on","home","ok","true","problem_free"].includes(entity.state)) return variables.color_ok;
+            if (["degraded","warning"].includes(entity.state)) return variables.color_warn;
+            return variables.color_bad;
           ]]]
       - "--mdc-icon-size": 20px
       - justify-self: start
@@ -642,6 +662,8 @@ vssp_status_indicator:
           [[[
             if (!entity || ["on","home","ok","true","problem_free"].includes(entity.state))
               return "drop-shadow(0 0 8px rgba(0,255,195,.6))";
+            if (["degraded","warning"].includes(entity.state))
+              return "drop-shadow(0 0 8px rgba(255,167,38,.6))";
             return "drop-shadow(0 0 8px rgba(255,61,113,.6))";
           ]]]
     label:

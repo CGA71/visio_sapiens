@@ -94,18 +94,18 @@ views:
         cards:
           - type: horizontal-stack
             cards:
-              # Case 1 — System Status
+              # Case 1 — System Status (vert/orange/rouge, voir vssp_home_status.yaml)
               - type: custom:button-card
                 template: vssp_status_indicator
                 name: "{{ t('home.kpi.system_status') }}"
                 label: "{{ t('home.kpi.system_status_hint') }}"
-                entity: binary_sensor.vssp_core_health   # TODO
-              # Case 2 — Energy Status
+                entity: sensor.vssp_core_health
+              # Case 2 — Energy Status (production vs consommation)
               - type: custom:button-card
                 template: vssp_status_indicator
                 name: "{{ t('home.kpi.energy_status') }}"
                 label: "{{ t('home.kpi.energy_status_hint') }}"
-                entity: binary_sensor.vssp_energy_health  # TODO
+                entity: binary_sensor.vssp_energy_health
 
           - type: horizontal-stack
             cards:
