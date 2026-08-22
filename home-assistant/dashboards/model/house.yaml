@@ -227,62 +227,25 @@ room_icons:
 # FR | `audio` est le seul tableau a deux roles : un flux existe independamment
 # FR | de sa sortie. Avec une source mais aucune sortie, le panneau affiche le
 # FR | lecteur et slot.audio_no_speaker.
-rooms:
-  - id: living_room
-    type: living_room
-    slot_set: default
-    slots:
-      climate: []
-      lights: []
-      appliances: []
-      shutters: []
-      security: []
-      audio:
-        source: []
-        output: []
-
-  - id: bedroom_1
-    type: bedroom
-    index: 1
-    slot_set: default
-    slots: {}
-
-  - id: bedroom_2
-    type: bedroom
-    index: 2
-    slot_set: default
-    slots: {}
-
-  - id: bathroom_1
-    type: bathroom
-    index: 1
-    slot_set: default
-    slots: {}
-
-  - id: computer
-    type: computer
-    slot_set: default
-    slots: {}
-
-  - id: technical
-    type: technical
-    slot_set: default
-    slots: {}
-
-  - id: secret
-    type: secret
-    slot_set: default
-    slots: {}
-
-  - id: entrance
-    type: entrance
-    slot_set: entrance
-    slots: {}
-
-  - id: garden
-    type: garden
-    slot_set: garden
-    slots: {}
+# EN | Empty on purpose. Rooms are no longer hand-written here: since
+# EN | vssp_rooms_apply.py syncs this list live from the HA Area registry
+# EN | (via the ROOMS & FLOORS admin form) and vssp_preserve_rooms.py
+# EN | carries that live state across every CI deploy, a hand-written
+# EN | placeholder list here only ever became stale ghost rooms — orphaned
+# EN | entries with no area_id that a deploy-time revert (fixed, but only
+# EN | going forward) once resurrected alongside the real ones. Leave this
+# EN | empty; build the house from the admin console instead.
+# FR | Vide volontairement. Les pieces ne sont plus redigees a la main
+# FR | ici : puisque vssp_rooms_apply.py synchronise cette liste en direct
+# FR | depuis le registre Zones HA (via le formulaire ROOMS & FLOORS) et
+# FR | que vssp_preserve_rooms.py transporte cet etat en direct a travers
+# FR | chaque deploiement CI, une liste placeholder ecrite a la main ici
+# FR | ne devenait jamais que des pieces fantomes perimees — des entrees
+# FR | orphelines sans area_id qu un retour en arriere au moment du
+# FR | deploiement (corrige, mais seulement a partir de maintenant)
+# FR | ressuscitait a cote des vraies. Laisser vide ; construire la maison
+# FR | depuis la console admin a la place.
+rooms: []
 
 # ── EN | ENERGY dashboard settings ────────────────────────────────────
 # ── FR | Parametres du dashboard ENERGY ───────────────────────────────
