@@ -16,19 +16,29 @@
 # EN | Energy Status, Active rooms, Connections) that home.yaml.j2 has
 # EN | always pointed at entities nobody ever defined — the TODO comments
 # EN | next to `entity: binary_sensor.vssp_core_health` etc. described
-# EN | this exact gap. `sensor.home_power_consumption` /
-# EN | `sensor.solar_power_production` (used by PRODUCTION/CONSOMMATION and
-# EN | their charts) already exist for real in vssp_energy_totaux.yaml —
-# EN | only these four were still missing.
+# EN | this exact gap. `sensor.home_power_consumption` (used by CONSOMMATION
+# EN | and its chart) already exists for real in vssp_energy_totaux.yaml.
+# EN | `sensor.solar_power_production` does NOT: every other view in this
+# EN | project marks it `# TODO` / "n'existe pas dans votre HA" — there is no
+# EN | solar sensor on this install. `states('sensor.solar_power_production')`
+# EN | below therefore falls back to 0 via `| float(0)`, so Energy Status
+# EN | reads "off"/red whenever the house draws any power at all, which is
+# EN | correct (no production) but not very informative until a real solar
+# EN | sensor exists — swap the entity id once one is added.
 # FR | Alimente les quatre cartes KPI de la deuxieme ligne de HOME (System
 # FR | Status, Energy Status, Pieces actives, Connexions) que home.yaml.j2
 # FR | a toujours pointees vers des entites que personne n'avait jamais
 # FR | definies — les commentaires TODO a cote de
 # FR | `entity: binary_sensor.vssp_core_health` etc. decrivaient exactement
-# FR | ce manque. `sensor.home_power_consumption` /
-# FR | `sensor.solar_power_production` (utilises par PRODUCTION/CONSOMMATION
-# FR | et leurs courbes) existent deja pour de vrai dans
-# FR | vssp_energy_totaux.yaml — seuls ces quatre-la manquaient encore.
+# FR | ce manque. `sensor.home_power_consumption` (utilise par CONSOMMATION
+# FR | et sa courbe) existe deja pour de vrai dans vssp_energy_totaux.yaml.
+# FR | `sensor.solar_power_production` non : tout le reste du projet le
+# FR | marque `# TODO` / "n'existe pas dans votre HA" — il n'y a pas de
+# FR | capteur solaire sur cette installation. `states('sensor.solar_power_production')`
+# FR | retombe donc sur 0 via `| float(0)`, donc Energy Status affiche
+# FR | "off"/rouge des que la maison tire la moindre puissance, ce qui est
+# FR | correct (pas de production) mais peu informatif tant qu'un vrai
+# FR | capteur solaire n'existe pas — remplacez l'entity id le jour venu.
 ########################################################################
 
 template:
@@ -124,25 +134,38 @@ template:
         attributes:
           total_areas: "{{ areas() | count }}"
 
-      # ── Connexions : entités actuellement disponibles dans HA ────────
-      # EN | Entity count, not a unique-device count: Home Assistant's
-      # EN | template engine has no simple built-in "list every device"
-      # EN | function to lean on the way areas()/area_entities() exist for
-      # EN | areas, so counting entities (excluding unavailable/unknown) is
-      # EN | the honest, safely-documented option rather than guessing at
-      # EN | one. Adjust to states.<domain> | count if you want it scoped to
-      # EN | fewer domains.
-      # FR | Nombre d'ENTITES, pas d'appareils uniques : le moteur de
-      # FR | template de Home Assistant n'a pas de fonction "lister chaque
-      # FR | appareil" simple sur laquelle s'appuyer comme areas()/
-      # FR | area_entities() existent pour les zones, donc compter les
-      # FR | entites (en excluant unavailable/unknown) est l'option honnete
-      # FR | et documentee plutot que d'en deviner une. Ajustez vers
-      # FR | states.<domain> | count si vous voulez le restreindre a moins
-      # FR | de domaines.
+      # ── Connexions : appareils (devices), pas entités, actuellement joignables
+      # EN | A raw entity count massively overstates "devices connected": one
+      # EN | Shelly plug alone can expose power/energy/switch/wifi-signal/
+      # EN | uptime entities. `device_id(entity_id)` is a core HA template
+      # EN | function (stable since 2021.7) that maps an entity back to its
+      # EN | device-registry device; deduplicating on it gives an actual
+      # EN | device count. A device counts as "connected" if at least one of
+      # EN | its entities is not unavailable/unknown — entity-less helpers
+      # EN | (automations, scripts, input_*...) have no device_id and are
+      # EN | naturally excluded.
+      # FR | Un compte d'ENTITES surestime enormement les « appareils
+      # FR | connectes » : une seule prise Shelly expose a elle seule des
+      # FR | entites puissance/energie/interrupteur/signal-wifi/uptime.
+      # FR | `device_id(entity_id)` est une fonction de template HA native
+      # FR | (stable depuis 2021.7) qui relie une entite a son appareil dans
+      # FR | le registre des appareils ; deduplicater dessus donne un vrai
+      # FR | compte d'appareils. Un appareil compte comme « connecte » si au
+      # FR | moins une de ses entites n'est pas unavailable/unknown — les
+      # FR | helpers sans appareil (automatisations, scripts, input_*...)
+      # FR | n'ont pas de device_id et sont exclus naturellement.
       - name: "VSSP Total Appareils"
         unique_id: vssp_total_appareils
         state_class: measurement
         icon: mdi:vector-polygon
         state: >
-          {{ states | selectattr('state', 'not_in', ['unavailable', 'unknown']) | list | count }}
+          {% set ns = namespace(ids=[]) %}
+          {% for s in states %}
+            {% if s.state not in ['unavailable', 'unknown'] %}
+              {% set did = device_id(s.entity_id) %}
+              {% if did and did not in ns.ids %}
+                {% set ns.ids = ns.ids + [did] %}
+              {% endif %}
+            {% endif %}
+          {% endfor %}
+          {{ ns.ids | count }}
