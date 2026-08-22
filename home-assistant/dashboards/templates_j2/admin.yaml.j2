@@ -100,7 +100,7 @@ views:
 {% set page_path = admin_path ~ '/menu' %}
 {% include '_header.j2' %}
 
-      - !include _nav_rail.yaml
+{% include '_nav.j2' %}
 
       - type: grid
         columns: 3
@@ -175,7 +175,7 @@ views:
 {% set page_path = admin_path ~ '/menu' %}
 {% include '_header.j2' %}
 
-      - !include _nav_rail.yaml
+{% include '_nav.j2' %}
 
       - type: vertical-stack
         view_layout:

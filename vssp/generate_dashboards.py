@@ -57,10 +57,10 @@ import vssp_i18n  # noqa: E402
 # FR | ADMIN.
 # ----------------------------------------------------------------------------
 SYSTEM_DASHBOARDS = [
-    ("home",   "home.yaml.j2",   "home.yaml",   {}),
-    ("core",   "core.yaml.j2",   "core.yaml",   {}),
-    ("energy", "energy.yaml.j2", "energy.yaml", {}),
-    ("admin",  "admin.yaml.j2",  "admin.yaml",  {}),
+    ("home",   "home.yaml.j2",   "home.yaml",   {"active_nav": "home"}),
+    ("core",   "core.yaml.j2",   "core.yaml",   {"active_nav": "core"}),
+    ("energy", "energy.yaml.j2", "energy.yaml", {"active_nav": "energy"}),
+    ("admin",  "admin.yaml.j2",  "admin.yaml",  {"active_nav": "admin"}),
 ]
 
 # EN | These three are created on demand from the ADMIN console (CREER
@@ -1093,93 +1093,13 @@ def main() -> int:
     out_dir.mkdir(parents=True, exist_ok=True)
     n_dev = len(model.get("energy_devices", []))
 
-    # --- EN | Navigation-rail fragment — always fresh, never protected ----
-    # --- FR | Fragment du bandeau de nav — toujours frais, jamais protege -
-    # EN | HOME (and any other --protect-existing id) never gets its own
-    # EN | dashboard file rewritten once it exists, precisely so a manual
-    # EN | Lovelace edit survives every room sync — but its nav rail used to
-    # EN | be baked inline by _nav.j2/_nav_mobile.j2 at that same render, so
-    # EN | it froze at whatever rooms existed the last time HOME was
-    # EN | actually (re)generated, while every unprotected dashboard (admin,
-    # EN | core, energy, every room) kept showing the current list. Writing
-    # EN | the rail to its own file, unconditionally, on every run — no
-    # EN | --only filtering, no --if-missing, no --protect-existing — and
-    # EN | having every dashboard pull it in via a native `!include` (which
-    # EN | Home Assistant resolves each time the dashboard is displayed, not
-    # EN | by this script at generate time) keeps HOME's rail live without
-    # EN | HOME itself ever being rewritten.
-    # EN | Skipped in --preview: a preview render must never touch the rail
-    # EN | every live dashboard depends on.
-    # FR | HOME (et tout autre id de --protect-existing) ne voit jamais son
-    # FR | propre fichier dashboard reecrit une fois qu il existe,
-    # FR | precisement pour qu une modification Lovelace manuelle survive a
-    # FR | chaque synchro de pieces — mais son bandeau de nav etait jusque
-    # FR | la integre en dur par _nav.j2/_nav_mobile.j2 lors de ce meme
-    # FR | rendu, donc il se figeait sur les pieces d il y a la derniere
-    # FR | (re)generation reelle de HOME, alors que chaque dashboard non
-    # FR | protege (admin, core, energy, chaque piece) continuait de
-    # FR | montrer la liste actuelle. Ecrire le bandeau dans son propre
-    # FR | fichier, sans condition, a chaque execution — aucun filtre
-    # FR | --only, aucun --if-missing, aucun --protect-existing — et faire
-    # FR | tirer ce fichier par chaque dashboard via un `!include` natif
-    # FR | (resolu par Home Assistant a chaque affichage du dashboard, pas
-    # FR | par ce script au moment de la generation) garde le bandeau de
-    # FR | HOME vivant sans jamais reecrire HOME lui-meme.
-    # FR | Saute en --preview : un rendu d apercu ne doit jamais toucher au
-    # FR | bandeau dont depend chaque dashboard en production.
-    if not args.preview:
-        nav_fragments = []
-        if "tablet" in formats:
-            nav_fragments.append(("_nav.j2", "_nav_rail.yaml", "tablet"))
-        if "mobile" in formats:
-            nav_fragments.append(("_nav_mobile.j2", "_nav_rail_mobile.yaml", "mobile"))
-
-        for tpl_name, out_name, nav_format in nav_fragments:
-            try:
-                nav_template = env.get_template(tpl_name)
-            except TemplateNotFound:
-                print(f"[skip] {tpl_name} not found — {out_name} not generated")
-                status["skipped"].append(f"{out_name} ({tpl_name} missing)")
-                continue
-
-            nav_rendered = nav_template.render(**{**model, **i18n})
-
-            try:
-                nav_doc = yaml.load(nav_rendered, Loader=HaLoader)
-            except yaml.YAMLError as exc:
-                msg = f"{out_name}: invalid YAML after render — not written"
-                print(f"[ERR] {msg}\n{exc}")
-                status["errors"].append(f"{msg} — {exc}")
-                write_status(args.status_file, status)
-                return 1
-
-            if not isinstance(nav_doc, dict) or "type" not in nav_doc:
-                msg = f"{out_name}: rendered YAML is missing `type` — not written"
-                print(f"[ERR] {msg}")
-                status["errors"].append(msg)
-                write_status(args.status_file, status)
-                return 1
-
-            nav_target = out_dir / out_name
-            if args.dry_run:
-                print(f"[dry-run] {nav_target} — render valid — NOT written")
-            else:
-                nav_target.write_text(nav_rendered, encoding="utf-8")
-                print(f"[OK] {nav_target} generated (nav rail)")
-            status["generated"].append({
-                "file": str(nav_target),
-                "id": "_nav_rail",
-                "format": nav_format,
-                "locale": locale,
-                "lines": len(nav_rendered.splitlines()),
-            })
-
     # --- EN | Build the job list: system dashboards + one per room -------
     # --- FR | Constitution des jobs : dashboards systeme + un par piece --
     jobs = list(SYSTEM_DASHBOARDS)
     for room in rooms:
         jobs.append((room["id"], ROOM_TEMPLATE, f"{room['id']}.yaml",
-                     {"room": room, "room_id": room["id"]}))
+                     {"active_nav": room["id"], "room": room,
+                      "room_id": room["id"]}))
 
     protected_ids = {s.strip() for s in args.protect_existing.split(",") if s.strip()}
 

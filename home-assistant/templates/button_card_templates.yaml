@@ -289,22 +289,13 @@ vssp_sidebar_logo:
 # FR | Element de navigation de la sidebar (HOME / CORE / pieces / ENERGY / ADMIN...).
 # EN | Vertical layout: icon left, title and subtitle stacked right.
 # FR | Disposition verticale : icone a gauche, titre et sous-titre empiles a droite.
-# EN | Nothing to pass for the active state: _nav_rail.yaml is one file
-# EN | shared by every dashboard (see its own header for why), so it cannot
-# EN | know at render time which page it will end up on. Each instance
-# EN | highlights itself live in the browser instead, via button-card's
-# EN | [[[ ]]] JS templates comparing its own tap_action.navigation_path
-# EN | against window.location.pathname — same mechanism as the mobile chip
-# EN | bar in _nav_mobile.j2.
-# FR | Rien a passer pour l etat actif : _nav_rail.yaml est un seul fichier
-# FR | partage par chaque dashboard (voir son propre en-tete pour la
-# FR | raison), donc il ne peut pas savoir au moment du rendu sur quelle
-# FR | page il finira. Chaque instance se surligne elle-meme en direct dans
-# FR | le navigateur, via les templates JS [[[ ]]] de button-card qui
-# FR | comparent son propre tap_action.navigation_path a
-# FR | window.location.pathname — meme mecanisme que la barre de chips
-# FR | mobile de _nav_mobile.j2.
+# EN | `active` must be passed per instance — the generated dashboard sets
+# FR | `active` doit etre passe par instance — le dashboard genere le pose
+# EN | it on the entry matching the current page.
+# FR | sur l'entree correspondant a la page courante.
 # EN |   template: vssp_nav_button
+# EN |   variables:
+# EN |     active: true
 # ---------------------------------------------------------------------
 vssp_nav_button:
   show_state: false
@@ -326,13 +317,9 @@ vssp_nav_button:
       - justify-items: start
       - align-items: center
     card:
-      - background: >
-          [[[ return window.location.pathname === config.tap_action.navigation_path ? 'rgba(0,229,255,0.14)' : 'transparent'; ]]]
+      - background: transparent
       - border-radius: 12px
-      - border: >
-          [[[ return '1px solid ' + (window.location.pathname === config.tap_action.navigation_path ? 'rgba(0,229,255,0.55)' : 'transparent'); ]]]
-      - box-shadow: >
-          [[[ return window.location.pathname === config.tap_action.navigation_path ? '0 0 12px rgba(0,229,255,.25)' : 'none'; ]]]
+      - border: 1px solid transparent
       - padding: 10px 12px
       - margin-bottom: 4px
       - width: 100%
@@ -340,8 +327,7 @@ vssp_nav_button:
       - text-align: left
       - transition: all .45s cubic-bezier(.4,0,.2,1)
     icon:
-      - color: >
-          [[[ return window.location.pathname === config.tap_action.navigation_path ? '#00E5FF' : '#8FB6C9'; ]]]
+      - color: "#8FB6C9"
       - "--mdc-icon-size": 20px
       - align-self: start
       - margin-top: 2px
