@@ -628,6 +628,16 @@ function computeDiff(){
     if (isExtFloor(f)) return;
     if (!draftFloorIds.has(f.floor_id)) d.floorsDelete.push(f);
   });
+  // L'étage Extérieur est explicitement écarté de la boucle ci-dessus
+  // (isExtFloor(f)) car il n'apparaît jamais dans state.draft.floors —
+  // buildDraftFromRegistry() le traite à part, comme les chips
+  // "exteriors". Traité ici séparément : supprimé seulement quand il ne
+  // lui reste plus aucune pièce extérieure après ce passage — sinon il
+  // restait indéfiniment dans le registre HA, vide, une fois le dernier
+  // chip retiré (aucun chemin ne le supprimait jamais auparavant).
+  if (extFloor && !extNames.length){
+    d.floorsDelete.push(extFloor);
+  }
 
   // Pièces
   state.draft.floors.forEach(f => {
