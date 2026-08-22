@@ -965,6 +965,49 @@ deploy:staging:
         echo "[i] Actual content of /config/vssp:"
         ls -1 /config/vssp
       '
+    # --- EN | PRESERVE LIVE ROOMS — before the pod re-renders anything ------
+    # --- FR | PRESERVER LES PIECES EN DIRECT — avant que le pod ne rerende --
+    # EN | The dashboards/ swap just above replaced house.yaml with the
+    # EN | repository's own copy. rooms: is no longer purely git-authored
+    # EN | though — vssp_rooms_apply.py writes it live from the ROOMS &
+    # EN | FLOORS admin form — so that swap would otherwise silently revert
+    # EN | every live room to whatever placeholder rooms the repo declares.
+    # EN | Must run BEFORE "regenerate on the pod" below, or that step's own
+    # EN | render (and everything a user sees right after this deploy) would
+    # EN | still reflect the reverted list for one full cycle. ruamel.yaml
+    # EN | verified/installed here too since this is now the first thing on
+    # EN | the pod that needs it.
+    # FR | L echange de dashboards/ ci-dessus vient de remplacer house.yaml
+    # FR | par la copie du depot. rooms: n est plus purement redige via Git
+    # FR | pour autant — vssp_rooms_apply.py l ecrit en direct depuis le
+    # FR | formulaire ROOMS & FLOORS — donc cet echange ferait sinon revenir
+    # FR | en silence chaque piece en direct aux pieces placeholder que le
+    # FR | depot declare. Doit tourner AVANT « regenerer sur le pod »
+    # FR | ci-dessous, sinon le rendu de cette etape (et tout ce qu un
+    # FR | utilisateur voit juste apres ce deploiement) refleterait encore
+    # FR | la liste revertee pendant un cycle complet. ruamel.yaml
+    # FR | verifie/installe ici aussi puisque c est desormais la premiere
+    # FR | chose sur le pod qui en a besoin.
+    - |
+      kubectl exec -n $K3S_NAMESPACE $HA_POD -c $K3S_CONTAINER -- sh -c '
+        if python3 -c "import ruamel.yaml" 2>/dev/null; then
+          echo "[OK] ruamel.yaml already present"
+        else
+          echo "[i] ruamel.yaml missing - installing (needed by vssp_preserve_rooms.py)"
+          pip install ruamel.yaml --quiet --break-system-packages 2>/dev/null \
+            || pip install ruamel.yaml --quiet 2>/dev/null || true
+          if python3 -c "import ruamel.yaml" 2>/dev/null; then
+            echo "[OK] ruamel.yaml installed"
+          else
+            echo "[ERR] ruamel.yaml could not be installed on this pod."
+            echo "      Live room state cannot be preserved across this deploy."
+            exit 1
+          fi
+        fi
+        python3 /config/vssp/vssp_preserve_rooms.py \
+          --old /config/dashboards.old/model/house.yaml \
+          --new /config/dashboards/model/house.yaml
+      '
     # --- EN | REGENERATE ON THE POD — the model lives there ---------------
     # --- FR | REGENERER SUR LE POD — le modele y vit ----------------------
     # EN | The build already rendered every dashboard, which validates the
@@ -1077,6 +1120,12 @@ deploy:staging:
             exit 1
           fi
         fi
+        # EN | rooms: already preserved by the dedicated step earlier (right
+        # EN | after the dashboards/ swap, before the pod-side regeneration
+        # EN | rendered anything) — nothing left to do for it here.
+        # FR | rooms: deja preserve par l etape dediee plus tot (juste apres
+        # FR | l echange de dashboards/, avant que la regeneration cote pod
+        # FR | ne rende quoi que ce soit) — plus rien a faire ici pour ca.
         python3 /config/vssp/vssp_apply_config.py \
           --config   /config/configuration.yaml \
           --fragment /config/config-fragment.yaml /config/config-fragment-rooms.yaml \
@@ -1331,6 +1380,36 @@ deploy:production:
     # EN | The build only exposes the .tar.gz: extract patcher + fragment in the runner
     # FR | Le build n'expose que le .tar.gz : on extrait patcher + fragment dans le runner
     - rm -rf /tmp/osv_pkg && mkdir -p /tmp/osv_pkg && tar xzf $PACKAGE_NAME.tar.gz -C /tmp/osv_pkg
+    # --- EN | Preserve live rooms — same reasoning as deploy:staging --------
+    # --- FR | Preserver les pieces en direct — meme raisonnement que deploy:staging
+    # EN | The dashboards/ swap above just replaced house.yaml with the
+    # EN | repository's own copy, reverting rooms: (pod-owned state written
+    # EN | live by vssp_rooms_apply.py) back to whatever placeholder rooms
+    # EN | the repo declares. Merged here on the runner (ruamel available,
+    # EN | same reasoning as the configuration.yaml patch below) rather than
+    # EN | inside HAOS: scp the two house.yaml copies down, merge just the
+    # EN | rooms: key locally, scp the result back up. Every other key
+    # EN | (theme, nav_system, room_icons, locale/format...) still comes
+    # EN | from this fresh build. Missing old copy (first-ever deploy) is
+    # EN | fine: the script leaves the fresh rooms: alone in that case.
+    # FR | L echange de dashboards/ ci-dessus vient de remplacer house.yaml
+    # FR | par la copie du depot, faisant revenir rooms: (etat appartenant
+    # FR | au pod, ecrit en direct par vssp_rooms_apply.py) aux pieces
+    # FR | placeholder que le depot declare. Fusionne ici sur le runner
+    # FR | (ruamel disponible, meme raisonnement que le patch de
+    # FR | configuration.yaml plus bas) plutot que dans HAOS : scp des deux
+    # FR | copies de house.yaml, fusion de la seule cle rooms: en local, scp
+    # FR | du resultat en retour. Toutes les autres cles (theme, nav_system,
+    # FR | room_icons, locale/format...) continuent de venir de ce build
+    # FR | frais. Copie ancienne absente (tout premier deploiement) : sans
+    # FR | probleme, le script laisse alors le rooms: frais tel quel.
+    - |
+      scp ha:$HA_CFG/dashboards/model/house.yaml /tmp/prod_house.yaml
+      scp ha:$HA_CFG/dashboards.old/model/house.yaml /tmp/prod_house.yaml.old 2>/dev/null || true
+      python3 /tmp/osv_pkg/vssp/vssp_preserve_rooms.py \
+        --old /tmp/prod_house.yaml.old \
+        --new /tmp/prod_house.yaml
+      scp /tmp/prod_house.yaml ha:$HA_CFG/dashboards/model/house.yaml
     - scp ha:$HA_CFG/configuration.yaml /tmp/prod_configuration.yaml
     # EN | local safety net / FR | filet local
     - cp /tmp/prod_configuration.yaml /tmp/prod_configuration.yaml.pre
