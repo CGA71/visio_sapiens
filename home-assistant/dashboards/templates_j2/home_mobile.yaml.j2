@@ -100,7 +100,16 @@ views:
                 name: "{{ t('home.kpi.system_status') }}"
                 label: "{{ t('home.kpi.system_status_hint') }}"
                 entity: binary_sensor.vssp_core_health   # TODO
-              # Case 2 — Pièces actives
+              # Case 2 — Energy Status
+              - type: custom:button-card
+                template: vssp_status_indicator
+                name: "{{ t('home.kpi.energy_status') }}"
+                label: "{{ t('home.kpi.energy_status_hint') }}"
+                entity: binary_sensor.vssp_energy_health  # TODO
+
+          - type: horizontal-stack
+            cards:
+              # Case 3 — Pièces actives
               - type: custom:button-card
                 template: vssp_kpi_card
                 icon: mdi:door-open
@@ -116,51 +125,42 @@ views:
                 variables:
                   icon_color: "#3AA7FF"
                   value_color: "#3AA7FF"
-
-          - type: horizontal-stack
-            cards:
-              # Case 3 — Energy Status
-              - type: custom:button-card
-                template: vssp_status_indicator
-                name: "{{ t('home.kpi.energy_status') }}"
-                label: "{{ t('home.kpi.energy_status_hint') }}"
-                entity: binary_sensor.vssp_energy_health  # TODO
-              # Case 4 — Sécurité / Alarme
+              # Case 4 — Connexions
               - type: custom:button-card
                 template: vssp_kpi_card
-                icon: mdi:shield-lock
-                name: "{{ t('common.security') }}"
-                entity: alarm_control_panel.maison            # TODO
-                state_display: >
-                  [[[
-                    if (!entity) return '{{ t("home.alarm.not_configured") }}';
-                    switch (entity.state) {
-                      case "disarmed": return '{{ t("home.alarm.ok") }}';
-                      case "triggered": return '{{ t("home.alarm.alert") }}';
-                      case "armed_home": return '{{ t("home.alarm.armed") }}';
-                      case "armed_away": return '{{ t("home.alarm.armed") }}';
-                      default: return entity.state;
-                    }
-                  ]]]
-                label: >
-                  [[[
-                    if (!entity) return '{{ t("home.alarm.no_entity") }}';
-                    return entity.state === "triggered" ? '{{ t("home.alarm.intrusion") }}' : '{{ t("home.alarm.no_alert") }}';
-                  ]]]
+                icon: mdi:vector-polygon
+                name: "{{ t('home.kpi.connections') }}"
+                entity: sensor.vssp_total_appareils
+                label: "{{ t('home.kpi.connections_hint') }}"
                 variables:
-                  icon_color: "#00FFC3"
-                  value_color: "#00FFC3"
+                  icon_color: "#B084FF"
+                  value_color: "#B084FF"
 
-          # Case 5 — Connexions (pleine largeur)
+          # Case 5 — Sécurité / Alarme (pleine largeur)
           - type: custom:button-card
             template: vssp_kpi_card
-            icon: mdi:vector-polygon
-            name: "{{ t('home.kpi.connections') }}"
-            entity: sensor.vssp_total_appareils
-            label: "{{ t('home.kpi.connections_hint') }}"
+            icon: mdi:shield-lock
+            name: "{{ t('common.security') }}"
+            entity: alarm_control_panel.maison            # TODO
+            state_display: >
+              [[[
+                if (!entity) return '{{ t("home.alarm.not_configured") }}';
+                switch (entity.state) {
+                  case "disarmed": return '{{ t("home.alarm.ok") }}';
+                  case "triggered": return '{{ t("home.alarm.alert") }}';
+                  case "armed_home": return '{{ t("home.alarm.armed") }}';
+                  case "armed_away": return '{{ t("home.alarm.armed") }}';
+                  default: return entity.state;
+                }
+              ]]]
+            label: >
+              [[[
+                if (!entity) return '{{ t("home.alarm.no_entity") }}';
+                return entity.state === "triggered" ? '{{ t("home.alarm.intrusion") }}' : '{{ t("home.alarm.no_alert") }}';
+              ]]]
             variables:
-              icon_color: "#B084FF"
-              value_color: "#B084FF"
+              icon_color: "#00FFC3"
+              value_color: "#00FFC3"
 
       # ═══════════════════════════════════════════════════════════════
       # VIDÉO CENTRALE VISIO SAPIENS (16:9)
@@ -197,12 +197,94 @@ views:
             ha-card { overflow: hidden; border-radius: 20px; }
 
       # ═══════════════════════════════════════════════════════════════
-      # ÉNERGIE — courbe production/consommation + synthèse (empilées)
+      # ÉNERGIE — top 10 appareils + courbe production/consommation +
+      # synthèse (empilés)
       # ═══════════════════════════════════════════════════════════════
       - type: vertical-stack
         view_layout:
           grid-area: energy
         cards:
+          - type: custom:button-card
+            template: vssp_section_title
+            name: "{{ t('home.top_devices') }}"
+            card_mod:
+              style: |
+                ha-card { padding: 0 0 6px 0 !important; }
+                #name { font-size: 12px !important; letter-spacing: 1px !important; }
+
+          # EN | Same fixed-height/overflow-y scroll box as ENERGY's own
+          # EN | mobile device panel (energy_mobile.yaml.j2), touch-action:
+          # EN | pan-y and all — that is this project's already-proven fix
+          # EN | for a scrollable list nested inside a page that also
+          # EN | scrolls (mirrors the pan-x used by the chip nav bar). No
+          # EN | column headers either, same reasoning as ENERGY's: four
+          # EN | labels over ~380px would wrap and cost more height than
+          # EN | they explain — vssp_energy_device_row already labels its
+          # EN | own values.
+          # FR | Meme boite de defilement a hauteur fixe/overflow-y que le
+          # FR | panneau appareils mobile d'ENERGY (energy_mobile.yaml.j2),
+          # FR | touch-action: pan-y compris — c'est deja le correctif
+          # FR | eprouve de ce projet pour une liste defilante imbriquee
+          # FR | dans une page qui defile aussi (miroir du pan-x de la barre
+          # FR | de chips de nav). Pas d'en-tetes de colonnes non plus, meme
+          # FR | raisonnement que ENERGY : quatre libelles sur ~380px se
+          # FR | replieraient et couteraient plus de hauteur qu'ils
+          # FR | n'expliquent — vssp_energy_device_row etiquette deja ses
+          # FR | propres valeurs.
+          - type: custom:button-card
+            show_icon: false
+            show_name: false
+            show_state: false
+            tap_action:
+              action: none
+            styles:
+              grid:
+                - grid-template-areas: '"list"'
+              card:
+                - background: transparent
+                - box-shadow: none
+                - border: none
+                - border-radius: 0
+                - padding: 0
+                - cursor: default
+              custom_fields:
+                list:
+                  - display: block
+                  - width: 100%
+                  - height: 260px
+                  - overflow-y: auto
+                  - overflow-x: hidden
+                  - touch-action: pan-y
+                  - "-webkit-overflow-scrolling": touch
+                  - padding-right: 4px
+                  - scrollbar-width: none
+            custom_fields:
+              list:
+                card:
+                  type: vertical-stack
+                  cards:
+{% for d in energy_devices[:10] %}
+                    - type: custom:button-card
+                      template: vssp_energy_device_row
+                      entity: {{ d.power_entity }}
+                      name: "{{ d.name }}"
+                      icon: {{ d.icon }}
+                      variables:
+                        room: "{{ d.room }}"
+                        model: "{{ d.model | default('—', true) }}"
+                        energy_entity: {{ d.energy_entity }}
+                      tap_action:
+                        action: more-info
+{% endfor %}
+{% if not energy_devices %}
+                    - type: custom:button-card
+                      template: vssp_energy_device_row
+                      name: "{{ t('energy.empty.devices') }}"
+                      icon: mdi:help-circle-outline
+                      variables:
+                        room: "—"
+{% endif %}
+
           # Courbe production solaire vs consommation
           - type: custom:apexcharts-card
             header:

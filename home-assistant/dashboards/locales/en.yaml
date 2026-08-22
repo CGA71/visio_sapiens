@@ -388,6 +388,7 @@ home:
   intercom: Intercom
   audio_stream: Audio stream
   production_consumption: "PRODUCTION & CONSUMPTION"
+  top_devices: "TOP 10 CONSUMPTION"
   kpi:
     system_status: SYSTEM STATUS
     system_status_hint: CORE metrics status

@@ -273,6 +273,7 @@ home:
   intercom: Interphone
   audio_stream: Flux audio
   production_consumption: "PRODUCTION & CONSOMMATION"
+  top_devices: "TOP 10 CONSOMMATION"
   kpi:
     system_status: SYSTEM STATUS
     system_status_hint: Statut métriques CORE

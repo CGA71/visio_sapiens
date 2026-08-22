@@ -99,7 +99,7 @@ views:
       # ═══════════════════════════════════════════════════════════════
 {% include '_nav.j2' %}
 
-      # --- KPI row (System Status / Pièces actives / Energy Status / Sécurité / Connexions) ----
+      # --- KPI row (System Status / Energy Status / Pièces actives / Connexions / Sécurité) ----
       - type: horizontal-stack
         view_layout:
           grid-area: kpi1
@@ -112,7 +112,14 @@ views:
             label: "{{ t('home.kpi.system_status_hint') }}"
             entity: binary_sensor.vssp_core_health  # TODO: capteur agrégé à créer (ex: template sensor combinant CPU/GPU/RAM/etc.)
 
-          # Case 2 — Pièces actives
+          # Case 2 — Energy Status : voyant vert reflétant l'état des métriques du dashboard ENERGY
+          - type: custom:button-card
+            template: vssp_status_indicator
+            name: "{{ t('home.kpi.energy_status') }}"
+            label: "{{ t('home.kpi.energy_status_hint') }}"
+            entity: binary_sensor.vssp_energy_health  # TODO: capteur agrégé à créer (ex: template sensor sur production/consommation)
+
+          # Case 3 — Pièces actives
           - type: custom:button-card
             template: vssp_kpi_card
             icon: mdi:door-open
@@ -129,14 +136,18 @@ views:
               icon_color: "#3AA7FF"
               value_color: "#3AA7FF"
 
-          # Case 3 — Energy Status : voyant vert reflétant l'état des métriques du dashboard ENERGY
+          # Case 4 — Connexions (total appareils enregistrés dans HA)
           - type: custom:button-card
-            template: vssp_status_indicator
-            name: "{{ t('home.kpi.energy_status') }}"
-            label: "{{ t('home.kpi.energy_status_hint') }}"
-            entity: binary_sensor.vssp_energy_health  # TODO: capteur agrégé à créer (ex: template sensor sur production/consommation)
+            template: vssp_kpi_card
+            icon: mdi:vector-polygon
+            name: "{{ t('home.kpi.connections') }}"
+            entity: sensor.vssp_total_appareils
+            label: "{{ t('home.kpi.connections_hint') }}"
+            variables:
+              icon_color: "#B084FF"
+              value_color: "#B084FF"
 
-          # Case 4 — Sécurité / Alarme
+          # Case 5 — Sécurité / Alarme
           - type: custom:button-card
             template: vssp_kpi_card
             icon: mdi:shield-lock
@@ -161,17 +172,6 @@ views:
             variables:
               icon_color: "#00FFC3"
               value_color: "#00FFC3"
-
-          # Case 5 — Connexions (total appareils enregistrés dans HA)
-          - type: custom:button-card
-            template: vssp_kpi_card
-            icon: mdi:vector-polygon
-            name: "{{ t('home.kpi.connections') }}"
-            entity: sensor.vssp_total_appareils
-            label: "{{ t('home.kpi.connections_hint') }}"
-            variables:
-              icon_color: "#B084FF"
-              value_color: "#B084FF"
 
       # --- Video centrale VISIO SAPIENS (remplace le floorplan) -----------
       # Lecture auto, en boucle, sans son.
@@ -226,41 +226,83 @@ views:
               align-items: stretch;
             }
         cards:
-          # Cadre 1 — courbe production solaire vs consommation (carte native apexcharts)
-          - type: custom:apexcharts-card
-            header:
-              show: true
-              title: "{{ t('home.production_consumption') }}"
-              show_states: false
-            graph_span: 24h
+          # Cadre 1 — top 10 appareils par consommation. Meme motif que le
+          # panneau « Consommation par appareil » d'ENERGY (meme template
+          # vssp_energy_device_row, meme liste defilante dans un unique
+          # button-card) — seule la source change : les 10 premieres
+          # entrees de energy_devices au lieu de la liste complete.
+          - type: vertical-stack
             card_mod:
               style: |
-                :host { flex: 1.8 1 0; align-self: stretch; }
-                ha-card {
-                  background: var(--osv-panel) !important;
-                  height: 100%;
-                  max-height: 100%;
-                  overflow: hidden;
-                }
-            series:
-              - entity: sensor.solar_power_production  # TODO: remplacer par votre entité production solaire
-                name: Production
-                type: area
-                color: "#00FFC3"
-                stroke_width: 2
-                opacity: 0.15
-              - entity: sensor.home_power_consumption  # TODO: remplacer par votre entité consommation
-                name: Consommation
-                type: line
-                color: "#00E5FF"
-                stroke_width: 2
+                :host { flex: 1.2 1 0; align-self: stretch; height: 100%; }
+                #root { height: 100%; }
+            cards:
+              - type: custom:button-card
+                template: vssp_section_title
+                name: "{{ t('home.top_devices') }}"
 
-          # Cadre 2 — synthèse kW production / consommation (squelette, entités à brancher)
+              - type: custom:button-card
+                show_icon: false
+                show_name: false
+                show_state: false
+                tap_action:
+                  action: none
+                styles:
+                  grid:
+                    - grid-template-areas: '"list"'
+                  card:
+                    - background: transparent
+                    - box-shadow: none
+                    - border: none
+                    - border-radius: 0
+                    - padding: 0
+                    - cursor: default
+                  custom_fields:
+                    list:
+                      - display: block
+                      - width: 100%
+                      - height: 100%
+                      - overflow-y: auto
+                      - overflow-x: hidden
+                      - padding-right: 4px
+                      - scrollbar-width: thin
+                      - scrollbar-color: rgba(0,229,255,0.35) rgba(0,229,255,0.06)
+                custom_fields:
+                  list:
+                    card:
+                      type: vertical-stack
+                      cards:
+{% for d in energy_devices[:10] %}
+                        - type: custom:button-card
+                          template: vssp_energy_device_row
+                          entity: {{ d.power_entity }}
+                          name: "{{ d.name }}"
+                          icon: {{ d.icon }}
+                          variables:
+                            room: "{{ d.room }}"
+                            model: "{{ d.model | default('—', true) }}"
+                            energy_entity: {{ d.energy_entity }}
+                          tap_action:
+                            action: more-info
+
+{% endfor %}
+{% if not energy_devices %}
+                        - type: custom:button-card
+                          template: vssp_energy_device_row
+                          name: "{{ t('energy.empty.devices') }}"
+                          icon: mdi:help-circle-outline
+                          variables:
+                            room: "—"
+{% endif %}
+
+          # Cadre 2 — PRODUCTION / CONSOMMATION + leur courbe journalière
+          # (même série que l'ancien Cadre 1, déplacée ici sous les deux
+          # cartes plutôt que dans une colonne large séparée).
           - type: vertical-stack
             card_mod:
               style: |
                 :host {
-                  flex: 0.8 1 0;
+                  flex: 1 1 0;
                   align-self: stretch;
                   height: 100%;
                 }
@@ -283,6 +325,33 @@ views:
                 icon: mdi:flash
                 name: CONSOMMATION
                 entity: sensor.home_power_consumption  # TODO: remplacer par votre entité consommation
+              - type: custom:apexcharts-card
+                header:
+                  show: true
+                  title: "{{ t('home.production_consumption') }}"
+                  show_states: false
+                graph_span: 24h
+                card_mod:
+                  style: |
+                    :host { flex: 2 1 0; align-self: stretch; }
+                    ha-card {
+                      background: var(--osv-panel) !important;
+                      height: 100%;
+                      max-height: 100%;
+                      overflow: hidden;
+                    }
+                series:
+                  - entity: sensor.solar_power_production  # TODO: remplacer par votre entité production solaire
+                    name: Production
+                    type: area
+                    color: "#00FFC3"
+                    stroke_width: 2
+                    opacity: 0.15
+                  - entity: sensor.home_power_consumption  # TODO: remplacer par votre entité consommation
+                    name: Consommation
+                    type: line
+                    color: "#00E5FF"
+                    stroke_width: 2
 
       # --- Événements récents (aligné avec le bas de la sidebar) --------
       - type: logbook
