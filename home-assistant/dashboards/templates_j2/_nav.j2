@@ -1,100 +1,115 @@
 {# =====================================================================
-   Visio Sapiens — NAVIGATION RAIL (shared partial)
-   Include:  {% raw %}{% include '_nav.j2' %}{% endraw %}
+   Visio Sapiens — NAVIGATION RAIL (standalone fragment)
 
-   EN | The rail is DYNAMIC: it is rendered from the `nav` list composed by
-   EN | generate_dashboards.py as
-   EN |     nav_system.before_rooms + declared rooms + nav_system.after_rooms
-   EN | so its length is always 4 system entries + the number of rooms.
-   EN | Adding a bathroom in the admin console adds its entry to the rail on
-   EN | every dashboard at once. No navigation block is maintained by hand
-   EN | anywhere in the repository.
-   FR | Le bandeau est DYNAMIQUE : il est rendu depuis la liste `nav` composee
-   FR | par generate_dashboards.py comme
-   FR |     nav_system.before_rooms + pieces declarees + nav_system.after_rooms
-   FR | donc sa longueur vaut toujours 4 entrees systeme + le nombre de pieces.
-   FR | Ajouter une salle de bain dans la console admin ajoute son entree au
-   FR | bandeau sur tous les dashboards d'un coup. Aucun bloc de navigation
-   FR | n'est maintenu a la main dans le depot.
+   EN | STANDALONE ON PURPOSE. This used to be spliced inline into every
+   EN | dashboard via `{% include '_nav.j2' %}`, which meant a dashboard
+   EN | that generate_dashboards.py protects from overwrite once it exists
+   EN | (HOME, via --protect-existing) would keep whatever room list was
+   EN | current the last time it was actually (re)generated — stale room
+   EN | changes and all — while every unprotected dashboard (admin, core,
+   EN | energy, every room) always showed the current one. Rendered once
+   EN | per run into its own file (_nav_rail.yaml, written unconditionally,
+   EN | never protected) and pulled in by every dashboard via a native
+   EN | `!include _nav_rail.yaml`, the rail now comes from a single file
+   EN | Home Assistant re-reads on its own next display — the same file,
+   EN | always current, whether the dashboard around it was just
+   EN | regenerated or not.
+   EN | Consequence: this fragment can no longer know which dashboard it
+   EN | ends up in, so it can no longer highlight "the current page" the
+   EN | way `active_nav` used to (a value only the per-dashboard render
+   EN | knew). vssp_nav_button now does that highlighting itself, live in
+   EN | the browser, by comparing its own tap_action.navigation_path
+   EN | against window.location.pathname — see button_card_templates.yaml.
+   FR | AUTONOME VOLONTAIREMENT. Ce fragment etait auparavant integre en
+   FR | ligne dans chaque dashboard via `{% include '_nav.j2' %}`, ce qui
+   FR | voulait dire qu un dashboard que generate_dashboards.py protege
+   FR | contre l ecrasement une fois qu il existe (HOME, via
+   FR | --protect-existing) gardait la liste de pieces telle qu elle etait
+   FR | lors de sa derniere (re)generation reelle — changements perimes
+   FR | compris — alors que chaque dashboard non protege (admin, core,
+   FR | energy, chaque piece) montrait toujours la liste actuelle. Rendu
+   FR | une seule fois par execution dans son propre fichier
+   FR | (_nav_rail.yaml, ecrit sans condition, jamais protege) et tire par
+   FR | chaque dashboard via un `!include _nav_rail.yaml` natif, le bandeau
+   FR | vient desormais d un seul fichier que Home Assistant relit tout
+   FR | seul a son prochain affichage — le meme fichier, toujours a jour,
+   FR | que le dashboard autour vienne d etre regenere ou non.
+   FR | Consequence : ce fragment ne peut plus savoir dans quel dashboard
+   FR | il finit, donc il ne peut plus surligner « la page courante » comme
+   FR | le faisait `active_nav` (une valeur que seul le rendu par dashboard
+   FR | connaissait). vssp_nav_button fait desormais ce surlignage lui-meme,
+   FR | en direct dans le navigateur, en comparant son propre
+   FR | tap_action.navigation_path a window.location.pathname — voir
+   FR | button_card_templates.yaml.
 
    EN | EXPECTED CONTEXT / FR | CONTEXTE ATTENDU
      house       - name, tagline, logo
-     nav         - composed entry list
-     active_nav  - id of the current dashboard, highlighted
-     format      - 'tablet' | 'mobile', selects path vs path_mobile
+     nav         - composed entry list (generate_dashboards.py's build_nav)
    ================================================================== #}
-      - type: vertical-stack
-        view_layout:
-          grid-area: nav
-        card_mod:
-          style: |
-            :host {
-              display: flex;
-              flex-direction: column;
-              height: 100%;
-              width: 100%;
-              min-width: 200px;
-              background: rgba(5,11,18,0.85);
-              border-radius: 20px;
-              border: 1px solid rgba(0,229,255,0.18);
-              padding: 16px 10px;
-              box-shadow: 0 0 18px rgba(0,229,255,.12);
-              overflow-y: auto;
-              scrollbar-width: thin;
-              scrollbar-color: rgba(0,229,255,0.35) rgba(0,229,255,0.06);
-            }
-        cards:
-          - type: custom:button-card
-            template: vssp_sidebar_logo
-            icon: mdi:hexagon-outline
-            name: "{{ house.name }}"
-            label: "{{ house.tagline }}"
+type: vertical-stack
+view_layout:
+  grid-area: nav
+card_mod:
+  style: |
+    :host {
+      display: flex;
+      flex-direction: column;
+      height: 100%;
+      width: 100%;
+      min-width: 200px;
+      background: rgba(5,11,18,0.85);
+      border-radius: 20px;
+      border: 1px solid rgba(0,229,255,0.18);
+      padding: 16px 10px;
+      box-shadow: 0 0 18px rgba(0,229,255,.12);
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: rgba(0,229,255,0.35) rgba(0,229,255,0.06);
+    }
+cards:
+  - type: custom:button-card
+    template: vssp_sidebar_logo
+    icon: mdi:hexagon-outline
+    name: "{{ house.name }}"
+    label: "{{ house.tagline }}"
 
 {% for item in nav %}
-          - type: custom:button-card
-            template: vssp_nav_button
-            icon: {{ item.icon }}
-            name: {{ item.name }}
-            label: "{{ item.label }}"
-{% if item.id == active_nav %}
-            variables:
-              active: true
-{% endif %}
-            tap_action:
-              action: navigate
-{% if format == 'mobile' %}
-              navigation_path: {{ item.path_mobile }}
-{% else %}
-              navigation_path: {{ item.path }}
-{% endif %}
+  - type: custom:button-card
+    template: vssp_nav_button
+    icon: {{ item.icon }}
+    name: {{ item.name }}
+    label: "{{ item.label }}"
+    tap_action:
+      action: navigate
+      navigation_path: {{ item.path }}
 
 {% endfor %}
-          - type: custom:button-card
-            show_icon: false
-            show_name: false
-            show_label: false
-            tap_action:
-              action: none
-            custom_fields:
-              logo: >
-                <img src="{{ house.logo }}"
-                     style="width:100%;max-width:160px;display:block;margin:0 auto;mix-blend-mode:screen;filter:drop-shadow(0 0 8px rgba(0,229,255,.28));" />
-            styles:
-              card:
-                - background: transparent
-                - border: none
-                - box-shadow: none
-                - padding: 12px 6px 4px 6px
-              grid:
-                - grid-template-areas: '"logo"'
-              custom_fields:
-                logo:
-                  - width: 100%
-            card_mod:
-              style: |
-                :host { margin-top: auto; }
-                ha-card {
-                  background: transparent !important;
-                  border: none !important;
-                  box-shadow: none !important;
-                }
+  - type: custom:button-card
+    show_icon: false
+    show_name: false
+    show_label: false
+    tap_action:
+      action: none
+    custom_fields:
+      logo: >
+        <img src="{{ house.logo }}"
+             style="width:100%;max-width:160px;display:block;margin:0 auto;mix-blend-mode:screen;filter:drop-shadow(0 0 8px rgba(0,229,255,.28));" />
+    styles:
+      card:
+        - background: transparent
+        - border: none
+        - box-shadow: none
+        - padding: 12px 6px 4px 6px
+      grid:
+        - grid-template-areas: '"logo"'
+      custom_fields:
+        logo:
+          - width: 100%
+    card_mod:
+      style: |
+        :host { margin-top: auto; }
+        ha-card {
+          background: transparent !important;
+          border: none !important;
+          box-shadow: none !important;
+        }

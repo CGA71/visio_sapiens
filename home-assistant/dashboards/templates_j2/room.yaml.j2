@@ -135,7 +135,7 @@ views:
       # EN | NAVIGATION RAIL — dynamic, 4 system entries + rooms
       # FR | BANDEAU DE NAVIGATION — dynamique, 4 entrees systeme + pieces
       # ═══════════════════════════════════════════════════════════════
-{% include '_nav.j2' %}
+      - !include _nav_rail.yaml
 {% endif %}
 
 {% set mobile_order = ['climate', 'lights', 'security', 'appliances', 'shutters', 'audio'] %}
