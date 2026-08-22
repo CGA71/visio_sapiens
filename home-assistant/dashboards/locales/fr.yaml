@@ -253,6 +253,15 @@ admin:
   regenerate_core: RÉGÉNÉRER CORE
   regenerate_core_hint: Écrase le dashboard actuel (sauvegarde auto)
   regenerate_core_confirm: Régénérer CORE écrasera le dashboard actuel (une sauvegarde sera créée). Continuer ?
+  deactivate_home: DÉSACTIVER HOME
+  deactivate_home_hint: Le retire du bandeau de nav (sauvegarde auto, réversible via CRÉER)
+  deactivate_home_confirm: Désactiver HOME le retire du bandeau de navigation de tous les dashboards (une sauvegarde sera créée ; CRÉER HOME le fait revenir). Continuer ?
+  deactivate_energy: DÉSACTIVER ENERGY
+  deactivate_energy_hint: Le retire du bandeau de nav (sauvegarde auto, réversible via CRÉER)
+  deactivate_energy_confirm: Désactiver ENERGY le retire du bandeau de navigation de tous les dashboards (une sauvegarde sera créée ; CRÉER ENERGY le fait revenir). Continuer ?
+  deactivate_core: DÉSACTIVER CORE
+  deactivate_core_hint: Le retire du bandeau de nav (sauvegarde auto, réversible via CRÉER)
+  deactivate_core_confirm: Désactiver CORE le retire du bandeau de navigation de tous les dashboards (une sauvegarde sera créée ; CRÉER CORE le fait revenir). Continuer ?
   select_language: Langue de l'interface
   select_format: Format cible
   room_count: Nombre de pièces

@@ -364,6 +364,15 @@ admin:
   regenerate_core: REGENERATE CORE
   regenerate_core_hint: Overwrites the current dashboard (auto-backup)
   regenerate_core_confirm: Regenerating CORE will overwrite the current dashboard (a backup will be created). Continue?
+  deactivate_home: DEACTIVATE HOME
+  deactivate_home_hint: Removes it from the nav rail (auto-backup, reversible with CREATE)
+  deactivate_home_confirm: Deactivating HOME removes it from every dashboard's nav rail (a backup will be created; use CREATE HOME to bring it back). Continue?
+  deactivate_energy: DEACTIVATE ENERGY
+  deactivate_energy_hint: Removes it from the nav rail (auto-backup, reversible with CREATE)
+  deactivate_energy_confirm: Deactivating ENERGY removes it from every dashboard's nav rail (a backup will be created; use CREATE ENERGY to bring it back). Continue?
+  deactivate_core: DEACTIVATE CORE
+  deactivate_core_hint: Removes it from the nav rail (auto-backup, reversible with CREATE)
+  deactivate_core_confirm: Deactivating CORE removes it from every dashboard's nav rail (a backup will be created; use CREATE CORE to bring it back). Continue?
   select_language: Interface language
   select_format: Target format
   room_count: Number of rooms

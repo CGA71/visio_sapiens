@@ -509,6 +509,23 @@ views:
                     service: script.vssp_regenerate_home_dashboard
               - type: conditional
                 conditions:
+                  - entity: binary_sensor.vssp_dashboard_home_present
+                    state: "on"
+                card:
+                  type: custom:button-card
+                  template: vssp_admin_button
+                  icon: mdi:view-dashboard-remove
+                  name: "{{ t('admin.deactivate_home') }}"
+                  label: "{{ t('admin.deactivate_home_hint') }}"
+                  variables:
+                    danger: true
+                  confirmation:
+                    text: "{{ t('admin.deactivate_home_confirm') }}"
+                  tap_action:
+                    action: call-service
+                    service: script.vssp_deactivate_home_dashboard
+              - type: conditional
+                conditions:
                   - entity: binary_sensor.vssp_dashboard_energy_present
                     state_not: "on"
                 card:
@@ -539,6 +556,23 @@ views:
                     service: script.vssp_regenerate_energy_dashboard
               - type: conditional
                 conditions:
+                  - entity: binary_sensor.vssp_dashboard_energy_present
+                    state: "on"
+                card:
+                  type: custom:button-card
+                  template: vssp_admin_button
+                  icon: mdi:lightning-bolt-off
+                  name: "{{ t('admin.deactivate_energy') }}"
+                  label: "{{ t('admin.deactivate_energy_hint') }}"
+                  variables:
+                    danger: true
+                  confirmation:
+                    text: "{{ t('admin.deactivate_energy_confirm') }}"
+                  tap_action:
+                    action: call-service
+                    service: script.vssp_deactivate_energy_dashboard
+              - type: conditional
+                conditions:
                   - entity: binary_sensor.vssp_dashboard_core_present
                     state_not: "on"
                 card:
@@ -567,6 +601,23 @@ views:
                   tap_action:
                     action: call-service
                     service: script.vssp_regenerate_core_dashboard
+              - type: conditional
+                conditions:
+                  - entity: binary_sensor.vssp_dashboard_core_present
+                    state: "on"
+                card:
+                  type: custom:button-card
+                  template: vssp_admin_button
+                  icon: mdi:server-off
+                  name: "{{ t('admin.deactivate_core') }}"
+                  label: "{{ t('admin.deactivate_core_hint') }}"
+                  variables:
+                    danger: true
+                  confirmation:
+                    text: "{{ t('admin.deactivate_core_confirm') }}"
+                  tap_action:
+                    action: call-service
+                    service: script.vssp_deactivate_core_dashboard
           # EN | The generated dashboards, listed from the model rather than
           # EN | typed here — the list cannot drift from what exists.
           # FR | Les dashboards generes, listes depuis le modele plutot que

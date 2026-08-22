@@ -60,16 +60,39 @@ input_text:
     max: 255
 
 # --------------------------------------------------------------------
-# ETAT DES DASHBOARDS SYSTEME (ENERGY, CORE)
+# ETAT DES DASHBOARDS SYSTEME (HOME, ENERGY, CORE)
 # --------------------------------------------------------------------
-# ENERGY et CORE ne sont pas rattaches a une piece Home Assistant : ils
-# ne passent donc jamais par le formulaire creation/modification/
+# HOME, ENERGY et CORE ne sont pas rattaches a une piece Home Assistant :
+# ils ne passent donc jamais par le formulaire creation/modification/
 # suppression du wizard. Le panneau ADMIN a besoin de savoir s'ils
-# existent pour proposer soit CREER, soit REGENERER.
+# existent pour proposer soit CREER, soit REGENERER/DESACTIVER.
+#
+# EN | vssp_dashboard_home_present was missing here even though
+# EN | admin.yaml.j2's CREER/REGENERER HOME conditional already reads it —
+# EN | with no entity behind it, both branches of that `type: conditional`
+# EN | evaluate false and NEITHER button ever renders. This is that
+# EN | missing entity.
+# FR | vssp_dashboard_home_present manquait ici alors que le conditional
+# FR | CREER/REGENERER HOME de admin.yaml.j2 le lit deja — sans entite
+# FR | derriere, les deux branches de ce `type: conditional` valent faux et
+# FR | AUCUN des deux boutons ne s affiche jamais. C est cette entite
+# FR | manquante.
 #
 # `command_line` est une integration de premier niveau : si votre
 # configuration.yaml en a deja une, fusionnez seulement les entrees.
 command_line:
+  - binary_sensor:
+      name: "VSSP Dashboard Home Present"
+      unique_id: vssp_dashboard_home_present
+      command: >-
+        test -s /config/dashboards/views/home.yaml
+        && echo ON || echo OFF
+      payload_on: "ON"
+      payload_off: "OFF"
+      # Pas de device_class : « on » signifie ici « present », pas
+      # « probleme ». Un device_class: problem inverserait le sens.
+      scan_interval: 60
+
   - binary_sensor:
       name: "VSSP Dashboard Energy Present"
       unique_id: vssp_dashboard_energy_present
@@ -219,6 +242,15 @@ shell_command:
     cp /config/dashboards/views/home.yaml
     /config/vssp/backups/home_$(date +%Y%m%d_%H%M%S).yaml || true"
 
+  # DESACTIVER HOME : retire le tablette ET le mobile, pour que
+  # binary_sensor.vssp_dashboard_home_present (qui ne surveille que le
+  # premier) et le bandeau de nav (qui n'affiche HOME que si ce meme
+  # fichier existe, cf. OPTIONAL_SYSTEM_NAV_IDS) s'accordent, sans
+  # laisser le mobile orphelin derriere.
+  vssp_delete_home: >-
+    rm -f /config/dashboards/views/home.yaml
+    /config/dashboards/views/home_mobile.yaml
+
   # CORE, contrairement a HOME, n'est jamais protege : comme ENERGY, il
   # reste une projection automatique du modele, jamais destine a une
   # edition manuelle.
@@ -251,6 +283,10 @@ shell_command:
     cp /config/dashboards/views/core.yaml
     /config/vssp/backups/core_$(date +%Y%m%d_%H%M%S).yaml || true"
 
+  vssp_delete_core: >-
+    rm -f /config/dashboards/views/core.yaml
+    /config/dashboards/views/core_mobile.yaml
+
   vssp_create_energy: >-
     python3 /config/vssp/generate_dashboards.py
     --only energy --if-missing
@@ -280,6 +316,10 @@ shell_command:
     [ -f /config/dashboards/views/energy.yaml ] &&
     cp /config/dashboards/views/energy.yaml
     /config/vssp/backups/energy_$(date +%Y%m%d_%H%M%S).yaml || true"
+
+  vssp_delete_energy: >-
+    rm -f /config/dashboards/views/energy.yaml
+    /config/dashboards/views/energy_mobile.yaml
 
   # ------------------------------------------------------------------
   # ENERGY — synchronisation du parc d'appareils mesures
@@ -489,6 +529,158 @@ script:
               relancez. Sauvegarde de la version precedente dans
               /config/vssp/backups/.
             {% endif %}
+
+  # Bouton DESACTIVER LE DASHBOARD ENERGY du panneau ADMIN. Sauvegarde
+  # puis retire tablette + mobile ; binary_sensor.vssp_dashboard_energy_present
+  # repasse a OFF au prochain scan_interval (60 s), donc ce bouton
+  # redevient CREER ENERGY au prochain affichage de ce panneau.
+  # EN | The bandeau on OTHER dashboards (home, admin, core, every room)
+  # EN | is baked in at THEIR OWN last generation — it does not know
+  # EN | ENERGY is gone until each of them is regenerated too. Deleting
+  # EN | energy.yaml makes /vssp-energy/energy itself unreachable right
+  # EN | away; the (now dead) ENERGY link on every other page's rail only
+  # EN | disappears after RÉGÉNÉRER LES DASHBOARDS (script.vssp_run_generate)
+  # EN | or the next full CI deploy.
+  # FR | Le bandeau des AUTRES dashboards (home, admin, core, chaque
+  # FR | piece) est fige a LEUR propre derniere generation — il ne sait
+  # FR | pas qu ENERGY a disparu tant que chacun d eux n a pas ete
+  # FR | regenere aussi. Supprimer energy.yaml rend /vssp-energy/energy
+  # FR | lui-meme injoignable immediatement ; le lien ENERGY (desormais
+  # FR | mort) sur le bandeau de chaque autre page ne disparait qu apres
+  # FR | RÉGÉNÉRER LES DASHBOARDS (script.vssp_run_generate) ou le
+  # FR | prochain deploiement CI complet.
+  vssp_deactivate_energy_dashboard:
+    alias: "Visio Sapiens — Désactiver le dashboard ENERGY"
+    sequence:
+      - service: shell_command.vssp_backup_energy
+      - service: shell_command.vssp_delete_energy
+      - service: persistent_notification.create
+        data:
+          title: "Visio Sapiens — Dashboard ENERGY désactivé"
+          message: >
+            Une sauvegarde a été conservée dans /config/vssp/backups/.
+            Le dashboard ENERGY est immédiatement injoignable, mais son
+            lien reste visible dans le bandeau des autres pages tant
+            qu'elles ne sont pas régénérées : utilisez RÉGÉNÉRER LES
+            DASHBOARDS ci-dessus pour le faire disparaître partout d'un
+            coup.
+
+  # Bouton CREER LE DASHBOARD HOME du panneau ADMIN.
+  # Idempotent : generate_dashboards.py protege deja HOME par defaut
+  # (DEFAULT_PROTECTED_DASHBOARD_IDS = "home"), donc ce shell_command
+  # n'ecrase jamais un HOME existant meme sans --if-missing.
+  vssp_create_home_dashboard:
+    alias: "Visio Sapiens — Créer le dashboard HOME"
+    sequence:
+      - service: shell_command.vssp_create_home
+      # Pas de service de rechargement : `lovelace.reload` n'existe pas
+      # dans Home Assistant. Un dashboard en mode YAML est relu tout seul
+      # au prochain affichage (HA compare la date du fichier).
+      - delay: "00:00:05"
+      - service: persistent_notification.create
+        data:
+          title: "Visio Sapiens — Dashboard HOME"
+          message: >
+            {% if is_state('binary_sensor.vssp_dashboard_home_present', 'on') %}
+              Dashboard HOME disponible sur /visio-sapiens/home.
+              Rafraichissez l'onglet (Ctrl+Maj+R) pour le voir.
+            {% else %}
+              La génération a échoué. Consultez
+              /config/www/vssp/preview_status.json pour le détail des
+              erreurs de validation du modèle.
+            {% endif %}
+
+  # Bouton REGENERER : ecrase volontairement HOME (apres sauvegarde) —
+  # seul appelant qui passe --protect-existing "" pour s'exempter de la
+  # protection par defaut, voir vssp_regenerate_home ci-dessus.
+  vssp_regenerate_home_dashboard:
+    alias: "Visio Sapiens — Régénérer le dashboard HOME"
+    sequence:
+      - service: shell_command.vssp_backup_home
+      - service: shell_command.vssp_regenerate_home
+      - service: persistent_notification.create
+        data:
+          title: "Visio Sapiens — Dashboard HOME régénéré"
+          message: >
+            Toute modification manuelle de la mise en page a été
+            écrasée. Une sauvegarde de la version précédente a été
+            conservée dans /config/vssp/backups/. Rafraichissez
+            l'onglet (Ctrl+Maj+R).
+
+  # Bouton DESACTIVER LE DASHBOARD HOME du panneau ADMIN.
+  # FR | Meme limite qu ENERGY (voir vssp_deactivate_energy_dashboard) :
+  # FR | le bandeau des autres pages ne perd le lien HOME qu apres
+  # FR | RÉGÉNÉRER LES DASHBOARDS ou le prochain deploiement CI.
+  vssp_deactivate_home_dashboard:
+    alias: "Visio Sapiens — Désactiver le dashboard HOME"
+    sequence:
+      - service: shell_command.vssp_backup_home
+      - service: shell_command.vssp_delete_home
+      - service: persistent_notification.create
+        data:
+          title: "Visio Sapiens — Dashboard HOME désactivé"
+          message: >
+            Une sauvegarde a été conservée dans /config/vssp/backups/.
+            Le dashboard HOME est immédiatement injoignable, mais son
+            lien reste visible dans le bandeau des autres pages tant
+            qu'elles ne sont pas régénérées : utilisez RÉGÉNÉRER LES
+            DASHBOARDS ci-dessus pour le faire disparaître partout d'un
+            coup.
+
+  # Bouton CREER LE DASHBOARD CORE du panneau ADMIN. Idempotent
+  # (--if-missing) : CORE n'est jamais destine a une edition manuelle,
+  # contrairement a HOME, donc rien n'a besoin d'etre protege ici.
+  vssp_create_core_dashboard:
+    alias: "Visio Sapiens — Créer le dashboard CORE"
+    sequence:
+      - service: shell_command.vssp_create_core
+      - delay: "00:00:05"
+      - service: persistent_notification.create
+        data:
+          title: "Visio Sapiens — Dashboard CORE"
+          message: >
+            {% if is_state('binary_sensor.vssp_dashboard_core_present', 'on') %}
+              Dashboard CORE disponible sur /visio-sapiens-core/core.
+              Rafraichissez l'onglet (Ctrl+Maj+R) pour le voir.
+            {% else %}
+              La génération a échoué. Consultez
+              /config/www/vssp/preview_status.json pour le détail des
+              erreurs de validation du modèle.
+            {% endif %}
+
+  # Bouton REGENERER : ecrase volontairement CORE (apres sauvegarde).
+  vssp_regenerate_core_dashboard:
+    alias: "Visio Sapiens — Régénérer le dashboard CORE"
+    sequence:
+      - service: shell_command.vssp_backup_core
+      - service: shell_command.vssp_regenerate_core
+      - service: persistent_notification.create
+        data:
+          title: "Visio Sapiens — Dashboard CORE régénéré"
+          message: >
+            Une sauvegarde de la version précédente a été conservée
+            dans /config/vssp/backups/. Rafraichissez l'onglet
+            (Ctrl+Maj+R).
+
+  # Bouton DESACTIVER LE DASHBOARD CORE du panneau ADMIN.
+  # FR | Meme limite qu ENERGY (voir vssp_deactivate_energy_dashboard) :
+  # FR | le bandeau des autres pages ne perd le lien CORE qu apres
+  # FR | RÉGÉNÉRER LES DASHBOARDS ou le prochain deploiement CI.
+  vssp_deactivate_core_dashboard:
+    alias: "Visio Sapiens — Désactiver le dashboard CORE"
+    sequence:
+      - service: shell_command.vssp_backup_core
+      - service: shell_command.vssp_delete_core
+      - service: persistent_notification.create
+        data:
+          title: "Visio Sapiens — Dashboard CORE désactivé"
+          message: >
+            Une sauvegarde a été conservée dans /config/vssp/backups/.
+            Le dashboard CORE est immédiatement injoignable, mais son
+            lien reste visible dans le bandeau des autres pages tant
+            qu'elles ne sont pas régénérées : utilisez RÉGÉNÉRER LES
+            DASHBOARDS ci-dessus pour le faire disparaître partout d'un
+            coup.
 
   # Bouton SYNC ENERGY du panneau ADMIN : resynchronise les tableaux
   # « Consommation par appareil » et « Tableau electrique » avec les
