@@ -124,7 +124,7 @@ views:
                 const m = String(d.getMinutes()).padStart(2,'0');
                 const jours = ['Dimanche','Lundi','Mardi','Mercredi','Jeudi','Vendredi','Samedi'];
                 const mois = ['janvier','février','mars','avril','mai','juin','juillet','août','septembre','octobre','novembre','décembre'];
-                return `<div style="font-family:Orbitron,sans-serif;font-size:24px;color:#00E5FF;line-height:1;">${h}:${m}</div>
+                return `<div style="font-family:Orbitron,sans-serif;font-size:24px;color:#FFFFFF;line-height:1;">${h}:${m}</div>
                         <div style="font-size:11px;color:#8FB6C9;letter-spacing:.5px;margin-top:4px;">
                           ${jours[d.getDay()]} ${d.getDate()} ${mois[d.getMonth()]} ${d.getFullYear()}</div>`;
               ]]]
