@@ -717,60 +717,45 @@ views:
                             room: "—"
 {% endif %}
 
-          # Cadre 2 — PRODUCTION puis son historique, CONSOMMATION puis le
-          # sien : deux courbes a un seul flux chacune, empilees sous leur
-          # propre metrique. Hauteurs fixes (et non plus flex sur toute la
-          # hauteur de la ligne) puisque ce cadre est maintenant empile sous
-          # le Cadre 1 plutot que seul sur sa propre ligne pleine hauteur.
-          - type: vertical-stack
-            cards:
-              - type: custom:button-card
-                template: vssp_metric
-                show_icon: true
-                icon: mdi:solar-power
-                name: PRODUCTION
-                entity: sensor.solar_power_production  # TODO: remplacer par votre entité production solaire
-              - type: custom:apexcharts-card
-                header:
-                  show: false
-                graph_span: 24h
-                card_mod:
-                  style: |
-                    ha-card {
-                      background: var(--osv-panel) !important;
-                      height: 110px;
-                      overflow: hidden;
-                    }
-                series:
-                  - entity: sensor.solar_power_production  # TODO: remplacer par votre entité production solaire
-                    name: Production
-                    type: area
-                    color: "#00FFC3"
-                    stroke_width: 2
-                    opacity: 0.15
-              - type: custom:button-card
-                template: vssp_metric
-                show_icon: true
-                icon: mdi:flash
-                name: CONSOMMATION
-                entity: sensor.home_power_consumption  # TODO: remplacer par votre entité consommation
-              - type: custom:apexcharts-card
-                header:
-                  show: false
-                graph_span: 24h
-                card_mod:
-                  style: |
-                    ha-card {
-                      background: var(--osv-panel) !important;
-                      height: 110px;
-                      overflow: hidden;
-                    }
-                series:
-                  - entity: sensor.home_power_consumption  # TODO: remplacer par votre entité consommation
-                    name: Consommation
-                    type: line
-                    color: "#00E5FF"
-                    stroke_width: 2
+          # Cadre 2 — Chatbot.
+          # EN | Was PRODUCTION/CONSOMMATION + their charts, removed per
+          # EN | request. Placeholder frame only — no chat backend wired up
+          # EN | yet. To embed an actual assistant, replace this
+          # EN | button-card with e.g. a `type: iframe` pointing at the
+          # EN | chat UI's URL, or a `custom:` card for whatever
+          # EN | integration ends up providing it (HA's own Assist,
+          # EN | a self-hosted widget...).
+          # FR | Etait PRODUCTION/CONSOMMATION + leurs courbes, retire sur
+          # FR | demande. Simple cadre d'accueil pour l'instant — aucun
+          # FR | moteur de chat branche. Pour integrer un assistant reel,
+          # FR | remplacer ce button-card par ex. par un `type: iframe`
+          # FR | pointant vers l'URL de l'interface de chat, ou une carte
+          # FR | `custom:` selon l'integration qui finira par le fournir
+          # FR | (Assist de HA, un widget auto-heberge...).
+          - type: custom:button-card
+            template: vssp_panel
+            show_name: true
+            show_label: true
+            name: "{{ t('home.chatbot') }}"
+            label: "{{ t('home.chatbot_hint') }}"
+            icon: mdi:chat-processing-outline
+            show_icon: true
+            styles:
+              card:
+                - height: 100%
+                - justify-content: center
+                - align-items: center
+              name:
+                - color: "#B8E8F5"
+                - font-size: 14px
+                - letter-spacing: 2px
+              label:
+                - color: "#56707E"
+                - font-size: 11px
+                - margin-top: 4px
+              icon:
+                - color: "#00E5FF"
+                - "--mdc-icon-size": 36px
 
 
     card_mod:

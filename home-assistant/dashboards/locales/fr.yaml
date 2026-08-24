@@ -272,6 +272,8 @@ admin:
 home:
   intercom: Interphone
   audio_stream: Flux audio
+  chatbot: Chatbot
+  chatbot_hint: Assistant conversationnel
   production_consumption: "PRODUCTION & CONSOMMATION"
   top_devices: "TOP 10 CONSOMMATION"
   kpi:

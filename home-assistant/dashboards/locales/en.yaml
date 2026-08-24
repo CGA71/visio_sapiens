@@ -387,6 +387,8 @@ admin:
 home:
   intercom: Intercom
   audio_stream: Audio stream
+  chatbot: Chatbot
+  chatbot_hint: Conversational assistant
   production_consumption: "PRODUCTION & CONSUMPTION"
   top_devices: "TOP 10 CONSUMPTION"
   kpi:
