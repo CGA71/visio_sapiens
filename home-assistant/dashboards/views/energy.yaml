@@ -134,10 +134,15 @@ views:
                 - border: 1px solid rgba(0,229,255,0.28)
                 - border-radius: 20px
                 - box-shadow: 0 0 18px rgba(0,229,255,.12)
-                - padding: 0 20px
+                - padding: 6px 20px
+              grid:
+                - grid-template-areas: '"l"'
+                - grid-template-rows: min-content
+                - align-content: start
+                - justify-items: end
               label:
-                - justify-self: start
-                - text-align: left
+                - justify-self: end
+                - text-align: right
             card_mod:
               style: |
                 :host { flex: 1 1 0; }

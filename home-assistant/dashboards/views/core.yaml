@@ -135,10 +135,10 @@ views:
                 - grid-template-areas: '"l"'
                 - grid-template-rows: min-content   # la ligne ne prend que la hauteur du texte
                 - align-content: start              # <- LE réglage clé : colle la grille en haut
-                - justify-items: center
+                - justify-items: end
               label:
-                - justify-self: center
-                - text-align: center
+                - justify-self: end
+                - text-align: right
             card_mod:
               style: |
                 :host { flex: 1 1 0; }
