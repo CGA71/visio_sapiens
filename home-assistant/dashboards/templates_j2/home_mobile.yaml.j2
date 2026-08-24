@@ -581,7 +581,9 @@ views:
         clock_position: top
         clock_format: 24h
         overlay_opacity: 0.1
-        language: fr
+        # EN | Was hardcoded `fr` — see home.yaml.j2's weather card for why.
+        # FR | Etait code en dur `fr` — voir la carte meteo de home.yaml.j2.
+        language: "{{ locale }}"
         wind_speed_unit: ms
         sunrise_entity: ""
         sunset_entity: ""

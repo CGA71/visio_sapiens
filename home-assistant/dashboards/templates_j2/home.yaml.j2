@@ -551,7 +551,17 @@ views:
         clock_position: top
         clock_format: 24h
         overlay_opacity: 0.1
-        language: fr
+        # EN | Was hardcoded `fr` — the card's own internal UI strings
+        # EN | ("Ressenti", weekday names, etc.) never followed the site's
+        # EN | locale, French even on an English build. `locale` is the
+        # EN | short code from the same catalogue every t() call uses
+        # EN | ('fr'/'en'), injected by the generator.
+        # FR | Etait code en dur `fr` — les chaines d'interface propres a la
+        # FR | carte (« Ressenti », noms de jours, etc.) ne suivaient jamais
+        # FR | la langue du site, francaises meme sur une build anglaise.
+        # FR | `locale` est le code court venant du meme catalogue que
+        # FR | chaque appel t(), injecte par le generateur.
+        language: "{{ locale }}"
         wind_speed_unit: ms
         sunrise_entity: ""
         sunset_entity: ""        
@@ -608,9 +618,42 @@ views:
           # entrees de energy_devices au lieu de la liste complete.
           - type: vertical-stack
             cards:
+              # EN | Not `template: vssp_section_title` — that template is
+              # EN | shared by every panel title across the whole project
+              # EN | (energy.yaml.j2, core.yaml, room panels...), all
+              # EN | left-aligned by design. Centering it there would
+              # EN | recentre every one of them. Inlined here instead,
+              # EN | identical styling except justify-content/justify-self:
+              # EN | center — scoped to this one title only.
+              # FR | Pas `template: vssp_section_title` — ce template est
+              # FR | partage par tous les titres de panneau du projet
+              # FR | (energy.yaml.j2, core.yaml, panneaux de piece...), tous
+              # FR | alignes a gauche par conception. Le centrer la-bas
+              # FR | recentrerait chacun d'entre eux. Mis en ligne ici a la
+              # FR | place, style identique sauf justify-content/
+              # FR | justify-self: center — limite a ce seul titre.
               - type: custom:button-card
-                template: vssp_section_title
+                show_icon: false
+                show_state: false
+                show_label: false
                 name: "{{ t('home.top_devices') }}"
+                styles:
+                  card:
+                    - background: transparent
+                    - box-shadow: none
+                    - border: none
+                    - padding: 2px 2px 10px 2px
+                    - justify-content: center
+                    - cursor: default
+                    - pointer-events: none
+                  name:
+                    - color: "#FFFFFF"
+                    - font-size: 15px
+                    - font-weight: 600
+                    - letter-spacing: 1px
+                    - justify-self: center
+                    - text-align: center
+                    - font-family: "Orbitron, sans-serif"
 
               # EN | Fixed pixel height, NOT height:100% — a percentage here
               # EN | has nothing concrete to resolve against, so the list
