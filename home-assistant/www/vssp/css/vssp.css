@@ -288,7 +288,8 @@ ha-card:hover{
    -------------------------------------------------------------------------- */
 .osv-datetime{
   display:flex;
-  align-items:center;
+  align-items:flex-start;
+  justify-content:flex-end;
   gap: 12px;
   height:100%;
   padding: 10px 14px;
@@ -304,12 +305,14 @@ ha-card:hover{
   font-size: 20px;
   font-weight: 700;
   line-height: 1.1;
+  text-align: right;
 }
 .osv-datetime .osv-datetime-date{
   color: var(--osv-text-dim);
   font-size: 11px;
   letter-spacing: .5px;
   text-transform: capitalize;
+  text-align: right;
 }
 /* --------------------------------------------------------------------------
    AD BANNER — bandeau publicitaire défilant (used by <osv-ad-banner-card>)
