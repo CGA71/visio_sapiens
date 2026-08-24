@@ -94,18 +94,177 @@ views:
         cards:
           - type: horizontal-stack
             cards:
-              # Case 1 — System Status (vert/orange/rouge, voir vssp_home_status.yaml)
+              # Case 1 — System Status. Same fix as home.yaml.j2's Case 1 —
+              # see the comment there: sensor.vssp_core_health read entity
+              # ids from an unconfigured systemmonitor integration and
+              # always showed "unknown". Keyword-searches for a CPU/RAM
+              # sensor client-side instead, same technique as core.html.
               - type: custom:button-card
-                template: vssp_status_indicator
+                icon: mdi:circle
+                show_state: false
+                show_label: true
                 name: "{{ t('home.kpi.system_status') }}"
-                label: "{{ t('home.kpi.system_status_hint') }}"
-                entity: sensor.vssp_core_health
-              # Case 2 — Energy Status (production vs consommation)
+                label: >
+                  [[[
+                    const norm = s => (s || '').toLowerCase();
+                    const find = (keys, exclude) => Object.values(states).find(e => {
+                      const c = norm(e.entity_id) + ' ' + norm(e.attributes.friendly_name);
+                      return keys.every(k => c.includes(k)) && !(exclude || []).some(x => c.includes(x));
+                    });
+                    const cpu = find(['cpu', 'use'], ['core', 'temp']) || find(['processor_use']);
+                    const ram = find(['ram', 'use'], ['swap']) || find(['memory_use_percent']);
+                    if (!cpu && !ram) return "{{ t('home.kpi.system_status_hint') }}";
+                    const c = cpu ? Math.round(parseFloat(cpu.state)) + '%' : '—';
+                    const r = ram ? Math.round(parseFloat(ram.state)) + '%' : '—';
+                    return 'CPU ' + c + ' · RAM ' + r;
+                  ]]]
+                styles:
+                  grid:
+                    - grid-template-areas: '"n" "i" "l"'
+                    - grid-template-rows: min-content min-content min-content
+                    - row-gap: 10px
+                    - justify-items: start
+                  card:
+                    - background: rgba(8,18,28,0.72)
+                    - border-radius: 18px
+                    - border: 1px solid rgba(0,229,255,0.20)
+                    - padding: 14px 18px
+                    - height: 100%
+                  name:
+                    - color: "#FFFFFF"
+                    - font-size: 13px
+                    - font-weight: 700
+                    - letter-spacing: 0.5px
+                    - justify-self: start
+                  icon:
+                    - color: >
+                        [[[
+                          const norm = s => (s || '').toLowerCase();
+                          const find = (keys, exclude) => Object.values(states).find(e => {
+                            const c = norm(e.entity_id) + ' ' + norm(e.attributes.friendly_name);
+                            return keys.every(k => c.includes(k)) && !(exclude || []).some(x => c.includes(x));
+                          });
+                          const cpu = find(['cpu', 'use'], ['core', 'temp']) || find(['processor_use']);
+                          const ram = find(['ram', 'use'], ['swap']) || find(['memory_use_percent']);
+                          if (!cpu && !ram) return "#56707E";
+                          const v = Math.max(cpu ? parseFloat(cpu.state) : 0, ram ? parseFloat(ram.state) : 0);
+                          if (v >= 90) return "#FF3D71";
+                          if (v >= 70) return "#FFA726";
+                          return "#00FFC3";
+                        ]]]
+                    - "--mdc-icon-size": 20px
+                    - justify-self: start
+                    - filter: >
+                        [[[
+                          const norm = s => (s || '').toLowerCase();
+                          const find = (keys, exclude) => Object.values(states).find(e => {
+                            const c = norm(e.entity_id) + ' ' + norm(e.attributes.friendly_name);
+                            return keys.every(k => c.includes(k)) && !(exclude || []).some(x => c.includes(x));
+                          });
+                          const cpu = find(['cpu', 'use'], ['core', 'temp']) || find(['processor_use']);
+                          const ram = find(['ram', 'use'], ['swap']) || find(['memory_use_percent']);
+                          if (!cpu && !ram) return "none";
+                          const v = Math.max(cpu ? parseFloat(cpu.state) : 0, ram ? parseFloat(ram.state) : 0);
+                          if (v >= 90) return "drop-shadow(0 0 8px rgba(255,61,113,.6))";
+                          if (v >= 70) return "drop-shadow(0 0 8px rgba(255,167,38,.6))";
+                          return "drop-shadow(0 0 8px rgba(0,255,195,.6))";
+                        ]]]
+                  label:
+                    - color: "#56707E"
+                    - font-size: 11px
+                    - justify-self: start
+
+              # Case 2 — Energy Status. Same fix as home.yaml.j2's Case 2 —
+              # see the comment there: sensor.solar_power_production does
+              # not exist on this install, so the old binary_sensor read
+              # "off"/red at all times. Tries the declared solar entity,
+              # falls back to a keyword search, and reads neutral/grey
+              # (never a false "critical") if neither exists.
               - type: custom:button-card
-                template: vssp_status_indicator
+                icon: mdi:circle
+                show_state: false
+                show_label: true
                 name: "{{ t('home.kpi.energy_status') }}"
-                label: "{{ t('home.kpi.energy_status_hint') }}"
-                entity: binary_sensor.vssp_energy_health
+                label: >
+                  [[[
+                    const cons = states['{{ energy.totals.power }}'];
+                    let prod = states['{{ energy.solar.power }}'];
+                    if (!prod || isNaN(parseFloat(prod.state))) {
+                      const norm = s => (s || '').toLowerCase();
+                      prod = Object.values(states).find(e => {
+                        const c = norm(e.entity_id) + ' ' + norm(e.attributes.friendly_name);
+                        return c.includes('solar') && c.includes('power')
+                          && !c.includes('today') && !c.includes('month') && !c.includes('year');
+                      });
+                    }
+                    if (!prod || isNaN(parseFloat(prod.state))) return "{{ t('home.kpi.energy_status_hint') }}";
+                    const p = Math.round(parseFloat(prod.state));
+                    const c = cons && !isNaN(parseFloat(cons.state)) ? Math.round(parseFloat(cons.state)) : '—';
+                    return p + 'W · ' + c + 'W';
+                  ]]]
+                styles:
+                  grid:
+                    - grid-template-areas: '"n" "i" "l"'
+                    - grid-template-rows: min-content min-content min-content
+                    - row-gap: 10px
+                    - justify-items: start
+                  card:
+                    - background: rgba(8,18,28,0.72)
+                    - border-radius: 18px
+                    - border: 1px solid rgba(0,229,255,0.20)
+                    - padding: 14px 18px
+                    - height: 100%
+                  name:
+                    - color: "#FFFFFF"
+                    - font-size: 13px
+                    - font-weight: 700
+                    - letter-spacing: 0.5px
+                    - justify-self: start
+                  icon:
+                    - color: >
+                        [[[
+                          const cons = states['{{ energy.totals.power }}'];
+                          let prod = states['{{ energy.solar.power }}'];
+                          if (!prod || isNaN(parseFloat(prod.state))) {
+                            const norm = s => (s || '').toLowerCase();
+                            prod = Object.values(states).find(e => {
+                              const c = norm(e.entity_id) + ' ' + norm(e.attributes.friendly_name);
+                              return c.includes('solar') && c.includes('power')
+                                && !c.includes('today') && !c.includes('month') && !c.includes('year');
+                            });
+                          }
+                          if (!prod || isNaN(parseFloat(prod.state))) return "#56707E";
+                          const p = parseFloat(prod.state);
+                          const c = cons && !isNaN(parseFloat(cons.state)) ? parseFloat(cons.state) : 0;
+                          if (p >= c) return "#00FFC3";
+                          if (c > 0 && p / c >= 0.5) return "#FFA726";
+                          return "#FF3D71";
+                        ]]]
+                    - "--mdc-icon-size": 20px
+                    - justify-self: start
+                    - filter: >
+                        [[[
+                          const cons = states['{{ energy.totals.power }}'];
+                          let prod = states['{{ energy.solar.power }}'];
+                          if (!prod || isNaN(parseFloat(prod.state))) {
+                            const norm = s => (s || '').toLowerCase();
+                            prod = Object.values(states).find(e => {
+                              const c = norm(e.entity_id) + ' ' + norm(e.attributes.friendly_name);
+                              return c.includes('solar') && c.includes('power')
+                                && !c.includes('today') && !c.includes('month') && !c.includes('year');
+                            });
+                          }
+                          if (!prod || isNaN(parseFloat(prod.state))) return "none";
+                          const p = parseFloat(prod.state);
+                          const c = cons && !isNaN(parseFloat(cons.state)) ? parseFloat(cons.state) : 0;
+                          if (p >= c) return "drop-shadow(0 0 8px rgba(0,255,195,.6))";
+                          if (c > 0 && p / c >= 0.5) return "drop-shadow(0 0 8px rgba(255,167,38,.6))";
+                          return "drop-shadow(0 0 8px rgba(255,61,113,.6))";
+                        ]]]
+                  label:
+                    - color: "#56707E"
+                    - font-size: 11px
+                    - justify-self: start
 
           - type: horizontal-stack
             cards:
@@ -114,12 +273,38 @@ views:
                 template: vssp_kpi_card
                 icon: mdi:door-open
                 name: "{{ t('home.kpi.active_rooms') }}"
-                entity: sensor.vssp_pieces_actives
+                # EN | Same fix as home.yaml.j2's Case 3 — see the comment
+                # EN | there. area_entities()/areas() never sees this
+                # EN | project's room↔device mapping (model/house.yaml
+                # EN | `rooms[].slots`), so it always read ~0. Baking each
+                # EN | room's actual lights/appliances entities in at
+                # EN | generate time and checking their state client-side
+                # EN | fixes it without a HA-side sensor.
+                # FR | Meme correctif que le Cas 3 de home.yaml.j2 — voir le
+                # FR | commentaire la-bas. area_entities()/areas() ne voit
+                # FR | jamais la correspondance piece↔appareil de ce projet
+                # FR | (`rooms[].slots` de model/house.yaml), donc lisait
+                # FR | toujours ~0. Figer les entites lights/appliances
+                # FR | reelles de chaque piece au moment de la generation et
+                # FR | verifier leur etat cote client corrige ca sans capteur
+                # FR | HA.
+{% set active_rooms_map = [] %}
+{% for r in rooms_rendered %}
+{% set ns = namespace(ents=[]) %}
+{% for slot in r.slots.values() %}
+{% if slot.id in ['lights', 'appliances'] %}
+{% set ns.ents = ns.ents + slot.entities %}
+{% endif %}
+{% endfor %}
+{% set _ = active_rooms_map.append(ns.ents) %}
+{% endfor %}
                 state_display: >
                   [[[
-                    const s = states['sensor.vssp_pieces_actives'];
-                    if (!s) return "- / -";
-                    return s.state + " / " + (s.attributes.total_areas ?? "-");
+                    const perRoom = {{ active_rooms_map | tojson }};
+                    const active = perRoom.filter(ents =>
+                      ents.some(e => states[e] && states[e].state === 'on')
+                    ).length;
+                    return active + " / " + perRoom.length;
                   ]]]
                 label: "{{ t('home.kpi.active_rooms_hint') }}"
                 variables:

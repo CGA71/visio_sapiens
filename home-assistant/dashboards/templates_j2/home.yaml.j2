@@ -106,34 +106,283 @@ views:
           grid-column: kpi1 / kpi5
         cards:
           # Case 1 — System Status : vert nominal / orange dégradé / rouge
-          # redémarrage nécessaire, depuis sensor.vssp_core_health
-          # (vssp_home_status.yaml — CPU/RAM, seuils 70 % / 90 %).
+          # critique, seuils 70 % / 90 %.
+          #
+          # EN | Was `template: vssp_status_indicator` + entity:
+          # EN | sensor.vssp_core_health, itself reading
+          # EN | sensor.processor_use / sensor.memory_use_percent — the
+          # EN | default entity ids of HA's own systemmonitor integration,
+          # EN | which this install does not have configured, so both always
+          # EN | resolved to "unknown". core.html (this project's own CORE
+          # EN | dashboard) never assumes a fixed entity id for this exact
+          # EN | reason: it keyword-searches every state for something that
+          # EN | looks like a CPU/RAM sensor. Same technique here, inlined
+          # EN | (button-card's [[[ ]]] blocks cannot share a JS function),
+          # EN | so this card lights up on whatever monitoring integration
+          # EN | is actually installed instead of one specific one.
+          # FR | Etait `template: vssp_status_indicator` + entity:
+          # FR | sensor.vssp_core_health, qui lisait elle-meme
+          # FR | sensor.processor_use / sensor.memory_use_percent — les
+          # FR | identifiants par defaut de l'integration systemmonitor de
+          # FR | HA, que cette installation n'a pas configuree, donc les deux
+          # FR | valaient toujours "unknown". core.html (le propre dashboard
+          # FR | CORE de ce projet) ne suppose jamais un identifiant fixe
+          # FR | pour cette meme raison : il cherche par mot-cle dans tous
+          # FR | les etats ce qui ressemble a un capteur CPU/RAM. Meme
+          # FR | technique ici, en ligne (les blocs [[[ ]]] de button-card ne
+          # FR | peuvent pas partager une fonction JS), pour que cette carte
+          # FR | s'allume avec l'integration de supervision reellement
+          # FR | installee plutot qu'une seule en particulier.
           - type: custom:button-card
-            template: vssp_status_indicator
+            icon: mdi:circle
+            show_state: false
+            show_label: true
             name: "{{ t('home.kpi.system_status') }}"
-            label: "{{ t('home.kpi.system_status_hint') }}"
-            entity: sensor.vssp_core_health
+            label: >
+              [[[
+                const norm = s => (s || '').toLowerCase();
+                const find = (keys, exclude) => Object.values(states).find(e => {
+                  const c = norm(e.entity_id) + ' ' + norm(e.attributes.friendly_name);
+                  return keys.every(k => c.includes(k)) && !(exclude || []).some(x => c.includes(x));
+                });
+                const cpu = find(['cpu', 'use'], ['core', 'temp']) || find(['processor_use']);
+                const ram = find(['ram', 'use'], ['swap']) || find(['memory_use_percent']);
+                if (!cpu && !ram) return "{{ t('home.kpi.system_status_hint') }}";
+                const c = cpu ? Math.round(parseFloat(cpu.state)) + '%' : '—';
+                const r = ram ? Math.round(parseFloat(ram.state)) + '%' : '—';
+                return 'CPU ' + c + ' · RAM ' + r;
+              ]]]
+            styles:
+              grid:
+                - grid-template-areas: '"n" "i" "l"'
+                - grid-template-rows: min-content min-content min-content
+                - row-gap: 10px
+                - justify-items: start
+              card:
+                - background: rgba(8,18,28,0.72)
+                - border-radius: 18px
+                - border: 1px solid rgba(0,229,255,0.20)
+                - padding: 14px 18px
+                - height: 100%
+              name:
+                - color: "#FFFFFF"
+                - font-size: 13px
+                - font-weight: 700
+                - letter-spacing: 0.5px
+                - justify-self: start
+              icon:
+                - color: >
+                    [[[
+                      const norm = s => (s || '').toLowerCase();
+                      const find = (keys, exclude) => Object.values(states).find(e => {
+                        const c = norm(e.entity_id) + ' ' + norm(e.attributes.friendly_name);
+                        return keys.every(k => c.includes(k)) && !(exclude || []).some(x => c.includes(x));
+                      });
+                      const cpu = find(['cpu', 'use'], ['core', 'temp']) || find(['processor_use']);
+                      const ram = find(['ram', 'use'], ['swap']) || find(['memory_use_percent']);
+                      if (!cpu && !ram) return "#56707E";
+                      const v = Math.max(cpu ? parseFloat(cpu.state) : 0, ram ? parseFloat(ram.state) : 0);
+                      if (v >= 90) return "#FF3D71";
+                      if (v >= 70) return "#FFA726";
+                      return "#00FFC3";
+                    ]]]
+                - "--mdc-icon-size": 20px
+                - justify-self: start
+                - filter: >
+                    [[[
+                      const norm = s => (s || '').toLowerCase();
+                      const find = (keys, exclude) => Object.values(states).find(e => {
+                        const c = norm(e.entity_id) + ' ' + norm(e.attributes.friendly_name);
+                        return keys.every(k => c.includes(k)) && !(exclude || []).some(x => c.includes(x));
+                      });
+                      const cpu = find(['cpu', 'use'], ['core', 'temp']) || find(['processor_use']);
+                      const ram = find(['ram', 'use'], ['swap']) || find(['memory_use_percent']);
+                      if (!cpu && !ram) return "none";
+                      const v = Math.max(cpu ? parseFloat(cpu.state) : 0, ram ? parseFloat(ram.state) : 0);
+                      if (v >= 90) return "drop-shadow(0 0 8px rgba(255,61,113,.6))";
+                      if (v >= 70) return "drop-shadow(0 0 8px rgba(255,167,38,.6))";
+                      return "drop-shadow(0 0 8px rgba(0,255,195,.6))";
+                    ]]]
+              label:
+                - color: "#56707E"
+                - font-size: 11px
+                - justify-self: start
 
           # Case 2 — Energy Status : vert si production >= consommation,
-          # rouge sinon, depuis binary_sensor.vssp_energy_health
-          # (vssp_home_status.yaml).
+          # orange si on couvre au moins la moitie, rouge sinon.
+          #
+          # EN | Was `template: vssp_status_indicator` + entity:
+          # EN | binary_sensor.vssp_energy_health, itself comparing
+          # EN | sensor.solar_power_production (no such sensor exists on
+          # EN | this install — every other view in this project already
+          # EN | marks it `# TODO`) against sensor.home_power_consumption
+          # EN | (real). No production reading defaulted to 0, so this read
+          # EN | "off"/red at all times the house drew any power — always,
+          # EN | in practice — which looks broken even though it was
+          # EN | technically doing what it was told. energy.solar.power is
+          # EN | tried first in case a real inverter integration gets added
+          # EN | later; failing that, same keyword search as System Status
+          # EN | above for anything that looks like a solar power sensor;
+          # EN | failing THAT, the card reads neutral/grey instead of a false
+          # EN | "critical" — same spirit as the Sécurité card's
+          # EN | "non configuré", never a red alert for a metric nobody wired
+          # EN | up yet.
+          # FR | Etait `template: vssp_status_indicator` + entity:
+          # FR | binary_sensor.vssp_energy_health, qui comparait elle-meme
+          # FR | sensor.solar_power_production (aucun capteur de ce nom
+          # FR | n'existe sur cette installation — tout le reste de ce projet
+          # FR | le marque deja `# TODO`) a sensor.home_power_consumption
+          # FR | (reel). Sans lecture de production, retombee sur 0, donc
+          # FR | lecture "off"/rouge des que la maison tirait la moindre
+          # FR | puissance — en pratique tout le temps — ce qui a l'air
+          # FR | casse meme si techniquement conforme a ce qu'on lui
+          # FR | demandait. energy.solar.power est tente en premier au cas ou
+          # FR | une vraie integration onduleur serait ajoutee plus tard ;
+          # FR | a defaut, meme recherche par mot-cle que System Status
+          # FR | ci-dessus pour tout ce qui ressemble a un capteur de
+          # FR | puissance solaire ; a defaut encore, la carte reste
+          # FR | neutre/grise plutot qu'un faux "critique" — meme esprit que
+          # FR | le "non configuré" de la carte Sécurité, jamais d'alerte
+          # FR | rouge pour une metrique que personne n'a encore branchee.
           - type: custom:button-card
-            template: vssp_status_indicator
+            icon: mdi:circle
+            show_state: false
+            show_label: true
             name: "{{ t('home.kpi.energy_status') }}"
-            label: "{{ t('home.kpi.energy_status_hint') }}"
-            entity: binary_sensor.vssp_energy_health
+            label: >
+              [[[
+                const cons = states['{{ energy.totals.power }}'];
+                let prod = states['{{ energy.solar.power }}'];
+                if (!prod || isNaN(parseFloat(prod.state))) {
+                  const norm = s => (s || '').toLowerCase();
+                  prod = Object.values(states).find(e => {
+                    const c = norm(e.entity_id) + ' ' + norm(e.attributes.friendly_name);
+                    return c.includes('solar') && c.includes('power')
+                      && !c.includes('today') && !c.includes('month') && !c.includes('year');
+                  });
+                }
+                if (!prod || isNaN(parseFloat(prod.state))) return "{{ t('home.kpi.energy_status_hint') }}";
+                const p = Math.round(parseFloat(prod.state));
+                const c = cons && !isNaN(parseFloat(cons.state)) ? Math.round(parseFloat(cons.state)) : '—';
+                return p + 'W · ' + c + 'W';
+              ]]]
+            styles:
+              grid:
+                - grid-template-areas: '"n" "i" "l"'
+                - grid-template-rows: min-content min-content min-content
+                - row-gap: 10px
+                - justify-items: start
+              card:
+                - background: rgba(8,18,28,0.72)
+                - border-radius: 18px
+                - border: 1px solid rgba(0,229,255,0.20)
+                - padding: 14px 18px
+                - height: 100%
+              name:
+                - color: "#FFFFFF"
+                - font-size: 13px
+                - font-weight: 700
+                - letter-spacing: 0.5px
+                - justify-self: start
+              icon:
+                - color: >
+                    [[[
+                      const cons = states['{{ energy.totals.power }}'];
+                      let prod = states['{{ energy.solar.power }}'];
+                      if (!prod || isNaN(parseFloat(prod.state))) {
+                        const norm = s => (s || '').toLowerCase();
+                        prod = Object.values(states).find(e => {
+                          const c = norm(e.entity_id) + ' ' + norm(e.attributes.friendly_name);
+                          return c.includes('solar') && c.includes('power')
+                            && !c.includes('today') && !c.includes('month') && !c.includes('year');
+                        });
+                      }
+                      if (!prod || isNaN(parseFloat(prod.state))) return "#56707E";
+                      const p = parseFloat(prod.state);
+                      const c = cons && !isNaN(parseFloat(cons.state)) ? parseFloat(cons.state) : 0;
+                      if (p >= c) return "#00FFC3";
+                      if (c > 0 && p / c >= 0.5) return "#FFA726";
+                      return "#FF3D71";
+                    ]]]
+                - "--mdc-icon-size": 20px
+                - justify-self: start
+                - filter: >
+                    [[[
+                      const cons = states['{{ energy.totals.power }}'];
+                      let prod = states['{{ energy.solar.power }}'];
+                      if (!prod || isNaN(parseFloat(prod.state))) {
+                        const norm = s => (s || '').toLowerCase();
+                        prod = Object.values(states).find(e => {
+                          const c = norm(e.entity_id) + ' ' + norm(e.attributes.friendly_name);
+                          return c.includes('solar') && c.includes('power')
+                            && !c.includes('today') && !c.includes('month') && !c.includes('year');
+                        });
+                      }
+                      if (!prod || isNaN(parseFloat(prod.state))) return "none";
+                      const p = parseFloat(prod.state);
+                      const c = cons && !isNaN(parseFloat(cons.state)) ? parseFloat(cons.state) : 0;
+                      if (p >= c) return "drop-shadow(0 0 8px rgba(0,255,195,.6))";
+                      if (c > 0 && p / c >= 0.5) return "drop-shadow(0 0 8px rgba(255,167,38,.6))";
+                      return "drop-shadow(0 0 8px rgba(255,61,113,.6))";
+                    ]]]
+              label:
+                - color: "#56707E"
+                - font-size: 11px
+                - justify-self: start
 
           # Case 3 — Pièces actives
+          #
+          # EN | sensor.vssp_pieces_actives (packages/vssp_home_status.yaml)
+          # EN | counted with area_entities()/areas(), which only sees what
+          # EN | Home Assistant's own Area registry has entities filed under.
+          # EN | This project's room↔device mapping is a SEPARATE concept —
+          # EN | model/house.yaml `rooms[].slots`, written by the discovery
+          # EN | scan (vssp_discovery.py) and the assignment step
+          # EN | (vssp_assign_apply.py) — and never touches the HA Area
+          # EN | registry, so area_entities() reported ~0 regardless of what
+          # EN | was actually on. vssp_discovery.py's own UNASSIGNED_DOMAINS
+          # EN | comment documents this exact gap. Fix: bake each room's
+          # EN | actually-assigned lights/appliances entity ids in at
+          # EN | generate time (rooms_rendered, the SAME source room.yaml.j2
+          # EN | uses to draw each room's own panels) and check their live
+          # EN | state client-side — no HA-side sensor, no Area registry.
+          # FR | sensor.vssp_pieces_actives (packages/vssp_home_status.yaml)
+          # FR | comptait avec area_entities()/areas(), qui ne voit que ce
+          # FR | que le registre de Zones de Home Assistant a classe. La
+          # FR | correspondance piece↔appareil de ce projet est un concept
+          # FR | SEPARE — `rooms[].slots` de model/house.yaml, ecrit par le
+          # FR | scan de decouverte (vssp_discovery.py) et l'etape
+          # FR | d'assignation (vssp_assign_apply.py) — qui ne touche jamais
+          # FR | le registre de Zones HA, donc area_entities() rapportait
+          # FR | ~0 quel que soit l'etat reel. Le commentaire
+          # FR | UNASSIGNED_DOMAINS de vssp_discovery.py documente exactement
+          # FR | ce manque. Correctif : figer les entites lights/appliances
+          # FR | reellement assignees de chaque piece au moment de la
+          # FR | generation (rooms_rendered, la MEME source que room.yaml.j2
+          # FR | utilise pour dessiner les tableaux de chaque piece) et
+          # FR | verifier leur etat en direct cote client — aucun capteur
+          # FR | HA, aucun registre de Zones.
+{% set active_rooms_map = [] %}
+{% for r in rooms_rendered %}
+{% set ns = namespace(ents=[]) %}
+{% for slot in r.slots.values() %}
+{% if slot.id in ['lights', 'appliances'] %}
+{% set ns.ents = ns.ents + slot.entities %}
+{% endif %}
+{% endfor %}
+{% set _ = active_rooms_map.append(ns.ents) %}
+{% endfor %}
           - type: custom:button-card
             template: vssp_kpi_card
             icon: mdi:door-open
             name: "{{ t('home.kpi.active_rooms') }}"
-            entity: sensor.vssp_pieces_actives
             state_display: >
               [[[
-                const s = states['sensor.vssp_pieces_actives'];
-                if (!s) return "- / -";
-                return s.state + " / " + (s.attributes.total_areas ?? "-");
+                const perRoom = {{ active_rooms_map | tojson }};
+                const active = perRoom.filter(ents =>
+                  ents.some(e => states[e] && states[e].state === 'on')
+                ).length;
+                return active + " / " + perRoom.length;
               ]]]
             label: "{{ t('home.kpi.active_rooms_hint') }}"
             variables:
@@ -215,173 +464,18 @@ views:
             :host { height: 100%; }
             ha-card { height: 100% !important; overflow: hidden; border-radius: 20px; }
 
-      - type: horizontal-stack
-        view_layout:
-          grid-area: egy1
-          grid-column: egy1 / egy2
-        card_mod:
-          style: |
-            :host {
-              height: 100%;
-              display: block;
-            }
-            #root {
-              height: 100%;
-              align-items: stretch;
-            }
-        cards:
-          # Cadre 1 — top 10 appareils par consommation. Meme motif que le
-          # panneau « Consommation par appareil » d'ENERGY (meme template
-          # vssp_energy_device_row, meme liste defilante dans un unique
-          # button-card) — seule la source change : les 10 premieres
-          # entrees de energy_devices au lieu de la liste complete.
-          - type: vertical-stack
-            card_mod:
-              style: |
-                :host { flex: 1.5 1 0; align-self: stretch; height: 100%; }
-                #root { height: 100%; }
-            cards:
-              - type: custom:button-card
-                template: vssp_section_title
-                name: "{{ t('home.top_devices') }}"
-
-              # EN | Fixed pixel height, NOT height:100% — a percentage here
-              # EN | has nothing concrete to resolve against (this card isn't
-              # EN | covered by a `#root > * { flex: 1 1 0 }` rule the way
-              # EN | Cadre 2 below is), so the list never actually capped
-              # EN | itself and just grew to fit all 10 rows. 300px, same
-              # EN | overflow-y: auto scrollbar as ENERGY's own per-device
-              # EN | panel (energy.yaml.j2), is the fix.
-              # FR | Hauteur fixe en pixels, PAS height:100% — un pourcentage
-              # FR | ici n'a rien de concret ou se resoudre (cette carte n'est
-              # FR | pas couverte par une regle `#root > * { flex: 1 1 0 }`
-              # FR | comme le Cadre 2 plus bas), donc la liste ne se limitait
-              # FR | jamais vraiment et grandissait pour caser les 10 lignes.
-              # FR | 300px, meme ascenseur overflow-y: auto que le panneau
-              # FR | par appareil d'ENERGY (energy.yaml.j2), est le correctif.
-              - type: custom:button-card
-                show_icon: false
-                show_name: false
-                show_state: false
-                tap_action:
-                  action: none
-                styles:
-                  grid:
-                    - grid-template-areas: '"list"'
-                  card:
-                    - background: transparent
-                    - box-shadow: none
-                    - border: none
-                    - border-radius: 0
-                    - padding: 0
-                    - cursor: default
-                  custom_fields:
-                    list:
-                      - display: block
-                      - width: 100%
-                      - height: 300px
-                      - overflow-y: auto
-                      - overflow-x: hidden
-                      - padding-right: 4px
-                      - scrollbar-width: thin
-                      - scrollbar-color: rgba(0,229,255,0.35) rgba(0,229,255,0.06)
-                custom_fields:
-                  list:
-                    card:
-                      type: vertical-stack
-                      cards:
-{% for d in energy_devices[:10] %}
-                        - type: custom:button-card
-                          template: vssp_energy_device_row
-                          entity: {{ d.power_entity }}
-                          name: "{{ d.name }}"
-                          icon: {{ d.icon }}
-                          variables:
-                            room: "{{ d.room }}"
-                            model: "{{ d.model | default('—', true) }}"
-                            energy_entity: {{ d.energy_entity }}
-                          tap_action:
-                            action: more-info
-
-{% endfor %}
-{% if not energy_devices %}
-                        - type: custom:button-card
-                          template: vssp_energy_device_row
-                          name: "{{ t('energy.empty.devices') }}"
-                          icon: mdi:help-circle-outline
-                          variables:
-                            room: "—"
-{% endif %}
-
-          # Cadre 2 — PRODUCTION puis son historique, CONSOMMATION puis le
-          # sien : deux courbes a un seul flux chacune, empilees sous leur
-          # propre metrique, plutot qu'une courbe unique a deux flux.
-          - type: vertical-stack
-            card_mod:
-              style: |
-                :host {
-                  flex: 0.8 1 0;
-                  align-self: stretch;
-                  height: 100%;
-                }
-                #root {
-                  height: 100%;
-                }
-                #root > * {
-                  flex: 1 1 0;
-                }
-            cards:
-              - type: custom:button-card
-                template: vssp_metric
-                show_icon: true
-                icon: mdi:solar-power
-                name: PRODUCTION
-                entity: sensor.solar_power_production  # TODO: remplacer par votre entité production solaire
-              - type: custom:apexcharts-card
-                header:
-                  show: false
-                graph_span: 24h
-                card_mod:
-                  style: |
-                    :host { flex: 1.4 1 0; align-self: stretch; }
-                    ha-card {
-                      background: var(--osv-panel) !important;
-                      height: 100%;
-                      max-height: 100%;
-                      overflow: hidden;
-                    }
-                series:
-                  - entity: sensor.solar_power_production  # TODO: remplacer par votre entité production solaire
-                    name: Production
-                    type: area
-                    color: "#00FFC3"
-                    stroke_width: 2
-                    opacity: 0.15
-              - type: custom:button-card
-                template: vssp_metric
-                show_icon: true
-                icon: mdi:flash
-                name: CONSOMMATION
-                entity: sensor.home_power_consumption  # TODO: remplacer par votre entité consommation
-              - type: custom:apexcharts-card
-                header:
-                  show: false
-                graph_span: 24h
-                card_mod:
-                  style: |
-                    :host { flex: 1.4 1 0; align-self: stretch; }
-                    ha-card {
-                      background: var(--osv-panel) !important;
-                      height: 100%;
-                      max-height: 100%;
-                      overflow: hidden;
-                    }
-                series:
-                  - entity: sensor.home_power_consumption  # TODO: remplacer par votre entité consommation
-                    name: Consommation
-                    type: line
-                    color: "#00E5FF"
-                    stroke_width: 2
+      # --- egy1 (colonnes 2-3, ligne 4) — laisse volontairement vide -------
+      # EN | Used to hold the Top 10 / Production-Consommation panel, moved
+      # EN | to the "right" grid area above (see the comment there). The
+      # EN | grid-template-areas still names egy1 (kpi1/right/etc. reference
+      # EN | the same column indices), so the cell is simply blank for now
+      # EN | rather than reflowing the whole row.
+      # FR | Contenait le panneau Top 10 / Production-Consommation, deplace
+      # FR | vers la zone de grille "right" ci-dessus (voir le commentaire
+      # FR | la-bas). grid-template-areas nomme toujours egy1 (kpi1/right/etc.
+      # FR | referencent les memes index de colonne), donc la cellule reste
+      # FR | simplement vide pour l'instant plutot que de reorganiser toute
+      # FR | la ligne.
 
       # --- Événements récents (aligné avec le bas de la sidebar) --------
       - type: logbook
@@ -479,49 +573,165 @@ views:
               overflow: hidden;
             }
 
-      # --- Zone droite (INTERPHONE + AUDIO STREAM) ----------------------
+      # --- Colonne de droite : TOP 10 CONSOMMATION, puis PRODUCTION et
+      # CONSOMMATION avec leur courbe ---------------------------------------
+      # EN | Replaces INTERPHONE / AUDIO STREAM — neither button had a real
+      # EN | entity or action behind it. This is the SAME panel that used to
+      # EN | sit in the egy1 row below (400px tall, split three ways with
+      # EN | egy2/events/meteo), moved here rather than duplicated: this
+      # EN | column is 444px tall and does not share its width with
+      # EN | anything, so Top 10 (Cadre 1) stacks above Production/
+      # EN | Consommation (Cadre 2) instead of sitting side by side. egy1's
+      # EN | grid cell is left declared but empty — nothing else claims it
+      # EN | yet.
+      # FR | Remplace INTERPHONE / AUDIO STREAM — aucun des deux boutons
+      # FR | n'avait de vraie entite ou action derriere. C'est le MEME
+      # FR | panneau qui occupait la ligne egy1 plus bas (400px de haut,
+      # FR | partagee en trois avec egy2/events/meteo), deplace ici plutot
+      # FR | que duplique : cette colonne fait 444px de haut et ne partage
+      # FR | pas sa largeur, donc Top 10 (Cadre 1) s'empile au-dessus de
+      # FR | Production/Consommation (Cadre 2) plutot que cote a cote. La
+      # FR | zone de grille egy1 reste declaree mais vide — rien d'autre ne
+      # FR | la reclame pour l'instant.
       - type: vertical-stack
         view_layout:
           grid-area: right
+        card_mod:
+          style: |
+            :host { height: 100%; display: block; }
+            #root { height: 100%; overflow-y: auto; }
         cards:
-          - type: custom:button-card
-            template: vssp_panel
-            show_name: true
-            name: "{{ t('home.intercom') }}"
-            icon: mdi:doorbell-video
-            show_icon: true
-            styles:
-              card:
-                - height: 50%
-                - justify-content: center
-                - align-items: center
-              name:
-                - color: "#B8E8F5"
-                - font-size: 14px
-                - letter-spacing: 2px
-              icon:
-                - color: "#00E5FF"
-                - "--mdc-icon-size": 36px
+          # Cadre 1 — top 10 appareils par consommation. Meme motif que le
+          # panneau « Consommation par appareil » d'ENERGY (meme template
+          # vssp_energy_device_row, meme liste defilante dans un unique
+          # button-card) — seule la source change : les 10 premieres
+          # entrees de energy_devices au lieu de la liste complete.
+          - type: vertical-stack
+            cards:
+              - type: custom:button-card
+                template: vssp_section_title
+                name: "{{ t('home.top_devices') }}"
 
-          - type: custom:button-card
-            template: vssp_panel
-            show_name: true
-            name: AUDIO STREAM
-            icon: mdi:music-note
-            show_icon: true
-            styles:
-              card:
-                - height: 50%
-                - justify-content: center
-                - align-items: center
-              name:
-                - color: "#B8E8F5"
-                - font-size: 14px
-                - letter-spacing: 2px
-              icon:
-                - color: "#00E5FF"
-                - "--mdc-icon-size": 36px
+              # EN | Fixed pixel height, NOT height:100% — a percentage here
+              # EN | has nothing concrete to resolve against, so the list
+              # EN | never actually capped itself and just grew to fit all
+              # EN | 10 rows. 300px, same overflow-y: auto scrollbar as
+              # EN | ENERGY's own per-device panel (energy.yaml.j2), is the
+              # EN | fix.
+              # FR | Hauteur fixe en pixels, PAS height:100% — un pourcentage
+              # FR | ici n'a rien de concret ou se resoudre, donc la liste ne
+              # FR | se limitait jamais vraiment et grandissait pour caser
+              # FR | les 10 lignes. 300px, meme ascenseur overflow-y: auto
+              # FR | que le panneau par appareil d'ENERGY (energy.yaml.j2),
+              # FR | est le correctif.
+              - type: custom:button-card
+                show_icon: false
+                show_name: false
+                show_state: false
+                tap_action:
+                  action: none
+                styles:
+                  grid:
+                    - grid-template-areas: '"list"'
+                  card:
+                    - background: transparent
+                    - box-shadow: none
+                    - border: none
+                    - border-radius: 0
+                    - padding: 0
+                    - cursor: default
+                  custom_fields:
+                    list:
+                      - display: block
+                      - width: 100%
+                      - height: 300px
+                      - overflow-y: auto
+                      - overflow-x: hidden
+                      - padding-right: 4px
+                      - scrollbar-width: thin
+                      - scrollbar-color: rgba(0,229,255,0.35) rgba(0,229,255,0.06)
+                custom_fields:
+                  list:
+                    card:
+                      type: vertical-stack
+                      cards:
+{% for d in energy_devices[:10] %}
+                        - type: custom:button-card
+                          template: vssp_energy_device_row
+                          entity: {{ d.power_entity }}
+                          name: "{{ d.name }}"
+                          icon: {{ d.icon }}
+                          variables:
+                            room: "{{ d.room }}"
+                            model: "{{ d.model | default('—', true) }}"
+                            energy_entity: {{ d.energy_entity }}
+                          tap_action:
+                            action: more-info
 
+{% endfor %}
+{% if not energy_devices %}
+                        - type: custom:button-card
+                          template: vssp_energy_device_row
+                          name: "{{ t('energy.empty.devices') }}"
+                          icon: mdi:help-circle-outline
+                          variables:
+                            room: "—"
+{% endif %}
+
+          # Cadre 2 — PRODUCTION puis son historique, CONSOMMATION puis le
+          # sien : deux courbes a un seul flux chacune, empilees sous leur
+          # propre metrique. Hauteurs fixes (et non plus flex sur toute la
+          # hauteur de la ligne) puisque ce cadre est maintenant empile sous
+          # le Cadre 1 plutot que seul sur sa propre ligne pleine hauteur.
+          - type: vertical-stack
+            cards:
+              - type: custom:button-card
+                template: vssp_metric
+                show_icon: true
+                icon: mdi:solar-power
+                name: PRODUCTION
+                entity: sensor.solar_power_production  # TODO: remplacer par votre entité production solaire
+              - type: custom:apexcharts-card
+                header:
+                  show: false
+                graph_span: 24h
+                card_mod:
+                  style: |
+                    ha-card {
+                      background: var(--osv-panel) !important;
+                      height: 110px;
+                      overflow: hidden;
+                    }
+                series:
+                  - entity: sensor.solar_power_production  # TODO: remplacer par votre entité production solaire
+                    name: Production
+                    type: area
+                    color: "#00FFC3"
+                    stroke_width: 2
+                    opacity: 0.15
+              - type: custom:button-card
+                template: vssp_metric
+                show_icon: true
+                icon: mdi:flash
+                name: CONSOMMATION
+                entity: sensor.home_power_consumption  # TODO: remplacer par votre entité consommation
+              - type: custom:apexcharts-card
+                header:
+                  show: false
+                graph_span: 24h
+                card_mod:
+                  style: |
+                    ha-card {
+                      background: var(--osv-panel) !important;
+                      height: 110px;
+                      overflow: hidden;
+                    }
+                series:
+                  - entity: sensor.home_power_consumption  # TODO: remplacer par votre entité consommation
+                    name: Consommation
+                    type: line
+                    color: "#00E5FF"
+                    stroke_width: 2
 
 
     card_mod:
