@@ -80,7 +80,7 @@ views:
         "nav header header header header header header"
         "nav kpi1 kpi2 kpi3 kpi4 kpi5 kpi5"
         "nav floor floor floor floor floor right"
-        "nav egy1 events events events events meteo"
+        "nav events events events events events meteo"
       margin: 12px
       grid-gap: 14px 14px
     cards:
@@ -464,20 +464,16 @@ views:
             :host { height: 100%; }
             ha-card { height: 100% !important; overflow: hidden; border-radius: 20px; }
 
-      # --- egy1 (colonne 2, ligne 4) — laisse volontairement vide ----------
-      # EN | Used to hold the Top 10 / Production-Consommation panel, moved
-      # EN | to the "right" grid area above (see the comment there). The
-      # EN | grid-template-areas still names egy1 (kpi1/right/etc. reference
-      # EN | the same column indices), so the cell is simply blank for now
-      # EN | rather than reflowing the whole row.
-      # FR | Contenait le panneau Top 10 / Production-Consommation, deplace
-      # FR | vers la zone de grille "right" ci-dessus (voir le commentaire
-      # FR | la-bas). grid-template-areas nomme toujours egy1 (kpi1/right/etc.
-      # FR | referencent les memes index de colonne), donc la cellule reste
-      # FR | simplement vide pour l'instant plutot que de reorganiser toute
-      # FR | la ligne.
-
       # --- Événements récents (aligné avec le bas de la sidebar) --------
+      # EN | Spans the full row now (nav..meteo) — egy1/egy2 used to hold
+      # EN | the Top 10 / Production-Consommation panel, moved to the
+      # EN | "right" grid area above (see the comment there), and both
+      # EN | freed columns were added to this slot rather than left empty.
+      # FR | Occupe toute la ligne desormais (nav..meteo) — egy1/egy2
+      # FR | contenaient le panneau Top 10 / Production-Consommation,
+      # FR | deplace vers la zone de grille "right" ci-dessus (voir le
+      # FR | commentaire la-bas), et les deux colonnes liberees ont ete
+      # FR | ajoutees a ce tableau plutot que laissees vides.
       - type: logbook
         title: "{{ t('home.events_recent') }}"
         hours_to_show: 24
