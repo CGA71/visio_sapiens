@@ -170,7 +170,8 @@ views:
             template: vssp_section_title
             name: "{{ t('slot.' ~ slot_id) }}"
 
-{% if slot.state == 'empty' %}
+{% set is_entrance_special = room.slot_set == 'entrance' and slot_id in ['lights', 'security'] %}
+{% if slot.state == 'empty' and not is_entrance_special %}
           # EN | The slot belongs to this room's set but holds no device yet.
           # EN | It is NOT "coming soon": nothing is promised. It simply
           # EN | states that the place exists and is available — assign a
@@ -206,7 +207,7 @@ views:
                 - letter-spacing: .6px
                 - margin-top: 8px
 
-{% elif slot.state == 'filler' %}
+{% elif slot.state == 'filler' and not is_entrance_special %}
           # EN | Visio Sapiens animation. At most ONE per dashboard, chosen by
           # EN | the generator — several identical panels on one screen would
           # EN | read as a broken interface rather than a signature.
@@ -1014,6 +1015,7 @@ views:
           # FR | une-ligne-par-appareil ci-dessous deborderait d'une barre
           # FR | aussi basse. Meme habillage de bouton, dispose cote a cote
           # FR | dans un horizontal-stack.
+{% if slot.entities %}
           - type: horizontal-stack
             cards:
 {% for e in slot.entities %}
@@ -1049,6 +1051,42 @@ views:
                 hold_action:
                   action: more-info
 {% endfor %}
+{% else %}
+          # EN | Was `slot.state == 'empty'`, which would otherwise have
+          # EN | taken the generic empty-slot branch above (icon + "no
+          # EN | device") — exempted for entrance so this branch always
+          # EN | runs, but that means it must handle the empty case itself.
+          # FR | Etait `slot.state == 'empty'`, ce qui aurait sinon pris la
+          # FR | branche generique tableau-vide ci-dessus (icone + « aucun
+          # FR | appareil ») — exemptee pour l'entree pour que cette branche
+          # FR | s'execute toujours, ce qui veut dire qu'elle doit gerer
+          # FR | elle-meme le cas vide.
+          - type: custom:button-card
+            show_icon: true
+            show_name: false
+            show_state: false
+            show_label: true
+            icon: mdi:tray-remove
+            label: "{{ t('slot.empty') }}"
+            tap_action:
+              action: none
+            styles:
+              card:
+                - background: transparent
+                - box-shadow: none
+                - border: none
+                - flex: 1 1 auto
+                - cursor: default
+                - pointer-events: none
+              icon:
+                - color: rgba(143,182,201,0.35)
+                - "--mdc-icon-size": 28px
+              label:
+                - color: rgba(143,182,201,0.55)
+                - font-size: 11px
+                - letter-spacing: .6px
+                - margin-top: 4px
+{% endif %}
 
 {% else %}
           # EN | CLIMATE / LIGHTS / SHUTTERS — one row per device, same
