@@ -71,6 +71,12 @@ slot:
   vacuum_battery: Batterie
   vacuum_schedule: Programmation
   vacuum_status: Statut Jessica
+  vacuum_state_docked: Amarré à la station
+  vacuum_state_cleaning: En nettoyage
+  vacuum_state_returning: Retour à la base
+  vacuum_state_paused: En pause
+  vacuum_state_error: Erreur
+  vacuum_state_idle: Inactif
 
 header:
   weather_unavailable: Météo indisponible

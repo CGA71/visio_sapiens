@@ -339,11 +339,10 @@ views:
           # EN | generic security branch below, so every other room keeping
           # EN | the `security` slot (a bedroom's smoke detector, a garage's
           # EN | camera...) is untouched.
-          # EN | Several entities below are TODO placeholders — this project
-          # EN | has no way to know your lock/script entity for the door
-          # EN | relay, your NVR's URL, or which integration exposes Jessica
-          # EN | (the "empty dustbin" action in particular varies a lot
-          # EN | between Roborock/Xiaomi/Ecovacs/Neato integrations).
+          # EN | The Jessica (Ecovacs) vacuum entities and the three NVR
+          # EN | camera channels are now real, given directly by the user.
+          # EN | The door lock/script entity and the NVR's own URL are still
+          # EN | TODO — this project has no way to know them.
           # FR | GABARIT PROPRE A L'ENTREE — trois colonnes cote a cote sur
           # FR | toute la ligne de 510px (house.yaml `layouts.entrance`) :
           # FR | mosaique de cameras + acces NVR, flux de l'interphone +
@@ -353,12 +352,11 @@ views:
           # FR | ci-dessous, pour que toute autre piece gardant le tableau
           # FR | `security` (le detecteur de fumee d'une chambre, la camera
           # FR | d'un garage...) reste inchangee.
-          # FR | Plusieurs entites ci-dessous sont des TODO — ce projet n'a
-          # FR | aucun moyen de savoir quelle entite lock/script pilote votre
-          # FR | relais de porte, l'URL de votre NVR, ni quelle integration
-          # FR | expose Jessica (l'action « vider le bac » en particulier
-          # FR | varie beaucoup entre les integrations Roborock/Xiaomi/
-          # FR | Ecovacs/Neato).
+          # FR | Les entites du robot Jessica (Ecovacs) et les trois canaux
+          # FR | de cameras NVR sont desormais reelles, fournies directement
+          # FR | par l'utilisateur. L'entite lock/script de la porte et
+          # FR | l'URL du NVR restent des TODO — ce projet n'a aucun moyen de
+          # FR | les connaitre.
           # EN | Cameras given directly by the user (Developer Tools >
           # EN | States did not have anything usable assigned to this slot
           # EN | via the admin console yet) rather than discovered from
@@ -641,47 +639,36 @@ views:
                             - color: rgba(255,167,38,0.35)
 {% endif %}
 
-              # ── Colonne 3 : robot Jessica + actions ──────────────────────
-              # TODO: remplacer vacuum.jessica / button.jessica_vider_bac par
-              # les entites reelles de votre integration (Roborock/Xiaomi/
-              # Ecovacs/Neato exposent "vider le bac" tres differemment).
+              # ── Colonne 3 : robot Jessica (Ecovacs) + actions ────────────
+              # Entites reelles fournies par l'utilisateur : vacuum.jessica,
+              # image.jessica_carte (carte de nettoyage en direct) et
+              # button.jessica_empty_dustbin (vidage du bac, expose comme
+              # bouton dedie par l'integration Ecovacs plutot que par un
+              # service vacuum generique).
               - type: vertical-stack
                 card_mod:
                   style: |
                     :host { flex: 1 1 0; height: 100%; }
                 cards:
-                  # STATIC PREVIEW — vacuum.jessica does not exist yet, and an
-                  # entity-bound state on a missing entity shows "unavailable",
-                  # which makes the layout impossible to judge. Hardcoded
-                  # placeholder text instead, no entity/tap_action, until the
-                  # real entity id is known — see TODO above.
-                  - type: custom:button-card
-                    show_icon: true
-                    show_name: true
-                    show_state: false
-                    show_label: true
-                    icon: mdi:robot-vacuum
+                  # Carte de nettoyage en direct plutot qu'un simple badge de
+                  # statut — image.jessica_carte est mise a jour par
+                  # l'integration Ecovacs pendant le nettoyage.
+                  - type: picture-entity
+                    entity: image.jessica_carte
                     name: Jessica
-                    label: "À la station"
+                    show_state: false
                     tap_action:
-                      action: none
-                    styles:
-                      card:
-                        - background: rgba(0,0,0,.28)
-                        - border: 1px solid rgba(0,229,255,.18)
-                        - border-radius: 14px
-                        - padding: 14px
-                        - height: 96px
-                      name:
-                        - font-size: 14px
-                        - color: "#FFFFFF"
-                        - font-weight: 700
-                      label:
-                        - font-size: 13px
-                        - color: "#00E5FF"
-                      icon:
-                        - color: "#00E5FF"
-                        - "--mdc-icon-size": 30px
+                      action: more-info
+                      entity: vacuum.jessica
+                    card_mod:
+                      style: |
+                        ha-card {
+                          background: rgba(0,0,0,.28) !important;
+                          border: 1px solid rgba(0,229,255,.18) !important;
+                          border-radius: 14px !important;
+                          height: 160px;
+                          overflow: hidden;
+                        }
                   - type: grid
                     columns: 2
                     square: false
@@ -696,7 +683,7 @@ views:
                           action: call-service
                           service: vacuum.return_to_base
                           service_data:
-                            entity_id: vacuum.jessica  # TODO
+                            entity_id: vacuum.jessica
                         styles:
                           card:
                             - background: rgba(0,0,0,.22)
@@ -718,7 +705,7 @@ views:
                           action: call-service
                           service: button.press
                           service_data:
-                            entity_id: button.jessica_vider_bac  # TODO
+                            entity_id: button.jessica_empty_dustbin
                         styles:
                           card:
                             - background: rgba(0,0,0,.22)
@@ -730,20 +717,22 @@ views:
                             - color: "#DCEEF6"
                           icon:
                             - color: "#00E5FF"
-                      # STATIC PREVIEW — see the comment on the Jessica card
-                      # above. Once vacuum.jessica is real, restore
-                      # `entity:` + the label lambda reading
-                      # entity.attributes.battery_level.
                       - type: custom:button-card
+                        entity: vacuum.jessica
                         show_icon: true
                         show_name: true
                         show_state: false
                         show_label: true
                         icon: mdi:battery-medium
                         name: "{{ t('slot.vacuum_battery') }}"
-                        label: "87%"
+                        label: >
+                          [[[
+                            if (!entity) return '—';
+                            const b = entity.attributes.battery_level;
+                            return b != null ? b + '%' : '—';
+                          ]]]
                         tap_action:
-                          action: none
+                          action: more-info
                         styles:
                           card:
                             - background: rgba(0,0,0,.22)
@@ -767,7 +756,7 @@ views:
                         name: "{{ t('slot.vacuum_schedule') }}"
                         tap_action:
                           action: more-info
-                          entity: vacuum.jessica  # TODO
+                          entity: vacuum.jessica
                         styles:
                           card:
                             - background: rgba(0,0,0,.22)
@@ -779,18 +768,29 @@ views:
                             - color: "#DCEEF6"
                           icon:
                             - color: "#00E5FF"
-                  # STATIC PREVIEW — see the comment on the Jessica card
-                  # above.
                   - type: custom:button-card
+                    entity: vacuum.jessica
                     show_icon: true
                     show_name: true
                     show_state: false
                     show_label: true
                     icon: mdi:map-marker-radius
                     name: "{{ t('slot.vacuum_status') }}"
-                    label: "Amarré à la station"
+                    label: >
+                      [[[
+                        if (!entity) return '—';
+                        switch (entity.state) {
+                          case 'docked': return '{{ t("slot.vacuum_state_docked") }}';
+                          case 'cleaning': return '{{ t("slot.vacuum_state_cleaning") }}';
+                          case 'returning': return '{{ t("slot.vacuum_state_returning") }}';
+                          case 'paused': return '{{ t("slot.vacuum_state_paused") }}';
+                          case 'error': return '{{ t("slot.vacuum_state_error") }}';
+                          case 'idle': return '{{ t("slot.vacuum_state_idle") }}';
+                          default: return entity.state;
+                        }
+                      ]]]
                     tap_action:
-                      action: none
+                      action: more-info
                     styles:
                       card:
                         - background: rgba(0,0,0,.22)

@@ -111,6 +111,12 @@ slot:
   vacuum_battery: Battery
   vacuum_schedule: Schedule
   vacuum_status: Jessica status
+  vacuum_state_docked: Docked at base
+  vacuum_state_cleaning: Cleaning
+  vacuum_state_returning: Returning to base
+  vacuum_state_paused: Paused
+  vacuum_state_error: Error
+  vacuum_state_idle: Idle
 
 # ----------------------------------------------------------------------
 # EN | Header band, identical on every dashboard.
