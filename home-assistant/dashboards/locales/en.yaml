@@ -403,7 +403,7 @@ home:
     connections: CONNECTIONS
     connections_hint: Connected devices
     rooms_devices: ROOMS & DEVICES
-    thermostats: TEMPERATURE
+    thermostats: THERMOSTAT
     thermostats_hint: No thermostat
   alarm:
     ok: All clear

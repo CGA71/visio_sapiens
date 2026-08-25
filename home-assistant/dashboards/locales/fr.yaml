@@ -288,7 +288,7 @@ home:
     connections: CONNEXIONS
     connections_hint: Appareils connectés
     rooms_devices: PIÈCES & APPAREILS
-    thermostats: TEMPÉRATURE
+    thermostats: THERMOSTAT
     thermostats_hint: Aucun thermostat
   alarm:
     ok: Parfait
