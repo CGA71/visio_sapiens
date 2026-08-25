@@ -117,6 +117,13 @@ slot:
   vacuum_state_paused: Paused
   vacuum_state_error: Error
   vacuum_state_idle: Idle
+  vacuum_map: Map
+  vacuum_mop: Mop attached
+  vacuum_on: Enabled
+  vacuum_off: Disabled
+  vacuum_detergent: Detergent level
+  vacuum_active_map: Active map
+  vacuum_relocate: Relocate
 
 # ----------------------------------------------------------------------
 # EN | Header band, identical on every dashboard.

@@ -675,10 +675,51 @@ views:
                     secondary_info: state
                     icon_type: entity-picture
 
+                  # EN | Same entity list as the user's own device page for
+                  # EN | Jessica — map (relative time instead of a raw
+                  # EN | timestamp), station state, mop-attached, detergent/
+                  # EN | water flow level, active map, relocate, battery,
+                  # EN | plus the empty-dustbin action already wired.
+                  # FR | Meme liste d'entites que la page appareil de
+                  # FR | l'utilisateur pour Jessica — carte (temps relatif
+                  # FR | plutot qu'un timestamp brut), etat de la station,
+                  # FR | serpilliere fixee, niveau de detergent/debit d'eau,
+                  # FR | carte active, repositionner, batterie, plus
+                  # FR | l'action vider-le-bac deja cablee.
                   - type: grid
                     columns: 2
                     square: false
                     cards:
+                      - type: custom:button-card
+                        entity: image.jessica_carte
+                        show_icon: true
+                        show_name: true
+                        show_state: true
+                        icon: mdi:map
+                        name: "{{ t('slot.vacuum_map') }}"
+                        state_display: >
+                          [[[
+                            if (!entity) return '—';
+                            const min = Math.round((Date.now() - new Date(entity.last_changed)) / 60000);
+                            return min + ' min';
+                          ]]]
+                        tap_action:
+                          action: more-info
+                        styles:
+                          card:
+                            - background: rgba(0,0,0,.22)
+                            - border: 1px solid rgba(0,229,255,.12)
+                            - border-radius: 12px
+                            - padding: 8px
+                          name:
+                            - font-size: 11px
+                            - color: "#DCEEF6"
+                          state:
+                            - font-size: 12px
+                            - color: "#00FFC3"
+                            - font-weight: 700
+                          icon:
+                            - color: "#00E5FF"
                       - type: custom:button-card
                         entity: sensor.jessica_station_state
                         show_icon: true
@@ -701,6 +742,106 @@ views:
                             - font-size: 12px
                             - color: "#00FFC3"
                             - font-weight: 700
+                          icon:
+                            - color: "#00E5FF"
+                      - type: custom:button-card
+                        entity: binary_sensor.jessica_serpilliere_fixee
+                        show_icon: true
+                        show_name: true
+                        show_state: false
+                        show_label: true
+                        icon: mdi:water-opacity
+                        name: "{{ t('slot.vacuum_mop') }}"
+                        label: >
+                          [[[
+                            if (!entity) return '—';
+                            return entity.state === 'on' ? '{{ t("slot.vacuum_on") }}' : '{{ t("slot.vacuum_off") }}';
+                          ]]]
+                        tap_action:
+                          action: more-info
+                        styles:
+                          card:
+                            - background: rgba(0,0,0,.22)
+                            - border: 1px solid rgba(0,229,255,.12)
+                            - border-radius: 12px
+                            - padding: 8px
+                          name:
+                            - font-size: 11px
+                            - color: "#DCEEF6"
+                          label:
+                            - font-size: 12px
+                            - color: "#00FFC3"
+                            - font-weight: 700
+                          icon:
+                            - color: "#00E5FF"
+                      - type: custom:button-card
+                        entity: number.jessica_water_flow_level
+                        show_icon: true
+                        show_name: true
+                        show_state: true
+                        icon: mdi:water-percent
+                        name: "{{ t('slot.vacuum_detergent') }}"
+                        tap_action:
+                          action: more-info
+                        styles:
+                          card:
+                            - background: rgba(0,0,0,.22)
+                            - border: 1px solid rgba(0,229,255,.12)
+                            - border-radius: 12px
+                            - padding: 8px
+                          name:
+                            - font-size: 11px
+                            - color: "#DCEEF6"
+                          state:
+                            - font-size: 12px
+                            - color: "#00FFC3"
+                            - font-weight: 700
+                          icon:
+                            - color: "#00E5FF"
+                      - type: custom:button-card
+                        entity: select.jessica_active_map
+                        show_icon: true
+                        show_name: true
+                        show_state: true
+                        icon: mdi:map-marker-path
+                        name: "{{ t('slot.vacuum_active_map') }}"
+                        tap_action:
+                          action: more-info
+                        styles:
+                          card:
+                            - background: rgba(0,0,0,.22)
+                            - border: 1px solid rgba(0,229,255,.12)
+                            - border-radius: 12px
+                            - padding: 8px
+                          name:
+                            - font-size: 11px
+                            - color: "#DCEEF6"
+                          state:
+                            - font-size: 12px
+                            - color: "#00FFC3"
+                            - font-weight: 700
+                          icon:
+                            - color: "#00E5FF"
+                      - type: custom:button-card
+                        show_icon: true
+                        show_name: true
+                        show_state: false
+                        icon: mdi:map-marker-radius-outline
+                        name: "{{ t('slot.vacuum_relocate') }}"
+                        tap_action:
+                          action: call-service
+                          service: button.press
+                          service_data:
+                            entity_id: button.jessica_relocate
+                        styles:
+                          card:
+                            - background: rgba(0,0,0,.22)
+                            - border: 1px solid rgba(0,229,255,.12)
+                            - border-radius: 12px
+                            - padding: 8px
+                          name:
+                            - font-size: 11px
+                            - color: "#DCEEF6"
                           icon:
                             - color: "#00E5FF"
                       - type: custom:button-card

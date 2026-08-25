@@ -77,6 +77,13 @@ slot:
   vacuum_state_paused: En pause
   vacuum_state_error: Erreur
   vacuum_state_idle: Inactif
+  vacuum_map: Carte
+  vacuum_mop: Serpillière fixée
+  vacuum_on: Activé
+  vacuum_off: Désactivé
+  vacuum_detergent: Niveau de détergent
+  vacuum_active_map: Carte active
+  vacuum_relocate: Repositionner
 
 header:
   weather_unavailable: Météo indisponible
