@@ -150,28 +150,35 @@ views:
                       - width: 100%
 
               # Case 2 — Energy Status. Same bar-card treatment as System
-              # Status (see home.yaml.j2's Case 2 for the full rationale):
-              # production stays at 0 (no solar entity on this install),
-              # consumption is real, bar = production/consumption.
+              # Status (see home.yaml.j2's Case 2 for the full rationale).
+              # Switched from instantaneous power to daily kWh totals
+              # (energy.totals.today / energy.solar.today) after the user
+              # pointed out the power reading looked far too low. Unit read
+              # from the entity's own unit_of_measurement, not hardcoded.
+              # Production stays at 0 — no solar entity on this install.
               - type: custom:button-card
                 show_icon: false
                 show_state: false
                 show_label: false
                 name: "{{ t('home.kpi.energy_status') }}"
-                entity: "{{ energy.totals.power }}"
+                entity: "{{ energy.totals.today }}"
                 tap_action:
                   action: more-info
                 custom_fields:
                   bar: >
                     [[[
-                      const prod = parseFloat(states['{{ energy.solar.power }}']?.state) || 0;
-                      const cons = parseFloat(states['{{ energy.totals.power }}']?.state) || 0;
+                      const prodEnt = states['{{ energy.solar.today }}'];
+                      const consEnt = states['{{ energy.totals.today }}'];
+                      const prod = parseFloat(prodEnt?.state) || 0;
+                      const cons = parseFloat(consEnt?.state) || 0;
+                      const prodUnit = prodEnt?.attributes?.unit_of_measurement || 'kWh';
+                      const consUnit = consEnt?.attributes?.unit_of_measurement || 'kWh';
                       const ratio = cons > 0 ? Math.min(prod / cons * 100, 100) : (prod > 0 ? 100 : 0);
                       const color = ratio >= 100 ? '#00FFC3' : ratio >= 50 ? '#FFA726' : '#FF3D71';
                       return `
                         <div style="display:flex;justify-content:space-between;font-size:9px;color:#56707E;margin-bottom:3px;line-height:1.2;">
-                          <span>{{ t('home.kpi.production') }} ${Math.round(prod)}W</span>
-                          <span>{{ t('home.kpi.consumption') }} ${Math.round(cons)}W</span>
+                          <span>{{ t('home.kpi.production') }} ${prod.toFixed(1)}${prodUnit}</span>
+                          <span>{{ t('home.kpi.consumption') }} ${cons.toFixed(1)}${consUnit}</span>
                         </div>
                         <div style="position:relative;width:100%;height:14px;background:rgba(255,255,255,.08);border-radius:7px;overflow:hidden;">
                           <div style="width:${ratio}%;height:100%;background:${color};border-radius:7px;transition:width .3s;"></div>

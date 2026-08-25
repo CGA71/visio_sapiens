@@ -182,48 +182,55 @@ views:
                   - width: 100%
 
           # Case 2 — Energy Status : meme motif que System Status, une seule
-          # bar card. Barre = part de la consommation couverte par la
-          # production (production / consommation).
+          # bar card. Barre = part du total consomme aujourd'hui couverte
+          # par la production du jour.
           #
-          # EN | Same bar-card treatment as System Status, per request.
-          # EN | energy.solar.power (sensor.solar_power_production) does not
-          # EN | exist on this install — confirmed by the user, who has no
-          # EN | production entity at all — so it always reads 0, same as
-          # EN | energy.totals.power (sensor.home_power_consumption, real)
-          # EN | always reads the true draw. Bar fill = production/
-          # EN | consumption, i.e. always empty/red here until a real solar
-          # EN | entity exists, which is the honest state of a house with no
-          # EN | production wired up rather than a fake "not configured"
-          # EN | placeholder.
-          # FR | Meme traitement bar card que System Status, sur demande.
-          # FR | energy.solar.power (sensor.solar_power_production) n'existe
-          # FR | pas sur cette installation — confirme par l'utilisateur, qui
-          # FR | n'a aucune entite de production — donc lit toujours 0, alors
-          # FR | que energy.totals.power (sensor.home_power_consumption,
-          # FR | reel) lit le vrai tirage. Remplissage de la barre =
-          # FR | production / consommation, donc toujours vide/rouge ici tant
-          # FR | qu'aucune vraie entite solaire n'existe, ce qui est l'etat
-          # FR | honnete d'une maison sans production plutot qu'un faux
-          # FR | placeholder "non configure".
+          # EN | Was energy.totals.power / energy.solar.power (instantaneous
+          # EN | W) — the user pointed out the consumption reading looked
+          # EN | far too low ("2W") for a whole house and asked for the
+          # EN | TOTAL instead. Switched to energy.totals.today /
+          # EN | energy.solar.today (sensor.home_energy_today /
+          # EN | sensor.solar_energy_today — daily kWh totals, already
+          # EN | declared in house.yaml's `energy:` block). Unit is read from
+          # EN | the entity's own unit_of_measurement rather than hardcoded,
+          # EN | so this displays correctly whatever the real unit is.
+          # EN | Production still reads 0 — no solar entity on this install —
+          # EN | same honest-empty-bar reasoning as before.
+          # FR | Etait energy.totals.power / energy.solar.power (W
+          # FR | instantane) — l'utilisateur a signale que la consommation
+          # FR | affichee semblait beaucoup trop faible (« 2W ») pour une
+          # FR | maison entiere et a demande LE TOTAL a la place. Bascule
+          # FR | vers energy.totals.today / energy.solar.today
+          # FR | (sensor.home_energy_today / sensor.solar_energy_today —
+          # FR | totaux kWh du jour, deja declares dans le bloc `energy:` de
+          # FR | house.yaml). L'unite est lue depuis le unit_of_measurement
+          # FR | propre a l'entite plutot que codee en dur, donc l'affichage
+          # FR | reste correct quelle que soit l'unite reelle. La production
+          # FR | reste a 0 — aucune entite solaire sur cette installation —
+          # FR | meme raisonnement de barre honnetement vide qu'avant.
           - type: custom:button-card
             show_icon: false
             show_state: false
             show_label: false
             name: "{{ t('home.kpi.energy_status') }}"
-            entity: "{{ energy.totals.power }}"
+            entity: "{{ energy.totals.today }}"
             tap_action:
               action: more-info
             custom_fields:
               bar: >
                 [[[
-                  const prod = parseFloat(states['{{ energy.solar.power }}']?.state) || 0;
-                  const cons = parseFloat(states['{{ energy.totals.power }}']?.state) || 0;
+                  const prodEnt = states['{{ energy.solar.today }}'];
+                  const consEnt = states['{{ energy.totals.today }}'];
+                  const prod = parseFloat(prodEnt?.state) || 0;
+                  const cons = parseFloat(consEnt?.state) || 0;
+                  const prodUnit = prodEnt?.attributes?.unit_of_measurement || 'kWh';
+                  const consUnit = consEnt?.attributes?.unit_of_measurement || 'kWh';
                   const ratio = cons > 0 ? Math.min(prod / cons * 100, 100) : (prod > 0 ? 100 : 0);
                   const color = ratio >= 100 ? '#00FFC3' : ratio >= 50 ? '#FFA726' : '#FF3D71';
                   return `
                     <div style="display:flex;justify-content:space-between;font-size:9px;color:#56707E;margin-bottom:3px;line-height:1.2;">
-                      <span>{{ t('home.kpi.production') }} ${Math.round(prod)}W</span>
-                      <span>{{ t('home.kpi.consumption') }} ${Math.round(cons)}W</span>
+                      <span>{{ t('home.kpi.production') }} ${prod.toFixed(1)}${prodUnit}</span>
+                      <span>{{ t('home.kpi.consumption') }} ${cons.toFixed(1)}${consUnit}</span>
                     </div>
                     <div style="position:relative;width:100%;height:14px;background:rgba(255,255,255,.08);border-radius:7px;overflow:hidden;">
                       <div style="width:${ratio}%;height:100%;background:${color};border-radius:7px;transition:width .3s;"></div>
