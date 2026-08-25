@@ -398,6 +398,8 @@ home:
     active_rooms_hint: Currently active
     energy_status: ENERGY STATUS
     energy_status_hint: ENERGY metrics status
+    production: Prod
+    consumption: Cons
     connections: CONNECTIONS
     connections_hint: Connected devices
   alarm:

@@ -149,39 +149,41 @@ views:
                     bar:
                       - width: 100%
 
-              # Case 2 — Energy Status. Same fix as home.yaml.j2's Case 2 —
-              # see the comment there: sensor.solar_power_production does
-              # not exist on this install, so the old binary_sensor read
-              # "off"/red at all times. Tries the declared solar entity,
-              # falls back to a keyword search, and reads neutral/grey
-              # (never a false "critical") if neither exists.
+              # Case 2 — Energy Status. Same bar-card treatment as System
+              # Status (see home.yaml.j2's Case 2 for the full rationale):
+              # production stays at 0 (no solar entity on this install),
+              # consumption is real, bar = production/consumption.
               - type: custom:button-card
-                icon: mdi:circle
+                show_icon: false
                 show_state: false
-                show_label: true
+                show_label: false
                 name: "{{ t('home.kpi.energy_status') }}"
-                label: >
-                  [[[
-                    const cons = states['{{ energy.totals.power }}'];
-                    let prod = states['{{ energy.solar.power }}'];
-                    if (!prod || isNaN(parseFloat(prod.state))) {
-                      const norm = s => (s || '').toLowerCase();
-                      prod = Object.values(states).find(e => {
-                        const c = norm(e.entity_id) + ' ' + norm(e.attributes.friendly_name);
-                        return c.includes('solar') && c.includes('power')
-                          && !c.includes('today') && !c.includes('month') && !c.includes('year');
-                      });
-                    }
-                    if (!prod || isNaN(parseFloat(prod.state))) return "{{ t('home.kpi.energy_status_hint') }}";
-                    const p = Math.round(parseFloat(prod.state));
-                    const c = cons && !isNaN(parseFloat(cons.state)) ? Math.round(parseFloat(cons.state)) : '—';
-                    return p + 'W · ' + c + 'W';
-                  ]]]
+                entity: "{{ energy.totals.power }}"
+                tap_action:
+                  action: more-info
+                custom_fields:
+                  bar: >
+                    [[[
+                      const prod = parseFloat(states['{{ energy.solar.power }}']?.state) || 0;
+                      const cons = parseFloat(states['{{ energy.totals.power }}']?.state) || 0;
+                      const ratio = cons > 0 ? Math.min(prod / cons * 100, 100) : (prod > 0 ? 100 : 0);
+                      const color = ratio >= 100 ? '#00FFC3' : ratio >= 50 ? '#FFA726' : '#FF3D71';
+                      return `
+                        <div style="display:flex;justify-content:space-between;font-size:9px;color:#56707E;margin-bottom:3px;line-height:1.2;">
+                          <span>{{ t('home.kpi.production') }} ${Math.round(prod)}W</span>
+                          <span>{{ t('home.kpi.consumption') }} ${Math.round(cons)}W</span>
+                        </div>
+                        <div style="position:relative;width:100%;height:14px;background:rgba(255,255,255,.08);border-radius:7px;overflow:hidden;">
+                          <div style="width:${ratio}%;height:100%;background:${color};border-radius:7px;transition:width .3s;"></div>
+                          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#0B141C;">${Math.round(ratio)}%</div>
+                        </div>
+                      `;
+                    ]]]
                 styles:
                   grid:
-                    - grid-template-areas: '"n" "i" "l"'
-                    - grid-template-rows: min-content min-content min-content
-                    - row-gap: 10px
+                    - grid-template-areas: '"n" "bar"'
+                    - grid-template-rows: min-content 1fr
+                    - row-gap: 6px
                     - justify-items: start
                   card:
                     - background: rgba(8,18,28,0.72)
@@ -195,51 +197,9 @@ views:
                     - font-weight: 700
                     - letter-spacing: 0.5px
                     - justify-self: start
-                  icon:
-                    - color: >
-                        [[[
-                          const cons = states['{{ energy.totals.power }}'];
-                          let prod = states['{{ energy.solar.power }}'];
-                          if (!prod || isNaN(parseFloat(prod.state))) {
-                            const norm = s => (s || '').toLowerCase();
-                            prod = Object.values(states).find(e => {
-                              const c = norm(e.entity_id) + ' ' + norm(e.attributes.friendly_name);
-                              return c.includes('solar') && c.includes('power')
-                                && !c.includes('today') && !c.includes('month') && !c.includes('year');
-                            });
-                          }
-                          if (!prod || isNaN(parseFloat(prod.state))) return "#56707E";
-                          const p = parseFloat(prod.state);
-                          const c = cons && !isNaN(parseFloat(cons.state)) ? parseFloat(cons.state) : 0;
-                          if (p >= c) return "#00FFC3";
-                          if (c > 0 && p / c >= 0.5) return "#FFA726";
-                          return "#FF3D71";
-                        ]]]
-                    - "--mdc-icon-size": 20px
-                    - justify-self: start
-                    - filter: >
-                        [[[
-                          const cons = states['{{ energy.totals.power }}'];
-                          let prod = states['{{ energy.solar.power }}'];
-                          if (!prod || isNaN(parseFloat(prod.state))) {
-                            const norm = s => (s || '').toLowerCase();
-                            prod = Object.values(states).find(e => {
-                              const c = norm(e.entity_id) + ' ' + norm(e.attributes.friendly_name);
-                              return c.includes('solar') && c.includes('power')
-                                && !c.includes('today') && !c.includes('month') && !c.includes('year');
-                            });
-                          }
-                          if (!prod || isNaN(parseFloat(prod.state))) return "none";
-                          const p = parseFloat(prod.state);
-                          const c = cons && !isNaN(parseFloat(cons.state)) ? parseFloat(cons.state) : 0;
-                          if (p >= c) return "drop-shadow(0 0 8px rgba(0,255,195,.6))";
-                          if (c > 0 && p / c >= 0.5) return "drop-shadow(0 0 8px rgba(255,167,38,.6))";
-                          return "drop-shadow(0 0 8px rgba(255,61,113,.6))";
-                        ]]]
-                  label:
-                    - color: "#56707E"
-                    - font-size: 11px
-                    - justify-self: start
+                  custom_fields:
+                    bar:
+                      - width: 100%
 
           - type: horizontal-stack
             cards:

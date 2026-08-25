@@ -283,6 +283,8 @@ home:
     active_rooms_hint: En activité
     energy_status: ENERGY STATUS
     energy_status_hint: Statut métriques ENERGY
+    production: Prod
+    consumption: Conso
     connections: CONNEXIONS
     connections_hint: Appareils connectés
   alarm:

@@ -181,69 +181,61 @@ views:
                 bar:
                   - width: 100%
 
-          # Case 2 — Energy Status : vert si production >= consommation,
-          # orange si on couvre au moins la moitie, rouge sinon.
+          # Case 2 — Energy Status : meme motif que System Status, une seule
+          # bar card. Barre = part de la consommation couverte par la
+          # production (production / consommation).
           #
-          # EN | Was `template: vssp_status_indicator` + entity:
-          # EN | binary_sensor.vssp_energy_health, itself comparing
-          # EN | sensor.solar_power_production (no such sensor exists on
-          # EN | this install — every other view in this project already
-          # EN | marks it `# TODO`) against sensor.home_power_consumption
-          # EN | (real). No production reading defaulted to 0, so this read
-          # EN | "off"/red at all times the house drew any power — always,
-          # EN | in practice — which looks broken even though it was
-          # EN | technically doing what it was told. energy.solar.power is
-          # EN | tried first in case a real inverter integration gets added
-          # EN | later; failing that, same keyword search as System Status
-          # EN | above for anything that looks like a solar power sensor;
-          # EN | failing THAT, the card reads neutral/grey instead of a false
-          # EN | "critical" — same spirit as the Sécurité card's
-          # EN | "non configuré", never a red alert for a metric nobody wired
-          # EN | up yet.
-          # FR | Etait `template: vssp_status_indicator` + entity:
-          # FR | binary_sensor.vssp_energy_health, qui comparait elle-meme
-          # FR | sensor.solar_power_production (aucun capteur de ce nom
-          # FR | n'existe sur cette installation — tout le reste de ce projet
-          # FR | le marque deja `# TODO`) a sensor.home_power_consumption
-          # FR | (reel). Sans lecture de production, retombee sur 0, donc
-          # FR | lecture "off"/rouge des que la maison tirait la moindre
-          # FR | puissance — en pratique tout le temps — ce qui a l'air
-          # FR | casse meme si techniquement conforme a ce qu'on lui
-          # FR | demandait. energy.solar.power est tente en premier au cas ou
-          # FR | une vraie integration onduleur serait ajoutee plus tard ;
-          # FR | a defaut, meme recherche par mot-cle que System Status
-          # FR | ci-dessus pour tout ce qui ressemble a un capteur de
-          # FR | puissance solaire ; a defaut encore, la carte reste
-          # FR | neutre/grise plutot qu'un faux "critique" — meme esprit que
-          # FR | le "non configuré" de la carte Sécurité, jamais d'alerte
-          # FR | rouge pour une metrique que personne n'a encore branchee.
+          # EN | Same bar-card treatment as System Status, per request.
+          # EN | energy.solar.power (sensor.solar_power_production) does not
+          # EN | exist on this install — confirmed by the user, who has no
+          # EN | production entity at all — so it always reads 0, same as
+          # EN | energy.totals.power (sensor.home_power_consumption, real)
+          # EN | always reads the true draw. Bar fill = production/
+          # EN | consumption, i.e. always empty/red here until a real solar
+          # EN | entity exists, which is the honest state of a house with no
+          # EN | production wired up rather than a fake "not configured"
+          # EN | placeholder.
+          # FR | Meme traitement bar card que System Status, sur demande.
+          # FR | energy.solar.power (sensor.solar_power_production) n'existe
+          # FR | pas sur cette installation — confirme par l'utilisateur, qui
+          # FR | n'a aucune entite de production — donc lit toujours 0, alors
+          # FR | que energy.totals.power (sensor.home_power_consumption,
+          # FR | reel) lit le vrai tirage. Remplissage de la barre =
+          # FR | production / consommation, donc toujours vide/rouge ici tant
+          # FR | qu'aucune vraie entite solaire n'existe, ce qui est l'etat
+          # FR | honnete d'une maison sans production plutot qu'un faux
+          # FR | placeholder "non configure".
           - type: custom:button-card
-            icon: mdi:circle
+            show_icon: false
             show_state: false
-            show_label: true
+            show_label: false
             name: "{{ t('home.kpi.energy_status') }}"
-            label: >
-              [[[
-                const cons = states['{{ energy.totals.power }}'];
-                let prod = states['{{ energy.solar.power }}'];
-                if (!prod || isNaN(parseFloat(prod.state))) {
-                  const norm = s => (s || '').toLowerCase();
-                  prod = Object.values(states).find(e => {
-                    const c = norm(e.entity_id) + ' ' + norm(e.attributes.friendly_name);
-                    return c.includes('solar') && c.includes('power')
-                      && !c.includes('today') && !c.includes('month') && !c.includes('year');
-                  });
-                }
-                if (!prod || isNaN(parseFloat(prod.state))) return "{{ t('home.kpi.energy_status_hint') }}";
-                const p = Math.round(parseFloat(prod.state));
-                const c = cons && !isNaN(parseFloat(cons.state)) ? Math.round(parseFloat(cons.state)) : '—';
-                return p + 'W · ' + c + 'W';
-              ]]]
+            entity: "{{ energy.totals.power }}"
+            tap_action:
+              action: more-info
+            custom_fields:
+              bar: >
+                [[[
+                  const prod = parseFloat(states['{{ energy.solar.power }}']?.state) || 0;
+                  const cons = parseFloat(states['{{ energy.totals.power }}']?.state) || 0;
+                  const ratio = cons > 0 ? Math.min(prod / cons * 100, 100) : (prod > 0 ? 100 : 0);
+                  const color = ratio >= 100 ? '#00FFC3' : ratio >= 50 ? '#FFA726' : '#FF3D71';
+                  return `
+                    <div style="display:flex;justify-content:space-between;font-size:9px;color:#56707E;margin-bottom:3px;line-height:1.2;">
+                      <span>{{ t('home.kpi.production') }} ${Math.round(prod)}W</span>
+                      <span>{{ t('home.kpi.consumption') }} ${Math.round(cons)}W</span>
+                    </div>
+                    <div style="position:relative;width:100%;height:14px;background:rgba(255,255,255,.08);border-radius:7px;overflow:hidden;">
+                      <div style="width:${ratio}%;height:100%;background:${color};border-radius:7px;transition:width .3s;"></div>
+                      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#0B141C;">${Math.round(ratio)}%</div>
+                    </div>
+                  `;
+                ]]]
             styles:
               grid:
-                - grid-template-areas: '"n" "i" "l"'
-                - grid-template-rows: min-content min-content min-content
-                - row-gap: 10px
+                - grid-template-areas: '"n" "bar"'
+                - grid-template-rows: min-content 1fr
+                - row-gap: 6px
                 - justify-items: start
               card:
                 - background: rgba(8,18,28,0.72)
@@ -257,51 +249,9 @@ views:
                 - font-weight: 700
                 - letter-spacing: 0.5px
                 - justify-self: start
-              icon:
-                - color: >
-                    [[[
-                      const cons = states['{{ energy.totals.power }}'];
-                      let prod = states['{{ energy.solar.power }}'];
-                      if (!prod || isNaN(parseFloat(prod.state))) {
-                        const norm = s => (s || '').toLowerCase();
-                        prod = Object.values(states).find(e => {
-                          const c = norm(e.entity_id) + ' ' + norm(e.attributes.friendly_name);
-                          return c.includes('solar') && c.includes('power')
-                            && !c.includes('today') && !c.includes('month') && !c.includes('year');
-                        });
-                      }
-                      if (!prod || isNaN(parseFloat(prod.state))) return "#56707E";
-                      const p = parseFloat(prod.state);
-                      const c = cons && !isNaN(parseFloat(cons.state)) ? parseFloat(cons.state) : 0;
-                      if (p >= c) return "#00FFC3";
-                      if (c > 0 && p / c >= 0.5) return "#FFA726";
-                      return "#FF3D71";
-                    ]]]
-                - "--mdc-icon-size": 20px
-                - justify-self: start
-                - filter: >
-                    [[[
-                      const cons = states['{{ energy.totals.power }}'];
-                      let prod = states['{{ energy.solar.power }}'];
-                      if (!prod || isNaN(parseFloat(prod.state))) {
-                        const norm = s => (s || '').toLowerCase();
-                        prod = Object.values(states).find(e => {
-                          const c = norm(e.entity_id) + ' ' + norm(e.attributes.friendly_name);
-                          return c.includes('solar') && c.includes('power')
-                            && !c.includes('today') && !c.includes('month') && !c.includes('year');
-                        });
-                      }
-                      if (!prod || isNaN(parseFloat(prod.state))) return "none";
-                      const p = parseFloat(prod.state);
-                      const c = cons && !isNaN(parseFloat(cons.state)) ? parseFloat(cons.state) : 0;
-                      if (p >= c) return "drop-shadow(0 0 8px rgba(0,255,195,.6))";
-                      if (c > 0 && p / c >= 0.5) return "drop-shadow(0 0 8px rgba(255,167,38,.6))";
-                      return "drop-shadow(0 0 8px rgba(255,61,113,.6))";
-                    ]]]
-              label:
-                - color: "#56707E"
-                - font-size: 11px
-                - justify-self: start
+              custom_fields:
+                bar:
+                  - width: 100%
 
           # Case 3 — Pièces actives
           #
