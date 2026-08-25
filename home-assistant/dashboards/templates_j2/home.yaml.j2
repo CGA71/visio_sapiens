@@ -105,57 +105,64 @@ views:
           grid-area: kpi1
           grid-column: kpi1 / kpi5
         cards:
-          # Case 1 — System Status : vert nominal / orange dégradé / rouge
-          # critique, seuils 70 % / 90 %.
+          # Case 1 — System Status : une seule bar card, moyenne CPU+RAM+HDD.
           #
-          # EN | Was `template: vssp_status_indicator` + entity:
-          # EN | sensor.vssp_core_health, itself reading
-          # EN | sensor.processor_use / sensor.memory_use_percent — the
-          # EN | default entity ids of HA's own systemmonitor integration,
-          # EN | which this install does not have configured, so both always
-          # EN | resolved to "unknown". core.html (this project's own CORE
-          # EN | dashboard) never assumes a fixed entity id for this exact
-          # EN | reason: it keyword-searches every state for something that
-          # EN | looks like a CPU/RAM sensor. Same technique here, inlined
-          # EN | (button-card's [[[ ]]] blocks cannot share a JS function),
-          # EN | so this card lights up on whatever monitoring integration
-          # EN | is actually installed instead of one specific one.
-          # FR | Etait `template: vssp_status_indicator` + entity:
-          # FR | sensor.vssp_core_health, qui lisait elle-meme
-          # FR | sensor.processor_use / sensor.memory_use_percent — les
-          # FR | identifiants par defaut de l'integration systemmonitor de
-          # FR | HA, que cette installation n'a pas configuree, donc les deux
-          # FR | valaient toujours "unknown". core.html (le propre dashboard
-          # FR | CORE de ce projet) ne suppose jamais un identifiant fixe
-          # FR | pour cette meme raison : il cherche par mot-cle dans tous
-          # FR | les etats ce qui ressemble a un capteur CPU/RAM. Meme
-          # FR | technique ici, en ligne (les blocs [[[ ]]] de button-card ne
-          # FR | peuvent pas partager une fonction JS), pour que cette carte
-          # FR | s'allume avec l'integration de supervision reellement
-          # FR | installee plutot qu'une seule en particulier.
+          # EN | Was a keyword search for a CPU/RAM sensor (same idea as
+          # EN | core.html), which found nothing: this install's System
+          # EN | Monitor integration exists but exposes French entity ids
+          # EN | (custom names given at setup, not the HA-default
+          # EN | sensor.processor_use etc. the keyword search was tuned for)
+          # EN | — confirmed directly by the user via Developer Tools >
+          # EN | States. Fixed entity ids now that the real ones are known.
+          # EN | Redesigned as one bar (not the 3-tier coloured-circle
+          # EN | layout every other status card here uses) per request: a
+          # EN | single average of the three metrics, CPU/RAM/HDD broken out
+          # EN | as small labels above it.
+          # FR | Etait une recherche par mot-cle d'un capteur CPU/RAM (meme
+          # FR | idee que core.html), qui ne trouvait rien : l'integration
+          # FR | System Monitor de cette installation existe mais expose des
+          # FR | entity id en francais (noms personnalises donnes a la
+          # FR | configuration, pas les sensor.processor_use etc. par defaut
+          # FR | de HA pour lesquels la recherche par mot-cle etait calee) —
+          # FR | confirme directement par l'utilisateur via Outils de
+          # FR | developpement > Etats. Entity id figes maintenant que les
+          # FR | vrais sont connus. Redessine en une seule barre (pas le
+          # FR | disque colore a 3 paliers que chaque autre carte de statut
+          # FR | ici utilise) sur demande : une moyenne unique des trois
+          # FR | metriques, CPU/RAM/HDD detailles en petites etiquettes
+          # FR | au-dessus.
           - type: custom:button-card
-            icon: mdi:circle
+            show_icon: false
             show_state: false
-            show_label: true
+            show_label: false
             name: "{{ t('home.kpi.system_status') }}"
-            label: >
-              [[[
-                const norm = s => (s || '').toLowerCase();
-                const find = (keys, exclude) => Object.values(states).find(e => {
-                  const c = norm(e.entity_id) + ' ' + norm(e.attributes.friendly_name);
-                  return keys.every(k => c.includes(k)) && !(exclude || []).some(x => c.includes(x));
-                });
-                const cpu = find(['cpu', 'use'], ['core', 'temp']) || find(['processor_use']);
-                const ram = find(['ram', 'use'], ['swap']) || find(['memory_use_percent']);
-                if (!cpu && !ram) return "{{ t('home.kpi.system_status_hint') }}";
-                const c = cpu ? Math.round(parseFloat(cpu.state)) + '%' : '—';
-                const r = ram ? Math.round(parseFloat(ram.state)) + '%' : '—';
-                return 'CPU ' + c + ' · RAM ' + r;
-              ]]]
+            entity: sensor.system_monitor_utilisation_du_processeur
+            tap_action:
+              action: more-info
+            custom_fields:
+              bar: >
+                [[[
+                  const cpu = parseFloat(states['sensor.system_monitor_utilisation_du_processeur']?.state) || 0;
+                  const ram = parseFloat(states['sensor.system_monitor_utilisation_de_la_memoire']?.state) || 0;
+                  const hdd = parseFloat(states['sensor.system_monitor_espace_utilise']?.state) || 0;
+                  const avg = (cpu + ram + hdd) / 3;
+                  const color = avg >= 90 ? '#FF3D71' : avg >= 70 ? '#FFA726' : '#00FFC3';
+                  return `
+                    <div style="display:flex;justify-content:space-between;font-size:10px;color:#56707E;margin-bottom:6px;">
+                      <span>CPU ${Math.round(cpu)}%</span>
+                      <span>RAM ${Math.round(ram)}%</span>
+                      <span>HDD ${Math.round(hdd)}%</span>
+                    </div>
+                    <div style="position:relative;width:100%;height:12px;background:rgba(255,255,255,.08);border-radius:6px;overflow:hidden;">
+                      <div style="width:${Math.min(avg,100)}%;height:100%;background:${color};border-radius:6px;transition:width .3s;"></div>
+                    </div>
+                    <div style="margin-top:6px;font-size:13px;color:${color};font-weight:700;">${Math.round(avg)}%</div>
+                  `;
+                ]]]
             styles:
               grid:
-                - grid-template-areas: '"n" "i" "l"'
-                - grid-template-rows: min-content min-content min-content
+                - grid-template-areas: '"n" "bar"'
+                - grid-template-rows: min-content 1fr
                 - row-gap: 10px
                 - justify-items: start
               card:
@@ -170,43 +177,9 @@ views:
                 - font-weight: 700
                 - letter-spacing: 0.5px
                 - justify-self: start
-              icon:
-                - color: >
-                    [[[
-                      const norm = s => (s || '').toLowerCase();
-                      const find = (keys, exclude) => Object.values(states).find(e => {
-                        const c = norm(e.entity_id) + ' ' + norm(e.attributes.friendly_name);
-                        return keys.every(k => c.includes(k)) && !(exclude || []).some(x => c.includes(x));
-                      });
-                      const cpu = find(['cpu', 'use'], ['core', 'temp']) || find(['processor_use']);
-                      const ram = find(['ram', 'use'], ['swap']) || find(['memory_use_percent']);
-                      if (!cpu && !ram) return "#56707E";
-                      const v = Math.max(cpu ? parseFloat(cpu.state) : 0, ram ? parseFloat(ram.state) : 0);
-                      if (v >= 90) return "#FF3D71";
-                      if (v >= 70) return "#FFA726";
-                      return "#00FFC3";
-                    ]]]
-                - "--mdc-icon-size": 20px
-                - justify-self: start
-                - filter: >
-                    [[[
-                      const norm = s => (s || '').toLowerCase();
-                      const find = (keys, exclude) => Object.values(states).find(e => {
-                        const c = norm(e.entity_id) + ' ' + norm(e.attributes.friendly_name);
-                        return keys.every(k => c.includes(k)) && !(exclude || []).some(x => c.includes(x));
-                      });
-                      const cpu = find(['cpu', 'use'], ['core', 'temp']) || find(['processor_use']);
-                      const ram = find(['ram', 'use'], ['swap']) || find(['memory_use_percent']);
-                      if (!cpu && !ram) return "none";
-                      const v = Math.max(cpu ? parseFloat(cpu.state) : 0, ram ? parseFloat(ram.state) : 0);
-                      if (v >= 90) return "drop-shadow(0 0 8px rgba(255,61,113,.6))";
-                      if (v >= 70) return "drop-shadow(0 0 8px rgba(255,167,38,.6))";
-                      return "drop-shadow(0 0 8px rgba(0,255,195,.6))";
-                    ]]]
-              label:
-                - color: "#56707E"
-                - font-size: 11px
-                - justify-self: start
+              custom_fields:
+                bar:
+                  - width: 100%
 
           # Case 2 — Energy Status : vert si production >= consommation,
           # orange si on couvre au moins la moitie, rouge sinon.

@@ -95,33 +95,42 @@ views:
           - type: horizontal-stack
             cards:
               # Case 1 — System Status. Same fix as home.yaml.j2's Case 1 —
-              # see the comment there: sensor.vssp_core_health read entity
-              # ids from an unconfigured systemmonitor integration and
-              # always showed "unknown". Keyword-searches for a CPU/RAM
-              # sensor client-side instead, same technique as core.html.
+              # see the comment there: the keyword search found nothing
+              # because this install's System Monitor entities carry French
+              # custom entity ids, confirmed by the user. Fixed ids now,
+              # redesigned as one averaged bar (CPU+RAM+HDD) per request.
               - type: custom:button-card
-                icon: mdi:circle
+                show_icon: false
                 show_state: false
-                show_label: true
+                show_label: false
                 name: "{{ t('home.kpi.system_status') }}"
-                label: >
-                  [[[
-                    const norm = s => (s || '').toLowerCase();
-                    const find = (keys, exclude) => Object.values(states).find(e => {
-                      const c = norm(e.entity_id) + ' ' + norm(e.attributes.friendly_name);
-                      return keys.every(k => c.includes(k)) && !(exclude || []).some(x => c.includes(x));
-                    });
-                    const cpu = find(['cpu', 'use'], ['core', 'temp']) || find(['processor_use']);
-                    const ram = find(['ram', 'use'], ['swap']) || find(['memory_use_percent']);
-                    if (!cpu && !ram) return "{{ t('home.kpi.system_status_hint') }}";
-                    const c = cpu ? Math.round(parseFloat(cpu.state)) + '%' : '—';
-                    const r = ram ? Math.round(parseFloat(ram.state)) + '%' : '—';
-                    return 'CPU ' + c + ' · RAM ' + r;
-                  ]]]
+                entity: sensor.system_monitor_utilisation_du_processeur
+                tap_action:
+                  action: more-info
+                custom_fields:
+                  bar: >
+                    [[[
+                      const cpu = parseFloat(states['sensor.system_monitor_utilisation_du_processeur']?.state) || 0;
+                      const ram = parseFloat(states['sensor.system_monitor_utilisation_de_la_memoire']?.state) || 0;
+                      const hdd = parseFloat(states['sensor.system_monitor_espace_utilise']?.state) || 0;
+                      const avg = (cpu + ram + hdd) / 3;
+                      const color = avg >= 90 ? '#FF3D71' : avg >= 70 ? '#FFA726' : '#00FFC3';
+                      return `
+                        <div style="display:flex;justify-content:space-between;font-size:10px;color:#56707E;margin-bottom:6px;">
+                          <span>CPU ${Math.round(cpu)}%</span>
+                          <span>RAM ${Math.round(ram)}%</span>
+                          <span>HDD ${Math.round(hdd)}%</span>
+                        </div>
+                        <div style="position:relative;width:100%;height:12px;background:rgba(255,255,255,.08);border-radius:6px;overflow:hidden;">
+                          <div style="width:${Math.min(avg,100)}%;height:100%;background:${color};border-radius:6px;transition:width .3s;"></div>
+                        </div>
+                        <div style="margin-top:6px;font-size:13px;color:${color};font-weight:700;">${Math.round(avg)}%</div>
+                      `;
+                    ]]]
                 styles:
                   grid:
-                    - grid-template-areas: '"n" "i" "l"'
-                    - grid-template-rows: min-content min-content min-content
+                    - grid-template-areas: '"n" "bar"'
+                    - grid-template-rows: min-content 1fr
                     - row-gap: 10px
                     - justify-items: start
                   card:
@@ -136,43 +145,9 @@ views:
                     - font-weight: 700
                     - letter-spacing: 0.5px
                     - justify-self: start
-                  icon:
-                    - color: >
-                        [[[
-                          const norm = s => (s || '').toLowerCase();
-                          const find = (keys, exclude) => Object.values(states).find(e => {
-                            const c = norm(e.entity_id) + ' ' + norm(e.attributes.friendly_name);
-                            return keys.every(k => c.includes(k)) && !(exclude || []).some(x => c.includes(x));
-                          });
-                          const cpu = find(['cpu', 'use'], ['core', 'temp']) || find(['processor_use']);
-                          const ram = find(['ram', 'use'], ['swap']) || find(['memory_use_percent']);
-                          if (!cpu && !ram) return "#56707E";
-                          const v = Math.max(cpu ? parseFloat(cpu.state) : 0, ram ? parseFloat(ram.state) : 0);
-                          if (v >= 90) return "#FF3D71";
-                          if (v >= 70) return "#FFA726";
-                          return "#00FFC3";
-                        ]]]
-                    - "--mdc-icon-size": 20px
-                    - justify-self: start
-                    - filter: >
-                        [[[
-                          const norm = s => (s || '').toLowerCase();
-                          const find = (keys, exclude) => Object.values(states).find(e => {
-                            const c = norm(e.entity_id) + ' ' + norm(e.attributes.friendly_name);
-                            return keys.every(k => c.includes(k)) && !(exclude || []).some(x => c.includes(x));
-                          });
-                          const cpu = find(['cpu', 'use'], ['core', 'temp']) || find(['processor_use']);
-                          const ram = find(['ram', 'use'], ['swap']) || find(['memory_use_percent']);
-                          if (!cpu && !ram) return "none";
-                          const v = Math.max(cpu ? parseFloat(cpu.state) : 0, ram ? parseFloat(ram.state) : 0);
-                          if (v >= 90) return "drop-shadow(0 0 8px rgba(255,61,113,.6))";
-                          if (v >= 70) return "drop-shadow(0 0 8px rgba(255,167,38,.6))";
-                          return "drop-shadow(0 0 8px rgba(0,255,195,.6))";
-                        ]]]
-                  label:
-                    - color: "#56707E"
-                    - font-size: 11px
-                    - justify-self: start
+                  custom_fields:
+                    bar:
+                      - width: 100%
 
               # Case 2 — Energy Status. Same fix as home.yaml.j2's Case 2 —
               # see the comment there: sensor.solar_power_production does
