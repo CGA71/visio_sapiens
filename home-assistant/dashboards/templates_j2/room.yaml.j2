@@ -629,15 +629,21 @@ views:
                   style: |
                     :host { flex: 1 1 0; height: 100%; }
                 cards:
+                  # STATIC PREVIEW — vacuum.jessica does not exist yet, and an
+                  # entity-bound state on a missing entity shows "unavailable",
+                  # which makes the layout impossible to judge. Hardcoded
+                  # placeholder text instead, no entity/tap_action, until the
+                  # real entity id is known — see TODO above.
                   - type: custom:button-card
-                    entity: vacuum.jessica  # TODO
                     show_icon: true
                     show_name: true
-                    show_state: true
+                    show_state: false
+                    show_label: true
                     icon: mdi:robot-vacuum
                     name: Jessica
+                    label: "À la station"
                     tap_action:
-                      action: more-info
+                      action: none
                     styles:
                       card:
                         - background: rgba(0,0,0,.28)
@@ -649,10 +655,9 @@ views:
                         - font-size: 14px
                         - color: "#FFFFFF"
                         - font-weight: 700
-                      state:
+                      label:
                         - font-size: 13px
                         - color: "#00E5FF"
-                        - text-transform: capitalize
                       icon:
                         - color: "#00E5FF"
                         - "--mdc-icon-size": 30px
@@ -704,22 +709,20 @@ views:
                             - color: "#DCEEF6"
                           icon:
                             - color: "#00E5FF"
+                      # STATIC PREVIEW — see the comment on the Jessica card
+                      # above. Once vacuum.jessica is real, restore
+                      # `entity:` + the label lambda reading
+                      # entity.attributes.battery_level.
                       - type: custom:button-card
-                        entity: vacuum.jessica  # TODO
                         show_icon: true
                         show_name: true
                         show_state: false
                         show_label: true
                         icon: mdi:battery-medium
                         name: "{{ t('slot.vacuum_battery') }}"
-                        label: >
-                          [[[
-                            if (!entity) return '—';
-                            const b = entity.attributes.battery_level;
-                            return b != null ? b + '%' : '—';
-                          ]]]
+                        label: "87%"
                         tap_action:
-                          action: more-info
+                          action: none
                         styles:
                           card:
                             - background: rgba(0,0,0,.22)
@@ -755,15 +758,18 @@ views:
                             - color: "#DCEEF6"
                           icon:
                             - color: "#00E5FF"
+                  # STATIC PREVIEW — see the comment on the Jessica card
+                  # above.
                   - type: custom:button-card
-                    entity: vacuum.jessica  # TODO
                     show_icon: true
                     show_name: true
-                    show_state: true
+                    show_state: false
+                    show_label: true
                     icon: mdi:map-marker-radius
                     name: "{{ t('slot.vacuum_status') }}"
+                    label: "Amarré à la station"
                     tap_action:
-                      action: more-info
+                      action: none
                     styles:
                       card:
                         - background: rgba(0,0,0,.22)
@@ -774,10 +780,9 @@ views:
                       name:
                         - font-size: 11px
                         - color: "#DCEEF6"
-                      state:
+                      label:
                         - font-size: 12px
                         - color: "#00FFC3"
-                        - text-transform: capitalize
                       icon:
                         - color: "#00E5FF"
 
