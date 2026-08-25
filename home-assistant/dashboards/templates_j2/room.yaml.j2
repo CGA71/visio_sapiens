@@ -359,13 +359,31 @@ views:
           # FR | expose Jessica (l'action « vider le bac » en particulier
           # FR | varie beaucoup entre les integrations Roborock/Xiaomi/
           # FR | Ecovacs/Neato).
-{% set all_cams = slot.by_domain.get('camera', []) %}
+          # EN | Cameras given directly by the user (Developer Tools >
+          # EN | States did not have anything usable assigned to this slot
+          # EN | via the admin console yet) rather than discovered from
+          # EN | slot.by_domain — hardcoded here, same spirit as the
+          # EN | System Monitor entity ids earlier. Explicit `name:` per
+          # EN | camera because an NVR channel's own registered name is
+          # EN | typically "Channel 1", not "Garage".
+          # FR | Cameras fournies directement par l'utilisateur (rien
+          # FR | d'exploitable assigne a ce tableau via la console admin
+          # FR | pour l'instant) plutot que decouvertes depuis
+          # FR | slot.by_domain — codees en dur ici, meme esprit que les
+          # FR | entity id System Monitor plus tot. `name:` explicite par
+          # FR | camera car le nom propre d'un canal NVR est typiquement
+          # FR | « Channel 1 », pas « Garage ».
+{% set entrance_cameras = [
+  {'entity': 'camera.nvr_expanse_channel_1', 'name': 'Garage'},
+  {'entity': 'camera.nvr_expanse_channel_2', 'name': 'Jardin'},
+  {'entity': 'camera.nvr_expanse_channel_3', 'name': "Porte d'entrée"},
+] %}
 {% set ns = namespace(intercom=[], mosaic=[]) %}
-{% for e in all_cams %}
-{% if 'interphone' in e | lower or 'intercom' in e | lower or 'portier' in e | lower or 'doorbell' in e | lower %}
-{% set ns.intercom = ns.intercom + [e] %}
+{% for c in entrance_cameras %}
+{% if 'interphone' in c.entity | lower or 'intercom' in c.entity | lower or 'portier' in c.entity | lower or 'doorbell' in c.entity | lower %}
+{% set ns.intercom = ns.intercom + [c] %}
 {% else %}
-{% set ns.mosaic = ns.mosaic + [e] %}
+{% set ns.mosaic = ns.mosaic + [c] %}
 {% endif %}
 {% endfor %}
 {% set intercom_cam = ns.intercom[0] if ns.intercom else None %}
@@ -416,9 +434,10 @@ views:
                           columns: 2
                           square: false
                           cards:
-{% for e in mosaic_cams %}
+{% for c in mosaic_cams %}
                             - type: picture-entity
-                              entity: {{ e }}
+                              entity: {{ c.entity }}
+                              name: "{{ c.name }}"
                               camera_view: live
                               show_name: true
                               show_state: false
@@ -489,7 +508,8 @@ views:
                 cards:
 {% if intercom_cam %}
                   - type: picture-entity
-                    entity: {{ intercom_cam }}
+                    entity: {{ intercom_cam.entity }}
+                    name: "{{ intercom_cam.name }}"
                     camera_view: live
                     show_name: true
                     show_state: false
