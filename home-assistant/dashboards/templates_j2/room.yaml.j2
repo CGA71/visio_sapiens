@@ -645,14 +645,39 @@ views:
               # button.jessica_empty_dustbin (vidage du bac, expose comme
               # bouton dedie par l'integration Ecovacs plutot que par un
               # service vacuum generique).
+              # EN | Mushroom's own commands (start_pause/stop/locate/
+              # EN | clean_spot/return_home) cover what the old dock button
+              # EN | did, so it is gone rather than duplicated. Requires the
+              # EN | Mushroom cards resource (config-fragment.yaml) — install
+              # EN | "Mushroom" from HACS if not already present.
+              # FR | Les commandes propres a Mushroom (start_pause/stop/
+              # FR | locate/clean_spot/return_home) couvrent ce que faisait
+              # FR | l'ancien bouton retour-base, donc il disparait plutot
+              # FR | que d'etre duplique. Necessite la ressource Mushroom
+              # FR | cards (config-fragment.yaml) — installer « Mushroom »
+              # FR | depuis HACS si ce n'est pas deja fait.
               - type: vertical-stack
                 card_mod:
                   style: |
                     :host { flex: 1 1 0; height: 100%; }
                 cards:
-                  # Carte de nettoyage en direct plutot qu'un simple badge de
-                  # statut — image.jessica_carte est mise a jour par
-                  # l'integration Ecovacs pendant le nettoyage.
+                  - type: custom:mushroom-vacuum-card
+                    entity: vacuum.jessica
+                    commands:
+                      - on_off
+                      - start_pause
+                      - stop
+                      - locate
+                      - clean_spot
+                      - return_home
+                    icon_animation: true
+                    primary_info: name
+                    secondary_info: state
+                    icon_type: entity-picture
+
+                  # Carte de nettoyage en direct — image.jessica_carte est
+                  # mise a jour par l'integration Ecovacs pendant le
+                  # nettoyage.
                   - type: picture-entity
                     entity: image.jessica_carte
                     name: Jessica
@@ -666,24 +691,23 @@ views:
                           background: rgba(0,0,0,.28) !important;
                           border: 1px solid rgba(0,229,255,.18) !important;
                           border-radius: 14px !important;
-                          height: 160px;
+                          height: 140px;
                           overflow: hidden;
                         }
+
                   - type: grid
                     columns: 2
                     square: false
                     cards:
                       - type: custom:button-card
+                        entity: sensor.jessica_station_state
                         show_icon: true
                         show_name: true
-                        show_state: false
+                        show_state: true
                         icon: mdi:home-import-outline
-                        name: "{{ t('slot.vacuum_dock') }}"
+                        name: "{{ t('slot.vacuum_status') }}"
                         tap_action:
-                          action: call-service
-                          service: vacuum.return_to_base
-                          service_data:
-                            entity_id: vacuum.jessica
+                          action: more-info
                         styles:
                           card:
                             - background: rgba(0,0,0,.22)
@@ -693,6 +717,34 @@ views:
                           name:
                             - font-size: 11px
                             - color: "#DCEEF6"
+                          state:
+                            - font-size: 12px
+                            - color: "#00FFC3"
+                            - font-weight: 700
+                          icon:
+                            - color: "#00E5FF"
+                      - type: custom:button-card
+                        entity: sensor.jessica_batterie
+                        show_icon: true
+                        show_name: true
+                        show_state: true
+                        icon: mdi:battery-medium
+                        name: "{{ t('slot.vacuum_battery') }}"
+                        tap_action:
+                          action: more-info
+                        styles:
+                          card:
+                            - background: rgba(0,0,0,.22)
+                            - border: 1px solid rgba(0,229,255,.12)
+                            - border-radius: 12px
+                            - padding: 8px
+                          name:
+                            - font-size: 11px
+                            - color: "#DCEEF6"
+                          state:
+                            - font-size: 12px
+                            - color: "#00FFC3"
+                            - font-weight: 700
                           icon:
                             - color: "#00E5FF"
                       - type: custom:button-card
@@ -717,95 +769,6 @@ views:
                             - color: "#DCEEF6"
                           icon:
                             - color: "#00E5FF"
-                      - type: custom:button-card
-                        entity: vacuum.jessica
-                        show_icon: true
-                        show_name: true
-                        show_state: false
-                        show_label: true
-                        icon: mdi:battery-medium
-                        name: "{{ t('slot.vacuum_battery') }}"
-                        label: >
-                          [[[
-                            if (!entity) return '—';
-                            const b = entity.attributes.battery_level;
-                            return b != null ? b + '%' : '—';
-                          ]]]
-                        tap_action:
-                          action: more-info
-                        styles:
-                          card:
-                            - background: rgba(0,0,0,.22)
-                            - border: 1px solid rgba(0,229,255,.12)
-                            - border-radius: 12px
-                            - padding: 8px
-                          name:
-                            - font-size: 11px
-                            - color: "#DCEEF6"
-                          label:
-                            - font-size: 12px
-                            - color: "#00FFC3"
-                            - font-weight: 700
-                          icon:
-                            - color: "#00E5FF"
-                      - type: custom:button-card
-                        show_icon: true
-                        show_name: true
-                        show_state: false
-                        icon: mdi:calendar-clock
-                        name: "{{ t('slot.vacuum_schedule') }}"
-                        tap_action:
-                          action: more-info
-                          entity: vacuum.jessica
-                        styles:
-                          card:
-                            - background: rgba(0,0,0,.22)
-                            - border: 1px solid rgba(0,229,255,.12)
-                            - border-radius: 12px
-                            - padding: 8px
-                          name:
-                            - font-size: 11px
-                            - color: "#DCEEF6"
-                          icon:
-                            - color: "#00E5FF"
-                  - type: custom:button-card
-                    entity: vacuum.jessica
-                    show_icon: true
-                    show_name: true
-                    show_state: false
-                    show_label: true
-                    icon: mdi:map-marker-radius
-                    name: "{{ t('slot.vacuum_status') }}"
-                    label: >
-                      [[[
-                        if (!entity) return '—';
-                        switch (entity.state) {
-                          case 'docked': return '{{ t("slot.vacuum_state_docked") }}';
-                          case 'cleaning': return '{{ t("slot.vacuum_state_cleaning") }}';
-                          case 'returning': return '{{ t("slot.vacuum_state_returning") }}';
-                          case 'paused': return '{{ t("slot.vacuum_state_paused") }}';
-                          case 'error': return '{{ t("slot.vacuum_state_error") }}';
-                          case 'idle': return '{{ t("slot.vacuum_state_idle") }}';
-                          default: return entity.state;
-                        }
-                      ]]]
-                    tap_action:
-                      action: more-info
-                    styles:
-                      card:
-                        - background: rgba(0,0,0,.22)
-                        - border: 1px solid rgba(0,229,255,.12)
-                        - border-radius: 12px
-                        - padding: 10px
-                        - margin-top: 8px
-                      name:
-                        - font-size: 11px
-                        - color: "#DCEEF6"
-                      label:
-                        - font-size: 12px
-                        - color: "#00FFC3"
-                      icon:
-                        - color: "#00E5FF"
 
 {% elif slot_id == 'security' %}
           # EN | OVERSIZED SLOT — it carries three things of different visual

@@ -172,6 +172,16 @@ lovelace:
       type: module
     - url: /hacsfiles/decluttering-card/decluttering-card.js
       type: module
+    # EN | Mushroom cards (piitaya/lovelace-mushroom) — used by the entrance
+    # EN | hall's Jessica vacuum panel (room.yaml.j2). Install "Mushroom" from
+    # EN | HACS if it is not already present; the HACS folder name is
+    # EN | lovelace-mushroom, hence this path.
+    # FR | Cartes Mushroom (piitaya/lovelace-mushroom) — utilisees par le
+    # FR | panneau du robot Jessica de l'entree (room.yaml.j2). Installer
+    # FR | « Mushroom » depuis HACS si ce n'est pas deja fait ; le nom du
+    # FR | dossier HACS est lovelace-mushroom, d'ou ce chemin.
+    - url: /hacsfiles/lovelace-mushroom/mushroom.js
+      type: module
     # EN | Both are used by home.yaml.j2 (weather cell of the header band and
     # EN | the meteo panel) and were missing from this list.
     # FR | Les deux sont utilisees par home.yaml.j2 (case meteo du bandeau et
