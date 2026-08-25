@@ -260,56 +260,47 @@ views:
                 bar:
                   - width: 100%
 
-          # Case 3 — Pièces actives + Connexions, fusionnees en une bar card
-          # (meme motif que System/Energy Status), sur demande : barre bleue
-          # pieces actives, barre violette appareils connectes.
+          # Case 3 — Pièces + Connexions, fusionnees en une bar card (meme
+          # motif que System/Energy Status), sur demande : barre bleue
+          # pieces, barre violette appareils connectes.
           #
-          # EN | Rooms: sensor.vssp_pieces_actives (packages/
-          # EN | vssp_home_status.yaml) counted with area_entities()/areas(),
-          # EN | which only sees what Home Assistant's own Area registry has
-          # EN | entities filed under. This project's room↔device mapping is
-          # EN | a SEPARATE concept — model/house.yaml `rooms[].slots`,
-          # EN | written by the discovery scan (vssp_discovery.py) and the
-          # EN | assignment step (vssp_assign_apply.py) — and never touches
-          # EN | the HA Area registry, so area_entities() reported ~0
-          # EN | regardless of what was actually on. Fix: bake each room's
-          # EN | actually-assigned lights/appliances entity ids in at
-          # EN | generate time (rooms_rendered, the SAME source room.yaml.j2
-          # EN | uses) and check their live state client-side.
+          # EN | "Pièces" is the count of DECLARED rooms (ROOMS & FLOORS in
+          # EN | the admin console), not a live "currently occupied" ratio —
+          # EN | two earlier attempts (area_entities()/areas(), then
+          # EN | rooms[].slots device assignment) both tried to compute an
+          # EN | on/off activity ratio, which was never what this card was
+          # EN | supposed to show; the user clarified after the second
+          # EN | attempt still read 0 for a different reason (assignment was
+          # EN | never done) that "actives" here just means the rooms that
+          # EN | exist. rooms_rendered — the exact list ROOMS & FLOORS
+          # EN | manages and room.yaml.j2 draws one dashboard per entry of —
+          # EN | is the correct, already-reliable source; its length is
+          # EN | baked in at generate time, no client-side state check
+          # EN | needed at all.
           # EN | Devices: sensor.vssp_total_appareils already counted
           # EN | CONNECTED devices (device_id() dedup, excluding unavailable/
           # EN | unknown); its new total_devices attribute (same dedup,
           # EN | every device regardless of state) is what makes a
-          # EN | connected/total ratio possible for the bar.
-          # FR | Pieces : sensor.vssp_pieces_actives (packages/
-          # FR | vssp_home_status.yaml) comptait avec area_entities()/
-          # FR | areas(), qui ne voit que ce que le registre de Zones de Home
-          # FR | Assistant a classe. La correspondance piece↔appareil de ce
-          # FR | projet est un concept SEPARE — `rooms[].slots` de
-          # FR | model/house.yaml, ecrit par le scan de decouverte
-          # FR | (vssp_discovery.py) et l'etape d'assignation
-          # FR | (vssp_assign_apply.py) — qui ne touche jamais le registre de
-          # FR | Zones HA, donc area_entities() rapportait ~0 quel que soit
-          # FR | l'etat reel. Correctif : figer les entites lights/
-          # FR | appliances reellement assignees de chaque piece au moment de
-          # FR | la generation (rooms_rendered, la MEME source que
-          # FR | room.yaml.j2 utilise) et verifier leur etat en direct cote
-          # FR | client.
+          # EN | connected/total ratio possible for that bar.
+          # FR | « Pièces » est le compte des pieces DECLAREES (ROOMS &
+          # FR | FLOORS dans la console admin), pas un ratio live "actuellement
+          # FR | occupee" — deux tentatives precedentes (area_entities()/
+          # FR | areas(), puis l'assignation d'appareils rooms[].slots) ont
+          # FR | toutes deux essaye de calculer un ratio d'activite on/off,
+          # FR | ce que cette carte n'a jamais ete censee montrer ; l'utilisateur
+          # FR | a clarifie apres que la seconde tentative lisait encore 0
+          # FR | pour une autre raison (l'assignation n'avait jamais ete
+          # FR | faite) que « actives » signifie ici simplement les pieces
+          # FR | qui existent. rooms_rendered — exactement la liste que ROOMS
+          # FR | & FLOORS gere et dont room.yaml.j2 dessine un dashboard par
+          # FR | entree — est la bonne source, deja fiable ; sa longueur est
+          # FR | figee au moment de la generation, aucune verification d'etat
+          # FR | cote client necessaire.
           # FR | Appareils : sensor.vssp_total_appareils comptait deja les
           # FR | appareils CONNECTES (deduplication device_id(), unavailable/
           # FR | unknown exclus) ; son nouvel attribut total_devices (meme
           # FR | deduplication, tout appareil quel que soit l'etat) est ce
-          # FR | qui rend possible un ratio connecte/total pour la barre.
-{% set active_rooms_map = [] %}
-{% for r in rooms_rendered %}
-{% set ns = namespace(ents=[]) %}
-{% for slot in r.slots.values() %}
-{% if slot.id in ['lights', 'appliances'] %}
-{% set ns.ents = ns.ents + slot.entities %}
-{% endif %}
-{% endfor %}
-{% set _ = active_rooms_map.append(ns.ents) %}
-{% endfor %}
+          # FR | qui rend possible un ratio connecte/total pour cette barre.
           - type: custom:button-card
             show_icon: false
             show_state: false
@@ -321,12 +312,7 @@ views:
             custom_fields:
               bars: >
                 [[[
-                  const perRoom = {{ active_rooms_map | tojson }};
-                  const activeRooms = perRoom.filter(ents =>
-                    ents.some(e => states[e] && states[e].state === 'on')
-                  ).length;
-                  const totalRooms = perRoom.length;
-                  const roomRatio = totalRooms > 0 ? (activeRooms / totalRooms * 100) : 0;
+                  const totalRooms = {{ rooms_rendered | length }};
 
                   const dev = states['sensor.vssp_total_appareils'];
                   const connected = dev ? (parseFloat(dev.state) || 0) : 0;
@@ -337,9 +323,9 @@ views:
 
                   return `
                     <div style="margin-bottom:6px;">
-                      <div style="font-size:9px;color:#3AA7FF;margin-bottom:2px;">${activeRooms}/${totalRooms} {{ t('home.kpi.active_rooms') }}</div>
+                      <div style="font-size:9px;color:#3AA7FF;margin-bottom:2px;">${totalRooms} {{ t('home.kpi.active_rooms') }}</div>
                       <div style="position:relative;width:100%;height:9px;background:rgba(255,255,255,.08);border-radius:5px;overflow:hidden;">
-                        <div style="width:${roomRatio}%;height:100%;background:#3AA7FF;border-radius:5px;"></div>
+                        <div style="width:100%;height:100%;background:#3AA7FF;border-radius:5px;"></div>
                       </div>
                     </div>
                     <div>
