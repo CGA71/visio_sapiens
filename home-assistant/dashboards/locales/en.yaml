@@ -355,6 +355,9 @@ admin:
   apply_language: APPLY LANGUAGE
   apply_language_hint: Render the fragment, patch the config, regenerate
   system_dashboards: System dashboards
+  regenerate_all: REGENERATE ALL
+  regenerate_all_hint: Regenerates every room + ENERGY/CORE (HOME protected)
+  regenerate_all_confirm: Regenerating ALL will overwrite every room dashboard plus ENERGY and CORE (a backup will be created). HOME is protected and will not be touched. Continue?
   create_home: CREATE HOME
   create_home_hint: Dashboard absent — generate it from the template
   create_home_confirm: Generate the HOME dashboard from the model?

@@ -244,6 +244,9 @@ admin:
   apply_language: APPLIQUER LA LANGUE
   apply_language_hint: Rendre le fragment, patcher la config, regénérer
   system_dashboards: Dashboards système
+  regenerate_all: RÉGÉNÉRER TOUT
+  regenerate_all_hint: Régénère toutes les pièces + ENERGY/CORE (HOME protégé)
+  regenerate_all_confirm: Régénérer TOUT écrasera les dashboards de toutes les pièces ainsi qu'ENERGY et CORE (une sauvegarde sera créée). HOME est protégé et ne sera pas touché. Continuer ?
   create_home: CRÉER HOME
   create_home_hint: Dashboard absent — le générer depuis le modèle
   create_home_confirm: Générer le dashboard HOME à partir du modèle ?

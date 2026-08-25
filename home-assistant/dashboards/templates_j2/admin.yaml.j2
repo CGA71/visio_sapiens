@@ -477,6 +477,37 @@ views:
             columns: 3
             square: false
             cards:
+              # EN | REGENERATE ALL — same script.vssp_run_generate as the
+              # EN | GENERATE button higher up on this screen (no --only
+              # EN | flag, so it processes every job: every room plus
+              # EN | ENERGY/CORE; HOME stays protected by
+              # EN | --protect-existing's default, same as every other
+              # EN | REGENERER button here). Placed in this grid, styled
+              # EN | like the per-dashboard CREER/REGENERER/DESACTIVER
+              # EN | buttons, so it reads as "the one for everything else"
+              # EN | rather than a stray duplicate of the GENERATE button
+              # EN | above.
+              # FR | REGENERER TOUT — meme script.vssp_run_generate que le
+              # FR | bouton GENERER plus haut sur cet ecran (pas de flag
+              # FR | --only, donc il traite chaque tache : toutes les
+              # FR | pieces plus ENERGY/CORE ; HOME reste protege par le
+              # FR | defaut de --protect-existing, comme chaque autre
+              # FR | bouton REGENERER ici). Place dans cette grille, stylise
+              # FR | comme les boutons CREER/REGENERER/DESACTIVER par
+              # FR | dashboard, pour se lire comme « celui pour tout le
+              # FR | reste » plutot qu'un doublon egare du bouton GENERER
+              # FR | ci-dessus.
+              - type: custom:button-card
+                template: vssp_admin_button
+                icon: mdi:refresh-circle
+                name: "{{ t('admin.regenerate_all') }}"
+                label: "{{ t('admin.regenerate_all_hint') }}"
+                confirmation:
+                  text: "{{ t('admin.regenerate_all_confirm') }}"
+                tap_action:
+                  action: call-service
+                  service: script.vssp_run_generate
+
               - type: conditional
                 conditions:
                   - entity: binary_sensor.vssp_dashboard_home_present
