@@ -287,6 +287,9 @@ home:
     consumption: Conso
     connections: CONNEXIONS
     connections_hint: Appareils connectés
+    rooms_devices: PIÈCES & APPAREILS
+    thermostats: TEMPÉRATURE
+    thermostats_hint: Aucun thermostat
   alarm:
     ok: Parfait
     alert: ALERTE

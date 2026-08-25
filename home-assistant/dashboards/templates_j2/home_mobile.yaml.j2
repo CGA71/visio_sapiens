@@ -210,26 +210,11 @@ views:
 
           - type: horizontal-stack
             cards:
-              # Case 3 — Pièces actives
-              - type: custom:button-card
-                template: vssp_kpi_card
-                icon: mdi:door-open
-                name: "{{ t('home.kpi.active_rooms') }}"
-                # EN | Same fix as home.yaml.j2's Case 3 — see the comment
-                # EN | there. area_entities()/areas() never sees this
-                # EN | project's room↔device mapping (model/house.yaml
-                # EN | `rooms[].slots`), so it always read ~0. Baking each
-                # EN | room's actual lights/appliances entities in at
-                # EN | generate time and checking their state client-side
-                # EN | fixes it without a HA-side sensor.
-                # FR | Meme correctif que le Cas 3 de home.yaml.j2 — voir le
-                # FR | commentaire la-bas. area_entities()/areas() ne voit
-                # FR | jamais la correspondance piece↔appareil de ce projet
-                # FR | (`rooms[].slots` de model/house.yaml), donc lisait
-                # FR | toujours ~0. Figer les entites lights/appliances
-                # FR | reelles de chaque piece au moment de la generation et
-                # FR | verifier leur etat cote client corrige ca sans capteur
-                # FR | HA.
+              # Case 3 — Pièces actives + Connexions fusionnees. Meme fix +
+              # meme fusion que home.yaml.j2's Case 3 — voir le commentaire
+              # la-bas (area_entities()/areas() ne voit jamais
+              # rooms[].slots ; total_devices est le nouvel attribut de
+              # sensor.vssp_total_appareils qui rend le ratio possible).
 {% set active_rooms_map = [] %}
 {% for r in rooms_rendered %}
 {% set ns = namespace(ents=[]) %}
@@ -240,28 +225,130 @@ views:
 {% endfor %}
 {% set _ = active_rooms_map.append(ns.ents) %}
 {% endfor %}
-                state_display: >
-                  [[[
-                    const perRoom = {{ active_rooms_map | tojson }};
-                    const active = perRoom.filter(ents =>
-                      ents.some(e => states[e] && states[e].state === 'on')
-                    ).length;
-                    return active + " / " + perRoom.length;
-                  ]]]
-                label: "{{ t('home.kpi.active_rooms_hint') }}"
-                variables:
-                  icon_color: "#3AA7FF"
-                  value_color: "#3AA7FF"
-              # Case 4 — Connexions
               - type: custom:button-card
-                template: vssp_kpi_card
-                icon: mdi:vector-polygon
-                name: "{{ t('home.kpi.connections') }}"
+                show_icon: false
+                show_state: false
+                show_label: false
+                name: "{{ t('home.kpi.rooms_devices') }}"
                 entity: sensor.vssp_total_appareils
-                label: "{{ t('home.kpi.connections_hint') }}"
-                variables:
-                  icon_color: "#B084FF"
-                  value_color: "#B084FF"
+                tap_action:
+                  action: more-info
+                custom_fields:
+                  bars: >
+                    [[[
+                      const perRoom = {{ active_rooms_map | tojson }};
+                      const activeRooms = perRoom.filter(ents =>
+                        ents.some(e => states[e] && states[e].state === 'on')
+                      ).length;
+                      const totalRooms = perRoom.length;
+                      const roomRatio = totalRooms > 0 ? (activeRooms / totalRooms * 100) : 0;
+
+                      const dev = states['sensor.vssp_total_appareils'];
+                      const connected = dev ? (parseFloat(dev.state) || 0) : 0;
+                      const totalDevices = dev && dev.attributes.total_devices != null
+                        ? (parseFloat(dev.attributes.total_devices) || connected)
+                        : connected;
+                      const devRatio = totalDevices > 0 ? (connected / totalDevices * 100) : 0;
+
+                      return `
+                        <div style="margin-bottom:6px;">
+                          <div style="font-size:9px;color:#3AA7FF;margin-bottom:2px;">${activeRooms}/${totalRooms} {{ t('home.kpi.active_rooms') }}</div>
+                          <div style="position:relative;width:100%;height:9px;background:rgba(255,255,255,.08);border-radius:5px;overflow:hidden;">
+                            <div style="width:${roomRatio}%;height:100%;background:#3AA7FF;border-radius:5px;"></div>
+                          </div>
+                        </div>
+                        <div>
+                          <div style="font-size:9px;color:#B084FF;margin-bottom:2px;">${connected}/${totalDevices} {{ t('home.kpi.connections') }}</div>
+                          <div style="position:relative;width:100%;height:9px;background:rgba(255,255,255,.08);border-radius:5px;overflow:hidden;">
+                            <div style="width:${devRatio}%;height:100%;background:#B084FF;border-radius:5px;"></div>
+                          </div>
+                        </div>
+                      `;
+                    ]]]
+                styles:
+                  grid:
+                    - grid-template-areas: '"n" "bars"'
+                    - grid-template-rows: min-content 1fr
+                    - row-gap: 6px
+                    - justify-items: start
+                  card:
+                    - background: rgba(8,18,28,0.72)
+                    - border-radius: 18px
+                    - border: 1px solid rgba(0,229,255,0.20)
+                    - padding: 14px 18px
+                    - height: 100%
+                  name:
+                    - color: "#FFFFFF"
+                    - font-size: 13px
+                    - font-weight: 700
+                    - letter-spacing: 0.5px
+                    - justify-self: start
+                  custom_fields:
+                    bars:
+                      - width: 100%
+
+              # Case 4 — Température : moyenne des thermostats, +/- ajuste
+              # chaque climate.* de 0.5°C. Meme carte que home.yaml.j2's
+              # Case 4 — voir le commentaire la-bas.
+              - type: custom:button-card
+                show_icon: false
+                show_state: false
+                show_label: false
+                name: "{{ t('home.kpi.thermostats') }}"
+                tap_action:
+                  action: none
+                custom_fields:
+                  temp: >
+                    [[[
+                      const clims = Object.values(states).filter(s =>
+                        s.entity_id.startsWith('climate.') && s.attributes.temperature != null
+                      );
+                      const avg = clims.length
+                        ? clims.reduce((a, s) => a + s.attributes.temperature, 0) / clims.length
+                        : null;
+                      const avgText = avg === null ? "{{ t('home.kpi.thermostats_hint') }}" : avg.toFixed(1) + '°C';
+                      const adjustJs = (delta) => `
+                        event.stopPropagation();
+                        var hass = document.querySelector('home-assistant').hass;
+                        Object.values(hass.states).filter(function(s) {
+                          return s.entity_id.startsWith('climate.') && s.attributes.temperature != null;
+                        }).forEach(function(s) {
+                          var t = Math.max(10, Math.min(30, Math.round((s.attributes.temperature + (${delta})) * 2) / 2));
+                          hass.callService('climate', 'set_temperature', {entity_id: s.entity_id, temperature: t});
+                        });
+                      `.replace(/\n/g, ' ').replace(/"/g, '&quot;');
+                      const btnStyle = avg === null
+                        ? 'font-size:22px;color:#00E5FF;width:28px;text-align:center;user-select:none;opacity:.3;pointer-events:none;'
+                        : 'font-size:22px;color:#00E5FF;width:28px;text-align:center;user-select:none;cursor:pointer;';
+                      return `
+                        <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+                          <span onclick="${adjustJs(-0.5)}" style="${btnStyle}">−</span>
+                          <span style="font-size:17px;font-weight:700;color:#FFFFFF;">${avgText}</span>
+                          <span onclick="${adjustJs(0.5)}" style="${btnStyle}">+</span>
+                        </div>
+                      `;
+                    ]]]
+                styles:
+                  grid:
+                    - grid-template-areas: '"n" "temp"'
+                    - grid-template-rows: min-content 1fr
+                    - row-gap: 10px
+                    - justify-items: start
+                  card:
+                    - background: rgba(8,18,28,0.72)
+                    - border-radius: 18px
+                    - border: 1px solid rgba(0,229,255,0.20)
+                    - padding: 14px 18px
+                    - height: 100%
+                  name:
+                    - color: "#FFFFFF"
+                    - font-size: 13px
+                    - font-weight: 700
+                    - letter-spacing: 0.5px
+                    - justify-self: start
+                  custom_fields:
+                    temp:
+                      - width: 100%
 
           # Case 5 — Sécurité / Alarme (pleine largeur)
           - type: custom:button-card

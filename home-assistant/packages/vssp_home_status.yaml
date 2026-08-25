@@ -169,3 +169,23 @@ template:
             {% endif %}
           {% endfor %}
           {{ ns.ids | count }}
+        attributes:
+          # EN | Denominator for a connected/total ratio (the HOME KPI bar
+          # EN | card). Same device_id() dedup as the state above, but
+          # EN | counts every device regardless of its entities' state —
+          # EN | unavailable/unknown devices ARE the ones a ratio needs to
+          # EN | show as missing.
+          # FR | Denominateur pour un ratio connecte/total (la bar card KPI
+          # FR | de HOME). Meme deduplication device_id() que l'etat
+          # FR | ci-dessus, mais compte tout appareil quel que soit l'etat de
+          # FR | ses entites — les appareils unavailable/unknown sont
+          # FR | precisement ceux qu'un ratio doit montrer comme manquants.
+          total_devices: >
+            {% set ns = namespace(ids=[]) %}
+            {% for s in states %}
+              {% set did = device_id(s.entity_id) %}
+              {% if did and did not in ns.ids %}
+                {% set ns.ids = ns.ids + [did] %}
+              {% endif %}
+            {% endfor %}
+            {{ ns.ids | count }}

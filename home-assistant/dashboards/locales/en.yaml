@@ -402,6 +402,9 @@ home:
     consumption: Cons
     connections: CONNECTIONS
     connections_hint: Connected devices
+    rooms_devices: ROOMS & DEVICES
+    thermostats: TEMPERATURE
+    thermostats_hint: No thermostat
   alarm:
     ok: All clear
     alert: ALERT

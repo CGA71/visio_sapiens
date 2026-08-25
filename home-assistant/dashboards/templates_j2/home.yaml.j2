@@ -260,38 +260,46 @@ views:
                 bar:
                   - width: 100%
 
-          # Case 3 — Pièces actives
+          # Case 3 — Pièces actives + Connexions, fusionnees en une bar card
+          # (meme motif que System/Energy Status), sur demande : barre bleue
+          # pieces actives, barre violette appareils connectes.
           #
-          # EN | sensor.vssp_pieces_actives (packages/vssp_home_status.yaml)
-          # EN | counted with area_entities()/areas(), which only sees what
-          # EN | Home Assistant's own Area registry has entities filed under.
-          # EN | This project's room↔device mapping is a SEPARATE concept —
-          # EN | model/house.yaml `rooms[].slots`, written by the discovery
-          # EN | scan (vssp_discovery.py) and the assignment step
-          # EN | (vssp_assign_apply.py) — and never touches the HA Area
-          # EN | registry, so area_entities() reported ~0 regardless of what
-          # EN | was actually on. vssp_discovery.py's own UNASSIGNED_DOMAINS
-          # EN | comment documents this exact gap. Fix: bake each room's
+          # EN | Rooms: sensor.vssp_pieces_actives (packages/
+          # EN | vssp_home_status.yaml) counted with area_entities()/areas(),
+          # EN | which only sees what Home Assistant's own Area registry has
+          # EN | entities filed under. This project's room↔device mapping is
+          # EN | a SEPARATE concept — model/house.yaml `rooms[].slots`,
+          # EN | written by the discovery scan (vssp_discovery.py) and the
+          # EN | assignment step (vssp_assign_apply.py) — and never touches
+          # EN | the HA Area registry, so area_entities() reported ~0
+          # EN | regardless of what was actually on. Fix: bake each room's
           # EN | actually-assigned lights/appliances entity ids in at
           # EN | generate time (rooms_rendered, the SAME source room.yaml.j2
-          # EN | uses to draw each room's own panels) and check their live
-          # EN | state client-side — no HA-side sensor, no Area registry.
-          # FR | sensor.vssp_pieces_actives (packages/vssp_home_status.yaml)
-          # FR | comptait avec area_entities()/areas(), qui ne voit que ce
-          # FR | que le registre de Zones de Home Assistant a classe. La
-          # FR | correspondance piece↔appareil de ce projet est un concept
-          # FR | SEPARE — `rooms[].slots` de model/house.yaml, ecrit par le
-          # FR | scan de decouverte (vssp_discovery.py) et l'etape
-          # FR | d'assignation (vssp_assign_apply.py) — qui ne touche jamais
-          # FR | le registre de Zones HA, donc area_entities() rapportait
-          # FR | ~0 quel que soit l'etat reel. Le commentaire
-          # FR | UNASSIGNED_DOMAINS de vssp_discovery.py documente exactement
-          # FR | ce manque. Correctif : figer les entites lights/appliances
-          # FR | reellement assignees de chaque piece au moment de la
-          # FR | generation (rooms_rendered, la MEME source que room.yaml.j2
-          # FR | utilise pour dessiner les tableaux de chaque piece) et
-          # FR | verifier leur etat en direct cote client — aucun capteur
-          # FR | HA, aucun registre de Zones.
+          # EN | uses) and check their live state client-side.
+          # EN | Devices: sensor.vssp_total_appareils already counted
+          # EN | CONNECTED devices (device_id() dedup, excluding unavailable/
+          # EN | unknown); its new total_devices attribute (same dedup,
+          # EN | every device regardless of state) is what makes a
+          # EN | connected/total ratio possible for the bar.
+          # FR | Pieces : sensor.vssp_pieces_actives (packages/
+          # FR | vssp_home_status.yaml) comptait avec area_entities()/
+          # FR | areas(), qui ne voit que ce que le registre de Zones de Home
+          # FR | Assistant a classe. La correspondance piece↔appareil de ce
+          # FR | projet est un concept SEPARE — `rooms[].slots` de
+          # FR | model/house.yaml, ecrit par le scan de decouverte
+          # FR | (vssp_discovery.py) et l'etape d'assignation
+          # FR | (vssp_assign_apply.py) — qui ne touche jamais le registre de
+          # FR | Zones HA, donc area_entities() rapportait ~0 quel que soit
+          # FR | l'etat reel. Correctif : figer les entites lights/
+          # FR | appliances reellement assignees de chaque piece au moment de
+          # FR | la generation (rooms_rendered, la MEME source que
+          # FR | room.yaml.j2 utilise) et verifier leur etat en direct cote
+          # FR | client.
+          # FR | Appareils : sensor.vssp_total_appareils comptait deja les
+          # FR | appareils CONNECTES (deduplication device_id(), unavailable/
+          # FR | unknown exclus) ; son nouvel attribut total_devices (meme
+          # FR | deduplication, tout appareil quel que soit l'etat) est ce
+          # FR | qui rend possible un ratio connecte/total pour la barre.
 {% set active_rooms_map = [] %}
 {% for r in rooms_rendered %}
 {% set ns = namespace(ents=[]) %}
@@ -303,32 +311,149 @@ views:
 {% set _ = active_rooms_map.append(ns.ents) %}
 {% endfor %}
           - type: custom:button-card
-            template: vssp_kpi_card
-            icon: mdi:door-open
-            name: "{{ t('home.kpi.active_rooms') }}"
-            state_display: >
-              [[[
-                const perRoom = {{ active_rooms_map | tojson }};
-                const active = perRoom.filter(ents =>
-                  ents.some(e => states[e] && states[e].state === 'on')
-                ).length;
-                return active + " / " + perRoom.length;
-              ]]]
-            label: "{{ t('home.kpi.active_rooms_hint') }}"
-            variables:
-              icon_color: "#3AA7FF"
-              value_color: "#3AA7FF"
-
-          # Case 4 — Connexions (total appareils enregistrés dans HA)
-          - type: custom:button-card
-            template: vssp_kpi_card
-            icon: mdi:vector-polygon
-            name: "{{ t('home.kpi.connections') }}"
+            show_icon: false
+            show_state: false
+            show_label: false
+            name: "{{ t('home.kpi.rooms_devices') }}"
             entity: sensor.vssp_total_appareils
-            label: "{{ t('home.kpi.connections_hint') }}"
-            variables:
-              icon_color: "#B084FF"
-              value_color: "#B084FF"
+            tap_action:
+              action: more-info
+            custom_fields:
+              bars: >
+                [[[
+                  const perRoom = {{ active_rooms_map | tojson }};
+                  const activeRooms = perRoom.filter(ents =>
+                    ents.some(e => states[e] && states[e].state === 'on')
+                  ).length;
+                  const totalRooms = perRoom.length;
+                  const roomRatio = totalRooms > 0 ? (activeRooms / totalRooms * 100) : 0;
+
+                  const dev = states['sensor.vssp_total_appareils'];
+                  const connected = dev ? (parseFloat(dev.state) || 0) : 0;
+                  const totalDevices = dev && dev.attributes.total_devices != null
+                    ? (parseFloat(dev.attributes.total_devices) || connected)
+                    : connected;
+                  const devRatio = totalDevices > 0 ? (connected / totalDevices * 100) : 0;
+
+                  return `
+                    <div style="margin-bottom:6px;">
+                      <div style="font-size:9px;color:#3AA7FF;margin-bottom:2px;">${activeRooms}/${totalRooms} {{ t('home.kpi.active_rooms') }}</div>
+                      <div style="position:relative;width:100%;height:9px;background:rgba(255,255,255,.08);border-radius:5px;overflow:hidden;">
+                        <div style="width:${roomRatio}%;height:100%;background:#3AA7FF;border-radius:5px;"></div>
+                      </div>
+                    </div>
+                    <div>
+                      <div style="font-size:9px;color:#B084FF;margin-bottom:2px;">${connected}/${totalDevices} {{ t('home.kpi.connections') }}</div>
+                      <div style="position:relative;width:100%;height:9px;background:rgba(255,255,255,.08);border-radius:5px;overflow:hidden;">
+                        <div style="width:${devRatio}%;height:100%;background:#B084FF;border-radius:5px;"></div>
+                      </div>
+                    </div>
+                  `;
+                ]]]
+            styles:
+              grid:
+                - grid-template-areas: '"n" "bars"'
+                - grid-template-rows: min-content 1fr
+                - row-gap: 6px
+                - justify-items: start
+              card:
+                - background: rgba(8,18,28,0.72)
+                - border-radius: 18px
+                - border: 1px solid rgba(0,229,255,0.20)
+                - padding: 14px 18px
+                - height: 100%
+              name:
+                - color: "#FFFFFF"
+                - font-size: 13px
+                - font-weight: 700
+                - letter-spacing: 0.5px
+                - justify-self: start
+              custom_fields:
+                bars:
+                  - width: 100%
+
+          # Case 4 — Température : moyenne des thermostats (climate.*), +/-
+          # ajuste la consigne de CHAQUE thermostat de 0.5 °C (relatif a sa
+          # propre consigne, donc les ecarts entre pieces sont preserves),
+          # borne a 10-30 °C. Decouverte par domaine plutot qu'une liste
+          # d'entites figee a la generation, pour rester a jour si un
+          # thermostat est ajoute/retire sans regenerer le dashboard.
+          #
+          # EN | document.querySelector('home-assistant').hass is the
+          # EN | standard community pattern for reaching the live hass
+          # EN | object from an inline onclick handler inside a
+          # EN | button-card custom_field: <home-assistant> is the app's
+          # EN | root custom element, sitting directly under <body> — not
+          # EN | itself inside any shadow root — so a plain
+          # EN | document.querySelector reaches it regardless of how deep
+          # EN | in shadow DOM the button-card itself is.
+          # FR | document.querySelector('home-assistant').hass est le motif
+          # FR | standard de la communaute pour atteindre l'objet hass en
+          # FR | direct depuis un gestionnaire onclick en ligne dans un
+          # FR | custom_field de button-card : <home-assistant> est
+          # FR | l'element racine de l'application, place directement sous
+          # FR | <body> — jamais lui-meme dans un shadow root — donc un
+          # FR | simple document.querySelector l'atteint quelle que soit la
+          # FR | profondeur de shadow DOM du button-card lui-meme.
+          - type: custom:button-card
+            show_icon: false
+            show_state: false
+            show_label: false
+            name: "{{ t('home.kpi.thermostats') }}"
+            tap_action:
+              action: none
+            custom_fields:
+              temp: >
+                [[[
+                  const clims = Object.values(states).filter(s =>
+                    s.entity_id.startsWith('climate.') && s.attributes.temperature != null
+                  );
+                  const avg = clims.length
+                    ? clims.reduce((a, s) => a + s.attributes.temperature, 0) / clims.length
+                    : null;
+                  const avgText = avg === null ? "{{ t('home.kpi.thermostats_hint') }}" : avg.toFixed(1) + '°C';
+                  const adjustJs = (delta) => `
+                    event.stopPropagation();
+                    var hass = document.querySelector('home-assistant').hass;
+                    Object.values(hass.states).filter(function(s) {
+                      return s.entity_id.startsWith('climate.') && s.attributes.temperature != null;
+                    }).forEach(function(s) {
+                      var t = Math.max(10, Math.min(30, Math.round((s.attributes.temperature + (${delta})) * 2) / 2));
+                      hass.callService('climate', 'set_temperature', {entity_id: s.entity_id, temperature: t});
+                    });
+                  `.replace(/\n/g, ' ').replace(/"/g, '&quot;');
+                  const btnStyle = avg === null
+                    ? 'font-size:22px;color:#00E5FF;width:28px;text-align:center;user-select:none;opacity:.3;pointer-events:none;'
+                    : 'font-size:22px;color:#00E5FF;width:28px;text-align:center;user-select:none;cursor:pointer;';
+                  return `
+                    <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+                      <span onclick="${adjustJs(-0.5)}" style="${btnStyle}">−</span>
+                      <span style="font-size:17px;font-weight:700;color:#FFFFFF;">${avgText}</span>
+                      <span onclick="${adjustJs(0.5)}" style="${btnStyle}">+</span>
+                    </div>
+                  `;
+                ]]]
+            styles:
+              grid:
+                - grid-template-areas: '"n" "temp"'
+                - grid-template-rows: min-content 1fr
+                - row-gap: 10px
+                - justify-items: start
+              card:
+                - background: rgba(8,18,28,0.72)
+                - border-radius: 18px
+                - border: 1px solid rgba(0,229,255,0.20)
+                - padding: 14px 18px
+                - height: 100%
+              name:
+                - color: "#FFFFFF"
+                - font-size: 13px
+                - font-weight: 700
+                - letter-spacing: 0.5px
+                - justify-self: start
+              custom_fields:
+                temp:
+                  - width: 100%
 
           # Case 5 — Sécurité / Alarme
           - type: custom:button-card
