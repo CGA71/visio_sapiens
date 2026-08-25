@@ -116,22 +116,22 @@ views:
                       const avg = (cpu + ram + hdd) / 3;
                       const color = avg >= 90 ? '#FF3D71' : avg >= 70 ? '#FFA726' : '#00FFC3';
                       return `
-                        <div style="display:flex;justify-content:space-between;font-size:10px;color:#56707E;margin-bottom:6px;">
+                        <div style="display:flex;justify-content:space-between;font-size:9px;color:#56707E;margin-bottom:3px;line-height:1.2;">
                           <span>CPU ${Math.round(cpu)}%</span>
                           <span>RAM ${Math.round(ram)}%</span>
                           <span>HDD ${Math.round(hdd)}%</span>
                         </div>
-                        <div style="position:relative;width:100%;height:12px;background:rgba(255,255,255,.08);border-radius:6px;overflow:hidden;">
-                          <div style="width:${Math.min(avg,100)}%;height:100%;background:${color};border-radius:6px;transition:width .3s;"></div>
+                        <div style="position:relative;width:100%;height:14px;background:rgba(255,255,255,.08);border-radius:7px;overflow:hidden;">
+                          <div style="width:${Math.min(avg,100)}%;height:100%;background:${color};border-radius:7px;transition:width .3s;"></div>
+                          <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#0B141C;">${Math.round(avg)}%</div>
                         </div>
-                        <div style="margin-top:6px;font-size:13px;color:${color};font-weight:700;">${Math.round(avg)}%</div>
                       `;
                     ]]]
                 styles:
                   grid:
                     - grid-template-areas: '"n" "bar"'
                     - grid-template-rows: min-content 1fr
-                    - row-gap: 10px
+                    - row-gap: 6px
                     - justify-items: start
                   card:
                     - background: rgba(8,18,28,0.72)
