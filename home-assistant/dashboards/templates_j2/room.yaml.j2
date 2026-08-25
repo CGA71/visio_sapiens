@@ -641,7 +641,7 @@ views:
 
               # ── Colonne 3 : robot Jessica (Ecovacs) + actions ────────────
               # Entites reelles fournies par l'utilisateur : vacuum.jessica,
-              # image.jessica_carte (carte de nettoyage en direct) et
+              # sensor.jessica_station_state, sensor.jessica_batterie et
               # button.jessica_empty_dustbin (vidage du bac, expose comme
               # bouton dedie par l'integration Ecovacs plutot que par un
               # service vacuum generique).
@@ -674,26 +674,6 @@ views:
                     primary_info: name
                     secondary_info: state
                     icon_type: entity-picture
-
-                  # Carte de nettoyage en direct — image.jessica_carte est
-                  # mise a jour par l'integration Ecovacs pendant le
-                  # nettoyage.
-                  - type: picture-entity
-                    entity: image.jessica_carte
-                    name: Jessica
-                    show_state: false
-                    tap_action:
-                      action: more-info
-                      entity: vacuum.jessica
-                    card_mod:
-                      style: |
-                        ha-card {
-                          background: rgba(0,0,0,.28) !important;
-                          border: 1px solid rgba(0,229,255,.18) !important;
-                          border-radius: 14px !important;
-                          height: 140px;
-                          overflow: hidden;
-                        }
 
                   - type: grid
                     columns: 2
