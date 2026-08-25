@@ -102,6 +102,15 @@ slot:
   audio_source: Source
   audio_output: Output
   audio_no_speaker: No nearby speaker
+  nvr_access: NVR access
+  door_open: Open
+  door_close: Close
+  door_light: Light
+  vacuum_dock: Return to base
+  vacuum_empty: Empty bin
+  vacuum_battery: Battery
+  vacuum_schedule: Schedule
+  vacuum_status: Jessica status
 
 # ----------------------------------------------------------------------
 # EN | Header band, identical on every dashboard.

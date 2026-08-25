@@ -62,6 +62,15 @@ slot:
   audio_source: Source
   audio_output: Sortie
   audio_no_speaker: Aucune enceinte à proximité
+  nvr_access: Accès NVR
+  door_open: Ouverture
+  door_close: Fermer
+  door_light: Lumière
+  vacuum_dock: Retour à la base
+  vacuum_empty: Vider le bac
+  vacuum_battery: Batterie
+  vacuum_schedule: Programmation
+  vacuum_status: Statut Jessica
 
 header:
   weather_unavailable: Météo indisponible
