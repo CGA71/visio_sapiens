@@ -674,6 +674,25 @@ views:
                     primary_info: name
                     secondary_info: state
                     icon_type: entity-picture
+                    # EN | Mushroom cards fall back to a white ha-card
+                    # EN | background (var(--card-background-color, white))
+                    # EN | unless overridden, unlike every other card here
+                    # EN | which sets its own dark background by hand — match
+                    # EN | that glass look instead of standing out in white.
+                    # FR | Les cartes Mushroom retombent sur un fond ha-card
+                    # FR | blanc (var(--card-background-color, white)) sans
+                    # FR | surcharge, contrairement a toutes les autres cartes
+                    # FR | ici qui posent leur propre fond sombre a la main —
+                    # FR | reprendre ce meme rendu verre plutot que trancher en
+                    # FR | blanc.
+                    card_mod:
+                      style: |
+                        ha-card {
+                          background: rgba(0,0,0,.22) !important;
+                          border: 1px solid rgba(0,229,255,.12);
+                          border-radius: 12px;
+                          box-shadow: none;
+                        }
 
                   # EN | Same entity list as the user's own device page for
                   # EN | Jessica — map (relative time instead of a raw
