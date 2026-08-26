@@ -692,9 +692,20 @@ views:
                           border: 1px solid rgba(0,229,255,.12);
                           border-radius: 12px;
                           box-shadow: none;
-                          --primary-text-color: #DCEEF6;
-                          --secondary-text-color: #8FB6C9;
-                          --icon-color: #00FFC3;
+                          --primary-text-color: #DCEEF6 !important;
+                          --secondary-text-color: #8FB6C9 !important;
+                          /* EN | Mushroom reads the RGB-triplet variants for
+                             EN | its name/state text, not the plain color
+                             EN | ones above — both are set so the fix holds
+                             EN | regardless of which one it actually uses.
+                             FR | Mushroom lit les variantes RGB pour son
+                             FR | texte nom/etat, pas les variables couleur
+                             FR | simples ci-dessus — les deux sont posees
+                             FR | pour que le correctif tienne quelle que
+                             FR | soit celle reellement utilisee. */
+                          --rgb-primary-text-color: 220,238,246 !important;
+                          --rgb-secondary-text-color: 143,182,201 !important;
+                          --icon-color: #00FFC3 !important;
                         }
 
                   # EN | Same entity list as the user's own device page for
