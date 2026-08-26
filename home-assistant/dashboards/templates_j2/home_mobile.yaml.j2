@@ -346,19 +346,19 @@ views:
             entity: alarm_control_panel.maison            # TODO
             state_display: >
               [[[
-                if (!entity) return '{{ t("home.alarm.not_configured") }}';
+                if (!entity) return '{{ t("home.alarm.not_configured") | js }}';
                 switch (entity.state) {
-                  case "disarmed": return '{{ t("home.alarm.ok") }}';
-                  case "triggered": return '{{ t("home.alarm.alert") }}';
-                  case "armed_home": return '{{ t("home.alarm.armed") }}';
-                  case "armed_away": return '{{ t("home.alarm.armed") }}';
+                  case "disarmed": return '{{ t("home.alarm.ok") | js }}';
+                  case "triggered": return '{{ t("home.alarm.alert") | js }}';
+                  case "armed_home": return '{{ t("home.alarm.armed") | js }}';
+                  case "armed_away": return '{{ t("home.alarm.armed") | js }}';
                   default: return entity.state;
                 }
               ]]]
             label: >
               [[[
-                if (!entity) return '{{ t("home.alarm.no_entity") }}';
-                return entity.state === "triggered" ? '{{ t("home.alarm.intrusion") }}' : '{{ t("home.alarm.no_alert") }}';
+                if (!entity) return '{{ t("home.alarm.no_entity") | js }}';
+                return entity.state === "triggered" ? '{{ t("home.alarm.intrusion") | js }}' : '{{ t("home.alarm.no_alert") | js }}';
               ]]]
             variables:
               icon_color: "#00FFC3"

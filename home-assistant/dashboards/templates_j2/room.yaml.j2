@@ -755,7 +755,7 @@ views:
                         label: >
                           [[[
                             if (!entity) return '—';
-                            return entity.state === 'on' ? '{{ t("slot.vacuum_on") }}' : '{{ t("slot.vacuum_off") }}';
+                            return entity.state === 'on' ? '{{ t("slot.vacuum_on") | js }}' : '{{ t("slot.vacuum_off") | js }}';
                           ]]]
                         tap_action:
                           action: more-info

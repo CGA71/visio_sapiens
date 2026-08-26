@@ -1089,6 +1089,16 @@ def main() -> int:
         lstrip_blocks=True,
         keep_trailing_newline=True,
     )
+    # EN | Escapes a translated string for safe embedding inside a JS
+    # EN | single-quoted literal in a button-card [[[ ]]] template. Without
+    # EN | it, any locale value containing an apostrophe (e.g. fr "À l'arrêt")
+    # EN | breaks the generated JS and button-card raises ButtonCardJSTemplateError.
+    # FR | Echappe une chaine traduite pour une insertion sure dans un
+    # FR | litteral JS entre guillemets simples au sein d'un template
+    # FR | button-card [[[ ]]]. Sans cela, toute valeur de locale contenant
+    # FR | une apostrophe (ex. fr "À l'arrêt") casse le JS genere et
+    # FR | button-card leve ButtonCardJSTemplateError.
+    env.filters["js"] = lambda s: str(s).replace("\\", "\\\\").replace("'", "\\'")
 
     out_dir.mkdir(parents=True, exist_ok=True)
     n_dev = len(model.get("energy_devices", []))

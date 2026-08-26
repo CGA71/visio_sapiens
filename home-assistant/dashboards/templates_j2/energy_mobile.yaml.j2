@@ -195,7 +195,7 @@ views:
                   const LOCALE = '{{ locale_tag }}';
                   const c = states['{{ energy.solar.capacity_helper }}'];
                   const cap = c ? Number(c.state) : 0;
-                  return '<span style="color:#56707E;font-size:10px">{{ t("energy.stat.annual_capacity") }}: ' +
+                  return '<span style="color:#56707E;font-size:10px">{{ t("energy.stat.annual_capacity") | js }}: ' +
                          cap.toLocaleString(LOCALE) + ' kWh</span>';
                 ]]]
               goal: |
@@ -208,7 +208,7 @@ views:
                   const pct = cap > 0 ? (prod / cap * 100) : 0;
                   return '<span style="color:#00FFC3;font-size:11px;font-weight:700">' +
                          pct.toLocaleString(LOCALE, { maximumFractionDigits: 1 }) +
-                         ' {{ t("energy.stat.of_annual_target") }}</span>';
+                         ' {{ t("energy.stat.of_annual_target") | js }}</span>';
                 ]]]
             styles:
               grid:

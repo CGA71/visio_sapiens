@@ -721,11 +721,11 @@ views:
                       '<ha-icon icon="mdi:menu-right" style="--mdc-icon-size:20px;color:' + color + ';margin-left:-8px;"></ha-icon>' +
                     '</div>';
                   const inv = states['{{ energy.solar.inverter_running }}'];
-                  const invTxt = !inv ? '{{ t("energy.flow.status_unknown") }}' : (inv.state === 'on' ? '{{ t("energy.flow.running") }}' : '{{ t("energy.flow.stopped") }}');
+                  const invTxt = !inv ? '{{ t("energy.flow.status_unknown") | js }}' : (inv.state === 'on' ? '{{ t("energy.flow.running") | js }}' : '{{ t("energy.flow.stopped") | js }}');
                   const invCol = (inv && inv.state === 'on') ? '#00FFC3' : '#FF3D71';
                   const exch =
                     '<div style="flex:1.2;display:flex;flex-direction:column;justify-content:center;gap:10px;padding-top:22px;min-width:86px;">' +
-                      '<div style="text-align:center;color:#FFD700;font-size:10px;">{{ t('energy.stat.exported') }}<br>' +
+                      '<div style="text-align:center;color:#FFD700;font-size:10px;">{{ t('energy.stat.exported') | js }}<br>' +
                         '<b style="font-size:13px;">' + val('{{ energy.grid.export_power }}', 2) + ' kW</b></div>' +
                       '<div style="display:flex;align-items:center;">' +
                         '<div style="height:2px;width:100%;background:linear-gradient(90deg,transparent,#FFD700);"></div>' +
@@ -735,7 +735,7 @@ views:
                         '<ha-icon icon="mdi:menu-left" style="--mdc-icon-size:18px;color:#FF9800;margin-right:-8px;"></ha-icon>' +
                         '<div style="height:2px;width:100%;background:linear-gradient(90deg,#FF9800,transparent);"></div>' +
                       '</div>' +
-                      '<div style="text-align:center;color:#FF9800;font-size:10px;">{{ t("energy.stat.imported") }}<br>' +
+                      '<div style="text-align:center;color:#FF9800;font-size:10px;">{{ t("energy.stat.imported") | js }}<br>' +
                         '<b style="font-size:13px;">' + val('{{ energy.grid.import_power }}', 2) + ' kW</b></div>' +
                     '</div>';
                   const legend = (color, txt) =>
@@ -744,18 +744,18 @@ views:
                       '<span style="color:#8FB6C9;font-size:10px;">' + txt + '</span></div>';
                   return '<div style="width:100%;">' +
                     '<div style="display:flex;align-items:flex-start;justify-content:space-between;width:100%;gap:4px;">' +
-                      node('mdi:solar-panel-large', '{{ t("energy.flow.solar_panels") }}', '{{ t("energy.flow.current_production") }}', '#56707E', val('{{ energy.solar.power }}', 2) + ' kW', '#00FFC3') +
+                      node('mdi:solar-panel-large', '{{ t("energy.flow.solar_panels") | js }}', '{{ t("energy.flow.current_production") | js }}', '#56707E', val('{{ energy.solar.power }}', 2) + ' kW', '#00FFC3') +
                       arrow('#00FFC3') +
-                      node('mdi:power-plug-battery', '{{ t("energy.flow.inverter") }}', '{{ t("energy.flow.status") }}', '#56707E', invTxt, invCol) +
+                      node('mdi:power-plug-battery', '{{ t("energy.flow.inverter") | js }}', '{{ t("energy.flow.status") | js }}', '#56707E', invTxt, invCol) +
                       arrow('#00E5FF') +
-                      node('mdi:home-lightning-bolt', '{{ t("energy.flow.home") }}', '{{ t("energy.flow.current_consumption") }}', '#56707E', val('{{ energy.totals.power }}', 2) + ' kW', '#00E5FF') +
+                      node('mdi:home-lightning-bolt', '{{ t("energy.flow.home") | js }}', '{{ t("energy.flow.current_consumption") | js }}', '#56707E', val('{{ energy.totals.power }}', 2) + ' kW', '#00E5FF') +
                       exch +
-                      node('mdi:transmission-tower', '{{ t("energy.flow.grid") }}', '\u00A0', '#56707E', '\u00A0', '#8FB6C9') +
+                      node('mdi:transmission-tower', '{{ t("energy.flow.grid") | js }}', '\u00A0', '#56707E', '\u00A0', '#8FB6C9') +
                     '</div>' +
                     '<div style="display:flex;gap:20px;justify-content:center;margin-top:12px;padding-top:10px;' +
                       'border-top:1px solid rgba(0,229,255,0.10);">' +
-                      legend('#00FFC3', '{{ t("energy.stat.produced") }}') + legend('#00E5FF', '{{ t("energy.stat.consumed") }}') +
-                      legend('#FFD700', '{{ t("energy.stat.exported") }}') + legend('#FF9800', '{{ t("energy.stat.imported") }}') +
+                      legend('#00FFC3', '{{ t("energy.stat.produced") | js }}') + legend('#00E5FF', '{{ t("energy.stat.consumed") | js }}') +
+                      legend('#FFD700', '{{ t("energy.stat.exported") | js }}') + legend('#FF9800', '{{ t("energy.stat.imported") | js }}') +
                     '</div></div>';
                 ]]]
             styles:
