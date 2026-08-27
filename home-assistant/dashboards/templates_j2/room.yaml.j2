@@ -682,7 +682,9 @@ views:
                           font-weight: normal;
                           color: var(--red-color);
                         }
-
+                        ha-state-icon {
+                          color: {{ '#008cff' if is_state(config.entity, 'on') else '#ffffff' }} !important;
+                        }
                   # EN | Same entity list as the user's own device page for
                   # EN | Jessica — map (relative time instead of a raw
                   # EN | timestamp), station state, mop-attached, detergent/
