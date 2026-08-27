@@ -84,6 +84,9 @@ slot:
   vacuum_detergent: Niveau de détergent
   vacuum_active_map: Carte active
   vacuum_relocate: Repositionner
+  security_camera: Caméra
+  security_intercom: Interphone
+  security_vacuum: Aspirateur
 
 header:
   weather_unavailable: Météo indisponible

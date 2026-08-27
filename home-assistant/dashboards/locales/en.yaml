@@ -124,6 +124,9 @@ slot:
   vacuum_detergent: Detergent level
   vacuum_active_map: Active map
   vacuum_relocate: Relocate
+  security_camera: Camera
+  security_intercom: Intercom
+  security_vacuum: Vacuum
 
 # ----------------------------------------------------------------------
 # EN | Header band, identical on every dashboard.
