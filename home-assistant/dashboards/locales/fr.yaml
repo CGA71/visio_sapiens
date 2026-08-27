@@ -87,6 +87,10 @@ slot:
   security_camera: Caméra
   security_intercom: Interphone
   security_vacuum: Aspirateur
+  lights_switches: Interrupteurs
+  lights_outlets: Prises
+  switch: Interrupteur
+  outlet: Prise
 
 header:
   weather_unavailable: Météo indisponible

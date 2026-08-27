@@ -1188,91 +1188,102 @@ views:
           # EN | fields (a room could be type: entrance with a different
           # EN | slot_set) and it is slot_set that actually selects the
           # EN | `entrance` layout in house.yaml where lights is the
-          # EN | full-width 90px horizontal strip under the header, not a
-          # EN | side column — the vertical one-row-per-device list below
-          # EN | would overflow a bar that short. Same button styling, laid
-          # EN | out side by side in a horizontal-stack instead.
+          # EN | full-width 175px horizontal strip under the header, not a
+          # EN | side column.
+          # EN | Two framed groups side by side, breaker-styled
+          # EN | (vssp_circuit_switch, same template as the ENERGY
+          # EN | electrical panel) rather than the plain one-line toggle
+          # EN | used by other rooms' lights slot: 3 switches, 2 outlets.
+          # EN | Hardcoded directly, same spirit as the entrance cameras
+          # EN | and the Jessica vacuum entities above — nothing usable is
+          # EN | assigned to this slot via the admin console, and the
+          # EN | outlets are a new device type with no real entities yet.
+          # EN | VISUAL TRIAL — entity ids below are placeholders
+          # EN | (switch.entree_*), TODO: replace with the real ones once
+          # EN | the switches/outlets exist in Home Assistant.
           # FR | room.slot_set, pas room.type : les deux sont des champs
           # FR | independants (une piece pourrait avoir type: entrance avec
           # FR | un autre slot_set) et c'est slot_set qui selectionne
           # FR | reellement le gabarit `entrance` de house.yaml, ou lights
-          # FR | est le bandeau horizontal pleine largeur de 90px sous
-          # FR | l'en-tete, pas une colonne laterale — la liste verticale
-          # FR | une-ligne-par-appareil ci-dessous deborderait d'une barre
-          # FR | aussi basse. Meme habillage de bouton, dispose cote a cote
-          # FR | dans un horizontal-stack.
-{% if slot.entities %}
+          # FR | est le bandeau horizontal pleine largeur de 175px sous
+          # FR | l'en-tete, pas une colonne laterale.
+          # FR | Deux groupes encadres cote a cote, façon interrupteur de
+          # FR | tableau electrique (vssp_circuit_switch, meme template que
+          # FR | le tableau electrique d'ENERGY) plutot que le simple
+          # FR | bouton une-ligne utilise par le tableau lights des autres
+          # FR | pieces : 3 interrupteurs, 2 prises. Code en dur, meme
+          # FR | esprit que les cameras de l'entree et les entites du robot
+          # FR | Jessica ci-dessus — rien d'exploitable n'est assigne a ce
+          # FR | tableau via la console admin, et les prises sont un
+          # FR | nouveau type d'appareil sans entite reelle pour l'instant.
+          # FR | ESSAI VISUEL — les entity id ci-dessous sont des
+          # FR | remplisseurs (switch.entree_*), TODO : les remplacer par
+          # FR | les vraies une fois les interrupteurs/prises presents dans
+          # FR | Home Assistant.
+{% set entrance_switches = ['switch.entree_interrupteur_1', 'switch.entree_interrupteur_2', 'switch.entree_interrupteur_3'] %}
+{% set entrance_outlets = ['switch.entree_prise_1', 'switch.entree_prise_2'] %}
           - type: horizontal-stack
+            card_mod:
+              style: |
+                :host { height: 100%; }
+                #root { height: 100%; align-items: stretch; }
             cards:
-{% for e in slot.entities %}
-              - type: custom:button-card
-                entity: {{ e }}
-                show_state: true
-                size: 22px
-                styles:
-                  grid:
-                    - grid-template-areas: '"i n s"'
-                    - grid-template-columns: 28px 1fr auto
-                    - align-items: center
-                    - column-gap: 8px
-                  card:
-                    - background: rgba(0,0,0,.22)
-                    - border: 1px solid rgba(0,229,255,.12)
-                    - border-radius: 12px
-                    - padding: 8px 12px
-                    - height: 100%
-                  name:
-                    - justify-self: start
-                    - font-size: 13px
-                    - color: "#DCEEF6"
-                  state:
-                    - justify-self: end
-                    - font-size: 12px
-                    - font-family: Orbitron, sans-serif
-                    - color: "#00E5FF"
-                  icon:
-                    - color: "#00E5FF"
-                tap_action:
-                  action: toggle
-                hold_action:
-                  action: more-info
+              - type: vertical-stack
+                card_mod:
+                  style: |
+                    :host { flex: 1 1 0; height: 100%; }
+                    #root {
+                      height: 100%;
+                      box-sizing: border-box;
+                      background: rgba(0,0,0,.16);
+                      border: 1px solid rgba(0,229,255,.15);
+                      border-radius: 16px;
+                      padding: 8px 10px;
+                    }
+                cards:
+                  - type: custom:button-card
+                    template: vssp_section_title
+                    name: "{{ t('slot.lights_switches') }}"
+                  - type: horizontal-stack
+                    cards:
+{% for e in entrance_switches %}
+                      - type: custom:button-card
+                        template: vssp_circuit_switch
+                        entity: {{ e }}  # TODO: remplacer par le vrai interrupteur
+                        name: "{{ t('slot.switch') }} {{ loop.index }}"
+                        icon: mdi:light-switch
+                        variables:
+                          model: ""
+                          amp: ""
 {% endfor %}
-{% else %}
-          # EN | Was `slot.state == 'empty'`, which would otherwise have
-          # EN | taken the generic empty-slot branch above (icon + "no
-          # EN | device") — exempted for entrance so this branch always
-          # EN | runs, but that means it must handle the empty case itself.
-          # FR | Etait `slot.state == 'empty'`, ce qui aurait sinon pris la
-          # FR | branche generique tableau-vide ci-dessus (icone + « aucun
-          # FR | appareil ») — exemptee pour l'entree pour que cette branche
-          # FR | s'execute toujours, ce qui veut dire qu'elle doit gerer
-          # FR | elle-meme le cas vide.
-          - type: custom:button-card
-            show_icon: true
-            show_name: false
-            show_state: false
-            show_label: true
-            icon: mdi:tray-remove
-            label: "{{ t('slot.empty') }}"
-            tap_action:
-              action: none
-            styles:
-              card:
-                - background: transparent
-                - box-shadow: none
-                - border: none
-                - flex: 1 1 auto
-                - cursor: default
-                - pointer-events: none
-              icon:
-                - color: rgba(143,182,201,0.35)
-                - "--mdc-icon-size": 28px
-              label:
-                - color: rgba(143,182,201,0.55)
-                - font-size: 11px
-                - letter-spacing: .6px
-                - margin-top: 4px
-{% endif %}
+              - type: vertical-stack
+                card_mod:
+                  style: |
+                    :host { flex: 1 1 0; height: 100%; }
+                    #root {
+                      height: 100%;
+                      box-sizing: border-box;
+                      background: rgba(0,0,0,.16);
+                      border: 1px solid rgba(0,229,255,.15);
+                      border-radius: 16px;
+                      padding: 8px 10px;
+                    }
+                cards:
+                  - type: custom:button-card
+                    template: vssp_section_title
+                    name: "{{ t('slot.lights_outlets') }}"
+                  - type: horizontal-stack
+                    cards:
+{% for e in entrance_outlets %}
+                      - type: custom:button-card
+                        template: vssp_circuit_switch
+                        entity: {{ e }}  # TODO: remplacer par la vraie prise — nouvel objet domotique
+                        name: "{{ t('slot.outlet') }} {{ loop.index }}"
+                        icon: mdi:power-socket-fr
+                        variables:
+                          model: ""
+                          amp: ""
+{% endfor %}
 
 {% else %}
           # EN | CLIMATE / LIGHTS / SHUTTERS — one row per device, same

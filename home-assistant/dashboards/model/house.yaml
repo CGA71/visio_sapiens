@@ -177,22 +177,26 @@ slot_sets:
 layouts:
   entrance:
     # EN | lights: full-width horizontal strip right under the header,
-    # EN | 90px — a light row does not need a whole column's height.
+    # EN | 175px — tall enough for the two framed groups of
+    # EN | breaker-styled switch cards (3 switches + 2 outlets) hardcoded
+    # EN | in room.yaml.j2's entrance-only lights branch.
     # EN | security: everything else, full width, one tall row. It now
     # EN | carries a camera mosaic, an NVR access panel, the intercom feed
     # EN | + door controls, and the Jessica vacuum panel side by side —
     # EN | needs the width more than the 4-of-5-columns split it had when
     # EN | it shared its rows with lights and climate.
     # FR | lights : bandeau horizontal pleine largeur juste sous l'en-tete,
-    # FR | 90px — une ligne de lumieres n'a pas besoin de la hauteur d'une
-    # FR | colonne entiere.
+    # FR | 175px — assez pour les deux groupes encadres de cartes
+    # FR | interrupteur façon tableau electrique (3 interrupteurs + 2
+    # FR | prises) codes en dur dans la branche lights specifique a
+    # FR | l'entree de room.yaml.j2.
     # FR | security : tout le reste, pleine largeur, une seule ligne haute.
     # FR | Il porte desormais une mosaique de cameras, un panneau d'acces au
     # FR | NVR, le flux de l'interphone + les commandes de porte, et le
     # FR | panneau du robot Jessica cote a cote — a besoin de la largeur
     # FR | plus que du partage a 4-colonnes-sur-5 qu'il avait quand il
     # FR | partageait ses lignes avec lights et climate.
-    rows: "105px 90px 510px"
+    rows: "105px 175px 510px"
     areas:
       - "nav header   header   header   header   header"
       - "nav lights   lights   lights   lights   lights"

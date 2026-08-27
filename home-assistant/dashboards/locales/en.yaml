@@ -127,6 +127,10 @@ slot:
   security_camera: Camera
   security_intercom: Intercom
   security_vacuum: Vacuum
+  lights_switches: Switches
+  lights_outlets: Outlets
+  switch: Switch
+  outlet: Outlet
 
 # ----------------------------------------------------------------------
 # EN | Header band, identical on every dashboard.
