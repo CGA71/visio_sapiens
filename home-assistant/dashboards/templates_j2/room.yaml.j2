@@ -683,7 +683,7 @@ views:
                           color: #ffffff;
                         }
                         ha-state-icon {
-                          color: {{ '#008cff' if is_state(config.entity, 'on') else '#ffffff' }} !important;
+                          color: {% raw %}{{ '#008cff' if is_state(config.entity, 'on') else '#ffffff' }}{% endraw %} !important;
                         }
                   # EN | Same entity list as the user's own device page for
                   # EN | Jessica — map (relative time instead of a raw
