@@ -72,6 +72,55 @@ L'éditeur propose :
   que `adminmenu.section.theme_hint` dans les catalogues de locale
   (« Importer ou exporter la charte graphique CSS ») promettait déjà.
 
+## Déploiement : `design_system.yaml` est un état côté pod
+
+`.gitlab-ci.yml` remplace tout le dossier `dashboards/` à chaque
+déploiement, puis recopie une courte liste blanche de fichiers depuis
+l'ancienne copie parce qu'ils sont écrits sur l'instance, pas livrés
+par le dépôt — `model/house_rooms.yaml` (le wizard des pièces),
+`model/energy_devices.yaml` (le sync énergie), `views/home.yaml`
+(édition Lovelace manuelle). `model/design_system.yaml` figure
+désormais dans cette même liste blanche, puisque `vssp_theme_apply.py`
+l'écrit exactement de la même manière. Sans cela, chaque déploiement
+annulait en silence toute couleur appliquée depuis l'écran THEME pour
+revenir à la valeur par défaut du dépôt — précisément la panne que
+cette section existe pour empêcher. (La production n'a encore aucune
+étape de régénération de dashboard côté pod, donc ses données
+ENERGY/THEME ne sont fraîches que jusqu'à la dernière modification
+faite en direct sur cette instance ; le staging régénère aussi
+`themes/visio_sapiens.yaml` depuis le modèle préservé juste après
+l'échange du déploiement, à l'image de la régénération ENERGY côté pod
+déjà existante.)
+
+## Revenir à la référence d'usine
+
+`design_system.yaml` est désormais un état côté pod (voir ci-dessus),
+donc une fois qu'une couleur est éditée depuis l'écran THEME, plus rien
+dans le dépôt ne peut l'écraser en silence — c'est tout l'intérêt. Mais
+cela veut aussi dire qu'il faut un chemin de retour explicite.
+
+**`home-assistant/dashboards/model/design_system.default.yaml`** est
+une seconde copie figée de la même structure `design:`, jamais écrite
+par `vssp_theme_apply.py` et jamais listée dans la liste blanche « état
+pod préservé » de `.gitlab-ci.yml` — elle part toujours avec ce que le
+dépôt déclare actuellement comme référence, rafraîchie à chaque
+déploiement comme n'importe quel template.
+
+Le bouton **RESTAURER LA RÉFÉRENCE** de l'écran THEME (à côté de
+l'iframe, avec une boîte de confirmation, même forme que REGENERER
+HOME/ENERGY) appelle `vssp_theme_apply.py --restore-reference
+design_system.default.yaml`, qui construit un payload
+`{"tokens": {...}}` normal directement depuis ce fichier et le fait
+passer par exactement le même code `validate()` / `apply()` /
+sauvegarde qu'une vraie soumission de l'éditeur — pas de logique de
+réinitialisation séparée à maintenir en phase. Il régénère ensuite le
+thème et le recharge à chaud, exactement comme un APPLIQUER normal.
+
+Pour changer la référence d'usine elle-même (un rebranding délibéré,
+pas une édition quotidienne), modifiez `design_system.default.yaml` et
+committez-le — `design_system.yaml` reste inchangé par ce changement
+tant que personne ne clique sur RESTAURER LA RÉFÉRENCE.
+
 ## Pipeline déclenché par APPLIQUER
 
 ```

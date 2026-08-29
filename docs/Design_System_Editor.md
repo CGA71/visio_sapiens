@@ -67,6 +67,52 @@ The editor offers:
   what `adminmenu.section.theme_hint` in the locale catalogues
   ("Import or export the CSS design system") already promised.
 
+## Deployment: `design_system.yaml` is pod-side state
+
+`.gitlab-ci.yml` replaces the whole `dashboards/` directory on every
+deployment, then copies a short whitelist of files back from the
+previous copy because they are written on the instance, not shipped by
+the repository — `model/house_rooms.yaml` (the rooms wizard),
+`model/energy_devices.yaml` (the energy sync), `views/home.yaml` (manual
+Lovelace editing). `model/design_system.yaml` is now in that same
+whitelist, since `vssp_theme_apply.py` writes it exactly the same way.
+Without this, every deployment silently reverted any color applied from
+the THEME screen back to the repository default — the very failure mode
+this section exists to prevent. (Production has no pod-side dashboard
+regeneration step at all yet, so its ENERGY/THEME data is only ever as
+fresh as the last live edit made directly on that instance; staging
+also re-renders `themes/visio_sapiens.yaml` from the preserved model
+right after the deploy swap, mirroring the existing ENERGY pod-side
+regeneration.)
+
+## Reverting to the factory reference
+
+`design_system.yaml` is pod-side state now (see above), so once someone edits a color from the THEME screen, nothing
+in the repository can silently overwrite it again — that is the whole
+point. But it also means there needs to be an explicit way back.
+
+**`home-assistant/dashboards/model/design_system.default.yaml`** is a
+second, frozen copy of the same `design:` structure, never written by
+`vssp_theme_apply.py` and never listed in `.gitlab-ci.yml`'s
+preserved-pod-state whitelist — it always ships with whatever the
+repository currently declares as the reference, refreshed on every
+deployment like any other template.
+
+The THEME screen's **RESTORE REFERENCE** button (next to the iframe,
+with a confirmation dialog, the same shape as REGENERATE HOME/ENERGY)
+calls `vssp_theme_apply.py --restore-reference
+design_system.default.yaml`, which builds a normal `{"tokens": {...}}`
+payload straight out of that file and pushes it through the exact same
+`validate()` / `apply()` / backup code path as a real editor
+submission — no separate reset logic to keep in sync. It then
+regenerates the theme and reloads it live, exactly like a normal
+APPLY.
+
+To change the factory reference itself (a deliberate rebrand, not a
+day-to-day edit), update `design_system.default.yaml` and commit it —
+`design_system.yaml` is untouched by that change until someone
+actually clicks RESTORE REFERENCE.
+
 ## Pipeline triggered by APPLY
 
 ```

@@ -77,6 +77,26 @@ shell_command:
     --design-status-file /config/www/vssp/design_system_status.json
     --status-file /config/www/vssp/theme_generate_status.json
 
+  # EN | RESTORE REFERENCE button: rebuilds the payload from the frozen
+  # EN | design_system.default.yaml instead of a webhook submission, then
+  # EN | goes through the exact same validate/backup/write code as a real
+  # EN | editor APPLY (see reference_payload() in vssp_theme_apply.py).
+  # EN | design_system.default.yaml itself always ships with the repository
+  # EN | — see the comment in .gitlab-ci.yml's preserved-pod-state list.
+  # FR | Bouton RESTAURER LA REFERENCE : reconstruit le payload depuis le
+  # FR | design_system.default.yaml fige plutot que depuis une soumission
+  # FR | webhook, puis passe par exactement le meme code
+  # FR | validation/sauvegarde/ecriture qu'un vrai APPLIQUER de l'editeur
+  # FR | (voir reference_payload() dans vssp_theme_apply.py).
+  # FR | design_system.default.yaml part toujours avec le depot lui-meme —
+  # FR | voir le commentaire de la liste « etat pod preserve » dans
+  # FR | .gitlab-ci.yml.
+  vssp_theme_restore_reference: >-
+    python3 /config/vssp/vssp_theme_apply.py
+    --model /config/dashboards/model/design_system.yaml
+    --restore-reference /config/dashboards/model/design_system.default.yaml
+    --status-file /config/www/vssp/theme_status.json
+
 # --------------------------------------------------------------------
 # EN | WEBHOOK — how the editor talks back to Home Assistant
 # FR | WEBHOOK — comment l editeur parle a Home Assistant
@@ -148,3 +168,43 @@ automation:
               message: >
                 The webhook received a payload without content_b64.
                 Nothing was written.
+
+# --------------------------------------------------------------------
+# EN | RESTORE REFERENCE — script behind the THEME screen's native button.
+# EN | No webhook: unlike a color submission, this needs no data from the
+# EN | browser, so it is a plain script + button (confirmation: text),
+# EN | same pattern as REGENERATE HOME/ENERGY in system_dashboards.yaml.
+# FR | RESTAURER LA REFERENCE — script derriere le bouton natif de l'ecran
+# FR | THEME. Pas de webhook : contrairement a une soumission de couleur,
+# FR | cela n'a besoin d'aucune donnee du navigateur, donc un simple script
+# FR | + bouton (texte confirmation:), meme patron que REGENERER
+# FR | HOME/ENERGY dans system_dashboards.yaml.
+# --------------------------------------------------------------------
+script:
+  vssp_restore_theme_reference:
+    alias: "Visio Sapiens — Restore the reference design system"
+    sequence:
+      - action: shell_command.vssp_theme_restore_reference
+        response_variable: restored
+      - if:
+          - condition: template
+            value_template: "{{ restored.returncode == 0 }}"
+        then:
+          - action: shell_command.vssp_backup_theme
+          - action: shell_command.vssp_generate_theme
+          - action: frontend.reload_themes
+          - action: persistent_notification.create
+            data:
+              title: "Visio Sapiens — Design system restored"
+              message: >
+                design_system.yaml reset to the factory reference and theme
+                reloaded live. A backup of the previous design_system.yaml
+                is in dashboards/model/backups/, and the previous rendered
+                theme in /config/vssp/backups/.
+        else:
+          - action: persistent_notification.create
+            data:
+              title: "Visio Sapiens — Restore failed"
+              message: >
+                See /local/vssp/theme_status.json for the reason. Nothing
+                was written.

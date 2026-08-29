@@ -37,6 +37,15 @@
 # FR | templates_j2/*.j2 (bordures, flou, ombre) n'est PAS encore pilote par
 # FR | ce fichier — c'est la phase 2, suivie dans
 # FR | docs/Design_System_Editor.md.
+#
+# EN | To reset to factory values: use the RESTORE REFERENCE button of the
+# EN | THEME screen (copies design_system.default.yaml back here, with a
+# EN | backup first) rather than editing this file's values by hand to match
+# EN | it — the button also regenerates the theme and reloads it live.
+# FR | Pour revenir aux valeurs d'usine : utiliser le bouton RESTAURER LA
+# FR | REFERENCE de l'ecran THEME (recopie design_system.default.yaml ici,
+# FR | avec sauvegarde prealable) plutot que de recopier ses valeurs a la
+# FR | main — le bouton regenere aussi le theme et le recharge a chaud.
 ########################################################################
 
 design:

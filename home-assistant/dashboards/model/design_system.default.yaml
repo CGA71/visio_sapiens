@@ -1,0 +1,82 @@
+########################################################################
+# Visio Sapiens — DESIGN SYSTEM, FACTORY REFERENCE (frozen, read-only)
+#
+# EN | Location: home-assistant/dashboards/model/design_system.default.yaml
+# FR | Emplacement : home-assistant/dashboards/model/design_system.default.yaml
+#
+# EN | This is NOT the file the THEME screen edits — see design_system.yaml
+# EN | for that. This one is the factory reference: the RESTORE REFERENCE
+# EN | button of the ADMIN console's THEME screen copies these values back
+# EN | into design_system.yaml, backs up the previous one first, then
+# EN | regenerates themes/visio_sapiens.yaml and reloads it live.
+# EN |
+# EN | NEVER WRITTEN BY vssp_theme_apply.py. Unlike design_system.yaml, this
+# EN | file is not pod-side state: it always ships with the repository (it
+# EN | is deliberately absent from the deploy jobs' preserved-pod-state
+# EN | whitelist in .gitlab-ci.yml), so it is refreshed to whatever the
+# EN | committed reference is on every deployment, the same way the
+# EN | templates themselves are.
+# EN |
+# EN | Keep this file's `design:` values in sync with design_system.yaml's
+# EN | ONLY when deliberately changing the factory reference (e.g. a
+# EN | rebrand) — day to day, only design_system.yaml changes as people use
+# EN | the THEME screen.
+# FR | Ceci n'est PAS le fichier que l'ecran THEME edite — voir
+# FR | design_system.yaml pour cela. Celui-ci est la reference d'usine : le
+# FR | bouton RESTAURER LA REFERENCE de l'ecran THEME de la console ADMIN
+# FR | recopie ces valeurs dans design_system.yaml, sauvegarde l'ancien
+# FR | d'abord, puis regenere themes/visio_sapiens.yaml et le recharge a
+# FR | chaud.
+# FR |
+# FR | JAMAIS ECRIT PAR vssp_theme_apply.py. Contrairement a
+# FR | design_system.yaml, ce fichier n'est pas un etat cote pod : il part
+# FR | toujours avec le depot (il est deliberement absent de la liste
+# FR | blanche « etat pod preserve » des jobs de deploiement dans
+# FR | .gitlab-ci.yml), donc il est rafraichi vers la reference committee a
+# FR | chaque deploiement, comme les templates eux-memes.
+# FR |
+# FR | Ne synchronisez les valeurs `design:` de ce fichier avec
+# FR | design_system.yaml QUE lors d'un changement deliberer de la reference
+# FR | d'usine (ex. un rebranding) — au jour le jour, seul design_system.yaml
+# FR | change quand on utilise l'ecran THEME.
+########################################################################
+
+design:
+  name: "Visio Sapiens"
+
+  palette:
+    primary: "#00E5FF"
+    accent: "#00FFD5"
+    background: "#050B12"
+    background_secondary: "#101B27"
+    card_background: "rgba(16,27,39,0.85)"
+    text_primary: "#FFFFFF"
+    text_secondary: "#B8E8F5"
+
+  header:
+    background: "#08121C"
+    text: "#00E5FF"
+
+  divider: "#1F3448"
+
+  icons:
+    default: "#00E5FF"
+    active: "#00FFD5"
+
+  shape:
+    card_radius: "18px"
+    card_border_width: "1px"
+    dialog_radius: "20px"
+
+  dialog:
+    scrim: "rgba(2,5,11,0.75)"
+
+  sidebar:
+    background: "#050B12"
+    text: "#B8E8F5"
+    icon: "#00E5FF"
+    selected_background: "rgba(0,229,255,0.10)"
+    selected_text: "#00E5FF"
+    selected_icon: "#00E5FF"
+
+  bubble_backdrop: "transparent"

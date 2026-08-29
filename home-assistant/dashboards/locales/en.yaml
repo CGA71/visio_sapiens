@@ -411,6 +411,9 @@ admin:
   add_room: Add a room
   remove_room: Remove
   generated_at: Last generated
+  restore_theme_reference: RESTORE REFERENCE
+  restore_theme_reference_hint: Reset every color/shape token to the factory default
+  restore_theme_reference_confirm: Reset the design system to its factory reference? A backup of the current design_system.yaml is kept, and the theme reloads live.
 
 # ----------------------------------------------------------------------
 # EN | HOME dashboard.

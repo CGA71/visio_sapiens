@@ -695,6 +695,31 @@ views:
           # FR | regenere UNIQUEMENT le fichier de theme et le recharge a
           # FR | chaud (frontend.reload_themes) — aucune regeneration de
           # FR | dashboard, aucun lovelace.reload.
+          #
+          # EN | RESTORE REFERENCE — the one action this screen exposes
+          # EN | outside the iframe. It needs no data from the browser (it
+          # EN | reads design_system.default.yaml on the pod), so it is a
+          # EN | plain native button with a confirmation dialog, same shape
+          # EN | as REGENERATE HOME/ENERGY in system_dashboards.yaml, rather
+          # EN | than another iframe control.
+          # FR | RESTAURER LA REFERENCE — la seule action que cet ecran
+          # FR | expose hors de l iframe. Elle n a besoin d aucune donnee du
+          # FR | navigateur (elle lit design_system.default.yaml sur le
+          # FR | pod), donc c est un bouton natif simple avec confirmation,
+          # FR | meme forme que REGENERER HOME/ENERGY dans
+          # FR | system_dashboards.yaml, plutot qu un controle d iframe de
+          # FR | plus.
+          - type: custom:button-card
+            template: vssp_admin_button
+            icon: mdi:restore
+            name: "{{ t('admin.restore_theme_reference') }}"
+            label: "{{ t('admin.restore_theme_reference_hint') }}"
+            confirmation:
+              text: "{{ t('admin.restore_theme_reference_confirm') }}"
+            tap_action:
+              action: call-service
+              service: script.vssp_restore_theme_reference
+
           - type: iframe
             url: /local/vssp/wizard/vssp_theme_editor.html?v=0
             card_mod:

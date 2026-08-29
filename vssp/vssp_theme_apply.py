@@ -70,7 +70,7 @@ except ImportError:
 # FR | Le moteur i18n et generate_dashboards.py vivent a cote de ce script,
 # FR | que le repertoire courant soit la racine du repo ou /config/vssp/.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from vssp_design_fields import FIELDS, validate  # noqa: E402
+from vssp_design_fields import FIELDS, flatten, validate  # noqa: E402
 
 
 def _yaml():
@@ -95,6 +95,28 @@ def read_payload(args) -> dict:
         return json.loads(raw)
     except json.JSONDecodeError as exc:
         sys.exit(f"[ERR] payload is not valid json: {exc}")
+
+
+def reference_payload(reference_path: Path) -> dict:
+    """
+    EN | Builds a normal {"tokens": {...}} payload straight out of
+    EN | design_system.default.yaml, so RESTORE REFERENCE goes through the
+    EN | exact same validate()/apply()/backup path as a real editor
+    EN | submission — no separate code path to keep in sync.
+    FR | Construit un payload {"tokens": {...}} normal directement depuis
+    FR | design_system.default.yaml, pour que RESTAURER LA REFERENCE passe
+    FR | par exactement le meme chemin validate()/apply()/sauvegarde qu'une
+    FR | vraie soumission de l'editeur — pas de second chemin de code a
+    FR | maintenir en phase.
+    """
+    if not reference_path.is_file():
+        sys.exit(f"[ERR] reference model not found: {reference_path}")
+    y = _yaml()
+    ref_doc = y.load(reference_path.read_text(encoding="utf-8"))
+    ref_design = (ref_doc or {}).get("design")
+    if ref_design is None:
+        sys.exit(f"[ERR] {reference_path} has no top-level `design:` key")
+    return {"tokens": flatten(ref_design)}
 
 
 def apply(design, accepted: dict) -> int:
@@ -123,6 +145,11 @@ def main() -> int:
                     default="/config/dashboards/model/design_system.yaml")
     ap.add_argument("--json-file", default=None)
     ap.add_argument("--json-b64", default=None)
+    ap.add_argument("--restore-reference", default=None,
+                     metavar="DESIGN_SYSTEM_DEFAULT_YAML",
+                     help="Ignore --json-file/--json-b64/stdin and rebuild "
+                          "the payload from this frozen reference file's "
+                          "`design:` block instead (RESTORE REFERENCE)")
     ap.add_argument("--dry-run", action="store_true",
                     help="Validate and report, write nothing")
     ap.add_argument("--status-file", default="/config/www/vssp/theme_status.json")
@@ -132,7 +159,10 @@ def main() -> int:
     if not model_path.is_file():
         sys.exit(f"[ERR] model not found: {model_path}")
 
-    payload = read_payload(args)
+    if args.restore_reference:
+        payload = reference_payload(Path(args.restore_reference))
+    else:
+        payload = read_payload(args)
     y = _yaml()
     doc = y.load(model_path.read_text(encoding="utf-8"))
     design = doc.get("design") if doc else None

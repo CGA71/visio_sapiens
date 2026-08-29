@@ -300,6 +300,9 @@ admin:
   add_room: Ajouter une pièce
   remove_room: Retirer
   generated_at: Dernière génération
+  restore_theme_reference: RESTAURER LA RÉFÉRENCE
+  restore_theme_reference_hint: Réinitialise chaque couleur/forme à la valeur d'usine
+  restore_theme_reference_confirm: Réinitialiser la charte graphique à sa référence d'usine ? Une sauvegarde du design_system.yaml actuel est conservée, et le thème se recharge à chaud.
 
 home:
   intercom: Interphone
