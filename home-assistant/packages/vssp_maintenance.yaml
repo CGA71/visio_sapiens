@@ -1,0 +1,74 @@
+########################################################################
+# Visio Sapiens — MAINTENANCE package (backup rotation)
+#
+# EN | Every REGENERATE button and every ASSIGN/ROOMS/THEME apply writes a
+# EN | timestamped backup before overwriting anything (vssp_backup_dashboard,
+# EN | vssp_backup_energy, vssp_backup_theme in the other packages, plus the
+# EN | backup step inside vssp_assign_apply.py / vssp_rooms_apply.py /
+# EN | vssp_theme_apply.py). None of them ever delete an old one — see
+# EN | docs/Backup_Retention.md for the full reasoning and the incident that
+# EN | prompted this package (62 files, three weeks, most from a few minutes
+# EN | of testing, on the very first instance this ran against).
+# EN |
+# EN | This package is the other half: a daily pass that keeps the 5 most
+# EN | recent backups PER PREFIX (home, energy, core, theme, ...) in each
+# EN | known backup directory and deletes the rest. Same "daily safety net"
+# EN | shape as vssp_energy_autosync_daily in vssp_energy_totaux.yaml, run
+# EN | 15 minutes after it to avoid overlapping shell_command load.
+# FR | Chaque bouton REGENERER et chaque application ASSIGN/ROOMS/THEME
+# FR | ecrit une sauvegarde horodatee avant d'ecraser quoi que ce soit
+# FR | (vssp_backup_dashboard, vssp_backup_energy, vssp_backup_theme dans les
+# FR | autres packages, plus l'etape de sauvegarde a l'interieur de
+# FR | vssp_assign_apply.py / vssp_rooms_apply.py / vssp_theme_apply.py).
+# FR | Aucun d'eux ne supprime jamais une ancienne sauvegarde — voir
+# FR | docs/Backup_Retention.md pour le raisonnement complet et l'incident
+# FR | qui a motive ce package (62 fichiers, trois semaines, la plupart issus
+# FR | de quelques minutes de tests, sur la toute premiere instance contre
+# FR | laquelle ceci a tourne).
+# FR |
+# FR | Ce package est l'autre moitie : une passe quotidienne qui garde les 5
+# FR | sauvegardes les plus recentes PAR PREFIXE (home, energy, core, theme,
+# FR | ...) dans chaque repertoire de sauvegarde connu et supprime le reste.
+# FR | Meme forme « filet de securite quotidien » que
+# FR | vssp_energy_autosync_daily dans vssp_energy_totaux.yaml, lance 15
+# FR | minutes apres pour eviter de superposer la charge des shell_command.
+########################################################################
+
+shell_command:
+  # EN | Two directories: the shell_command-created backups (dashboard/theme
+  # EN | outputs) and the apply-script-created ones (model files rewritten by
+  # EN | ASSIGN/ROOMS/THEME). Both follow the same <prefix>_<stamp>.yaml
+  # EN | naming, so one pass covers them.
+  # FR | Deux repertoires : les sauvegardes creees par shell_command (sorties
+  # FR | dashboard/theme) et celles creees par les scripts d'application
+  # FR | (fichiers de modele reecrits par ASSIGN/ROOMS/THEME). Les deux
+  # FR | suivent le meme nommage <prefixe>_<horodatage>.yaml, donc une seule
+  # FR | passe couvre les deux.
+  vssp_prune_backups: >-
+    python3 /config/vssp/vssp_prune_backups.py
+    --dir /config/vssp/backups
+    --dir /config/dashboards/model/backups
+    --keep 5
+    --status-file /config/www/vssp/prune_status.json
+
+# --------------------------------------------------------------------
+# EN | DAILY SAFETY NET — no notification, same restraint as
+# EN | vssp_energy_autosync_daily: routine housekeeping that runs correctly
+# EN | every day is not something worth a persistent_notification forever.
+# EN | Check /local/vssp/prune_status.json if you want to see what the last
+# EN | run actually did.
+# FR | FILET DE SECURITE QUOTIDIEN — pas de notification, meme retenue que
+# FR | vssp_energy_autosync_daily : un entretien de routine qui tourne
+# FR | correctement chaque jour ne vaut pas une persistent_notification pour
+# FR | toujours. Consultez /local/vssp/prune_status.json pour voir ce que le
+# FR | dernier passage a reellement fait.
+# --------------------------------------------------------------------
+automation:
+  - id: vssp_prune_backups_daily
+    alias: "Visio Sapiens — Daily backup rotation"
+    mode: single
+    triggers:
+      - trigger: time
+        at: "04:45:00"
+    actions:
+      - action: shell_command.vssp_prune_backups
