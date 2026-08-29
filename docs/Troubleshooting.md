@@ -301,6 +301,11 @@ previous version of the file even though `vssp_discovery` and
 `vssp_energy_sync` use it. It is now declared — without it, those commands
 were running with an empty token.
 
+`vssp_admin_pin`/`vssp_pin_entry` is currently the only dedicated
+access gate in the whole project, and it protects one button, not the
+console. See `docs/Security.md` for the current state of access
+control and the planned face recognition + 6-digit code design.
+
 ### "ButtonCardJSTemplateError" (red banner)
 
 A button-card JS template threw an exception. The most common cause:

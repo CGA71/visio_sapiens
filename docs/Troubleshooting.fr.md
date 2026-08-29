@@ -301,6 +301,12 @@ précédente du fichier alors que `vssp_discovery` et `vssp_energy_sync`
 l'utilisent. Il est maintenant déclaré — sans lui, ces commandes
 tournaient avec un jeton vide.
 
+`vssp_admin_pin`/`vssp_pin_entry` est actuellement le seul verrou
+d'accès dédié de tout le projet, et il protège un bouton, pas la
+console. Voir `docs/Security.fr.md` pour l'état actuel du contrôle
+d'accès et la conception prévue de la reconnaissance faciale + code à
+6 chiffres.
+
 ### « ButtonCardJSTemplateError » (bandeau rouge)
 
 Un template JS de button-card a levé une exception. La cause la plus
