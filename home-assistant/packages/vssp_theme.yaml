@@ -73,6 +73,8 @@ shell_command:
     --model /config/dashboards/model/house.yaml
     --design-model /config/dashboards/model/design_system.yaml
     --templates /config/dashboards/templates_j2
+    --locales-dir /config/dashboards/locales
+    --locale {{ states('input_select.vssp_language') }}
     --themes-out /config/themes
     --design-status-file /config/www/vssp/design_system_status.json
     --status-file /config/www/vssp/theme_generate_status.json

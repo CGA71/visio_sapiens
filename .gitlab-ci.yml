@@ -1086,8 +1086,9 @@ deploy:staging:
     # FR | regeneration des dashboards ci-dessus.
     - |
       kubectl exec -n $K3S_NAMESPACE $HA_POD -c $K3S_CONTAINER -- sh -c '
-        echo "[i] regenerating the theme on the pod"
-        python3 /config/vssp/generate_dashboards.py --only theme           --model /config/dashboards/model/house.yaml           --design-model /config/dashboards/model/design_system.yaml           --templates /config/dashboards/templates_j2           --themes-out /config/themes           --design-status-file /config/www/vssp/design_system_status.json
+        LOCALE=$(cat /config/VSSP_LOCALE 2>/dev/null || echo en)
+        echo "[i] regenerating the theme on the pod, locale $LOCALE"
+        python3 /config/vssp/generate_dashboards.py --only theme           --model /config/dashboards/model/house.yaml           --design-model /config/dashboards/model/design_system.yaml           --templates /config/dashboards/templates_j2           --locales-dir /config/dashboards/locales           --locale "$LOCALE"           --themes-out /config/themes           --design-status-file /config/www/vssp/design_system_status.json
       ' || {
         echo "[WARN] pod-side theme regeneration failed."
         echo "       themes/visio_sapiens.yaml stays at the repository default"
