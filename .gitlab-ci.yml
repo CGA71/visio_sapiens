@@ -870,9 +870,9 @@ deploy:staging:
         # EN |                              rating was filled in by hand)
         # EN |   model/house_rooms.yaml     by the discovery wizard (room
         # EN |                              assignment)
-        # EN |   model/design_system.yaml   by the THEME screen's graphical
-        # EN |                              editor (vssp_theme_apply.py) —
-        # EN |                              same reasoning as house_rooms.yaml
+        # EN |   model/design_system.yaml   by the graphical editor of the
+        # EN |                              THEME screen (vssp_theme_apply.py)
+        # EN |                              — same reasoning as house_rooms.yaml
         # EN |   views/home.yaml,           the one system dashboard meant
         # EN |   views/home_mobile.yaml     for manual Lovelace editing after
         # EN |                              creation (see --protect-existing
@@ -1066,14 +1066,14 @@ deploy:staging:
     # --- EN | REGENERATE THE THEME ON THE POD — same reasoning as above ----
     # --- FR | REGENERER LE THEME SUR LE POD — meme raisonnement que ci-dessus
     # EN | The `themes` directory swap a few steps up just replaced
-    # EN | themes/visio_sapiens.yaml with the repository's default — even
-    # EN | though model/design_system.yaml was just preserved from the pod's
-    # EN | previous copy. Without this step, every deployment silently
+    # EN | themes/visio_sapiens.yaml with the repository default — even
+    # EN | though model/design_system.yaml was just preserved from the
+    # EN | previous pod copy. Without this step, every deployment silently
     # EN | reverted any color applied from the THEME screen back to the
     # EN | repository defaults, with no error anywhere: the symptom that
-    # EN | prompted this fix. --design-status-file keeps the editor's next
-    # EN | load in sync with what is actually deployed. NON-FATAL, same
-    # EN | reasoning as the dashboard regeneration above.
+    # EN | prompted this fix. --design-status-file keeps what the editor
+    # EN | loads next in sync with what is actually deployed. NON-FATAL,
+    # EN | same reasoning as the dashboard regeneration above.
     # FR | L echange du dossier `themes` quelques etapes plus haut vient de
     # FR | remplacer themes/visio_sapiens.yaml par le defaut du depot — meme
     # FR | si model/design_system.yaml vient d etre preserve depuis la copie
