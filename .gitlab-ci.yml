@@ -274,7 +274,7 @@ validate:
       # FR | `--legacy--locale` comme `--locale` et signalerait un decalage
       # FR | inexistant — ou pire, en manquerait un reel.
       TOKENS=$(echo "$HELP" | tr -cs 'A-Za-z0-9-' '\n')
-      for flag in --locale --format --locales-dir --static-fragment --rooms-fragment; do
+      for flag in --locale --format --locales-dir --static-fragment --rooms-fragment --only --design-model --themes-out --design-status-file; do
         echo "$TOKENS" | grep -qx -- "$flag" || MISSING="$MISSING $flag"
       done
       if [ -n "$MISSING" ]; then
@@ -870,6 +870,9 @@ deploy:staging:
         # EN |                              rating was filled in by hand)
         # EN |   model/house_rooms.yaml     by the discovery wizard (room
         # EN |                              assignment)
+        # EN |   model/design_system.yaml   by the THEME screen's graphical
+        # EN |                              editor (vssp_theme_apply.py) —
+        # EN |                              same reasoning as house_rooms.yaml
         # EN |   views/home.yaml,           the one system dashboard meant
         # EN |   views/home_mobile.yaml     for manual Lovelace editing after
         # EN |                              creation (see --protect-existing
@@ -895,6 +898,10 @@ deploy:staging:
         # FR |                              la main)
         # FR |   model/house_rooms.yaml     par le Discovery Wizard
         # FR |                              (assignation des pieces)
+        # FR |   model/design_system.yaml   par l editeur graphique de
+        # FR |                              l ecran THEME
+        # FR |                              (vssp_theme_apply.py) — meme
+        # FR |                              raisonnement que house_rooms.yaml
         # FR |   views/home.yaml,           le seul dashboard systeme destine
         # FR |   views/home_mobile.yaml     a une edition Lovelace manuelle
         # FR |                              apres creation (voir
@@ -909,7 +916,7 @@ deploy:staging:
         # FR | modifiable.
         # FR | La version du pod gagne toujours : donnee decouverte ou faite
         # FR | a la main, le depot n a aucune autorite dessus.
-        for f in model/energy_devices.yaml model/house_rooms.yaml views/home.yaml views/home_mobile.yaml; do
+        for f in model/energy_devices.yaml model/house_rooms.yaml model/design_system.yaml views/home.yaml views/home_mobile.yaml; do
           if [ -f /config/dashboards.old/$f ]; then
             mkdir -p /config/dashboards/$(dirname $f)
             cp /config/dashboards.old/$f /config/dashboards/$f
@@ -1054,6 +1061,39 @@ deploy:staging:
         echo "       holds no discovered device."
         echo "       Usual cause: jinja2 missing in the Home Assistant image."
         echo "       Re-run SYNC ENERGY from the ADMIN console to fix it in place."
+      }
+
+    # --- EN | REGENERATE THE THEME ON THE POD — same reasoning as above ----
+    # --- FR | REGENERER LE THEME SUR LE POD — meme raisonnement que ci-dessus
+    # EN | The `themes` directory swap a few steps up just replaced
+    # EN | themes/visio_sapiens.yaml with the repository's default — even
+    # EN | though model/design_system.yaml was just preserved from the pod's
+    # EN | previous copy. Without this step, every deployment silently
+    # EN | reverted any color applied from the THEME screen back to the
+    # EN | repository defaults, with no error anywhere: the symptom that
+    # EN | prompted this fix. --design-status-file keeps the editor's next
+    # EN | load in sync with what is actually deployed. NON-FATAL, same
+    # EN | reasoning as the dashboard regeneration above.
+    # FR | L echange du dossier `themes` quelques etapes plus haut vient de
+    # FR | remplacer themes/visio_sapiens.yaml par le defaut du depot — meme
+    # FR | si model/design_system.yaml vient d etre preserve depuis la copie
+    # FR | precedente du pod. Sans cette etape, chaque deploiement annulait en
+    # FR | silence toute couleur appliquee depuis l ecran THEME pour revenir
+    # FR | aux valeurs par defaut du depot, sans la moindre erreur nulle part
+    # FR | — le symptome qui a motive ce correctif. --design-status-file
+    # FR | garde le prochain chargement de l editeur synchronise avec ce qui
+    # FR | est reellement deploye. NON BLOQUANT, meme raisonnement que la
+    # FR | regeneration des dashboards ci-dessus.
+    - |
+      kubectl exec -n $K3S_NAMESPACE $HA_POD -c $K3S_CONTAINER -- sh -c '
+        echo "[i] regenerating the theme on the pod"
+        python3 /config/vssp/generate_dashboards.py --only theme           --model /config/dashboards/model/house.yaml           --design-model /config/dashboards/model/design_system.yaml           --templates /config/dashboards/templates_j2           --themes-out /config/themes           --design-status-file /config/www/vssp/design_system_status.json
+      ' || {
+        echo "[WARN] pod-side theme regeneration failed."
+        echo "       themes/visio_sapiens.yaml stays at the repository default"
+        echo "       for this deployment — any THEME screen edit made before"
+        echo "       this deploy is not reflected until the next successful"
+        echo "       APPLY from the ADMIN console."
       }
 
     # --- EN | Router secret: written from the masked CI/CD variable ---------
@@ -1294,14 +1334,14 @@ deploy:production:
           mv $HA_CFG/.osv_stage/\$d $HA_CFG/\$d
         done
         # EN | Pod-side state, same rule as staging: energy_devices.yaml,
-        # EN | house_rooms.yaml and the hand-edited HOME dashboard are
-        # EN | written on the instance, never shipped — see the full
-        # EN | explanation on the staging job.
+        # EN | house_rooms.yaml, design_system.yaml (THEME screen) and the
+        # EN | hand-edited HOME dashboard are written on the instance, never
+        # EN | shipped — see the full explanation on the staging job.
         # FR | Etat cote pod, meme regle qu'en staging : energy_devices.yaml,
-        # FR | house_rooms.yaml et le dashboard HOME edite a la main sont
-        # FR | ecrits sur l'instance, jamais livres — voir l'explication
-        # FR | complete sur le job staging.
-        for f in model/energy_devices.yaml model/house_rooms.yaml views/home.yaml views/home_mobile.yaml; do
+        # FR | house_rooms.yaml, design_system.yaml (ecran THEME) et le
+        # FR | dashboard HOME edite a la main sont ecrits sur l'instance,
+        # FR | jamais livres — voir l'explication complete sur le job staging.
+        for f in model/energy_devices.yaml model/house_rooms.yaml model/design_system.yaml views/home.yaml views/home_mobile.yaml; do
           if [ -f $HA_CFG/dashboards.old/\$f ]; then
             mkdir -p $HA_CFG/dashboards/\$(dirname \$f)
             cp $HA_CFG/dashboards.old/\$f $HA_CFG/dashboards/\$f
