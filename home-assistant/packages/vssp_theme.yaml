@@ -1,0 +1,150 @@
+########################################################################
+# Visio Sapiens — THEME package (design system editor)
+#
+# EN | Wires the THEME screen's graphical editor into Home Assistant. Same
+# EN | shape as vssp_assign.yaml, applied to the visual charter instead of
+# EN | device placement:
+# EN |   the editor       -> webhook                (the new tokens)
+# EN |   this package     -> design_system.yaml     (the decision, recorded)
+# EN |   the generator    -> themes/visio_sapiens.yaml (the decision, rendered)
+# EN |   frontend.reload_themes -> live, no dashboard regeneration needed
+# FR | Branche l editeur graphique de l ecran THEME dans Home Assistant. Meme
+# FR | forme que vssp_assign.yaml, appliquee a la charte graphique plutot
+# FR | qu au placement des appareils :
+# FR |   l editeur        -> webhook                (les nouveaux tokens)
+# FR |   ce package       -> design_system.yaml     (la decision, enregistree)
+# FR |   le generateur    -> themes/visio_sapiens.yaml (la decision, rendue)
+# FR |   frontend.reload_themes -> a chaud, sans regeneration de dashboard
+#
+# EN | WHY NO DASHBOARD REGENERATION — every generated dashboard reads its
+# EN | colors from the ACTIVE THEME (house.theme in house.yaml), never from a
+# EN | copy of its own. Reloading the theme is therefore the entire dynamic
+# EN | update: no lovelace.reload, no dashboard backup, none of the churn the
+# EN | ENERGY/HOME/CORE buttons need.
+# FR | POURQUOI AUCUNE REGENERATION DE DASHBOARD — chaque dashboard genere lit
+# FR | ses couleurs depuis le THEME ACTIF (house.theme dans house.yaml),
+# FR | jamais depuis une copie qui lui serait propre. Recharger le theme est
+# FR | donc toute la mise a jour dynamique : pas de lovelace.reload, pas de
+# FR | sauvegarde de dashboard, rien du remue-menage que demandent les
+# FR | boutons ENERGY/HOME/CORE.
+#
+# EN | BEFORE DEPLOYING — check for duplicate keys, same as every package:
+# FR | AVANT DE DEPLOYER — verifier les cles en double, comme pour tout package :
+#
+#   grep -n "vssp_theme" home-assistant/packages/*.yaml
+#
+# EN | Dependency on the pod: ruamel.yaml (already required by
+# EN | vssp_assign_apply.py — nothing new to install if assign is deployed).
+# FR | Dependance sur le pod : ruamel.yaml (deja requise par
+# FR | vssp_assign_apply.py — rien de nouveau a installer si assign est deploye).
+########################################################################
+
+shell_command:
+  # EN | Writes the submitted tokens into design_system.yaml. The payload
+  # EN | arrives base64 encoded — same reasoning as vssp_assign_apply: colors
+  # EN | and rgba() values could break shell quoting raw.
+  # FR | Ecrit les tokens soumis dans design_system.yaml. Le payload arrive
+  # FR | encode en base64 — meme raisonnement que vssp_assign_apply : les
+  # FR | couleurs et valeurs rgba() pourraient casser le quoting shell brutes.
+  vssp_theme_apply: >-
+    python3 /config/vssp/vssp_theme_apply.py
+    --model /config/dashboards/model/design_system.yaml
+    --json-b64 "{{ content_b64 }}"
+    --status-file /config/www/vssp/theme_status.json
+
+  # EN | Targeted backup of the deployed theme file alone, before it is
+  # EN | overwritten — same convention as vssp_backup_energy.
+  # FR | Sauvegarde ciblee du seul fichier de theme deploye, avant qu il ne
+  # FR | soit ecrase — meme convention que vssp_backup_energy.
+  vssp_backup_theme: >-
+    sh -c "mkdir -p /config/vssp/backups &&
+    [ -f /config/themes/visio_sapiens.yaml ] &&
+    cp /config/themes/visio_sapiens.yaml
+    /config/vssp/backups/theme_$(date +%Y%m%d_%H%M%S).yaml || true"
+
+  # EN | Renders ONLY the theme (--only theme): fast, and it never touches
+  # EN | dashboards/views/ — see the note above on why that is enough.
+  # FR | Rend UNIQUEMENT le theme (--only theme) : rapide, et cela ne touche
+  # FR | jamais dashboards/views/ — voir la remarque ci-dessus sur pourquoi
+  # FR | cela suffit.
+  vssp_generate_theme: >-
+    python3 /config/vssp/generate_dashboards.py
+    --only theme
+    --model /config/dashboards/model/house.yaml
+    --design-model /config/dashboards/model/design_system.yaml
+    --templates /config/dashboards/templates_j2
+    --themes-out /config/themes
+    --design-status-file /config/www/vssp/design_system_status.json
+    --status-file /config/www/vssp/theme_generate_status.json
+
+# --------------------------------------------------------------------
+# EN | WEBHOOK — how the editor talks back to Home Assistant
+# FR | WEBHOOK — comment l editeur parle a Home Assistant
+# --------------------------------------------------------------------
+# EN | Same reasoning as vssp_assign.yaml's webhook: the editor runs in an
+# EN | iframe, so it cannot reach the parent `hass` object, and a long-lived
+# EN | REST token has no business sitting in a browser for this. A webhook
+# EN | needs none; `local_only: true` keeps it on the LAN.
+# FR | Meme raisonnement que le webhook de vssp_assign.yaml : l editeur tourne
+# FR | dans une iframe, il ne peut donc pas atteindre l objet `hass` parent,
+# FR | et un jeton REST longue duree n a rien a faire dans un navigateur pour
+# FR | cela. Un webhook n en a besoin d aucun ; `local_only: true` le
+# FR | maintient sur le reseau local.
+automation:
+  - alias: "Visio Sapiens — Receive design system update"
+    id: vssp_receive_theme
+    mode: single
+    triggers:
+      - trigger: webhook
+        webhook_id: vssp_theme
+        local_only: true
+        allowed_methods:
+          - POST
+    actions:
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.json.content_b64 is defined }}"
+            sequence:
+              - action: shell_command.vssp_theme_apply
+                data:
+                  content_b64: "{{ trigger.json.content_b64 }}"
+                response_variable: applied
+              # EN | Only regenerate/reload when the write actually happened.
+              # EN | Same reasoning as vssp_assign: reloading after a rejected
+              # EN | payload would reload the unchanged theme and look exactly
+              # EN | like success.
+              # FR | Ne regenerer/recharger que si l ecriture a reellement eu
+              # FR | lieu. Meme raisonnement que vssp_assign : recharger apres
+              # FR | un payload refuse rechargerait le theme inchange et
+              # FR | ressemblerait exactement a un succes.
+              - if:
+                  - condition: template
+                    value_template: "{{ applied.returncode == 0 }}"
+                then:
+                  - action: shell_command.vssp_backup_theme
+                  - action: shell_command.vssp_generate_theme
+                  - action: frontend.reload_themes
+                  - action: persistent_notification.create
+                    data:
+                      title: "Visio Sapiens — Design system updated"
+                      message: >
+                        Theme reloaded live — no dashboard regeneration was
+                        needed. If a color still looks off, hard-refresh the
+                        tab (Ctrl+Shift+R).
+                else:
+                  - action: persistent_notification.create
+                    data:
+                      title: "Visio Sapiens — Design system update refused"
+                      message: >
+                        The submitted tokens were rejected and NOTHING was
+                        written. See /local/vssp/theme_status.json for the
+                        reason — usually an invalid color or an out-of-range
+                        radius.
+        default:
+          - action: persistent_notification.create
+            data:
+              title: "Visio Sapiens — Malformed design system update"
+              message: >
+                The webhook received a payload without content_b64.
+                Nothing was written.

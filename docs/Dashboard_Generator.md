@@ -316,3 +316,9 @@ candidates, in order of return on effort:
 4. **`room.yaml.j2`** — a single per-room template that generates
    `views/livingroom.yaml`, `views/bedroom1.yaml`, etc. from `rooms:`
    (the views still commented out at the end of `home.yaml`).
+
+The visual charter itself follows the same generated-from-a-model
+principle: `themes/visio_sapiens.yaml` is now rendered from
+`model/design_system.yaml` by `templates_j2/theme.yaml.j2`, editable
+graphically from the ADMIN console's THEME screen. See
+[Design_System_Editor.md](Design_System_Editor.md).

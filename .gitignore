@@ -3,3 +3,7 @@
 *.log
 .storage/
 vssp/livebox.env
+
+# Python
+__pycache__/
+*.pyc

@@ -11,6 +11,7 @@ FR | UTILISATION
     python3 vssp/generate_dashboards.py --format both      # tablet + mobile
     python3 vssp/generate_dashboards.py --preview          # isolated TEST dashboard
     python3 vssp/generate_dashboards.py --dry-run          # validation only
+    python3 vssp/generate_dashboards.py --only theme       # theme file only, from design_system.yaml
     # EN | or on the HA pod (see vssp/vssp_admin_config.yaml):
     # FR | ou sur le pod HA (voir vssp/vssp_admin_config.yaml) :
     python3 /config/vssp/generate_dashboards.py --model ... --templates ... --out ...
@@ -46,6 +47,7 @@ from jinja2 import Environment, FileSystemLoader, StrictUndefined, TemplateNotFo
 # FR | racine du repo ou /config/vssp/.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
 import vssp_i18n  # noqa: E402
+import vssp_design_fields  # noqa: E402
 
 # ----------------------------------------------------------------------------
 # EN | SYSTEM DASHBOARDS — the four mandatory ones. They depend on no room and
@@ -897,6 +899,73 @@ def check_nav_targets(nav: list, declared: set, static_fragment,
     return sorted(set(missing))
 
 
+def render_theme(model: dict, env: Environment, template_name: str,
+                  out_path: Path, design_status_path, dry_run: bool,
+                  status: dict) -> bool:
+    """
+    EN | Renders model["design"] (design_system.yaml) into the Home Assistant
+    EN | theme file, with the same guarantees as a dashboard render: YAML
+    EN | validated before writing, so a broken template never overwrites a
+    EN | working theme. Returns False on a fatal error (the caller writes the
+    EN | status and exits 1), mirroring the dashboard job loop below.
+    EN | Also writes design_status_path (design_system_status.json): the flat
+    EN | token values the THEME editor reads on load, via the same FIELDS
+    EN | table vssp_theme_apply.py validates a submission against — so the
+    EN | editor can never show a token under a name APPLY would reject.
+    FR | Rend model["design"] (design_system.yaml) dans le fichier de theme
+    FR | Home Assistant, avec les memes garanties qu'un rendu de dashboard :
+    FR | YAML valide avant ecriture, pour qu'un template casse n'ecrase jamais
+    FR | un theme fonctionnel. Renvoie False en cas d'erreur fatale (l'appelant
+    FR | ecrit le statut et sort en 1), comme la boucle des dashboards plus bas.
+    FR | Ecrit aussi design_status_path (design_system_status.json) : les
+    FR | valeurs plates de tokens que l'editeur THEME lit au chargement, via
+    FR | la meme table FIELDS que vssp_theme_apply.py utilise pour valider une
+    FR | soumission — l'editeur ne peut donc jamais afficher un token sous un
+    FR | nom qu'APPLY rejetterait.
+    """
+    try:
+        template = env.get_template(template_name)
+    except TemplateNotFound:
+        msg = f"{template_name} not found — theme not generated"
+        print(f"[skip] {msg}")
+        status["skipped"].append(msg)
+        return True
+
+    rendered = template.render(**model)
+
+    try:
+        doc = yaml.load(rendered, Loader=HaLoader)
+    except yaml.YAMLError as exc:
+        msg = f"{out_path.name}: invalid YAML after render — not written"
+        print(f"[ERR] {msg}\n{exc}")
+        status["errors"].append(f"{msg} — {exc}")
+        return False
+
+    if not isinstance(doc, dict) or not doc:
+        msg = f"{out_path.name}: rendered theme is empty — not written"
+        print(f"[ERR] {msg}")
+        status["errors"].append(msg)
+        return False
+
+    if dry_run:
+        print(f"[dry-run] {out_path} — render valid "
+              f"({len(rendered.splitlines())} lines) — NOT written")
+    else:
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        out_path.write_text(rendered, encoding="utf-8")
+        print(f"[OK] {out_path} generated")
+
+        if design_status_path:
+            flat = vssp_design_fields.flatten(model.get("design") or {})
+            write_status(design_status_path, flat)
+            print(f"[OK] {design_status_path} written "
+                  f"({len(flat)} token(s), for the THEME editor)")
+
+    status["generated"].append({
+        "file": str(out_path), "id": "theme", "lines": len(rendered.splitlines())})
+    return True
+
+
 def write_status(path, status: dict) -> None:
     """
     EN | JSON report read by the admin console (served under /local/vssp/...).
@@ -927,6 +996,20 @@ def main() -> int:
                     help="Flat device list for the ENERGY dashboard "
                          "(maintained by vssp_energy_sync.py). Takes "
                          "precedence over flattening the rooms.")
+    ap.add_argument("--design-model",
+                    default="home-assistant/dashboards/model/design_system.yaml",
+                    help="Design tokens (theme screen of the ADMIN console). "
+                         "If present, rendered by --theme-template into "
+                         "--themes-out/visio_sapiens.yaml (id 'theme' for --only)")
+    ap.add_argument("--theme-template", default="theme.yaml.j2")
+    ap.add_argument("--themes-out", default="themes")
+    ap.add_argument("--design-status-file", default=None,
+                    help="Flat token values for the THEME editor's initial "
+                         "load (see vssp_design_fields.flatten), e.g. "
+                         "/config/www/vssp/design_system_status.json. Same "
+                         "opt-in-only default as --status-file: unset locally "
+                         "so a local --only theme run never writes outside "
+                         "--themes-out.")
     ap.add_argument("--templates",
                     default="home-assistant/dashboards/templates_j2")
     ap.add_argument("--out", default="home-assistant/dashboards/views")
@@ -1037,6 +1120,15 @@ def main() -> int:
     else:
         model["energy_devices"] = flatten_rooms(model.get("rooms", []))
 
+    # --- EN | Design tokens for the THEME screen -------------------------
+    # --- FR | Tokens de design pour l'ecran THEME -------------------------
+    design_path = Path(args.design_model)
+    if design_path.exists():
+        design_doc = yaml.safe_load(design_path.read_text(encoding="utf-8")) or {}
+        model["design"] = design_doc.get("design", {})
+    else:
+        model["design"] = {}
+
     errors, warns = validate_model(model)
     layout_errors, layout_warns = validate_layouts(model)
     errors += layout_errors
@@ -1116,11 +1208,43 @@ def main() -> int:
     wanted = ({s.strip() for s in args.only.split(",") if s.strip()}
               if args.only else None)
     if wanted:
-        unknown = wanted - {j[0] for j in jobs}
+        # EN | 'theme' is a recognised --only id but not a Lovelace dashboard
+        # EN | job (see render_theme() below) — exclude it from the
+        # EN | "unknown dashboard" check instead of adding a fake job for it.
+        # FR | 'theme' est un id --only reconnu mais pas un job de dashboard
+        # FR | Lovelace (voir render_theme() plus bas) — on l'exclut du
+        # FR | controle "dashboard inconnu" plutot que d'ajouter un faux job.
+        unknown = (wanted - {"theme"}) - {j[0] for j in jobs}
         if unknown:
             msg = f"unknown dashboard(s): {', '.join(sorted(unknown))}"
             print(f"[ERR] {msg}")
             status["errors"].append(msg)
+            write_status(args.status_file, status)
+            return 1
+
+    # --- EN | THEME — independent of the Lovelace dashboard jobs ---------
+    # --- FR | THEME — independant des jobs de dashboards Lovelace ---------
+    # EN | Opt-in only (--only theme / --only theme,energy,...), never part
+    # EN | of a plain full run: the CI build already copies themes/ into
+    # EN | dist/themes BEFORE calling this script without --only (see
+    # EN | .gitlab-ci.yml), so a default-on render here would silently modify
+    # EN | the source tree's themes/visio_sapiens.yaml after that copy ran,
+    # EN | with no effect on the artefact actually shipped — confusing, for
+    # EN | no benefit. The ADMIN console's THEME screen always passes
+    # EN | --only theme explicitly.
+    # FR | Seulement a la demande (--only theme / --only theme,energy,...),
+    # FR | jamais lors d'un run complet ordinaire : le build CI copie deja
+    # FR | themes/ vers dist/themes AVANT d'appeler ce script sans --only
+    # FR | (voir .gitlab-ci.yml), donc un rendu actif par defaut ici
+    # FR | modifierait en silence le themes/visio_sapiens.yaml de l'arbre
+    # FR | source apres cette copie, sans effet sur le livrable reellement
+    # FR | expedie — source de confusion, pour aucun benefice. L'ecran THEME
+    # FR | de la console ADMIN passe toujours --only theme explicitement.
+    if wanted is not None and "theme" in wanted and not args.preview:
+        theme_out = Path(args.themes_out) / "visio_sapiens.yaml"
+        if not render_theme(model, env, args.theme_template, theme_out,
+                            args.design_status_file,
+                            args.dry_run, status):
             write_status(args.status_file, status)
             return 1
 

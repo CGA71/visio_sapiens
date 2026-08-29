@@ -316,3 +316,9 @@ Candidats suivants, par ordre de rentabilité :
 4. **`room.yaml.j2`** — un template unique par pièce qui génère
    `views/livingroom.yaml`, `views/bedroom1.yaml`, etc. depuis `rooms:`
    (les vues encore commentées en fin de `home.yaml`).
+
+La charte graphique elle-même suit le même principe de génération
+depuis un modèle : `themes/visio_sapiens.yaml` est désormais rendu
+depuis `model/design_system.yaml` par `templates_j2/theme.yaml.j2`,
+éditable graphiquement depuis l'écran THEME de la console ADMIN. Voir
+[Design_System_Editor.fr.md](Design_System_Editor.fr.md).

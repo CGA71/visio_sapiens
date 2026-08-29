@@ -49,14 +49,18 @@
 # FR | endroit ou on va. Pieces & etages est une declaration manuelle, pas une
 # FR | decouverte d appareils, donc elle ne porte pas la carte de scan.
 #
-# EN | TWO SCREENS ARE NOT BUILT YET (energy, theme). Their view exists and
-# EN | says so plainly. An empty menu entry that leads nowhere is worse than
-# EN | one that states what it will do. ROOMS opens the standalone rooms &
-# EN | floors wizard instead.
-# FR | DEUX ECRANS NE SONT PAS ENCORE CONSTRUITS (energie, theme). Leur vue
-# FR | existe et le dit franchement. Une entree de menu qui ne mene nulle part
-# FR | vaut moins qu une qui annonce ce qu elle fera. PIECES ouvre a la place
-# FR | l assistant autonome pieces & etages.
+# EN | ONE SCREEN IS NOT BUILT YET (energy). Its view exists and says so
+# EN | plainly. An empty menu entry that leads nowhere is worse than one that
+# EN | states what it will do. ROOMS opens the standalone rooms & floors
+# EN | wizard instead. THEME (design system editor) follows the same
+# EN | iframe + webhook pattern as ASSIGN — see vssp_theme_editor.html and
+# EN | packages/vssp_theme.yaml.
+# FR | UN SEUL ECRAN N EST PAS ENCORE CONSTRUIT (energie). Sa vue existe et le
+# FR | dit franchement. Une entree de menu qui ne mene nulle part vaut moins
+# FR | qu une qui annonce ce qu elle fera. PIECES ouvre a la place l assistant
+# FR | autonome pieces & etages. THEME (editeur de charte graphique) suit le
+# FR | meme patron iframe + webhook qu ASSIGN — voir vssp_theme_editor.html et
+# FR | packages/vssp_theme.yaml.
 ########################################################################
 
 {% set admin_path = '/visio-sapiens-admin' %}
@@ -137,8 +141,8 @@ views:
     layout:
       grid-template-columns: minmax(200px, auto) 1fr 1fr 1fr
       # EN | 1fr, not auto, for the screens that end in a full-height iframe
-      # EN | (rooms, assign): auto sizes the row to its content's natural
-      # EN | height, which is exactly what left the iframe's own
+      # EN | (rooms, assign, theme): auto sizes the row to its content's
+      # EN | natural height, which is exactly what left the iframe's own
       # EN | calc(100vh - Npx) height stranded above a dead strip of page
       # EN | background whenever N didn't match the real content above it —
       # EN | a number that breaks every time a card is added or removed up
@@ -146,13 +150,13 @@ views:
       # EN | to this screen). 1fr makes the row — and everything stretched
       # EN | to fill it below — consume exactly what's left of the
       # EN | viewport, no matter what sits above. Screens without a
-      # EN | fill-the-rest iframe (energy, theme, dashboards) keep auto:
+      # EN | fill-the-rest iframe (energy, dashboards) keep auto:
       # EN | their content should size to itself and let the page scroll,
       # EN | not stretch to the window.
       # FR | 1fr, pas auto, pour les ecrans qui se terminent par une iframe
-      # FR | pleine hauteur (rooms, assign) : auto dimensionne la ligne a la
-      # FR | hauteur naturelle de son contenu, ce qui est precisement ce qui
-      # FR | laissait la hauteur calc(100vh - Npx) de l'iframe echouee
+      # FR | pleine hauteur (rooms, assign, theme) : auto dimensionne la ligne
+      # FR | a la hauteur naturelle de son contenu, ce qui est precisement ce
+      # FR | qui laissait la hauteur calc(100vh - Npx) de l'iframe echouee
       # FR | au-dessus d'une bande morte de fond de page des que N ne
       # FR | correspondait plus au contenu reel au-dessus — un nombre qui
       # FR | casse a chaque carte ajoutee ou retiree la-haut (ce qui vient
@@ -160,10 +164,10 @@ views:
       # FR | ecran). 1fr fait que la ligne — et tout ce qui s'y etire en
       # FR | dessous — consomme exactement ce qu'il reste du viewport, quoi
       # FR | qu'il y ait au-dessus. Les ecrans sans iframe a etirer
-      # FR | (energy, theme, dashboards) gardent auto : leur contenu doit se
+      # FR | (energy, dashboards) gardent auto : leur contenu doit se
       # FR | dimensionner a lui-meme et laisser la page defiler, pas
       # FR | s'etirer jusqu'a la fenetre.
-      grid-template-rows: 105px {{ '1fr' if screen in ['rooms', 'assign'] else 'auto' }}
+      grid-template-rows: 105px {{ '1fr' if screen in ['rooms', 'assign', 'theme'] else 'auto' }}
       grid-template-areas: |
         "nav header header header"
         "nav body body body"
@@ -669,6 +673,45 @@ views:
                   action: navigate
                   navigation_path: {{ r.path }}
 {% endfor %}
+
+{% elif screen == 'theme' %}
+          # EN | Same iframe + webhook pattern as ASSIGN above: the editor
+          # EN | cannot reach the parent `hass` object, and colors/rgba()
+          # EN | values are exactly the kind of payload a webhook (no token,
+          # EN | local_only) handles better than a form of REST calls.
+          # EN | Live preview and export/import are entirely client-side —
+          # EN | only APPLY reaches Home Assistant, via webhook `vssp_theme`
+          # EN | (packages/vssp_theme.yaml), which regenerates ONLY the theme
+          # EN | file and reloads it live (frontend.reload_themes) — no
+          # EN | dashboard regeneration, no lovelace.reload.
+          # FR | Meme patron iframe + webhook que ASSIGN ci-dessus : l editeur
+          # FR | ne peut pas atteindre l objet `hass` parent, et les couleurs/
+          # FR | valeurs rgba() sont exactement le genre de payload qu un
+          # FR | webhook (sans jeton, local_only) gere mieux qu un formulaire
+          # FR | d appels REST.
+          # FR | L apercu live et l export/import sont entierement cote
+          # FR | client — seul APPLIQUER atteint Home Assistant, via le
+          # FR | webhook `vssp_theme` (packages/vssp_theme.yaml), qui
+          # FR | regenere UNIQUEMENT le fichier de theme et le recharge a
+          # FR | chaud (frontend.reload_themes) — aucune regeneration de
+          # FR | dashboard, aucun lovelace.reload.
+          - type: iframe
+            url: /local/vssp/wizard/vssp_theme_editor.html?v=0
+            card_mod:
+              style: |
+                :host {
+                  flex: 1 1 0;
+                  min-height: 520px;
+                }
+                ha-card {
+                  background: transparent !important;
+                  border: none !important;
+                  box-shadow: none !important;
+                  overflow: hidden;
+                  height: 100%;
+                  border-radius: 16px;
+                }
+                iframe { width: 100%; height: 100% !important; border: none; }
 
 {% else %}
           # EN | Placeholder, and it says so. Naming what is missing is more

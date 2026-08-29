@@ -1,0 +1,87 @@
+########################################################################
+# Visio Sapiens — DESIGN SYSTEM (source of truth for the visual theme)
+#
+# EN | Location: home-assistant/dashboards/model/design_system.yaml
+# FR | Emplacement : home-assistant/dashboards/model/design_system.yaml
+#
+# EN | This file is the input of the theme generator (step 5 of the admin
+# EN | process, theme branch). It is rendered by
+# EN | templates_j2/theme.yaml.j2 into themes/visio_sapiens.yaml — that file
+# EN | is now GENERATED and must not be hand-edited any more; edit this one
+# EN | instead, then run:
+# EN |   python3 vssp/generate_dashboards.py --only theme
+# EN | or use the THEME screen of the ADMIN console, which does the same
+# EN | thing plus a live reload (frontend.reload_themes) — no dashboard
+# EN | regeneration needed, since every generated dashboard already reads
+# EN | its colors from the active theme rather than from a copy of its own.
+# FR | Ce fichier est l'entree du generateur de theme (etape 5 du processus
+# FR | admin, branche theme). Il est rendu par templates_j2/theme.yaml.j2
+# FR | vers themes/visio_sapiens.yaml — ce fichier est desormais GENERE et ne
+# FR | doit plus etre edite a la main ; editez celui-ci a la place, puis
+# FR | lancez :
+# FR |   python3 vssp/generate_dashboards.py --only theme
+# FR | ou utilisez l'ecran THEME de la console ADMIN, qui fait la meme chose
+# FR | plus un rechargement a chaud (frontend.reload_themes) — aucune
+# FR | regeneration de dashboard n'est necessaire, puisque chaque dashboard
+# FR | genere lit deja ses couleurs depuis le theme actif plutot que depuis
+# FR | une copie qui lui serait propre.
+#
+# EN | SCOPE (phase 1 / MVP) — only the Home Assistant native theme tokens:
+# EN | palette, header, sidebar, card/dialog shape. The neon glass-panel
+# EN | look baked directly into card_mod blocks across templates_j2/*.j2
+# EN | (borders, blur, box-shadow) is NOT driven by this file yet — that is
+# EN | phase 2, tracked in docs/Design_System_Editor.md.
+# FR | PERIMETRE (phase 1 / MVP) — seulement les tokens de theme natifs Home
+# FR | Assistant : palette, en-tete, sidebar, forme des cartes/dialogues.
+# FR | L'aspect vitre neon code en dur dans les blocs card_mod des
+# FR | templates_j2/*.j2 (bordures, flou, ombre) n'est PAS encore pilote par
+# FR | ce fichier — c'est la phase 2, suivie dans
+# FR | docs/Design_System_Editor.md.
+########################################################################
+
+design:
+  # EN | Home Assistant theme name — must match `house.theme` in house.yaml.
+  # FR | Nom du theme Home Assistant — doit correspondre a `house.theme` dans
+  # FR | house.yaml.
+  name: "Visio Sapiens"
+
+  palette:
+    primary: "#00E5FF"
+    accent: "#00FFD5"
+    background: "#050B12"
+    background_secondary: "#101B27"
+    card_background: "rgba(16,27,39,0.85)"
+    text_primary: "#FFFFFF"
+    text_secondary: "#B8E8F5"
+
+  header:
+    background: "#08121C"
+    text: "#00E5FF"
+
+  divider: "#1F3448"
+
+  icons:
+    default: "#00E5FF"
+    active: "#00FFD5"
+
+  shape:
+    card_radius: "18px"
+    card_border_width: "1px"
+    dialog_radius: "20px"
+
+  # EN | browser_mod popup dialogs
+  # FR | popups browser_mod
+  dialog:
+    scrim: "rgba(2,5,11,0.75)"
+
+  sidebar:
+    background: "#050B12"
+    text: "#B8E8F5"
+    icon: "#00E5FF"
+    selected_background: "rgba(0,229,255,0.10)"
+    selected_text: "#00E5FF"
+    selected_icon: "#00E5FF"
+
+  # EN | transparency
+  # FR | transparence
+  bubble_backdrop: "transparent"
