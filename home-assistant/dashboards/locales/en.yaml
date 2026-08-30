@@ -83,12 +83,16 @@ room:
 # FR | Jamais traduite.
 # ----------------------------------------------------------------------
 slot:
-  climate: Temperature & heating
-  lights: Lights
+  sensors: Sensors
+  switches: Switches
   appliances: Devices
-  shutters: Shutters
   security: Security
-  audio: Audio
+  infrastructure: Infrastructure
+  # EN | Group headers inside the switches slot's grouped listing.
+  # FR | En-tetes de groupe dans le listing groupe du tableau switches.
+  switches_lights: Lights
+  switches_outlets: Connected outlets
+  switches_shutters: Shutters
   # EN | Shown when a slot belongs to the room's slot set but holds no
   # EN | device yet. A slot that does not apply to the room at all is not
   # EN | rendered — it collapses and its neighbours expand.
@@ -97,11 +101,6 @@ slot:
   # FR | piece n'est pas rendu du tout — il s'effondre et ses voisins
   # FR | s'etendent.
   empty: No device
-  # EN | Audio slot: the stream exists independently of its output.
-  # FR | Tableau audio : le flux existe independamment de sa sortie.
-  audio_source: Source
-  audio_output: Output
-  audio_no_speaker: No nearby speaker
   nvr_access: NVR access
   door_open: Open
   door_close: Close

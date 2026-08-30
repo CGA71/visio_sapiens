@@ -15,9 +15,8 @@
 # EN | INPUT — json, either from a file or base64 on the command line:
 # FR | ENTREE — json, depuis un fichier ou en base64 en ligne de commande :
 #   {"assignments": [
-#      {"entity_id": "light.living_ceiling", "room": "living_room", "slot": "lights"},
-#      {"entity_id": "media_player.sonos",   "room": "living_room", "slot": "audio",
-#       "role": "output"}
+#      {"entity_id": "light.living_ceiling", "room": "living_room", "slot": "switches"},
+#      {"entity_id": "sensor.living_temperature", "room": "living_room", "slot": "sensors"}
 #   ]}
 #
 # EN | An entity with an empty room or slot is REMOVED from the model. That is
@@ -64,8 +63,7 @@ try:
 except ImportError:
     sys.exit("[ERR] ruamel.yaml is missing. Install it: pip install ruamel.yaml")
 
-SLOTS = ["climate", "lights", "appliances", "shutters", "security", "audio"]
-AUDIO_ROLES = ("source", "output")
+SLOTS = ["sensors", "switches", "appliances", "security", "infrastructure"]
 
 
 def _yaml():
@@ -112,7 +110,6 @@ def validate(payload: dict, rooms: dict, slot_sets: dict) -> tuple[dict, list]:
         eid = (item.get("entity_id") or "").strip()
         room = (item.get("room") or "").strip()
         slot = (item.get("slot") or "").strip()
-        role = (item.get("role") or "").strip()
 
         if not eid:
             errors.append("an assignment has no entity_id")
@@ -137,15 +134,7 @@ def validate(payload: dict, rooms: dict, slot_sets: dict) -> tuple[dict, list]:
                 f"(set `{rooms[room].get('slot_set', 'default')}` allows "
                 f"{', '.join(allowed)})")
             continue
-        if slot == "audio":
-            if role not in AUDIO_ROLES:
-                errors.append(f"{eid}: audio needs a role among "
-                              f"{', '.join(AUDIO_ROLES)}, got `{role or '-'}`")
-                continue
-            grouped[room].setdefault("audio", {"source": [], "output": []})
-            grouped[room]["audio"][role].append(eid)
-        else:
-            grouped[room].setdefault(slot, []).append(eid)
+        grouped[room].setdefault(slot, []).append(eid)
 
     return grouped, errors
 
@@ -166,15 +155,8 @@ def apply(model, grouped: dict) -> int:
             if slot_id not in assigned:
                 continue
             value = assigned[slot_id]
-            if slot_id == "audio":
-                audio = CommentedMap()
-                audio["source"] = CommentedSeq(value.get("source", []))
-                audio["output"] = CommentedSeq(value.get("output", []))
-                slots["audio"] = audio
-                written += len(value.get("source", [])) + len(value.get("output", []))
-            else:
-                slots[slot_id] = CommentedSeq(value)
-                written += len(value)
+            slots[slot_id] = CommentedSeq(value)
+            written += len(value)
         room["slots"] = slots
     return written
 
@@ -221,9 +203,7 @@ def main() -> int:
         written = apply(model, grouped)
         status["written"] = written
         status["rooms"] = {rid: sum(
-            len(v.get("source", [])) + len(v.get("output", []))
-            if isinstance(v, dict) else len(v)
-            for v in grouped.get(rid, {}).values()) for rid in rooms}
+            len(v) for v in grouped.get(rid, {}).values()) for rid in rooms}
         if args.dry_run:
             print(f"[dry-run] {written} entity(ies) would be written")
         else:

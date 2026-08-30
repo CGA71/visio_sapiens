@@ -17,8 +17,8 @@
 # EN |      is no slot-set-specific layout here: with one column, a reduced
 # EN |      slot set simply means fewer rows.
 # EN |   3. READING ORDER — the tablet grid order is not the right vertical
-# EN |      order. `lights` and `climate` come first: nobody should scroll to
-# EN |      switch on a lamp.
+# EN |      order. `switches` and `sensors` come first: nobody should scroll
+# EN |      to switch on a lamp.
 # EN |   4. TYPE SCALE — smaller titles, shorter lists, one-column mosaics.
 # FR | POURQUOI UN FICHIER SEPARE PLUTOT QUE DES BRANCHES DANS room.yaml.j2
 # FR | Un telephone n'est pas une tablette etroite. Quatre choses different,
@@ -29,7 +29,7 @@
 # FR |      ligne. Aucune disposition propre au jeu de tableaux ici : avec une
 # FR |      colonne, un jeu reduit signifie simplement moins de lignes.
 # FR |   3. ORDRE DE LECTURE — l'ordre de la grille tablette n'est pas le bon
-# FR |      ordre vertical. `lights` et `climate` passent en premier :
+# FR |      ordre vertical. `switches` et `sensors` passent en premier :
 # FR |      personne ne doit scroller pour allumer une lampe.
 # FR |   4. ECHELLE TYPO — titres plus petits, listes plus courtes,
 # FR |      mosaiques sur une colonne.
@@ -43,7 +43,7 @@
 {# EN | Vertical reading order — deliberately NOT the tablet grid order.
     FR | Ordre de lecture vertical — volontairement PAS l'ordre de la grille
     FR | tablette. #}
-{% set mobile_order = ['lights', 'climate', 'security', 'appliances', 'shutters', 'audio'] %}
+{% set mobile_order = ['switches', 'sensors', 'security', 'appliances', 'infrastructure'] %}
 {% set shown = [] %}
 {% for slot_id in mobile_order if slot_id in room.slots %}
 {% set _ = shown.append(slot_id) %}
@@ -362,74 +362,237 @@ views:
 {% endfor %}
 {% endif %}
 
-{% elif slot_id == 'audio' %}
-{% for e in slot.source %}
-          - type: media-control
-            entity: {{ e }}
-            card_mod:
-              style: |
-                ha-card {
-                  background: rgba(0,0,0,.28) !important;
-                  border: 1px solid color-mix(in srgb, var(--primary-color, #00E5FF) 18%, transparent) !important;
-                  border-radius: 12px !important;
-                }
-{% endfor %}
-{% if slot.has_speaker %}
-          - type: grid
-            columns: 2
-            square: false
-            cards:
-{% for e in slot.output %}
-              - type: custom:button-card
-                entity: {{ e }}
-                show_state: true
-                size: 16px
-                styles:
-                  card:
-                    - background: rgba(0,0,0,.22)
-                    - border: 1px solid color-mix(in srgb, var(--primary-color, #00E5FF) 12%, transparent)
-                    - border-radius: 10px
-                    - padding: 6px
-                  name:
-                    - font-size: 10px
-                    - color: var(--text-primary-color, #DCEEF6)
-                  state:
-                    - font-size: 10px
-                    - color: "#00E5FF"
-                tap_action:
-                  action: more-info
-{% endfor %}
-{% else %}
+{% elif slot_id == 'switches' %}
+          # EN | Grouped, scrollable listing — lights, then connected
+          # EN | outlets, then shutters — same grouping as the tablet
+          # EN | version, just narrower/shorter cards. Every row is
+          # EN | vssp_circuit_switch: its icon color and toggle pill already
+          # EN | react to entity.state, that IS the on/off indicator.
+          # FR | Listing groupe et defilant — lumieres, puis prises
+          # FR | connectees, puis volets — meme groupement que la version
+          # FR | tablette, juste des cartes plus etroites/courtes. Chaque
+          # FR | ligne est vssp_circuit_switch : sa couleur d'icone et son
+          # FR | curseur bascule reagissent deja a entity.state, c'EST le
+          # FR | voyant allume/eteint.
           - type: custom:button-card
-            show_icon: true
+            show_icon: false
             show_name: false
             show_state: false
-            show_label: true
-            icon: mdi:speaker-off
-            label: "{{ t('slot.audio_no_speaker') }}"
             tap_action:
               action: none
             styles:
+              grid:
+                - grid-template-areas: '"list"'
               card:
                 - background: transparent
                 - box-shadow: none
                 - border: none
-                - padding: 8px 0
+                - border-radius: 0
+                - padding: 0
                 - cursor: default
-                - pointer-events: none
-              icon:
-                - color: rgba(143,182,201,0.45)
-                - "--mdc-icon-size": 22px
-              label:
-                - color: rgba(143,182,201,0.65)
-                - font-size: 11px
-                - margin-top: 4px
+              custom_fields:
+                list:
+                  - display: block
+                  - width: 100%
+                  - height: 260px
+                  - overflow-y: auto
+                  - overflow-x: hidden
+                  - touch-action: pan-y
+                  - "-webkit-overflow-scrolling": touch
+                  - padding-right: 4px
+                  - scrollbar-width: none
+            custom_fields:
+              list:
+                card:
+                  type: vertical-stack
+                  cards:
+{% if slot.by_domain.get('light', []) %}
+                    - type: custom:button-card
+                      show_icon: false
+                      show_name: false
+                      show_state: false
+                      show_label: true
+                      label: "{{ t('slot.switches_lights') }}"
+                      tap_action:
+                        action: none
+                      styles:
+                        card:
+                          - background: transparent
+                          - box-shadow: none
+                          - border: none
+                          - padding: 6px 0 3px 0
+                          - cursor: default
+                        label:
+                          - justify-self: start
+                          - font-size: 10px
+                          - letter-spacing: .5px
+                          - color: var(--secondary-text-color, #8FB6C9)
+{% for e in slot.by_domain.get('light', []) %}
+                    - type: custom:button-card
+                      template: vssp_circuit_switch
+                      entity: {{ e }}
+                      icon: mdi:lightbulb
+                      variables:
+                        model: ""
+                        amp: ""
+{% endfor %}
 {% endif %}
+{% if slot.by_domain.get('switch', []) %}
+                    - type: custom:button-card
+                      show_icon: false
+                      show_name: false
+                      show_state: false
+                      show_label: true
+                      label: "{{ t('slot.switches_outlets') }}"
+                      tap_action:
+                        action: none
+                      styles:
+                        card:
+                          - background: transparent
+                          - box-shadow: none
+                          - border: none
+                          - padding: 6px 0 3px 0
+                          - cursor: default
+                        label:
+                          - justify-self: start
+                          - font-size: 10px
+                          - letter-spacing: .5px
+                          - color: var(--secondary-text-color, #8FB6C9)
+{% for e in slot.by_domain.get('switch', []) %}
+                    - type: custom:button-card
+                      template: vssp_circuit_switch
+                      entity: {{ e }}
+                      icon: mdi:power-socket-fr
+                      variables:
+                        model: ""
+                        amp: ""
+{% endfor %}
+{% endif %}
+{% if slot.by_domain.get('cover', []) %}
+                    - type: custom:button-card
+                      show_icon: false
+                      show_name: false
+                      show_state: false
+                      show_label: true
+                      label: "{{ t('slot.switches_shutters') }}"
+                      tap_action:
+                        action: none
+                      styles:
+                        card:
+                          - background: transparent
+                          - box-shadow: none
+                          - border: none
+                          - padding: 6px 0 3px 0
+                          - cursor: default
+                        label:
+                          - justify-self: start
+                          - font-size: 10px
+                          - letter-spacing: .5px
+                          - color: var(--secondary-text-color, #8FB6C9)
+{% for e in slot.by_domain.get('cover', []) %}
+                    - type: custom:button-card
+                      template: vssp_circuit_switch
+                      entity: {{ e }}
+                      icon: mdi:window-shutter
+                      tap_action:
+                        action: more-info
+                      hold_action:
+                        action: toggle
+                      variables:
+                        model: ""
+                        amp: ""
+{% endfor %}
+{% endif %}
+{% set known_switch_domains = ['light', 'switch', 'cover'] %}
+{% for domain, ents in slot.by_domain.items() if domain not in known_switch_domains %}
+{% for e in ents %}
+                    - type: custom:button-card
+                      template: vssp_circuit_switch
+                      entity: {{ e }}
+                      variables:
+                        model: ""
+                        amp: ""
+{% endfor %}
+{% endfor %}
+
+{% elif slot_id == 'infrastructure' %}
+          # EN | Same scrollable-list idiom as appliances above.
+          # FR | Meme idiome de liste defilante que appliances ci-dessus.
+          - type: custom:button-card
+            show_icon: false
+            show_name: false
+            show_state: false
+            tap_action:
+              action: none
+            styles:
+              grid:
+                - grid-template-areas: '"list"'
+              card:
+                - background: transparent
+                - box-shadow: none
+                - border: none
+                - border-radius: 0
+                - padding: 0
+                - cursor: default
+              custom_fields:
+                list:
+                  - display: block
+                  - width: 100%
+                  - height: 210px
+                  - overflow-y: auto
+                  - overflow-x: hidden
+                  - touch-action: pan-y
+                  - "-webkit-overflow-scrolling": touch
+                  - padding-right: 4px
+                  - scrollbar-width: none
+            custom_fields:
+              list:
+                card:
+                  type: vertical-stack
+                  cards:
+{% for e in slot.entities %}
+                    - type: custom:button-card
+                      entity: {{ e }}
+                      show_state: true
+                      size: 18px
+                      styles:
+                        grid:
+                          - grid-template-areas: '"i n s"'
+                          - grid-template-columns: 26px 1fr auto
+                          - align-items: center
+                          - column-gap: 8px
+                        card:
+                          - background: rgba(0,0,0,.22)
+                          - border: 1px solid color-mix(in srgb, var(--primary-color, #00E5FF) 12%, transparent)
+                          - border-radius: 10px
+                          - padding: 6px 10px
+                          - margin-bottom: 6px
+                          - height: 42px
+                        name:
+                          - justify-self: start
+                          - font-size: 11px
+                          - color: var(--text-primary-color, #DCEEF6)
+                          - white-space: nowrap
+                          - overflow: hidden
+                          - text-overflow: ellipsis
+                        state:
+                          - justify-self: end
+                          - font-size: 11px
+                          - color: "#00E5FF"
+                        icon:
+                          - color: var(--paper-item-icon-color, #00E5FF)
+                      tap_action:
+                        action: more-info
+{% endfor %}
 
 {% else %}
-          # EN | CLIMATE / LIGHTS / SHUTTERS — one row per device.
-          # FR | CLIMATE / LIGHTS / SHUTTERS — une ligne par appareil.
+          # EN | SENSORS — one row per device. sensor/binary_sensor entities
+          # EN | are read-only, so they open more-info instead of toggling.
+          # FR | SENSORS — une ligne par appareil. Les entites
+          # FR | sensor/binary_sensor sont en lecture seule, donc elles
+          # FR | ouvrent more-info plutot que de basculer.
 {% for e in slot.entities %}
+{% set domain = e.split('.')[0] %}
           - type: custom:button-card
             entity: {{ e }}
             show_state: true
@@ -461,7 +624,7 @@ views:
                 - color: "#00E5FF"
               icon:
                 - color: var(--paper-item-icon-color, #00E5FF)
-{% if slot_id == 'shutters' %}
+{% if domain in ['sensor', 'binary_sensor'] %}
             tap_action:
               action: more-info
 {% else %}

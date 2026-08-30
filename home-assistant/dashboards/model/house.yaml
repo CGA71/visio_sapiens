@@ -114,36 +114,44 @@ nav_system:
 # ── EN | Slot sets — which panels a room may hold ─────────────────────
 # ── FR | Jeux de tableaux — quels panneaux une piece peut porter ──────
 # EN | A slot set says which slots are CANDIDATES, not what the room contains
-# EN | today. A bathroom keeps `shutters` in its set even with no shutter
+# EN | today. A bathroom keeps `switches` in its set even with no shutter
 # EN | installed: tomorrow one is added through the form, with no
 # EN | reconfiguration. The slot then shows slot.empty in the meantime.
 # EN | A slot OUTSIDE the set is not rendered at all — it collapses and its
 # EN | neighbours expand. That is the whole difference between "not yet" and
 # EN | "never".
 # FR | Un jeu de tableaux dit quels tableaux sont CANDIDATS, pas ce que la
-# FR | piece contient aujourd'hui. Une salle de bain garde `shutters` dans son
+# FR | piece contient aujourd'hui. Une salle de bain garde `switches` dans son
 # FR | jeu meme sans volet installe : demain on en ajoute un via le
 # FR | formulaire, sans reconfiguration. Le tableau affiche slot.empty en
 # FR | attendant. Un tableau HORS du jeu n'est pas rendu du tout — il
 # FR | s'effondre et ses voisins s'etendent. C'est toute la difference entre
 # FR | « pas encore » et « jamais ».
 slot_sets:
-  default:  [climate, lights, appliances, shutters, security, audio]
-  toilet:   [climate, lights, shutters, audio]
-  garden:   [climate, lights, appliances, security, audio]
-  # EN | Garage, cellar, laundry: no shutters, no audio stream.
-  # FR | Garage, cave, buanderie : pas de volets, pas de flux audio.
-  utility:  [climate, lights, appliances, security]
-  # EN | Entrance hall: where the intercom lives. No climate slot — the
-  # EN | entrance has no thermostat of its own, and the freed row goes to a
-  # EN | full-width horizontal lights slot right under the header instead.
-  # FR | Entree : l'endroit ou vit l'interphone. Pas de tableau climate —
-  # FR | l'entree n'a pas son propre thermostat, et la ligne liberee va a un
-  # FR | tableau lights horizontal pleine largeur juste sous l'en-tete.
-  entrance: [lights, security]
+  default:  [sensors, switches, appliances, security]
+  toilet:   [sensors, switches]
+  garden:   [sensors, switches, appliances, security]
+  # EN | Garage, cellar, laundry.
+  # FR | Garage, cave, buanderie.
+  utility:  [sensors, switches, appliances, security]
+  # EN | Entrance hall: where the intercom lives. No sensors slot — the
+  # EN | entrance has no thermostat of its own, and the freed row keeps
+  # EN | switches full width, same as every other set.
+  # FR | Entree : l'endroit ou vit l'interphone. Pas de tableau sensors —
+  # FR | l'entree n'a pas son propre thermostat, et la ligne liberee garde
+  # FR | switches pleine largeur, comme dans tout autre jeu.
+  entrance: [switches, security]
   # EN | Two slots only, for a corridor or a landing.
   # FR | Deux tableaux seulement, pour un couloir ou un palier.
-  minimal:  [lights, security]
+  minimal:  [switches, security]
+  # EN | Server, network switch, ISP box, firewall — no automatic
+  # EN | suggestion (see DEVICE_CLASS_HINT/DOMAIN_HINT in
+  # EN | vssp_assign_prepare.py): assigned by hand in the assignment form.
+  # FR | Serveur, switch reseau, box FAI, firewall — aucune suggestion
+  # FR | automatique (voir DEVICE_CLASS_HINT/DOMAIN_HINT dans
+  # FR | vssp_assign_prepare.py) : assigne a la main dans le formulaire
+  # FR | d'assignation.
+  computer_room: [sensors, switches, infrastructure, security]
 
 # ── EN | Grid layouts — one per slot set ──────────────────────────────
 # ── FR | Gabarits de grille — un par jeu de tableaux ──────────────────
@@ -176,36 +184,37 @@ slot_sets:
 # FR | generateur s'appliquent. N'en declarer un ici que pour le surcharger.
 layouts:
   entrance:
-    # EN | lights: full-width horizontal strip right under the header,
-    # EN | 175px — tall enough for the two framed groups of
+    # EN | switches: full-width horizontal strip right under the header,
+    # EN | 220px — tall enough for the two framed groups of
     # EN | breaker-styled switch cards (3 switches + 2 outlets) hardcoded
-    # EN | in room.yaml.j2's entrance-only lights branch.
+    # EN | in room.yaml.j2's entrance-only switches branch.
     # EN | security: everything else, full width, one tall row. It now
     # EN | carries a camera mosaic, an NVR access panel, the intercom feed
     # EN | + door controls, and the Jessica vacuum panel side by side —
     # EN | needs the width more than the 4-of-5-columns split it had when
-    # EN | it shared its rows with lights and climate.
-    # FR | lights : bandeau horizontal pleine largeur juste sous l'en-tete,
-    # FR | 175px — assez pour les deux groupes encadres de cartes
+    # EN | it shared its rows with switches and sensors.
+    # FR | switches : bandeau horizontal pleine largeur juste sous l'en-tete,
+    # FR | 220px — assez pour les deux groupes encadres de cartes
     # FR | interrupteur façon tableau electrique (3 interrupteurs + 2
-    # FR | prises) codes en dur dans la branche lights specifique a
+    # FR | prises) codes en dur dans la branche switches specifique a
     # FR | l'entree de room.yaml.j2.
     # FR | security : tout le reste, pleine largeur, une seule ligne haute.
     # FR | Il porte desormais une mosaique de cameras, un panneau d'acces au
     # FR | NVR, le flux de l'interphone + les commandes de porte, et le
     # FR | panneau du robot Jessica cote a cote — a besoin de la largeur
     # FR | plus que du partage a 4-colonnes-sur-5 qu'il avait quand il
-    # FR | partageait ses lignes avec lights et climate.
-    rows: "105px 175px 510px"
+    # FR | partageait ses lignes avec switches et sensors.
+    rows: "105px 220px 490px"
     areas:
       - "nav header   header   header   header   header"
-      - "nav lights   lights   lights   lights   lights"
+      - "nav switches switches switches switches switches"
       - "nav security security security security security"
   minimal:
-    rows: "105px 620px"
+    rows: "105px 300px 340px"
     areas:
       - "nav header   header   header   header   header"
-      - "nav security security security security lights"
+      - "nav security security security security security"
+      - "nav switches switches switches switches switches"
 
 # ── EN | Default icon per room type ───────────────────────────────────
 # ── FR | Icone par defaut selon le type de piece ──────────────────────
@@ -237,9 +246,6 @@ room_icons:
 # EN |   slot_set which slots are candidates (see above)
 # EN |   slots    device list per slot, IN THE FORM'S ORDER — you decide the
 # EN |            TV comes before the console without renaming an entity
-# EN | `audio` is the one slot with two roles: a stream exists independently of
-# EN | its output. With a source but no output, the panel shows the player and
-# EN | slot.audio_no_speaker.
 # FR | Ecrit par la console admin. Une entree par INSTANCE de piece :
 # FR |   id       unique, jamais traduit — alimente les chemins et noms de fichiers
 # FR |   type     cle du catalogue de pieces (locales/*.yaml, room.<type>)
@@ -248,9 +254,6 @@ room_icons:
 # FR |   slots    liste d'appareils par tableau, DANS L'ORDRE DU FORMULAIRE —
 # FR |            tu decides que la TV passe avant la console sans renommer
 # FR |            d'entite
-# FR | `audio` est le seul tableau a deux roles : un flux existe independamment
-# FR | de sa sortie. Avec une source mais aucune sortie, le panneau affiche le
-# FR | lecteur et slot.audio_no_speaker.
 # EN | Empty on purpose. Rooms are no longer hand-written here: since
 # EN | vssp_rooms_apply.py syncs this list live from the HA Area registry
 # EN | (via the ROOMS & FLOORS admin form) and vssp_preserve_rooms.py

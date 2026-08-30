@@ -167,17 +167,36 @@ def template_for(tpl_name: str, target_format: str) -> str:
 # FR | de grid-area CSS et de nom de section dans le template — les trois
 # FR | doivent etre la meme chaine. Jamais traduit ; seuls les libelles
 # FR | slot.<id> le sont.
-SLOTS = ["climate", "lights", "appliances", "shutters", "security", "audio"]
+SLOTS = ["sensors", "switches", "appliances", "security", "infrastructure"]
 
 # EN | Slot sets. `default` applies unless the room says otherwise.
 # FR | Jeux de tableaux. `default` s'applique sauf mention contraire.
 DEFAULT_SLOT_SETS = {
-    "default":  SLOTS,
-    "toilet":   ["climate", "lights", "shutters", "audio"],
-    "garden":   ["climate", "lights", "appliances", "security", "audio"],
-    "utility":  ["climate", "lights", "appliances", "security"],
-    "entrance": ["climate", "lights", "security"],
-    "minimal":  ["lights", "security"],
+    "default":       ["sensors", "switches", "appliances", "security"],
+    "toilet":        ["sensors", "switches"],
+    "garden":        ["sensors", "switches", "appliances", "security"],
+    "utility":       ["sensors", "switches", "appliances", "security"],
+    # EN | No sensors slot: an entrance has no thermostat of its own. The
+    # EN | freed row goes to a full-width horizontal switches slot right
+    # EN | under the header instead (see DEFAULT_LAYOUTS below).
+    # FR | Pas de tableau sensors : l'entree n'a pas son propre thermostat.
+    # FR | La ligne liberee va a un tableau switches horizontal pleine
+    # FR | largeur juste sous l'en-tete a la place (voir DEFAULT_LAYOUTS
+    # FR | ci-dessous).
+    "entrance":      ["switches", "security"],
+    "minimal":       ["switches", "security"],
+    # EN | Server, network switch, ISP box, firewall — no HA domain or
+    # EN | device_class reliably tells this apart from an ordinary sensor or
+    # EN | switch, so this is the one slot with no automatic suggestion
+    # EN | (see DEVICE_CLASS_HINT/DOMAIN_HINT in vssp_assign_prepare.py): the
+    # EN | admin picks it by hand in the assignment form.
+    # FR | Serveur, switch reseau, box FAI, firewall — aucun domaine ni
+    # FR | device_class Home Assistant ne distingue fiablement cela d'un
+    # FR | capteur ou interrupteur ordinaire, donc c'est le seul tableau sans
+    # FR | suggestion automatique (voir DEVICE_CLASS_HINT/DOMAIN_HINT dans
+    # FR | vssp_assign_prepare.py) : l'administrateur le choisit a la main
+    # FR | dans le formulaire d'assignation.
+    "computer_room": ["sensors", "switches", "infrastructure", "security"],
 }
 
 # ----------------------------------------------------------------------------
@@ -196,60 +215,84 @@ DEFAULT_SLOT_SETS = {
 # FR | reellement besoin.
 # ----------------------------------------------------------------------------
 DEFAULT_LAYOUTS = {
+    # EN | `switches` is ALWAYS a full-width horizontal strip, never a
+    # EN | narrow column: it holds a grouped, scrollable listing (lights,
+    # EN | then connected outlets, then shutters — see room.yaml.j2's
+    # EN | `switches` branch), and a grouped list needs width more than
+    # EN | height. Every set below gives it its own full-width row.
+    # FR | `switches` est TOUJOURS un bandeau horizontal pleine largeur,
+    # FR | jamais une colonne etroite : il porte un listing groupe et
+    # FR | defilant (lumieres, puis prises connectees, puis volets — voir la
+    # FR | branche `switches` de room.yaml.j2), et un listing groupe a besoin
+    # FR | de largeur plus que de hauteur. Chaque jeu ci-dessous lui donne sa
+    # FR | propre ligne pleine largeur.
     "default": {
-        "rows": "105px 260px 300px 220px",
+        "rows": "105px 220px 260px 220px",
         "areas": [
-            "nav header   header   header   header   header",
-            "nav climate  climate  lights   lights   appliances",
-            "nav security security security shutters appliances",
-            "nav security security security audio    audio",
+            "nav header     header     header     header     header",
+            "nav switches   switches   switches   switches   switches",
+            "nav sensors    sensors    sensors    appliances appliances",
+            "nav security   security   security   security   security",
         ],
     },
     "toilet": {
-        "rows": "105px 300px 300px",
+        "rows": "105px 220px 300px",
         "areas": [
             "nav header   header   header   header   header",
-            "nav climate  climate  climate  lights   lights",
-            "nav shutters shutters shutters audio    audio",
+            "nav switches switches switches switches switches",
+            "nav sensors  sensors  sensors  sensors  sensors",
         ],
     },
     "garden": {
-        "rows": "105px 280px 320px",
+        "rows": "105px 220px 260px 220px",
         "areas": [
-            "nav header   header   header   header   header",
-            "nav climate  climate  lights   lights   appliances",
-            "nav security security security audio    appliances",
+            "nav header     header     header     header     header",
+            "nav switches   switches   switches   switches   switches",
+            "nav sensors    sensors    sensors    appliances appliances",
+            "nav security   security   security   security   security",
         ],
     },
     "utility": {
-        "rows": "105px 280px 320px",
+        "rows": "105px 220px 260px 220px",
         "areas": [
-            "nav header   header   header   header    header",
-            "nav climate  climate  lights   lights    appliances",
-            "nav security security security security  appliances",
+            "nav header     header     header     header     header",
+            "nav switches   switches   switches   switches   switches",
+            "nav sensors    sensors    sensors    appliances appliances",
+            "nav security   security   security   security   security",
         ],
     },
-    # EN | Three slots: `security` takes four columns over two rows. An
-    # EN | entrance is where the intercom lives — it deserves the space that
-    # EN | the absent slots free up.
-    # FR | Trois tableaux : `security` prend quatre colonnes sur deux lignes.
-    # FR | Une entree est l'endroit ou vit l'interphone — il merite la place
-    # FR | que liberent les tableaux absents.
+    # EN | No sensors slot here (see DEFAULT_SLOT_SETS): the freed row keeps
+    # EN | switches full width, same as every other set, above a tall
+    # EN | security row for the intercom feed + camera mosaic.
+    # FR | Pas de tableau sensors ici (voir DEFAULT_SLOT_SETS) : la ligne
+    # FR | liberee garde switches pleine largeur, comme dans tout autre jeu,
+    # FR | au-dessus d'une ligne security haute pour le flux d'interphone +
+    # FR | la mosaique de cameras.
     "entrance": {
-        "rows": "105px 300px 300px",
+        "rows": "105px 220px 490px",
         "areas": [
             "nav header   header   header   header   header",
-            "nav security security security security lights",
-            "nav security security security security climate",
+            "nav switches switches switches switches switches",
+            "nav security security security security security",
         ],
     },
-    # EN | Two slots: `security` fills almost the whole view.
-    # FR | Deux tableaux : `security` occupe presque toute la vue.
+    # EN | Two slots, both full width.
+    # FR | Deux tableaux, tous deux pleine largeur.
     "minimal": {
-        "rows": "105px 620px",
+        "rows": "105px 300px 340px",
         "areas": [
             "nav header   header   header   header   header",
-            "nav security security security security lights",
+            "nav security security security security security",
+            "nav switches switches switches switches switches",
+        ],
+    },
+    "computer_room": {
+        "rows": "105px 220px 260px 220px",
+        "areas": [
+            "nav header         header         header         header         header",
+            "nav switches       switches       switches       switches       switches",
+            "nav sensors        sensors        infrastructure infrastructure infrastructure",
+            "nav security       security       security       security       security",
         ],
     },
 }
@@ -265,7 +308,7 @@ NON_SLOT_AREAS = {"nav", "header"}
 # FR | Au plus une animation Visio Sapiens de remplissage par dashboard, sur le
 # FR | premier tableau de cette liste appartenant au jeu de la piece et ne
 # FR | contenant aucun appareil.
-FILLER_PRIORITY = ["shutters", "audio"]
+FILLER_PRIORITY = ["switches"]
 
 T_PLACEHOLDER = re.compile(r"__T:[A-Za-z0-9_.]+__")
 
@@ -466,41 +509,29 @@ def normalise_slots(room: dict, slot_sets: dict) -> dict:
         if slot_id not in candidates:
             continue
         value = raw.get(slot_id)
-
-        # EN | `audio` is the one slot with two roles: a stream exists
-        # EN | independently of its output.
-        # FR | `audio` est le seul tableau a deux roles : un flux existe
-        # FR | independamment de sa sortie.
-        if slot_id == "audio":
-            if isinstance(value, dict):
-                source = list(value.get("source") or [])
-                output = list(value.get("output") or [])
-            else:
-                source = list(value or [])
-                output = []
-            entry = {"id": slot_id, "source": source, "output": output,
-                     "entities": source + output,
-                     "has_speaker": bool(output)}
-            entry["state"] = "filled" if source else "empty"
-        else:
-            entities = list(value or [])
-            entry = {"id": slot_id, "entities": entities,
-                     "state": "filled" if entities else "empty"}
+        entities = list(value or [])
+        entry = {"id": slot_id, "entities": entities,
+                 "state": "filled" if entities else "empty"}
 
         # EN | Entities grouped by Home Assistant domain, order preserved.
         # EN | The `security` slot needs this: an alarm state, an intercom
         # EN | video feed and a camera mosaic are three different visual
-        # EN | natures that cannot share one card. Classifying here rather
-        # EN | than in the template keeps the template about presentation —
-        # EN | and Jinja has no regex test, so doing it there would mean an
-        # EN | awkward workaround anyway.
+        # EN | natures that cannot share one card. `switches` needs it too,
+        # EN | now that it holds lights, outlets and shutters together: the
+        # EN | template lists them as three separate groups, not one mixed
+        # EN | pile. Classifying here rather than in the template keeps the
+        # EN | template about presentation — and Jinja has no regex test, so
+        # EN | doing it there would mean an awkward workaround anyway.
         # FR | Entites groupees par domaine Home Assistant, ordre preserve.
         # FR | Le tableau `security` en a besoin : un etat d'alarme, un flux
         # FR | video d'interphone et une mosaique de cameras sont trois
         # FR | natures visuelles differentes qui ne peuvent pas partager une
-        # FR | seule carte. Classer ici plutot que dans le template garde le
-        # FR | template sur la presentation — et Jinja n'a pas de test regex,
-        # FR | donc le faire la-bas imposerait un contournement de toute facon.
+        # FR | seule carte. `switches` aussi, maintenant qu'il porte lumieres,
+        # FR | prises et volets ensemble : le template les liste en trois
+        # FR | groupes separes, pas un tas melange. Classer ici plutot que
+        # FR | dans le template garde le template sur la presentation — et
+        # FR | Jinja n'a pas de test regex, donc le faire la-bas imposerait un
+        # FR | contournement de toute facon.
         by_domain = {}
         for ent in entry["entities"]:
             domain = str(ent).split(".", 1)[0]

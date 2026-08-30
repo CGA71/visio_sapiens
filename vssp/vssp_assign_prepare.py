@@ -58,15 +58,27 @@ except ImportError:
 
 # EN | Canonical slot order, same list as generate_dashboards.py.
 # FR | Ordre canonique des tableaux, meme liste que generate_dashboards.py.
-SLOTS = ["climate", "lights", "appliances", "shutters", "security", "audio"]
+SLOTS = ["sensors", "switches", "appliances", "security", "infrastructure"]
 
 DEFAULT_SLOT_SETS = {
-    "default":  SLOTS,
-    "toilet":   ["climate", "lights", "shutters", "audio"],
-    "garden":   ["climate", "lights", "appliances", "security", "audio"],
-    "utility":  ["climate", "lights", "appliances", "security"],
-    "entrance": ["climate", "lights", "security"],
-    "minimal":  ["lights", "security"],
+    "default":       ["sensors", "switches", "appliances", "security"],
+    "toilet":        ["sensors", "switches"],
+    "garden":        ["sensors", "switches", "appliances", "security"],
+    "utility":       ["sensors", "switches", "appliances", "security"],
+    "entrance":      ["switches", "security"],
+    "minimal":       ["switches", "security"],
+    # EN | Server, network switch, ISP box, firewall — no HA domain or
+    # EN | device_class reliably tells this apart from an ordinary sensor or
+    # EN | switch, so unlike every other slot this one has no automatic
+    # EN | suggestion in DEVICE_CLASS_HINT/DOMAIN_HINT below: the admin picks
+    # EN | it by hand in the assignment form.
+    # FR | Serveur, switch reseau, box FAI, firewall — aucun domaine ni
+    # FR | device_class Home Assistant ne distingue fiablement cela d un
+    # FR | capteur ou interrupteur ordinaire, donc contrairement a tout autre
+    # FR | tableau celui-ci n a pas de suggestion automatique dans
+    # FR | DEVICE_CLASS_HINT/DOMAIN_HINT ci-dessous : l administrateur le
+    # FR | choisit a la main dans le formulaire d assignation.
+    "computer_room": ["sensors", "switches", "infrastructure", "security"],
 }
 
 # EN | Suggested slot per Home Assistant domain. A SUGGESTION only: the form
@@ -90,34 +102,38 @@ DEFAULT_SLOT_SETS = {
 # FR | et `receiver` sont des appareils, `speaker` est de l audio — ce que le
 # FR | domaine ne peut jamais distinguer.
 DEVICE_CLASS_HINT = {
-    "temperature": "climate", "humidity": "climate", "pressure": "climate",
-    "carbon_dioxide": "climate", "pm25": "climate",
-    "shutter": "shutters", "blind": "shutters", "curtain": "shutters",
-    "awning": "shutters", "shade": "shutters",
+    "temperature": "sensors", "humidity": "sensors", "pressure": "sensors",
+    "carbon_dioxide": "sensors", "pm25": "sensors", "battery": "sensors",
+    "shutter": "switches", "blind": "switches", "curtain": "switches",
+    "awning": "switches", "shade": "switches",
     "garage": "appliances", "door": "security", "window": "security",
     "motion": "security", "occupancy": "security", "smoke": "security",
     "gas": "security", "moisture": "security", "safety": "security",
     "lock": "security", "tamper": "security", "sound": "security",
-    "tv": "appliances", "receiver": "appliances", "speaker": "audio",
+    "tv": "appliances", "receiver": "appliances", "speaker": "appliances",
     "outlet": "appliances", "switch": "appliances",
     "power": "appliances", "energy": "appliances",
 }
 
 DOMAIN_HINT = {
-    "climate": "climate",
-    "water_heater": "climate",
-    "light": "lights",
+    "climate": "sensors",
+    "water_heater": "sensors",
+    "light": "switches",
     "switch": "appliances",
-    "fan": "appliances",
+    # EN | Ventilation (VMC): grouped with the environmental readings it
+    # EN | affects, not with the general appliances catch-all.
+    # FR | Ventilation (VMC) : regroupe avec les mesures environnementales
+    # FR | qu elle influence, pas avec le fourre-tout appareils.
+    "fan": "sensors",
     "vacuum": "appliances",
     "humidifier": "appliances",
     "media_player": "appliances",
-    "cover": "shutters",
+    "cover": "switches",
     "alarm_control_panel": "security",
     "camera": "security",
     "lock": "security",
     "binary_sensor": "security",
-    "sensor": "climate",
+    "sensor": "sensors",
 }
 
 
@@ -206,21 +222,16 @@ def extract_entities(report) -> list:
 
 def current_assignment(model: dict) -> dict:
     """
-    EN | entity_id -> {room, slot, role} as the model declares it today.
-    FR | entity_id -> {room, slot, role} tel que le modele le declare
+    EN | entity_id -> {room, slot} as the model declares it today.
+    FR | entity_id -> {room, slot} tel que le modele le declare
     FR | aujourd hui.
     """
     where = {}
     for room in (model.get("rooms") or []):
         rid = room.get("id")
         for slot_id, value in (room.get("slots") or {}).items():
-            if slot_id == "audio" and isinstance(value, dict):
-                for role in ("source", "output"):
-                    for ent in (value.get(role) or []):
-                        where[ent] = {"room": rid, "slot": "audio", "role": role}
-            else:
-                for ent in (value or []):
-                    where[ent] = {"room": rid, "slot": slot_id, "role": ""}
+            for ent in (value or []):
+                where[ent] = {"room": rid, "slot": slot_id}
     return where
 
 
@@ -312,7 +323,6 @@ def main() -> int:
             "area": ent.get("area", ""),
             "room": cur.get("room", ""),
             "slot": cur.get("slot", ""),
-            "role": cur.get("role", ""),
             "device_class": dc,
             "area_name": ent.get("area_name", ""),
             "suggested_slot": hint,

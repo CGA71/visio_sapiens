@@ -189,11 +189,10 @@
     <table>
       <thead>
         <tr>
-          <th style="width:38%">Device</th>
-          <th style="width:12%">Domain / class</th>
-          <th style="width:22%">Room</th>
-          <th style="width:20%">Slot</th>
-          <th style="width:8%">Role</th>
+          <th style="width:40%">Device</th>
+          <th style="width:14%">Domain / class</th>
+          <th style="width:23%">Room</th>
+          <th style="width:23%">Slot</th>
         </tr>
       </thead>
       <tbody id="rows"></tbody>
@@ -304,39 +303,19 @@ function buildRow(entity) {
   const slotSel = document.createElement('select');
   td4.appendChild(slotSel);
 
-  const td5 = document.createElement('td');
-  const roleSel = document.createElement('select');
-  td5.appendChild(roleSel);
-
-  // EN | audio is the one slot with two roles: a stream exists independently
-  // EN | of the speaker that plays it.
-  // FR | audio est le seul tableau a deux roles : un flux existe
-  // FR | independamment de l enceinte qui le diffuse.
-  function refreshRole() {
-    const isAudio = slotSel.value === 'audio';
-    roleSel.innerHTML = '';
-    roleSel.disabled = !isAudio;
-    if (!isAudio) { roleSel.appendChild(option('', '—', true)); return; }
-    ['source', 'output'].forEach(r => roleSel.appendChild(
-      option(r, r, r === (entity.role || 'output'))));
-  }
-
   roomSel.addEventListener('change', () => {
     fillSlots(slotSel, roomSel.value, '', entity.suggested_slot);
-    refreshRole(); markPending();
+    markPending();
   });
-  slotSel.addEventListener('change', () => { refreshRole(); markPending(); });
-  roleSel.addEventListener('change', markPending);
+  slotSel.addEventListener('change', markPending);
 
   fillSlots(slotSel, preRoom, entity.slot, entity.suggested_slot);
-  refreshRole();
 
-  tr.append(td1, td2, td3, td4, td5);
+  tr.append(td1, td2, td3, td4);
   tr._get = () => ({
     entity_id: entity.entity_id,
     room: roomSel.value,
     slot: slotSel.value,
-    role: roleSel.disabled ? '' : roleSel.value,
   });
   return tr;
 }
@@ -360,7 +339,7 @@ function renderRecap() {
   [...el('rows').children].forEach(tr => {
     const a = tr._get();
     if (!a.room || !a.slot) return;
-    const name = tr.querySelector('.name').textContent + (a.role ? ' (' + a.role + ')' : '');
+    const name = tr.querySelector('.name').textContent;
     byRoomSlot[a.room] = byRoomSlot[a.room] || {};
     (byRoomSlot[a.room][a.slot] = byRoomSlot[a.room][a.slot] || []).push(name);
   });

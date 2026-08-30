@@ -17,31 +17,35 @@
 # FR | template. Une cuisine et un garage different par ce que house.yaml dit
 # FR | qu'elles contiennent, pas par leur balisage.
 #
-# EN | THE SIX SLOTS / FR | LES SIX TABLEAUX
-#   1 climate     temperature, heating, air conditioning, thermostat
-#   2 lights      lighting
-#   3 appliances  white goods, TV, home cinema, console, wine fridge, spa,
-#                 HRV, towel rail — LINE BY LINE, with a scrollbar
-#   4 shutters    roller shutters
-#   5 security    alarm, intercom, camera — OVERSIZED: an intercom video
-#                 feed, a camera mosaic and the alarm state need room
-#   6 audio       audio stream, with speaker output selection
+# EN | THE FIVE SLOTS / FR | LES CINQ TABLEAUX
+#   1 sensors        temperature, humidity, heating, ventilation (VMC),
+#                    battery — environmental readings and climate control
+#   2 switches       ALWAYS a full-width horizontal strip with a scrollbar:
+#                    a grouped listing — lights, then connected outlets,
+#                    then shutters — each row with a state indicator
+#                    (see vssp_circuit_switch)
+#   3 appliances     white goods, TV, home cinema, console, wine fridge, spa,
+#                    towel rail — LINE BY LINE, with a scrollbar
+#   4 security       alarm, intercom, camera — OVERSIZED: an intercom video
+#                    feed, a camera mosaic and the alarm state need room
+#   5 infrastructure servers, network switches, ISP box, firewall — LINE BY
+#                    LINE, with a scrollbar, same idiom as appliances
 #
 # EN | SLOT STATES — set by generate_dashboards.py, not decided here:
 # EN |   filled  the slot holds at least one device
 # EN |   empty   the slot is in the room's set but holds nothing yet
-# EN |           -> shows slot.empty, because a shutter may still be added
+# EN |           -> shows slot.empty, because a device may still be added
 # EN |   filler  empty, and carries the Visio Sapiens animation (one per
-# EN |           dashboard at most, shutters first)
+# EN |           dashboard at most, switches first — see FILLER_PRIORITY)
 # EN | A slot OUTSIDE the room's set never reaches this template: it is
 # EN | absent from room.slots and absent from the grid areas below, so it
 # EN | collapses and its neighbours expand.
 # FR | ETATS DES TABLEAUX — poses par generate_dashboards.py, pas decides ici :
 # FR |   filled  le tableau contient au moins un appareil
 # FR |   empty   le tableau est dans le jeu de la piece mais ne contient rien
-# FR |           -> affiche slot.empty, car un volet peut encore etre ajoute
+# FR |           -> affiche slot.empty, car un appareil peut encore etre ajoute
 # FR |   filler  vide, et porte l'animation Visio Sapiens (au plus une par
-# FR |           dashboard, shutters en priorite)
+# FR |           dashboard, switches en priorite — voir FILLER_PRIORITY)
 # FR | Un tableau HORS du jeu de la piece n'atteint jamais ce template : il
 # FR | est absent de room.slots et absent des grid areas ci-dessous, donc il
 # FR | s'effondre et ses voisins s'etendent.
@@ -138,7 +142,7 @@ views:
 {% include '_nav.j2' %}
 {% endif %}
 
-{% set mobile_order = ['climate', 'lights', 'security', 'appliances', 'shutters', 'audio'] %}
+{% set mobile_order = ['sensors', 'switches', 'security', 'appliances', 'infrastructure'] %}
 {% set slot_order = mobile_order if format == 'mobile' else slots %}
 {% for slot_id in slot_order if slot_id in room.slots %}
 {% set slot = room.slots[slot_id] %}
@@ -170,7 +174,7 @@ views:
             template: vssp_section_title
             name: "{{ t('slot.' ~ slot_id) }}"
 
-{% set is_entrance_special = room.slot_set == 'entrance' and slot_id in ['lights', 'security'] %}
+{% set is_entrance_special = room.slot_set == 'entrance' and slot_id in ['switches', 'security'] %}
 {% if slot.state == 'empty' and not is_entrance_special %}
           # EN | The slot belongs to this room's set but holds no device yet.
           # EN | It is NOT "coming soon": nothing is promised. It simply
@@ -386,7 +390,14 @@ views:
 {% endfor %}
 {% set intercom_cam = ns.intercom[0] if ns.intercom else None %}
 {% set mosaic_cams = ns.mosaic %}
-{% set entrance_light = room.slots['lights'].entities[0] if room.slots.get('lights') and room.slots['lights'].entities else None %}
+{# EN | Specifically a light-domain entity — the switches slot now also
+   EN | carries outlets and shutters, so entities[0] could be any of the
+   EN | three; by_domain (see normalise_slots()) picks the right one.
+   FR | Specifiquement une entite du domaine light — le tableau switches
+   FR | porte desormais aussi les prises et les volets, donc entities[0]
+   FR | pourrait etre n'importe lequel des trois ; by_domain (voir
+   FR | normalise_slots()) choisit le bon. #}
+{% set entrance_light = room.slots['switches'].by_domain.light[0] if room.slots.get('switches') and room.slots['switches'].by_domain.get('light') else None %}
           - type: horizontal-stack
             card_mod:
               style: |
@@ -1084,116 +1095,17 @@ views:
 {% endfor %}
 {% endif %}
 
-{% elif slot_id == 'audio' %}
-          # EN | AUDIO — the stream exists independently of its output, which
-          # EN | is why this is the one slot the form fills with two roles.
-          # EN | Three states: stream + speakers, stream without speaker, and
-          # EN | nothing at all (handled above as empty/filler).
-          # FR | AUDIO — le flux existe independamment de sa sortie, c'est
-          # FR | pourquoi c'est le seul tableau que le formulaire remplit avec
-          # FR | deux roles. Trois etats : flux + enceintes, flux sans
-          # FR | enceinte, et rien du tout (traite plus haut en empty/filler).
-{% for e in slot.source %}
-          - type: media-control
-            entity: {{ e }}
-            card_mod:
-              style: |
-                ha-card {
-                  background: rgba(0,0,0,.28) !important;
-                  border: 1px solid color-mix(in srgb, var(--primary-color, #00E5FF) 18%, transparent) !important;
-                  border-radius: 14px !important;
-                }
-{% endfor %}
-{% if slot.has_speaker %}
-          # EN | Output selection — which speaker plays the stream
-          # FR | Selection de la sortie — quelle enceinte diffuse le flux
-          - type: custom:button-card
-            show_icon: false
-            show_name: false
-            show_state: false
-            show_label: true
-            label: "{{ t('slot.audio_output') }}"
-            tap_action:
-              action: none
-            styles:
-              card:
-                - background: transparent
-                - box-shadow: none
-                - border: none
-                - padding: 8px 0 4px 0
-                - cursor: default
-              label:
-                - justify-self: start
-                - font-size: 11px
-                - letter-spacing: .6px
-                - color: var(--secondary-text-color, #8FB6C9)
-          - type: grid
-            columns: 2
-            square: false
-            cards:
-{% for e in slot.output %}
-              - type: custom:button-card
-                entity: {{ e }}
-                show_state: true
-                size: 20px
-                styles:
-                  card:
-                    - background: rgba(0,0,0,.22)
-                    - border: 1px solid color-mix(in srgb, var(--primary-color, #00E5FF) 12%, transparent)
-                    - border-radius: 12px
-                    - padding: 8px
-                  name:
-                    - font-size: 12px
-                    - color: var(--text-primary-color, #DCEEF6)
-                  state:
-                    - font-size: 11px
-                    - color: "#00E5FF"
-                tap_action:
-                  action: more-info
-{% endfor %}
-{% else %}
-          # EN | A stream with nowhere to play it. Saying so is more useful
-          # EN | than an empty control the user would tap without result.
-          # FR | Un flux sans rien pour le diffuser. Le dire est plus utile
-          # FR | qu'un controle vide sur lequel l'utilisateur appuierait sans
-          # FR | resultat.
-          - type: custom:button-card
-            show_icon: true
-            show_name: false
-            show_state: false
-            show_label: true
-            icon: mdi:speaker-off
-            label: "{{ t('slot.audio_no_speaker') }}"
-            tap_action:
-              action: none
-            styles:
-              card:
-                - background: transparent
-                - box-shadow: none
-                - border: none
-                - padding: 10px 0
-                - cursor: default
-                - pointer-events: none
-              icon:
-                - color: rgba(143,182,201,0.45)
-                - "--mdc-icon-size": 28px
-              label:
-                - color: rgba(143,182,201,0.65)
-                - font-size: 12px
-                - margin-top: 6px
-{% endif %}
-
-{% elif slot_id == 'lights' and room.slot_set == 'entrance' %}
+{% elif slot_id == 'switches' and room.slot_set == 'entrance' %}
           # EN | room.slot_set, not room.type: the two are independent
           # EN | fields (a room could be type: entrance with a different
           # EN | slot_set) and it is slot_set that actually selects the
-          # EN | `entrance` layout in house.yaml where lights is the
-          # EN | full-width 175px horizontal strip under the header, not a
+          # EN | `entrance` layout in house.yaml where switches is the
+          # EN | full-width 220px horizontal strip under the header, not a
           # EN | side column.
           # EN | Two framed groups side by side, breaker-styled
           # EN | (vssp_circuit_switch, same template as the ENERGY
-          # EN | electrical panel) rather than the plain one-line toggle
-          # EN | used by other rooms' lights slot: 3 switches, 2 outlets.
+          # EN | electrical panel) rather than the grouped scrollable listing
+          # EN | used by other rooms' switches slot: 3 switches, 2 outlets.
           # EN | Hardcoded directly, same spirit as the entrance cameras
           # EN | and the Jessica vacuum entities above — nothing usable is
           # EN | assigned to this slot via the admin console, and the
@@ -1204,14 +1116,14 @@ views:
           # FR | room.slot_set, pas room.type : les deux sont des champs
           # FR | independants (une piece pourrait avoir type: entrance avec
           # FR | un autre slot_set) et c'est slot_set qui selectionne
-          # FR | reellement le gabarit `entrance` de house.yaml, ou lights
-          # FR | est le bandeau horizontal pleine largeur de 175px sous
+          # FR | reellement le gabarit `entrance` de house.yaml, ou switches
+          # FR | est le bandeau horizontal pleine largeur de 220px sous
           # FR | l'en-tete, pas une colonne laterale.
           # FR | Deux groupes encadres cote a cote, façon interrupteur de
           # FR | tableau electrique (vssp_circuit_switch, meme template que
-          # FR | le tableau electrique d'ENERGY) plutot que le simple
-          # FR | bouton une-ligne utilise par le tableau lights des autres
-          # FR | pieces : 3 interrupteurs, 2 prises. Code en dur, meme
+          # FR | le tableau electrique d'ENERGY) plutot que le listing
+          # FR | groupe et defilant utilise par le tableau switches des
+          # FR | autres pieces : 3 interrupteurs, 2 prises. Code en dur, meme
           # FR | esprit que les cameras de l'entree et les entites du robot
           # FR | Jessica ci-dessus — rien d'exploitable n'est assigne a ce
           # FR | tableau via la console admin, et les prises sont un
@@ -1285,14 +1197,265 @@ views:
                           amp: ""
 {% endfor %}
 
-{% else %}
-          # EN | CLIMATE / LIGHTS / SHUTTERS — one row per device, same
-          # EN | vocabulary as the appliances list but without the scrollbar:
-          # EN | these slots hold few entities by nature.
-          # FR | CLIMATE / LIGHTS / SHUTTERS — une ligne par appareil, meme
-          # FR | vocabulaire que la liste appliances mais sans ascenseur : ces
-          # FR | tableaux contiennent peu d'entites par nature.
+{% elif slot_id == 'switches' %}
+          # EN | SWITCHES — ALWAYS a full-width horizontal strip (see
+          # EN | DEFAULT_LAYOUTS) holding a grouped, scrollable listing:
+          # EN | lights, then connected outlets, then shutters, each as its
+          # EN | own labeled group — never one mixed pile. Every row is
+          # EN | vssp_circuit_switch (same breaker-style card as the entrance
+          # EN | panel above and the ENERGY electrical panel), whose icon
+          # EN | color and toggle pill already react to entity.state — that
+          # EN | IS the on/off indicator, no separate widget needed.
+          # EN | Same scrollable-list mechanics as the appliances slot below
+          # EN | (custom_fields.list, fixed height + overflow-y, handled by
+          # EN | button-card's own style engine, not card-mod).
+          # FR | SWITCHES — TOUJOURS un bandeau horizontal pleine largeur
+          # FR | (voir DEFAULT_LAYOUTS) portant un listing groupe et
+          # FR | defilant : lumieres, puis prises connectees, puis volets,
+          # FR | chacun son propre groupe etiquete — jamais un tas melange.
+          # FR | Chaque ligne est vssp_circuit_switch (meme carte facon
+          # FR | tableau electrique que le panneau entree ci-dessus et le
+          # FR | tableau electrique d'ENERGY), dont la couleur d'icone et le
+          # FR | curseur bascule reagissent deja a entity.state — c'EST le
+          # FR | voyant allume/eteint, pas besoin d'un widget separe.
+          # FR | Meme mecanique de liste defilante que le tableau appliances
+          # FR | plus bas (custom_fields.list, hauteur fixe + overflow-y,
+          # FR | gere par le moteur de styles de button-card, pas card-mod).
+          - type: custom:button-card
+            show_icon: false
+            show_name: false
+            show_state: false
+            tap_action:
+              action: none
+            styles:
+              grid:
+                - grid-template-areas: '"list"'
+              card:
+                - background: transparent
+                - box-shadow: none
+                - border: none
+                - border-radius: 0
+                - padding: 0
+                - cursor: default
+              custom_fields:
+                list:
+                  - display: block
+                  - width: 100%
+                  - height: {{ '150px' if format != 'mobile' else '260px' }}
+                  - overflow-y: auto
+                  - overflow-x: hidden
+                  - padding-right: 4px
+                  - scrollbar-width: thin
+                  - scrollbar-color: color-mix(in srgb, var(--primary-color, #00E5FF) 35%, transparent) color-mix(in srgb, var(--primary-color, #00E5FF) 6%, transparent)
+            custom_fields:
+              list:
+                card:
+                  type: vertical-stack
+                  cards:
+{% if slot.by_domain.get('light', []) %}
+                    - type: custom:button-card
+                      show_icon: false
+                      show_name: false
+                      show_state: false
+                      show_label: true
+                      label: "{{ t('slot.switches_lights') }}"
+                      tap_action:
+                        action: none
+                      styles:
+                        card:
+                          - background: transparent
+                          - box-shadow: none
+                          - border: none
+                          - padding: 8px 0 4px 0
+                          - cursor: default
+                        label:
+                          - justify-self: start
+                          - font-size: 11px
+                          - letter-spacing: .6px
+                          - color: var(--secondary-text-color, #8FB6C9)
+{% for e in slot.by_domain.get('light', []) %}
+                    - type: custom:button-card
+                      template: vssp_circuit_switch
+                      entity: {{ e }}
+                      icon: mdi:lightbulb
+                      variables:
+                        model: ""
+                        amp: ""
+{% endfor %}
+{% endif %}
+{% if slot.by_domain.get('switch', []) %}
+                    - type: custom:button-card
+                      show_icon: false
+                      show_name: false
+                      show_state: false
+                      show_label: true
+                      label: "{{ t('slot.switches_outlets') }}"
+                      tap_action:
+                        action: none
+                      styles:
+                        card:
+                          - background: transparent
+                          - box-shadow: none
+                          - border: none
+                          - padding: 8px 0 4px 0
+                          - cursor: default
+                        label:
+                          - justify-self: start
+                          - font-size: 11px
+                          - letter-spacing: .6px
+                          - color: var(--secondary-text-color, #8FB6C9)
+{% for e in slot.by_domain.get('switch', []) %}
+                    - type: custom:button-card
+                      template: vssp_circuit_switch
+                      entity: {{ e }}
+                      icon: mdi:power-socket-fr
+                      variables:
+                        model: ""
+                        amp: ""
+{% endfor %}
+{% endif %}
+{% if slot.by_domain.get('cover', []) %}
+                    - type: custom:button-card
+                      show_icon: false
+                      show_name: false
+                      show_state: false
+                      show_label: true
+                      label: "{{ t('slot.switches_shutters') }}"
+                      tap_action:
+                        action: none
+                      styles:
+                        card:
+                          - background: transparent
+                          - box-shadow: none
+                          - border: none
+                          - padding: 8px 0 4px 0
+                          - cursor: default
+                        label:
+                          - justify-self: start
+                          - font-size: 11px
+                          - letter-spacing: .6px
+                          - color: var(--secondary-text-color, #8FB6C9)
+{% for e in slot.by_domain.get('cover', []) %}
+                    - type: custom:button-card
+                      template: vssp_circuit_switch
+                      entity: {{ e }}
+                      icon: mdi:window-shutter
+                      tap_action:
+                        action: more-info
+                      hold_action:
+                        action: toggle
+                      variables:
+                        model: ""
+                        amp: ""
+{% endfor %}
+{% endif %}
+{# EN | Anything assigned to switches outside light/switch/cover — an
+   EN | edge case DEVICE_CLASS_HINT/DOMAIN_HINT never suggests, but the
+   EN | admin can still assign by hand. Listed rather than silently
+   EN | dropped, same principle as everywhere else in this project.
+   FR | Tout ce qui est assigne a switches hors light/switch/cover — un cas
+   FR | limite que DEVICE_CLASS_HINT/DOMAIN_HINT ne suggere jamais, mais que
+   FR | l'administrateur peut quand meme assigner a la main. Liste plutot
+   FR | qu'abandonne en silence, meme principe que partout ailleurs dans ce
+   FR | projet. #}
+{% set known_switch_domains = ['light', 'switch', 'cover'] %}
+{% for domain, ents in slot.by_domain.items() if domain not in known_switch_domains %}
+{% for e in ents %}
+                    - type: custom:button-card
+                      template: vssp_circuit_switch
+                      entity: {{ e }}
+                      variables:
+                        model: ""
+                        amp: ""
+{% endfor %}
+{% endfor %}
+
+{% elif slot_id == 'infrastructure' %}
+          # EN | INFRASTRUCTURE — same scrollable-list idiom as appliances:
+          # EN | no bespoke visual vocabulary exists yet for server/network
+          # EN | hardware, and this project's rule is shared vocabulary over
+          # EN | a second design for the same idea.
+          # FR | INFRASTRUCTURE — meme idiome de liste defilante que
+          # FR | appliances : aucun vocabulaire visuel dedie n'existe encore
+          # FR | pour le materiel serveur/reseau, et la regle de ce projet
+          # FR | est un vocabulaire partage plutot qu'un second design pour
+          # FR | la meme idee.
+          - type: custom:button-card
+            show_icon: false
+            show_name: false
+            show_state: false
+            tap_action:
+              action: none
+            styles:
+              grid:
+                - grid-template-areas: '"list"'
+              card:
+                - background: transparent
+                - box-shadow: none
+                - border: none
+                - border-radius: 0
+                - padding: 0
+                - cursor: default
+              custom_fields:
+                list:
+                  - display: block
+                  - width: 100%
+                  - height: {{ '320px' if format != 'mobile' else '260px' }}
+                  - overflow-y: auto
+                  - overflow-x: hidden
+                  - padding-right: 4px
+                  - scrollbar-width: thin
+                  - scrollbar-color: color-mix(in srgb, var(--primary-color, #00E5FF) 35%, transparent) color-mix(in srgb, var(--primary-color, #00E5FF) 6%, transparent)
+            custom_fields:
+              list:
+                card:
+                  type: vertical-stack
+                  cards:
 {% for e in slot.entities %}
+                    - type: custom:button-card
+                      entity: {{ e }}
+                      show_state: true
+                      show_label: false
+                      size: 22px
+                      styles:
+                        grid:
+                          - grid-template-areas: '"i n s"'
+                          - grid-template-columns: 32px 1fr auto
+                          - align-items: center
+                          - column-gap: 10px
+                        card:
+                          - background: rgba(0,0,0,.22)
+                          - border: 1px solid color-mix(in srgb, var(--primary-color, #00E5FF) 12%, transparent)
+                          - border-radius: 12px
+                          - padding: 8px 12px
+                          - margin-bottom: 6px
+                          - height: 46px
+                        name:
+                          - justify-self: start
+                          - font-size: 13px
+                          - color: var(--text-primary-color, #DCEEF6)
+                        state:
+                          - justify-self: end
+                          - font-size: 12px
+                          - color: "#00E5FF"
+                        icon:
+                          - color: var(--paper-item-icon-color, #00E5FF)
+                      tap_action:
+                        action: more-info
+{% endfor %}
+
+{% else %}
+          # EN | SENSORS — one row per device, same vocabulary as the
+          # EN | appliances list but without the scrollbar: this slot holds
+          # EN | few entities by nature. sensor/binary_sensor entities are
+          # EN | read-only, so they open more-info instead of toggling.
+          # FR | SENSORS — une ligne par appareil, meme vocabulaire que la
+          # FR | liste appliances mais sans ascenseur : ce tableau contient
+          # FR | peu d'entites par nature. Les entites sensor/binary_sensor
+          # FR | sont en lecture seule, donc elles ouvrent more-info plutot
+          # FR | que de basculer.
+{% for e in slot.entities %}
+{% set domain = e.split('.')[0] %}
           - type: custom:button-card
             entity: {{ e }}
             show_state: true
@@ -1321,7 +1484,7 @@ views:
                 - color: "#00E5FF"
               icon:
                 - color: var(--paper-item-icon-color, #00E5FF)
-{% if slot_id == 'shutters' %}
+{% if domain in ['sensor', 'binary_sensor'] %}
             tap_action:
               action: more-info
 {% else %}

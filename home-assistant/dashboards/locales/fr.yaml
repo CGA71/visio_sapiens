@@ -52,16 +52,15 @@ room:
 # FR | Libelles des tableaux. Les cles restent en anglais — seuls les
 # FR | libelles changent.
 slot:
-  climate: Température & chauffage
-  lights: Éclairages
+  sensors: Capteurs
+  switches: Interrupteurs
   appliances: Appareils
-  shutters: Volets roulants
   security: Sécurité
-  audio: Audio
+  infrastructure: Infrastructure
+  switches_lights: Éclairages
+  switches_outlets: Prises connectées
+  switches_shutters: Volets roulants
   empty: Aucun appareil
-  audio_source: Source
-  audio_output: Sortie
-  audio_no_speaker: Aucune enceinte à proximité
   nvr_access: Accès NVR
   door_open: Ouverture
   door_close: Fermer
