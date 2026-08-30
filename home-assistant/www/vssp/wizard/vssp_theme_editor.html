@@ -60,7 +60,7 @@
   .header h1 { margin: 0; }
   .header .sub-label { margin: 2px 0 0; font-size: 10px; letter-spacing: 2px; color: var(--dim); }
 
-  .layout { display: grid; grid-template-columns: minmax(320px, 1fr) 280px; gap: 16px; align-items: start; }
+  .layout { display: grid; grid-template-columns: minmax(280px, 1fr) 500px; gap: 16px; align-items: start; }
   @media (max-width: 780px) { .layout { grid-template-columns: 1fr; } }
 
   .wrap {
@@ -193,13 +193,24 @@
     padding: 10px 12px; text-transform: uppercase;
   }
   #preview .p-body { display: flex; }
+  /* EN | The mock nav rail now carries a couple of room entries alongside
+     EN | the system ones, and a selected item, so it reads as a small copy
+     EN | of the real rail (_nav.j2 / vssp_nav_button) rather than a generic
+     EN | 3-item placeholder — asked for explicitly ("un mini dashboard home
+     EN | avec le nav et le header").
+     FR | Le bandeau maquette porte desormais quelques pieces a cote des
+     FR | entrees systeme, plus un element selectionne, pour se lire comme une
+     FR | petite copie du vrai bandeau (_nav.j2 / vssp_nav_button) plutot
+     FR | qu'un generique a 3 entrees — demande explicitement (« un mini
+     FR | dashboard home avec le nav et le header »). */
   #preview .p-sidebar {
-    width: 64px; background: var(--p-sidebar-background, #050B12);
-    padding: 10px 6px; display: flex; flex-direction: column; gap: 8px;
+    width: 84px; background: var(--p-sidebar-background, #050B12);
+    padding: 10px 6px; display: flex; flex-direction: column; gap: 6px;
   }
   #preview .p-sidebar .p-item {
     display: flex; flex-direction: column; align-items: center; gap: 3px;
-    color: var(--p-sidebar-text, #B8E8F5); font-size: 8px;
+    color: var(--p-sidebar-text, #B8E8F5); font-size: 8px; padding: 4px 2px;
+    border-radius: 6px;
   }
   #preview .p-sidebar .p-item .dot {
     width: 8px; height: 8px; border-radius: 50%;
@@ -207,10 +218,11 @@
   }
   #preview .p-sidebar .p-item.selected {
     background: var(--p-sidebar-selected-background, rgba(0,229,255,.10));
-    border-radius: 8px; color: var(--p-sidebar-selected-text, #00E5FF);
+    color: var(--p-sidebar-selected-text, #00E5FF);
   }
   #preview .p-sidebar .p-item.selected .dot { background: var(--p-sidebar-selected-icon, #00E5FF); }
-  #preview .p-content { flex: 1; padding: 12px; }
+  #preview .p-sidebar .p-divider { height: 1px; background: var(--p-divider, #1F3448); margin: 4px 4px; }
+  #preview .p-content { flex: 1; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
   #preview .p-card {
     background: var(--p-card-background, rgba(16,27,39,.85));
     border: var(--p-card-border-width, 1px) solid var(--p-divider, #1F3448);
@@ -225,6 +237,32 @@
     background: var(--p-primary, #00E5FF); color: #04141B;
   }
   #preview .p-card .p-btn.accent { background: var(--p-accent, #00FFD5); margin-left: 6px; }
+  /* EN | "Infos below" — a small KPI row, the same idea as the real HOME
+     EN | dashboard's System/Energy/Rooms status row, so the preview shows
+     EN | more than one lone card ("quelques infos en-dessous ... pour
+     EN | visualiser une vraie preview").
+     FR | « Infos en-dessous » — une petite ligne de KPI, meme idee que la
+     FR | ligne de statut Systeme/Energie/Pieces du vrai dashboard HOME, pour
+     FR | que l'apercu montre plus qu'une carte isolee (« quelques infos
+     FR | en-dessous ... pour visualiser une vraie preview »). */
+  #preview .p-kpis { display: flex; gap: 8px; }
+  #preview .p-kpi {
+    flex: 1; background: var(--p-card-background, rgba(16,27,39,.85));
+    border: var(--p-card-border-width, 1px) solid var(--p-divider, #1F3448);
+    border-radius: var(--p-card-radius, 18px);
+    padding: 8px 10px;
+  }
+  #preview .p-kpi .p-kpi-label {
+    color: var(--p-text-secondary, #B8E8F5); font-size: 8px;
+    text-transform: uppercase; letter-spacing: .5px;
+  }
+  #preview .p-kpi .p-kpi-bar {
+    margin-top: 6px; height: 4px; border-radius: 2px;
+    background: var(--p-divider, #1F3448); overflow: hidden;
+  }
+  #preview .p-kpi .p-kpi-bar span {
+    display: block; height: 100%; background: var(--p-primary, #00E5FF);
+  }
   #preview .p-dialog {
     margin: 10px 12px 12px; padding: 10px;
     background: var(--p-dialog-scrim, rgba(2,5,11,.75));
@@ -263,8 +301,12 @@
     <div class="p-body">
       <div class="p-sidebar">
         <div class="p-item"><div class="dot"></div>HOME</div>
+        <div class="p-item"><div class="dot"></div>kitchen</div>
+        <div class="p-item"><div class="dot"></div>living room</div>
+        <div class="p-divider"></div>
         <div class="p-item selected"><div class="dot"></div>THEME</div>
         <div class="p-item"><div class="dot"></div>ENERGY</div>
+        <div class="p-item"><div class="dot"></div>ADMIN</div>
       </div>
       <div class="p-content">
         <div class="p-card">
@@ -272,6 +314,20 @@
           <div class="p-muted">21.4°C · 3 devices on</div>
           <span class="p-btn">Apply</span>
           <span class="p-btn accent">Preview</span>
+        </div>
+        <div class="p-kpis">
+          <div class="p-kpi">
+            <div class="p-kpi-label">System</div>
+            <div class="p-kpi-bar"><span style="width:51%"></span></div>
+          </div>
+          <div class="p-kpi">
+            <div class="p-kpi-label">Energy</div>
+            <div class="p-kpi-bar"><span style="width:35%"></span></div>
+          </div>
+          <div class="p-kpi">
+            <div class="p-kpi-label">Rooms</div>
+            <div class="p-kpi-bar"><span style="width:80%"></span></div>
+          </div>
         </div>
       </div>
     </div>
