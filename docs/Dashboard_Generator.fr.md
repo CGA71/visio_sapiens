@@ -322,3 +322,115 @@ depuis un modèle : `themes/visio_sapiens.yaml` est désormais rendu
 depuis `model/design_system.yaml` par `templates_j2/theme.yaml.j2`,
 éditable graphiquement depuis l'écran THEME de la console ADMIN. Voir
 [Design_System_Editor.fr.md](Design_System_Editor.fr.md).
+
+## Grille des dashboards de pièce — disposition dynamique des tableaux (**proposé, pas encore implémenté**)
+
+**Statut : conception validée le 31/08/2026, en attente de simulations
+avant tout code.** Tout ce qui suit décrit un comportement *cible*, pas
+ce que fait actuellement `room.yaml.j2`. Le mécanisme livré aujourd'hui
+— une grille dessinée à la main par `slot_set` dans `DEFAULT_LAYOUTS`
+(`generate_dashboards.py`), l'un de `default` / `toilet` / `garden` /
+`utility` / `entrance` / `minimal` / `computer` — reste la référence
+tant que ceci n'est pas réellement construit et validé.
+
+### Pourquoi changer
+
+`DEFAULT_LAYOUTS` est une grille figée par préréglage nommé : chaque
+pièce utilisant `default` obtient exactement les mêmes proportions,
+que son tableau `appliances` porte neuf appareils ou un seul. Faire
+grandir le vocabulaire de tableaux (cinq aujourd'hui, le tableau
+`infrastructure` de `computer` ajouté par-dessus) veut dire dessiner à
+la main une nouvelle grille pour chaque nouvelle combinaison qui
+compte. La proposition remplace la *forme* de la grille par un calcul
+basé sur ce que la pièce contient réellement, tandis que `slot_set`
+continue de décider *quels* tableaux sont candidats (cette partie ne
+change pas — voir « Jeux de tableaux » plus haut dans ce document et
+`KNOWN_SLOT_SETS` dans `vssp_assign_prepare.py`/`vssp_rooms_apply.py`).
+
+### L'algorithme
+
+Vocabulaire :
+- **tableau par défaut** — l'un des cinq tableaux candidats de la
+  pièce, choisi pièce par pièce (un nouveau champ, pas encore ajouté
+  au schéma des pièces de `house.yaml`). Toujours rendu, pleine
+  largeur, en haut de la grille, même vide.
+- **tableaux secondaires** — les autres candidats. Un tableau
+  secondaire à zéro appareil assigné **n'est pas rendu du tout** (pas
+  de placeholder `slot.empty` ici — c'est le seul changement de
+  comportement délibéré par rapport aux grilles statiques actuelles,
+  où un tableau vide-mais-dans-le-jeu affiche quand même « aucun
+  appareil pour l'instant »).
+- **poids** — le nombre d'appareils d'un tableau secondaire
+  (`len(slot.entities)`, déjà calculé par `normalise_slots()`).
+
+Étapes :
+1. Réserver le tableau par défaut → bandeau pleine largeur, hauteur
+   fixe, en haut.
+2. Écarter tout tableau secondaire de poids 0.
+3. Trier les secondaires restants par poids décroissant.
+4. Les répartir en au plus deux étages :
+   - **Étage A** — les 2 plus lourds, partageant un bloc à hauteur
+     fixe (3 lignes de grille) sous le tableau par défaut. 1 tableau
+     présent → il remplit le bloc seul ; 2 présents → cote à cote,
+     largeur proportionnelle au poids.
+   - **Étage B** — les 2 suivants par poids (n'existe que si 3 ou 4
+     secondaires sont présents), partageant une ligne en bas, même
+     règle de largeur proportionnelle. 1 tableau en étage B → remplit
+     la ligne seul.
+
+| Secondaires présents | Étage A | Étage B |
+|---|---|---|
+| 1 | ce tableau, bloc entier | — |
+| 2 | les deux, repartis par poids | — |
+| 3 | les 2 plus lourds, repartis par poids | le 3e, ligne entière |
+| 4 | les 2 plus lourds, repartis par poids | 3e + 4e, repartis par poids |
+
+Formule du nombre de colonnes pour un membre d'étage, sur une grille
+de contenu à 12 colonnes :
+
+```
+col_span = round(12 × son_poids / poids_total_de_l_etage)
+```
+
+plafonné pour qu'aucun membre ne descende sous un minimum lisible
+(valeur exacte du plafond : question ouverte, voir plus bas).
+
+### Exemple chiffré
+
+Une pièce avec `switches` comme tableau par défaut, et quatre
+secondaires présents : `appliances` (9 appareils), `sensors` (3),
+`security` (2), `infrastructure` (2).
+
+```
+switches — par défaut, pleine largeur, ligne 1
+┌──────────────────────────────┬───────────────┐
+│ appliances (9)                │ sensors (3)   │   étage A, 3 lignes
+│ 9/12 col                      │ 3/12 col      │
+├───────────────────┬───────────┴───────────────┤
+│ security (2)       │ infrastructure (2)        │   étage B, 1 ligne
+│ 6/12 col            │ 6/12 col                  │
+└───────────────────┴────────────────────────────┘
+```
+
+### Questions ouvertes à trancher pendant les simulations de demain
+
+- **Valeur du plafond** pour `col_span` — jusqu'où un membre d'étage
+  peut-il s'amincir avant de devenir inutilisable (un nombre de
+  colonnes minimum, ou un pourcentage minimum) ?
+- **Hauteurs de ligne** — les 3 lignes de l'étage A et la 1 ligne de
+  l'étage B sont-elles des valeurs pixel/`fr` fixes, ou varient-elles
+  aussi selon quelque chose ?
+- **Format mobile** — `room_mobile.yaml.j2` est mono-colonne ; l'ordre
+  basé sur le poids (défaut d'abord, puis secondaires du plus lourd au
+  plus léger) s'y applique-t-il aussi, même sans l'étagement 2D ?
+- **Règle actuelle « switches toujours pleine largeur »** — le nouveau
+  mécanisme de tableau par défaut la remplace-t-il purement et
+  simplement, ou `switches` peut-il encore être forcé pleine largeur
+  même quand ce n'est pas le tableau par défaut choisi ?
+- **Égalité de poids** — quand deux secondaires ont le même nombre
+  d'appareils, qu'est-ce qui départage (ordre des tableaux dans
+  `SLOTS`, alphabétique, autre chose) ?
+- **Pièce entièrement à zéro** — une pièce où chaque secondaire est
+  vide (seul le tableau par défaut a du contenu, ou rien du tout) :
+  la grille se réduit-elle juste au bandeau par défaut, ou autre chose
+  remplit-il l'espace restant ?

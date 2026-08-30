@@ -322,3 +322,107 @@ principle: `themes/visio_sapiens.yaml` is now rendered from
 `model/design_system.yaml` by `templates_j2/theme.yaml.j2`, editable
 graphically from the ADMIN console's THEME screen. See
 [Design_System_Editor.md](Design_System_Editor.md).
+
+## Room dashboard grid — dynamic slot layout (**proposed, not yet implemented**)
+
+**Status: design agreed 2026-08-31, pending simulation before any code
+is written.** Everything in this section describes a *target*
+behaviour, not what `room.yaml.j2` currently does. Today's shipped
+mechanism — a hand-drawn grid per `slot_set` in `DEFAULT_LAYOUTS`
+(`generate_dashboards.py`), one of `default` / `toilet` / `garden` /
+`utility` / `entrance` / `minimal` / `computer` — stays authoritative
+until this is actually built and validated.
+
+### Why change it
+
+`DEFAULT_LAYOUTS` is a fixed grid per named preset: every room using
+`default` gets the exact same proportions regardless of whether its
+`appliances` slot holds nine devices or one. Growing the slot
+vocabulary (five slots today, `computer`'s `infrastructure` slot
+added on top) means hand-drawing a new grid for every new combination
+that matters. The proposal replaces the *shape* of the grid with a
+computation based on what a room actually contains, while
+`slot_set` keeps deciding *which* slots are candidates at all (that
+part is unchanged — see "Slot sets" earlier in this doc and
+`vssp_assign_prepare.py`/`vssp_rooms_apply.py`'s `KNOWN_SLOT_SETS`).
+
+### The algorithm
+
+Terms:
+- **default slot** — one of the room's five candidate slots, chosen
+  per room (a new field, not yet added to `house.yaml`'s room schema).
+  Always rendered, full width, top of the grid, even if empty.
+- **secondary slots** — the other candidates. A secondary slot with
+  zero assigned devices is **not rendered at all** (no `slot.empty`
+  placeholder here — that's the one deliberate behaviour change from
+  today's static grids, where an empty-but-in-set slot still shows
+  "no device yet").
+- **weight** — a secondary slot's device count (`len(slot.entities)`,
+  already computed by `normalise_slots()`).
+
+Steps:
+1. Reserve the default slot → full-width band, fixed height, on top.
+2. Drop every secondary slot with weight 0.
+3. Sort the remaining secondaries by weight, descending.
+4. Split them into at most two tiers:
+   - **Tier A** — the top 2 by weight, sharing a fixed-height block
+     (3 grid rows) below the default slot. 1 slot present → it fills
+     the block alone; 2 present → split side by side, width
+     proportional to weight.
+   - **Tier B** — the next 2 by weight (only exists when 3 or 4
+     secondaries are present), sharing one row at the bottom, same
+     proportional-width rule. 1 slot in tier B → fills the row alone.
+
+| Secondaries present | Tier A | Tier B |
+|---|---|---|
+| 1 | that slot, full block | — |
+| 2 | both, split by weight | — |
+| 3 | top 2, split by weight | 3rd, full row |
+| 4 | top 2, split by weight | 3rd + 4th, split by weight |
+
+Column-span formula for a tier member on a 12-column content grid:
+
+```
+col_span = round(12 × its_weight / tier_total_weight)
+```
+
+clamped so no member drops below a readable minimum (exact clamp
+value: open question, see below).
+
+### Worked example
+
+A room with `switches` as its default slot, and four secondaries
+present: `appliances` (9 devices), `sensors` (3), `security` (2),
+`infrastructure` (2).
+
+```
+switches — default, full width, row 1
+┌──────────────────────────────┬───────────────┐
+│ appliances (9)                │ sensors (3)   │   tier A, 3 rows
+│ 9/12 cols                     │ 3/12 cols     │
+├───────────────────┬───────────┴───────────────┤
+│ security (2)       │ infrastructure (2)        │   tier B, 1 row
+│ 6/12 cols           │ 6/12 cols                 │
+└───────────────────┴────────────────────────────┘
+```
+
+### Open questions to settle during tomorrow's simulations
+
+- **Clamp value** for `col_span` — how thin can a tier member get
+  before it stops being usable (a minimum column count, or a minimum
+  percentage)?
+- **Row heights** — are tier A's 3 rows and tier B's 1 row fixed
+  pixel/`fr` values, or do they also scale with something?
+- **Mobile format** — `room_mobile.yaml.j2` is single-column; does the
+  weight-based *ordering* (default first, then secondaries heaviest to
+  lightest) carry over there even without the 2-D tiering?
+- **`switches`' existing "always full width" rule** — does the new
+  default-slot mechanism replace it outright, or can `switches` still
+  be forced full-width even when it isn't the chosen default?
+- **Ties in weight** — when two secondaries have the same device
+  count, what breaks the tie (slot order in `SLOTS`, alphabetical,
+  something else)?
+- **All-zero room** — a room where every secondary is empty (only the
+  default slot has content, or nothing does at all): does the grid
+  just shrink to the default band, or does something else fill the
+  remaining space?
