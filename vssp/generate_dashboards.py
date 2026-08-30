@@ -185,18 +185,27 @@ DEFAULT_SLOT_SETS = {
     # FR | ci-dessous).
     "entrance":      ["switches", "security"],
     "minimal":       ["switches", "security"],
+    # EN | Named after the room TYPE (room_icons/locales `computer`), not
+    # EN | after any one room's own id — a slot set is a reusable preset,
+    # EN | the same way `toilet`/`garden`/`entrance` are, not something tied
+    # EN | to a specific room instance.
     # EN | Server, network switch, ISP box, firewall — no HA domain or
     # EN | device_class reliably tells this apart from an ordinary sensor or
     # EN | switch, so this is the one slot with no automatic suggestion
     # EN | (see DEVICE_CLASS_HINT/DOMAIN_HINT in vssp_assign_prepare.py): the
     # EN | admin picks it by hand in the assignment form.
+    # FR | Nomme d'apres le TYPE de piece (room_icons/locales `computer`),
+    # FR | pas d'apres l'id d'une piece en particulier — un jeu de tableaux
+    # FR | est un preset reutilisable, au meme titre que `toilet`/`garden`/
+    # FR | `entrance`, pas quelque chose de lie a une instance de piece
+    # FR | precise.
     # FR | Serveur, switch reseau, box FAI, firewall — aucun domaine ni
     # FR | device_class Home Assistant ne distingue fiablement cela d'un
     # FR | capteur ou interrupteur ordinaire, donc c'est le seul tableau sans
     # FR | suggestion automatique (voir DEVICE_CLASS_HINT/DOMAIN_HINT dans
     # FR | vssp_assign_prepare.py) : l'administrateur le choisit a la main
     # FR | dans le formulaire d'assignation.
-    "computer_room": ["sensors", "switches", "infrastructure", "security"],
+    "computer": ["sensors", "switches", "infrastructure", "security"],
 }
 
 # ----------------------------------------------------------------------------
@@ -286,7 +295,7 @@ DEFAULT_LAYOUTS = {
             "nav switches switches switches switches switches",
         ],
     },
-    "computer_room": {
+    "computer": {
         "rows": "105px 220px 260px 220px",
         "areas": [
             "nav header         header         header         header         header",

@@ -67,18 +67,31 @@ DEFAULT_SLOT_SETS = {
     "utility":       ["sensors", "switches", "appliances", "security"],
     "entrance":      ["switches", "security"],
     "minimal":       ["switches", "security"],
+    # EN | Named after the room TYPE (room_icons/locales `computer`), not
+    # EN | after any one room's own id — a slot set is a reusable preset,
+    # EN | the same way `toilet`/`garden`/`entrance` are, not something tied
+    # EN | to a specific room instance. A room named "server room" or
+    # EN | "office" picks this same set via its `type:`/`slot_set:` fields;
+    # EN | it is not "the computer_room room's settings".
     # EN | Server, network switch, ISP box, firewall — no HA domain or
     # EN | device_class reliably tells this apart from an ordinary sensor or
     # EN | switch, so unlike every other slot this one has no automatic
     # EN | suggestion in DEVICE_CLASS_HINT/DOMAIN_HINT below: the admin picks
     # EN | it by hand in the assignment form.
+    # FR | Nomme d'apres le TYPE de piece (room_icons/locales `computer`),
+    # FR | pas d'apres l'id d'une piece en particulier — un jeu de tableaux
+    # FR | est un preset reutilisable, au meme titre que `toilet`/`garden`/
+    # FR | `entrance`, pas quelque chose de lie a une instance de piece
+    # FR | precise. Une piece nommee « salle serveur » ou « bureau » choisit
+    # FR | ce meme jeu via ses champs `type:`/`slot_set:` ; ce n'est pas
+    # FR | « les reglages de la piece computer_room ».
     # FR | Serveur, switch reseau, box FAI, firewall — aucun domaine ni
     # FR | device_class Home Assistant ne distingue fiablement cela d un
     # FR | capteur ou interrupteur ordinaire, donc contrairement a tout autre
     # FR | tableau celui-ci n a pas de suggestion automatique dans
     # FR | DEVICE_CLASS_HINT/DOMAIN_HINT ci-dessous : l administrateur le
     # FR | choisit a la main dans le formulaire d assignation.
-    "computer_room": ["sensors", "switches", "infrastructure", "security"],
+    "computer": ["sensors", "switches", "infrastructure", "security"],
 }
 
 # EN | Suggested slot per Home Assistant domain. A SUGGESTION only: the form

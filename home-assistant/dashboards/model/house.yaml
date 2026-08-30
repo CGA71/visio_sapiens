@@ -144,14 +144,27 @@ slot_sets:
   # EN | Two slots only, for a corridor or a landing.
   # FR | Deux tableaux seulement, pour un couloir ou un palier.
   minimal:  [switches, security]
+  # EN | Named after the room TYPE (room_icons `computer`), not after any
+  # EN | one room's own id — a slot set is a reusable preset, not something
+  # EN | tied to a specific room instance (the `computer_room` room below is
+  # EN | one INSTANCE that may pick this set via its own `slot_set:` field;
+  # EN | this set's name and that room's id are two unrelated strings that
+  # EN | happen to look similar).
   # EN | Server, network switch, ISP box, firewall — no automatic
   # EN | suggestion (see DEVICE_CLASS_HINT/DOMAIN_HINT in
   # EN | vssp_assign_prepare.py): assigned by hand in the assignment form.
+  # FR | Nomme d'apres le TYPE de piece (room_icons `computer`), pas
+  # FR | d'apres l'id d'une piece en particulier — un jeu de tableaux est un
+  # FR | preset reutilisable, pas quelque chose de lie a une instance de
+  # FR | piece precise (la piece `computer_room` plus bas est une INSTANCE
+  # FR | qui peut choisir ce jeu via son propre champ `slot_set:` ; le nom de
+  # FR | ce jeu et l'id de cette piece sont deux chaines sans rapport qui se
+  # FR | ressemblent par coincidence).
   # FR | Serveur, switch reseau, box FAI, firewall — aucune suggestion
   # FR | automatique (voir DEVICE_CLASS_HINT/DOMAIN_HINT dans
   # FR | vssp_assign_prepare.py) : assigne a la main dans le formulaire
   # FR | d'assignation.
-  computer_room: [sensors, switches, infrastructure, security]
+  computer: [sensors, switches, infrastructure, security]
 
 # ── EN | Grid layouts — one per slot set ──────────────────────────────
 # ── FR | Gabarits de grille — un par jeu de tableaux ──────────────────
