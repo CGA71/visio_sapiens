@@ -314,10 +314,37 @@ NON_SLOT_AREAS = {"nav", "header"}
 
 # EN | At most one Visio Sapiens filler animation per dashboard, on the first
 # EN | slot of this list that is in the room's set and holds no device.
-# FR | Au plus une animation Visio Sapiens de remplissage par dashboard, sur le
-# FR | premier tableau de cette liste appartenant au jeu de la piece et ne
+# EN | Empty on purpose. `switches` was tried here after the five-slot rework
+# EN | (FILLER_PRIORITY previously read ["shutters", "audio"]), but the
+# EN | filler card's markup — a full-bleed <img ... object-fit:cover> — was
+# EN | designed for a roughly card-shaped panel, and switches is now ALWAYS
+# EN | a full-width horizontal strip: the same image renders as a thin,
+# EN | stretched sliver instead of the intended hero visual. On top of that,
+# EN | the default asset (house.filler_animation, /local/vssp/images/
+# EN | vssp_loop.gif) does not actually exist on this deployment — only
+# EN | desk.png, floorplan.png, logo_VS-Sapiens.png and radar.gif are in
+# EN | www/vssp/images/ — so the filler card rendered a broken image on top
+# EN | of the aspect-ratio problem. No slot here currently has a shape this
+# EN | card was designed for; re-enable by picking a real (tall-ish) slot
+# EN | AND supplying/confirming a real asset for house.filler_animation.
+# FR | Au plus une animation Visio Sapiens de remplissage par dashboard, sur
+# FR | le premier tableau de cette liste appartenant au jeu de la piece et ne
 # FR | contenant aucun appareil.
-FILLER_PRIORITY = ["switches"]
+# FR | Vide volontairement. `switches` avait ete essaye ici apres la refonte
+# FR | a cinq tableaux (FILLER_PRIORITY valait avant ["shutters", "audio"]),
+# FR | mais le balisage de la carte de remplissage — un <img ...
+# FR | object-fit:cover> pleine carte — a ete concu pour un panneau a peu
+# FR | pres carre, et switches est desormais TOUJOURS un bandeau horizontal
+# FR | pleine largeur : la meme image se rend en fine lamelle etiree au lieu
+# FR | du visuel vedette prevu. En plus de cela, l'actif par defaut
+# FR | (house.filler_animation, /local/vssp/images/vssp_loop.gif) n'existe
+# FR | pas reellement sur ce deploiement — seuls desk.png, floorplan.png,
+# FR | logo_VS-Sapiens.png et radar.gif sont dans www/vssp/images/ — donc la
+# FR | carte de remplissage rendait une image cassee en plus du probleme de
+# FR | proportions. Aucun tableau ici n'a actuellement la forme prevue pour
+# FR | cette carte ; la reactiver suppose de choisir un vrai tableau (plutot
+# FR | haut) ET de fournir/confirmer un vrai actif pour house.filler_animation.
+FILLER_PRIORITY = []
 
 T_PLACEHOLDER = re.compile(r"__T:[A-Za-z0-9_.]+__")
 

@@ -36,7 +36,8 @@
 # EN |   empty   the slot is in the room's set but holds nothing yet
 # EN |           -> shows slot.empty, because a device may still be added
 # EN |   filler  empty, and carries the Visio Sapiens animation (one per
-# EN |           dashboard at most, switches first — see FILLER_PRIORITY)
+# EN |           dashboard at most — see FILLER_PRIORITY; currently empty,
+# EN |           so no slot actually reaches this state right now)
 # EN | A slot OUTSIDE the room's set never reaches this template: it is
 # EN | absent from room.slots and absent from the grid areas below, so it
 # EN | collapses and its neighbours expand.
@@ -45,7 +46,8 @@
 # FR |   empty   le tableau est dans le jeu de la piece mais ne contient rien
 # FR |           -> affiche slot.empty, car un appareil peut encore etre ajoute
 # FR |   filler  vide, et porte l'animation Visio Sapiens (au plus une par
-# FR |           dashboard, switches en priorite — voir FILLER_PRIORITY)
+# FR |           dashboard — voir FILLER_PRIORITY ; actuellement vide, donc
+# FR |           aucun tableau n'atteint reellement cet etat pour l'instant)
 # FR | Un tableau HORS du jeu de la piece n'atteint jamais ce template : il
 # FR | est absent de room.slots et absent des grid areas ci-dessous, donc il
 # FR | s'effondre et ses voisins s'etendent.
