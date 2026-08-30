@@ -71,10 +71,36 @@
     font-family: Orbitron, sans-serif; font-size: 10px; letter-spacing: 1.5px;
     color: var(--muted); text-transform: uppercase; padding: 12px 12px 6px;
   }
-  .fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(230px, 1fr)); gap: 4px 10px; padding: 0 10px 8px; }
-  .field { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 4px 0; }
-  .field label { color: var(--text); font-size: 12px; }
-  .field .hint { color: var(--dim); font-size: 9px; display: block; }
+  /* EN | One card per field — label always directly above its own control,
+     EN | inside a visible boundary. Was label-left/control-right in a shared
+     EN | row (justify-content: space-between); at some widths auto-fill
+     EN | settled on a column count where a long label ("Background
+     EN | (secondary)", "Sidebar selected background") wrapped to two lines
+     EN | while its control stayed pinned to the row's right edge, so the
+     EN | control visually landed next to the FOLLOWING field's label instead
+     EN | of its own — reported as "a lone box with no label". Stacking
+     EN | vertically inside a bordered card makes the pairing unambiguous
+     EN | regardless of column count or label length.
+     FR | Une carte par champ — l'etiquette toujours directement au-dessus de
+     FR | son propre controle, dans un cadre visible. C'etait etiquette a
+     FR | gauche / controle a droite dans une ligne partagee
+     FR | (justify-content: space-between) ; a certaines largeurs auto-fill
+     FR | retenait un nombre de colonnes ou une etiquette longue
+     FR | ("Background (secondary)", "Sidebar selected background") passait
+     FR | sur deux lignes pendant que son controle restait colle au bord droit
+     FR | de la ligne, donc le controle atterrissait visuellement a cote de
+     FR | l'etiquette du champ SUIVANT plutot que la sienne — signale comme
+     FR | « une case seule sans etiquette ». Empiler verticalement dans une
+     FR | carte encadree rend l'association sans ambiguite, quel que soit le
+     FR | nombre de colonnes ou la longueur de l'etiquette. */
+  .fields { display: grid; grid-template-columns: repeat(auto-fill, minmax(215px, 1fr)); gap: 8px; padding: 0 10px 10px; }
+  .field {
+    display: flex; flex-direction: column; align-items: flex-start; gap: 6px;
+    padding: 8px 10px; background: rgba(255,255,255,.03);
+    border: 1px solid var(--line-soft); border-radius: 8px;
+  }
+  .field label { color: var(--text); font-size: 11px; }
+  .field .hint { color: var(--dim); font-size: 9px; display: block; margin-top: 1px; }
   input[type=color] {
     width: 34px; height: 26px; padding: 0; border: 1px solid var(--line-soft);
     border-radius: 6px; background: transparent; cursor: pointer;
@@ -102,7 +128,8 @@
      FR | L'input texte sous-jacent existe toujours (le saisir directement
      FR | marche encore) — le popover ecrit dedans et relit depuis lui a
      FR | l'ouverture. */
-  .rgba-field { position: relative; display: flex; align-items: center; gap: 6px; }
+  .rgba-field { position: relative; display: flex; align-items: center; gap: 6px; width: 100%; }
+  .rgba-field input[type=text] { flex: 1; min-width: 0; width: auto; }
   .swatch {
     width: 26px; height: 26px; border-radius: 6px; cursor: pointer;
     border: 1px solid var(--line-soft); flex: none;
