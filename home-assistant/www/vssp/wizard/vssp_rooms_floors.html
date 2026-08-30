@@ -210,6 +210,25 @@ const LS_COLORS= "vssp_room_colors";
 // FR | peut pas plus atteindre l objet `hass` ou un jeton Bearer que
 // FR | celle-la.
 const WEBHOOK_ROOMS = "/api/webhook/vssp_rooms_sync";
+// EN | Written by vssp_rooms_apply.py after every sync — a full snapshot of
+// EN | every room's current slot_set (not just what changed this pass), so
+// EN | the slot_set <select> below can be pre-filled with the real value
+// EN | instead of always defaulting to "default" and silently overwriting
+// EN | an existing choice on the next Apply.
+// FR | Ecrit par vssp_rooms_apply.py apres chaque synchronisation — un
+// FR | instantane complet du slot_set actuel de chaque piece (pas
+// FR | seulement ce qui a change cette passe), pour que le <select>
+// FR | slot_set plus bas puisse etre pre-rempli avec la vraie valeur au
+// FR | lieu de toujours retomber sur "default" et ecraser en silence un
+// FR | choix existant au prochain Appliquer.
+const ROOMS_STATUS_URL = "/local/vssp/rooms_sync_status.json";
+// EN | Same identifiers as DEFAULT_SLOT_SETS in generate_dashboards.py /
+// EN | vssp_assign_prepare.py — kept in sync by hand, same as those two
+// EN | already are with each other.
+// FR | Memes identifiants que DEFAULT_SLOT_SETS dans
+// FR | generate_dashboards.py / vssp_assign_prepare.py — tenus a jour a la
+// FR | main, comme ces deux-la le sont deja l un avec l autre.
+const SLOT_SETS = ["default", "toilet", "garden", "utility", "entrance", "minimal", "computer"];
 
 // Domaines considérés comme « appareils assignables » en phase 2.
 // Le même filtre est appliqué ici pour compter ce que contient chaque pièce.
@@ -311,6 +330,7 @@ const I18N = {
     title_remove_floor: "Retirer l'étage",
     editor_no_rooms: "Aucune pièce à cet étage.",
     placeholder_room_name: "Nom de la pièce",
+    title_room_slot_set: "Jeu de tableaux — quels panneaux cette pièce affichera sur son dashboard",
     title_room_color: "Couleur du plan",
     badge_new_room: "nouvelle",
     title_remove_room: "Retirer la pièce",
@@ -387,6 +407,7 @@ const I18N = {
     title_remove_floor: "Remove floor",
     editor_no_rooms: "No rooms on this floor.",
     placeholder_room_name: "Room name",
+    title_room_slot_set: "Slot set — which panels this room will show on its dashboard",
     title_room_color: "Floor plan color",
     badge_new_room: "new",
     title_remove_room: "Remove room",
@@ -576,7 +597,8 @@ function buildDraftFromRegistry(){
     .map(f => ({
       floor_id: f.floor_id, name: f.name, level: f.level ?? 0,
       rooms: state.ha.areas.filter(a => a.floor_id === f.floor_id)
-        .map(a => ({area_id:a.area_id, name:a.name, color: state.colors[a.area_id] || DEFAULT_COLOR}))
+        .map(a => ({area_id:a.area_id, name:a.name, slot_set: "default",
+          color: state.colors[a.area_id] || DEFAULT_COLOR}))
     }));
 
   // Pièces sans étage → regroupées dans « Non classé » pour ne rien perdre
@@ -585,7 +607,7 @@ function buildDraftFromRegistry(){
   if (orphans.length){
     floors.push({
       floor_id: null, name: "Non classé", level: floors.length,
-      rooms: orphans.map(a => ({area_id:a.area_id, name:a.name,
+      rooms: orphans.map(a => ({area_id:a.area_id, name:a.name, slot_set: "default",
         color: state.colors[a.area_id] || DEFAULT_COLOR}))
     });
   }
@@ -676,6 +698,12 @@ function entitiesAtRisk(diff){
 // APPLICATION DANS HOME ASSISTANT
 // ═══════════════════════════════════════════════════════════════════════════
 async function applyDiff(){
+  // EN | Captured up front, before anything below can rebuild state.draft
+  // EN | out from under it — see currentSlotSetByName()'s comment.
+  // FR | Capture en amont, avant que quoi que ce soit plus bas ne
+  // FR | reconstruise state.draft sous ses pieds — voir le commentaire de
+  // FR | currentSlotSetByName().
+  const pendingSlotSets = currentSlotSetByName();
   const diff = computeDiff();
   if (!diff.total){
     // EN | Nothing pending for the HA registry, but house.yaml can still
@@ -687,7 +715,7 @@ async function applyDiff(){
     // FR | session anterieure, avant que syncRoomsToModel() existe) —
     // FR | synchroniser malgre le retour anticipe ici.
     setBusy(true, t("busy_applying"));
-    state.notice = await syncRoomsBestEffort(t("diff_nothing_to_apply"));
+    state.notice = await syncRoomsBestEffort(t("diff_nothing_to_apply"), pendingSlotSets);
     setBusy(false);
     return;
   }
@@ -749,7 +777,7 @@ async function applyDiff(){
     // FR | Best-effort : l ecriture dans le registre HA ci-dessus a deja
     // FR | reussi, et c est elle qui ne doit pas etre rapportee comme
     // FR | ratee — voir le commentaire de syncRoomsBestEffort().
-    state.notice = await syncRoomsBestEffort(t("notice_applied", {total: diff.total}));
+    state.notice = await syncRoomsBestEffort(t("notice_applied", {total: diff.total}), pendingSlotSets);
   }catch(e){
     state.error = t("err_apply_failed", {msg: e.message});
   }finally{
@@ -768,9 +796,54 @@ async function applyDiff(){
 // FR | assign.html : les noms de pieces portent des accents, et les
 // FR | passer bruts a travers un shell est precisement ce qui casse en
 // FR | silence.
-async function syncRoomsToModel(){
+// EN | slot_set per area_id, read from the CURRENT draft — used when
+// EN | nothing has just rebuilt state.draft out from under an in-flight
+// EN | edit (connect/reload, and applyDiff's early "nothing to apply"
+// EN | return).
+// FR | slot_set par area_id, lu depuis le brouillon ACTUEL — utilise quand
+// FR | rien ne vient de reconstruire state.draft sous un edit en cours
+// FR | (connect/reload, et le retour anticipe « rien a appliquer » de
+// FR | applyDiff).
+function currentSlotSetMap(){
+  const m = {};
+  state.draft.floors.forEach(f => f.rooms.forEach(r => {
+    if (r.area_id) m[r.area_id] = r.slot_set || "default";
+  }));
+  return m;
+}
+// EN | Same, keyed by (trimmed) room NAME instead of area_id — used by
+// EN | applyDiff() for its main path, captured BEFORE loadRegistry()
+// EN | rebuilds state.draft from the just-updated HA registry (which wipes
+// EN | every slot_set back to the "default" placeholder, since HA's Area
+// EN | registry has no such concept). A brand-new room has no area_id yet
+// EN | at capture time — name is the only stable key connecting "what the
+// EN | admin just picked in the dropdown" to "the area HA is about to hand
+// EN | back with a freshly-minted area_id".
+// FR | Meme chose, indexe par nom de piece (nettoye) plutot que par
+// FR | area_id — utilise par applyDiff() dans son chemin principal, capture
+// FR | AVANT que loadRegistry() ne reconstruise state.draft depuis le
+// FR | registre HA tout juste mis a jour (ce qui remet chaque slot_set au
+// FR | placeholder "default", le registre Zones HA n'ayant pas cette
+// FR | notion). Une piece toute neuve n'a pas encore d'area_id au moment de
+// FR | la capture — le nom est la seule cle stable reliant « ce que
+// FR | l administrateur vient de choisir dans le menu deroulant » a « la
+// FR | zone que HA va rendre avec un area_id fraichement cree ».
+function currentSlotSetByName(){
+  const m = {};
+  state.draft.floors.forEach(f => f.rooms.forEach(r => {
+    const name = r.name.trim();
+    if (name) m[name] = r.slot_set || "default";
+  }));
+  return m;
+}
+async function syncRoomsToModel(pendingSlotSetByName){
+  const byName = pendingSlotSetByName || {};
+  const byAreaId = currentSlotSetMap();
   const payload = JSON.stringify({
-    rooms: state.ha.areas.map(a => ({area_id: a.area_id, name: a.name})),
+    rooms: state.ha.areas.map(a => ({
+      area_id: a.area_id, name: a.name,
+      slot_set: byName[a.name] || byAreaId[a.area_id] || "default",
+    })),
   });
   const b64 = btoa(unescape(encodeURIComponent(payload)));
   const res = await fetch(WEBHOOK_ROOMS, {
@@ -779,6 +852,36 @@ async function syncRoomsToModel(){
     body: JSON.stringify({content_b64: b64}),
   });
   if (!res.ok) throw new Error("HTTP " + res.status);
+}
+
+// EN | Pulls the real current slot_set per room from the status file
+// EN | vssp_rooms_apply.py writes after every sync, overwriting the
+// EN | "default" placeholder buildDraftFromRegistry() just gave every room
+// EN | (the HA Area registry has no concept of slot_set at all). Call this
+// EN | BEFORE sending anything back with syncRoomsToModel(), never after —
+// EN | otherwise every room would round-trip through "default" first.
+// EN | Best-effort: on any failure the draft simply keeps its "default"
+// EN | placeholders, same as before this existed.
+// FR | Recupere le vrai slot_set actuel de chaque piece depuis le fichier
+// FR | de statut qu'ecrit vssp_rooms_apply.py apres chaque synchronisation,
+// FR | par-dessus le placeholder "default" que buildDraftFromRegistry()
+// FR | vient de donner a chaque piece (le registre Zones HA n'a aucune
+// FR | notion de slot_set). A appeler AVANT de renvoyer quoi que ce soit
+// FR | avec syncRoomsToModel(), jamais apres — sinon chaque piece
+// FR | repasserait d'abord par "default". Best-effort : en cas d'echec, le
+// FR | brouillon garde simplement ses placeholders "default", comme avant
+// FR | que ceci existe.
+async function applyDraftSlotSets(){
+  try {
+    const res = await fetch(ROOMS_STATUS_URL + "?t=" + Date.now(), {cache:"no-store"});
+    if (!res.ok) return;
+    const status = await res.json();
+    const byAreaId = {};
+    (status.rooms || []).forEach(r => { if (r.area_id && r.slot_set) byAreaId[r.area_id] = r.slot_set; });
+    state.draft.floors.forEach(f => f.rooms.forEach(r => {
+      if (r.area_id && byAreaId[r.area_id]) r.slot_set = byAreaId[r.area_id];
+    }));
+  } catch (e) { /* best-effort — see comment above */ }
 }
 
 // EN | Wraps syncRoomsToModel() for the three callers that read the
@@ -803,9 +906,9 @@ async function syncRoomsToModel(){
 // FR | (computeDiff() renvoie 0), donc conditionner la synchronisation a
 // FR | diff.total ferait qu elle ne tourne jamais pour precisement les
 // FR | pieces qui en ont le plus besoin.
-async function syncRoomsBestEffort(baseNotice){
+async function syncRoomsBestEffort(baseNotice, pendingSlotSetByName){
   try {
-    await syncRoomsToModel();
+    await syncRoomsToModel(pendingSlotSetByName);
     return baseNotice;
   } catch (syncErr) {
     return baseNotice + "\n" + t("notice_sync_failed", {msg: syncErr.message});
@@ -900,7 +1003,7 @@ function refreshDiff(){
   if (el) el.outerHTML = renderDiff();
 }
 function updFloorName(fi,v){ state.draft.floors[fi].name = v; refreshDiff(); }
-function addRoom(fi){ state.draft.floors[fi].rooms.push({area_id:null, name:"", color:DEFAULT_COLOR}); render(); }
+function addRoom(fi){ state.draft.floors[fi].rooms.push({area_id:null, name:"", slot_set:"default", color:DEFAULT_COLOR}); render(); }
 function delRoom(fi,ri){ state.draft.floors[fi].rooms.splice(ri,1); render(); }
 function updRoom(fi,ri,k,v){
   const r = state.draft.floors[fi].rooms[ri];
@@ -977,6 +1080,7 @@ async function connect(){
     await wsConnect(state.token);
     state.connected = true;
     await loadRegistry();
+    await applyDraftSlotSets();
     await loadLanguage();
     subscribeLanguage();
     state.notice = await syncRoomsBestEffort(
@@ -990,6 +1094,7 @@ async function reload(){
   setBusy(true, t("busy_reloading"));
   try{
     await loadRegistry();
+    await applyDraftSlotSets();
     state.notice = await syncRoomsBestEffort(t("notice_registry_reloaded"));
   }
   catch(e){ state.error = e.message; }
@@ -1175,6 +1280,10 @@ function renderEditor(){
       <div class="row room-row">
         <input type="text" class="flex1" value="${esc(r.name)}" placeholder="${t("placeholder_room_name")}"
           oninput="updRoom(${fi},${ri},'name',this.value)"/>
+        <select title="${t("title_room_slot_set")}"
+          onchange="updRoom(${fi},${ri},'slot_set',this.value)">
+${SLOT_SETS.map(s => `          <option value="${s}" ${s === (r.slot_set || "default") ? "selected" : ""}>${esc(s)}</option>`).join("\n")}
+        </select>
         <input type="color" value="${esc(r.color || DEFAULT_COLOR)}" title="${t("title_room_color")}"
           onchange="updRoom(${fi},${ri},'color',this.value)"/>
         ${r.area_id ? `<span class="badge badge-${cnt?"cyan":"mut"}">${t("badge_ent_short",{n:cnt})}</span>`
