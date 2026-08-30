@@ -520,6 +520,7 @@ views:
         hours_to_show: 24
         view_layout:
           grid-area: events
+{% if rooms_rendered %}
         target:
           # EN | Generated from the declared rooms rather than hardcoded. The
           # EN | hand-written list already named areas that no longer match
@@ -539,6 +540,19 @@ views:
 {% for r in rooms_rendered %}
             - {{ r.area_id }}
 {% endfor %}
+{% else %}
+        # EN | No room declared yet: an empty `area_id:` list renders as a
+        # EN | null target, which Home Assistant's logbook card rejects as
+        # EN | an invalid config ("Erreur de configuration") instead of
+        # EN | showing anything. Omitting `target` entirely falls back to
+        # EN | every event, which is the sane behaviour before ROOMS has run.
+        # FR | Aucune piece declaree pour l'instant : une liste `area_id:`
+        # FR | vide se rend en cible null, que la carte logbook de Home
+        # FR | Assistant rejette comme configuration invalide (« Erreur de
+        # FR | configuration ») plutot que d'afficher quoi que ce soit. Omettre
+        # FR | `target` bascule sur tous les evenements, comportement sense
+        # FR | avant le premier passage de ROOMS.
+{% endif %}
         card_mod:
           style: |
             # EN | height:100% alone left this card shorter than its 400px
