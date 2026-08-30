@@ -865,7 +865,41 @@ function delFloor(fi){
   if (f.rooms.length && !confirm(t("confirm_del_floor", {name: f.name, n: f.rooms.length}))) return;
   state.draft.floors.splice(fi,1); render();
 }
-function updFloorName(fi,v){ state.draft.floors[fi].name = v; }
+// EN | updFloorName/updRoom deliberately do NOT call the full render(): that
+// EN | replaces #content's entire innerHTML, which would drop focus and the
+// EN | cursor position out of the very <input> the user is typing into.
+// EN | But the PENDING CHANGES card (and its Apply button) is built from the
+// EN | same state by renderDiff(), so without some refresh it goes stale the
+// EN | moment a name is typed — the row's own "new" badge already showed
+// EN | on creation (addRoom() does render() once, before any text exists),
+// EN | so nothing else prompts a re-render, and diff_total stays frozen at
+// EN | whatever it was then (usually 0, since computeDiff() skips blank
+// EN | names). That left the Apply button never appearing at all: a room
+// EN | typed in and never applied, silently lost the moment NEXT (which only
+// EN | writes the draft to localStorage, never to Home Assistant) navigates
+// EN | away. refreshDiff() replaces just that one card, leaving the editor's
+// EN | text inputs — and their focus — untouched.
+// FR | updFloorName/updRoom n appellent volontairement PAS le render()
+// FR | complet : cela remplace tout le innerHTML de #content, ce qui ferait
+// FR | perdre le focus et la position du curseur dans l <input> meme ou
+// FR | l utilisateur est en train de taper. Mais la carte MODIFICATIONS EN
+// FR | ATTENTE (et son bouton Appliquer) est construite depuis le meme state
+// FR | par renderDiff(), donc sans un rafraichissement elle devient perimee
+// FR | des qu un nom est tape — le badge « new » de la ligne s affiche deja
+// FR | a la creation (addRoom() fait un render() une fois, avant qu aucun
+// FR | texte n existe), donc rien d autre ne provoque un nouveau rendu, et
+// FR | diff_total reste fige a ce qu il etait alors (generalement 0, car
+// FR | computeDiff() ignore les noms vides). Consequence : le bouton
+// FR | Appliquer n apparaissait jamais : une piece tapee puis jamais
+// FR | appliquee, perdue en silence des que SUIVANT (qui n ecrit le brouillon
+// FR | que dans localStorage, jamais vers Home Assistant) navigue ailleurs.
+// FR | refreshDiff() ne remplace que cette carte, laissant intacts les
+// FR | champs texte de l editeur — et leur focus.
+function refreshDiff(){
+  const el = document.getElementById("diffCard");
+  if (el) el.outerHTML = renderDiff();
+}
+function updFloorName(fi,v){ state.draft.floors[fi].name = v; refreshDiff(); }
 function addRoom(fi){ state.draft.floors[fi].rooms.push({area_id:null, name:"", color:DEFAULT_COLOR}); render(); }
 function delRoom(fi,ri){ state.draft.floors[fi].rooms.splice(ri,1); render(); }
 function updRoom(fi,ri,k,v){
@@ -875,6 +909,7 @@ function updRoom(fi,ri,k,v){
     state.colors[r.area_id] = v;
     localStorage.setItem(LS_COLORS, JSON.stringify(state.colors));
   }
+  refreshDiff();
 }
 function toggleExt(name){
   const ex = state.draft.exteriors, i = ex.indexOf(name);
@@ -1184,7 +1219,7 @@ function renderDiff(){
   const d = computeDiff();
   const risk = entitiesAtRisk(d);
 
-  let h = `<div class="card">
+  let h = `<div class="card" id="diffCard">
     <div class="card-title">${t("diff_title")}</div>`;
 
   if (!d.total){
