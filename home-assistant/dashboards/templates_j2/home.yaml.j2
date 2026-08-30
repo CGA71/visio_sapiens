@@ -91,6 +91,17 @@ views:
 {% set page_title = t('page.home.name') %}
 {% set page_subtitle = t('page.home.subtitle') %}
 {% set page_path = '/visio-sapiens/home' %}
+{# EN | HOME is the one dashboard protected against automatic overwrite
+   EN | (--protect-existing home, see vssp_admin.yaml) — every other
+   EN | REGENERATE/ROOMS/ASSIGN/THEME apply already refreshes it, so it is
+   EN | the one that goes stale on its own. A header button that calls the
+   EN | same script as ADMIN's own REGENERATE HOME saves the round trip.
+   FR | HOME est le seul dashboard protege contre l'ecrasement automatique
+   FR | (--protect-existing home, voir vssp_admin.yaml) — toute autre
+   FR | application REGENERER/ROOMS/ASSIGN/THEME le rafraichit deja, donc
+   FR | c'est le seul qui se perime tout seul. Un bouton d'en-tete qui
+   FR | appelle le meme script que le REGENERER HOME d'ADMIN evite l'aller-retour. #}
+{% set regenerate_dashboard_service = 'script.vssp_regenerate_home_dashboard' %}
 {% include '_header.j2' %}
 
       # ═══════════════════════════════════════════════════════════════

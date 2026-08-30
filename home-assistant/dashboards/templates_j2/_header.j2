@@ -17,6 +17,17 @@
      page_subtitle   - subtitle line, already translated
      page_path       - navigation target when the title is tapped
      locale_tag      - BCP-47 tag ('fr-FR', 'en-US') injected by the generator
+     regenerate_dashboard_service (optional) - EN | script/service id; when
+       set, a 4th compact icon cell is added that calls it (with the same
+       confirmation dialog as the ADMIN console's own REGENERATE button) —
+       for a dashboard that goes stale on its own (HOME is protected against
+       automatic overwrite, see vssp_admin.yaml) so its own regeneration
+       can be triggered without leaving it for ADMIN.
+       FR | id de script/service ; si defini, une 4e case compacte a icone
+       est ajoutee et l'appelle (avec la meme boite de confirmation que le
+       bouton REGENERER propre a la console ADMIN) — pour un dashboard qui se
+       perime tout seul (HOME est protege contre l'ecrasement automatique,
+       voir vssp_admin.yaml) sans avoir a repasser par ADMIN.
 
    EN | The date is produced by Intl.DateTimeFormat(locale_tag), NOT by
    EN | hardcoded arrays. That single change is what makes the band say
@@ -135,3 +146,35 @@
                   box-shadow: 0 0 18px color-mix(in srgb, var(--primary-color, #00E5FF) 12%, transparent) !important;
                   height: 100px
                 }
+{% if regenerate_dashboard_service is defined %}
+
+          {# EN | Cell 4 (optional): regenerate this dashboard, in place —
+             EN | see the note in EXPECTED CONTEXT above.
+             FR | Case 4 (optionnelle) : regenerer ce dashboard, sur place —
+             FR | voir la note dans CONTEXTE ATTENDU ci-dessus. #}
+          - type: custom:button-card
+            show_name: false
+            show_label: false
+            icon: mdi:refresh
+            confirmation:
+              text: "{{ t('admin.regenerate_home_confirm') }}"
+            tap_action:
+              action: call-service
+              service: {{ regenerate_dashboard_service }}
+            styles:
+              card:
+                - width: 56px
+              icon:
+                - color: var(--primary-color, #00E5FF)
+                - "--mdc-icon-size": 22px
+            card_mod:
+              style: |
+                :host { flex: 0 0 56px; }
+                ha-card {
+                  background: rgba(16,27,39,0.85) !important;
+                  border: 1px solid color-mix(in srgb, var(--primary-color, #00E5FF) 28%, transparent) !important;
+                  border-radius: 20px !important;
+                  box-shadow: 0 0 18px color-mix(in srgb, var(--primary-color, #00E5FF) 12%, transparent) !important;
+                  height: 100px
+                }
+{% endif %}
