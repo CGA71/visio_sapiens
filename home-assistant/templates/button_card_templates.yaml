@@ -304,9 +304,9 @@ vssp_nav_button:
   card_mod:
     style: |
       ha-card:hover {
-        background: rgba(0,229,255,0.25) !important;
-        border: 1px solid rgba(0,229,255,0.65) !important;
-        box-shadow: 0 0 18px rgba(0,229,255,.35) !important;
+        background: color-mix(in srgb, var(--primary-color, #00E5FF) 25%, transparent) !important;
+        border: 1px solid color-mix(in srgb, var(--primary-color, #00E5FF) 65%, transparent) !important;
+        box-shadow: 0 0 18px color-mix(in srgb, var(--primary-color, #00E5FF) 35%, transparent) !important;
       }
   styles:
     grid:
@@ -318,9 +318,19 @@ vssp_nav_button:
       - justify-items: start
       - align-items: center
     card:
-      - background: transparent
+      # EN | `active` (set by _nav.j2 on the entry matching the current page)
+      # EN | used to read var(--sidebar-selected-background-color) nowhere —
+      # EN | the whole "Sidebar selected *" group of THEME tokens had no
+      # EN | consumer at all, same story as name/icon below.
+      # FR | `active` (pose par _nav.j2 sur l'entree correspondant a la page
+      # FR | courante) ne lisait nulle part var(--sidebar-selected-background-color)
+      # FR | — tout le groupe de tokens THEME « Sidebar selected * » n'avait
+      # FR | aucun consommateur, meme histoire que name/icon plus bas.
+      - background: >
+          [[[ return variables.active ? 'var(--sidebar-selected-background-color, rgba(0,229,255,0.10))' : 'transparent'; ]]]
       - border-radius: 12px
-      - border: 1px solid transparent
+      - border: >
+          [[[ return variables.active ? '1px solid color-mix(in srgb, var(--primary-color, #00E5FF) 35%, transparent)' : '1px solid transparent'; ]]]
       - padding: 10px 12px
       - margin-bottom: 4px
       - width: 100%
@@ -328,12 +338,24 @@ vssp_nav_button:
       - text-align: left
       - transition: all .45s cubic-bezier(.4,0,.2,1)
     icon:
-      - color: "#8FB6C9"
+      # EN | Was a literal #8FB6C9 — the THEME screen's "Sidebar icon" /
+      # EN | "Sidebar selected icon" pickers changed a value nothing read.
+      # FR | Etait un #8FB6C9 litteral — les selecteurs THEME « Sidebar icon »
+      # FR | / « Sidebar selected icon » changeaient une valeur que rien ne lisait.
+      - color: >
+          [[[ return variables.active ? 'var(--sidebar-selected-icon-color, #00E5FF)' : 'var(--sidebar-icon-color, #8FB6C9)'; ]]]
       - "--mdc-icon-size": 20px
       - align-self: start
       - margin-top: 2px
     name:
-      - color: "#FFFFFF"
+      # EN | Was a literal #FFFFFF — this is the exact field reported as not
+      # EN | responding to the THEME screen's "Sidebar text" / "Sidebar
+      # EN | selected text" pickers.
+      # FR | Etait un #FFFFFF litteral — c'est exactement le champ signale
+      # FR | comme ne repondant pas aux selecteurs THEME « Sidebar text » /
+      # FR | « Sidebar selected text ».
+      - color: >
+          [[[ return variables.active ? 'var(--sidebar-selected-text-color, #00E5FF)' : 'var(--sidebar-text-color, #FFFFFF)'; ]]]
       - font-size: 13px
       - font-weight: 600
       - letter-spacing: 0.5px
