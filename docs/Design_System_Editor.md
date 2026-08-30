@@ -166,26 +166,38 @@ already declared in `themes/visio_sapiens.yaml` before this change
 drive button-card, mushroom and card_mod styling wherever they use
 `var(--...)` from the active theme.
 
-**Not covered yet** — the neon glass-panel look (borders, blur,
-box-shadow) baked directly as literal values into `card_mod` blocks
-across `templates_j2/*.j2` (67 occurrences across 8 templates as of
-this writing), and duplicated again in the wizard pages' own
-`<style>` blocks (`assign.html`, `vssp_rooms_floors.html`, etc.).
-Editing a color in the THEME screen today changes every native token
-consumer, but not those hardcoded blocks.
+**Now covered** — the neon border/glow color. Every `card_mod` border,
+box-shadow and scrollbar-color across `templates_j2/*.j2` (120
+occurrences, 11 templates) hardcoded `rgba(0,229,255,ALPHA)`, the exact
+hex of the default Primary token, without ever reading it. These now
+read `color-mix(in srgb, var(--primary-color, #00E5FF) N%, transparent)`
+instead — same alpha per occurrence, so nothing changes until Primary
+is actually edited, but a THEME screen APPLY now visibly changes every
+neon border and glow in the product.
 
-### Phase 2 (future work, not implemented here)
+**Still not covered** — `border-radius` and `backdrop-filter: blur`
+baked directly as literal values into the same `card_mod` blocks, plus
+everything (borders, blur, box-shadow, radius) duplicated again in the
+wizard pages' own `<style>` blocks (`assign.html`,
+`vssp_rooms_floors.html`, etc.). `border-radius` specifically was left
+alone rather than mechanically mapped: the literals `18px` and `20px`
+are used inconsistently as both card and dialog radii across templates
+(e.g. several `energy.yaml.j2` cards use `20px` as their own card
+radius, not a dialog), so wiring them to `--ha-card-border-radius` vs
+`--ha-dialog-border-radius` needs a per-occurrence read, not a
+find/replace — a correctness risk a mechanical pass could get wrong
+silently.
 
-Refactor every hardcoded `rgba(0,229,255,...)` / `border-radius: 18px`
-/ `backdrop-filter: blur(12px)` / `Orbitron` occurrence in
-`templates_j2/*.j2` and in the wizard HTML pages to consume
-`var(--vssp-*)` custom properties instead — properties this phase's
-`theme.yaml.j2` can already emit once decided. At that point, a THEME
-screen edit changes literally everything visual in the product, not
-just the tokens Home Assistant's own components already understand.
-This is a larger, higher-risk change (regression-testing 8 templates'
-worth of visual styling) and is intentionally out of scope for the
-MVP described in this document.
+### Phase 2 (remaining work)
+
+Refactor the remaining hardcoded `border-radius` / `backdrop-filter:
+blur(12px)` / `Orbitron` occurrences in `templates_j2/*.j2` (per
+occurrence, card vs dialog) and every duplicate in the wizard HTML
+pages, to consume `var(--ha-card-border-radius)` /
+`var(--ha-dialog-border-radius)` — both already emitted by
+`theme.yaml.j2` — instead of literals. `Orbitron` (the font) and the
+blur radius have no corresponding `design_system.yaml` field yet, so
+wiring those means deciding whether they become editable tokens first.
 
 ## Verification
 

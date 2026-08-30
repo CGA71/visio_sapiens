@@ -177,28 +177,41 @@ changement (palette, en-tête, séparateur, icônes, forme des
 cartes/dialogues, sidebar). Ils pilotent button-card, mushroom et
 card_mod partout où ils utilisent un `var(--...)` du thème actif.
 
-**Pas encore couvert** — l'aspect vitre néon (bordures, flou, ombre)
-codé en dur en valeurs littérales dans les blocs `card_mod` à travers
-`templates_j2/*.j2` (67 occurrences sur 8 templates au moment de la
-rédaction), et dupliqué à nouveau dans les propres blocs `<style>` des
-pages wizard (`assign.html`, `vssp_rooms_floors.html`, etc.). Éditer
-une couleur dans l'écran THEME aujourd'hui change tous les
-consommateurs de tokens natifs, mais pas ces blocs codés en dur.
+**Désormais couverte** — la couleur des bordures/lueurs néon. Chaque
+bordure, box-shadow et scrollbar-color `card_mod` à travers
+`templates_j2/*.j2` (120 occurrences, 11 templates) codait en dur
+`rgba(0,229,255,ALPHA)`, exactement le hex du token Primary par défaut,
+sans jamais le lire. Elles utilisent désormais
+`color-mix(in srgb, var(--primary-color, #00E5FF) N%, transparent)` —
+même alpha par occurrence, donc rien ne change tant que Primary n'est
+pas réellement édité, mais un APPLIQUER de l'écran THEME change
+désormais visiblement chaque bordure et lueur néon du produit.
 
-### Phase 2 (à venir, non implémentée ici)
+**Toujours pas couvert** — `border-radius` et `backdrop-filter: blur`
+codés en dur en valeurs littérales dans ces mêmes blocs `card_mod`,
+plus tout (bordures, flou, ombre, rayon) dupliqué à nouveau dans les
+propres blocs `<style>` des pages wizard (`assign.html`,
+`vssp_rooms_floors.html`, etc.). `border-radius` a été volontairement
+laissé de côté plutôt que mappé mécaniquement : les littéraux `18px` et
+`20px` sont utilisés de façon incohérente comme rayon de carte ET de
+dialogue selon les templates (par exemple plusieurs cartes de
+`energy.yaml.j2` utilisent `20px` comme leur propre rayon de carte, pas
+un dialogue), donc les relier à `--ha-card-border-radius` vs
+`--ha-dialog-border-radius` demande une lecture au cas par cas, pas un
+chercher/remplacer — un risque de correction silencieusement erronée
+qu'une passe mécanique pourrait introduire.
 
-Refactoriser chaque occurrence codée en dur de
-`rgba(0,229,255,...)` / `border-radius: 18px` /
-`backdrop-filter: blur(12px)` / `Orbitron` dans `templates_j2/*.j2` et
-dans les pages HTML des wizards pour qu'elles consomment des
-propriétés personnalisées `var(--vssp-*)` à la place — des propriétés
-que le `theme.yaml.j2` de cette phase peut déjà émettre une fois la
-décision prise. À ce moment-là, une modification dans l'écran THEME
-changera littéralement tout l'aspect visuel du produit, pas seulement
-les tokens que les composants Home Assistant comprennent déjà. C'est
-un chantier plus large et plus risqué (retester visuellement 8
-templates), volontairement hors périmètre du MVP décrit dans ce
-document.
+### Phase 2 (travail restant)
+
+Refactoriser les occurrences `border-radius` / `backdrop-filter:
+blur(12px)` / `Orbitron` restantes dans `templates_j2/*.j2` (au cas par
+cas, carte vs dialogue) et chaque doublon dans les pages HTML des
+wizards, pour qu'elles consomment `var(--ha-card-border-radius)` /
+`var(--ha-dialog-border-radius)` — déjà émis tous les deux par
+`theme.yaml.j2` — au lieu de littéraux. `Orbitron` (la police) et le
+rayon de flou n'ont pas encore de champ correspondant dans
+`design_system.yaml`, donc les relier suppose de décider d'abord s'ils
+deviennent des tokens éditables.
 
 ## Vérification
 
