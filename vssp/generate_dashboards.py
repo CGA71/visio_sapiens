@@ -1169,6 +1169,29 @@ def main() -> int:
     # FR | validate_layouts controle exactement les valeurs que le template
     # FR | utilisera.
     model["layouts"] = {**DEFAULT_LAYOUTS, **(model.get("layouts") or {})}
+    # EN | Cache-busting query param for the ADMIN console's wizard iframes
+    # EN | (assign.html, vssp_rooms_floors.html, vssp_theme_editor.html — see
+    # EN | admin.yaml.j2). Those were all served at a literal `?v=0`: once a
+    # EN | browser cached that exact URL, it kept the iframe's *first-ever*
+    # EN | content forever, no matter how many times the underlying HTML file
+    # EN | changed on a later deploy — confirmed live: a THEME editor fix
+    # EN | shipped, deployed, and confirmed running on the pod by commit SHA,
+    # EN | yet the iframe kept showing the pre-fix page. A fresh value here on
+    # EN | every generation (any REGENERATE, ROOMS/ASSIGN apply, or CI deploy)
+    # EN | forces the browser to fetch the iframe content again.
+    # FR | Parametre anti-cache pour les iframes wizard de la console ADMIN
+    # FR | (assign.html, vssp_rooms_floors.html, vssp_theme_editor.html — voir
+    # FR | admin.yaml.j2). Elles etaient toutes servies avec un `?v=0` litteral :
+    # FR | une fois cette URL exacte mise en cache par le navigateur, l'iframe
+    # FR | gardait son contenu de la toute premiere fois pour toujours, peu
+    # FR | importe combien de fois le fichier HTML sous-jacent changeait a un
+    # FR | deploiement suivant — constate en direct : un correctif de l'editeur
+    # FR | THEME livre, deploye et confirme actif sur le pod par son SHA de
+    # FR | commit, alors que l'iframe continuait d'afficher la page d'avant le
+    # FR | correctif. Une valeur fraiche ici a chaque generation (n'importe
+    # FR | quel REGENERER, application ROOMS/ASSIGN, ou deploiement CI) force
+    # FR | le navigateur a re-telecharger le contenu de l'iframe.
+    model["build_stamp"] = datetime.now().strftime("%Y%m%d%H%M%S")
     print(f"[i] navigation: {len(model['nav'])} entries "
           f"({len(model['nav']) - len(rooms)} system + {len(rooms)} room(s))")
 

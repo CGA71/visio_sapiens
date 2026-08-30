@@ -221,7 +221,7 @@ views:
           # FR | qui est indiscernable de "le correctif n'a pas ete deploye"
           # FR | alors qu'il l'a ete.
           - type: iframe
-            url: /local/vssp/wizard/assign.html?v=0
+            url: /local/vssp/wizard/assign.html?v={{ build_stamp }}
             # EN | :host{flex:1 1 0} instead of a fixed calc(100vh-Npx): the
             # EN | same pattern already used in _header.j2 to make a card
             # EN | grow to fill its stack. This card is the last in a
@@ -364,7 +364,7 @@ views:
           # FR | indefiniment — ce qui est indiscernable de "le correctif n'a
           # FR | pas ete deploye" alors qu'il l'a ete.
           - type: iframe
-            url: /local/vssp/wizard/vssp_rooms_floors.html?v=0
+            url: /local/vssp/wizard/vssp_rooms_floors.html?v={{ build_stamp }}
             # EN | Same :host{flex:1 1 0} technique as the ASSIGN screen's
             # EN | iframe — see the comment there. This card is the last in
             # EN | a vertical-stack whose row is 1fr, so it grows to fill
@@ -721,7 +721,7 @@ views:
               service: script.vssp_restore_theme_reference
 
           - type: iframe
-            url: /local/vssp/wizard/vssp_theme_editor.html?v=0
+            url: /local/vssp/wizard/vssp_theme_editor.html?v={{ build_stamp }}
             card_mod:
               style: |
                 :host {
