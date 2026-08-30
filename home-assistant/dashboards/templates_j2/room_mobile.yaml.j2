@@ -118,8 +118,8 @@ views:
             :host {
               display: block;
               width: 100%;
-              background: rgba(8,18,28,0.75);
-              border-radius: 18px;
+              background: var(--card-background-color, rgba(8,18,28,0.75));
+              border-radius: var(--ha-card-border-radius, 18px);
               border: 1px solid color-mix(in srgb, var(--primary-color, #00E5FF) 28%, transparent);
               backdrop-filter: blur(12px);
               box-shadow: 0 0 18px color-mix(in srgb, var(--primary-color, #00E5FF) 15%, transparent);
@@ -252,7 +252,7 @@ views:
                         name:
                           - justify-self: start
                           - font-size: 11px
-                          - color: "#DCEEF6"
+                          - color: var(--text-primary-color, #DCEEF6)
                           - white-space: nowrap
                           - overflow: hidden
                           - text-overflow: ellipsis
@@ -261,7 +261,7 @@ views:
                           - font-size: 11px
                           - color: "#00E5FF"
                         icon:
-                          - color: "#00E5FF"
+                          - color: var(--paper-item-icon-color, #00E5FF)
                       tap_action:
                         action: toggle
                       hold_action:
@@ -310,7 +310,7 @@ views:
               name:
                 - justify-self: start
                 - font-size: 11px
-                - color: "#8FB6C9"
+                - color: var(--secondary-text-color, #8FB6C9)
               state:
                 - justify-self: start
                 - font-size: 13px
@@ -353,7 +353,7 @@ views:
                     - padding: 6px
                   name:
                     - font-size: 10px
-                    - color: "#DCEEF6"
+                    - color: var(--text-primary-color, #DCEEF6)
                   state:
                     - font-size: 10px
                     - color: "#00E5FF"
@@ -392,7 +392,7 @@ views:
                     - padding: 6px
                   name:
                     - font-size: 10px
-                    - color: "#DCEEF6"
+                    - color: var(--text-primary-color, #DCEEF6)
                   state:
                     - font-size: 10px
                     - color: "#00E5FF"
@@ -450,7 +450,7 @@ views:
               name:
                 - justify-self: start
                 - font-size: 12px
-                - color: "#DCEEF6"
+                - color: var(--text-primary-color, #DCEEF6)
                 - white-space: nowrap
                 - overflow: hidden
                 - text-overflow: ellipsis
@@ -460,7 +460,7 @@ views:
                 - font-family: Orbitron, sans-serif
                 - color: "#00E5FF"
               icon:
-                - color: "#00E5FF"
+                - color: var(--paper-item-icon-color, #00E5FF)
 {% if slot_id == 'shutters' %}
             tap_action:
               action: more-info

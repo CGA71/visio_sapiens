@@ -49,29 +49,29 @@
               <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
                 <div style="display:flex;align-items:center;gap:10px;min-width:0;">
                   <ha-icon icon="{{ page_icon }}"
-                    style="--mdc-icon-size:24px;color:#00E5FF;flex:none;"></ha-icon>
+                    style="--mdc-icon-size:24px;color:var(--paper-item-icon-color, #00E5FF);flex:none;"></ha-icon>
                   <div style="min-width:0;">
                     <div style="font-family:Orbitron,sans-serif;font-size:17px;
-                      letter-spacing:2px;color:#FFFFFF;line-height:1;
+                      letter-spacing:2px;color:var(--text-primary-color, #FFFFFF);line-height:1;
                       white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ page_title }}</div>
-                    <div style="font-size:10px;color:#8FB6C9;letter-spacing:.5px;
+                    <div style="font-size:10px;color:var(--secondary-text-color, #8FB6C9);letter-spacing:.5px;
                       margin-top:3px;white-space:nowrap;overflow:hidden;
                       text-overflow:ellipsis;">{{ page_subtitle }}</div>
                   </div>
                 </div>
                 <div style="text-align:right;flex:none;padding-left:8px;">
                   <div style="font-family:Orbitron,sans-serif;font-size:20px;
-                    color:#FFFFFF;line-height:1;">${time}</div>
-                  <div style="font-size:10px;color:#8FB6C9;margin-top:3px;
+                    color:var(--text-primary-color, #FFFFFF);line-height:1;">${time}</div>
+                  <div style="font-size:10px;color:var(--secondary-text-color, #8FB6C9);margin-top:3px;
                     text-transform:capitalize;">${date}</div>
                 </div>
               </div>`;
           ]]]
         styles:
           card:
-            - background: rgba(16,27,39,0.85)
+            - background: var(--card-background-color, rgba(16,27,39,0.85))
             - border: 1px solid color-mix(in srgb, var(--primary-color, #00E5FF) 28%, transparent)
-            - border-radius: 18px
+            - border-radius: var(--ha-card-border-radius, 18px)
             - box-shadow: 0 0 18px color-mix(in srgb, var(--primary-color, #00E5FF) 12%, transparent)
             - padding: 14px 16px
           label:

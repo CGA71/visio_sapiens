@@ -132,8 +132,8 @@ views:
               display: flex;
               flex-direction: column;
               height: 100%;
-              background: rgba(8,18,28,0.75);
-              border-radius: 20px;
+              background: var(--card-background-color, rgba(8,18,28,0.75));
+              border-radius: var(--ha-card-border-radius, 20px);
               border: 1px solid color-mix(in srgb, var(--primary-color, #00E5FF) 28%, transparent);
               backdrop-filter: blur(12px);
               box-shadow: 0 0 18px color-mix(in srgb, var(--primary-color, #00E5FF) 15%, transparent);
@@ -439,8 +439,8 @@ views:
               flex-direction: column;
               height: 100%;
               box-sizing: border-box;
-              background: rgba(8,18,28,0.75);
-              border-radius: 20px;
+              background: var(--card-background-color, rgba(8,18,28,0.75));
+              border-radius: var(--ha-card-border-radius, 20px);
               border: 1px solid color-mix(in srgb, var(--primary-color, #00E5FF) 28%, transparent);
               backdrop-filter: blur(12px);
               box-shadow: 0 0 18px color-mix(in srgb, var(--primary-color, #00E5FF) 15%, transparent);
@@ -581,8 +581,8 @@ views:
               display: flex;
               flex-direction: column;
               height: 100%;
-              background: rgba(8,18,28,0.75);
-              border-radius: 20px;
+              background: var(--card-background-color, rgba(8,18,28,0.75));
+              border-radius: var(--ha-card-border-radius, 20px);
               border: 1px solid color-mix(in srgb, var(--primary-color, #00E5FF) 28%, transparent);
               backdrop-filter: blur(12px);
               box-shadow: 0 0 18px color-mix(in srgb, var(--primary-color, #00E5FF) 15%, transparent);
@@ -673,8 +673,8 @@ views:
               display: flex;
               flex-direction: column;
               height: 100%;
-              background: rgba(8,18,28,0.75);
-              border-radius: 20px;
+              background: var(--card-background-color, rgba(8,18,28,0.75));
+              border-radius: var(--ha-card-border-radius, 20px);
               border: 1px solid color-mix(in srgb, var(--primary-color, #00E5FF) 28%, transparent);
               backdrop-filter: blur(12px);
               box-shadow: 0 0 18px color-mix(in srgb, var(--primary-color, #00E5FF) 15%, transparent);
@@ -784,8 +784,8 @@ views:
               display: flex;
               flex-direction: column;
               height: 100%;
-              background: rgba(8,18,28,0.75);
-              border-radius: 20px;
+              background: var(--card-background-color, rgba(8,18,28,0.75));
+              border-radius: var(--ha-card-border-radius, 20px);
               border: 1px solid color-mix(in srgb, var(--primary-color, #00E5FF) 28%, transparent);
               backdrop-filter: blur(12px);
               box-shadow: 0 0 18px color-mix(in srgb, var(--primary-color, #00E5FF) 15%, transparent);
@@ -851,7 +851,7 @@ views:
                 - cursor: default
                 - pointer-events: none
               label:
-                - color: "#8FB6C9"
+                - color: var(--secondary-text-color, #8FB6C9)
                 - font-size: 11px
                 - justify-self: start
               state:
@@ -887,11 +887,11 @@ views:
                 - cursor: default
                 - pointer-events: none
               name:
-                - color: "#8FB6C9"
+                - color: var(--secondary-text-color, #8FB6C9)
                 - font-size: 12px
                 - justify-self: start
               state:
-                - color: "#FFFFFF"
+                - color: var(--text-primary-color, #FFFFFF)
                 - font-size: 22px
                 - font-weight: 700
                 - justify-self: end
@@ -907,8 +907,8 @@ views:
             :host {
               display: flex;
               flex-direction: column;
-              background: rgba(8,18,28,0.75);
-              border-radius: 20px;
+              background: var(--card-background-color, rgba(8,18,28,0.75));
+              border-radius: var(--ha-card-border-radius, 20px);
               border: 1px solid color-mix(in srgb, var(--primary-color, #00E5FF) 28%, transparent);
               backdrop-filter: blur(12px);
               box-shadow: 0 0 18px color-mix(in srgb, var(--primary-color, #00E5FF) 15%, transparent);

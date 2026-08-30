@@ -177,13 +177,13 @@ views:
                 - row-gap: 6px
                 - justify-items: start
               card:
-                - background: rgba(8,18,28,0.72)
-                - border-radius: 18px
+                - background: var(--card-background-color, rgba(8,18,28,0.72))
+                - border-radius: var(--ha-card-border-radius, 18px)
                 - border: 1px solid color-mix(in srgb, var(--primary-color, #00E5FF) 20%, transparent)
                 - padding: 14px 18px
                 - height: 100%
               name:
-                - color: "#FFFFFF"
+                - color: var(--text-primary-color, #FFFFFF)
                 - font-size: 13px
                 - font-weight: 700
                 - letter-spacing: 0.5px
@@ -256,13 +256,13 @@ views:
                 - row-gap: 6px
                 - justify-items: start
               card:
-                - background: rgba(8,18,28,0.72)
-                - border-radius: 18px
+                - background: var(--card-background-color, rgba(8,18,28,0.72))
+                - border-radius: var(--ha-card-border-radius, 18px)
                 - border: 1px solid color-mix(in srgb, var(--primary-color, #00E5FF) 20%, transparent)
                 - padding: 14px 18px
                 - height: 100%
               name:
-                - color: "#FFFFFF"
+                - color: var(--text-primary-color, #FFFFFF)
                 - font-size: 13px
                 - font-weight: 700
                 - letter-spacing: 0.5px
@@ -354,13 +354,13 @@ views:
                 - row-gap: 6px
                 - justify-items: start
               card:
-                - background: rgba(8,18,28,0.72)
-                - border-radius: 18px
+                - background: var(--card-background-color, rgba(8,18,28,0.72))
+                - border-radius: var(--ha-card-border-radius, 18px)
                 - border: 1px solid color-mix(in srgb, var(--primary-color, #00E5FF) 20%, transparent)
                 - padding: 14px 18px
                 - height: 100%
               name:
-                - color: "#FFFFFF"
+                - color: var(--text-primary-color, #FFFFFF)
                 - font-size: 13px
                 - font-weight: 700
                 - letter-spacing: 0.5px
@@ -437,13 +437,13 @@ views:
                 - row-gap: 10px
                 - justify-items: start
               card:
-                - background: rgba(8,18,28,0.72)
-                - border-radius: 18px
+                - background: var(--card-background-color, rgba(8,18,28,0.72))
+                - border-radius: var(--ha-card-border-radius, 18px)
                 - border: 1px solid color-mix(in srgb, var(--primary-color, #00E5FF) 20%, transparent)
                 - padding: 14px 18px
                 - height: 100%
               name:
-                - color: "#FFFFFF"
+                - color: var(--text-primary-color, #FFFFFF)
                 - font-size: 13px
                 - font-weight: 700
                 - letter-spacing: 0.5px
@@ -501,7 +501,7 @@ views:
             - background: transparent
             - border: 1px solid color-mix(in srgb, var(--primary-color, #00E5FF) 28%, transparent)
             - box-shadow: 0 0 24px color-mix(in srgb, var(--primary-color, #00E5FF) 12%, transparent)
-            - border-radius: 20px
+            - border-radius: var(--ha-card-border-radius, 20px)
             - overflow: hidden
             - height: 100%
           grid:
@@ -514,7 +514,7 @@ views:
         card_mod:
           style: |
             :host { height: 100%; }
-            ha-card { height: 100% !important; overflow: hidden; border-radius: 20px; }
+            ha-card { height: 100% !important; overflow: hidden; border-radius: var(--ha-card-border-radius, 20px); }
 
       # --- Événements récents (aligné avec le bas de la sidebar) --------
       # EN | Spans the full row now (nav..meteo) — egy1/egy2 used to hold
@@ -729,7 +729,7 @@ views:
                     - cursor: default
                     - pointer-events: none
                   name:
-                    - color: "#FFFFFF"
+                    - color: var(--text-primary-color, #FFFFFF)
                     - font-size: 15px
                     - font-weight: 600
                     - letter-spacing: 1px
@@ -832,15 +832,15 @@ views:
                 - justify-content: center
                 - align-items: center
               name:
-                - color: "#B8E8F5"
+                - color: var(--secondary-text-color, #B8E8F5)
                 - font-size: 14px
                 - letter-spacing: 2px
               label:
-                - color: "#56707E"
+                - color: var(--secondary-text-color, #56707E)
                 - font-size: 11px
                 - margin-top: 4px
               icon:
-                - color: "#00E5FF"
+                - color: var(--paper-item-icon-color, #00E5FF)
                 - "--mdc-icon-size": 36px
 
 

@@ -134,13 +134,13 @@ views:
                     - row-gap: 6px
                     - justify-items: start
                   card:
-                    - background: rgba(8,18,28,0.72)
-                    - border-radius: 18px
+                    - background: var(--card-background-color, rgba(8,18,28,0.72))
+                    - border-radius: var(--ha-card-border-radius, 18px)
                     - border: 1px solid color-mix(in srgb, var(--primary-color, #00E5FF) 20%, transparent)
                     - padding: 14px 18px
                     - height: 100%
                   name:
-                    - color: "#FFFFFF"
+                    - color: var(--text-primary-color, #FFFFFF)
                     - font-size: 13px
                     - font-weight: 700
                     - letter-spacing: 0.5px
@@ -193,13 +193,13 @@ views:
                     - row-gap: 6px
                     - justify-items: start
                   card:
-                    - background: rgba(8,18,28,0.72)
-                    - border-radius: 18px
+                    - background: var(--card-background-color, rgba(8,18,28,0.72))
+                    - border-radius: var(--ha-card-border-radius, 18px)
                     - border: 1px solid color-mix(in srgb, var(--primary-color, #00E5FF) 20%, transparent)
                     - padding: 14px 18px
                     - height: 100%
                   name:
-                    - color: "#FFFFFF"
+                    - color: var(--text-primary-color, #FFFFFF)
                     - font-size: 13px
                     - font-weight: 700
                     - letter-spacing: 0.5px
@@ -260,13 +260,13 @@ views:
                     - row-gap: 6px
                     - justify-items: start
                   card:
-                    - background: rgba(8,18,28,0.72)
-                    - border-radius: 18px
+                    - background: var(--card-background-color, rgba(8,18,28,0.72))
+                    - border-radius: var(--ha-card-border-radius, 18px)
                     - border: 1px solid color-mix(in srgb, var(--primary-color, #00E5FF) 20%, transparent)
                     - padding: 14px 18px
                     - height: 100%
                   name:
-                    - color: "#FFFFFF"
+                    - color: var(--text-primary-color, #FFFFFF)
                     - font-size: 13px
                     - font-weight: 700
                     - letter-spacing: 0.5px
@@ -323,13 +323,13 @@ views:
                     - row-gap: 10px
                     - justify-items: start
                   card:
-                    - background: rgba(8,18,28,0.72)
-                    - border-radius: 18px
+                    - background: var(--card-background-color, rgba(8,18,28,0.72))
+                    - border-radius: var(--ha-card-border-radius, 18px)
                     - border: 1px solid color-mix(in srgb, var(--primary-color, #00E5FF) 20%, transparent)
                     - padding: 14px 18px
                     - height: 100%
                   name:
-                    - color: "#FFFFFF"
+                    - color: var(--text-primary-color, #FFFFFF)
                     - font-size: 13px
                     - font-weight: 700
                     - letter-spacing: 0.5px
@@ -387,7 +387,7 @@ views:
             - background: transparent
             - border: 1px solid color-mix(in srgb, var(--primary-color, #00E5FF) 28%, transparent)
             - box-shadow: 0 0 24px color-mix(in srgb, var(--primary-color, #00E5FF) 12%, transparent)
-            - border-radius: 20px
+            - border-radius: var(--ha-card-border-radius, 20px)
             - overflow: hidden
           grid:
             - grid-template-areas: '"video"'
@@ -396,7 +396,7 @@ views:
               - width: 100%
         card_mod:
           style: |
-            ha-card { overflow: hidden; border-radius: 20px; }
+            ha-card { overflow: hidden; border-radius: var(--ha-card-border-radius, 20px); }
 
       # ═══════════════════════════════════════════════════════════════
       # ÉNERGIE — top 10 appareils + courbe production/consommation +
@@ -639,11 +639,11 @@ views:
                 - justify-content: center
                 - align-items: center
               name:
-                - color: "#B8E8F5"
+                - color: var(--secondary-text-color, #B8E8F5)
                 - font-size: 13px
                 - letter-spacing: 2px
               icon:
-                - color: "#00E5FF"
+                - color: var(--paper-item-icon-color, #00E5FF)
                 - "--mdc-icon-size": 34px
 
           - type: custom:button-card
@@ -658,11 +658,11 @@ views:
                 - justify-content: center
                 - align-items: center
               name:
-                - color: "#B8E8F5"
+                - color: var(--secondary-text-color, #B8E8F5)
                 - font-size: 13px
                 - letter-spacing: 2px
               icon:
-                - color: "#00E5FF"
+                - color: var(--paper-item-icon-color, #00E5FF)
                 - "--mdc-icon-size": 34px
 
     # ── Fond de vue (même image que la version desktop) ──────────────

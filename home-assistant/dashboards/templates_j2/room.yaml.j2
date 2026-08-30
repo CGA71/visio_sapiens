@@ -157,8 +157,8 @@ views:
               display: flex;
               flex-direction: column;
               height: 100%;
-              background: rgba(8,18,28,0.75);
-              border-radius: 20px;
+              background: var(--card-background-color, rgba(8,18,28,0.75));
+              border-radius: var(--ha-card-border-radius, 20px);
               border: 1px solid color-mix(in srgb, var(--primary-color, #00E5FF) 28%, transparent);
               backdrop-filter: blur(12px);
               box-shadow: 0 0 18px color-mix(in srgb, var(--primary-color, #00E5FF) 15%, transparent);
@@ -317,13 +317,13 @@ views:
                         name:
                           - justify-self: start
                           - font-size: 13px
-                          - color: "#DCEEF6"
+                          - color: var(--text-primary-color, #DCEEF6)
                         state:
                           - justify-self: end
                           - font-size: 12px
                           - color: "#00E5FF"
                         icon:
-                          - color: "#00E5FF"
+                          - color: var(--paper-item-icon-color, #00E5FF)
                       tap_action:
                         action: toggle
                       hold_action:
@@ -502,11 +502,11 @@ views:
                         - flex-direction: row
                         - gap: 12px
                       name:
-                        - color: "#B8E8F5"
+                        - color: var(--secondary-text-color, #B8E8F5)
                         - font-size: 13px
                         - letter-spacing: 1px
                       icon:
-                        - color: "#00E5FF"
+                        - color: var(--paper-item-icon-color, #00E5FF)
                         - "--mdc-icon-size": 28px
 
               # ── Colonne 2 : ecran interphone + ouverture/fermeture/lumiere ──
@@ -592,7 +592,7 @@ views:
                             - padding: 10px
                           name:
                             - font-size: 11px
-                            - color: "#DCEEF6"
+                            - color: var(--text-primary-color, #DCEEF6)
                           icon:
                             - color: "#00FFC3"
                       - type: custom:button-card
@@ -614,7 +614,7 @@ views:
                             - padding: 10px
                           name:
                             - font-size: 11px
-                            - color: "#DCEEF6"
+                            - color: var(--text-primary-color, #DCEEF6)
                           icon:
                             - color: "#FF4D6D"
 {% if entrance_light %}
@@ -635,7 +635,7 @@ views:
                             - padding: 10px
                           name:
                             - font-size: 11px
-                            - color: "#DCEEF6"
+                            - color: var(--text-primary-color, #DCEEF6)
                           icon:
                             - color: "#FFA726"
 {% else %}
@@ -795,13 +795,13 @@ views:
                                   - padding: 8px
                                 name:
                                   - font-size: 11px
-                                  - color: "#DCEEF6"
+                                  - color: var(--text-primary-color, #DCEEF6)
                                 state:
                                   - font-size: 12px
                                   - color: "#00FFC3"
                                   - font-weight: 700
                                 icon:
-                                  - color: "#00E5FF"
+                                  - color: var(--paper-item-icon-color, #00E5FF)
                             - type: custom:button-card
                               entity: sensor.jessica_station_state
                               show_icon: true
@@ -819,13 +819,13 @@ views:
                                   - padding: 8px
                                 name:
                                   - font-size: 11px
-                                  - color: "#DCEEF6"
+                                  - color: var(--text-primary-color, #DCEEF6)
                                 state:
                                   - font-size: 12px
                                   - color: "#00FFC3"
                                   - font-weight: 700
                                 icon:
-                                  - color: "#00E5FF"
+                                  - color: var(--paper-item-icon-color, #00E5FF)
                             - type: custom:button-card
                               entity: binary_sensor.jessica_serpilliere_fixee
                               show_icon: true
@@ -849,13 +849,13 @@ views:
                                   - padding: 8px
                                 name:
                                   - font-size: 11px
-                                  - color: "#DCEEF6"
+                                  - color: var(--text-primary-color, #DCEEF6)
                                 label:
                                   - font-size: 12px
                                   - color: "#00FFC3"
                                   - font-weight: 700
                                 icon:
-                                  - color: "#00E5FF"
+                                  - color: var(--paper-item-icon-color, #00E5FF)
                             - type: custom:button-card
                               entity: number.jessica_water_flow_level
                               show_icon: true
@@ -873,13 +873,13 @@ views:
                                   - padding: 8px
                                 name:
                                   - font-size: 11px
-                                  - color: "#DCEEF6"
+                                  - color: var(--text-primary-color, #DCEEF6)
                                 state:
                                   - font-size: 12px
                                   - color: "#00FFC3"
                                   - font-weight: 700
                                 icon:
-                                  - color: "#00E5FF"
+                                  - color: var(--paper-item-icon-color, #00E5FF)
                             - type: custom:button-card
                               entity: select.jessica_active_map
                               show_icon: true
@@ -897,13 +897,13 @@ views:
                                   - padding: 8px
                                 name:
                                   - font-size: 11px
-                                  - color: "#DCEEF6"
+                                  - color: var(--text-primary-color, #DCEEF6)
                                 state:
                                   - font-size: 12px
                                   - color: "#00FFC3"
                                   - font-weight: 700
                                 icon:
-                                  - color: "#00E5FF"
+                                  - color: var(--paper-item-icon-color, #00E5FF)
                             - type: custom:button-card
                               show_icon: true
                               show_name: true
@@ -923,9 +923,9 @@ views:
                                   - padding: 8px
                                 name:
                                   - font-size: 11px
-                                  - color: "#DCEEF6"
+                                  - color: var(--text-primary-color, #DCEEF6)
                                 icon:
-                                  - color: "#00E5FF"
+                                  - color: var(--paper-item-icon-color, #00E5FF)
                             - type: custom:button-card
                               entity: sensor.jessica_batterie
                               show_icon: true
@@ -943,13 +943,13 @@ views:
                                   - padding: 8px
                                 name:
                                   - font-size: 11px
-                                  - color: "#DCEEF6"
+                                  - color: var(--text-primary-color, #DCEEF6)
                                 state:
                                   - font-size: 12px
                                   - color: "#00FFC3"
                                   - font-weight: 700
                                 icon:
-                                  - color: "#00E5FF"
+                                  - color: var(--paper-item-icon-color, #00E5FF)
                             - type: custom:button-card
                               show_icon: true
                               show_name: true
@@ -969,9 +969,9 @@ views:
                                   - padding: 8px
                                 name:
                                   - font-size: 11px
-                                  - color: "#DCEEF6"
+                                  - color: var(--text-primary-color, #DCEEF6)
                                 icon:
-                                  - color: "#00E5FF"
+                                  - color: var(--paper-item-icon-color, #00E5FF)
 
 {% elif slot_id == 'security' %}
           # EN | OVERSIZED SLOT — it carries three things of different visual
@@ -1018,7 +1018,7 @@ views:
                     - height: 96px
                   name:
                     - font-size: 12px
-                    - color: "#8FB6C9"
+                    - color: var(--secondary-text-color, #8FB6C9)
                   state:
                     - font-size: 15px
                     - font-family: Orbitron, sans-serif
@@ -1075,7 +1075,7 @@ views:
                     - padding: 8px
                   name:
                     - font-size: 12px
-                    - color: "#DCEEF6"
+                    - color: var(--text-primary-color, #DCEEF6)
                   state:
                     - font-size: 11px
                     - color: "#00E5FF"
@@ -1126,7 +1126,7 @@ views:
                 - justify-self: start
                 - font-size: 11px
                 - letter-spacing: .6px
-                - color: "#8FB6C9"
+                - color: var(--secondary-text-color, #8FB6C9)
           - type: grid
             columns: 2
             square: false
@@ -1144,7 +1144,7 @@ views:
                     - padding: 8px
                   name:
                     - font-size: 12px
-                    - color: "#DCEEF6"
+                    - color: var(--text-primary-color, #DCEEF6)
                   state:
                     - font-size: 11px
                     - color: "#00E5FF"
@@ -1313,14 +1313,14 @@ views:
               name:
                 - justify-self: start
                 - font-size: 13px
-                - color: "#DCEEF6"
+                - color: var(--text-primary-color, #DCEEF6)
               state:
                 - justify-self: end
                 - font-size: 13px
                 - font-family: Orbitron, sans-serif
                 - color: "#00E5FF"
               icon:
-                - color: "#00E5FF"
+                - color: var(--paper-item-icon-color, #00E5FF)
 {% if slot_id == 'shutters' %}
             tap_action:
               action: more-info
