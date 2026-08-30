@@ -171,57 +171,85 @@
 -->
 <div class="steps">
   <div class="step" id="step1"><div class="step-bar"></div><div class="step-label">1. Structure</div></div>
-  <div class="step active"><div class="step-bar"></div><div class="step-label">2. Devices</div></div>
-  <div class="step"><div class="step-bar"></div><div class="step-label">3. Dashboards</div></div>
+  <div class="step" id="step2"><div class="step-bar"></div><div class="step-label">2. Devices</div></div>
+  <div class="step" id="step3"><div class="step-bar"></div><div class="step-label">3. Dashboards</div></div>
 </div>
 
 <div class="sub" id="subtitle">Loading…</div>
 
-<div class="bar">
-  <input type="text" id="filter" placeholder="Filter by name, entity or domain…">
-  <select id="bulkRoom"><option value="">— bulk: room —</option></select>
-  <button class="ghost" id="applyBulk">Apply to filtered</button>
-  <span class="count" id="count"></span>
-</div>
+<!--
+  EN | STEP 2 — the flat, filterable, editable table. Everything here writes
+  EN | only to the in-memory row state (tr._get()) until Save, which now
+  EN | lives on step 3 — this view is purely about deciding room+slot per
+  EN | entity, not about committing.
+  FR | ETAPE 2 — le tableau plat, filtrable, editable. Tout ici n ecrit que
+  FR | dans l etat en memoire des lignes (tr._get()) jusqu au Save, qui vit
+  FR | desormais a l etape 3 — cette vue ne sert qu a decider piece+tableau
+  FR | par entite, pas a valider.
+-->
+<div id="step2view">
+  <div class="bar">
+    <input type="text" id="filter" placeholder="Filter by name, entity or domain…">
+    <select id="bulkRoom"><option value="">— bulk: room —</option></select>
+    <button class="ghost" id="applyBulk">Apply to filtered</button>
+    <span class="count" id="count"></span>
+  </div>
 
-<div class="wrap">
-  <div class="scroll">
-    <table>
-      <thead>
-        <tr>
-          <th style="width:40%">Device</th>
-          <th style="width:14%">Domain / class</th>
-          <th style="width:23%">Room</th>
-          <th style="width:23%">Slot</th>
-        </tr>
-      </thead>
-      <tbody id="rows"></tbody>
-    </table>
+  <div class="wrap">
+    <div class="scroll">
+      <table>
+        <thead>
+          <tr>
+            <th style="width:40%">Device</th>
+            <th style="width:14%">Domain / class</th>
+            <th style="width:23%">Room</th>
+            <th style="width:23%">Slot</th>
+          </tr>
+        </thead>
+        <tbody id="rows"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="bar" style="margin-top:12px">
+    <button class="ghost" id="reload">Reload</button>
+    <span class="count" id="pending"></span>
+    <button id="next2to3" style="margin-left:auto">Next → Dashboards</button>
   </div>
 </div>
 
 <!--
-  EN | Recap grouped by room / slot — lets the admin see what will actually
-  EN | land in the generated dashboards (one card per room, one line per
-  EN | slot) before hitting Save, instead of auditing eighty flat rows.
-  EN | Rebuilt from the live in-memory selection, so it reflects unsaved
-  EN | changes too.
-  FR | Recapitulatif groupe par piece / tableau — permet a l administrateur
-  FR | de voir ce qui atterrira reellement dans les dashboards generes (une
-  FR | carte par piece, une ligne par tableau) avant d enregistrer, plutot
-  FR | que d auditer quatre-vingts lignes a plat. Reconstruit a partir de la
-  FR | selection en memoire, donc reflete aussi les changements non
-  FR | enregistres.
+  EN | STEP 3 — recap grouped by room / slot, so the admin sees what will
+  EN | actually land in the generated dashboards (one card per room, one
+  EN | line per slot) before committing anything, instead of auditing
+  EN | eighty flat rows. Rebuilt from the live in-memory selection every
+  EN | time this step is entered, so it reflects unsaved changes too — it
+  EN | can never drift from what Save is about to send, because it reads
+  EN | the exact same tr._get() Save reads.
+  EN | Not satisfied? BACK returns to step 2 with every selection intact —
+  EN | nothing is written until SAVE AND REGENERATE is actually pressed
+  EN | here.
+  FR | ETAPE 3 — recapitulatif groupe par piece / tableau, pour que
+  FR | l administrateur voie ce qui atterrira reellement dans les dashboards
+  FR | generes (une carte par piece, une ligne par tableau) avant de rien
+  FR | valider, plutot que d auditer quatre-vingts lignes a plat. Reconstruit
+  FR | a partir de la selection en memoire a chaque entree dans cette etape,
+  FR | donc reflete aussi les changements non enregistres — il ne peut donc
+  FR | jamais diverger de ce que Save est sur le point d envoyer, puisqu il
+  FR | lit exactement le meme tr._get() que Save.
+  FR | Pas satisfait ? RETOUR renvoie a l etape 2 avec toute la selection
+  FR | intacte — rien n est ecrit avant d avoir reellement appuye ici sur
+  FR | ENREGISTRER ET REGENERER.
 -->
-<div class="wrap recap" id="recap">
-  <div class="recap-grid" id="recapBody"></div>
-</div>
+<div id="step3view" style="display:none">
+  <div class="wrap recap" id="recap" style="display:block">
+    <div class="recap-grid" id="recapBody"></div>
+  </div>
 
-<div class="bar" style="margin-top:12px">
-  <button id="save">Save and regenerate</button>
-  <button class="ghost" id="toggleRecap">Preview by room</button>
-  <button class="ghost" id="reload">Reload</button>
-  <span class="count" id="pending"></span>
+  <div class="bar" style="margin-top:12px">
+    <button class="ghost" id="back3to2">◀ Back</button>
+    <button id="save">Save and regenerate</button>
+  </div>
 </div>
 
 <div class="msg" id="msg"></div>
@@ -324,7 +352,26 @@ function markPending() {
   const rows = [...el('rows').children];
   const n = rows.filter(r => r._get().room && r._get().slot).length;
   el('pending').textContent = n + ' / ' + rows.length + ' assigned';
-  if (el('recap').style.display !== 'none') renderRecap();
+}
+
+// EN | STEP SWITCHING — steps 2 and 3 are two views of the same in-memory
+// EN | row state, never a navigation: nothing here reloads DATA_URL or
+// EN | touches the webhook, so BACK from step 3 loses nothing, and NEXT can
+// EN | be pressed as many times as needed while still editing.
+// FR | CHANGEMENT D ETAPE — les etapes 2 et 3 sont deux vues du meme etat de
+// FR | lignes en memoire, jamais une navigation : rien ici ne recharge
+// FR | DATA_URL ni ne touche le webhook, donc RETOUR depuis l etape 3 ne
+// FR | perd rien, et SUIVANT peut etre presse autant de fois que necessaire
+// FR | tant que l edition continue.
+let currentStep = 2;
+function goToStep(n) {
+  currentStep = n;
+  el('step2view').style.display = n === 2 ? 'block' : 'none';
+  el('step3view').style.display = n === 3 ? 'block' : 'none';
+  el('step2').classList.toggle('active', n === 2);
+  el('step2').classList.toggle('done', n === 3);
+  el('step3').classList.toggle('active', n === 3);
+  if (n === 3) renderRecap();
 }
 
 // EN | Groups the live selection by room then slot, using the same _get()
@@ -384,6 +431,7 @@ function show(kind, text) {
 
 async function load() {
   show('', '');
+  goToStep(2);
   try {
     // EN | cache: no-store — the file is rewritten by every scan, and a
     // EN | cached copy would show the previous run as if nothing happened.
@@ -423,13 +471,8 @@ async function load() {
 
 el('filter').addEventListener('input', applyFilter);
 el('reload').addEventListener('click', load);
-el('toggleRecap').addEventListener('click', () => {
-  const w = el('recap');
-  const show = w.style.display === 'none' || !w.style.display;
-  w.style.display = show ? 'block' : 'none';
-  el('toggleRecap').textContent = show ? 'Hide preview' : 'Preview by room';
-  if (show) renderRecap();
-});
+el('next2to3').addEventListener('click', () => goToStep(3));
+el('back3to2').addEventListener('click', () => goToStep(2));
 
 // EN | Bulk assignment applies to the VISIBLE rows only. Filtering by
 // EN | "living" then assigning is how eighty entities become manageable, and
