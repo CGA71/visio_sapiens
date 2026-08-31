@@ -190,7 +190,8 @@
 <div id="step2view">
   <div class="bar">
     <input type="text" id="filter" placeholder="Filter by name, entity or domain…">
-    <select id="bulkRoom"><option value="">— bulk: room —</option></select>
+    <select id="filterRoom"><option value="">— filter: room —</option></select>
+    <select id="bulkRoom"><option value="">— assign to room —</option></select>
     <button class="ghost" id="applyBulk">Apply to filtered</button>
     <span class="count" id="count"></span>
   </div>
@@ -334,6 +335,7 @@ function buildRow(entity) {
   roomSel.addEventListener('change', () => {
     fillSlots(slotSel, roomSel.value, '', entity.suggested_slot);
     markPending();
+    applyFilter();
   });
   slotSel.addEventListener('change', markPending);
 
@@ -416,10 +418,24 @@ function renderRecap() {
   });
 }
 
+// EN | Two independent narrowing controls: free-text search and "only rows
+// EN | currently assigned to this room" — the room select used to be the bulk
+// EN | -assign target only, which read as a filter (it sits right next to the
+// EN | search box) but silently wrote to every visible row instead. It is now
+// EN | a real filter; the bulk target is the separate "assign to room" select.
+// FR | Deux filtres independants : recherche libre et « seulement les lignes
+// FR | actuellement assignees a cette piece » — le menu piece ne servait avant
+// FR | qu a cibler l assignation en masse, ce qui se lisait comme un filtre
+// FR | (il est juste a cote de la recherche) mais ecrivait silencieusement sur
+// FR | chaque ligne visible. C est maintenant un vrai filtre ; la cible de
+// FR | l assignation en masse est le select separe « assign to room ».
 function applyFilter() {
   const q = el('filter').value.trim().toLowerCase();
+  const room = el('filterRoom').value;
   [...el('rows').children].forEach(tr => {
-    tr.style.display = !q || tr.dataset.search.includes(q) ? '' : 'none';
+    const matchesText = !q || tr.dataset.search.includes(q);
+    const matchesRoom = !room || tr._get().room === room;
+    tr.style.display = matchesText && matchesRoom ? '' : 'none';
   });
 }
 
@@ -459,8 +475,13 @@ async function load() {
 
   const bulk = el('bulkRoom');
   bulk.innerHTML = '';
-  bulk.appendChild(option('', '— bulk: room —', true));
+  bulk.appendChild(option('', '— assign to room —', true));
   DATA.rooms.forEach(r => bulk.appendChild(option(r.id, r.label)));
+
+  const filterRoom = el('filterRoom');
+  filterRoom.innerHTML = '';
+  filterRoom.appendChild(option('', '— filter: room —', true));
+  DATA.rooms.forEach(r => filterRoom.appendChild(option(r.id, r.label)));
 
   const body = el('rows');
   body.innerHTML = '';
@@ -470,6 +491,7 @@ async function load() {
 }
 
 el('filter').addEventListener('input', applyFilter);
+el('filterRoom').addEventListener('change', applyFilter);
 el('reload').addEventListener('click', load);
 el('next2to3').addEventListener('click', () => goToStep(3));
 el('back3to2').addEventListener('click', () => goToStep(2));
@@ -485,6 +507,19 @@ el('back3to2').addEventListener('click', () => goToStep(2));
 el('applyBulk').addEventListener('click', () => {
   const room = el('bulkRoom').value;
   if (!room) { show('err', 'Pick a room for the bulk assignment first.'); return; }
+  // EN | Refuse to run against the unfiltered table: with neither the text
+  // EN | search nor the room filter active, "visible rows" is every row, and
+  // EN | this button would silently overwrite the whole assignment table.
+  // FR | Refuse de s executer sur le tableau non filtre : sans recherche
+  // FR | texte ni filtre piece actifs, « lignes visibles » designe toutes les
+  // FR | lignes, et ce bouton ecraserait silencieusement tout le tableau
+  // FR | d assignation.
+  if (!el('filter').value.trim() && !el('filterRoom').value) {
+    show('err', 'Filter the table first (search text or "filter: room") '
+      + 'before applying a bulk assignment — otherwise it would overwrite '
+      + 'every row.');
+    return;
+  }
   let n = 0;
   [...el('rows').children].forEach(tr => {
     if (tr.style.display === 'none') return;
