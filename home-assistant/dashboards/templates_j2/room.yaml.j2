@@ -324,14 +324,14 @@ views:
                           - justify-self: start
                           - text-align: left
                           - font-size: 13px
-                          - color: var(--text-primary-color, #DCEEF6)
+                          - color: "var(--text-primary-color, #DCEEF6)"
                         state:
                           - justify-self: end
                           - text-align: right
                           - font-size: 12px
                           - color: "#00E5FF"
                         icon:
-                          - color: var(--paper-item-icon-color, #00E5FF)
+                          - color: "var(--paper-item-icon-color, #00E5FF)"
                       tap_action:
                         action: toggle
                       hold_action:
@@ -517,11 +517,11 @@ views:
                         - flex-direction: row
                         - gap: 12px
                       name:
-                        - color: var(--secondary-text-color, #B8E8F5)
+                        - color: "var(--secondary-text-color, #B8E8F5)"
                         - font-size: 13px
                         - letter-spacing: 1px
                       icon:
-                        - color: var(--paper-item-icon-color, #00E5FF)
+                        - color: "var(--paper-item-icon-color, #00E5FF)"
                         - "--mdc-icon-size": 28px
 
               # ── Colonne 2 : ecran interphone + ouverture/fermeture/lumiere ──
@@ -607,7 +607,7 @@ views:
                             - padding: 10px
                           name:
                             - font-size: 11px
-                            - color: var(--text-primary-color, #DCEEF6)
+                            - color: "var(--text-primary-color, #DCEEF6)"
                           icon:
                             - color: "#00FFC3"
                       - type: custom:button-card
@@ -629,7 +629,7 @@ views:
                             - padding: 10px
                           name:
                             - font-size: 11px
-                            - color: var(--text-primary-color, #DCEEF6)
+                            - color: "var(--text-primary-color, #DCEEF6)"
                           icon:
                             - color: "#FF4D6D"
 {% if entrance_light %}
@@ -650,7 +650,7 @@ views:
                             - padding: 10px
                           name:
                             - font-size: 11px
-                            - color: var(--text-primary-color, #DCEEF6)
+                            - color: "var(--text-primary-color, #DCEEF6)"
                           icon:
                             - color: "#FFA726"
 {% else %}
@@ -810,13 +810,13 @@ views:
                                   - padding: 8px
                                 name:
                                   - font-size: 11px
-                                  - color: var(--text-primary-color, #DCEEF6)
+                                  - color: "var(--text-primary-color, #DCEEF6)"
                                 state:
                                   - font-size: 12px
                                   - color: "#00FFC3"
                                   - font-weight: 700
                                 icon:
-                                  - color: var(--paper-item-icon-color, #00E5FF)
+                                  - color: "var(--paper-item-icon-color, #00E5FF)"
                             - type: custom:button-card
                               entity: sensor.jessica_station_state
                               show_icon: true
@@ -834,13 +834,13 @@ views:
                                   - padding: 8px
                                 name:
                                   - font-size: 11px
-                                  - color: var(--text-primary-color, #DCEEF6)
+                                  - color: "var(--text-primary-color, #DCEEF6)"
                                 state:
                                   - font-size: 12px
                                   - color: "#00FFC3"
                                   - font-weight: 700
                                 icon:
-                                  - color: var(--paper-item-icon-color, #00E5FF)
+                                  - color: "var(--paper-item-icon-color, #00E5FF)"
                             - type: custom:button-card
                               entity: binary_sensor.jessica_serpilliere_fixee
                               show_icon: true
@@ -864,13 +864,13 @@ views:
                                   - padding: 8px
                                 name:
                                   - font-size: 11px
-                                  - color: var(--text-primary-color, #DCEEF6)
+                                  - color: "var(--text-primary-color, #DCEEF6)"
                                 label:
                                   - font-size: 12px
                                   - color: "#00FFC3"
                                   - font-weight: 700
                                 icon:
-                                  - color: var(--paper-item-icon-color, #00E5FF)
+                                  - color: "var(--paper-item-icon-color, #00E5FF)"
                             - type: custom:button-card
                               entity: number.jessica_water_flow_level
                               show_icon: true
@@ -888,13 +888,13 @@ views:
                                   - padding: 8px
                                 name:
                                   - font-size: 11px
-                                  - color: var(--text-primary-color, #DCEEF6)
+                                  - color: "var(--text-primary-color, #DCEEF6)"
                                 state:
                                   - font-size: 12px
                                   - color: "#00FFC3"
                                   - font-weight: 700
                                 icon:
-                                  - color: var(--paper-item-icon-color, #00E5FF)
+                                  - color: "var(--paper-item-icon-color, #00E5FF)"
                             - type: custom:button-card
                               entity: select.jessica_active_map
                               show_icon: true
@@ -912,13 +912,13 @@ views:
                                   - padding: 8px
                                 name:
                                   - font-size: 11px
-                                  - color: var(--text-primary-color, #DCEEF6)
+                                  - color: "var(--text-primary-color, #DCEEF6)"
                                 state:
                                   - font-size: 12px
                                   - color: "#00FFC3"
                                   - font-weight: 700
                                 icon:
-                                  - color: var(--paper-item-icon-color, #00E5FF)
+                                  - color: "var(--paper-item-icon-color, #00E5FF)"
                             - type: custom:button-card
                               show_icon: true
                               show_name: true
@@ -938,9 +938,9 @@ views:
                                   - padding: 8px
                                 name:
                                   - font-size: 11px
-                                  - color: var(--text-primary-color, #DCEEF6)
+                                  - color: "var(--text-primary-color, #DCEEF6)"
                                 icon:
-                                  - color: var(--paper-item-icon-color, #00E5FF)
+                                  - color: "var(--paper-item-icon-color, #00E5FF)"
                             - type: custom:button-card
                               entity: sensor.jessica_batterie
                               show_icon: true
@@ -958,13 +958,13 @@ views:
                                   - padding: 8px
                                 name:
                                   - font-size: 11px
-                                  - color: var(--text-primary-color, #DCEEF6)
+                                  - color: "var(--text-primary-color, #DCEEF6)"
                                 state:
                                   - font-size: 12px
                                   - color: "#00FFC3"
                                   - font-weight: 700
                                 icon:
-                                  - color: var(--paper-item-icon-color, #00E5FF)
+                                  - color: "var(--paper-item-icon-color, #00E5FF)"
                             - type: custom:button-card
                               show_icon: true
                               show_name: true
@@ -984,10 +984,9 @@ views:
                                   - padding: 8px
                                 name:
                                   - font-size: 11px
-                                  - color: var(--text-primary-color, #DCEEF6)
+                                  - color: "var(--text-primary-color, #DCEEF6)"
                                 icon:
-                                  - color: var(--paper-item-icon-color, #00E5FF)
-
+                                  - color: "var(--paper-item-icon-color, #00E5FF)"
 {% elif slot_id == 'security' %}
           # EN | OVERSIZED SLOT — it carries three things of different visual
           # EN | natures: an alarm state (a word), an intercom (a video feed)
@@ -1033,7 +1032,7 @@ views:
                     - height: 96px
                   name:
                     - font-size: 12px
-                    - color: var(--secondary-text-color, #8FB6C9)
+                    - color: "var(--secondary-text-color, #8FB6C9)"
                   state:
                     - font-size: 15px
                     - font-family: Orbitron, sans-serif
@@ -1090,7 +1089,7 @@ views:
                     - padding: 8px
                   name:
                     - font-size: 12px
-                    - color: var(--text-primary-color, #DCEEF6)
+                    - color: "var(--text-primary-color, #DCEEF6)"
                   state:
                     - font-size: 11px
                     - color: "#00E5FF"
@@ -1277,7 +1276,7 @@ views:
                           - text-align: left
                           - font-size: 11px
                           - letter-spacing: .6px
-                          - color: var(--secondary-text-color, #8FB6C9)
+                          - color: "var(--secondary-text-color, #8FB6C9)"
 {% for e in slot.by_domain.get('light', []) %}
                     - type: custom:button-card
                       template: vssp_circuit_switch
@@ -1309,7 +1308,7 @@ views:
                           - text-align: left
                           - font-size: 11px
                           - letter-spacing: .6px
-                          - color: var(--secondary-text-color, #8FB6C9)
+                          - color: "var(--secondary-text-color, #8FB6C9)"
 {% for e in slot.by_domain.get('switch', []) %}
                     - type: custom:button-card
                       template: vssp_circuit_switch
@@ -1341,7 +1340,7 @@ views:
                           - text-align: left
                           - font-size: 11px
                           - letter-spacing: .6px
-                          - color: var(--secondary-text-color, #8FB6C9)
+                          - color: "var(--secondary-text-color, #8FB6C9)"
 {% for e in slot.by_domain.get('cover', []) %}
                     - type: custom:button-card
                       template: vssp_circuit_switch
@@ -1441,14 +1440,14 @@ views:
                           - justify-self: start
                           - text-align: left
                           - font-size: 13px
-                          - color: var(--text-primary-color, #DCEEF6)
+                          - color: "var(--text-primary-color, #DCEEF6)"
                         state:
                           - justify-self: end
                           - text-align: right
                           - font-size: 12px
                           - color: "#00E5FF"
                         icon:
-                          - color: var(--paper-item-icon-color, #00E5FF)
+                          - color: "var(--paper-item-icon-color, #00E5FF)"
                       tap_action:
                         action: more-info
 {% endfor %}
@@ -1486,7 +1485,7 @@ views:
                 - justify-self: start
                 - text-align: left
                 - font-size: 13px
-                - color: var(--text-primary-color, #DCEEF6)
+                - color: "var(--text-primary-color, #DCEEF6)"
               state:
                 - justify-self: end
                 - text-align: right
@@ -1494,7 +1493,7 @@ views:
                 - font-family: Orbitron, sans-serif
                 - color: "#00E5FF"
               icon:
-                - color: var(--paper-item-icon-color, #00E5FF)
+                - color: "var(--paper-item-icon-color, #00E5FF)"
 {% if domain in ['sensor', 'binary_sensor'] %}
             tap_action:
               action: more-info

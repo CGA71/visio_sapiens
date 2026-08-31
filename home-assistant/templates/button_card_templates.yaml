@@ -78,10 +78,10 @@ vssp_metric:
       - border: 1px solid rgba(0,229,255,.25)
       - padding: 10px
     icon:
-      - color: var(--paper-item-icon-color, #00E5FF)
+      - color: "var(--paper-item-icon-color, #00E5FF)"
       - "--mdc-icon-size": 20px
     name:
-      - color: var(--secondary-text-color, #8FB6C9)
+      - color: "var(--secondary-text-color, #8FB6C9)"
       - font-size: 12px
       - letter-spacing: 2px
     state:
@@ -121,7 +121,7 @@ vssp_page_header:
       - color: "#8FB6C9"
       - "--mdc-icon-size": 24px
     name:
-      - color: var(--text-primary-color, #FFFFFF)
+      - color: "var(--text-primary-color, #FFFFFF)"
       - font-size: 20px
       - font-weight: 700
       - letter-spacing: 1px
@@ -129,7 +129,7 @@ vssp_page_header:
       - text-align: left
       - font-family: "Orbitron, sans-serif"
     label:
-      - color: var(--secondary-text-color, #8FB6C9)
+      - color: "var(--secondary-text-color, #8FB6C9)"
       - font-size: 12px
       - justify-self: start
       - text-align: left
@@ -202,14 +202,14 @@ vssp_alarm_status:
           ]]]
       - "--mdc-icon-size": 22px
     name:
-      - color: var(--text-primary-color, #FFFFFF)
+      - color: "var(--text-primary-color, #FFFFFF)"
       - font-size: 13px
       - font-weight: 700
       - letter-spacing: 1px
       - justify-self: start
       - text-align: left
     label:
-      - color: var(--secondary-text-color, #8FB6C9)
+      - color: "var(--secondary-text-color, #8FB6C9)"
       - font-size: 11px
       - justify-self: start
       - text-align: left
@@ -529,13 +529,13 @@ vssp_security_row:
           ]]]
       - "--mdc-icon-size": 20px
     name:
-      - color: var(--text-primary-color, #FFFFFF)
+      - color: "var(--text-primary-color, #FFFFFF)"
       - font-size: 13px
       - font-weight: 600
       - justify-self: start
       - text-align: left
     label:
-      - color: var(--secondary-text-color, #8FB6C9)
+      - color: "var(--secondary-text-color, #8FB6C9)"
       - font-size: 11px
       - justify-self: start
       - text-align: left
@@ -573,14 +573,14 @@ vssp_admin_button:
       - color: '[[[ return variables.danger ? "#FF3D71" : "var(--paper-item-icon-color, #00E5FF)" ]]]'
       - "--mdc-icon-size": 26px
     name:
-      - color: var(--text-primary-color, #FFFFFF)
+      - color: "var(--text-primary-color, #FFFFFF)"
       - font-size: 14px
       - font-weight: 700
       - letter-spacing: 1px
       - justify-self: start
       - text-align: left
     label:
-      - color: var(--secondary-text-color, #8FB6C9)
+      - color: "var(--secondary-text-color, #8FB6C9)"
       - font-size: 11px
       - justify-self: start
       - text-align: left
@@ -619,7 +619,7 @@ vssp_kpi_card:
       - "--mdc-icon-size": 26px
       - margin-top: 2px
     name:
-      - color: var(--text-primary-color, #FFFFFF)
+      - color: "var(--text-primary-color, #FFFFFF)"
       - font-size: 13px
       - font-weight: 700
       - letter-spacing: 0.5px
@@ -632,7 +632,7 @@ vssp_kpi_card:
       - justify-self: start
       - text-align: left
     label:
-      - color: var(--secondary-text-color, #56707E)
+      - color: "var(--secondary-text-color, #56707E)"
       - font-size: 11px
       - justify-self: start
       - text-align: left
@@ -682,7 +682,7 @@ vssp_status_indicator:
       - padding: 14px 18px
       - height: 100%
     name:
-      - color: var(--text-primary-color, #FFFFFF)
+      - color: "var(--text-primary-color, #FFFFFF)"
       - font-size: 13px
       - font-weight: 700
       - letter-spacing: 0.5px
@@ -707,7 +707,7 @@ vssp_status_indicator:
             return "drop-shadow(0 0 8px rgba(255,61,113,.6))";
           ]]]
     label:
-      - color: var(--secondary-text-color, #56707E)
+      - color: "var(--secondary-text-color, #56707E)"
       - font-size: 11px
       - justify-self: start
       - text-align: left
@@ -726,10 +726,10 @@ vssp_quick_action:
       - border: 1px solid rgba(0,229,255,0.22)
       - padding: 14px
     icon:
-      - color: var(--paper-item-icon-color, #00E5FF)
+      - color: "var(--paper-item-icon-color, #00E5FF)"
       - "--mdc-icon-size": 26px
     name:
-      - color: var(--secondary-text-color, #B8E8F5)
+      - color: "var(--secondary-text-color, #B8E8F5)"
       - font-size: 12px
       - letter-spacing: 1px
 
@@ -757,7 +757,7 @@ vssp_alert:
             return '#00FFC3';
           ]]]
     name:
-      - color: var(--text-primary-color, #FFFFFF)
+      - color: "var(--text-primary-color, #FFFFFF)"
       - font-size: 13px
       - justify-self: start
 
@@ -775,10 +775,10 @@ vssp_room_card:
       - height: 110px
       - transition: transform .2s ease, box-shadow .2s ease
     icon:
-      - color: var(--paper-item-icon-color, #00E5FF)
+      - color: "var(--paper-item-icon-color, #00E5FF)"
       - "--mdc-icon-size": 30px
     name:
-      - color: var(--text-primary-color, #FFFFFF)
+      - color: "var(--text-primary-color, #FFFFFF)"
       - font-size: 14px
       - letter-spacing: 1px
 
@@ -822,7 +822,7 @@ vssp_section_title:
       - cursor: default
       - pointer-events: none
     name:
-      - color: var(--text-primary-color, #FFFFFF)
+      - color: "var(--text-primary-color, #FFFFFF)"
       - font-size: 15px
       - font-weight: 600
       - letter-spacing: 1px
@@ -862,7 +862,7 @@ vssp_energy_stat:
       - cursor: default
       - pointer-events: none
     label:
-      - color: var(--secondary-text-color, #8FB6C9)
+      - color: "var(--secondary-text-color, #8FB6C9)"
       - font-size: 11px
       - letter-spacing: 0.5px
       - justify-self: start
@@ -915,7 +915,7 @@ vssp_energy_kpi:
       - color: "[[[ return variables.accent ]]]"
       - "--mdc-icon-size": 24px
     state:
-      - color: var(--text-primary-color, #FFFFFF)
+      - color: "var(--text-primary-color, #FFFFFF)"
       - font-size: 22px
       - font-weight: 700
       - justify-self: start
@@ -1075,21 +1075,21 @@ vssp_energy_device_row:
       - width: 30px
       - height: 30px
     icon:
-      - color: var(--paper-item-icon-color, #00E5FF)
+      - color: "var(--paper-item-icon-color, #00E5FF)"
       - "--mdc-icon-size": 17px
     name:
-      - color: var(--text-primary-color, #FFFFFF)
+      - color: "var(--text-primary-color, #FFFFFF)"
       - font-size: 13px
       - font-weight: 600
       - justify-self: start
       - text-align: left
     label:
-      - color: var(--secondary-text-color, #56707E)
+      - color: "var(--secondary-text-color, #56707E)"
       - font-size: 10px
       - justify-self: start
       - text-align: left
     state:
-      - color: var(--secondary-text-color, #B8E8F5)
+      - color: "var(--secondary-text-color, #B8E8F5)"
       - font-size: 13px
       - font-weight: 600
       - justify-self: end
@@ -1224,13 +1224,13 @@ vssp_circuit_switch:
           [[[ return (entity && entity.state === 'on') ? "#00FFC3" : "#8FB6C9"; ]]]
       - "--mdc-icon-size": 17px
     name:
-      - color: var(--text-primary-color, #FFFFFF)
+      - color: "var(--text-primary-color, #FFFFFF)"
       - font-size: 13px
       - font-weight: 600
       - justify-self: start
       - text-align: left
     label:
-      - color: var(--secondary-text-color, #56707E)
+      - color: "var(--secondary-text-color, #56707E)"
       - font-size: 10px
       - justify-self: start
       - text-align: left
