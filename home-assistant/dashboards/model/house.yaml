@@ -166,68 +166,22 @@ slot_sets:
   # FR | d'assignation.
   computer: [sensors, switches, infrastructure, security]
 
-# ── EN | Grid layouts — one per slot set ──────────────────────────────
-# ── FR | Gabarits de grille — un par jeu de tableaux ──────────────────
-# EN | THE FEWER SLOTS A ROOM HAS, THE MORE ROOM THE REMAINING ONES GET.
-# EN | That is the whole point of writing these by hand instead of computing
-# EN | them: an entrance with three slots gives `security` four columns over
-# EN | two rows, which is what an intercom video feed plus a camera mosaic
-# EN | actually needs. A computed collapse would have kept it the same size
-# EN | as in a six-slot living room and wasted the freed space.
-# FR | MOINS UNE PIECE A DE TABLEAUX, PLUS LES RESTANTS ONT DE PLACE.
-# FR | C'est tout l'interet de les ecrire a la main plutot que de les
-# FR | calculer : une entree a trois tableaux donne a `security` quatre
-# FR | colonnes sur deux lignes, ce dont un flux video d'interphone plus une
-# FR | mosaique de cameras a reellement besoin. Un effondrement calcule
-# FR | l'aurait laisse a la taille qu'il a dans un salon a six tableaux, et
-# FR | aurait gaspille la place liberee.
-#
-# EN | `nav` and `header` are not slots — every other token must match a slot
-# EN | of the corresponding set. generate_dashboards.py refuses to render when
-# EN | they disagree: a slot with no area produces a panel that is silently
-# EN | never displayed.
-# FR | `nav` et `header` ne sont pas des tableaux — tout autre element doit
-# FR | correspondre a un tableau du jeu concerne. generate_dashboards.py
-# FR | refuse de rendre en cas de desaccord : un tableau sans zone produit un
-# FR | panneau qui n'est jamais affiche, en silence.
-#
-# EN | Omitting this whole block is fine: the generator's built-in layouts
-# EN | apply. Declare a set here only to override one.
-# FR | Omettre tout ce bloc ne pose pas de probleme : les gabarits integres au
-# FR | generateur s'appliquent. N'en declarer un ici que pour le surcharger.
-layouts:
-  entrance:
-    # EN | switches: full-width horizontal strip right under the header,
-    # EN | 220px — tall enough for the two framed groups of
-    # EN | breaker-styled switch cards (3 switches + 2 outlets) hardcoded
-    # EN | in room.yaml.j2's entrance-only switches branch.
-    # EN | security: everything else, full width, one tall row. It now
-    # EN | carries a camera mosaic, an NVR access panel, the intercom feed
-    # EN | + door controls, and the Jessica vacuum panel side by side —
-    # EN | needs the width more than the 4-of-5-columns split it had when
-    # EN | it shared its rows with switches and sensors.
-    # FR | switches : bandeau horizontal pleine largeur juste sous l'en-tete,
-    # FR | 220px — assez pour les deux groupes encadres de cartes
-    # FR | interrupteur façon tableau electrique (3 interrupteurs + 2
-    # FR | prises) codes en dur dans la branche switches specifique a
-    # FR | l'entree de room.yaml.j2.
-    # FR | security : tout le reste, pleine largeur, une seule ligne haute.
-    # FR | Il porte desormais une mosaique de cameras, un panneau d'acces au
-    # FR | NVR, le flux de l'interphone + les commandes de porte, et le
-    # FR | panneau du robot Jessica cote a cote — a besoin de la largeur
-    # FR | plus que du partage a 4-colonnes-sur-5 qu'il avait quand il
-    # FR | partageait ses lignes avec switches et sensors.
-    rows: "105px 220px 490px"
-    areas:
-      - "nav header   header   header   header   header"
-      - "nav switches switches switches switches switches"
-      - "nav security security security security security"
-  minimal:
-    rows: "105px 300px 340px"
-    areas:
-      - "nav header   header   header   header   header"
-      - "nav security security security security security"
-      - "nav switches switches switches switches switches"
+# ── EN | Grid layout — computed per room, not declared here ───────────
+# ── FR | Gabarit de grille — calcule par piece, pas declare ici ───────
+# EN | There used to be a `layouts:` override block here, one hand-drawn grid
+# EN | per slot_set. It's gone: compute_room_layout() in
+# EN | generate_dashboards.py now builds each room's grid from what it
+# EN | actually contains (device counts per slot + its `default_slot`, see
+# EN | that field below) instead of a fixed preset — see
+# EN | docs/Dashboard_Generator.md, "Room dashboard grid — dynamic slot
+# EN | layout". Nothing to declare or override here any more.
+# FR | Il y avait ici un bloc `layouts:` de surcharge, une grille ecrite a la
+# FR | main par slot_set. Il a disparu : compute_room_layout() dans
+# FR | generate_dashboards.py construit desormais la grille de chaque piece
+# FR | a partir de ce qu'elle contient reellement (nombre d'appareils par
+# FR | tableau + son `default_slot`, voir ce champ plus bas) plutot qu'un
+# FR | preset fixe — voir docs/Dashboard_Generator.md, « Room dashboard
+# FR | grid — dynamic slot layout ». Plus rien a declarer ou surcharger ici.
 
 # ── EN | Default icon per room type ───────────────────────────────────
 # ── FR | Icone par defaut selon le type de piece ──────────────────────
@@ -256,17 +210,30 @@ room_icons:
 # EN |   id       unique, never translated — feeds paths and file names
 # EN |   type     key of the room catalogue (locales/*.yaml, room.<type>)
 # EN |   index    for (n) rooms: bedroom 1, bedroom 2...
-# EN |   slot_set which slots are candidates (see above)
-# EN |   slots    device list per slot, IN THE FORM'S ORDER — you decide the
-# EN |            TV comes before the console without renaming an entity
+# EN |   slot_set     which slots are candidates (see above)
+# EN |   default_slot which candidate gets the privileged (1fr, most of the
+# EN |                screen) band — one of sensors/switches/appliances/
+# EN |                security/infrastructure, picked by hand, not inferred
+# EN |                from device counts. Falls back to the candidate with
+# EN |                the most devices when missing or invalid (see
+# EN |                resolve_default_slot() in generate_dashboards.py).
+# EN |   slots        device list per slot, IN THE FORM'S ORDER — you decide
+# EN |                the TV comes before the console without renaming an
+# EN |                entity
 # FR | Ecrit par la console admin. Une entree par INSTANCE de piece :
-# FR |   id       unique, jamais traduit — alimente les chemins et noms de fichiers
-# FR |   type     cle du catalogue de pieces (locales/*.yaml, room.<type>)
-# FR |   index    pour les pieces (n) : chambre 1, chambre 2...
-# FR |   slot_set quels tableaux sont candidats (voir ci-dessus)
-# FR |   slots    liste d'appareils par tableau, DANS L'ORDRE DU FORMULAIRE —
-# FR |            tu decides que la TV passe avant la console sans renommer
-# FR |            d'entite
+# FR |   id           unique, jamais traduit — alimente les chemins et noms de fichiers
+# FR |   type         cle du catalogue de pieces (locales/*.yaml, room.<type>)
+# FR |   index        pour les pieces (n) : chambre 1, chambre 2...
+# FR |   slot_set     quels tableaux sont candidats (voir ci-dessus)
+# FR |   default_slot quel candidat recoit la bande privilegiee (1fr, la
+# FR |                majorite de l'ecran) — un parmi sensors/switches/
+# FR |                appliances/security/infrastructure, choisi a la main,
+# FR |                pas deduit du nombre d'appareils. Se replie sur le
+# FR |                candidat le plus charge si absent ou invalide (voir
+# FR |                resolve_default_slot() dans generate_dashboards.py).
+# FR |   slots        liste d'appareils par tableau, DANS L'ORDRE DU
+# FR |                FORMULAIRE — tu decides que la TV passe avant la
+# FR |                console sans renommer d'entite
 # EN | Empty on purpose. Rooms are no longer hand-written here: since
 # EN | vssp_rooms_apply.py syncs this list live from the HA Area registry
 # EN | (via the ROOMS & FLOORS admin form) and vssp_preserve_rooms.py

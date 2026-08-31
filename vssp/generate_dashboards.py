@@ -176,13 +176,8 @@ DEFAULT_SLOT_SETS = {
     "toilet":        ["sensors", "switches"],
     "garden":        ["sensors", "switches", "appliances", "security"],
     "utility":       ["sensors", "switches", "appliances", "security"],
-    # EN | No sensors slot: an entrance has no thermostat of its own. The
-    # EN | freed row goes to a full-width horizontal switches slot right
-    # EN | under the header instead (see DEFAULT_LAYOUTS below).
+    # EN | No sensors slot: an entrance has no thermostat of its own.
     # FR | Pas de tableau sensors : l'entree n'a pas son propre thermostat.
-    # FR | La ligne liberee va a un tableau switches horizontal pleine
-    # FR | largeur juste sous l'en-tete a la place (voir DEFAULT_LAYOUTS
-    # FR | ci-dessous).
     "entrance":      ["switches", "security"],
     "minimal":       ["switches", "security"],
     # EN | Named after the room TYPE (room_icons/locales `computer`), not
@@ -209,108 +204,20 @@ DEFAULT_SLOT_SETS = {
 }
 
 # ----------------------------------------------------------------------------
-# EN | GRID LAYOUTS — one per slot set, overridable from house.yaml.
-# EN | Written by hand rather than computed: collapsing a grid algorithmically
-# EN | produces layouts nobody chose. The fewer slots a room has, the more room
-# EN | the remaining ones get — an entrance with three slots can give `security`
-# EN | four columns and two rows, which is what an intercom feed plus a camera
-# EN | mosaic actually needs.
-# FR | GABARITS DE GRILLE — un par jeu de tableaux, surchargeable depuis
-# FR | house.yaml. Ecrits a la main plutot que calcules : effondrer une grille
-# FR | algorithmiquement produit des dispositions que personne n'a choisies.
-# FR | Moins une piece a de tableaux, plus les restants ont de place — une
-# FR | entree a trois tableaux peut donner a `security` quatre colonnes et deux
-# FR | lignes, ce dont un flux d'interphone plus une mosaique de cameras a
-# FR | reellement besoin.
+# EN | GRID LAYOUT — computed per room by compute_room_layout(), not a fixed
+# EN | preset per slot_set. See docs/Dashboard_Generator.md, "Room dashboard
+# EN | grid — dynamic slot layout" for the full design. Replaced the old
+# EN | hand-drawn DEFAULT_LAYOUTS (one grid per slot_set, same proportions for
+# EN | every room sharing a set regardless of how many devices each slot
+# EN | actually held, and an empty slot still rendered a "no device" card).
+# FR | GABARIT DE GRILLE — calcule par piece par compute_room_layout(), plus
+# FR | un preset fixe par slot_set. Voir docs/Dashboard_Generator.md,
+# FR | « Room dashboard grid — dynamic slot layout » pour la conception
+# FR | complete. Remplace l'ancien DEFAULT_LAYOUTS ecrit a la main (une grille
+# FR | par slot_set, memes proportions pour toute piece partageant ce jeu quel
+# FR | que soit le nombre d'appareils par tableau, et un tableau vide affichait
+# FR | quand meme une carte "aucun appareil").
 # ----------------------------------------------------------------------------
-DEFAULT_LAYOUTS = {
-    # EN | `switches` is ALWAYS a full-width horizontal strip, never a
-    # EN | narrow column: it holds a grouped, scrollable listing (lights,
-    # EN | then connected outlets, then shutters — see room.yaml.j2's
-    # EN | `switches` branch), and a grouped list needs width more than
-    # EN | height. Every set below gives it its own full-width row.
-    # FR | `switches` est TOUJOURS un bandeau horizontal pleine largeur,
-    # FR | jamais une colonne etroite : il porte un listing groupe et
-    # FR | defilant (lumieres, puis prises connectees, puis volets — voir la
-    # FR | branche `switches` de room.yaml.j2), et un listing groupe a besoin
-    # FR | de largeur plus que de hauteur. Chaque jeu ci-dessous lui donne sa
-    # FR | propre ligne pleine largeur.
-    "default": {
-        "rows": "105px 220px 260px 220px",
-        "areas": [
-            "nav header     header     header     header     header",
-            "nav switches   switches   switches   switches   switches",
-            "nav sensors    sensors    sensors    appliances appliances",
-            "nav security   security   security   security   security",
-        ],
-    },
-    "toilet": {
-        "rows": "105px 220px 300px",
-        "areas": [
-            "nav header   header   header   header   header",
-            "nav switches switches switches switches switches",
-            "nav sensors  sensors  sensors  sensors  sensors",
-        ],
-    },
-    "garden": {
-        "rows": "105px 220px 260px 220px",
-        "areas": [
-            "nav header     header     header     header     header",
-            "nav switches   switches   switches   switches   switches",
-            "nav sensors    sensors    sensors    appliances appliances",
-            "nav security   security   security   security   security",
-        ],
-    },
-    "utility": {
-        "rows": "105px 220px 260px 220px",
-        "areas": [
-            "nav header     header     header     header     header",
-            "nav switches   switches   switches   switches   switches",
-            "nav sensors    sensors    sensors    appliances appliances",
-            "nav security   security   security   security   security",
-        ],
-    },
-    # EN | No sensors slot here (see DEFAULT_SLOT_SETS): the freed row keeps
-    # EN | switches full width, same as every other set, above a tall
-    # EN | security row for the intercom feed + camera mosaic.
-    # FR | Pas de tableau sensors ici (voir DEFAULT_SLOT_SETS) : la ligne
-    # FR | liberee garde switches pleine largeur, comme dans tout autre jeu,
-    # FR | au-dessus d'une ligne security haute pour le flux d'interphone +
-    # FR | la mosaique de cameras.
-    "entrance": {
-        "rows": "105px 220px 490px",
-        "areas": [
-            "nav header   header   header   header   header",
-            "nav switches switches switches switches switches",
-            "nav security security security security security",
-        ],
-    },
-    # EN | Two slots, both full width.
-    # FR | Deux tableaux, tous deux pleine largeur.
-    "minimal": {
-        "rows": "105px 300px 340px",
-        "areas": [
-            "nav header   header   header   header   header",
-            "nav security security security security security",
-            "nav switches switches switches switches switches",
-        ],
-    },
-    "computer": {
-        "rows": "105px 220px 260px 220px",
-        "areas": [
-            "nav header         header         header         header         header",
-            "nav switches       switches       switches       switches       switches",
-            "nav sensors        sensors        infrastructure infrastructure infrastructure",
-            "nav security       security       security       security       security",
-        ],
-    },
-}
-
-# EN | Grid areas that are not slots. Everything else in a layout must match a
-# EN | slot of the corresponding set.
-# FR | Zones de grille qui ne sont pas des tableaux. Tout le reste d'un gabarit
-# FR | doit correspondre a un tableau du jeu concerne.
-NON_SLOT_AREAS = {"nav", "header"}
 
 # EN | At most one Visio Sapiens filler animation per dashboard, on the first
 # EN | slot of this list that is in the room's set and holds no device.
@@ -451,65 +358,23 @@ def validate_model(model: dict) -> tuple[list, list]:
             if slot_id not in SLOTS:
                 errors.append(f"Room `{rid}`: unknown slot `{slot_id}` "
                               f"(known: {', '.join(SLOTS)})")
-
-    return errors, warnings
-
-
-def validate_layouts(model: dict) -> tuple[list, list]:
-    """
-    EN | Checks each layout against its slot set. This catches the one failure
-    EN | mode a rendered dashboard will never report: a slot present in the set
-    EN | but absent from the grid areas produces a card with a `grid-area` that
-    EN | does not exist, so the panel is simply NOT DISPLAYED — no error, no
-    EN | log, nothing. The reverse (an area with no slot) leaves a hole in the
-    EN | grid, which is visible but still unintended.
-    FR | Verifie chaque gabarit face a son jeu de tableaux. Cela attrape le seul
-    FR | mode de defaillance qu'un dashboard rendu ne signalera jamais : un
-    FR | tableau present dans le jeu mais absent des zones de grille produit une
-    FR | carte avec un `grid-area` inexistant, donc le panneau n'est tout
-    FR | simplement PAS AFFICHE — aucune erreur, aucun log, rien. L'inverse
-    FR | (une zone sans tableau) laisse un trou dans la grille, visible mais
-    FR | tout aussi involontaire.
-    """
-    errors: list = []
-    warnings: list = []
-
-    slot_sets = {**DEFAULT_SLOT_SETS, **(model.get("slot_sets") or {})}
-    layouts = {**DEFAULT_LAYOUTS, **(model.get("layouts") or {})}
-
-    # EN | Only check the sets actually used by a declared room.
-    # FR | Ne verifier que les jeux reellement utilises par une piece declaree.
-    used = {r.get("slot_set", "default") for r in (model.get("rooms") or [])}
-
-    for set_name in sorted(used):
-        if set_name not in slot_sets:
-            # EN | Already reported by validate_model / FR | Deja signale
-            continue
-        if set_name not in layouts:
-            warnings.append(
-                f"Slot set `{set_name}` has no grid layout — falling back to "
-                f"`default`, which may not match its slots")
-            continue
-
-        declared = set(slot_sets[set_name])
-        areas = set()
-        for line in layouts[set_name].get("areas", []):
-            areas.update(str(line).split())
-        areas -= NON_SLOT_AREAS
-
-        invisible = sorted(declared - areas)
-        orphan = sorted(areas - declared)
-
-        if invisible:
-            errors.append(
-                f"Slot set `{set_name}`: slot(s) {', '.join(invisible)} have no "
-                f"grid area in layout `{set_name}` — their panel would not be "
-                f"displayed at all")
-        if orphan:
-            warnings.append(
-                f"Slot set `{set_name}`: layout declares area(s) "
-                f"{', '.join(orphan)} that are not slots of the set — they "
-                f"leave an empty cell in the grid")
+        # EN | default_slot is optional (build_rooms() falls back to the
+        # EN | heaviest candidate when missing/invalid), so this is a warning,
+        # EN | not an error — a bad value degrades gracefully rather than
+        # EN | blocking the whole build over one room.
+        # FR | default_slot est optionnel (build_rooms() se replie sur le
+        # FR | candidat le plus charge si absent/invalide), donc c'est un
+        # FR | avertissement, pas une erreur — une valeur invalide degrade
+        # FR | proprement plutot que de bloquer tout le build pour une piece.
+        default_slot = room.get("default_slot")
+        if default_slot and default_slot not in SLOTS:
+            warnings.append(f"Room `{rid}`: unknown default_slot `{default_slot}` "
+                            f"(known: {', '.join(SLOTS)}) — falling back to the "
+                            f"heaviest candidate")
+        elif default_slot and set_name in slot_sets and default_slot not in slot_sets[set_name]:
+            warnings.append(f"Room `{rid}`: default_slot `{default_slot}` is not "
+                            f"in its own slot_set `{set_name}` — falling back to "
+                            f"the heaviest candidate")
 
     return errors, warnings
 
@@ -587,6 +452,157 @@ def normalise_slots(room: dict, slot_sets: dict) -> dict:
     return out
 
 
+def resolve_default_slot(requested: str | None, rendered: dict) -> str | None:
+    """
+    EN | Picks the slot that gets the privileged (1fr) band: the room's
+    EN | requested `default_slot` if it actually renders (see
+    EN | rendered_slots()), otherwise the rendered slot with the most devices
+    EN | (ties broken by SLOTS order), or None if the room renders nothing.
+    FR | Choisit le tableau qui recoit la bande privilegiee (1fr) : le
+    FR | `default_slot` demande par la piece s'il se rend reellement (voir
+    FR | rendered_slots()), sinon le tableau rendu avec le plus d'appareils
+    FR | (egalite tranchee par l'ordre de SLOTS), ou None si la piece ne rend
+    FR | rien.
+    """
+    if requested and requested in rendered:
+        return requested
+    if not rendered:
+        return None
+    ordered = sorted(rendered.values(), key=lambda s: (-len(s["entities"]), SLOTS.index(s["id"])))
+    return ordered[0]["id"]
+
+
+def rendered_slots(slots: dict, slot_set: str) -> dict:
+    """
+    EN | The subset of a room's `slots` that actually renders a panel: every
+    EN | filled slot, plus — for slot_set == 'entrance' — `switches` and
+    EN | `security` even when empty, because their content is hardcoded per
+    EN | the physical room (camera mosaic, intercom feed — see room.yaml.j2's
+    EN | `and room.slot_set == 'entrance'`-gated branches) rather than driven
+    EN | by assigned devices, so device count says nothing about whether they
+    EN | should render.
+    EN | Single source of truth for "does this slot get a grid area": every
+    EN | function below, and room.yaml.j2's/room_mobile.yaml.j2's rendering
+    EN | loop (via room.rendered_slot_ids), all consume this instead of each
+    EN | re-deriving the exemption — a slot present in one but missing from
+    EN | another is exactly the "grid-area that doesn't exist, panel silently
+    EN | not displayed" failure the old validate_layouts() existed to catch.
+    FR | Le sous-ensemble des `slots` d'une piece qui rend reellement un
+    FR | panneau : tout tableau rempli, plus — pour slot_set == 'entrance' —
+    FR | `switches` et `security` meme vides, car leur contenu est code en
+    FR | dur pour la piece physique (mosaique de cameras, flux d'interphone —
+    FR | voir les branches de room.yaml.j2 conditionnees par
+    FR | `and room.slot_set == 'entrance'`) plutot que pilote par des
+    FR | appareils assignes, donc le nombre d'appareils ne dit rien sur si
+    FR | ils doivent se rendre.
+    FR | Source unique de verite pour « ce tableau a-t-il une zone de
+    FR | grille » : chaque fonction ci-dessous, et la boucle de rendu de
+    FR | room.yaml.j2/room_mobile.yaml.j2 (via room.rendered_slot_ids),
+    FR | consomment tous ceci plutot que de redecoder chacun l'exception —
+    FR | un tableau present dans l'un mais absent d'un autre est exactement
+    FR | la panne « zone de grille inexistante, panneau silencieusement non
+    FR | affiche » que l'ancien validate_layouts() existait pour attraper.
+    """
+    exempt = slot_set == "entrance"
+    return {
+        sid: s for sid, s in slots.items()
+        if s["state"] != "empty" or (exempt and sid in ("switches", "security"))
+    }
+
+
+def compute_room_layout(rendered: dict, default_slot: str | None) -> dict:
+    """
+    EN | Computes a room's CSS grid from what it actually renders (see
+    EN | rendered_slots()). Replaces the old DEFAULT_LAYOUTS per-slot_set
+    EN | presets — see docs/Dashboard_Generator.md, "Room dashboard grid —
+    EN | dynamic slot layout" for the full design this implements.
+    EN | Every rendered, non-default slot ("secondary") is ordered by device
+    EN | count descending (ties by SLOTS order) and split into at most two
+    EN | tiers: tier A (top 2, a tall row) and tier B (next 2, a short row,
+    EN | only when 3-4 secondaries are present). A lone tier member always
+    EN | takes the full row — the weight split only matters between two
+    EN | members sharing one. default_slot always renders last, full width,
+    EN | sized 1fr so it takes whatever space is left.
+    FR | Calcule la grille CSS d'une piece a partir de ce qu'elle rend
+    FR | reellement (voir rendered_slots()). Remplace les anciens gabarits
+    FR | DEFAULT_LAYOUTS par slot_set — voir docs/Dashboard_Generator.md,
+    FR | « Room dashboard grid — dynamic slot layout » pour la conception
+    FR | complete que ceci met en oeuvre.
+    FR | Chaque tableau rendu et non-defaut (« secondaire ») est ordonne par
+    FR | nombre d'appareils decroissant (egalite par l'ordre de SLOTS) et
+    FR | reparti sur au plus deux paliers : palier A (les 2 premiers, ligne
+    FR | haute) et palier B (les 2 suivants, ligne basse, seulement quand 3-4
+    FR | secondaires sont presents). Un palier a un seul membre prend
+    FR | toujours toute la ligne — le partage par poids ne compte qu'a deux.
+    FR | default_slot est toujours rendu en dernier, pleine largeur, en 1fr
+    FR | pour prendre l'espace restant.
+    """
+    secondaries = sorted(
+        (s for s in rendered.values() if s["id"] != default_slot),
+        key=lambda s: (-len(s["entities"]), SLOTS.index(s["id"])),
+    )
+    tier_a, tier_b = secondaries[:2], secondaries[2:4]
+
+    def area_row(tier: list) -> str:
+        if len(tier) == 1:
+            return "nav " + " ".join([tier[0]["id"]] * 5)
+        total = sum(len(s["entities"]) for s in tier) or 1
+        spans = [max(1, min(4, round(5 * len(s["entities"]) / total))) for s in tier]
+        # EN | Force a clean 2-5 split when rounding leaves the pair short of
+        # EN | (or over) the 5 columns available — happens at ties (e.g. 1/1).
+        # FR | Force un partage propre a 5 colonnes quand l'arrondi laisse la
+        # FR | paire en-deca (ou au-dela) des 5 colonnes disponibles — arrive
+        # FR | en cas d'egalite (ex. 1/1).
+        if sum(spans) != 5:
+            spans[1] = max(1, min(4, 5 - spans[0]))
+            spans[0] = 5 - spans[1]
+        cells: list = []
+        for slot, span in zip(tier, spans):
+            cells += [slot["id"]] * span
+        return "nav " + " ".join(cells[:5])
+
+    rows = ["105px"]
+    areas = ["nav header header header header header"]
+
+    if tier_a:
+        rows.append("260px")
+        areas.append(area_row(tier_a))
+    if tier_b:
+        rows.append("140px")
+        areas.append(area_row(tier_b))
+    if default_slot:
+        rows.append("1fr")
+        areas.append(f"nav {default_slot} {default_slot} {default_slot} "
+                      f"{default_slot} {default_slot}")
+
+    return {"rows": " ".join(rows), "areas": areas}
+
+
+def compute_mobile_order(rendered: dict, default_slot: str | None) -> list:
+    """
+    EN | Single-column reading order for room_mobile.yaml.j2: secondaries by
+    EN | device count descending (same tie-break as compute_room_layout),
+    EN | then default_slot last — mirroring its "biggest, at the bottom"
+    EN | desktop position without needing 2-D tiering. Operates on
+    EN | rendered_slots()'s output, so the entrance switches/security
+    EN | exemption is already applied — nothing left to filter here.
+    FR | Ordre de lecture mono-colonne pour room_mobile.yaml.j2 : secondaires
+    FR | par nombre d'appareils decroissant (meme egalite que
+    FR | compute_room_layout), puis default_slot en dernier — reprend sa
+    FR | position desktop « le plus grand, en bas » sans repartition 2D.
+    FR | Opere sur la sortie de rendered_slots(), donc l'exception
+    FR | switches/security d'entrance est deja appliquee — rien a filtrer ici.
+    """
+    secondaries = sorted(
+        (s for s in rendered.values() if s["id"] != default_slot),
+        key=lambda s: (-len(s["entities"]), SLOTS.index(s["id"])),
+    )
+    order = [s["id"] for s in secondaries]
+    if default_slot and default_slot in rendered:
+        order.append(default_slot)
+    return order
+
+
 def build_rooms(model: dict, ctx_t) -> list:
     """
     EN | Expands the model's rooms into what the template needs: display name,
@@ -623,6 +639,11 @@ def build_rooms(model: dict, ctx_t) -> list:
         url_path = room.get("url_path") or f"visio-sapiens-{slug(rid)}"
         url_path_mobile = room.get("url_path_mobile") or f"{url_path}-m"
 
+        slot_set = room.get("slot_set", "default")
+        slots = normalise_slots(room, slot_sets)
+        rendered = rendered_slots(slots, slot_set)
+        default_slot = resolve_default_slot(room.get("default_slot"), rendered)
+
         rooms.append({
             "id": rid,
             "type": rtype,
@@ -630,8 +651,23 @@ def build_rooms(model: dict, ctx_t) -> list:
             "label": label,
             "name": room.get("name") or label.upper(),
             "icon": room.get("icon") or icons.get(rtype, "mdi:home-outline"),
-            "slot_set": room.get("slot_set", "default"),
-            "slots": normalise_slots(room, slot_sets),
+            "slot_set": slot_set,
+            "slots": slots,
+            # EN | Slot ids room.yaml.j2's tablet loop renders, in SLOTS
+            # EN | order — the same `rendered` set compute_room_layout() and
+            # EN | compute_mobile_order() below are built from, so the loop
+            # EN | can never diverge from what the grid actually has areas
+            # EN | for (see rendered_slots()'s docstring).
+            # FR | Ids de tableaux que la boucle tablette de room.yaml.j2
+            # FR | rend, dans l'ordre de SLOTS — le meme jeu `rendered` dont
+            # FR | sont batis compute_room_layout() et compute_mobile_order()
+            # FR | ci-dessous, donc la boucle ne peut pas diverger de ce pour
+            # FR | quoi la grille a reellement des zones (voir la docstring
+            # FR | de rendered_slots()).
+            "rendered_slot_ids": [s for s in SLOTS if s in rendered],
+            "default_slot": default_slot,
+            "layout": compute_room_layout(rendered, default_slot),
+            "slot_order_mobile": compute_mobile_order(rendered, default_slot),
             # EN | Home Assistant area id, used by anything that targets an
             # EN | area (the HOME logbook, area-scoped automations). Defaults
             # EN | to the room id; override in house.yaml when the HA area is
@@ -1197,9 +1233,6 @@ def main() -> int:
         model["design"] = {}
 
     errors, warns = validate_model(model)
-    layout_errors, layout_warns = validate_layouts(model)
-    errors += layout_errors
-    warns += layout_warns
     status["warnings"] = warns
     if warns:
         print(f"[warn] {len(warns)} point(s) to review:")
@@ -1228,14 +1261,6 @@ def main() -> int:
     model["rooms_rendered"] = rooms
     model["nav"] = build_nav(model, rooms, out_dir)
     model["slots"] = SLOTS
-    # EN | Layouts reach the template as data, so a grid can be tuned in
-    # EN | house.yaml without touching room.yaml.j2 — and so validate_layouts
-    # EN | can check the very same values the template will use.
-    # FR | Les gabarits arrivent au template comme donnee, donc une grille se
-    # FR | regle dans house.yaml sans toucher a room.yaml.j2 — et
-    # FR | validate_layouts controle exactement les valeurs que le template
-    # FR | utilisera.
-    model["layouts"] = {**DEFAULT_LAYOUTS, **(model.get("layouts") or {})}
     # EN | Cache-busting query param for the ADMIN console's wizard iframes
     # EN | (assign.html, vssp_rooms_floors.html, vssp_theme_editor.html — see
     # EN | admin.yaml.j2). Those were all served at a literal `?v=0`: once a

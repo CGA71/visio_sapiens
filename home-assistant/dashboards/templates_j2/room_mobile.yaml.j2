@@ -16,9 +16,11 @@
 # EN |   2. GRID — a single column, `minmax(0, 1fr)`, one slot per row. There
 # EN |      is no slot-set-specific layout here: with one column, a reduced
 # EN |      slot set simply means fewer rows.
-# EN |   3. READING ORDER — the tablet grid order is not the right vertical
-# EN |      order. `switches` and `sensors` come first: nobody should scroll
-# EN |      to switch on a lamp.
+# EN |   3. READING ORDER — secondary slots (by device count, heaviest
+# EN |      first), then the room's `default_slot` last — mirrors its
+# EN |      "biggest, at the bottom" desktop position without needing 2-D
+# EN |      tiering. Computed by compute_mobile_order() in
+# EN |      generate_dashboards.py, not hardcoded here.
 # EN |   4. TYPE SCALE — smaller titles, shorter lists, one-column mosaics.
 # FR | POURQUOI UN FICHIER SEPARE PLUTOT QUE DES BRANCHES DANS room.yaml.j2
 # FR | Un telephone n'est pas une tablette etroite. Quatre choses different,
@@ -28,27 +30,29 @@
 # FR |   2. GRILLE — une seule colonne, `minmax(0, 1fr)`, un tableau par
 # FR |      ligne. Aucune disposition propre au jeu de tableaux ici : avec une
 # FR |      colonne, un jeu reduit signifie simplement moins de lignes.
-# FR |   3. ORDRE DE LECTURE — l'ordre de la grille tablette n'est pas le bon
-# FR |      ordre vertical. `switches` et `sensors` passent en premier :
-# FR |      personne ne doit scroller pour allumer une lampe.
+# FR |   3. ORDRE DE LECTURE — tableaux secondaires (par nombre d'appareils,
+# FR |      le plus charge en premier), puis le `default_slot` de la piece en
+# FR |      dernier — reprend sa position desktop « le plus grand, en bas »
+# FR |      sans repartition 2D. Calcule par compute_mobile_order() dans
+# FR |      generate_dashboards.py, pas code en dur ici.
 # FR |   4. ECHELLE TYPO — titres plus petits, listes plus courtes,
 # FR |      mosaiques sur une colonne.
 #
-# EN | Slot states (filled / empty / filler) are decided by
-# EN | generate_dashboards.py and behave exactly as on tablet.
-# FR | Les etats des tableaux (filled / empty / filler) sont decides par
-# FR | generate_dashboards.py et se comportent exactement comme en tablette.
+# EN | Slot states (filled / empty) are decided by generate_dashboards.py and
+# EN | behave exactly as on tablet — an empty slot is absent entirely, no
+# EN | placeholder card.
+# FR | Les etats des tableaux (filled / empty) sont decides par
+# FR | generate_dashboards.py et se comportent exactement comme en tablette —
+# FR | un tableau vide est totalement absent, pas de carte de remplacement.
 ########################################################################
 
-{# EN | Vertical reading order — deliberately NOT the tablet grid order.
-    FR | Ordre de lecture vertical — volontairement PAS l'ordre de la grille
-    FR | tablette. #}
-{% set mobile_order = ['switches', 'sensors', 'security', 'appliances', 'infrastructure'] %}
-{% set shown = [] %}
-{% for slot_id in mobile_order if slot_id in room.slots %}
-{% set _ = shown.append(slot_id) %}
-{% endfor %}
-{% set filler_media = house.filler_animation | default('/local/vssp/images/vssp_loop.gif', true) %}
+{# EN | Vertical reading order comes pre-computed and already
+    EN | empty-filtered from generate_dashboards.py (compute_mobile_order()) —
+    EN | see the READING ORDER note above.
+    FR | L'ordre de lecture vertical arrive deja calcule et deja filtre des
+    FR | tableaux vides depuis generate_dashboards.py (compute_mobile_order())
+    FR | — voir la note ORDRE DE LECTURE ci-dessus. #}
+{% set shown = room.slot_order_mobile %}
 
 title: {{ room.label }}
 theme: {{ house.theme }}
@@ -139,58 +143,7 @@ views:
                 ha-card { padding: 0 0 6px 0 !important; }
                 #name { font-size: 12px !important; letter-spacing: 1px !important; }
 
-{% if slot.state == 'empty' %}
-          - type: custom:button-card
-            show_icon: true
-            show_name: false
-            show_state: false
-            show_label: true
-            icon: mdi:tray-remove
-            label: "{{ t('slot.empty') }}"
-            tap_action:
-              action: none
-            styles:
-              card:
-                - background: transparent
-                - box-shadow: none
-                - border: none
-                - padding: 10px 0
-                - cursor: default
-                - pointer-events: none
-              icon:
-                - color: rgba(143,182,201,0.35)
-                - "--mdc-icon-size": 28px
-              label:
-                - color: rgba(143,182,201,0.55)
-                - font-size: 11px
-                - margin-top: 6px
-
-{% elif slot.state == 'filler' %}
-          - type: custom:button-card
-            show_icon: false
-            show_name: false
-            show_state: false
-            tap_action:
-              action: none
-            custom_fields:
-              anim: >
-                <img src="{{ filler_media }}"
-                     style="width:100%;height:120px;object-fit:cover;border-radius:12px;opacity:.75;mix-blend-mode:screen;" />
-            styles:
-              card:
-                - background: transparent
-                - box-shadow: none
-                - border: none
-                - padding: 0
-                - cursor: default
-                - pointer-events: none
-              grid:
-                - grid-template-areas: '"anim"'
-              custom_fields:
-                anim:
-                  - width: 100%
-
-{% elif slot_id == 'appliances' %}
+{% if slot_id in ['appliances', 'sensors'] %}
           # EN | Line by line with an internal scrollbar, capped shorter than
           # EN | on tablet: on a phone the panel competes with the whole page
           # EN | for vertical space, and a 320px list would push everything

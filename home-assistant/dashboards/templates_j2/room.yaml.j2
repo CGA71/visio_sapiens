@@ -33,21 +33,24 @@
 #
 # EN | SLOT STATES — set by generate_dashboards.py, not decided here:
 # EN |   filled  the slot holds at least one device
-# EN |   empty   the slot is in the room's set but holds nothing yet
-# EN |           -> shows slot.empty, because a device may still be added
-# EN |   filler  empty, and carries the Visio Sapiens animation (one per
-# EN |           dashboard at most — see FILLER_PRIORITY; currently empty,
-# EN |           so no slot actually reaches this state right now)
+# EN |   empty   the slot holds nothing. NOT rendered — no placeholder card,
+# EN |           no grid area, dropped entirely (see compute_room_layout() in
+# EN |           generate_dashboards.py). The one exception: a room's
+# EN |           `entrance`-preset `switches`/`security` slots always render,
+# EN |           even empty — their content is hardcoded per the physical
+# EN |           room (cameras, intercom), not device-driven.
 # EN | A slot OUTSIDE the room's set never reaches this template: it is
 # EN | absent from room.slots and absent from the grid areas below, so it
 # EN | collapses and its neighbours expand.
 # FR | ETATS DES TABLEAUX — poses par generate_dashboards.py, pas decides ici :
 # FR |   filled  le tableau contient au moins un appareil
-# FR |   empty   le tableau est dans le jeu de la piece mais ne contient rien
-# FR |           -> affiche slot.empty, car un appareil peut encore etre ajoute
-# FR |   filler  vide, et porte l'animation Visio Sapiens (au plus une par
-# FR |           dashboard — voir FILLER_PRIORITY ; actuellement vide, donc
-# FR |           aucun tableau n'atteint reellement cet etat pour l'instant)
+# FR |   empty   le tableau ne contient rien. PAS rendu — ni carte de
+# FR |           remplacement, ni zone de grille, totalement absent (voir
+# FR |           compute_room_layout() dans generate_dashboards.py). Seule
+# FR |           exception : les tableaux `switches`/`security` d'une piece
+# FR |           au preset `entrance` sont toujours rendus, meme vides — leur
+# FR |           contenu est code en dur pour la piece physique (cameras,
+# FR |           interphone), pas pilote par des appareils assignes.
 # FR | Un tableau HORS du jeu de la piece n'atteint jamais ce template : il
 # FR | est absent de room.slots et absent des grid areas ci-dessous, donc il
 # FR | s'effondre et ses voisins s'etendent.
@@ -71,22 +74,22 @@
    FR | fermant le commentaire d'en-tete — la cle s'est retrouvee dans un
    FR | commentaire et chaque dashboard genere a perdu son titre en silence. #}
 {# =====================================================================
-    EN | GRID LAYOUT — comes from the data (house.yaml `layouts:`, merged
-    EN | with the defaults in generate_dashboards.py), NOT from this file.
-    EN | Two reasons: a grid can be tuned without touching the template, and
-    EN | validate_layouts() checks the very same values before rendering.
-    EN | That check matters more than it looks: a slot present in the set but
-    EN | absent from the areas below would produce a card whose grid-area does
-    EN | not exist — the panel would simply not be displayed, silently.
-    FR | GABARIT DE GRILLE — vient de la donnee (house.yaml `layouts:`,
-    FR | fusionne avec les defauts de generate_dashboards.py), PAS de ce
-    FR | fichier. Deux raisons : une grille se regle sans toucher au template,
-    FR | et validate_layouts() controle exactement ces valeurs avant le rendu.
-    FR | Ce controle compte plus qu'il n'y parait : un tableau present dans le
-    FR | jeu mais absent des zones ci-dessous produirait une carte au
-    FR | grid-area inexistant — le panneau ne s'afficherait pas, en silence.
+    EN | GRID LAYOUT — computed per room by compute_room_layout() in
+    EN | generate_dashboards.py from what the room actually contains (device
+    EN | counts + its `default_slot`), NOT a fixed preset. See
+    EN | docs/Dashboard_Generator.md, "Room dashboard grid — dynamic slot
+    EN | layout". Areas are generated FROM the present slots, so a slot with
+    EN | no grid area can no longer happen by construction — nothing left to
+    EN | validate here at render time.
+    FR | GABARIT DE GRILLE — calcule par piece par compute_room_layout() dans
+    FR | generate_dashboards.py a partir de ce que la piece contient
+    FR | reellement (nombre d'appareils + son `default_slot`), pas un preset
+    FR | fixe. Voir docs/Dashboard_Generator.md, « Room dashboard grid —
+    FR | dynamic slot layout ». Les zones sont generees A PARTIR des tableaux
+    FR | presents, donc un tableau sans zone de grille ne peut plus arriver
+    FR | par construction — rien a valider ici au rendu.
     ================================================================== #}
-{% set layout = layouts.get(room.slot_set, layouts['default']) %}
+{% set layout = room.layout %}
 {% set filler_media = house.filler_animation | default('/local/vssp/images/vssp_loop.gif', true) %}
 
 title: {{ room.label }}
@@ -144,9 +147,8 @@ views:
 {% include '_nav.j2' %}
 {% endif %}
 
-{% set mobile_order = ['sensors', 'switches', 'security', 'appliances', 'infrastructure'] %}
-{% set slot_order = mobile_order if format == 'mobile' else slots %}
-{% for slot_id in slot_order if slot_id in room.slots %}
+{% set slot_order = room.slot_order_mobile if format == 'mobile' else slots %}
+{% for slot_id in slot_order if slot_id in room.rendered_slot_ids %}
 {% set slot = room.slots[slot_id] %}
       # ═══════════════════════════════════════════════════════════════
       # EN | SLOT {{ loop.index }} — {{ slot_id | upper }} ({{ slot.state }})
@@ -247,8 +249,13 @@ views:
                   - width: 100%
                   - height: 100%
 
-{% elif slot_id == 'appliances' %}
-          # EN | LINE BY LINE, WITH A SCROLLBAR.
+{% elif slot_id in ['appliances', 'sensors'] %}
+          # EN | LINE BY LINE, WITH A SCROLLBAR. Shared with `sensors` — same
+          # EN | idiom, this block has no appliances-specific content, it
+          # EN | only ever reads `slot.entities`/`format`.
+          # FR | LIGNE PAR LIGNE, AVEC UN ASCENSEUR. Partage avec `sensors` —
+          # FR | meme idiome, ce bloc n'a rien de propre a appliances, il ne
+          # FR | lit que `slot.entities`/`format`.
           # EN | Same idiom as the ENERGY device list: the scrolling lives
           # EN | INSIDE a single button-card whose custom field has a fixed
           # EN | height and overflow-y. button-card's own style engine handles

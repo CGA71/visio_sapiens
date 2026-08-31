@@ -26,7 +26,7 @@
 # EN | INPUT — json, either from a file or base64 on the command line:
 # FR | ENTREE — json, depuis un fichier ou en base64 en ligne de commande :
 #   {"rooms": [{"area_id": "living_room_ab12", "name": "Salon",
-#               "slot_set": "default"}, ...]}
+#               "slot_set": "default", "default_slot": "security"}, ...]}
 #
 # EN | `slot_set` is OPTIONAL per room. When present and one of
 # EN | KNOWN_SLOT_SETS, it is trusted over this script's own name-keyword
@@ -35,6 +35,14 @@
 # EN | getting whatever the room's name happens to guess to. Absent,
 # EN | unknown, or blank: falls back to the guess (new room) or is left
 # EN | untouched (existing room) exactly as before this existed.
+# EN | `default_slot` is OPTIONAL too, but behaves slightly differently: it
+# EN | has no name-keyword guess to fall back to (nothing about a room's name
+# EN | says which of its panels should get the most screen space), so a
+# EN | missing key just leaves the existing value untouched, while a present
+# EN | key — including an explicit "" for "let the generator pick" — is
+# EN | always applied when it's a member of KNOWN_SLOTS or empty. See
+# EN | sync_rooms()'s docstring for the full "key absent vs empty value"
+# EN | distinction this requires.
 # FR | `slot_set` est OPTIONNEL par piece. Present et dans KNOWN_SLOT_SETS,
 # FR | il prime sur l estimation par mot-cle du nom que fait ce script
 # FR | (SLOT_SET_KEYWORDS plus bas) — c est ce qui permet a l administrateur
@@ -42,6 +50,15 @@
 # FR | lieu de toujours recevoir ce que le nom de la piece devine. Absent,
 # FR | inconnu ou vide : repli sur l estimation (piece nouvelle) ou laisse
 # FR | intact (piece existante), exactement comme avant que ceci existe.
+# FR | `default_slot` est OPTIONNEL aussi, mais se comporte legerement
+# FR | different : il n a pas d estimation par mot-cle vers laquelle se
+# FR | replier (rien dans le nom d une piece ne dit lequel de ses tableaux
+# FR | doit recevoir le plus d espace ecran), donc une cle absente laisse
+# FR | simplement la valeur existante intacte, alors qu une cle presente —
+# FR | y compris un "" explicite pour « laisser le generateur choisir » —
+# FR | est toujours appliquee des lors qu elle est un membre de KNOWN_SLOTS
+# FR | ou vide. Voir la docstring de sync_rooms() pour la distinction
+# FR | complete « cle absente contre valeur vide » que cela impose.
 #
 # EN | NEVER touches the `slots:` of a room it keeps. A room already linked
 # EN | to an area_id keeps its id, type and slots untouched — this script
@@ -186,6 +203,16 @@ SLOT_SET_KEYWORDS = [
 # FR | une valeur absurde directement dans house.yaml.
 KNOWN_SLOT_SETS = {"default", "toilet", "garden", "utility", "entrance", "minimal", "computer"}
 
+# EN | Same idea, for `default_slot` — same identifiers as SLOTS in
+# EN | generate_dashboards.py. Empty string is valid (means "let
+# EN | resolve_default_slot() pick automatically"), unlike KNOWN_SLOT_SETS
+# EN | which always needs a real value.
+# FR | Meme principe, pour `default_slot` — memes identifiants que SLOTS
+# FR | dans generate_dashboards.py. Chaine vide valide (signifie « laisser
+# FR | resolve_default_slot() choisir automatiquement »), contrairement a
+# FR | KNOWN_SLOT_SETS qui a toujours besoin d une vraie valeur.
+KNOWN_SLOTS = {"sensors", "switches", "appliances", "security", "infrastructure"}
+
 
 def normalize(s: str) -> str:
     """EN | Lowercase, strip accents/punctuation, collapse whitespace.
@@ -234,8 +261,8 @@ def sync_rooms(model, incoming: list) -> dict:
     """
     EN | Returns a summary:
     EN |   {"linked": [...], "created": [...], "renamed": [...],
-    EN |    "slot_set_changed": [...], "removed": [...], "orphaned": [...],
-    EN |    "unchanged": n}.
+    EN |    "slot_set_changed": [...], "default_slot_changed": [...],
+    EN |    "removed": [...], "orphaned": [...], "unchanged": n}.
     EN | Mutates model["rooms"] in place: new entries are appended, a LINKED
     EN | room missing from `incoming` is dropped (see the module docstring
     EN | for why that is safe here), an UNLINKED room still unmatched after
@@ -243,16 +270,18 @@ def sync_rooms(model, incoming: list) -> dict:
     EN | and `name` is kept up to date on every room this pass touches — so
     EN | a rename in the HA Area registry reaches the rendered navigation
     EN | rail on the next sync, the same way a deletion does. `id` and `type`
-    EN | are never rewritten once set. `slot_set` is a live mirror of
-    EN | whatever the incoming payload explicitly sends (see KNOWN_SLOT_SETS
-    EN | above) — this is the one field the admin edits by hand in PIECES &
-    EN | ETAGES, so unlike `id`/`type` it is expected to change after
-    EN | creation. `slots` (the actual device assignments) is never touched
-    EN | here at all — that is ASSIGN's job, not this script's.
+    EN | are never rewritten once set. `slot_set` and `default_slot` are a
+    EN | live mirror of whatever the incoming payload explicitly sends (see
+    EN | KNOWN_SLOT_SETS/KNOWN_SLOTS above) — these are the fields the admin
+    EN | edits by hand in PIECES & ETAGES, so unlike `id`/`type` they are
+    EN | expected to change after creation. `default_slot` alone accepts an
+    EN | explicit "" as a real, applyable value — see the module docstring's
+    EN | note on it. `slots` (the actual device assignments) is never
+    EN | touched here at all — that is ASSIGN's job, not this script's.
     FR | Renvoie un resume :
     FR |   {"linked": [...], "created": [...], "renamed": [...],
-    FR |    "slot_set_changed": [...], "removed": [...], "orphaned": [...],
-    FR |    "unchanged": n}.
+    FR |    "slot_set_changed": [...], "default_slot_changed": [...],
+    FR |    "removed": [...], "orphaned": [...], "unchanged": n}.
     FR | Modifie model["rooms"] sur place : les nouvelles entrees sont
     FR | ajoutees, une piece LIEE absente de `incoming` est retiree (voir la
     FR | docstring du module pour pourquoi c est sans risque ici), une piece
@@ -278,7 +307,7 @@ def sync_rooms(model, incoming: list) -> dict:
     } - {""}
 
     summary = {"linked": [], "created": [], "renamed": [], "slot_set_changed": [],
-               "removed": [], "orphaned": [], "unchanged": 0}
+               "default_slot_changed": [], "removed": [], "orphaned": [], "unchanged": 0}
 
     # EN | Prune first: a room whose area_id no longer appears in the fresh
     # EN | registry snapshot was deleted in HA. Doing this before the
@@ -312,6 +341,27 @@ def sync_rooms(model, incoming: list) -> dict:
         if incoming_slot_set not in KNOWN_SLOT_SETS:
             incoming_slot_set = None
 
+        # EN | default_slot differs from slot_set in one way: "" is a
+        # EN | legitimate, applyable value (means "let resolve_default_slot()
+        # EN | pick automatically"), not "field absent, ignore it". So the key
+        # EN | must be distinguished from its value — an old browser tab that
+        # EN | never sends `default_slot` at all must leave the room's
+        # EN | existing value untouched, while a tab that deliberately sends
+        # EN | "" (the wizard's "(automatic)" option) must be able to clear a
+        # EN | previously-set value.
+        # FR | default_slot differe de slot_set sur un point : "" est une
+        # FR | valeur legitime, applicable (signifie « laisser
+        # FR | resolve_default_slot() choisir automatiquement »), pas
+        # FR | « champ absent, ignorer ». La cle doit donc etre distinguee de
+        # FR | sa valeur — un onglet perime qui n envoie jamais `default_slot`
+        # FR | du tout doit laisser la valeur existante de la piece intacte,
+        # FR | alors qu un onglet qui envoie deliberement "" (l option
+        # FR | « automatique » de l assistant) doit pouvoir effacer une
+        # FR | valeur precedemment posee.
+        default_slot_present = "default_slot" in area
+        incoming_default_slot = (area.get("default_slot") or "").strip()
+        default_slot_valid = not incoming_default_slot or incoming_default_slot in KNOWN_SLOTS
+
         if area_id in by_area_id:
             room = by_area_id[area_id]
             touched = False
@@ -328,6 +378,14 @@ def sync_rooms(model, incoming: list) -> dict:
                 summary["slot_set_changed"].append(
                     {"id": room.get("id"), "area_id": area_id,
                      "from": old_slot_set, "to": incoming_slot_set})
+                touched = True
+            if (default_slot_present and default_slot_valid
+                    and incoming_default_slot != room.get("default_slot", "")):
+                old_default_slot = room.get("default_slot", "")
+                room["default_slot"] = incoming_default_slot
+                summary["default_slot_changed"].append(
+                    {"id": room.get("id"), "area_id": area_id,
+                     "from": old_default_slot, "to": incoming_default_slot})
                 touched = True
             if not touched:
                 summary["unchanged"] += 1
@@ -349,6 +407,13 @@ def sync_rooms(model, incoming: list) -> dict:
                 summary["slot_set_changed"].append(
                     {"id": match.get("id"), "area_id": area_id,
                      "from": old_slot_set, "to": incoming_slot_set})
+            if (default_slot_present and default_slot_valid
+                    and incoming_default_slot != match.get("default_slot", "")):
+                old_default_slot = match.get("default_slot", "")
+                match["default_slot"] = incoming_default_slot
+                summary["default_slot_changed"].append(
+                    {"id": match.get("id"), "area_id": area_id,
+                     "from": old_default_slot, "to": incoming_default_slot})
             unlinked.remove(match)
             by_area_id[area_id] = match
             summary["linked"].append({"id": match.get("id"), "area_id": area_id, "name": name})
@@ -356,6 +421,7 @@ def sync_rooms(model, incoming: list) -> dict:
 
         rtype = guess(name_norm, TYPE_KEYWORDS) or slugify(name, taken_ids)
         slot_set = incoming_slot_set or guess(name_norm, SLOT_SET_KEYWORDS) or "default"
+        default_slot = incoming_default_slot if default_slot_valid else ""
         rid = slugify(name, taken_ids)
         taken_ids.add(rid)
 
@@ -363,6 +429,7 @@ def sync_rooms(model, incoming: list) -> dict:
         new_room["id"] = rid
         new_room["type"] = rtype
         new_room["slot_set"] = slot_set
+        new_room["default_slot"] = default_slot
         new_room["area_id"] = area_id
         new_room["name"] = name
         new_room["slots"] = CommentedMap()
@@ -419,35 +486,46 @@ def main() -> int:
         "dry_run": args.dry_run,
         "timestamp": _dt.datetime.now().isoformat(timespec="seconds"),
         **summary,
-        # EN | Full snapshot of every room's current slot_set, written on
-        # EN | EVERY run regardless of what changed this pass (unlike the
-        # EN | summary lists above, which only ever list this pass's
-        # EN | actions). vssp_rooms_floors.html reads this to pre-fill each
-        # EN | room's slot_set <select> with the real value instead of
-        # EN | always defaulting to "default" — see applyDraftSlotSets()
-        # EN | there.
-        # FR | Instantane complet du slot_set actuel de chaque piece, ecrit
-        # FR | a CHAQUE execution quel que soit ce qui a change cette passe
-        # FR | (contrairement aux listes du resume ci-dessus, qui ne listent
-        # FR | jamais que les actions de cette passe). vssp_rooms_floors.html
-        # FR | lit ceci pour pre-remplir le <select> slot_set de chaque
-        # FR | piece avec la vraie valeur au lieu de toujours retomber sur
-        # FR | "default" — voir applyDraftSlotSets() la-bas.
+        # EN | Full snapshot of every room's current slot_set and
+        # EN | default_slot, written on EVERY run regardless of what changed
+        # EN | this pass (unlike the summary lists above, which only ever
+        # EN | list this pass's actions). vssp_rooms_floors.html reads this to
+        # EN | pre-fill each room's slot_set/default_slot <select> with the
+        # EN | real value instead of always defaulting to "default"/""
+        # EN | — see applyDraftSlotSets() there. default_slot is always
+        # EN | present as a key, even when "" (auto) — that presence is what
+        # EN | applyDraftSlotSets() uses to tell "the room has no priority
+        # EN | slot" apart from "this snapshot predates default_slot".
+        # FR | Instantane complet du slot_set et du default_slot actuels de
+        # FR | chaque piece, ecrit a CHAQUE execution quel que soit ce qui a
+        # FR | change cette passe (contrairement aux listes du resume
+        # FR | ci-dessus, qui ne listent jamais que les actions de cette
+        # FR | passe). vssp_rooms_floors.html lit ceci pour pre-remplir les
+        # FR | <select> slot_set/default_slot de chaque piece avec la vraie
+        # FR | valeur au lieu de toujours retomber sur "default"/"" — voir
+        # FR | applyDraftSlotSets() la-bas. default_slot est toujours present
+        # FR | comme cle, meme quand "" (auto) — cette presence est ce
+        # FR | qu utilise applyDraftSlotSets() pour distinguer « la piece n a
+        # FR | pas de tableau prioritaire » de « cet instantane precede
+        # FR | default_slot ».
         "rooms": [
             {"id": r.get("id"), "area_id": r.get("area_id"),
-             "name": r.get("name"), "slot_set": r.get("slot_set")}
+             "name": r.get("name"), "slot_set": r.get("slot_set"),
+             "default_slot": r.get("default_slot", "")}
             for r in model.get("rooms") or []
         ],
     }
 
     changed = (summary["linked"] or summary["created"] or summary["renamed"]
-               or summary["slot_set_changed"] or summary["removed"] or summary["orphaned"])
+               or summary["slot_set_changed"] or summary["default_slot_changed"]
+               or summary["removed"] or summary["orphaned"])
 
     if args.dry_run:
         print(f"[dry-run] {len(summary['linked'])} would be linked, "
               f"{len(summary['created'])} would be created, "
               f"{len(summary['renamed'])} would be renamed, "
               f"{len(summary['slot_set_changed'])} slot_set(s) would change, "
+              f"{len(summary['default_slot_changed'])} default_slot(s) would change, "
               f"{len(summary['removed'])} would be removed, "
               f"{len(summary['orphaned'])} would be orphaned, "
               f"{summary['unchanged']} already in sync")
@@ -477,6 +555,7 @@ def main() -> int:
               f"{len(summary['created'])} room(s) created, "
               f"{len(summary['renamed'])} room(s) renamed, "
               f"{len(summary['slot_set_changed'])} slot_set(s) changed, "
+              f"{len(summary['default_slot_changed'])} default_slot(s) changed, "
               f"{len(summary['removed'])} room(s) removed, "
               f"{len(summary['orphaned'])} room(s) orphaned")
         for r in summary["linked"]:
@@ -487,6 +566,8 @@ def main() -> int:
             print(f"       renamed {r['id']} ({r['area_id']}) {r['from']!r} -> {r['to']!r}")
         for r in summary["slot_set_changed"]:
             print(f"       slot_set {r['id']} ({r['area_id']}) {r['from']!r} -> {r['to']!r}")
+        for r in summary["default_slot_changed"]:
+            print(f"       default_slot {r['id']} ({r['area_id']}) {r['from']!r} -> {r['to']!r}")
         for r in summary["removed"]:
             print(f"       removed {r['id']} ({r['area_id']}) — area no longer in Home Assistant")
         for r in summary["orphaned"]:
