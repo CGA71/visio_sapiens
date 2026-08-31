@@ -357,6 +357,7 @@ const I18N = {
     diff_upd_floor: "~ étage",
     diff_add_room: "+ pièce",
     diff_upd_room: "~ pièce",
+    diff_upd_slotset: "~ tableaux",
     diff_del_room: "− pièce",
     diff_del_floor: "− étage",
     diff_no_floor: "sans étage",
@@ -436,6 +437,7 @@ const I18N = {
     diff_upd_floor: "~ floor",
     diff_add_room: "+ room",
     diff_upd_room: "~ room",
+    diff_upd_slotset: "~ slots",
     diff_del_room: "− room",
     diff_del_floor: "− floor",
     diff_no_floor: "no floor",
@@ -612,6 +614,7 @@ function buildDraftFromRegistry(){
       floor_id: f.floor_id, name: f.name, level: f.level ?? 0,
       rooms: state.ha.areas.filter(a => a.floor_id === f.floor_id)
         .map(a => ({area_id:a.area_id, name:a.name, slot_set: "default", default_slot: "",
+          _baseSlotSet: "default", _baseDefaultSlot: "",
           color: state.colors[a.area_id] || DEFAULT_COLOR}))
     }));
 
@@ -622,6 +625,7 @@ function buildDraftFromRegistry(){
     floors.push({
       floor_id: null, name: "Non classé", level: floors.length,
       rooms: orphans.map(a => ({area_id:a.area_id, name:a.name, slot_set: "default", default_slot: "",
+        _baseSlotSet: "default", _baseDefaultSlot: "",
         color: state.colors[a.area_id] || DEFAULT_COLOR}))
     });
   }
@@ -638,7 +642,7 @@ function buildDraftFromRegistry(){
 // ═══════════════════════════════════════════════════════════════════════════
 function computeDiff(){
   const d = {floorsCreate:[], floorsUpdate:[], floorsDelete:[],
-             areasCreate:[], areasUpdate:[], areasDelete:[]};
+             areasCreate:[], areasUpdate:[], areasDelete:[], slotSetChanges:[]};
 
   const draftFloorIds = new Set(state.draft.floors.map(f => f.floor_id).filter(Boolean));
   const draftAreaIds  = new Set();
@@ -697,8 +701,31 @@ function computeDiff(){
     if (!draftAreaIds.has(a.area_id)) d.areasDelete.push(a);
   });
 
+  // EN | slot_set / default_slot never touch the HA registry, so nothing
+  // EN | above ever notices them — without this, editing these two <select>
+  // EN | still showed "Apply (0)", the exact same label as "nothing pending",
+  // EN | so there was no signal that Apply still had to be clicked to save
+  // EN | them. computeDiff() is the only place both the button label and the
+  // EN | confirm() dialog read from, so it has to know about these too.
+  // FR | slot_set / default_slot ne touchent jamais le registre HA, donc rien
+  // FR | ci-dessus ne les remarque — sans ceci, modifier ces deux menus
+  // FR | affichait quand meme "Apply (0)", exactement le meme libelle que
+  // FR | "rien en attente", donc aucun signal qu il fallait quand meme
+  // FR | cliquer Apply pour les enregistrer. computeDiff() est le seul
+  // FR | endroit dont le libelle du bouton et la boite confirm() se
+  // FR | nourrissent, donc il doit aussi les connaitre.
+  state.draft.floors.forEach(f => f.rooms.forEach(r => {
+    if (!r.name.trim()) return;
+    const slotSet = r.slot_set || "default";
+    const defaultSlot = r.default_slot || "";
+    if (slotSet !== (r._baseSlotSet ?? "default") || defaultSlot !== (r._baseDefaultSlot ?? "")){
+      d.slotSetChanges.push({area_id:r.area_id, name:r.name.trim()});
+    }
+  }));
+
   d.total = d.floorsCreate.length + d.floorsUpdate.length + d.floorsDelete.length
-          + d.areasCreate.length + d.areasUpdate.length + d.areasDelete.length;
+          + d.areasCreate.length + d.areasUpdate.length + d.areasDelete.length
+          + d.slotSetChanges.length;
   return d;
 }
 
@@ -785,6 +812,7 @@ async function applyDiff(){
 
     localStorage.setItem(LS_COLORS, JSON.stringify(state.colors));
     await loadRegistry();
+    applyPendingLocalSlotSets(pendingSlotSets, pendingDefaultSlots);
     saveHouse();
     // EN | Best-effort: the HA registry write above already succeeded and
     // EN | is the part that must not be reported as failed — see
@@ -875,6 +903,35 @@ function currentDefaultSlotByName(){
   }));
   return m;
 }
+// EN | Re-stamps the just-captured slot_set/default_slot choices onto the
+// EN | freshly rebuilt draft right after loadRegistry() — which always resets
+// EN | both to their "default"/"" placeholders, HA's Area registry having no
+// EN | such concept. Without this, the two <select> visibly snapped back to
+// EN | "default" / "(automatic)" the instant Apply finished, even though the
+// EN | choice was about to be (or just was) written to house.yaml — reading
+// EN | as "my choice wasn't saved" when it actually was, just not reflected
+// EN | on screen yet. The real confirmation still comes from applyDraftSlotSets()
+// EN | re-reading the status file on the next connect()/reload().
+// FR | Ré-applique les choix de slot_set/default_slot tout juste captures sur
+// FR | le brouillon fraichement reconstruit apres loadRegistry() — qui remet
+// FR | toujours les deux aux placeholders "default"/"", le registre Zones HA
+// FR | n'ayant pas cette notion. Sans ceci, les deux menus revenaient
+// FR | visiblement a "default" / "(automatique)" des la fin d'Apply, alors
+// FR | meme que le choix etait en train d'etre (ou venait d'etre) ecrit dans
+// FR | house.yaml — se lisant comme "mon choix n'a pas ete enregistre" alors
+// FR | qu'il l'a ete, simplement pas encore reflete a l'ecran. La confirmation
+// FR | reelle vient toujours de applyDraftSlotSets() relisant le fichier de
+// FR | statut au prochain connect()/reload().
+function applyPendingLocalSlotSets(byName, byNameDefault){
+  state.draft.floors.forEach(f => f.rooms.forEach(r => {
+    const name = r.name.trim();
+    if (!name) return;
+    if (name in byName) r.slot_set = byName[name];
+    if (name in byNameDefault) r.default_slot = byNameDefault[name];
+    r._baseSlotSet = r.slot_set;
+    r._baseDefaultSlot = r.default_slot;
+  }));
+}
 async function syncRoomsToModel(pendingSlotSetByName, pendingDefaultSlotByName){
   const byName = pendingSlotSetByName || {};
   const byAreaId = currentSlotSetMap();
@@ -932,6 +989,16 @@ async function applyDraftSlotSets(){
     state.draft.floors.forEach(f => f.rooms.forEach(r => {
       if (r.area_id && byAreaId[r.area_id]) r.slot_set = byAreaId[r.area_id];
       if (r.area_id && r.area_id in byAreaIdDefault) r.default_slot = byAreaIdDefault[r.area_id];
+      // EN | This IS the persisted state, whether or not the status file had
+      // EN | an entry for this room — record it as the baseline computeDiff()
+      // EN | compares against, so an unrelated structural diff doesn't also
+      // EN | flag these two fields as "changed".
+      // FR | Ceci EST l etat persiste, que le fichier de statut ait ou non
+      // FR | une entree pour cette piece — l enregistrer comme reference a
+      // FR | laquelle computeDiff() compare, pour qu un diff structurel sans
+      // FR | rapport ne signale pas aussi ces deux champs comme "modifies".
+      r._baseSlotSet = r.slot_set;
+      r._baseDefaultSlot = r.default_slot;
     }));
   } catch (e) { /* best-effort — see comment above */ }
 }
@@ -1398,6 +1465,7 @@ function renderDiff(){
   d.floorsUpdate.forEach(f => h += `<div class="upd">${t("diff_upd_floor")} &nbsp;${esc(f.name)}</div>`);
   d.areasCreate.forEach(a  => h += `<div class="add">${t("diff_add_room")} &nbsp;${esc(a.name)} <span style="color:var(--mut)">(${esc(a.floorName||t("diff_no_floor"))})</span></div>`);
   d.areasUpdate.forEach(a  => h += `<div class="upd">${t("diff_upd_room")} &nbsp;${esc(a.name)} <span style="color:var(--mut)">(${esc(a.floorName||t("diff_no_floor"))})</span></div>`);
+  d.slotSetChanges.forEach(r => h += `<div class="upd">${t("diff_upd_slotset")} &nbsp;${esc(r.name)}</div>`);
   d.areasDelete.forEach(a  => {
     const n = (state.ha.counts[a.area_id]||{total:0}).total;
     h += `<div class="del">${t("diff_del_room")} &nbsp;${esc(a.name)}${n?`<span style="color:var(--mut)">${t("diff_entities_unassigned",{n})}</span>`:""}</div>`;
