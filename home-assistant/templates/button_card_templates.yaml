@@ -60,6 +60,7 @@ vssp_title:
       - letter-spacing: 3px
       - font-family: "Orbitron, sans-serif"
       - justify-self: start
+      - text-align: left
       - padding-left: 4px
 
 # ---------------------------------------------------------------------
@@ -125,11 +126,13 @@ vssp_page_header:
       - font-weight: 700
       - letter-spacing: 1px
       - justify-self: start
+      - text-align: left
       - font-family: "Orbitron, sans-serif"
     label:
       - color: var(--secondary-text-color, #8FB6C9)
       - font-size: 12px
       - justify-self: start
+      - text-align: left
 
 # ---------------------------------------------------------------------
 # EN | HUD header — alarm status cell. Bind `entity` to your
@@ -204,10 +207,12 @@ vssp_alarm_status:
       - font-weight: 700
       - letter-spacing: 1px
       - justify-self: start
+      - text-align: left
     label:
       - color: var(--secondary-text-color, #8FB6C9)
       - font-size: 11px
       - justify-self: start
+      - text-align: left
 
 # ---------------------------------------------------------------------
 # EN | HUD header — circular "OS" avatar / logo (right end of the header bar).
@@ -279,11 +284,13 @@ vssp_sidebar_logo:
       - letter-spacing: 2px
       - font-family: "Orbitron, sans-serif"
       - justify-self: start
+      - text-align: left
     label:
       - color: "#56707E"
       - font-size: 10px
       - letter-spacing: 1px
       - justify-self: start
+      - text-align: left
 
 # ---------------------------------------------------------------------
 # EN | Sidebar navigation item (HOME / CORE / rooms / ENERGY / ADMIN...).
@@ -360,10 +367,12 @@ vssp_nav_button:
       - font-weight: 600
       - letter-spacing: 0.5px
       - justify-self: start
+      - text-align: left
     label:
       - color: "#56707E"
       - font-size: 10px
       - justify-self: start
+      - text-align: left
 
 # ---------------------------------------------------------------------
 # EN | Sidebar bottom branding block — placed as the LAST card of the nav
@@ -524,10 +533,12 @@ vssp_security_row:
       - font-size: 13px
       - font-weight: 600
       - justify-self: start
+      - text-align: left
     label:
       - color: var(--secondary-text-color, #8FB6C9)
       - font-size: 11px
       - justify-self: start
+      - text-align: left
 
 # ---------------------------------------------------------------------
 # EN | Admin console button (Discovery / Upgrade / Generate / Delete).
@@ -567,10 +578,12 @@ vssp_admin_button:
       - font-weight: 700
       - letter-spacing: 1px
       - justify-self: start
+      - text-align: left
     label:
       - color: var(--secondary-text-color, #8FB6C9)
       - font-size: 11px
       - justify-self: start
+      - text-align: left
 
 # ---------------------------------------------------------------------
 # EN | KPI card (active rooms / alarm / connections...) — icon + title +
@@ -611,15 +624,18 @@ vssp_kpi_card:
       - font-weight: 700
       - letter-spacing: 0.5px
       - justify-self: start
+      - text-align: left
     state:
       - color: '[[[ return variables.value_color || "var(--text-primary-color, #FFFFFF)" ]]]'
       - font-size: 16px
       - font-weight: 700
       - justify-self: start
+      - text-align: left
     label:
       - color: var(--secondary-text-color, #56707E)
       - font-size: 11px
       - justify-self: start
+      - text-align: left
 
 # ---------------------------------------------------------------------
 # EN | Status indicator card (System Status / Energy Status) — title + round
@@ -671,6 +687,7 @@ vssp_status_indicator:
       - font-weight: 700
       - letter-spacing: 0.5px
       - justify-self: start
+      - text-align: left
     icon:
       - color: >
           [[[
@@ -693,6 +710,7 @@ vssp_status_indicator:
       - color: var(--secondary-text-color, #56707E)
       - font-size: 11px
       - justify-self: start
+      - text-align: left
 
 # ---------------------------------------------------------------------
 # EN | Quick action button (scenes, scripts, toggles).
@@ -809,6 +827,7 @@ vssp_section_title:
       - font-weight: 600
       - letter-spacing: 1px
       - justify-self: start
+      - text-align: left
       - font-family: "Orbitron, sans-serif"
 
 # ---------------------------------------------------------------------
@@ -847,11 +866,13 @@ vssp_energy_stat:
       - font-size: 11px
       - letter-spacing: 0.5px
       - justify-self: start
+      - text-align: left
     state:
       - color: "[[[ return variables.accent ]]]"
       - font-size: "[[[ return variables.size ]]]"
       - font-weight: 700
       - justify-self: start
+      - text-align: left
 
 # ---------------------------------------------------------------------
 # EN | KPI tile: icon in a rounded square on the left, value and label right.
@@ -898,10 +919,12 @@ vssp_energy_kpi:
       - font-size: 22px
       - font-weight: 700
       - justify-self: start
+      - text-align: left
     label:
       - color: "[[[ return variables.accent ]]]"
       - font-size: 12px
       - justify-self: start
+      - text-align: left
 
 # ---------------------------------------------------------------------
 # EN | Period tab. The active state is derived from `entity` (an input_select)
@@ -1059,21 +1082,25 @@ vssp_energy_device_row:
       - font-size: 13px
       - font-weight: 600
       - justify-self: start
+      - text-align: left
     label:
       - color: var(--secondary-text-color, #56707E)
       - font-size: 10px
       - justify-self: start
+      - text-align: left
     state:
       - color: var(--secondary-text-color, #B8E8F5)
       - font-size: 13px
       - font-weight: 600
       - justify-self: end
+      - text-align: right
     custom_fields:
       room:
         - justify-self: end
         - text-align: right
       energy:
         - justify-self: end
+        - text-align: right
       arrow:
         - justify-self: end
         - display: flex
@@ -1115,11 +1142,13 @@ vssp_energy_total_row:
       - font-size: 13px
       - font-weight: 600
       - justify-self: start
+      - text-align: left
     state:
       - color: "#00E5FF"
       - font-size: 18px
       - font-weight: 700
       - justify-self: end
+      - text-align: right
 
 # ---------------------------------------------------------------------
 # EN | Breaker-panel circuit card (Shelly).
@@ -1199,10 +1228,12 @@ vssp_circuit_switch:
       - font-size: 13px
       - font-weight: 600
       - justify-self: start
+      - text-align: left
     label:
       - color: var(--secondary-text-color, #56707E)
       - font-size: 10px
       - justify-self: start
+      - text-align: left
     custom_fields:
       amp:
         - justify-self: start
@@ -1274,5 +1305,6 @@ vssp_nav_chip:
       - font-size: 10px
       - letter-spacing: 1px
       - justify-self: start
+      - text-align: left
       - color: >
           [[[ return variables.active ? '#00E5FF' : '#8FB6C9'; ]]]

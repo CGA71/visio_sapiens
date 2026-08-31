@@ -422,8 +422,10 @@ views:
                   custom_fields:
                     cap:
                       - justify-self: start
+                      - text-align: left
                     goal:
                       - justify-self: end
+                      - text-align: right
 
       # ═══════════════════════════════════════════════════════════════
       # EN | PANEL 2 — PER-DEVICE CONSUMPTION
@@ -484,12 +486,16 @@ views:
               custom_fields:
                 c1:
                   - justify-self: start
+                  - text-align: left
                 cr:
                   - justify-self: end
+                  - text-align: right
                 c2:
                   - justify-self: end
+                  - text-align: right
                 c3:
                   - justify-self: end
+                  - text-align: right
 
           # ── Liste des appareils (défilante) ────────────────────────
           # Même principe que le panneau « Événements récents » de
@@ -854,16 +860,20 @@ views:
                 - color: var(--secondary-text-color, #8FB6C9)
                 - font-size: 11px
                 - justify-self: start
+                - text-align: left
               state:
                 - color: "#00FFC3"
                 - font-size: 28px
                 - font-weight: 700
                 - justify-self: start
+                - text-align: left
               custom_fields:
                 period:
                   - justify-self: start
+                  - text-align: left
                 tarif:
                   - justify-self: end
+                  - text-align: right
 
           - type: custom:button-card
             show_icon: false
@@ -890,11 +900,13 @@ views:
                 - color: var(--secondary-text-color, #8FB6C9)
                 - font-size: 12px
                 - justify-self: start
+                - text-align: left
               state:
                 - color: var(--text-primary-color, #FFFFFF)
                 - font-size: 22px
                 - font-weight: 700
                 - justify-self: end
+                - text-align: right
 
       # ═══════════════════════════════════════════════════════════════
       # PANNEAU 6 — TABLEAU ÉLECTRIQUE (contrôle des circuits Shelly)
