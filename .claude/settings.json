@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C d:/Visio-Sapiens add home-assistant/www/vssp/wizard/vssp_rooms_floors.html)",
+      "Bash(git -C d:/Visio-Sapiens commit -m ' *)",
+      "Bash(git -C d:/Visio-Sapiens push)"
+    ]
+  }
+}
