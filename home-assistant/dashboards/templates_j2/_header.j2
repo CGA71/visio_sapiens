@@ -17,28 +17,19 @@
      page_subtitle   - subtitle line, already translated
      page_path       - navigation target when the title is tapped
      locale_tag      - BCP-47 tag ('fr-FR', 'en-US') injected by the generator
-     calendar_entity (optional) - EN | a calendar.* entity id; when set:
-       - Cell 1 gets time/date merged in next to the title (single card,
-         flex layout) instead of the plain title-only cell.
-       - Cell 3 becomes a custom:calendar-card-pro alone, showing the
-         agenda day by day (days_to_show: 7) with internal scroll
-         (overflow-y: auto) since a week's worth of events can outgrow
-         the row.
-       Requires the calendar-card-pro Lovelace resource to be registered
-       (HACS or manual resource) — NOT custom:stack-in-card, which isn't
-       installed on this instance (confirmed in Settings > Dashboards >
-       Resources).
-       FR | id d'entite calendar.* ; si defini :
-       - la Case 1 recoit l'heure/date fusionnee a cote du titre (carte
-         unique, mise en page flex) au lieu de la case titre seule.
-       - la Case 3 devient un custom:calendar-card-pro seul, affichant
-         l'agenda jour par jour (days_to_show: 7) avec defilement interne
-         (overflow-y: auto) puisqu'une semaine d'evenements peut depasser
-         la ligne.
-       Necessite que la ressource Lovelace calendar-card-pro soit
-       enregistree (HACS ou ressource manuelle) — PAS custom:stack-in-card,
-       qui n'est pas installee sur cette instance (confirme dans
-       Parametres > Tableaux de bord > Ressources).
+     calendar_entity (optional) - EN | a calendar.* entity id; defaults to
+       calendar.calebar (the only calendar.* entity in this install) so
+       every dashboard generated through this partial gets HOME's header
+       model without the caller having to set anything. Pass a different
+       id to point a specific dashboard at another calendar, or override
+       the default below if this install's calendar entity ever changes.
+       FR | id d'entite calendar.* ; vaut par defaut calendar.calebar (la
+       seule entite calendar.* de cette installation) pour que chaque
+       dashboard genere via ce partial recoive le modele d'en-tete de HOME
+       sans que l'appelant ait rien a definir. Passer un autre id pour
+       pointer un dashboard particulier vers un autre calendrier, ou changer
+       la valeur par defaut ci-dessous si l'entite calendrier de cette
+       installation change un jour.
      regenerate_dashboard_service (optional) - EN | script/service id; when
        set, a 4th compact icon cell is added that calls it (with the same
        confirmation dialog as the ADMIN console's own REGENERATE button) —
@@ -61,23 +52,21 @@
    FR | traduction, et il continuera de fonctionner pour toute langue
    FR | ajoutee plus tard.
    ================================================================== #}
+{% set calendar_entity = calendar_entity | default('calendar.calebar') %}
       - type: horizontal-stack
         view_layout:
           grid-area: header
         cards:
 
-          {# EN | Cell 1: title, and — when calendar_entity is set by the
-             EN | caller — time/date moved in next to it (single card, flex
-             EN | layout: icon+title+subtitle left, clock right) instead of
-             EN | living in Cell 3. Optional so every other dashboard using
-             EN | this partial keeps the plain title-only cell.
-             FR | Case 1 : titre, et — quand calendar_entity est defini par
-             FR | l'appelant — heure/date deplacees a cote (carte unique,
-             FR | mise en page flex : icone+titre+sous-titre a gauche,
-             FR | horloge a droite) au lieu de vivre en Case 3. Optionnel
-             FR | pour que tous les autres dashboards utilisant ce partial
-             FR | gardent la case titre seule. #}
-{% if calendar_entity is defined %}
+          {# EN | Cell 1: title with time/date merged in next to it (single
+             EN | card, flex layout: icon+title+subtitle left, clock right)
+             EN | — HOME's header model, now the standard for every
+             EN | dashboard generated through this partial.
+             FR | Case 1 : titre avec heure/date fusionnees a cote (carte
+             FR | unique, mise en page flex : icone+titre+sous-titre a
+             FR | gauche, horloge a droite) — le modele d'en-tete de HOME,
+             FR | desormais standard pour tout dashboard genere via ce
+             FR | partial. #}
           - type: custom:button-card
             entity: {{ house.time_entity }}
             show_name: false
@@ -148,26 +137,6 @@
                   box-shadow: 0 0 18px color-mix(in srgb, var(--primary-color, #00E5FF) 12%, transparent) !important;
                   height: 100%
                 }
-{% else %}
-          - type: custom:button-card
-            template: vssp_page_header
-            icon: mdi:chevron-left
-            name: {{ page_title }}
-            label: "{{ page_subtitle }}"
-            tap_action:
-              action: navigate
-              navigation_path: {{ page_path }}
-            card_mod:
-              style: |
-                :host { flex: 1 1 0; }
-                ha-card {
-                  background: var(--card-background-color, rgba(16,27,39,0.85)) !important;
-                  border: 1px solid color-mix(in srgb, var(--primary-color, #00E5FF) 28%, transparent) !important;
-                  border-radius: var(--ha-card-border-radius, 20px) !important;
-                  box-shadow: 0 0 18px color-mix(in srgb, var(--primary-color, #00E5FF) 12%, transparent) !important;
-                  height: 100%
-                }
-{% endif %}
 
           {# EN | Cell 2: weather (native card, always available)
              FR | Case 2 : meteo (carte native, toujours disponible) #}
@@ -201,16 +170,16 @@
                   height: 100%
                 }
 
-          {# EN | Cell 3: time (plain cell for every other dashboard), or —
-             EN | when calendar_entity is set by the caller — the agenda
-             EN | alone, day by day (days_to_show: 7), now that time/date
-             EN | moved into Cell 1 next to the title.
-             FR | Case 3 : heure (case simple pour tous les autres
-             FR | dashboards), ou — quand calendar_entity est defini par
-             FR | l'appelant — l'agenda seul, jour par jour
-             FR | (days_to_show: 7), maintenant que l'heure/date a
-             FR | rejoint la Case 1 a cote du titre. #}
-{% if calendar_entity is defined %}
+          {# EN | Cell 3: the agenda alone, day by day (days_to_show: 7) —
+             EN | HOME's header model, now the standard for every dashboard
+             EN | generated through this partial. Internal scroll
+             EN | (overflow-y: auto) since a week's worth of events can
+             EN | outgrow the row.
+             FR | Case 3 : l'agenda seul, jour par jour (days_to_show: 7) —
+             FR | le modele d'en-tete de HOME, desormais standard pour tout
+             FR | dashboard genere via ce partial. Defilement interne
+             FR | (overflow-y: auto) puisqu'une semaine d'evenements peut
+             FR | depasser la ligne. #}
           - type: custom:calendar-card-pro
             entities:
               - {{ calendar_entity }}
@@ -228,56 +197,6 @@
                   height: 100%;
                   overflow-y: auto;
                 }
-{% else %}
-          - type: custom:button-card
-            entity: {{ house.time_entity }}
-            show_name: false
-            show_icon: false
-            show_state: false
-            show_label: true
-            label: |
-              [[[
-                // EN | The locale tag comes from the generator: one constant,
-                // EN | and Intl handles every language on its own.
-                // FR | L'etiquette de langue vient du generateur : une seule
-                // FR | constante, et Intl gere toutes les langues tout seul.
-                const LOCALE = '{{ locale_tag }}';
-                const d = new Date();
-                const time = new Intl.DateTimeFormat(LOCALE, {
-                  hour: '2-digit', minute: '2-digit', hour12: false
-                }).format(d);
-                const date = new Intl.DateTimeFormat(LOCALE, {
-                  weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
-                }).format(d);
-                return `<div style="font-family:Orbitron,sans-serif;font-size:24px;color:var(--text-primary-color, #FFFFFF);line-height:1;">${time}</div>
-                        <div style="font-size:11px;color:var(--secondary-text-color, #8FB6C9);letter-spacing:.5px;margin-top:4px;text-transform:capitalize;">${date}</div>`;
-              ]]]
-            styles:
-              card:
-                - background: var(--card-background-color, rgba(16,27,39,0.85))
-                - border: 1px solid color-mix(in srgb, var(--primary-color, #00E5FF) 28%, transparent)
-                - border-radius: var(--ha-card-border-radius, 20px)
-                - box-shadow: 0 0 18px color-mix(in srgb, var(--primary-color, #00E5FF) 12%, transparent)
-                - padding: 6px 20px
-              grid:
-                - grid-template-areas: '"l"'
-                - grid-template-rows: min-content
-                - align-content: start
-                - justify-items: end
-              label:
-                - justify-self: end
-                - text-align: right
-            card_mod:
-              style: |
-                :host { flex: 1 1 0; }
-                ha-card {
-                  background: var(--card-background-color, rgba(16,27,39,0.85)) !important;
-                  border: 1px solid color-mix(in srgb, var(--primary-color, #00E5FF) 28%, transparent) !important;
-                  border-radius: var(--ha-card-border-radius, 20px) !important;
-                  box-shadow: 0 0 18px color-mix(in srgb, var(--primary-color, #00E5FF) 12%, transparent) !important;
-                  height: 100px
-                }
-{% endif %}
 {% if regenerate_dashboard_service is defined %}
 
           {# EN | Cell 4 (optional): regenerate this dashboard, in place —

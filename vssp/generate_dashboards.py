@@ -561,7 +561,7 @@ def compute_room_layout(rendered: dict, default_slot: str | None) -> dict:
             cells += [slot["id"]] * span
         return "nav " + " ".join(cells[:5])
 
-    rows = ["105px"]
+    rows = ["130px"]
     areas = ["nav header header header header header"]
 
     if tier_a:

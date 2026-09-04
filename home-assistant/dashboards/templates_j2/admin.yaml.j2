@@ -92,7 +92,7 @@ views:
     type: custom:grid-layout
     layout:
       grid-template-columns: minmax(200px, auto) 1fr 1fr 1fr
-      grid-template-rows: 105px auto
+      grid-template-rows: 130px auto
       grid-template-areas: |
         "nav header header header"
         "nav tiles tiles tiles"
@@ -167,7 +167,7 @@ views:
       # FR | (energy, dashboards) gardent auto : leur contenu doit se
       # FR | dimensionner a lui-meme et laisser la page defiler, pas
       # FR | s'etirer jusqu'a la fenetre.
-      grid-template-rows: 105px {{ '1fr' if screen in ['rooms', 'assign', 'theme'] else 'auto' }}
+      grid-template-rows: 130px {{ '1fr' if screen in ['rooms', 'assign', 'theme'] else 'auto' }}
       grid-template-areas: |
         "nav header header header"
         "nav body body body"
