@@ -429,3 +429,83 @@ modification de son contenu.
 Outils de développement → Actions : le sélecteur ne propose que les
 services réellement enregistrés. Taper `lovelace.` n'y fait apparaître
 que `reload_resources`, ce qui confirme le diagnostic en deux secondes.
+
+## 4. slot_set / default_slot (ou une sauvegarde ASSIGN / THEME) revient en silence
+
+### Ce que ça donne
+
+Vous choisissez un `slot_set` et un `default_slot` pour une pièce dans
+PIÈCES & ÉTAGES (ou une assignation dans ASSIGNATION DES APPAREILS, ou
+une couleur dans THEME), vous cliquez sur Appliquer/Enregistrer, vous
+voyez le message de succès habituel — et quand vous revenez sur la
+page plus tard, le champ est revenu à `default` / `(automatique)`
+comme si rien n'avait jamais été enregistré. Aucune erreur nulle part.
+
+### Reproduit en direct, pas deviné
+
+Ceci a été retrouvé en pilotant réellement l'iframe PIÈCES & ÉTAGES
+(une session Playwright avec un vrai jeton longue durée), en
+interceptant l'appel `fetch()` vers `/api/webhook/vssp_rooms_sync`, et
+en décodant le payload base64 envoyé : il était **correct** —
+`{"area_id":"entrance_hall","slot_set":"entrance","default_slot":"security", ...}`.
+`house.yaml` montrait quand même toujours `slot_set: default` ensuite.
+Le client n'était donc jamais le problème — tout ce qui se passe après
+le webhook devait être vérifié.
+
+### La commande qui donne la réponse
+
+```sh
+sudo kubectl -n homeassistant exec $POD -- true   # (verification d'acces)
+```
+
+Puis, depuis la console du navigateur (ou toute session authentifiée),
+lister les exécutions récentes de l'automatisation et regarder
+`script_execution` :
+
+```js
+await hass.callWS({ type: 'trace/list', domain: 'automation',
+                     item_id: 'vssp_receive_rooms_sync' });
+```
+
+Une exécution avec `"script_execution": "failed_single"` est la preuve
+irréfutable : l'automatisation n'a même jamais démarré pour ce
+déclenchement.
+
+### La cause
+
+`vssp_receive_rooms_sync` (et le même motif identique dans
+`vssp_receive_assignment` et `vssp_receive_theme`, les trois dans
+`home-assistant/packages/`) utilisait `mode: single`. Chacune de ces
+automatisations declenchées par webhook fait un vrai travail —
+`vssp_rooms_apply.py` + `vssp_generate_dashboards` +
+`vssp_assign_prepare` pour les pièces, environ 4-5 secondes de bout en
+bout.
+
+La page PIÈCES & ÉTAGES déclenche le même webhook depuis **trois**
+endroits : `connect()` (au chargement de la page), `reload()`, et la
+propre synchronisation post-Appliquer de `applyDiff()`. Ouvrez la page
+et cliquez sur Appliquer peu après (ou gardez-la ouverte dans deux
+onglets) et deux POST arrivent rapprochés. Avec `mode: single`, quelle
+que soit la requête encore en cours quand la seconde arrive l'emporte ;
+la seconde est purement et simplement rejetée — et **le point d'entrée
+webhook lui-même répond quand même HTTP 200** dans les deux cas, donc
+le navigateur affiche son avis « appliqué » habituel que
+l'automatisation ait réellement tourné ou non. En pratique, le perdant
+est souvent la vraie modification de l'utilisateur : la synchronisation
+au moment du connect() de la page (envoyée avec ce qui était affiché
+*avant* la modification) peut très bien tourner encore quand le POST du
+vrai Appliquer arrive quelques secondes plus tard.
+
+### Corrigé
+
+Les trois automatisations passées en `mode: queued` (`max: 10`) —
+chaque déclenchement est traité dans l'ordre, aucun n'est rejeté en
+silence. Diagnostiqué et corrigé le 2026-09-05 ; voir le commit pour
+l'explication complète.
+
+**Si vous rencontrez ceci sur une version antérieure au correctif** :
+ce que vous avez appliqué en dernier n'est peut-être pas réellement sur
+le disque. Vérifiez la valeur actuelle du champ après un chargement de
+page frais (pas juste après Appliquer — ça a toujours l'air correct
+juste après, voir la note dans `vssp_rooms_floors.html` sur
+`applyPendingLocalSlotSets()`) avant de supposer que tout va bien.

@@ -261,6 +261,7 @@ déployé sous `/config` sur le pod) :
 shell_command:
   vssp_generate_dashboards: >-
     python3 /config/vssp/generate_dashboards.py
+    --locale {{ states('input_select.vssp_language') }}
     --model /config/dashboards/model/house.yaml
     --templates /config/dashboards/templates_j2
     --out /config/dashboards/views
@@ -278,6 +279,20 @@ script:
             energy.yaml a été régénéré depuis model/house.yaml.
             Rechargez Lovelace pour voir le résultat.
 ```
+
+**`--locale` n'est pas optionnel ici, meme si le script accepte `None`
+et retombe sur autre chose** : sa propre priorite est `--locale`
+(selecteur de la console) > `house.locale` > `'en'`. Chaque
+`shell_command` qui appelle `generate_dashboards.py` — celui-ci,
+CREER/REGENERER pour HOME/ENERGY/CORE, les commandes d'apercu — a
+besoin du flag explicitement, en lisant
+`input_select.vssp_language`. L'omettre sur l'une d'elles fait que
+cette commande regenere en silence dans ce que dit `house.locale` au
+lieu de ce qu'affiche le selecteur de langue de l'ecran ADMIN, sans
+aucune erreur : le dashboard revient juste dans la mauvaise langue.
+Ceci a reellement touche `home-assistant/packages/vssp_admin.yaml` —
+chaque `shell_command` la-bas manquait le flag jusqu'au 2026-09-04 ;
+voir l'historique git pour le correctif sur les neuf points d'appel.
 
 Un bouton GENERATE peut rejoindre la rangée DISCOVERY / UPGRADE /
 DELETE du panneau ADMIN (`template: vssp_admin_button`,
@@ -322,6 +337,53 @@ depuis un modèle : `themes/visio_sapiens.yaml` est désormais rendu
 depuis `model/design_system.yaml` par `templates_j2/theme.yaml.j2`,
 éditable graphiquement depuis l'écran THEME de la console ADMIN. Voir
 [Design_System_Editor.fr.md](Design_System_Editor.fr.md).
+
+## Partial d'en-tête partagé (`_header.j2`)
+
+`templates_j2/_header.j2` est le bandeau horizontal par lequel s'ouvre
+chaque dashboard (titre, météo, horloge/agenda) — inclus (`!include`)
+depuis `home.yaml.j2`, `room.yaml.j2`, `energy.yaml.j2`,
+`admin.yaml.j2` et `core.yaml.j2` pour qu'il existe une seule fois au
+lieu de six copies. Depuis le 2026-09-04, il rend **le modèle
+d'en-tête de HOME de façon inconditionnelle** pour chacun d'eux :
+
+- **Case 1** — titre fusionné avec l'horloge (icône + titre +
+  sous-titre à gauche, heure + date courte à droite) dans une seule
+  carte, au lieu d'une case titre seule.
+- **Case 3** — un `custom:calendar-card-pro` seul, l'agenda jour par
+  jour (`days_to_show: 7`, `overflow-y: auto` puisqu'une semaine
+  d'événements peut dépasser la ligne).
+
+`calendar_entity` vaut par défaut `calendar.calebar` (la seule entité
+`calendar.*` de cette installation) directement dans le partial via
+`{% set calendar_entity = calendar_entity | default('calendar.calebar') %}`
+— aucun appelant n'a rien à définir pour que le modèle s'applique ;
+passer un autre id depuis un fichier `.yaml.j2` particulier pour
+pointer ce seul dashboard vers un autre calendrier. La hauteur de la
+ligne d'en-tête est passée de `105px` à `130px` chez chaque appelant
+(`admin.yaml.j2` sur ses deux écrans, `core.yaml.j2`,
+`energy.yaml.j2`, et le budget de ligne dynamique par pièce calculé
+dans `compute_room_grid()` de `generate_dashboards.py`) pour laisser
+la place à la case fusionnée plus haute et au calendrier. Les
+dashboards mobiles ne sont pas concernés — ils utilisent le
+`_header_mobile.j2` séparé, une seule carte compacte sans place pour
+un agenda.
+
+Deux pièges d'implémentation à connaître si vous retouchez ce partial :
+
+- **`custom:stack-in-card` n'est pas installée sur cette instance** —
+  seule `custom:vertical-stack-in-card` l'est (vérifié en direct dans
+  Paramètres > Tableaux de bord > Ressources). Une première version de
+  la Case 3 utilisait la première et se rendait en « Erreur de
+  configuration », effaçant l'horloge que l'en-tête affichait
+  auparavant.
+- **`custom:button-card` centre verticalement une carte ne portant
+  qu'un `label:` par défaut.** La ligne flex de la Case 1 se retrouvait
+  ~20px plus bas que les Cases 2/3 tant que `styles.grid` ne forçait
+  pas explicitement `grid-template-rows: min-content` +
+  `align-content: start` — le même contournement dont la case heure
+  seule (la branche `{% else %}`, toujours utilisée par tout appelant
+  hors HOME) avait déjà besoin pour la même raison.
 
 ## Grille des dashboards de pièce — disposition dynamique des tableaux (**proposé, pas encore implémenté**)
 

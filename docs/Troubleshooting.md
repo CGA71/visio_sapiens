@@ -426,3 +426,75 @@ to a dashboard in `lovelace: dashboards:` — not modifying its content.
 Developer Tools → Actions: the picker only offers services that are
 actually registered. Typing `lovelace.` there shows only
 `reload_resources`, which confirms the diagnosis in two seconds.
+
+## 4. slot_set / default_slot (or an ASSIGN / THEME save) silently reverts
+
+### What it looks like
+
+You pick a `slot_set` and `default_slot` for a room in ROOMS & FLOORS
+(or an assignment in DEVICE ASSIGNMENT, or a color in THEME), click
+Apply/Save, see the normal success notice — and when you come back to
+the page later, the field is back to `default` / `(automatic)` as if
+nothing was ever saved. There is no error anywhere.
+
+### Reproduced live, not guessed
+
+This was tracked down by actually driving the ROOMS & FLOORS iframe
+(a Playwright session with a real long-lived token), intercepting the
+`fetch()` call to `/api/webhook/vssp_rooms_sync`, and decoding the
+base64 payload it sent: it was **correct** —
+`{"area_id":"entrance_hall","slot_set":"entrance","default_slot":"security", ...}`.
+`house.yaml` still showed `slot_set: default` afterward regardless.
+So the client was never the problem — everything past the webhook
+needed checking.
+
+### The command that gives you the answer
+
+```sh
+sudo kubectl -n homeassistant exec $POD -- true   # (auth check)
+```
+
+Then, from the browser console (or any authenticated session), list
+the automation's recent runs and look at `script_execution`:
+
+```js
+await hass.callWS({ type: 'trace/list', domain: 'automation',
+                     item_id: 'vssp_receive_rooms_sync' });
+```
+
+A run with `"script_execution": "failed_single"` is the smoking gun:
+the automation never even started for that trigger.
+
+### The cause
+
+`vssp_receive_rooms_sync` (and the identical pattern in
+`vssp_receive_assignment` and `vssp_receive_theme`, all three in
+`home-assistant/packages/`) used `mode: single`. Each of these
+webhook-driven automations does real work — `vssp_rooms_apply.py` +
+`vssp_generate_dashboards` + `vssp_assign_prepare` for rooms, roughly
+4-5 seconds end to end.
+
+The ROOMS & FLOORS page fires the same webhook from **three** places:
+`connect()` (on page load), `reload()`, and `applyDiff()`'s own
+post-Apply sync. Open the page and click Apply soon after (or have it
+open in two tabs) and two POSTs land close together. With
+`mode: single`, whichever request is still running when the second
+arrives wins; the second is dropped outright — and the **webhook
+endpoint itself still answers HTTP 200** either way, so the browser
+shows its normal "applied" notice whether or not the automation
+actually ran. In practice the loser is often the user's real edit: the
+page's own connect()-time sync (sent with whatever was on screen
+*before* the edit) can easily still be running when the deliberate
+Apply's POST arrives a few seconds later.
+
+### Fixed
+
+All three automations changed to `mode: queued` (`max: 10`) —
+every trigger is processed in order, none silently dropped. Diagnosed
+and fixed 2026-09-05; see the commit for the full writeup.
+
+**If you hit this on a version predating the fix**: whatever you last
+applied may not actually be on disk. Check the field's current value on
+a fresh page load (not right after Apply — that always looks right,
+per the note in `vssp_rooms_floors.html` about `applyPendingLocalSlotSets()`)
+before assuming it's fine.

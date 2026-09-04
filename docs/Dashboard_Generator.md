@@ -261,6 +261,7 @@ deployed under `/config` on the pod):
 shell_command:
   vssp_generate_dashboards: >-
     python3 /config/vssp/generate_dashboards.py
+    --locale {{ states('input_select.vssp_language') }}
     --model /config/dashboards/model/house.yaml
     --templates /config/dashboards/templates_j2
     --out /config/dashboards/views
@@ -278,6 +279,19 @@ script:
             energy.yaml has been regenerated from model/house.yaml.
             Reload Lovelace to see the result.
 ```
+
+**`--locale` is not optional here, even though the script accepts
+`None` and falls back**: its own precedence is `--locale` (console
+selector) > `house.locale` > `'en'`. Every `shell_command` that calls
+`generate_dashboards.py` — this one, CREATE/REGENERATE for HOME/ENERGY/
+CORE, the preview commands — needs the flag explicitly, reading
+`input_select.vssp_language`. Omit it on any one of them and that
+command silently regenerates in whatever `house.locale` says instead of
+what the ADMIN screen's language selector shows, with no error: the
+dashboard just comes back in the wrong language. This bit
+`home-assistant/packages/vssp_admin.yaml` for real — every
+`shell_command` there was missing the flag until 2026-09-04; see the
+git history for the fix across all nine call sites.
 
 A GENERATE button can join the DISCOVERY / UPGRADE / DELETE row of the
 ADMIN panel (`template: vssp_admin_button`,
@@ -322,6 +336,49 @@ principle: `themes/visio_sapiens.yaml` is now rendered from
 `model/design_system.yaml` by `templates_j2/theme.yaml.j2`, editable
 graphically from the ADMIN console's THEME screen. See
 [Design_System_Editor.md](Design_System_Editor.md).
+
+## Shared header partial (`_header.j2`)
+
+`templates_j2/_header.j2` is the horizontal band every dashboard opens
+with (title, weather, clock/agenda) — `!include`d from `home.yaml.j2`,
+`room.yaml.j2`, `energy.yaml.j2`, `admin.yaml.j2` and `core.yaml.j2` so
+it exists once instead of six copies. As of 2026-09-04 it renders
+**HOME's header model unconditionally** for every one of them:
+
+- **Cell 1** — title merged with the clock (icon + title + subtitle on
+  the left, time + short date on the right) in one card, instead of a
+  plain title-only cell.
+- **Cell 3** — a `custom:calendar-card-pro` alone, the agenda day by
+  day (`days_to_show: 7`, `overflow-y: auto` since a week's events can
+  outgrow the row).
+
+`calendar_entity` defaults to `calendar.calebar` (the only `calendar.*`
+entity in this install) directly inside the partial via
+`{% set calendar_entity = calendar_entity | default('calendar.calebar') %}`
+— no caller has to set anything for the model to apply; pass a
+different id from a specific `.yaml.j2` file to point that one
+dashboard at another calendar. The header row height was raised from
+`105px` to `130px` in every caller (`admin.yaml.j2` both screens,
+`core.yaml.j2`, `energy.yaml.j2`, and the dynamic per-room row budget
+computed in `generate_dashboards.py`'s `compute_room_grid()`) to fit
+the taller merged cell and the calendar. Mobile dashboards are
+untouched — they use the separate `_header_mobile.j2`, a single
+compact card with no room for an agenda.
+
+Two implementation traps worth knowing if you touch this partial
+again:
+
+- **`custom:stack-in-card` is not installed on this instance** — only
+  `custom:vertical-stack-in-card` is (checked live in Settings >
+  Dashboards > Resources). An early draft of Cell 3 used the former and
+  rendered as "Erreur de configuration", wiping out the clock the
+  header used to show.
+- **`custom:button-card` centers a `label:`-only card vertically by
+  default.** Cell 1's flex-row label sat ~20px lower than Cell 2/3
+  until `styles.grid` explicitly set `grid-template-rows: min-content`
+  + `align-content: start` — the same override the plain time-only
+  cell (the `{% else %}` branch, still used by every non-HOME caller)
+  already needed for the same reason.
 
 ## Room dashboard grid — dynamic slot layout (**proposed, not yet implemented**)
 
