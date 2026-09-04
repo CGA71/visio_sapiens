@@ -114,14 +114,16 @@
   .range-val { color: var(--muted); font-size: 11px; width: 34px; text-align: right; }
 
   /* EN | Swatch + popover — a real color-with-alpha picker for the rgba()
-     EN | tokens (card_background, sidebar_selected_background, dialog_scrim,
-     EN | bubble_backdrop). A native <input type=color> can't carry alpha, so
-     EN | this pairs one with a range slider, painted over a checkerboard so
-     EN | transparency is visible. The underlying text input is still there
-     EN | (typing a value directly still works) — the popover just writes into
-     EN | it and reads back from it when opened.
+     EN | tokens (card_background, selector_background,
+     EN | sidebar_selected_background, dialog_scrim, bubble_backdrop). A
+     EN | native <input type=color> can't carry alpha, so this pairs one
+     EN | with a range slider, painted over a checkerboard so transparency
+     EN | is visible. The underlying text input is still there (typing a
+     EN | value directly still works) — the popover just writes into it and
+     EN | reads back from it when opened.
      FR | Pastille + popover — un vrai selecteur couleur+transparence pour les
-     FR | tokens rgba() (card_background, sidebar_selected_background,
+     FR | tokens rgba() (card_background, selector_background,
+     FR | sidebar_selected_background,
      FR | dialog_scrim, bubble_backdrop). Un <input type=color> natif ne porte
      FR | pas de canal alpha, donc ceci associe un input color a un curseur,
      FR | peint sur un damier pour que la transparence reste visible.
@@ -356,6 +358,7 @@ const DEFAULTS = {
   primary: '#00E5FF', accent: '#00FFD5',
   background: '#050B12', background_secondary: '#101B27',
   card_background: 'rgba(16,27,39,0.85)',
+  selector_background: '#000000',
   text_primary: '#FFFFFF', text_secondary: '#B8E8F5',
   header_background: '#08121C', header_text: '#00E5FF',
   divider: '#1F3448',
@@ -381,6 +384,7 @@ const FIELDS = [
   { key: 'background', label: 'Background', type: 'color', group: 'Palette' },
   { key: 'background_secondary', label: 'Background (secondary)', type: 'color', group: 'Palette' },
   { key: 'card_background', label: 'Card background', type: 'text', group: 'Palette', hint: 'hex or rgba()', picker: true },
+  { key: 'selector_background', label: 'Selector background', type: 'text', group: 'Palette', hint: 'hex or rgba() — Interface language / Target format / Chatbot provider rows', picker: true },
   { key: 'text_primary', label: 'Text (primary)', type: 'color', group: 'Palette' },
   { key: 'text_secondary', label: 'Text (secondary)', type: 'color', group: 'Palette' },
   { key: 'header_background', label: 'Header background', type: 'color', group: 'Header' },

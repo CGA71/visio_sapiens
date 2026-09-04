@@ -40,6 +40,7 @@ FIELDS: dict[str, tuple[tuple[str, ...], str, int]] = {
     "background":                  (("palette", "background"), "color", 0),
     "background_secondary":        (("palette", "background_secondary"), "color", 0),
     "card_background":             (("palette", "card_background"), "color", 0),
+    "selector_background":         (("palette", "selector_background"), "color", 0),
     "text_primary":                (("palette", "text_primary"), "color", 0),
     "text_secondary":              (("palette", "text_secondary"), "color", 0),
     "header_background":           (("header", "background"), "color", 0),

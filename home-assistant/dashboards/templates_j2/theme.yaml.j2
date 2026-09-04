@@ -20,6 +20,18 @@
 
   card-background-color: "{{ design.palette.card_background }}"
 
+  # EN | Independent from card-background-color on purpose — the compact
+  # EN | selector rows (ADMIN's Interface language, Target format, Chatbot
+  # EN | provider) get their own token so it can be tuned without changing
+  # EN | every other card's background too. Editable in the THEME screen
+  # EN | (Palette > Selector background).
+  # FR | Independant de card-background-color volontairement — les cases
+  # FR | selecteur compactes (Langue d'interface, Format cible, Fournisseur
+  # FR | chatbot de l'ADMIN) ont leur propre token pour pouvoir etre ajustees
+  # FR | sans changer le fond de toutes les autres cartes. Modifiable dans
+  # FR | l'ecran THEME (Palette > Fond des selecteurs).
+  selector-background: "{{ design.palette.selector_background }}"
+
   text-primary-color: "{{ design.palette.text_primary }}"
   secondary-text-color: "{{ design.palette.text_secondary }}"
 

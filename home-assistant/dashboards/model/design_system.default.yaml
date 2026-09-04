@@ -50,6 +50,7 @@ design:
     background: "#050B12"
     background_secondary: "#101B27"
     card_background: "rgba(16,27,39,0.85)"
+    selector_background: "#000000"
     text_primary: "#FFFFFF"
     text_secondary: "#B8E8F5"
 
