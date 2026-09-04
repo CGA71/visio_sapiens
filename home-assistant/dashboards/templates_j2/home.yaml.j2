@@ -45,15 +45,9 @@
 #
 # EN | Lovelace dependencies (HACS + declared in resources):
 # FR | Dependances Lovelace (HACS + declarees dans resources) :
-#   button-card, card-mod, layout-card, custom:vertical-stack-in-card,
+#   button-card, card-mod, layout-card,
 #   apexcharts-card, config-template-card, decluttering-card, browser_mod,
 #   calendar-card-pro
-#   EN | Was "custom:stack-in-card" — not actually installed on this
-#   EN | instance (confirmed in Settings > Dashboards > Resources);
-#   EN | corrected to vertical-stack-in-card, the one that is.
-#   FR | Etait « custom:stack-in-card » — pas reellement installee sur cette
-#   FR | instance (confirme dans Parametres > Tableaux de bord > Ressources) ;
-#   FR | corrige en vertical-stack-in-card, celle qui l'est.
 ########################################################################
 
 title: {{ house.name | title }}
@@ -82,7 +76,7 @@ views:
     type: custom:grid-layout
     layout:
       grid-template-columns: minmax(200px, auto) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) 565px
-      grid-template-rows: 140px 113px 444px 400px
+      grid-template-rows: 260px 113px 444px 400px
       grid-template-areas: |
         "nav header header header header header header"
         "nav kpi1 kpi2 kpi3 kpi4 kpi5 kpi5"
