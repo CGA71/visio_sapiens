@@ -406,10 +406,18 @@ views:
                 name: "{{ t('admin.select_language') }}"
               - entity: input_select.vssp_format
                 name: "{{ t('admin.select_format') }}"
+              - entity: input_select.vssp_chatbot_provider
+                name: "{{ t('admin.select_chatbot') }}"
               - entity: sensor.vssp_deployed_locale
                 name: "{{ t('admin.deployed_locale') }}"
               - entity: sensor.vssp_unrendered_placeholders
                 name: "{{ t('admin.unrendered_markers') }}"
+              - type: divider
+              - entity: input_boolean.vssp_auto_regenerate
+                name: "{{ t('admin.auto_regenerate') }}"
+                secondary_info: "{{ t('admin.auto_regenerate_hint') }}"
+              - entity: input_number.vssp_auto_regenerate_interval_hours
+                name: "{{ t('admin.auto_regenerate_interval') }}"
             card_mod:
               style: |
                 ha-card {
@@ -476,7 +484,7 @@ views:
           # FR | deux s affiche jamais.
           - type: custom:button-card
             template: vssp_title
-            name: "{{ t('admin.system_dashboards') }}"
+            name: "{{ t('admin.system_dashboards_regen') }}"
           - type: grid
             columns: 3
             square: false
@@ -659,7 +667,7 @@ views:
           # FR | saisis ici — la liste ne peut pas diverger de ce qui existe.
           - type: custom:button-card
             template: vssp_title
-            name: "{{ t('admin.system_dashboards') }}"
+            name: "{{ t('admin.system_dashboards_list') }}"
           - type: grid
             columns: 3
             square: false

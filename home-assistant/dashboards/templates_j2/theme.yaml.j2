@@ -53,3 +53,29 @@
 
   # transparence
   bubble-default-backdrop-background-color: "{{ design.bubble_backdrop }}"
+
+  # EN | input_select / mwc-select dropdowns (ADMIN's Interface language,
+  # EN | Target format, Chatbot provider...) — without these, HA's Material
+  # EN | select falls back to its own light-mode default fill (a bright
+  # EN | white box) instead of inheriting the dark theme, because these are
+  # EN | MDC component variables, never set anywhere in this file before.
+  # FR | Menus deroulants input_select / mwc-select (Langue d'interface,
+  # FR | Format cible, Fournisseur chatbot... de l'ADMIN) — sans elles, le
+  # FR | select Material de HA retombe sur son propre remplissage clair par
+  # FR | defaut (une boite blanche vive) au lieu d'heriter du theme sombre,
+  # FR | car ce sont des variables de composant MDC, jamais definies dans ce
+  # FR | fichier avant.
+  mdc-select-fill-color: "{{ design.palette.card_background }}"
+  mdc-select-ink-color: "{{ design.palette.text_primary }}"
+  mdc-select-label-ink-color: "{{ design.palette.text_secondary }}"
+  mdc-select-idle-line-color: "{{ design.divider }}"
+  mdc-select-hover-line-color: "{{ design.palette.primary }}"
+  mdc-select-outlined-idle-border-color: "{{ design.divider }}"
+  mdc-select-outlined-hover-border-color: "{{ design.palette.primary }}"
+  mdc-text-field-fill-color: "{{ design.palette.card_background }}"
+  mdc-text-field-ink-color: "{{ design.palette.text_primary }}"
+  mdc-text-field-label-ink-color: "{{ design.palette.text_secondary }}"
+  mdc-text-field-idle-line-color: "{{ design.divider }}"
+  mdc-text-field-hover-line-color: "{{ design.palette.primary }}"
+  mdc-theme-surface: "{{ design.palette.card_background }}"
+  mdc-theme-on-surface: "{{ design.palette.text_primary }}"

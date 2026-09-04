@@ -41,3 +41,29 @@ Visio Sapiens:
 
   # transparence
   bubble-default-backdrop-background-color: "transparent"
+
+  # EN | input_select / mwc-select dropdowns (ADMIN's Interface language,
+  # EN | Target format, Chatbot provider...) — without these, HA's Material
+  # EN | select falls back to its own light-mode default fill (a bright
+  # EN | white box) instead of inheriting the dark theme, because these are
+  # EN | MDC component variables, never set anywhere in this file before.
+  # FR | Menus deroulants input_select / mwc-select (Langue d'interface,
+  # FR | Format cible, Fournisseur chatbot... de l'ADMIN) — sans elles, le
+  # FR | select Material de HA retombe sur son propre remplissage clair par
+  # FR | defaut (une boite blanche vive) au lieu d'heriter du theme sombre,
+  # FR | car ce sont des variables de composant MDC, jamais definies dans ce
+  # FR | fichier avant.
+  mdc-select-fill-color: "rgba(16,27,39,0.85)"
+  mdc-select-ink-color: "#FFFFFF"
+  mdc-select-label-ink-color: "#B8E8F5"
+  mdc-select-idle-line-color: "#1F3448"
+  mdc-select-hover-line-color: "#00E5FF"
+  mdc-select-outlined-idle-border-color: "#1F3448"
+  mdc-select-outlined-hover-border-color: "#00E5FF"
+  mdc-text-field-fill-color: "rgba(16,27,39,0.85)"
+  mdc-text-field-ink-color: "#FFFFFF"
+  mdc-text-field-label-ink-color: "#B8E8F5"
+  mdc-text-field-idle-line-color: "#1F3448"
+  mdc-text-field-hover-line-color: "#00E5FF"
+  mdc-theme-surface: "rgba(16,27,39,0.85)"
+  mdc-theme-on-surface: "#FFFFFF"

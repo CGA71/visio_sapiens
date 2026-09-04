@@ -262,7 +262,12 @@ admin:
   generation: GÉNÉRATION
   apply_language: APPLIQUER LA LANGUE
   apply_language_hint: Rendre le fragment, patcher la config, regénérer
-  system_dashboards: Dashboards système
+  select_chatbot: Assistant chatbot
+  auto_regenerate: Régénération automatique
+  auto_regenerate_hint: Relance RÉGÉNÉRER TOUT (HOME protégé) selon l'intervalle ci-dessous
+  auto_regenerate_interval: Intervalle (heures)
+  system_dashboards_regen: Régénération des dashboards
+  system_dashboards_list: Liste des dashboards
   regenerate_all: RÉGÉNÉRER TOUT
   regenerate_all_hint: Régénère toutes les pièces + ENERGY/CORE (HOME protégé)
   regenerate_all_confirm: Régénérer TOUT écrasera les dashboards de toutes les pièces ainsi qu'ENERGY et CORE (une sauvegarde sera créée). HOME est protégé et ne sera pas touché. Continuer ?

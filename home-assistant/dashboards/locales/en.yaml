@@ -373,7 +373,12 @@ admin:
   generation: GENERATION
   apply_language: APPLY LANGUAGE
   apply_language_hint: Render the fragment, patch the config, regenerate
-  system_dashboards: System dashboards
+  select_chatbot: Chatbot assistant
+  auto_regenerate: Auto-regenerate
+  auto_regenerate_hint: Reruns REGENERATE ALL (HOME protected) on the interval below
+  auto_regenerate_interval: Interval (hours)
+  system_dashboards_regen: Dashboard regeneration
+  system_dashboards_list: Dashboard list
   regenerate_all: REGENERATE ALL
   regenerate_all_hint: Regenerates every room + ENERGY/CORE (HOME protected)
   regenerate_all_confirm: Regenerating ALL will overwrite every room dashboard plus ENERGY and CORE (a backup will be created). HOME is protected and will not be touched. Continue?

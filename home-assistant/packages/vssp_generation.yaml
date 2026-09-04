@@ -2,23 +2,27 @@
 # Visio Sapiens — GENERATION package
 #
 # EN | WHY THIS FILE EXISTS
-# EN | The ADMIN console's GENERATION panel references four entities. They
-# EN | were written into vssp/vssp_admin_config.yaml, which is a REFERENCE
-# EN | file: Home Assistant never loads it. What HA loads is this directory,
-# EN | through `homeassistant: packages: !include_dir_named packages` in
+# EN | The ADMIN console's GENERATION panel references the entities below
+# EN | (language/format/chatbot selectors, diagnostic sensors, the
+# EN | auto-regenerate toggle and its interval). They were written into
+# EN | vssp/vssp_admin_config.yaml, which is a REFERENCE file: Home
+# EN | Assistant never loads it. What HA loads is this directory, through
+# EN | `homeassistant: packages: !include_dir_named packages` in
 # EN | config-fragment.yaml. Anything the dashboards reference must therefore
 # EN | live in home-assistant/packages/, not in vssp/.
-# EN | Symptom when it does not: four "Entity not found" cards, with no error
-# EN | in the logs — the dashboard renders fine, it just points at nothing.
+# EN | Symptom when it does not: "Entity not found" cards, with no error in
+# EN | the logs — the dashboard renders fine, it just points at nothing.
 # FR | POURQUOI CE FICHIER EXISTE
-# FR | Le panneau GENERATION de la console ADMIN reference quatre entites.
-# FR | Elles etaient ecrites dans vssp/vssp_admin_config.yaml, qui est un
-# FR | fichier de REFERENCE : Home Assistant ne le charge jamais. Ce que HA
-# FR | charge, c'est ce repertoire, via
+# FR | Le panneau GENERATION de la console ADMIN reference les entites
+# FR | ci-dessous (selecteurs langue/format/chatbot, capteurs de diagnostic,
+# FR | interrupteur de regeneration automatique et son intervalle). Elles
+# FR | etaient ecrites dans vssp/vssp_admin_config.yaml, qui est un fichier
+# FR | de REFERENCE : Home Assistant ne le charge jamais. Ce que HA charge,
+# FR | c'est ce repertoire, via
 # FR | `homeassistant: packages: !include_dir_named packages` dans
 # FR | config-fragment.yaml. Tout ce que les dashboards referencent doit donc
 # FR | vivre dans home-assistant/packages/, pas dans vssp/.
-# FR | Symptome sinon : quatre cartes « Entite non trouvee », sans erreur dans
+# FR | Symptome sinon : des cartes « Entite non trouvee », sans erreur dans
 # FR | les logs — le dashboard s'affiche tres bien, il pointe juste vers rien.
 #
 # EN | BEFORE DEPLOYING — check for duplicate keys. Home Assistant refuses to
@@ -29,8 +33,9 @@
 # FR | packages/vssp_admin.yaml declare deja l'un des noms ci-dessous, n'en
 # FR | garder QU'UN des deux :
 #
-#   grep -n "vssp_language\|vssp_format\|vssp_render_fragment\|\
-# vssp_apply_fragment\|vssp_apply_language" home-assistant/packages/*.yaml
+#   grep -n "vssp_language\|vssp_format\|vssp_chatbot_provider\|\
+# vssp_auto_regenerate\|vssp_render_fragment\|vssp_apply_fragment\|\
+# vssp_apply_language" home-assistant/packages/*.yaml
 ########################################################################
 
 # ----------------------------------------------------------------------
@@ -62,6 +67,105 @@ input_select:
       - both
     initial: tablet
     icon: mdi:tablet-cellphone
+
+  # EN | Stored preference only — the HOME chatbot card (home.yaml.j2,
+  # EN | "Cadre 2 — Chatbot") is a placeholder with no backend wired up
+  # EN | yet. This selector exists so a future integration has a single
+  # EN | place to read "which provider" from, instead of that choice
+  # EN | being made when the backend finally gets built.
+  # FR | Preference stockee uniquement — la carte Chatbot de HOME
+  # FR | (home.yaml.j2, « Cadre 2 — Chatbot ») est un placeholder sans
+  # FR | backend cable. Ce selecteur existe pour qu'une future integration
+  # FR | ait un seul endroit ou lire « quel fournisseur », plutot que ce
+  # FR | choix soit fait au moment ou le backend sera enfin construit.
+  vssp_chatbot_provider:
+    name: "Visio Sapiens — Chatbot provider"
+    options:
+      - gemini
+      - claude
+      - chatgpt
+      - custom
+    initial: claude
+    icon: mdi:chat-processing-outline
+
+# ----------------------------------------------------------------------
+# EN | AUTO-REGENERATE — toggle + adjustable interval
+# FR | REGENERATION AUTOMATIQUE — interrupteur + intervalle ajustable
+# ----------------------------------------------------------------------
+# EN | Off by default: unattended regeneration is a real risk for anyone
+# EN | who hand-edits a dashboard between two runs (exactly why HOME is
+# EN | --protect-existing in the first place — see vssp_admin.yaml). Runs
+# EN | the same script.vssp_run_generate as the manual REGENERER TOUT
+# EN | button below, so it inherits that same protection: HOME is never
+# EN | touched by this automation either.
+# FR | Desactive par defaut : une regeneration sans surveillance est un
+# FR | vrai risque pour qui modifie un dashboard a la main entre deux
+# FR | passages (exactement pourquoi HOME est --protect-existing — voir
+# FR | vssp_admin.yaml). Lance le meme script.vssp_run_generate que le
+# FR | bouton manuel REGENERER TOUT ci-dessous, donc herite de la meme
+# FR | protection : HOME n'est jamais touche par cette automatisation non
+# FR | plus.
+input_boolean:
+  vssp_auto_regenerate:
+    name: "Visio Sapiens — Auto-regenerate"
+    icon: mdi:refresh-auto
+
+input_number:
+  vssp_auto_regenerate_interval_hours:
+    name: "Visio Sapiens — Auto-regenerate interval (hours)"
+    min: 1
+    max: 168
+    step: 1
+    initial: 24
+    icon: mdi:timer-cog-outline
+
+input_datetime:
+  # EN | Not shown on the admin screen — internal bookkeeping only, so the
+  # EN | automation below can tell "due" from "already ran recently"
+  # EN | without a dedicated scheduler integration.
+  # FR | Non affiche sur l'ecran admin — comptabilite interne uniquement,
+  # FR | pour que l'automatisation ci-dessous distingue « du » de « deja
+  # FR | lance recemment » sans integration de planification dediee.
+  vssp_auto_regenerate_last_run:
+    name: "Visio Sapiens — Auto-regenerate last run"
+    has_date: true
+    has_time: true
+
+automation:
+  - id: vssp_auto_regenerate
+    alias: "Visio Sapiens — Auto-regenerate dashboards"
+    mode: single
+    triggers:
+      # EN | Polls every 15 min; the condition below is what actually
+      # EN | gates it to the configured interval (default 24h). Coarser
+      # EN | than the interval itself so a change to the input_number
+      # EN | takes effect within 15 min instead of waiting a full cycle.
+      # FR | Sonde toutes les 15 min ; la condition ci-dessous est ce qui
+      # FR | verrouille reellement sur l'intervalle configure (24h par
+      # FR | defaut). Plus fin que l'intervalle lui-meme pour qu'un
+      # FR | changement de l'input_number prenne effet sous 15 min plutot
+      # FR | que d'attendre un cycle complet.
+      - trigger: time_pattern
+        minutes: "/15"
+    conditions:
+      - condition: state
+        entity_id: input_boolean.vssp_auto_regenerate
+        state: "on"
+      - condition: template
+        # EN | "unknown" (never run yet) counts as due.
+        # FR | « unknown » (jamais lance) compte comme du.
+        value_template: >-
+          {% set last = states('input_datetime.vssp_auto_regenerate_last_run') %}
+          {{ last in ['unknown', 'unavailable'] or
+             (now() - (last | as_datetime | as_local)).total_seconds()
+             >= (states('input_number.vssp_auto_regenerate_interval_hours') | float(24) * 3600) }}
+    actions:
+      - action: script.vssp_run_generate
+      - action: input_datetime.set_datetime
+        target:
+          entity_id: input_datetime.vssp_auto_regenerate_last_run
+        data:
+          datetime: "{{ now().strftime('%Y-%m-%d %H:%M:%S') }}"
 
 # ----------------------------------------------------------------------
 # EN | DIAGNOSTIC SENSORS
