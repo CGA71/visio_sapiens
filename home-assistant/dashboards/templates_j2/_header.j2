@@ -79,64 +79,62 @@
              FR | gardent la case titre seule. #}
 {% if calendar_entity is defined %}
           - type: custom:button-card
-            show_name: false
-            show_label: false
             entity: {{ house.time_entity }}
+            show_name: false
+            show_icon: false
+            show_state: false
+            show_label: true
             tap_action:
               action: navigate
               navigation_path: {{ page_path }}
-            custom_fields:
-              content: |
-                [[[
-                  // EN | The locale tag comes from the generator: one constant,
-                  // EN | and Intl handles every language on its own.
-                  // FR | L'etiquette de langue vient du generateur : une seule
-                  // FR | constante, et Intl gere toutes les langues tout seul.
-                  const LOCALE = '{{ locale_tag }}';
-                  const d = new Date();
-                  const time = new Intl.DateTimeFormat(LOCALE, {
-                    hour: '2-digit', minute: '2-digit', hour12: false
-                  }).format(d);
-                  // EN | Short format (like the mobile header) — the long
-                  // EN | form ("Vendredi 4 Septembre 2026") pushed the
-                  // EN | right-hand block wide enough to truncate the
-                  // EN | title down to "AC...".
-                  // FR | Format court (comme le header mobile) — la forme
-                  // FR | longue (« Vendredi 4 Septembre 2026 ») elargissait
-                  // FR | le bloc de droite au point de tronquer le titre en
-                  // FR | « AC... ».
-                  const date = new Intl.DateTimeFormat(LOCALE, {
-                    weekday: 'short', day: 'numeric', month: 'short'
-                  }).format(d);
-                  return `
-                    <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
-                      <div style="display:flex;align-items:center;gap:12px;min-width:0;flex:1 1 auto;">
-                        <ha-icon icon="mdi:chevron-left" style="--mdc-icon-size:24px;color:#8FB6C9;flex:none;"></ha-icon>
-                        <div style="min-width:0;">
-                          <div style="font-family:Orbitron,sans-serif;font-size:20px;font-weight:700;
-                            letter-spacing:1px;color:var(--text-primary-color, #FFFFFF);white-space:nowrap;
-                            overflow:hidden;text-overflow:ellipsis;">{{ page_title }}</div>
-                          <div style="font-size:13px;color:var(--secondary-text-color, #8FB6C9);margin-top:2px;
-                            white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ page_subtitle }}</div>
-                        </div>
+            label: |
+              [[[
+                // EN | The locale tag comes from the generator: one constant,
+                // EN | and Intl handles every language on its own.
+                // FR | L'etiquette de langue vient du generateur : une seule
+                // FR | constante, et Intl gere toutes les langues tout seul.
+                const LOCALE = '{{ locale_tag }}';
+                const d = new Date();
+                const time = new Intl.DateTimeFormat(LOCALE, {
+                  hour: '2-digit', minute: '2-digit', hour12: false
+                }).format(d);
+                // EN | Short format (like the mobile header) — the long
+                // EN | form ("Vendredi 4 Septembre 2026") pushed the
+                // EN | right-hand block wide enough to truncate the
+                // EN | title down to "AC...".
+                // FR | Format court (comme le header mobile) — la forme
+                // FR | longue (« Vendredi 4 Septembre 2026 ») elargissait
+                // FR | le bloc de droite au point de tronquer le titre en
+                // FR | « AC... ».
+                const date = new Intl.DateTimeFormat(LOCALE, {
+                  weekday: 'short', day: 'numeric', month: 'short'
+                }).format(d);
+                return `
+                  <div style="display:flex;align-items:center;justify-content:space-between;width:100%;">
+                    <div style="display:flex;align-items:center;gap:12px;min-width:0;">
+                      <ha-icon icon="mdi:chevron-left" style="--mdc-icon-size:24px;color:#8FB6C9;flex:none;"></ha-icon>
+                      <div style="min-width:0;">
+                        <div style="font-family:Orbitron,sans-serif;font-size:20px;font-weight:700;
+                          letter-spacing:1px;color:var(--text-primary-color, #FFFFFF);white-space:nowrap;
+                          overflow:hidden;text-overflow:ellipsis;">{{ page_title }}</div>
+                        <div style="font-size:13px;color:var(--secondary-text-color, #8FB6C9);margin-top:2px;
+                          white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ page_subtitle }}</div>
                       </div>
-                      <div style="text-align:right;flex:none;padding-left:12px;">
-                        <div style="font-family:Orbitron,sans-serif;font-size:24px;color:var(--text-primary-color, #FFFFFF);line-height:1;">${time}</div>
-                        <div style="font-size:11px;color:var(--secondary-text-color, #8FB6C9);letter-spacing:.5px;margin-top:4px;text-transform:capitalize;white-space:nowrap;">${date}</div>
-                      </div>
-                    </div>`;
-                ]]]
+                    </div>
+                    <div style="text-align:right;flex:none;padding-left:12px;">
+                      <div style="font-family:Orbitron,sans-serif;font-size:24px;color:var(--text-primary-color, #FFFFFF);line-height:1;">${time}</div>
+                      <div style="font-size:11px;color:var(--secondary-text-color, #8FB6C9);letter-spacing:.5px;margin-top:4px;text-transform:capitalize;white-space:nowrap;">${date}</div>
+                    </div>
+                  </div>`;
+              ]]]
             styles:
               card:
                 - background: transparent
                 - box-shadow: none
                 - border: none
                 - padding: 6px 20px
-              grid:
-                - grid-template-areas: '"content"'
-              custom_fields:
-                content:
-                  - width: 100%
+              label:
+                - width: 100%
             card_mod:
               style: |
                 :host { flex: 1 1 0; }
