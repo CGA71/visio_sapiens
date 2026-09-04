@@ -181,8 +181,39 @@ shell_command:
   # Discovery Wizard, phase 3) s'il est present, puis rend les
   # templates Jinja2 vers dashboards/views/ (validation YAML avant
   # ecriture : jamais de dashboard casse deploye).
+  #
+  # EN | --locale WAS MISSING HERE (and on every other generate_dashboards.py
+  # EN | shell_command below). generate_dashboards.py's own precedence is
+  # EN | --locale > house.locale > 'en' — without the flag, EVERY dashboard
+  # EN | (this one, CREATE/REGENERATE HOME/ENERGY/CORE, even the preview
+  # EN | commands) silently fell back to house.yaml's static `locale: fr`,
+  # EN | ignoring input_select.vssp_language entirely. APPLY LANGUAGE's step
+  # EN | 1 (shell_command.vssp_render_fragment, sidebar nav strings) DID read
+  # EN | the selector correctly, which is what made this so easy to miss:
+  # EN | the nav rail switched language, the page content underneath it
+  # EN | silently did not. Found live: selecting "en" and running APPLY
+  # EN | LANGUAGE kept regenerating every dashboard in French — confirmed by
+  # EN | fetching the raw lovelace/config over the websocket, not just the
+  # EN | rendered page, since a stale browser cache was the first (wrong)
+  # EN | suspect.
+  # FR | --locale MANQUAIT ICI (et sur chaque autre shell_command
+  # FR | generate_dashboards.py ci-dessous). La priorite propre a
+  # FR | generate_dashboards.py est --locale > house.locale > 'en' — sans le
+  # FR | flag, CHAQUE dashboard (celui-ci, CREER/REGENERER HOME/ENERGY/CORE,
+  # FR | meme les commandes d'apercu) retombait silencieusement sur le
+  # FR | `locale: fr` statique de house.yaml, ignorant totalement
+  # FR | input_select.vssp_language. L'etape 1 d'APPLIQUER LA LANGUE
+  # FR | (shell_command.vssp_render_fragment, chaines du bandeau de nav) LUI
+  # FR | lisait bien le selecteur, ce qui rendait la panne facile a manquer :
+  # FR | le bandeau de nav changeait de langue, le contenu de page en dessous
+  # FR | non, en silence. Trouve en direct : selectionner « en » puis lancer
+  # FR | APPLIQUER LA LANGUE regenerait quand meme chaque dashboard en
+  # FR | francais — confirme en recuperant le lovelace/config brut via le
+  # FR | websocket, pas seulement la page rendue, puisqu'un cache navigateur
+  # FR | perime etait le premier suspect (le mauvais).
   vssp_generate_dashboards: >-
     python3 /config/vssp/generate_dashboards.py
+    --locale {{ states('input_select.vssp_language') }}
     --model /config/dashboards/model/house.yaml
     --rooms /config/dashboards/model/house_rooms.yaml
     --devices /config/dashboards/model/energy_devices.yaml
@@ -208,8 +239,10 @@ shell_command:
   # erreur sur une installation deja configuree. HOME est de toute facon
   # protege en permanence par generate_dashboards.py (--protect-existing
   # vaut "home" par defaut), meme si --if-missing n'etait pas passe ici.
+  # --locale : voir la note sur vssp_generate_dashboards plus haut.
   vssp_create_home: >-
     python3 /config/vssp/generate_dashboards.py
+    --locale {{ states('input_select.vssp_language') }}
     --only home --if-missing
     --model /config/dashboards/model/house.yaml
     --devices /config/dashboards/model/energy_devices.yaml
@@ -223,8 +256,10 @@ shell_command:
   # seul moyen intentionnel d'ecraser HOME. --protect-existing "" est
   # INDISPENSABLE ici : sans lui, la protection par defaut de HOME
   # (activee par tous les autres appelants) bloquerait aussi ce bouton.
+  # --locale : voir la note sur vssp_generate_dashboards plus haut.
   vssp_regenerate_home: >-
     python3 /config/vssp/generate_dashboards.py
+    --locale {{ states('input_select.vssp_language') }}
     --only home
     --protect-existing ""
     --model /config/dashboards/model/house.yaml
@@ -254,8 +289,10 @@ shell_command:
   # CORE, contrairement a HOME, n'est jamais protege : comme ENERGY, il
   # reste une projection automatique du modele, jamais destine a une
   # edition manuelle.
+  # --locale : voir la note sur vssp_generate_dashboards plus haut.
   vssp_create_core: >-
     python3 /config/vssp/generate_dashboards.py
+    --locale {{ states('input_select.vssp_language') }}
     --only core --if-missing
     --model /config/dashboards/model/house.yaml
     --devices /config/dashboards/model/energy_devices.yaml
@@ -265,8 +302,10 @@ shell_command:
     --out /config/dashboards/views
     --status-file /config/www/vssp/preview_status.json
 
+  # --locale : voir la note sur vssp_generate_dashboards plus haut.
   vssp_regenerate_core: >-
     python3 /config/vssp/generate_dashboards.py
+    --locale {{ states('input_select.vssp_language') }}
     --only core
     --model /config/dashboards/model/house.yaml
     --devices /config/dashboards/model/energy_devices.yaml
@@ -287,8 +326,10 @@ shell_command:
     rm -f /config/dashboards/views/core.yaml
     /config/dashboards/views/core_mobile.yaml
 
+  # --locale : voir la note sur vssp_generate_dashboards plus haut.
   vssp_create_energy: >-
     python3 /config/vssp/generate_dashboards.py
+    --locale {{ states('input_select.vssp_language') }}
     --only energy --if-missing
     --model /config/dashboards/model/house.yaml
     --devices /config/dashboards/model/energy_devices.yaml
@@ -299,8 +340,10 @@ shell_command:
     --status-file /config/www/vssp/energy_generate_status.json
 
   # REGENERER : ecrase volontairement (apres sauvegarde par le script).
+  # --locale : voir la note sur vssp_generate_dashboards plus haut.
   vssp_regenerate_energy: >-
     python3 /config/vssp/generate_dashboards.py
+    --locale {{ states('input_select.vssp_language') }}
     --only energy
     --model /config/dashboards/model/house.yaml
     --devices /config/dashboards/model/energy_devices.yaml
@@ -368,8 +411,10 @@ shell_command:
   # 2) Genere energy_preview.yaml (url vssp-energy-preview) a partir du
   #    modele d'apercu. --preview garantit qu'aucun fichier de staging
   #    n'est ecrit : le nom de sortie et l'url_path sont suffixes.
+  # --locale : voir la note sur vssp_generate_dashboards plus haut.
   vssp_generate_preview: >-
     python3 /config/vssp/generate_dashboards.py
+    --locale {{ states('input_select.vssp_language') }}
     --model /config/dashboards/model/house.yaml
     --rooms /config/dashboards/model/house_rooms.preview.yaml
     --templates /config/dashboards/templates_j2
@@ -379,8 +424,10 @@ shell_command:
     --status-file /config/www/vssp/preview_status.json
 
   # 3) Validation seule : ne produit aucun fichier, juste le rapport.
+  # --locale : voir la note sur vssp_generate_dashboards plus haut.
   vssp_validate_preview: >-
     python3 /config/vssp/generate_dashboards.py
+    --locale {{ states('input_select.vssp_language') }}
     --model /config/dashboards/model/house.yaml
     --rooms /config/dashboards/model/house_rooms.preview.yaml
     --templates /config/dashboards/templates_j2
