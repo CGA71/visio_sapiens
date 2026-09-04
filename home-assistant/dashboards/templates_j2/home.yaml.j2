@@ -193,9 +193,9 @@ views:
                 bar:
                   - width: 100%
 
-          # Case 2 — Energy Status : meme motif que System Status, une seule
-          # bar card. Barre = part du total consomme aujourd'hui couverte
-          # par la production du jour.
+          # Case 2 — Energy Status : deux barres distinctes (production /
+          # consommation du jour), meme motif que Case 3 (Pieces +
+          # Connexions) plutot qu'une seule barre de ratio.
           #
           # EN | Was energy.totals.power / energy.solar.power (instantaneous
           # EN | W) — the user pointed out the consumption reading looked
@@ -206,8 +206,11 @@ views:
           # EN | declared in house.yaml's `energy:` block). Unit is read from
           # EN | the entity's own unit_of_measurement rather than hardcoded,
           # EN | so this displays correctly whatever the real unit is.
-          # EN | Production still reads 0 — no solar entity on this install —
-          # EN | same honest-empty-bar reasoning as before.
+          # EN | Later, the user asked for two separate bars (production and
+          # EN | consumption) instead of the single coverage-ratio bar, so
+          # EN | each value now gets its own bar scaled against the max of
+          # EN | the two (matching the Case 3 rooms/devices pattern) rather
+          # EN | than one bar showing prod-as-%-of-cons.
           # FR | Etait energy.totals.power / energy.solar.power (W
           # FR | instantane) — l'utilisateur a signale que la consommation
           # FR | affichee semblait beaucoup trop faible (« 2W ») pour une
@@ -217,9 +220,13 @@ views:
           # FR | totaux kWh du jour, deja declares dans le bloc `energy:` de
           # FR | house.yaml). L'unite est lue depuis le unit_of_measurement
           # FR | propre a l'entite plutot que codee en dur, donc l'affichage
-          # FR | reste correct quelle que soit l'unite reelle. La production
-          # FR | reste a 0 — aucune entite solaire sur cette installation —
-          # FR | meme raisonnement de barre honnetement vide qu'avant.
+          # FR | reste correct quelle que soit l'unite reelle. Ensuite,
+          # FR | l'utilisateur a demande deux barres distinctes (production
+          # FR | et consommation) au lieu de l'unique barre de ratio de
+          # FR | couverture : chaque valeur a maintenant sa propre barre,
+          # FR | mise a l'echelle du max des deux (meme motif que Pieces/
+          # FR | Connexions du Case 3) plutot qu'une barre montrant
+          # FR | prod-en-%-de-cons.
           - type: custom:button-card
             show_icon: false
             show_state: false
@@ -229,7 +236,7 @@ views:
             tap_action:
               action: more-info
             custom_fields:
-              bar: >
+              bars: >
                 [[[
                   const prodEnt = states['{{ energy.solar.today }}'];
                   const consEnt = states['{{ energy.totals.today }}'];
@@ -237,22 +244,27 @@ views:
                   const cons = parseFloat(consEnt?.state) || 0;
                   const prodUnit = prodEnt?.attributes?.unit_of_measurement || 'kWh';
                   const consUnit = consEnt?.attributes?.unit_of_measurement || 'kWh';
-                  const ratio = cons > 0 ? Math.min(prod / cons * 100, 100) : (prod > 0 ? 100 : 0);
-                  const color = ratio >= 100 ? '#00FFC3' : ratio >= 50 ? '#FFA726' : '#FF3D71';
+                  const maxVal = Math.max(prod, cons, 0.001);
+                  const prodRatio = prod / maxVal * 100;
+                  const consRatio = cons / maxVal * 100;
                   return `
-                    <div style="display:flex;justify-content:space-between;font-size:9px;color:#56707E;margin-bottom:3px;line-height:1.2;">
-                      <span>{{ t('home.kpi.production') }} ${prod.toFixed(1)}${prodUnit}</span>
-                      <span>{{ t('home.kpi.consumption') }} ${cons.toFixed(1)}${consUnit}</span>
+                    <div style="margin-bottom:6px;">
+                      <div style="font-size:9px;color:#00FFC3;margin-bottom:2px;">{{ t('home.kpi.production') }} ${prod.toFixed(1)}${prodUnit}</div>
+                      <div style="position:relative;width:100%;height:9px;background:rgba(255,255,255,.08);border-radius:5px;overflow:hidden;">
+                        <div style="width:${prodRatio}%;height:100%;background:#00FFC3;border-radius:5px;transition:width .3s;"></div>
+                      </div>
                     </div>
-                    <div style="position:relative;width:100%;height:14px;background:rgba(255,255,255,.08);border-radius:7px;overflow:hidden;">
-                      <div style="width:${ratio}%;height:100%;background:${color};border-radius:7px;transition:width .3s;"></div>
-                      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#0B141C;">${Math.round(ratio)}%</div>
+                    <div>
+                      <div style="font-size:9px;color:#FFA726;margin-bottom:2px;">{{ t('home.kpi.consumption') }} ${cons.toFixed(1)}${consUnit}</div>
+                      <div style="position:relative;width:100%;height:9px;background:rgba(255,255,255,.08);border-radius:5px;overflow:hidden;">
+                        <div style="width:${consRatio}%;height:100%;background:#FFA726;border-radius:5px;transition:width .3s;"></div>
+                      </div>
                     </div>
                   `;
                 ]]]
             styles:
               grid:
-                - grid-template-areas: '"n" "bar"'
+                - grid-template-areas: '"n" "bars"'
                 - grid-template-rows: min-content 1fr
                 - row-gap: 6px
                 - justify-items: start
@@ -270,7 +282,7 @@ views:
                 - justify-self: start
                 - text-align: left
               custom_fields:
-                bar:
+                bars:
                   - width: 100%
 
           # Case 3 — Pièces + Connexions, fusionnees en une bar card (meme
