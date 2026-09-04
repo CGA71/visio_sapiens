@@ -18,15 +18,21 @@
      page_path       - navigation target when the title is tapped
      locale_tag      - BCP-47 tag ('fr-FR', 'en-US') injected by the generator
      calendar_entity (optional) - EN | a calendar.* entity id; when set,
-       Cell 3 becomes a custom:stack-in-card merging the time/date cell with
-       a custom:calendar-card-pro showing today's agenda (days_to_show: 1)
-       in the same bordered frame. Requires the calendar-card-pro Lovelace
-       resource to be registered (HACS or manual resource).
+       Cell 3 becomes a custom:vertical-stack-in-card merging the time/date
+       cell with a custom:calendar-card-pro showing today's agenda
+       (days_to_show: 1) in the same bordered frame. NOT custom:stack-in-card
+       — that resource isn't installed in this instance; only
+       vertical-stack-in-card is (confirmed in Settings > Dashboards >
+       Resources). Requires the calendar-card-pro Lovelace resource to be
+       registered too (HACS or manual resource).
        FR | id d'entite calendar.* ; si defini, la Case 3 devient un
-       custom:stack-in-card fusionnant la case heure/date avec un
+       custom:vertical-stack-in-card fusionnant la case heure/date avec un
        custom:calendar-card-pro affichant l'agenda du jour (days_to_show: 1)
-       dans le meme cadre borde. Necessite que la ressource Lovelace
-       calendar-card-pro soit enregistree (HACS ou ressource manuelle).
+       dans le meme cadre borde. PAS custom:stack-in-card — cette ressource
+       n'est pas installee sur cette instance ; seul vertical-stack-in-card
+       l'est (confirme dans Parametres > Tableaux de bord > Ressources).
+       Necessite aussi que la ressource Lovelace calendar-card-pro soit
+       enregistree (HACS ou ressource manuelle).
      regenerate_dashboard_service (optional) - EN | script/service id; when
        set, a 4th compact icon cell is added that calls it (with the same
        confirmation dialog as the ADMIN console's own REGENERATE button) —
@@ -118,7 +124,7 @@
              FR | autres dashboards utilisant ce partial gardent la case
              FR | heure seule. #}
 {% if calendar_entity is defined %}
-          - type: custom:stack-in-card
+          - type: custom:vertical-stack-in-card
             card_mod:
               style: |
                 :host { flex: 1 1 0; }
