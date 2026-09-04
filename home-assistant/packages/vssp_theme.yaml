@@ -113,9 +113,34 @@ shell_command:
 # FR | cela. Un webhook n en a besoin d aucun ; `local_only: true` le
 # FR | maintient sur le reseau local.
 automation:
+  # EN | mode: queued (not single) — same fix as vssp_rooms.yaml's
+  # EN | "Receive room structure sync" (see its comment for the full
+  # EN | writeup): a webhook automation with mode: single silently DROPS a
+  # EN | trigger that arrives while a previous run is still executing
+  # EN | (script_execution: "failed_single" in the trace), yet the webhook
+  # EN | endpoint itself still answers 200, so the browser shows its normal
+  # EN | success notice regardless of whether this automation actually ran.
+  # EN | Any client that can fire this webhook from more than one call site
+  # EN | close together is exposed to a real edit being silently discarded
+  # EN | in favor of whichever request happened to win the race. queued
+  # EN | (max: 10) processes every trigger in order instead of dropping any.
+  # FR | mode: queued (pas single) — meme correctif que « Receive room
+  # FR | structure sync » de vssp_rooms.yaml (voir son commentaire pour
+  # FR | l explication complete) : une automatisation webhook en mode:
+  # FR | single REJETTE en silence un declenchement arrivant pendant qu une
+  # FR | execution precedente tourne encore (script_execution:
+  # FR | « failed_single » dans la trace), pourtant le point d entree
+  # FR | webhook lui-meme repond quand meme 200, donc le navigateur affiche
+  # FR | son avis de succes habituel que cette automatisation ait
+  # FR | reellement tourne ou non. Tout client capable de declencher ce
+  # FR | webhook depuis plus d un point d appel rapproche s expose a voir
+  # FR | une vraie modification ecrasee en silence au profit de la requete
+  # FR | qui a gagne la course. queued (max: 10) traite chaque
+  # FR | declenchement dans l ordre au lieu d en rejeter aucun.
   - alias: "Visio Sapiens — Receive design system update"
     id: vssp_receive_theme
-    mode: single
+    mode: queued
+    max: 10
     triggers:
       - trigger: webhook
         webhook_id: vssp_theme

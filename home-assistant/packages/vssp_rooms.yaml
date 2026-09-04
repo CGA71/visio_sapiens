@@ -53,9 +53,46 @@ shell_command:
 # FR | Bearer, donc un webhook local uniquement sert de point d entree.
 # ----------------------------------------------------------------------
 automation:
+  # EN | mode: queued (not single) — ROOT CAUSE of "my slot_set/default_slot
+  # EN | choice reverted to default/automatic" reproduced live: this webhook
+  # EN | fires from THREE client call sites (connect(), reload(), and
+  # EN | applyDiff()'s own post-Apply sync) — a page load followed shortly by
+  # EN | an Apply, or two tabs, sends two POSTs close together. Each run of
+  # EN | this automation takes 4-5s (shell_command.vssp_rooms_apply +
+  # EN | vssp_generate_dashboards + vssp_assign_prepare), so with mode:
+  # EN | single the second POST arriving mid-run was silently REJECTED
+  # EN | (script_execution: "failed_single" in the trace) — never even
+  # EN | reaching vssp_rooms_apply.py. The webhook endpoint itself still
+  # EN | answered 200 either way, so the browser showed its normal "applied"
+  # EN | notice regardless of whether the automation actually ran. Whichever
+  # EN | POST fired first (often the page's own connect()-time sync, sending
+  # EN | the OLD "default" values since nothing had been edited yet) is the
+  # EN | one that won, silently discarding the admin's real edit. queued
+  # EN | (max: 10) processes every trigger in order instead of dropping any.
+  # FR | mode: queued (pas single) — CAUSE RACINE de « mon choix de
+  # FR | slot_set/default_slot est revenu a default/automatique » reproduite
+  # FR | en direct : ce webhook est declenche depuis TROIS points d appel
+  # FR | cote client (connect(), reload(), et la propre synchronisation
+  # FR | post-Appliquer de applyDiff()) — un chargement de page suivi de peu
+  # FR | par un Appliquer, ou deux onglets, envoie deux POST rapprochés.
+  # FR | Chaque execution de cette automatisation prend 4-5s
+  # FR | (shell_command.vssp_rooms_apply + vssp_generate_dashboards +
+  # FR | vssp_assign_prepare), donc avec mode: single le second POST arrive
+  # FR | en cours d execution et etait REJETE en silence
+  # FR | (script_execution: « failed_single » dans la trace) — n atteignant
+  # FR | meme jamais vssp_rooms_apply.py. Le point d entree webhook
+  # FR | lui-meme repondait quand meme 200 dans les deux cas, donc le
+  # FR | navigateur affichait son avis « applique » habituel que
+  # FR | l automatisation ait reellement tourne ou non. Quel que soit le
+  # FR | POST arrive en premier (souvent la synchronisation au moment de
+  # FR | connect(), envoyant les ANCIENNES valeurs « default » puisque rien
+  # FR | n avait encore ete edite) l emportait, ecrasant en silence la
+  # FR | vraie modification de l administrateur. queued (max: 10) traite
+  # FR | chaque declenchement dans l ordre au lieu d en rejeter aucun.
   - alias: "Visio Sapiens — Receive room structure sync"
     id: vssp_receive_rooms_sync
-    mode: single
+    mode: queued
+    max: 10
     triggers:
       - trigger: webhook
         webhook_id: vssp_rooms_sync
