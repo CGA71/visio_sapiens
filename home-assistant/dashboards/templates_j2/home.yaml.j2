@@ -46,7 +46,8 @@
 # EN | Lovelace dependencies (HACS + declared in resources):
 # FR | Dependances Lovelace (HACS + declarees dans resources) :
 #   button-card, card-mod, layout-card, custom:stack-in-card,
-#   apexcharts-card, config-template-card, decluttering-card, browser_mod
+#   apexcharts-card, config-template-card, decluttering-card, browser_mod,
+#   calendar-card-pro
 ########################################################################
 
 title: {{ house.name | title }}
@@ -75,7 +76,7 @@ views:
     type: custom:grid-layout
     layout:
       grid-template-columns: minmax(200px, auto) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) minmax(0, 1fr) 565px
-      grid-template-rows: 105px 113px 444px 400px
+      grid-template-rows: 210px 113px 444px 400px
       grid-template-areas: |
         "nav header header header header header header"
         "nav kpi1 kpi2 kpi3 kpi4 kpi5 kpi5"
@@ -91,17 +92,26 @@ views:
 {% set page_title = t('page.home.name') %}
 {% set page_subtitle = t('page.home.subtitle') %}
 {% set page_path = '/visio-sapiens/home' %}
-{# EN | HOME is the one dashboard protected against automatic overwrite
-   EN | (--protect-existing home, see vssp_admin.yaml) — every other
-   EN | REGENERATE/ROOMS/ASSIGN/THEME apply already refreshes it, so it is
-   EN | the one that goes stale on its own. A header button that calls the
-   EN | same script as ADMIN's own REGENERATE HOME saves the round trip.
-   FR | HOME est le seul dashboard protege contre l'ecrasement automatique
-   FR | (--protect-existing home, voir vssp_admin.yaml) — toute autre
-   FR | application REGENERER/ROOMS/ASSIGN/THEME le rafraichit deja, donc
-   FR | c'est le seul qui se perime tout seul. Un bouton d'en-tete qui
-   FR | appelle le meme script que le REGENERER HOME d'ADMIN evite l'aller-retour. #}
-{% set regenerate_dashboard_service = 'script.vssp_regenerate_home_dashboard' %}
+{# EN | calendar.calebar is the only calendar.* entity in this install
+   EN | (Local Calendar integration, "calebar" entry) — used here to show
+   EN | today's agenda alongside the clock, per user request.
+   FR | calendar.calebar est la seule entite calendar.* de cette
+   FR | installation (integration Local Calendar, entree « calebar ») —
+   FR | utilisee ici pour afficher l'agenda du jour a cote de l'horloge, a
+   FR | la demande de l'utilisateur. #}
+{% set calendar_entity = 'calendar.calebar' %}
+{# EN | No regenerate_dashboard_service here on purpose: the header's
+   EN | optional Cell 4 (mdi:refresh, calls script.vssp_regenerate_home_
+   EN | dashboard) was removed from HOME per user request — use ADMIN's own
+   EN | REGENERATE HOME instead. HOME is still the one dashboard protected
+   EN | against automatic overwrite (--protect-existing home, see
+   EN | vssp_admin.yaml).
+   FR | Pas de regenerate_dashboard_service ici, volontairement : la case 4
+   FR | optionnelle de l'en-tete (mdi:refresh, appelle script.vssp_
+   FR | regenerate_home_dashboard) a ete retiree de HOME a la demande de
+   FR | l'utilisateur — passer par le REGENERER HOME d'ADMIN a la place.
+   FR | HOME reste le seul dashboard protege contre l'ecrasement automatique
+   FR | (--protect-existing home, voir vssp_admin.yaml). #}
 {% include '_header.j2' %}
 
       # ═══════════════════════════════════════════════════════════════
@@ -142,6 +152,14 @@ views:
           # FR | ici utilise) sur demande : une moyenne unique des trois
           # FR | metriques, CPU/RAM/HDD detailles en petites etiquettes
           # FR | au-dessus.
+          # EN | Later, the user asked for two dedicated CPU/RAM bars
+          # EN | (stacked, one above the other) instead of the single
+          # EN | averaged bar, dropping HDD — same layout as Case 2's
+          # EN | production/consumption bars below.
+          # FR | Ensuite, l'utilisateur a demande deux barres dediees
+          # FR | CPU/RAM (empilees l'une sous l'autre) au lieu de la barre
+          # FR | moyenne unique, en abandonnant le HDD — meme mise en page
+          # FR | que les barres production/consommation du Case 2 ci-dessous.
           - type: custom:button-card
             show_icon: false
             show_state: false
@@ -151,28 +169,31 @@ views:
             tap_action:
               action: more-info
             custom_fields:
-              bar: >
+              bars: >
                 [[[
                   const cpu = parseFloat(states['sensor.system_monitor_utilisation_du_processeur']?.state) || 0;
                   const ram = parseFloat(states['sensor.system_monitor_utilisation_de_la_memoire']?.state) || 0;
-                  const hdd = parseFloat(states['sensor.system_monitor_espace_utilise']?.state) || 0;
-                  const avg = (cpu + ram + hdd) / 3;
-                  const color = avg >= 90 ? '#FF3D71' : avg >= 70 ? '#FFA726' : '#00FFC3';
+                  const colorFor = (v) => v >= 90 ? '#FF3D71' : v >= 70 ? '#FFA726' : '#00FFC3';
+                  const cpuColor = colorFor(cpu);
+                  const ramColor = colorFor(ram);
                   return `
-                    <div style="display:flex;justify-content:space-between;font-size:9px;color:#56707E;margin-bottom:3px;line-height:1.2;">
-                      <span>CPU ${Math.round(cpu)}%</span>
-                      <span>RAM ${Math.round(ram)}%</span>
-                      <span>HDD ${Math.round(hdd)}%</span>
+                    <div style="margin-bottom:6px;">
+                      <div style="font-size:9px;color:${cpuColor};margin-bottom:2px;">CPU ${Math.round(cpu)}%</div>
+                      <div style="position:relative;width:100%;height:9px;background:rgba(255,255,255,.08);border-radius:5px;overflow:hidden;">
+                        <div style="width:${Math.min(cpu,100)}%;height:100%;background:${cpuColor};border-radius:5px;transition:width .3s;"></div>
+                      </div>
                     </div>
-                    <div style="position:relative;width:100%;height:14px;background:rgba(255,255,255,.08);border-radius:7px;overflow:hidden;">
-                      <div style="width:${Math.min(avg,100)}%;height:100%;background:${color};border-radius:7px;transition:width .3s;"></div>
-                      <div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;color:#0B141C;">${Math.round(avg)}%</div>
+                    <div>
+                      <div style="font-size:9px;color:${ramColor};margin-bottom:2px;">RAM ${Math.round(ram)}%</div>
+                      <div style="position:relative;width:100%;height:9px;background:rgba(255,255,255,.08);border-radius:5px;overflow:hidden;">
+                        <div style="width:${Math.min(ram,100)}%;height:100%;background:${ramColor};border-radius:5px;transition:width .3s;"></div>
+                      </div>
                     </div>
                   `;
                 ]]]
             styles:
               grid:
-                - grid-template-areas: '"n" "bar"'
+                - grid-template-areas: '"n" "bars"'
                 - grid-template-rows: min-content 1fr
                 - row-gap: 6px
                 - justify-items: start
@@ -190,7 +211,7 @@ views:
                 - justify-self: start
                 - text-align: left
               custom_fields:
-                bar:
+                bars:
                   - width: 100%
 
           # Case 2 — Energy Status : deux barres distinctes (production /

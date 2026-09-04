@@ -17,6 +17,16 @@
      page_subtitle   - subtitle line, already translated
      page_path       - navigation target when the title is tapped
      locale_tag      - BCP-47 tag ('fr-FR', 'en-US') injected by the generator
+     calendar_entity (optional) - EN | a calendar.* entity id; when set,
+       Cell 3 becomes a custom:stack-in-card merging the time/date cell with
+       a custom:calendar-card-pro showing today's agenda (days_to_show: 1)
+       in the same bordered frame. Requires the calendar-card-pro Lovelace
+       resource to be registered (HACS or manual resource).
+       FR | id d'entite calendar.* ; si defini, la Case 3 devient un
+       custom:stack-in-card fusionnant la case heure/date avec un
+       custom:calendar-card-pro affichant l'agenda du jour (days_to_show: 1)
+       dans le meme cadre borde. Necessite que la ressource Lovelace
+       calendar-card-pro soit enregistree (HACS ou ressource manuelle).
      regenerate_dashboard_service (optional) - EN | script/service id; when
        set, a 4th compact icon cell is added that calls it (with the same
        confirmation dialog as the ADMIN console's own REGENERATE button) —
@@ -61,7 +71,7 @@
                   border: 1px solid color-mix(in srgb, var(--primary-color, #00E5FF) 28%, transparent) !important;
                   border-radius: var(--ha-card-border-radius, 20px) !important;
                   box-shadow: 0 0 18px color-mix(in srgb, var(--primary-color, #00E5FF) 12%, transparent) !important;
-                  height: 100px
+                  height: 100%
                 }
 
           {# EN | Cell 2: weather (native card, always available)
@@ -93,11 +103,81 @@
                   border: 1px solid color-mix(in srgb, var(--primary-color, #00E5FF) 28%, transparent) !important;
                   border-radius: var(--ha-card-border-radius, 20px) !important;
                   box-shadow: 0 0 18px color-mix(in srgb, var(--primary-color, #00E5FF) 12%, transparent) !important;
-                  height: 100px
+                  height: 100%
                 }
 
-          {# EN | Cell 3: time (standalone button-card, no dependency)
-             FR | Case 3 : heure (button-card autonome, sans dependance) #}
+          {# EN | Cell 3: time, and — when calendar_entity is set by the
+             EN | caller — today's agenda stacked below it in the same
+             EN | frame (custom:stack-in-card merges both into one bordered
+             EN | panel instead of two). Optional so every other dashboard
+             EN | using this partial keeps the plain time-only cell.
+             FR | Case 3 : heure, et — quand calendar_entity est defini par
+             FR | l'appelant — l'agenda du jour empile dessous dans le meme
+             FR | cadre (custom:stack-in-card fusionne les deux en un seul
+             FR | panneau borde au lieu de deux). Optionnel pour que tous les
+             FR | autres dashboards utilisant ce partial gardent la case
+             FR | heure seule. #}
+{% if calendar_entity is defined %}
+          - type: custom:stack-in-card
+            card_mod:
+              style: |
+                :host { flex: 1 1 0; }
+                ha-card {
+                  background: var(--card-background-color, rgba(16,27,39,0.85)) !important;
+                  border: 1px solid color-mix(in srgb, var(--primary-color, #00E5FF) 28%, transparent) !important;
+                  border-radius: var(--ha-card-border-radius, 20px) !important;
+                  box-shadow: 0 0 18px color-mix(in srgb, var(--primary-color, #00E5FF) 12%, transparent) !important;
+                }
+            cards:
+              - type: custom:button-card
+                entity: {{ house.time_entity }}
+                show_name: false
+                show_icon: false
+                show_state: false
+                show_label: true
+                label: |
+                  [[[
+                    // EN | The locale tag comes from the generator: one constant,
+                    // EN | and Intl handles every language on its own.
+                    // FR | L'etiquette de langue vient du generateur : une seule
+                    // FR | constante, et Intl gere toutes les langues tout seul.
+                    const LOCALE = '{{ locale_tag }}';
+                    const d = new Date();
+                    const time = new Intl.DateTimeFormat(LOCALE, {
+                      hour: '2-digit', minute: '2-digit', hour12: false
+                    }).format(d);
+                    const date = new Intl.DateTimeFormat(LOCALE, {
+                      weekday: 'long', day: 'numeric', month: 'long', year: 'numeric'
+                    }).format(d);
+                    return `<div style="font-family:Orbitron,sans-serif;font-size:24px;color:var(--text-primary-color, #FFFFFF);line-height:1;">${time}</div>
+                            <div style="font-size:11px;color:var(--secondary-text-color, #8FB6C9);letter-spacing:.5px;margin-top:4px;text-transform:capitalize;">${date}</div>`;
+                  ]]]
+                styles:
+                  card:
+                    - background: transparent
+                    - padding: 6px 20px 2px 20px
+                  grid:
+                    - grid-template-areas: '"l"'
+                    - grid-template-rows: min-content
+                    - align-content: start
+                    - justify-items: end
+                  label:
+                    - justify-self: end
+                    - text-align: right
+                card_mod:
+                  style: |
+                    ha-card { border: none !important; box-shadow: none !important; background: transparent !important; }
+              - type: custom:calendar-card-pro
+                entities:
+                  - {{ calendar_entity }}
+                days_to_show: 1
+                show_location: false
+                show_month: false
+                card_mod:
+                  style: |
+                    ha-card { border: none !important; box-shadow: none !important; background: transparent !important; }
+                    :host { font-size: 11px; }
+{% else %}
           - type: custom:button-card
             entity: {{ house.time_entity }}
             show_name: false
@@ -146,6 +226,7 @@
                   box-shadow: 0 0 18px color-mix(in srgb, var(--primary-color, #00E5FF) 12%, transparent) !important;
                   height: 100px
                 }
+{% endif %}
 {% if regenerate_dashboard_service is defined %}
 
           {# EN | Cell 4 (optional): regenerate this dashboard, in place —
