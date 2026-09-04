@@ -378,6 +378,9 @@ admin:
   auto_regenerate_hint: Reruns REGENERATE ALL (HOME protected) on the interval below
   auto_regenerate_interval: Interval (hours)
   system_dashboards_regen: Dashboard regeneration
+  col_dashboard: Dashboard
+  col_regenerate: Regen.
+  col_active: Active
   system_dashboards_list: Dashboard list
   regenerate_all: REGENERATE ALL
   regenerate_all_hint: Regenerates every room + ENERGY/CORE (HOME protected)

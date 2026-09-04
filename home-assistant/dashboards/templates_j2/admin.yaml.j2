@@ -577,8 +577,28 @@ views:
             tap_action:
               action: call-service
               service: script.vssp_run_generate
-          - type: vertical-stack
+          # EN | REGENERATE ALL is a global action, not a row of the table
+          # EN | below — card_mod gives it a bit of breathing room so it
+          # EN | doesn't read as part of the table.
+          # FR | REGENERER TOUT est une action globale, pas une ligne du
+          # FR | tableau ci-dessous — card_mod lui donne un peu d'air pour
+          # FR | qu'il ne se lise pas comme faisant partie du tableau.
+          - type: custom:vertical-stack-in-card
+            card_mod:
+              style: |
+                :host { margin-top: 14px; }
+                ha-card {
+                  background: var(--card-background-color, rgba(8,18,28,0.72)) !important;
+                  border: 1px solid rgba(0,229,255,0.25) !important;
+                  border-radius: var(--ha-card-border-radius, 16px) !important;
+                }
             cards:
+              - type: custom:decluttering-card
+                template: vssp_dashboard_row_header
+                variables:
+                  - col_dashboard: "{{ t('admin.col_dashboard') }}"
+                  - col_regenerate: "{{ t('admin.col_regenerate') }}"
+                  - col_active: "{{ t('admin.col_active') }}"
               - type: custom:decluttering-card
                 template: vssp_dashboard_row
                 variables:
