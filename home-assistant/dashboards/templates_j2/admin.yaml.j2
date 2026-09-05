@@ -106,21 +106,52 @@ views:
 
 {% include '_nav.j2' %}
 
-      - type: grid
-        columns: 3
-        square: false
+      # EN | A vertical list of rows (one screen per line), not a grid of
+      # EN | big boxes — replaces the previous 3-column tile grid at the
+      # EN | user's request. Wrapped in one vssp_panel-styled button-card
+      # EN | (show_icon/name/label all false, real content in
+      # EN | custom_fields.rows) purely so the list reads as one enclosed
+      # EN | menu panel — same technique already used for the Top-10 list
+      # EN | on HOME (home.yaml.j2) — rather than loose rows floating
+      # EN | directly on the page background.
+      # FR | Une liste verticale de lignes (un ecran par ligne), pas une
+      # FR | grille de grosses cases — remplace la grille de tuiles a 3
+      # FR | colonnes precedente, a la demande de l'utilisateur. Enveloppee
+      # FR | dans un button-card stylise vssp_panel (show_icon/name/label a
+      # FR | false, vrai contenu dans custom_fields.rows) uniquement pour
+      # FR | que la liste se lise comme un seul panneau de menu enveloppe —
+      # FR | meme technique deja utilisee pour la liste Top 10 de HOME
+      # FR | (home.yaml.j2) — plutot que des lignes flottant directement sur
+      # FR | le fond de page.
+      - type: custom:button-card
+        template: vssp_panel
         view_layout:
           grid-area: tiles
-        cards:
+        show_icon: false
+        show_name: false
+        show_label: false
+        styles:
+          card:
+            - padding: 6px 14px
+          grid:
+            - grid-template-areas: '"rows"'
+          custom_fields:
+            rows:
+              - width: 100%
+        custom_fields:
+          rows:
+            card:
+              type: vertical-stack
+              cards:
 {% for screen, icon, key in screens %}
-          - type: custom:button-card
-            template: vssp_admin_button
-            icon: {{ icon }}
-            name: "{{ t('adminmenu.section.' ~ key) }}"
-            label: "{{ t('adminmenu.section.' ~ key ~ '_hint') }}"
-            tap_action:
-              action: navigate
-              navigation_path: {{ admin_path }}/{{ screen }}
+                - type: custom:button-card
+                  template: vssp_admin_menu_row
+                  icon: {{ icon }}
+                  name: "{{ t('adminmenu.section.' ~ key) }}"
+                  label: "{{ t('adminmenu.section.' ~ key ~ '_hint') }}"
+                  tap_action:
+                    action: navigate
+                    navigation_path: {{ admin_path }}/{{ screen }}
 {% endfor %}
 
 {% for screen, icon, key in screens %}

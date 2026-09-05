@@ -586,6 +586,72 @@ vssp_admin_button:
       - text-align: left
 
 # ---------------------------------------------------------------------
+# EN | ADMIN console MENU screen — one full-width row per screen, stacked
+# EN | vertically (icon | name + hint | chevron), instead of a grid of big
+# EN | boxes (vssp_admin_button above). Same row shape as
+# EN | vssp_energy_device_row (icon cell / stacked name+label / trailing
+# EN | chevron / bottom-divider), just without that template's
+# EN | room/energy columns — this one is a pure navigation link.
+# EN |   template: vssp_admin_menu_row
+# EN |   icon: mdi:floor-plan
+# EN |   name: "Rooms"
+# EN |   label: "Define rooms and floors"
+# EN |   tap_action: {action: navigate, navigation_path: /visio-sapiens-admin/rooms}
+# FR | Ecran MENU de la console ADMIN — une ligne pleine largeur par ecran,
+# FR | empilees verticalement (icone | nom + indice | chevron), a la place
+# FR | d'une grille de grosses cases (vssp_admin_button ci-dessus). Meme
+# FR | forme de ligne que vssp_energy_device_row (case icone / nom+libelle
+# FR | empiles / chevron final / trait de separation en bas), simplement
+# FR | sans les colonnes piece/energie de ce template — celui-ci n'est
+# FR | qu'un lien de navigation.
+# FR |   template: vssp_admin_menu_row
+# FR |   icon: mdi:floor-plan
+# FR |   name: "Pieces"
+# FR |   label: "Definir les pieces et etages"
+# FR |   tap_action: {action: navigate, navigation_path: /visio-sapiens-admin/rooms}
+# ---------------------------------------------------------------------
+vssp_admin_menu_row:
+  show_icon: true
+  show_name: true
+  show_state: false
+  show_label: true
+  custom_fields:
+    arrow: >
+      <ha-icon icon="mdi:chevron-right"
+               style="--mdc-icon-size:18px;color:#56707E;"></ha-icon>
+  styles:
+    grid:
+      - grid-template-areas: '"i n arrow" "i l arrow"'
+      - grid-template-columns: 40px 1fr 20px
+      - grid-template-rows: min-content min-content
+      - column-gap: 12px
+      - justify-items: start
+      - align-items: center
+    card:
+      - background: transparent
+      - box-shadow: none
+      - border: none
+      - border-bottom: 1px solid var(--divider-color, rgba(0,229,255,0.10))
+      - border-radius: 0
+      - padding: 14px 4px
+      - transition: background .2s ease
+    icon:
+      - color: "var(--paper-item-icon-color, #00E5FF)"
+      - "--mdc-icon-size": 22px
+    name:
+      - color: "var(--text-primary-color, #FFFFFF)"
+      - font-size: 14px
+      - font-weight: 700
+      - letter-spacing: .5px
+      - justify-self: start
+      - text-align: left
+    label:
+      - color: "var(--secondary-text-color, #8FB6C9)"
+      - font-size: 11px
+      - justify-self: start
+      - text-align: left
+
+# ---------------------------------------------------------------------
 # EN | KPI card (active rooms / alarm / connections...) — icon + title +
 # FR | Carte KPI (pieces actives / alarme / connexions...) — icone + titre +
 # EN | coloured value + subtitle. Optional variables:
