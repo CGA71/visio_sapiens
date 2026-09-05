@@ -115,6 +115,32 @@ class VsspChatbotBar {
     return btoa(unescape(encodeURIComponent(str)));
   }
 
+  // EN | button-card renders custom_fields inside its OWN shadow root, so
+  // EN | `document.getElementById(...)` from here never finds the <input> —
+  // EN | `document.getElementById` does not pierce shadow boundaries. Every
+  // EN | caller below passes the DOM element it was actually invoked on
+  // EN | (`this` from its own inline onclick/onkeydown attribute) instead of
+  // EN | an id string, and this resolves the bar's <input> through ordinary
+  // EN | DOM traversal from that element (`closest`/`querySelector`), which
+  // EN | works fine within a shadow tree as long as it never routes back
+  // EN | through `document`.
+  // FR | button-card rend ses custom_fields dans SON PROPRE shadow root,
+  // FR | donc `document.getElementById(...)` depuis ici ne trouve jamais le
+  // FR | `<input>` — `document.getElementById` ne traverse pas les
+  // FR | frontieres du shadow DOM. Chaque appelant ci-dessous passe
+  // FR | l'element DOM sur lequel il a reellement ete invoque (`this` depuis
+  // FR | son propre attribut onclick/onkeydown en ligne) plutot qu'une
+  // FR | chaine id, et ceci resout le `<input>` de la barre par une
+  // FR | traversee DOM ordinaire depuis cet element (`closest`/
+  // FR | `querySelector`), qui fonctionne bien a l'interieur d'un shadow
+  // FR | tree tant qu'elle ne repasse jamais par `document`.
+  _resolveInput(el) {
+    if (!el) return null;
+    if (el.tagName === 'INPUT') return el;
+    const bar = el.closest ? el.closest('.vssp-chat-bar') : null;
+    return bar ? bar.querySelector('input') : null;
+  }
+
   // EN | The reply/error bubble is appended to <body>, not to the
   // EN | button-card's own DOM: that card can re-render (e.g. when the
   // EN | active provider changes) and wipe anything nested inside it, and
@@ -177,8 +203,8 @@ class VsspChatbotBar {
   // FR | l'ecrit. Aucun historique de conversation envoye : cette barre n'a
   // FR | pas de liste de messages pour en garder un, contrairement au popup
   // FR | complet.
-  async send(inputId) {
-    const input = document.getElementById(inputId);
+  async send(el) {
+    const input = this._resolveInput(el);
     if (!input) return;
     const text = input.value.trim();
     if (!text) return;
@@ -240,8 +266,8 @@ class VsspChatbotBar {
   // FR | que la saisie manuelle, juste dicte. Chromium uniquement
   // FR | (webkitSpeechRecognition) ; affiche la bulle "non disponible" sur
   // FR | les navigateurs qui ne l'ont pas plutot que d'echouer bruyamment.
-  mic(inputId) {
-    const input = document.getElementById(inputId);
+  mic(el) {
+    const input = this._resolveInput(el);
     if (!input) return;
     const SR = window.SpeechRecognition || window.webkitSpeechRecognition;
     if (!SR) {

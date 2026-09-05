@@ -863,6 +863,14 @@ views:
           # EN | Voice input is the Web Speech API, browser-side only — see
           # EN | the mic() comment in js/vssp.js for why it fills the input
           # EN | rather than auto-sending.
+          # EN | Every onclick/onkeydown below passes `this` (the actual DOM
+          # EN | element), never the input's id as a string: button-card
+          # EN | renders custom_fields inside its own shadow root, and
+          # EN | `document.getElementById()` from js/vssp.js cannot see past
+          # EN | that boundary — it silently returns null, which is why send()
+          # EN | and mic() resolve the bar's `<input>` through `.vssp-chat-bar`
+          # EN | + `closest`/`querySelector` from the clicked element instead
+          # EN | (see `_resolveInput()` in js/vssp.js).
           # FR | Barre en ligne fonctionnelle, plus une simple maquette
           # FR | declencheuse : un vrai `<input>` saisi et envoye depuis HOME
           # FR | lui-meme, aucun popup implique dans l'envoi. Le HTML brut
@@ -888,6 +896,15 @@ views:
           # FR | Web Speech API, cote navigateur uniquement — voir le
           # FR | commentaire de mic() dans js/vssp.js pour pourquoi elle
           # FR | remplit le champ plutot que d'envoyer automatiquement.
+          # FR | Chaque onclick/onkeydown ci-dessous passe `this` (l'element
+          # FR | DOM reel), jamais l'id du champ en chaine : button-card rend
+          # FR | ses custom_fields dans son propre shadow root, et
+          # FR | `document.getElementById()` depuis js/vssp.js ne voit pas au
+          # FR | dela de cette frontiere — il renvoie null en silence, d'ou le
+          # FR | fait que send() et mic() resolvent le `<input>` de la barre
+          # FR | via `.vssp-chat-bar` + `closest`/`querySelector` depuis
+          # FR | l'element clique a la place (voir `_resolveInput()` dans
+          # FR | js/vssp.js).
           - type: custom:button-card
             template: vssp_panel
             entity: input_select.vssp_chatbot_provider
@@ -920,7 +937,7 @@ views:
                     ? `<img src="${logo}" alt="${provider}" data-title="{{ t('home.chatbot') }}" onclick="window.vsspChatbot.openFullChat(this)" style="width:22px;height:22px;border-radius:6px;cursor:pointer;flex:0 0 auto;" />`
                     : `<ha-icon icon="mdi:tune-variant" data-title="{{ t('home.chatbot') }}" onclick="window.vsspChatbot.openFullChat(this)" style="--mdc-icon-size:22px;color:var(--primary-color,#00E5FF);cursor:pointer;flex:0 0 auto;"></ha-icon>`;
                   return `
-                    <div style="display:flex;align-items:center;width:100%;height:100%;gap:10px;">
+                    <div class="vssp-chat-bar" style="display:flex;align-items:center;width:100%;height:100%;gap:10px;">
                       ${badge}
                       <input
                         id="vssp_home_chat_input"
@@ -931,17 +948,17 @@ views:
                         data-no-reply="{{ t('home.chatbot_no_reply') }}"
                         data-empty-reply="{{ t('home.chatbot_empty_reply') }}"
                         data-mic-unsupported="{{ t('home.chatbot_mic_unsupported') }}"
-                        onkeydown="if (event.key === 'Enter') window.vsspChatbot.send('vssp_home_chat_input');"
+                        onkeydown="if (event.key === 'Enter') window.vsspChatbot.send(this);"
                         style="flex:1 1 auto;min-width:0;border:none;outline:none;background:transparent;color:var(--primary-text-color,#DCEEF6);font-size:14px;padding:0;"
                       />
                       <ha-icon
                         icon="mdi:microphone-outline"
-                        onclick="window.vsspChatbot.mic('vssp_home_chat_input')"
+                        onclick="window.vsspChatbot.mic(this)"
                         style="--mdc-icon-size:20px;color:var(--secondary-text-color,#56707E);cursor:pointer;flex:0 0 auto;"
                       ></ha-icon>
                       <ha-icon
                         icon="mdi:arrow-up-circle"
-                        onclick="window.vsspChatbot.send('vssp_home_chat_input')"
+                        onclick="window.vsspChatbot.send(this)"
                         style="--mdc-icon-size:26px;color:var(--primary-color,#00E5FF);cursor:pointer;flex:0 0 auto;"
                       ></ha-icon>
                     </div>
