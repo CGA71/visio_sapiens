@@ -10,7 +10,7 @@ provider selector (`input_select.vssp_chatbot_provider`) are wired to
 ("custom") model — instead of being static placeholders.
 
 ```
-HOME chatbot card / ADMIN "custom" tile
+HOME chatbot card / ADMIN "Custom" button (shown when custom is selected)
         │  tap_action: browser_mod.popup
         ▼
 /local/vssp/wizard/vssp_chatbot.html   (iframe — real chat UI or config form)
@@ -63,27 +63,21 @@ does not open after installing browser_mod, check the exact service
 schema under Developer Tools → Actions → `browser_mod.popup` on the
 live instance and adjust the two `tap_action` blocks accordingly.
 
-## Provider selector — logos instead of plain text
+## Provider selector — visual unchanged
 
-`input_select.vssp_chatbot_provider`'s options are unchanged
-(`gemini` / `claude` / `chatgpt` / `custom`, `packages/vssp_generation.yaml`).
-What changed is how the ADMIN GENERATION panel renders them: not a
-`type: tile` + `select-options` feature (that HA tile feature only ever
-shows plain text, no per-option icon or image), but a row of
-`custom:button-card`, one per option — the same radio-tab pattern
-already used for ENERGY's Day/Month/Year tabs
-(`energy.yaml.j2` + template `vssp_energy_tab`). The new template,
-`vssp_chatbot_provider_tab` (`home-assistant/templates/button_card_templates.yaml`),
-shows each provider's logo via `image:` — except `custom`, which stays
-icon + text per the original request, and additionally opens the
-config popup on tap.
+`input_select.vssp_chatbot_provider` (`gemini` / `claude` / `chatgpt` /
+`custom`, `packages/vssp_generation.yaml`) still renders exactly as
+before: a `type: tile` + `select-options` feature, plain text options,
+same `card_mod` background as the language/format selectors next to it
+(`admin.yaml.j2`). An earlier version of this feature replaced it with
+a row of logo buttons; that was reverted at the user's request — the
+selector's look was intentionally left untouched.
 
-Logo files live at `home-assistant/www/vssp/images/providers/{gemini,claude,chatgpt}.svg`.
-**These are original, brand-neutral placeholder marks, not the real
-trademarked logos** (copyright/trademark risk in reproducing them
-without a license). Drop official assets in at those exact filenames
-later if you hold the rights to use them — nothing else needs to
-change.
+What *is* new: a small **"Custom" button appears below the selector
+row, only when `custom` is the selected option** (`type: conditional`,
+same pattern as the CREATE/REGENERATE HOME buttons in
+`system_dashboards.yaml`). Tapping it opens the same config popup as
+before, for the local/self-hosted model's fields.
 
 ## Secrets
 
@@ -139,10 +133,7 @@ editing `build_custom_request()`/`parse_custom_response()` in
 - `vssp/vssp_chatbot_send.py` — calls the real provider API.
 - `home-assistant/dashboards/templates_j2/home.yaml.j2` — the HOME
   chatbot card ("Cadre 2").
-- `home-assistant/dashboards/templates_j2/admin.yaml.j2` — the provider
-  tab row.
-- `home-assistant/templates/button_card_templates.yaml` —
-  `vssp_chatbot_provider_tab`.
+- `home-assistant/dashboards/templates_j2/admin.yaml.j2` — the
+  conditional "Custom" config button below the (unchanged) selector.
 - `home-assistant/www/vssp/wizard/vssp_chatbot.html` — the popup's
   content (chat UI + config form).
-- `home-assistant/www/vssp/images/providers/*.svg` — provider logos.

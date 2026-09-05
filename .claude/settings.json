@@ -3,7 +3,24 @@
     "allow": [
       "Bash(git -C d:/Visio-Sapiens add home-assistant/www/vssp/wizard/vssp_rooms_floors.html)",
       "Bash(git -C d:/Visio-Sapiens commit -m ' *)",
-      "Bash(git -C d:/Visio-Sapiens push)"
+      "Bash(git -C d:/Visio-Sapiens push)",
+      "Bash(git status*)",
+      "Bash(git log*)",
+      "Bash(git diff*)",
+      "Bash(git show*)",
+      "Bash(git branch*)",
+      "Bash(git remote*)",
+      "Bash(git fetch*)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git push*)",
+      "Bash(ls*)",
+      "Bash(find *)",
+      "Bash(grep *)",
+      "Bash(wc *)",
+      "Bash(cat *)",
+      "Bash(sed *)",
+      "Bash(mkdir -p *)"
     ]
   }
 }

@@ -11,7 +11,7 @@ ChatGPT, ou un modèle auto-hébergé (« custom ») — au lieu d'être de
 simples cadres d'accueil.
 
 ```
-Carte Chatbot HOME / tuile "custom" de l'ADMIN
+Carte Chatbot HOME / bouton "Custom" de l'ADMIN (affiché si custom est sélectionné)
         │  tap_action : browser_mod.popup
         ▼
 /local/vssp/wizard/vssp_chatbot.html   (iframe — vraie interface de chat ou formulaire)
@@ -69,30 +69,23 @@ du service sous Outils de développement > Actions > `browser_mod.popup`
 sur l'instance en production et ajustez les deux blocs `tap_action` en
 conséquence.
 
-## Sélecteur de fournisseur — des logos plutôt que du texte
+## Sélecteur de fournisseur — visuel inchangé
 
-Les options d'`input_select.vssp_chatbot_provider` sont inchangées
-(`gemini` / `claude` / `chatgpt` / `custom`,
-`packages/vssp_generation.yaml`). Ce qui change, c'est la façon dont le
-panneau GENERATION de l'ADMIN les affiche : pas un `type: tile` +
-fonctionnalité `select-options` (cette fonctionnalité tile de HA ne
-rend jamais que du texte brut, aucune icône/image par option), mais une
-ligne de `custom:button-card`, un par option — le même motif de
-radio-onglets déjà utilisé pour les onglets Jour/Mois/Année d'ENERGY
-(`energy.yaml.j2` + template `vssp_energy_tab`). Le nouveau template,
-`vssp_chatbot_provider_tab`
-(`home-assistant/templates/button_card_templates.yaml`), affiche le
-logo de chaque fournisseur via `image:` — sauf « custom », qui reste
-icône + texte selon la demande d'origine, et qui ouvre en plus le popup
-de configuration au tap.
+`input_select.vssp_chatbot_provider` (`gemini` / `claude` / `chatgpt` /
+`custom`, `packages/vssp_generation.yaml`) se rend exactement comme
+avant : un `type: tile` + fonctionnalité `select-options`, options en
+texte brut, même `card_mod` de fond que les sélecteurs langue/format
+juste à côté (`admin.yaml.j2`). Une version précédente de cette
+fonctionnalité l'avait remplacé par une ligne de boutons-logos ; c'est
+revenu en arrière à la demande de l'utilisateur — le visuel du
+sélecteur a été volontairement laissé intact.
 
-Les fichiers de logo se trouvent dans
-`home-assistant/www/vssp/images/providers/{gemini,claude,chatgpt}.svg`.
-**Ce sont des marques placeholder originales et neutres, pas les vrais
-logos déposés** (risque de droit d'auteur/marque à les reproduire sans
-licence). Déposez les assets officiels à ces mêmes noms de fichier plus
-tard si vous en détenez les droits — rien d'autre n'a besoin de
-changer.
+Ce qui est nouveau : un petit **bouton « Custom » apparaît sous la
+ligne du sélecteur, uniquement quand « custom » est l'option
+sélectionnée** (`type: conditional`, même motif que les boutons
+CRÉER/RÉGÉNÉRER HOME de `system_dashboards.yaml`). Le taper ouvre le
+même popup de configuration qu'avant, pour les champs du modèle
+local/auto-hébergé.
 
 ## Secrets
 
@@ -151,11 +144,7 @@ pris en charge sans modifier
 - `vssp/vssp_chatbot_send.py` — appelle la vraie API du fournisseur.
 - `home-assistant/dashboards/templates_j2/home.yaml.j2` — la carte
   Chatbot de HOME (« Cadre 2 »).
-- `home-assistant/dashboards/templates_j2/admin.yaml.j2` — la ligne
-  d'onglets fournisseur.
-- `home-assistant/templates/button_card_templates.yaml` —
-  `vssp_chatbot_provider_tab`.
+- `home-assistant/dashboards/templates_j2/admin.yaml.j2` — le bouton
+  conditionnel « Custom » sous le sélecteur (inchangé).
 - `home-assistant/www/vssp/wizard/vssp_chatbot.html` — le contenu du
   popup (interface de chat + formulaire).
-- `home-assistant/www/vssp/images/providers/*.svg` — logos des
-  fournisseurs.
