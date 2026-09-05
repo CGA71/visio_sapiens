@@ -107,7 +107,11 @@ input_text:
     max: 100
   vssp_chatbot_custom_system_prompt:
     name: "Visio Sapiens — Chatbot custom : prompt systeme"
-    max: 500
+    # EN | 255 is input_text's own hard cap, not an arbitrary choice —
+    # EN | Home Assistant refused to set up this whole domain with 500.
+    # FR | 255 est le plafond propre d'input_text, pas un choix arbitraire —
+    # FR | Home Assistant refusait de demarrer tout le domaine avec 500.
+    max: 255
   vssp_chatbot_custom_api_key:
     name: "Visio Sapiens — Chatbot custom : cle API (optionnelle)"
     mode: password

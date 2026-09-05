@@ -224,7 +224,7 @@ automation:
                 target:
                   entity_id: input_text.vssp_chatbot_custom_system_prompt
                 data:
-                  value: "{{ (trigger.json.system_prompt | default('')) | truncate(500, True, '') }}"
+                  value: "{{ (trigger.json.system_prompt | default('')) | truncate(255, True, '') }}"
               - action: input_text.set_value
                 target:
                   entity_id: input_text.vssp_chatbot_custom_api_key
