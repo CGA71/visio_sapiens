@@ -434,6 +434,10 @@ home:
   chatbot: Chatbot
   chatbot_hint: Conversational assistant
   chatbot_placeholder: Ask the assistant…
+  chatbot_error_prefix: "Error: "
+  chatbot_no_reply: No reply after 30s.
+  chatbot_empty_reply: (empty reply)
+  chatbot_mic_unsupported: Voice input not available in this browser.
   production_consumption: "PRODUCTION & CONSUMPTION"
   top_devices: "TOP 10 CONSUMPTION"
   kpi:

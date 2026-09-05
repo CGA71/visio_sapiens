@@ -319,6 +319,10 @@ home:
   chatbot: Chatbot
   chatbot_hint: Assistant conversationnel
   chatbot_placeholder: Écrivez à l'assistant…
+  chatbot_error_prefix: "Erreur : "
+  chatbot_no_reply: Pas de réponse après 30s.
+  chatbot_empty_reply: (réponse vide)
+  chatbot_mic_unsupported: Reconnaissance vocale non disponible dans ce navigateur.
   production_consumption: "PRODUCTION & CONSOMMATION"
   top_devices: "TOP 10 CONSOMMATION"
   kpi:

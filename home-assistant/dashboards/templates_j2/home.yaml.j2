@@ -841,137 +841,112 @@ views:
 {% endif %}
 
           # Cadre 2 — Chatbot.
-          # EN | Real backend now wired up (packages/vssp_chatbot.yaml,
-          # EN | vssp/vssp_chatbot_send.py) — this card is a fixed-size
-          # EN | visual trigger only, styled to look like a chat app's own
-          # EN | input bar (icon / greyed placeholder / mic / send), NOT a
-          # EN | real live `<input>`: button-card's custom_fields cannot
-          # EN | host a working text field, and the outer box's size must
-          # EN | stay exactly as it is. Tapping anywhere on it opens a
-          # EN | browser_mod popup (REQUIRES browser_mod installed via
-          # EN | HACS — see docs/Security.md) whose content is
-          # EN | vssp_chatbot.html in an iframe: THAT page has the real
-          # EN | input, message list and send button. The active provider
-          # EN | (input_select.vssp_chatbot_provider) is resolved
-          # EN | server-side by the webhook automation, not passed through
-          # EN | this URL — see packages/vssp_chatbot.yaml.
-          # FR | Vrai backend cable desormais (packages/vssp_chatbot.yaml,
-          # FR | vssp/vssp_chatbot_send.py) — cette carte n'est qu'un
-          # FR | declencheur visuel a taille fixe, stylise pour ressembler
-          # FR | a la barre de saisie d'une appli de chat (icone / texte
-          # FR | grise / micro / envoi), PAS un vrai `<input>` fonctionnel :
-          # FR | les custom_fields de button-card ne peuvent pas heberger un
-          # FR | champ texte reel, et la taille du cadre exterieur doit
-          # FR | rester strictement inchangee. Taper n'importe ou dessus
-          # FR | ouvre un popup browser_mod (REQUIERT browser_mod installe
-          # FR | via HACS — voir docs/Security.md) dont le contenu est
-          # FR | vssp_chatbot.html en iframe : CETTE page porte le vrai
-          # FR | champ de saisie, la liste des messages et le bouton
-          # FR | d'envoi. Le fournisseur actif
-          # FR | (input_select.vssp_chatbot_provider) est resolu cote
-          # FR | serveur par l'automatisation webhook, pas transmis par
-          # FR | cette URL — voir packages/vssp_chatbot.yaml.
+          # EN | Functional inline bar, not a trigger-only mockup anymore: a
+          # EN | real `<input>` typed and sent from HOME itself, no popup
+          # EN | involved in sending. custom_fields raw HTML cannot carry a
+          # EN | working <script>, so the input/mic/send elements below call
+          # EN | window.vsspChatbot's functions (js/vssp.js, loaded once as a
+          # EN | lovelace resource) through plain onclick/onkeydown
+          # EN | attributes — that file does the actual fetch() to
+          # EN | /api/webhook/vssp_chatbot_send and polls
+          # EN | chatbot_status.json exactly like vssp_chatbot.html does,
+          # EN | showing the reply in a floating bubble anchored under the
+          # EN | input (position:fixed, appended to <body> — see
+          # EN | _ensureBubble there). The card's `entity:` is the provider
+          # EN | selector so the leading badge (logo, or a generic icon for
+          # EN | "custom") re-renders only when the active provider changes,
+          # EN | not on every unrelated Home Assistant state update — that
+          # EN | re-render would otherwise wipe whatever the user is
+          # EN | mid-typing. That same badge is now the only way left to
+          # EN | open the full conversation popup (input/mic/send handle
+          # EN | their own actions), via window.vsspChatbot.openFullChat().
+          # EN | Voice input is the Web Speech API, browser-side only — see
+          # EN | the mic() comment in js/vssp.js for why it fills the input
+          # EN | rather than auto-sending.
+          # FR | Barre en ligne fonctionnelle, plus une simple maquette
+          # FR | declencheuse : un vrai `<input>` saisi et envoye depuis HOME
+          # FR | lui-meme, aucun popup implique dans l'envoi. Le HTML brut
+          # FR | des custom_fields ne peut pas porter de <script> qui
+          # FR | s'execute, donc les elements input/mic/envoi ci-dessous
+          # FR | appellent les fonctions de window.vsspChatbot (js/vssp.js,
+          # FR | charge une fois comme ressource lovelace) via de simples
+          # FR | attributs onclick/onkeydown — ce fichier fait le vrai
+          # FR | fetch() vers /api/webhook/vssp_chatbot_send et interroge
+          # FR | chatbot_status.json exactement comme vssp_chatbot.html,
+          # FR | affichant la reponse dans une bulle flottante ancree sous
+          # FR | le champ (position:fixed, ajoutee a <body> — voir
+          # FR | _ensureBubble la-bas). Le `entity:` de la carte est le
+          # FR | selecteur de fournisseur pour que le badge de tete (logo,
+          # FR | ou une icone generique pour "custom") ne se re-rende que
+          # FR | quand le fournisseur actif change, pas a chaque mise a jour
+          # FR | d'etat Home Assistant sans rapport — ce re-rendu
+          # FR | effacerait sinon ce que l'utilisateur est en train de
+          # FR | taper. Ce meme badge est desormais le seul moyen restant
+          # FR | d'ouvrir le popup de conversation complete (input/mic/envoi
+          # FR | gerent leurs propres actions), via
+          # FR | window.vsspChatbot.openFullChat(). La saisie vocale est la
+          # FR | Web Speech API, cote navigateur uniquement — voir le
+          # FR | commentaire de mic() dans js/vssp.js pour pourquoi elle
+          # FR | remplit le champ plutot que d'envoyer automatiquement.
           - type: custom:button-card
             template: vssp_panel
+            entity: input_select.vssp_chatbot_provider
             show_name: false
             show_label: false
             show_icon: false
-            tap_action: &vssp_chatbot_open_popup
-              action: perform-action
-              perform_action: browser_mod.popup
-              data:
-                browser_id: this
-                title: "{{ t('home.chatbot') }}"
-                size: normal
-                content:
-                  type: iframe
-                  url: /local/vssp/wizard/vssp_chatbot.html?mode=chat
+            show_state: false
             styles:
               card:
                 - height: 100%
                 - padding: 10px 14px
                 - justify-content: center
-                - cursor: pointer
               grid:
                 - grid-template-areas: '"bar"'
               custom_fields:
                 bar:
                   - width: 100%
+                  - height: 100%
             custom_fields:
-              bar:
-                card:
-                  type: horizontal-stack
-                  cards:
-                    - type: custom:button-card
-                      show_name: false
-                      show_label: false
-                      icon: mdi:chat-processing-outline
-                      tap_action: *vssp_chatbot_open_popup
-                      card_mod:
-                        style: ":host { flex: 0 0 auto; display: flex; align-items: center; }"
-                      styles:
-                        card:
-                          - background: transparent
-                          - box-shadow: none
-                          - border: none
-                          - padding: 0
-                        icon:
-                          - color: "var(--paper-item-icon-color, #00E5FF)"
-                          - "--mdc-icon-size": 22px
-                    - type: custom:button-card
-                      show_icon: false
-                      show_label: false
-                      name: "{{ t('home.chatbot_placeholder') }}"
-                      tap_action: *vssp_chatbot_open_popup
-                      card_mod:
-                        style: ":host { flex: 1 1 auto; display: flex; align-items: center; min-width: 0; }"
-                      styles:
-                        card:
-                          - background: transparent
-                          - box-shadow: none
-                          - border: none
-                          - padding: 0
-                          - justify-content: start
-                        name:
-                          - color: "var(--secondary-text-color, #56707E)"
-                          - font-size: 13px
-                          - justify-self: start
-                          - text-align: left
-                          - overflow: hidden
-                          - text-overflow: ellipsis
-                          - white-space: nowrap
-                    - type: custom:button-card
-                      show_name: false
-                      show_label: false
-                      icon: mdi:microphone-outline
-                      tap_action: *vssp_chatbot_open_popup
-                      card_mod:
-                        style: ":host { flex: 0 0 auto; display: flex; align-items: center; }"
-                      styles:
-                        card:
-                          - background: transparent
-                          - box-shadow: none
-                          - border: none
-                          - padding: 0
-                        icon:
-                          - color: "var(--secondary-text-color, #56707E)"
-                          - "--mdc-icon-size": 20px
-                    - type: custom:button-card
-                      show_name: false
-                      show_label: false
-                      icon: mdi:arrow-up-circle
-                      tap_action: *vssp_chatbot_open_popup
-                      card_mod:
-                        style: ":host { flex: 0 0 auto; display: flex; align-items: center; }"
-                      styles:
-                        card:
-                          - background: transparent
-                          - box-shadow: none
-                          - border: none
-                          - padding: 0
-                        icon:
-                          - color: "var(--primary-color, #00E5FF)"
-                          - "--mdc-icon-size": 26px
+              bar: >
+                [[[
+                  const provider = (states['input_select.vssp_chatbot_provider'] || {}).state || 'claude';
+                  const logos = {
+                    gemini: '/local/vssp/images/providers/gemini.svg',
+                    claude: '/local/vssp/images/providers/claude.svg',
+                    chatgpt: '/local/vssp/images/providers/chatgpt.svg',
+                  };
+                  const logo = logos[provider];
+                  const badge = logo
+                    ? `<img src="${logo}" alt="${provider}" data-title="{{ t('home.chatbot') }}" onclick="window.vsspChatbot.openFullChat(this)" style="width:22px;height:22px;border-radius:6px;cursor:pointer;flex:0 0 auto;" />`
+                    : `<ha-icon icon="mdi:tune-variant" data-title="{{ t('home.chatbot') }}" onclick="window.vsspChatbot.openFullChat(this)" style="--mdc-icon-size:22px;color:var(--primary-color,#00E5FF);cursor:pointer;flex:0 0 auto;"></ha-icon>`;
+                  return `
+                    <div style="display:flex;align-items:center;width:100%;height:100%;gap:10px;">
+                      ${badge}
+                      <input
+                        id="vssp_home_chat_input"
+                        type="text"
+                        placeholder="{{ t('home.chatbot_placeholder') }}"
+                        autocomplete="off"
+                        data-error-prefix="{{ t('home.chatbot_error_prefix') }}"
+                        data-no-reply="{{ t('home.chatbot_no_reply') }}"
+                        data-empty-reply="{{ t('home.chatbot_empty_reply') }}"
+                        data-mic-unsupported="{{ t('home.chatbot_mic_unsupported') }}"
+                        onkeydown="if (event.key === 'Enter') window.vsspChatbot.send('vssp_home_chat_input');"
+                        style="flex:1 1 auto;min-width:0;border:none;outline:none;background:transparent;color:var(--primary-text-color,#DCEEF6);font-size:14px;padding:0;"
+                      />
+                      <ha-icon
+                        icon="mdi:microphone-outline"
+                        onclick="window.vsspChatbot.mic('vssp_home_chat_input')"
+                        style="--mdc-icon-size:20px;color:var(--secondary-text-color,#56707E);cursor:pointer;flex:0 0 auto;"
+                      ></ha-icon>
+                      <ha-icon
+                        icon="mdi:arrow-up-circle"
+                        onclick="window.vsspChatbot.send('vssp_home_chat_input')"
+                        style="--mdc-icon-size:26px;color:var(--primary-color,#00E5FF);cursor:pointer;flex:0 0 auto;"
+                      ></ha-icon>
+                    </div>
+                  `;
+                ]]]
 
 
     card_mod:
