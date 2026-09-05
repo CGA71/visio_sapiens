@@ -841,44 +841,137 @@ views:
 {% endif %}
 
           # Cadre 2 — Chatbot.
-          # EN | Was PRODUCTION/CONSOMMATION + their charts, removed per
-          # EN | request. Placeholder frame only — no chat backend wired up
-          # EN | yet. To embed an actual assistant, replace this
-          # EN | button-card with e.g. a `type: iframe` pointing at the
-          # EN | chat UI's URL, or a `custom:` card for whatever
-          # EN | integration ends up providing it (HA's own Assist,
-          # EN | a self-hosted widget...).
-          # FR | Etait PRODUCTION/CONSOMMATION + leurs courbes, retire sur
-          # FR | demande. Simple cadre d'accueil pour l'instant — aucun
-          # FR | moteur de chat branche. Pour integrer un assistant reel,
-          # FR | remplacer ce button-card par ex. par un `type: iframe`
-          # FR | pointant vers l'URL de l'interface de chat, ou une carte
-          # FR | `custom:` selon l'integration qui finira par le fournir
-          # FR | (Assist de HA, un widget auto-heberge...).
+          # EN | Real backend now wired up (packages/vssp_chatbot.yaml,
+          # EN | vssp/vssp_chatbot_send.py) — this card is a fixed-size
+          # EN | visual trigger only, styled to look like a chat app's own
+          # EN | input bar (icon / greyed placeholder / mic / send), NOT a
+          # EN | real live `<input>`: button-card's custom_fields cannot
+          # EN | host a working text field, and the outer box's size must
+          # EN | stay exactly as it is. Tapping anywhere on it opens a
+          # EN | browser_mod popup (REQUIRES browser_mod installed via
+          # EN | HACS — see docs/Security.md) whose content is
+          # EN | vssp_chatbot.html in an iframe: THAT page has the real
+          # EN | input, message list and send button. The active provider
+          # EN | (input_select.vssp_chatbot_provider) is resolved
+          # EN | server-side by the webhook automation, not passed through
+          # EN | this URL — see packages/vssp_chatbot.yaml.
+          # FR | Vrai backend cable desormais (packages/vssp_chatbot.yaml,
+          # FR | vssp/vssp_chatbot_send.py) — cette carte n'est qu'un
+          # FR | declencheur visuel a taille fixe, stylise pour ressembler
+          # FR | a la barre de saisie d'une appli de chat (icone / texte
+          # FR | grise / micro / envoi), PAS un vrai `<input>` fonctionnel :
+          # FR | les custom_fields de button-card ne peuvent pas heberger un
+          # FR | champ texte reel, et la taille du cadre exterieur doit
+          # FR | rester strictement inchangee. Taper n'importe ou dessus
+          # FR | ouvre un popup browser_mod (REQUIERT browser_mod installe
+          # FR | via HACS — voir docs/Security.md) dont le contenu est
+          # FR | vssp_chatbot.html en iframe : CETTE page porte le vrai
+          # FR | champ de saisie, la liste des messages et le bouton
+          # FR | d'envoi. Le fournisseur actif
+          # FR | (input_select.vssp_chatbot_provider) est resolu cote
+          # FR | serveur par l'automatisation webhook, pas transmis par
+          # FR | cette URL — voir packages/vssp_chatbot.yaml.
           - type: custom:button-card
             template: vssp_panel
-            show_name: true
-            show_label: true
-            name: "{{ t('home.chatbot') }}"
-            label: "{{ t('home.chatbot_hint') }}"
-            icon: mdi:chat-processing-outline
-            show_icon: true
+            show_name: false
+            show_label: false
+            show_icon: false
+            tap_action: &vssp_chatbot_open_popup
+              action: perform-action
+              perform_action: browser_mod.popup
+              data:
+                browser_id: this
+                title: "{{ t('home.chatbot') }}"
+                size: normal
+                content:
+                  type: iframe
+                  url: /local/vssp/wizard/vssp_chatbot.html?mode=chat
             styles:
               card:
                 - height: 100%
+                - padding: 10px 14px
                 - justify-content: center
-                - align-items: center
-              name:
-                - color: "var(--secondary-text-color, #B8E8F5)"
-                - font-size: 14px
-                - letter-spacing: 2px
-              label:
-                - color: "var(--secondary-text-color, #56707E)"
-                - font-size: 11px
-                - margin-top: 4px
-              icon:
-                - color: "var(--paper-item-icon-color, #00E5FF)"
-                - "--mdc-icon-size": 36px
+                - cursor: pointer
+              grid:
+                - grid-template-areas: '"bar"'
+              custom_fields:
+                bar:
+                  - width: 100%
+            custom_fields:
+              bar:
+                card:
+                  type: horizontal-stack
+                  cards:
+                    - type: custom:button-card
+                      show_name: false
+                      show_label: false
+                      icon: mdi:chat-processing-outline
+                      tap_action: *vssp_chatbot_open_popup
+                      card_mod:
+                        style: ":host { flex: 0 0 auto; display: flex; align-items: center; }"
+                      styles:
+                        card:
+                          - background: transparent
+                          - box-shadow: none
+                          - border: none
+                          - padding: 0
+                        icon:
+                          - color: "var(--paper-item-icon-color, #00E5FF)"
+                          - "--mdc-icon-size": 22px
+                    - type: custom:button-card
+                      show_icon: false
+                      show_label: false
+                      name: "{{ t('home.chatbot_placeholder') }}"
+                      tap_action: *vssp_chatbot_open_popup
+                      card_mod:
+                        style: ":host { flex: 1 1 auto; display: flex; align-items: center; min-width: 0; }"
+                      styles:
+                        card:
+                          - background: transparent
+                          - box-shadow: none
+                          - border: none
+                          - padding: 0
+                          - justify-content: start
+                        name:
+                          - color: "var(--secondary-text-color, #56707E)"
+                          - font-size: 13px
+                          - justify-self: start
+                          - text-align: left
+                          - overflow: hidden
+                          - text-overflow: ellipsis
+                          - white-space: nowrap
+                    - type: custom:button-card
+                      show_name: false
+                      show_label: false
+                      icon: mdi:microphone-outline
+                      tap_action: *vssp_chatbot_open_popup
+                      card_mod:
+                        style: ":host { flex: 0 0 auto; display: flex; align-items: center; }"
+                      styles:
+                        card:
+                          - background: transparent
+                          - box-shadow: none
+                          - border: none
+                          - padding: 0
+                        icon:
+                          - color: "var(--secondary-text-color, #56707E)"
+                          - "--mdc-icon-size": 20px
+                    - type: custom:button-card
+                      show_name: false
+                      show_label: false
+                      icon: mdi:arrow-up-circle
+                      tap_action: *vssp_chatbot_open_popup
+                      card_mod:
+                        style: ":host { flex: 0 0 auto; display: flex; align-items: center; }"
+                      styles:
+                        card:
+                          - background: transparent
+                          - box-shadow: none
+                          - border: none
+                          - padding: 0
+                        icon:
+                          - color: "var(--primary-color, #00E5FF)"
+                          - "--mdc-icon-size": 26px
 
 
     card_mod:

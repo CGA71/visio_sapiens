@@ -68,16 +68,16 @@ input_select:
     initial: tablet
     icon: mdi:tablet-cellphone
 
-  # EN | Stored preference only — the HOME chatbot card (home.yaml.j2,
-  # EN | "Cadre 2 — Chatbot") is a placeholder with no backend wired up
-  # EN | yet. This selector exists so a future integration has a single
-  # EN | place to read "which provider" from, instead of that choice
-  # EN | being made when the backend finally gets built.
-  # FR | Preference stockee uniquement — la carte Chatbot de HOME
-  # FR | (home.yaml.j2, « Cadre 2 — Chatbot ») est un placeholder sans
-  # FR | backend cable. Ce selecteur existe pour qu'une future integration
-  # FR | ait un seul endroit ou lire « quel fournisseur », plutot que ce
-  # FR | choix soit fait au moment ou le backend sera enfin construit.
+  # EN | Drives the real chatbot backend (packages/vssp_chatbot.yaml,
+  # EN | vssp/vssp_chatbot_send.py). The HOME chatbot card (home.yaml.j2,
+  # EN | "Cadre 2 — Chatbot") reads this value to know which provider's
+  # EN | popup to open. "custom" additionally opens a config popup — see
+  # EN | script.vssp_open_chatbot_custom_popup.
+  # FR | Pilote le vrai backend chatbot (packages/vssp_chatbot.yaml,
+  # FR | vssp/vssp_chatbot_send.py). La carte Chatbot de HOME
+  # FR | (home.yaml.j2, « Cadre 2 — Chatbot ») lit cette valeur pour savoir
+  # FR | quel popup fournisseur ouvrir. « custom » ouvre en plus un popup
+  # FR | de configuration — voir script.vssp_open_chatbot_custom_popup.
   vssp_chatbot_provider:
     name: "Visio Sapiens — Chatbot provider"
     options:

@@ -374,6 +374,8 @@ admin:
   apply_language: APPLY LANGUAGE
   apply_language_hint: Render the fragment, patch the config, regenerate
   select_chatbot: Chatbot assistant
+  chatbot_custom_label: Custom
+  chatbot_custom_popup_title: Custom chatbot configuration
   auto_regenerate: Auto-regenerate
   auto_regenerate_hint: Reruns REGENERATE ALL (HOME protected) on the interval below
   auto_regenerate_interval: Interval (hours)
@@ -431,6 +433,7 @@ home:
   audio_stream: Audio stream
   chatbot: Chatbot
   chatbot_hint: Conversational assistant
+  chatbot_placeholder: Ask the assistant…
   production_consumption: "PRODUCTION & CONSUMPTION"
   top_devices: "TOP 10 CONSUMPTION"
   kpi:

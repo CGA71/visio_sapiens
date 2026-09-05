@@ -59,6 +59,60 @@ input_text:
     mode: password
     max: 255
 
+  # Cles API des chatbots geres nativement (Gemini/Claude/ChatGPT), plus
+  # le modele utilise par chacun — modifiable ici sans toucher au code,
+  # meme convention que vssp_ha_token : jamais passees en argument de
+  # ligne de commande, ecrites dans un fichier protege par
+  # shell_command.vssp_write_<provider>_key puis lues de la par
+  # vssp_chatbot_send.py (voir packages/vssp_chatbot.yaml).
+  vssp_gemini_api_key:
+    name: "Visio Sapiens — Cle API Gemini"
+    mode: password
+    max: 255
+  vssp_gemini_model:
+    name: "Visio Sapiens — Modele Gemini"
+    initial: "gemini-2.0-flash"
+    max: 100
+  vssp_claude_api_key:
+    name: "Visio Sapiens — Cle API Claude"
+    mode: password
+    max: 255
+  vssp_claude_model:
+    name: "Visio Sapiens — Modele Claude"
+    initial: "claude-sonnet-4-5"
+    max: 100
+  vssp_chatgpt_api_key:
+    name: "Visio Sapiens — Cle API ChatGPT"
+    mode: password
+    max: 255
+  vssp_chatgpt_model:
+    name: "Visio Sapiens — Modele ChatGPT"
+    initial: "gpt-4o-mini"
+    max: 100
+
+  # Chatbot local / auto-heberge ("custom" dans le selecteur ADMIN).
+  # Renseigne via le popup browser_mod ouvert depuis l'ecran GENERATION,
+  # ecrit par le webhook vssp_chatbot_custom_config — voir
+  # packages/vssp_chatbot.yaml et vssp_chatbot.html.
+  # La cle API est optionnelle : de nombreux serveurs locaux (Ollama,
+  # LM Studio...) n'en exigent aucune.
+  vssp_chatbot_custom_name:
+    name: "Visio Sapiens — Chatbot custom : nom"
+    max: 100
+  vssp_chatbot_custom_endpoint:
+    name: "Visio Sapiens — Chatbot custom : URL du point d'acces"
+    max: 255
+  vssp_chatbot_custom_model:
+    name: "Visio Sapiens — Chatbot custom : modele"
+    max: 100
+  vssp_chatbot_custom_system_prompt:
+    name: "Visio Sapiens — Chatbot custom : prompt systeme"
+    max: 500
+  vssp_chatbot_custom_api_key:
+    name: "Visio Sapiens — Chatbot custom : cle API (optionnelle)"
+    mode: password
+    max: 255
+
 # --------------------------------------------------------------------
 # ETAT DES DASHBOARDS SYSTEME (HOME, ENERGY, CORE)
 # --------------------------------------------------------------------
@@ -230,6 +284,31 @@ shell_command:
     printf '%s' '{{ states('input_text.vssp_ha_token') }}'
     > /config/vssp/.ha_token &&
     chmod 600 /config/vssp/.ha_token"
+
+  # Meme motif que vssp_write_token, une fois par fournisseur de chatbot.
+  # A relancer si vous changez de cle (script.vssp_save_<provider>_key).
+  vssp_write_gemini_key: >-
+    sh -c "mkdir -p /config/vssp &&
+    printf '%s' '{{ states('input_text.vssp_gemini_api_key') }}'
+    > /config/vssp/.gemini_key &&
+    chmod 600 /config/vssp/.gemini_key"
+  vssp_write_claude_key: >-
+    sh -c "mkdir -p /config/vssp &&
+    printf '%s' '{{ states('input_text.vssp_claude_api_key') }}'
+    > /config/vssp/.claude_key &&
+    chmod 600 /config/vssp/.claude_key"
+  vssp_write_chatgpt_key: >-
+    sh -c "mkdir -p /config/vssp &&
+    printf '%s' '{{ states('input_text.vssp_chatgpt_api_key') }}'
+    > /config/vssp/.chatgpt_key &&
+    chmod 600 /config/vssp/.chatgpt_key"
+  # La cle du chatbot custom est optionnelle : le fichier peut rester
+  # vide, vssp_chatbot_send.py ne pose alors aucun header Authorization.
+  vssp_write_custom_key: >-
+    sh -c "mkdir -p /config/vssp &&
+    printf '%s' '{{ states('input_text.vssp_chatbot_custom_api_key') }}'
+    > /config/vssp/.custom_key &&
+    chmod 600 /config/vssp/.custom_key"
 
   # ------------------------------------------------------------------
   # DASHBOARDS SYSTEME — creation / regeneration
@@ -514,6 +593,77 @@ script:
                 court. Collez-y un jeton longue duree
                 (Profil > Securite > Jetons d'acces longue duree),
                 puis relancez ce script.
+
+  # Meme motif que vssp_save_token, une fois par fournisseur de chatbot.
+  # A lancer apres avoir colle la cle dans le helper correspondant, et a
+  # chaque changement de cle.
+  vssp_save_gemini_key:
+    alias: "Visio Sapiens — Enregistrer la cle Gemini"
+    sequence:
+      - if:
+          - condition: template
+            value_template: "{{ states('input_text.vssp_gemini_api_key') | length > 10 }}"
+        then:
+          - service: shell_command.vssp_write_gemini_key
+          - service: persistent_notification.create
+            data:
+              title: "Visio Sapiens — Cle Gemini enregistree"
+              message: "Ecrite dans /config/vssp/.gemini_key."
+        else:
+          - service: persistent_notification.create
+            data:
+              title: "Visio Sapiens — Cle Gemini invalide"
+              message: "Le helper input_text.vssp_gemini_api_key est vide ou trop court."
+
+  vssp_save_claude_key:
+    alias: "Visio Sapiens — Enregistrer la cle Claude"
+    sequence:
+      - if:
+          - condition: template
+            value_template: "{{ states('input_text.vssp_claude_api_key') | length > 10 }}"
+        then:
+          - service: shell_command.vssp_write_claude_key
+          - service: persistent_notification.create
+            data:
+              title: "Visio Sapiens — Cle Claude enregistree"
+              message: "Ecrite dans /config/vssp/.claude_key."
+        else:
+          - service: persistent_notification.create
+            data:
+              title: "Visio Sapiens — Cle Claude invalide"
+              message: "Le helper input_text.vssp_claude_api_key est vide ou trop court."
+
+  vssp_save_chatgpt_key:
+    alias: "Visio Sapiens — Enregistrer la cle ChatGPT"
+    sequence:
+      - if:
+          - condition: template
+            value_template: "{{ states('input_text.vssp_chatgpt_api_key') | length > 10 }}"
+        then:
+          - service: shell_command.vssp_write_chatgpt_key
+          - service: persistent_notification.create
+            data:
+              title: "Visio Sapiens — Cle ChatGPT enregistree"
+              message: "Ecrite dans /config/vssp/.chatgpt_key."
+        else:
+          - service: persistent_notification.create
+            data:
+              title: "Visio Sapiens — Cle ChatGPT invalide"
+              message: "Le helper input_text.vssp_chatgpt_api_key est vide ou trop court."
+
+  # La cle du chatbot custom est optionnelle : contrairement aux trois
+  # scripts ci-dessus, un helper vide est un cas normal (serveur local
+  # sans authentification) et ecrit quand meme un fichier vide.
+  vssp_save_custom_key:
+    alias: "Visio Sapiens — Enregistrer la cle du chatbot custom"
+    sequence:
+      - service: shell_command.vssp_write_custom_key
+      - service: persistent_notification.create
+        data:
+          title: "Visio Sapiens — Cle custom enregistree"
+          message: >
+            Ecrite dans /config/vssp/.custom_key (vide si le serveur
+            n'exige pas d'authentification).
 
   # Bouton CREER LE DASHBOARD ENERGY du panneau ADMIN.
   # Idempotent : si le dashboard existe deja, il n'est pas touche et le

@@ -1,0 +1,261 @@
+########################################################################
+# Visio Sapiens — CHATBOT package (integration reelle Gemini/Claude/
+# ChatGPT/Custom)
+#
+# EN | WHAT THIS WIRES UP
+# EN |   HOME chatbot card (home.yaml.j2, "Cadre 2") -> browser_mod.popup ->
+# EN |   iframe /local/vssp/wizard/vssp_chatbot.html (real chat UI) -> this
+# EN |   webhook -> shell_command.vssp_chatbot_send -> vssp_chatbot_send.py
+# EN |   (real HTTP call to the provider's API) -> status JSON polled by
+# EN |   the iframe.
+# EN |   ADMIN "custom" provider tile (admin.yaml.j2) -> browser_mod.popup ->
+# EN |   same iframe, config-form mode -> the OTHER webhook below, which
+# EN |   writes the four input_text.vssp_chatbot_custom_* helpers directly
+# EN |   (no Python needed for that half — see the "why no base64 here"
+# EN |   note on that automation) and selects "custom" as the active
+# EN |   provider once saved.
+# EN |   API keys live in home-assistant/packages/vssp_admin.yaml, same
+# EN |   convention as vssp_ha_token (input_text mode:password -> a
+# EN |   shell_command writer -> a gitignored file, never a CLI argument).
+# FR | CE QUE CE FICHIER BRANCHE
+# FR |   Carte Chatbot de HOME (home.yaml.j2, « Cadre 2 ») -> browser_mod.popup
+# FR |   -> iframe /local/vssp/wizard/vssp_chatbot.html (vraie interface de
+# FR |   chat) -> ce webhook -> shell_command.vssp_chatbot_send ->
+# FR |   vssp_chatbot_send.py (vrai appel HTTP au fournisseur) -> JSON de
+# FR |   statut interroge par l'iframe.
+# FR |   Tuile fournisseur "custom" de l'ADMIN (admin.yaml.j2) ->
+# FR |   browser_mod.popup -> meme iframe, mode formulaire -> l'AUTRE
+# FR |   webhook ci-dessous, qui ecrit directement les quatre helpers
+# FR |   input_text.vssp_chatbot_custom_* (pas besoin de Python pour cette
+# FR |   moitie — voir la note « pourquoi pas de base64 ici » sur cette
+# FR |   automatisation) et selectionne « custom » comme fournisseur actif
+# FR |   une fois enregistre.
+# FR |   Les cles API vivent dans home-assistant/packages/vssp_admin.yaml,
+# FR |   meme convention que vssp_ha_token (input_text mode:password -> un
+# FR |   shell_command ecrivain -> un fichier gitignore, jamais un
+# FR |   argument de ligne de commande).
+#
+# EN | REQUIRES browser_mod (HACS integration) installed on the live pod —
+# EN | not something this repo can install for you. See docs/Security.md
+# EN | and the plan this feature shipped from for the manual steps.
+# FR | REQUIERT browser_mod (integration HACS) installee sur le pod en
+# FR | production — ce depot ne peut pas l'installer a votre place. Voir
+# FR | docs/Security.md et le plan a l'origine de cette fonctionnalite pour
+# FR | les etapes manuelles.
+#
+# EN | BEFORE DEPLOYING — check for duplicate keys, same as every package:
+# FR | AVANT DE DEPLOYER — verifier les cles en double, comme pour tout package :
+#
+#   grep -n "vssp_chatbot" home-assistant/packages/*.yaml
+########################################################################
+
+shell_command:
+  # EN | Only ever receives literal, shell-safe values: `provider` is
+  # EN | read from input_select.vssp_chatbot_provider's OWN state (see the
+  # EN | automation below), so it is always exactly one of that helper's 4
+  # EN | declared options, never client-supplied text; message_b64/
+  # EN | history_b64 are base64 — neither can carry a shell metacharacter.
+  # EN | The actual free-text message, and (for "custom") the endpoint/
+  # EN | model/system prompt the user typed into the popup form, are NEVER
+  # EN | interpolated into this shell line: vssp_chatbot_send.py reads the
+  # EN | custom fields itself via the Home Assistant REST API (same
+  # EN | --ha-token-file pattern as vssp_energy_sync.py) and decodes the
+  # EN | message from base64. Home Assistant's shell_command always runs
+  # EN | through a real shell, so this is not a stylistic choice — it is
+  # EN | what keeps a chat message containing a stray quote or `$(...)`
+  # EN | from ever reaching a shell.
+  # FR | Ne recoit jamais que des valeurs litterales et sures pour un shell :
+  # FR | `provider` est lu depuis l'etat PROPRE de
+  # FR | input_select.vssp_chatbot_provider (voir l'automatisation
+  # FR | ci-dessous), donc toujours exactement l'une des 4 options
+  # FR | declarees de ce helper, jamais un texte fourni par le client ;
+  # FR | message_b64/history_b64 sont en base64 — aucun des deux ne peut
+  # FR | porter de metacaractere shell. Le message en texte libre, et (pour
+  # FR | "custom") l'URL/le modele/le prompt systeme saisis dans le popup,
+  # FR | ne sont JAMAIS interpoles dans cette ligne shell :
+  # FR | vssp_chatbot_send.py lit lui-meme les champs custom via l'API REST
+  # FR | Home Assistant (meme motif --ha-token-file que
+  # FR | vssp_energy_sync.py) et decode le message depuis le base64. Le
+  # FR | shell_command de Home Assistant passe toujours par un vrai shell,
+  # FR | ce n'est donc pas un choix de style — c'est ce qui empeche un
+  # FR | message contenant un guillemet ou un `$(...)` d'atteindre un
+  # FR | shell.
+  vssp_chatbot_send: >-
+    python3 /config/vssp/vssp_chatbot_send.py
+    --url http://localhost:8123
+    --ha-token-file /config/vssp/.ha_token
+    --provider '{{ provider }}'
+    --message-b64 '{{ message_b64 }}'
+    --history-b64 '{{ history_b64 }}'
+    --status-file /config/www/vssp/chatbot_status.json
+
+# --------------------------------------------------------------------
+# EN | WEBHOOKS — how the chat iframe talks back to Home Assistant. Same
+# EN | reasoning as vssp_theme.yaml's webhook: the iframe cannot reach the
+# EN | parent `hass` object, and a long-lived REST token has no business
+# EN | sitting in a browser for this. local_only: true keeps both on the LAN.
+# FR | WEBHOOKS — comment l'iframe de chat parle a Home Assistant. Meme
+# FR | raisonnement que le webhook de vssp_theme.yaml : l'iframe ne peut pas
+# FR | atteindre l'objet `hass` parent, et un jeton REST longue duree n'a
+# FR | rien a faire dans un navigateur pour cela. local_only: true maintient
+# FR | les deux sur le reseau local.
+# --------------------------------------------------------------------
+automation:
+  - alias: "Visio Sapiens — Receive chatbot message"
+    id: vssp_receive_chatbot_message
+    mode: queued
+    max: 10
+    triggers:
+      - trigger: webhook
+        webhook_id: vssp_chatbot_send
+        local_only: true
+        allowed_methods:
+          - POST
+    actions:
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.json.message_b64 is defined }}"
+            sequence:
+              # EN | provider comes from Home Assistant's OWN state, not
+              # EN | from the webhook payload — the iframe never needs to
+              # EN | know or submit it. This also means the value reaching
+              # EN | the shell_command line below is always exactly one of
+              # EN | input_select.vssp_chatbot_provider's own 4 declared
+              # EN | options (vssp_generation.yaml), never client-supplied
+              # EN | text.
+              # FR | provider vient de l'etat de Home Assistant LUI-MEME, pas
+              # FR | du payload webhook — l'iframe n'a jamais besoin de le
+              # FR | connaitre ni de le soumettre. Cela garantit aussi que la
+              # FR | valeur atteignant la ligne shell_command ci-dessous est
+              # FR | toujours exactement l'une des 4 options declarees par
+              # FR | input_select.vssp_chatbot_provider (vssp_generation.yaml),
+              # FR | jamais un texte fourni par le client.
+              - action: shell_command.vssp_chatbot_send
+                data:
+                  provider: "{{ states('input_select.vssp_chatbot_provider') }}"
+                  message_b64: "{{ trigger.json.message_b64 }}"
+                  history_b64: "{{ trigger.json.history_b64 | default('') }}"
+                response_variable: sent
+              # EN | No success notification — unlike a rare admin action
+              # EN | (theme apply), a chat message can happen every few
+              # EN | seconds; the iframe already shows the reply inline by
+              # EN | polling the status file. Only a hard script failure
+              # EN | (nonzero exit — the status file may not even have been
+              # EN | written) is worth surfacing here.
+              # FR | Pas de notification de succes — contrairement a une
+              # FR | action admin rare (application du theme), un message de
+              # FR | chat peut arriver toutes les quelques secondes ;
+              # FR | l'iframe affiche deja la reponse en interrogeant le
+              # FR | fichier de statut. Seul un echec dur du script (code de
+              # FR | sortie non nul — le fichier de statut peut meme ne pas
+              # FR | avoir ete ecrit) merite d'etre remonte ici.
+              - if:
+                  - condition: template
+                    value_template: "{{ sent.returncode != 0 }}"
+                then:
+                  - action: persistent_notification.create
+                    data:
+                      title: "Visio Sapiens — Echec d'envoi au chatbot"
+                      message: >
+                        vssp_chatbot_send.py a quitte avec le code
+                        {{ sent.returncode }}. Voir
+                        /config/www/vssp/chatbot_status.json et les
+                        journaux Home Assistant pour le detail.
+        default:
+          - action: persistent_notification.create
+            data:
+              title: "Visio Sapiens — Message chatbot malforme"
+              message: >
+                Le webhook a recu un payload sans message_b64. Rien n'a
+                ete envoye.
+
+  # EN | WHY NO base64/content_b64 HERE, UNLIKE THE THEME WEBHOOK — that
+  # EN | payload is handed to a shell one-liner (rgba() values would break
+  # EN | shell quoting raw). This one only ever reaches native
+  # EN | input_text.set_value / input_select.select_option service calls —
+  # EN | there is no shell in the loop, so a quote or newline in a
+  # EN | self-hosted model's system prompt is just part of the string, not
+  # EN | a hazard. Keeping it plain JSON also means no Python script is
+  # EN | needed for this half of the feature at all.
+  # FR | POURQUOI PAS DE base64/content_b64 ICI, CONTRAIREMENT AU WEBHOOK
+  # FR | THEME — ce payload-la est remis a une ligne shell (les valeurs
+  # FR | rgba() casseraient le quoting shell brutes). Celui-ci n'atteint
+  # FR | jamais que des appels de service natifs input_text.set_value /
+  # FR | input_select.select_option — aucun shell dans la boucle, donc un
+  # FR | guillemet ou un retour a la ligne dans le prompt systeme d'un
+  # FR | modele auto-heberge n'est qu'une partie de la chaine, pas un
+  # FR | risque. Garder du JSON simple signifie aussi qu'aucun script
+  # FR | Python n'est necessaire pour cette moitie de la fonctionnalite.
+  - alias: "Visio Sapiens — Receive chatbot custom config"
+    id: vssp_receive_chatbot_custom_config
+    mode: queued
+    max: 10
+    triggers:
+      - trigger: webhook
+        webhook_id: vssp_chatbot_custom_config
+        local_only: true
+        allowed_methods:
+          - POST
+    actions:
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: >-
+                  {{ trigger.json.endpoint is defined
+                     and (trigger.json.endpoint | trim | regex_match('^https?://.+')) }}
+            sequence:
+              - action: input_text.set_value
+                target:
+                  entity_id: input_text.vssp_chatbot_custom_name
+                data:
+                  value: "{{ (trigger.json.name | default('')) | truncate(100, True, '') }}"
+              - action: input_text.set_value
+                target:
+                  entity_id: input_text.vssp_chatbot_custom_endpoint
+                data:
+                  value: "{{ trigger.json.endpoint | trim | truncate(255, True, '') }}"
+              - action: input_text.set_value
+                target:
+                  entity_id: input_text.vssp_chatbot_custom_model
+                data:
+                  value: "{{ (trigger.json.model | default('')) | truncate(100, True, '') }}"
+              - action: input_text.set_value
+                target:
+                  entity_id: input_text.vssp_chatbot_custom_system_prompt
+                data:
+                  value: "{{ (trigger.json.system_prompt | default('')) | truncate(500, True, '') }}"
+              - action: input_text.set_value
+                target:
+                  entity_id: input_text.vssp_chatbot_custom_api_key
+                data:
+                  value: "{{ (trigger.json.api_key | default('')) | truncate(255, True, '') }}"
+              # EN | Writes the (possibly empty — optional per spec) key to
+              # EN | /config/vssp/.custom_key right away, so Save is a
+              # EN | single step instead of "save, then remember to also
+              # EN | click a separate save-key button" like the three
+              # EN | built-in providers require.
+              # FR | Ecrit la cle (potentiellement vide — optionnelle selon
+              # FR | la demande) dans /config/vssp/.custom_key immediatement,
+              # FR | pour qu'Enregistrer soit une seule etape plutot que
+              # FR | « enregistrer, puis penser a cliquer aussi un bouton
+              # FR | separe » comme l'exigent les trois fournisseurs natifs.
+              - action: shell_command.vssp_write_custom_key
+              - action: input_select.select_option
+                target:
+                  entity_id: input_select.vssp_chatbot_provider
+                data:
+                  option: custom
+              - action: persistent_notification.create
+                data:
+                  title: "Visio Sapiens — Chatbot custom enregistre"
+                  message: >
+                    Configuration enregistree et selectionnee comme
+                    fournisseur actif du chatbot.
+        default:
+          - action: persistent_notification.create
+            data:
+              title: "Visio Sapiens — Configuration chatbot custom refusee"
+              message: >
+                L'URL du point d'acces est vide ou invalide (http:// ou
+                https:// requis). Rien n'a ete enregistre.

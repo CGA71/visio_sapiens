@@ -460,15 +460,100 @@ views:
                   - type: select-options
                 features_position: inline
                 card_mod: *vssp_selector_card_mod
-              - type: tile
-                entity: input_select.vssp_chatbot_provider
-                name: "{{ t('admin.select_chatbot') }}"
-                icon: mdi:chat-processing-outline
-                vertical: false
-                features:
-                  - type: select-options
-                features_position: inline
-                card_mod: *vssp_selector_card_mod
+              # EN | Not a `type: tile` + select-options like language/format
+              # EN | above — that HA tile feature only ever renders plain
+              # EN | text options, no per-option icon/image. Same radio-row
+              # EN | pattern as ENERGY's Day/Month/Year tabs instead
+              # EN | (energy.yaml.j2, template vssp_chatbot_provider_tab):
+              # EN | one button-card per provider, gemini/claude/chatgpt show
+              # EN | their logo, "custom" stays icon+text (spec: "le mode
+              # EN | texte" for that one option) and ALSO opens a browser_mod
+              # EN | popup to fill in the local/self-hosted model's fields —
+              # EN | see vssp_chatbot.html and the vssp_chatbot_custom_config
+              # EN | webhook (packages/vssp_chatbot.yaml), which is what
+              # EN | actually selects "custom" once the form is saved.
+              # EN | REQUIRES browser_mod installed (HACS) — see
+              # EN | docs/Security.md.
+              # FR | Pas un `type: tile` + select-options comme
+              # FR | langue/format ci-dessus — cette fonctionnalite tile HA
+              # FR | ne rend jamais que des options en texte brut, aucune
+              # FR | icone/image par option. Meme motif en ligne de
+              # FR | radio-boutons que les onglets Jour/Mois/Annee d'ENERGY
+              # FR | a la place (energy.yaml.j2, template
+              # FR | vssp_chatbot_provider_tab) : un button-card par
+              # FR | fournisseur, gemini/claude/chatgpt affichent leur logo,
+              # FR | "custom" reste icone+texte (demande : « le mode texte »
+              # FR | pour cette seule option) et ouvre EN PLUS un popup
+              # FR | browser_mod pour renseigner les champs du modele
+              # FR | local/auto-heberge — voir vssp_chatbot.html et le
+              # FR | webhook vssp_chatbot_custom_config
+              # FR | (packages/vssp_chatbot.yaml), qui est ce qui
+              # FR | selectionne reellement "custom" une fois le formulaire
+              # FR | enregistre.
+              # FR | REQUIERT browser_mod installe (HACS) — voir
+              # FR | docs/Security.md.
+              - type: horizontal-stack
+                card_mod:
+                  style: |
+                    ha-card { background: transparent !important; border: none !important; box-shadow: none !important; }
+                cards:
+                  - type: custom:button-card
+                    template: vssp_chatbot_provider_tab
+                    entity: input_select.vssp_chatbot_provider
+                    image: /local/vssp/images/providers/gemini.svg
+                    name: Gemini
+                    variables:
+                      provider: gemini
+                    tap_action:
+                      action: call-service
+                      service: input_select.select_option
+                      service_data:
+                        entity_id: input_select.vssp_chatbot_provider
+                        option: gemini
+                  - type: custom:button-card
+                    template: vssp_chatbot_provider_tab
+                    entity: input_select.vssp_chatbot_provider
+                    image: /local/vssp/images/providers/claude.svg
+                    name: Claude
+                    variables:
+                      provider: claude
+                    tap_action:
+                      action: call-service
+                      service: input_select.select_option
+                      service_data:
+                        entity_id: input_select.vssp_chatbot_provider
+                        option: claude
+                  - type: custom:button-card
+                    template: vssp_chatbot_provider_tab
+                    entity: input_select.vssp_chatbot_provider
+                    image: /local/vssp/images/providers/chatgpt.svg
+                    name: ChatGPT
+                    variables:
+                      provider: chatgpt
+                    tap_action:
+                      action: call-service
+                      service: input_select.select_option
+                      service_data:
+                        entity_id: input_select.vssp_chatbot_provider
+                        option: chatgpt
+                  - type: custom:button-card
+                    template: vssp_chatbot_provider_tab
+                    entity: input_select.vssp_chatbot_provider
+                    show_icon: true
+                    icon: mdi:tune-variant
+                    name: "{{ t('admin.chatbot_custom_label') }}"
+                    variables:
+                      provider: custom
+                    tap_action:
+                      action: perform-action
+                      perform_action: browser_mod.popup
+                      data:
+                        browser_id: this
+                        title: "{{ t('admin.chatbot_custom_popup_title') }}"
+                        size: normal
+                        content:
+                          type: iframe
+                          url: /local/vssp/wizard/vssp_chatbot.html?mode=custom
           - type: entities
             entities:
               - entity: sensor.vssp_deployed_locale
