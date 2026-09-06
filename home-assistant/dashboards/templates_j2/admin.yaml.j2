@@ -867,9 +867,34 @@ views:
                      FR | un champ clair se trouve reellement. Poser ces trois
                      FR | variables dans le theme reparerait cette ligne et
                      FR | casserait le texte secondaire dans toute l'UI. #}
-                  --ha-color-form-background: {{ design.palette.input_background }};
-                  --wa-form-control-value-color: {{ design.palette.input_ink }};
-                  --secondary-text-color: {{ design.palette.input_label }};
+                  {# EN | .get() with a literal fallback, NOT
+                     EN | design.palette.x — `design` is {} on every run that
+                     EN | does not pass --design-model, which is every
+                     EN | dashboard run: only the --only theme command reads
+                     EN | the design model. Under StrictUndefined the dotted
+                     EN | form raised UndefinedError, aborting the whole
+                     EN | generator on the ADMIN template — and since admin
+                     EN | renders BEFORE the room dashboards and before the
+                     EN | rooms fragment is written, every regeneration died
+                     EN | there, leaving no room view and an empty fragment.
+                     EN | One unreachable value in a card_mod must never be
+                     EN | able to take the rooms down with it.
+                     FR | .get() avec un repli litteral, PAS
+                     FR | design.palette.x — `design` vaut {} sur tout
+                     FR | lancement qui ne passe pas --design-model, c'est-a-
+                     FR | dire tout lancement de dashboards : seule la
+                     FR | commande --only theme lit le modele de design. Sous
+                     FR | StrictUndefined, la forme pointee levait
+                     FR | UndefinedError et interrompait tout le generateur
+                     FR | sur le template ADMIN — et comme admin est rendu
+                     FR | AVANT les dashboards de piece et avant l'ecriture du
+                     FR | fragment, chaque regeneration mourait la, sans
+                     FR | aucune vue de piece et avec un fragment vide.
+                     FR | Une seule valeur inatteignable dans un card_mod ne
+                     FR | doit jamais pouvoir emporter les pieces avec elle. #}
+                  --ha-color-form-background: {{ design.get('palette', {}).get('input_background', '#C9D6DE') }};
+                  --wa-form-control-value-color: {{ design.get('palette', {}).get('input_ink', '#0A1720') }};
+                  --secondary-text-color: {{ design.get('palette', {}).get('input_label', '#3A4E5A') }};
                 }
           - type: grid
             columns: 3

@@ -276,6 +276,7 @@ shell_command:
     --model /config/dashboards/model/house.yaml
     --rooms /config/dashboards/model/house_rooms.yaml
     --devices /config/dashboards/model/energy_devices.yaml
+    --design-model /config/dashboards/model/design_system.yaml
     --templates /config/dashboards/templates_j2
     --locales-dir /config/dashboards/locales
     --rooms-fragment /config/config-fragment-rooms.yaml
@@ -354,6 +355,7 @@ shell_command:
     --model /config/dashboards/model/house.yaml
     --rooms /config/dashboards/model/house_rooms.yaml
     --devices /config/dashboards/model/energy_devices.yaml
+    --design-model /config/dashboards/model/design_system.yaml
     --templates /config/dashboards/templates_j2
     --locales-dir /config/dashboards/locales
     --rooms-fragment /config/config-fragment-rooms.yaml
@@ -374,6 +376,7 @@ shell_command:
     --model /config/dashboards/model/house.yaml
     --rooms /config/dashboards/model/house_rooms.yaml
     --devices /config/dashboards/model/energy_devices.yaml
+    --design-model /config/dashboards/model/design_system.yaml
     --templates /config/dashboards/templates_j2
     --locales-dir /config/dashboards/locales
     --rooms-fragment /config/config-fragment-rooms.yaml
@@ -408,6 +411,7 @@ shell_command:
     --model /config/dashboards/model/house.yaml
     --rooms /config/dashboards/model/house_rooms.yaml
     --devices /config/dashboards/model/energy_devices.yaml
+    --design-model /config/dashboards/model/design_system.yaml
     --templates /config/dashboards/templates_j2
     --locales-dir /config/dashboards/locales
     --rooms-fragment /config/config-fragment-rooms.yaml
@@ -423,6 +427,7 @@ shell_command:
     --model /config/dashboards/model/house.yaml
     --rooms /config/dashboards/model/house_rooms.yaml
     --devices /config/dashboards/model/energy_devices.yaml
+    --design-model /config/dashboards/model/design_system.yaml
     --templates /config/dashboards/templates_j2
     --locales-dir /config/dashboards/locales
     --rooms-fragment /config/config-fragment-rooms.yaml
@@ -449,6 +454,7 @@ shell_command:
     --model /config/dashboards/model/house.yaml
     --rooms /config/dashboards/model/house_rooms.yaml
     --devices /config/dashboards/model/energy_devices.yaml
+    --design-model /config/dashboards/model/design_system.yaml
     --templates /config/dashboards/templates_j2
     --locales-dir /config/dashboards/locales
     --rooms-fragment /config/config-fragment-rooms.yaml
@@ -465,6 +471,7 @@ shell_command:
     --model /config/dashboards/model/house.yaml
     --rooms /config/dashboards/model/house_rooms.yaml
     --devices /config/dashboards/model/energy_devices.yaml
+    --design-model /config/dashboards/model/design_system.yaml
     --templates /config/dashboards/templates_j2
     --locales-dir /config/dashboards/locales
     --rooms-fragment /config/config-fragment-rooms.yaml
@@ -536,6 +543,7 @@ shell_command:
     --calendar-entity '{{ states('input_text.vssp_google_calendar_entity') }}'
     --model /config/dashboards/model/house.yaml
     --rooms /config/dashboards/model/house_rooms.preview.yaml
+    --design-model /config/dashboards/model/design_system.yaml
     --templates /config/dashboards/templates_j2
     --locales-dir /config/dashboards/locales
     --out /config/dashboards/views
@@ -550,6 +558,7 @@ shell_command:
     --calendar-entity '{{ states('input_text.vssp_google_calendar_entity') }}'
     --model /config/dashboards/model/house.yaml
     --rooms /config/dashboards/model/house_rooms.preview.yaml
+    --design-model /config/dashboards/model/design_system.yaml
     --templates /config/dashboards/templates_j2
     --locales-dir /config/dashboards/locales
     --out /config/dashboards/views
