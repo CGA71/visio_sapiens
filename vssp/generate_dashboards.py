@@ -769,8 +769,33 @@ def preview_context(context: dict) -> dict:
     return ctx
 
 
+def existing_rooms_fragment(path) -> dict:
+    """
+    EN | The room dashboards the fragment declares RIGHT NOW, before this run
+    EN | rewrites it. Only used to refuse a rewrite that would delete all of
+    EN | them — see the guard in write_rooms_fragment.
+    EN | An unreadable or absent file reads as "declares nothing", which is
+    EN | the safe answer: it lets a first run write the fragment normally.
+    FR | Les dashboards de piece que le fragment declare MAINTENANT, avant
+    FR | que ce lancement ne le reecrive. Sert uniquement a refuser une
+    FR | reecriture qui les supprimerait tous — voir le garde-fou dans
+    FR | write_rooms_fragment.
+    FR | Un fichier absent ou illisible vaut « ne declare rien », ce qui est
+    FR | la reponse sure : un premier lancement ecrit le fragment normalement.
+    """
+    p = Path(path) if path else None
+    if not p or not p.is_file():
+        return {}
+    try:
+        doc = yaml.safe_load(p.read_text(encoding="utf-8")) or {}
+    except (yaml.YAMLError, OSError) as exc:
+        print(f"[warn] {p} unreadable ({exc}) — treated as declaring nothing")
+        return {}
+    return ((doc.get("lovelace") or {}).get("dashboards") or {})
+
+
 def write_rooms_fragment(path, rooms: list, formats: list, out_dir: Path,
-                         locale: str) -> dict:
+                         locale: str, allow_empty: bool = False) -> dict:
     """
     EN | Writes the `lovelace.dashboards` entries for the generated room
     EN | dashboards. Without this, every room dashboard exists on disk and is
@@ -849,6 +874,45 @@ def write_rooms_fragment(path, rooms: list, formats: list, out_dir: Path,
         "# FR | les entrees obsoletes.\n"
         "########################################################################\n\n"
     )
+
+    # EN | GUARD — never let one run delete EVERY room declaration.
+    # EN | This fragment is what tells Home Assistant that the room
+    # EN | dashboards exist at all; emptying it unlinks every room in the
+    # EN | interface at once, and nothing on screen explains why. It happened:
+    # EN | six ADMIN buttons passed --rooms-fragment WITHOUT --rooms, so they
+    # EN | rebuilt this file from a rooms list that was empty, and one click
+    # EN | on REGENERATE HOME took every room dashboard out of the console.
+    # EN | Going from "some rooms" to "no rooms" is almost always a missing
+    # EN | source (no --rooms, an empty model, a half-finished deploy) rather
+    # EN | than an intent, so it now needs to be stated: --allow-empty-rooms.
+    # EN | Everything else still writes normally — including removing SOME
+    # EN | rooms, which is an ordinary edit.
+    # FR | GARDE-FOU — ne jamais laisser un lancement supprimer TOUTES les
+    # FR | declarations de pieces.
+    # FR | Ce fragment est ce qui apprend a Home Assistant que les dashboards
+    # FR | de piece existent ; le vider delie toutes les pieces de l'interface
+    # FR | d'un coup, et rien a l'ecran n'explique pourquoi. C'est arrive :
+    # FR | six boutons de l'ADMIN passaient --rooms-fragment SANS --rooms, ils
+    # FR | reconstruisaient donc ce fichier depuis une liste de pieces vide,
+    # FR | et un clic sur REGENERER HOME a sorti tous les dashboards de piece
+    # FR | de la console.
+    # FR | Passer de « quelques pieces » a « aucune piece » vient presque
+    # FR | toujours d'une source manquante (pas de --rooms, un modele vide, un
+    # FR | deploiement a moitie fait) plutot que d'une intention : cela doit
+    # FR | desormais etre declare, avec --allow-empty-rooms. Tout le reste
+    # FR | s'ecrit normalement — y compris retirer CERTAINES pieces, qui est
+    # FR | une modification ordinaire.
+    if not dashboards and not allow_empty:
+        already = existing_rooms_fragment(path)
+        if already:
+            print(f"[REFUSED] {path}: this run declares no room dashboard, "
+                  f"but the file currently declares {len(already)} "
+                  f"({', '.join(sorted(already))}).")
+            print("          Refusing to unlink every room. Likely cause: no "
+                  "--rooms given, or the model's rooms: list is empty.")
+            print("          Re-run with --rooms <house_rooms.yaml>, or pass "
+                  "--allow-empty-rooms if the rooms really are all gone.")
+            return already
 
     body = yaml.safe_dump({"lovelace": {"dashboards": dashboards}},
                           sort_keys=False, allow_unicode=True, default_flow_style=False)
@@ -1159,6 +1223,16 @@ def main() -> int:
                     help="Where to write the lovelace.dashboards entries of "
                          "the generated room dashboards. Pass an empty string "
                          "to skip.")
+    # EN | Opt out of the guard above: says the rooms really are all gone
+    # EN | and the fragment should be emptied. Only the room wizard's own
+    # EN | "delete everything" path has any business passing this.
+    # FR | Renonce au garde-fou ci-dessus : affirme que les pieces ont bien
+    # FR | toutes disparu et que le fragment doit etre vide. Seul le parcours
+    # FR | « tout supprimer » de l'assistant pieces a une raison de le passer.
+    ap.add_argument("--allow-empty-rooms", action="store_true",
+                    help="Allow the rooms fragment to be emptied. Without it, "
+                         "a run that declares no room refuses to delete "
+                         "existing room declarations.")
     ap.add_argument("--status-file", default=None,
                     help="Writes a JSON report (readable by the console at "
                          "/local/vssp/preview_status.json)")
@@ -1551,7 +1625,8 @@ def main() -> int:
     fragment_entries = {}
     if args.rooms_fragment and not args.preview and not args.dry_run:
         fragment_entries = write_rooms_fragment(
-            args.rooms_fragment, rooms, formats, out_dir, locale)
+            args.rooms_fragment, rooms, formats, out_dir, locale,
+            allow_empty=args.allow_empty_rooms)
         print(f"[OK] {args.rooms_fragment}: "
               f"{len(fragment_entries)} room dashboard(s) declared")
         if rooms and not fragment_entries:

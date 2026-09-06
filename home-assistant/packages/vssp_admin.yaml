@@ -323,13 +323,36 @@ shell_command:
   # erreur sur une installation deja configuree. HOME est de toute facon
   # protege en permanence par generate_dashboards.py (--protect-existing
   # vaut "home" par defaut), meme si --if-missing n'etait pas passe ici.
-  # --locale : voir la note sur vssp_generate_dashboards plus haut.
+  # EN | --rooms WAS MISSING on this command and on the five other
+  # EN | create/regenerate commands below. They all pass --rooms-fragment,
+  # EN | which rewrites the file declaring every room dashboard to Home
+  # EN | Assistant — and they rebuilt it from house.yaml's rooms: alone,
+  # EN | because generate_dashboards.py's --rooms default is a REPO-relative
+  # EN | path that does not exist on the pod. With that list empty, one click
+  # EN | on REGENERATE HOME unlinked every room in the console, leaving only
+  # EN | CORE, ENERGY and ADMIN in the navigation rail. Confirmed live.
+  # EN | The generator now also refuses such a rewrite on its own
+  # EN | (--allow-empty-rooms opts out), so this is the first of two locks.
+  # FR | --rooms MANQUAIT sur cette commande et sur les cinq autres commandes
+  # FR | de creation/regeneration ci-dessous. Toutes passent --rooms-fragment,
+  # FR | qui reecrit le fichier declarant chaque dashboard de piece a Home
+  # FR | Assistant — et elles le reconstruisaient depuis le seul rooms: de
+  # FR | house.yaml, car le defaut de --rooms dans generate_dashboards.py est
+  # FR | un chemin relatif AU DEPOT, inexistant sur le pod. Cette liste vide,
+  # FR | un clic sur REGENERER HOME deliait toutes les pieces de la console,
+  # FR | ne laissant que CORE, ENERGY et ADMIN dans le bandeau de navigation.
+  # FR | Confirme en production.
+  # FR | Le generateur refuse desormais aussi une telle reecriture de lui-meme
+  # FR | (--allow-empty-rooms y renonce) : ceci est le premier des deux verrous.
+  # EN | --locale : see the note on vssp_generate_dashboards above.
+  # FR | --locale : voir la note sur vssp_generate_dashboards plus haut.
   vssp_create_home: >-
     python3 /config/vssp/generate_dashboards.py
     --locale {{ states('input_select.vssp_language') }}
     --calendar-entity '{{ states('input_text.vssp_google_calendar_entity') }}'
     --only home --if-missing
     --model /config/dashboards/model/house.yaml
+    --rooms /config/dashboards/model/house_rooms.yaml
     --devices /config/dashboards/model/energy_devices.yaml
     --templates /config/dashboards/templates_j2
     --locales-dir /config/dashboards/locales
@@ -349,6 +372,7 @@ shell_command:
     --only home
     --protect-existing ""
     --model /config/dashboards/model/house.yaml
+    --rooms /config/dashboards/model/house_rooms.yaml
     --devices /config/dashboards/model/energy_devices.yaml
     --templates /config/dashboards/templates_j2
     --locales-dir /config/dashboards/locales
@@ -382,6 +406,7 @@ shell_command:
     --calendar-entity '{{ states('input_text.vssp_google_calendar_entity') }}'
     --only core --if-missing
     --model /config/dashboards/model/house.yaml
+    --rooms /config/dashboards/model/house_rooms.yaml
     --devices /config/dashboards/model/energy_devices.yaml
     --templates /config/dashboards/templates_j2
     --locales-dir /config/dashboards/locales
@@ -396,6 +421,7 @@ shell_command:
     --calendar-entity '{{ states('input_text.vssp_google_calendar_entity') }}'
     --only core
     --model /config/dashboards/model/house.yaml
+    --rooms /config/dashboards/model/house_rooms.yaml
     --devices /config/dashboards/model/energy_devices.yaml
     --templates /config/dashboards/templates_j2
     --locales-dir /config/dashboards/locales
@@ -421,6 +447,7 @@ shell_command:
     --calendar-entity '{{ states('input_text.vssp_google_calendar_entity') }}'
     --only energy --if-missing
     --model /config/dashboards/model/house.yaml
+    --rooms /config/dashboards/model/house_rooms.yaml
     --devices /config/dashboards/model/energy_devices.yaml
     --templates /config/dashboards/templates_j2
     --locales-dir /config/dashboards/locales
@@ -436,6 +463,7 @@ shell_command:
     --calendar-entity '{{ states('input_text.vssp_google_calendar_entity') }}'
     --only energy
     --model /config/dashboards/model/house.yaml
+    --rooms /config/dashboards/model/house_rooms.yaml
     --devices /config/dashboards/model/energy_devices.yaml
     --templates /config/dashboards/templates_j2
     --locales-dir /config/dashboards/locales

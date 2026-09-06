@@ -247,6 +247,16 @@ Declaration of the preview dashboard: see
   generation fail instead of producing a silent hole.
 - **YAML validation of the render before writing**: a broken template
   never replaces a working dashboard.
+- **The rooms fragment is never emptied by accident**: a run that
+  declares no room dashboard, against a `config-fragment-rooms.yaml`
+  that currently declares some, is **refused** and leaves the file
+  alone. That fragment is the only thing telling Home Assistant the room
+  dashboards exist, so emptying it unlinks every room at once, with
+  nothing on screen to explain why. Going from "some rooms" to "no
+  rooms" is nearly always a missing source — no `--rooms`, an empty
+  model, a half-finished deploy — rather than an intent, so it has to be
+  stated: `--allow-empty-rooms`. Removing *some* rooms is an ordinary
+  edit and still writes normally.
 
 This is complementary to `vssp_upgrade.py`: upgrade compares what
 exists against what was discovered (diagnosis), the generator produces

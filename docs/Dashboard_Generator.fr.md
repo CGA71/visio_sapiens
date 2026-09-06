@@ -247,6 +247,17 @@ Déclaration du dashboard d'aperçu : voir
   échouer la génération au lieu de produire un trou silencieux.
 - **Validation YAML du rendu avant écriture** : un template cassé ne
   remplace jamais un dashboard fonctionnel.
+- **Le fragment de pièces n'est jamais vidé par accident** : un
+  lancement qui ne déclare aucun dashboard de pièce, face à un
+  `config-fragment-rooms.yaml` qui en déclare, est **refusé** et laisse
+  le fichier tel quel. Ce fragment est la seule chose qui apprend à Home
+  Assistant que les dashboards de pièce existent : le vider délie toutes
+  les pièces d'un coup, sans rien à l'écran pour l'expliquer. Passer de
+  « quelques pièces » à « aucune pièce » vient presque toujours d'une
+  source manquante — pas de `--rooms`, un modèle vide, un déploiement à
+  moitié fait — plutôt que d'une intention : cela doit être déclaré, avec
+  `--allow-empty-rooms`. Retirer *certaines* pièces est une modification
+  ordinaire et s'écrit toujours normalement.
 
 C'est complémentaire de `vssp_upgrade.py` : upgrade compare l'existant
 aux découvertes (diagnostic), le générateur produit l'état cible

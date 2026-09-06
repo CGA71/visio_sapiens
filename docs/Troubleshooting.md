@@ -2,10 +2,11 @@
 
 **English** · [Français](Troubleshooting.fr.md)
 
-This document brings together three field postmortems: why the deployment
+This document brings together four field postmortems: why the deployment
 seemed to never reach staging, why the ENERGY tables stayed empty after a
-sync that reported success, and an FAQ-style troubleshooting sheet for the
-ADMIN panel. Each case keeps its narrative shape — symptom, cause, fix or
+sync that reported success, why every room vanished from the navigation
+after one click in the console, and why a slot_set edit silently reverted —
+plus an FAQ-style troubleshooting sheet for the ADMIN panel. Each case keeps its narrative shape — symptom, cause, fix or
 diagnostic commands — so it can double as source material for a future
 "debugging sessions" video episode.
 
@@ -244,7 +245,69 @@ Assistant knows about the devices, but the scan couldn't write them.
 
 ---
 
-## 3. ADMIN panel FAQ
+## 3. Every room disappears from the navigation after a regeneration
+
+**Symptom.** The rooms were there. One click in the ADMIN console —
+REGENERATE HOME, APPLY TO HEADER, or any per-dashboard create/regenerate
+button — and the navigation rail is down to CORE, ENERGY and ADMIN. No
+error, no notification. Home Assistant's *Settings > Dashboards* no
+longer lists any `visio-sapiens-<room>` entry.
+
+**What is NOT lost.** The Home Assistant **area registry** — the actual
+source of truth for rooms — is untouched, floors included. So are the
+entity-to-area assignments. What was lost is generated: the room view
+files and, above all, `config-fragment-rooms.yaml`, the fragment that
+declares those dashboards to Home Assistant.
+
+**Cause.** Six `shell_command`s in `vssp_admin.yaml`
+(`vssp_create_home` / `vssp_regenerate_home` and the same pair for core
+and energy) passed `--rooms-fragment` **without `--rooms`**. That
+combination rewrites the fragment from the model's `rooms:` alone —
+and `generate_dashboards.py`'s `--rooms` default is a *repo*-relative
+path (`home-assistant/dashboards/model/house_rooms.yaml`) that does not
+exist on the pod, so nothing fills the gap. With that list empty, the
+rewrite declares zero room dashboards and every room is unlinked in one
+step.
+
+Only `vssp_generate_dashboards` (the REGENERATE ALL button) passed
+`--rooms`, which is why the same console could look fine one moment and
+empty the next depending on which button was pressed.
+
+**Fix.** Two independent locks, because either alone would have been
+enough to prevent this and neither is sufficient forever:
+
+1. All six commands now pass
+   `--rooms /config/dashboards/model/house_rooms.yaml`.
+2. `generate_dashboards.py` **refuses** to rewrite a rooms fragment into
+   an empty one when the existing file declares rooms — see *Guardrails*
+   in [Dashboard_Generator.md](Dashboard_Generator.md). `--allow-empty-rooms`
+   opts out for the genuine "all rooms really are gone" case.
+
+**Recovery**, in order — nothing here needs the lost files:
+
+1. ADMIN > **ROOMS & FLOORS**, paste a long-lived token, *Connect*. The
+   form reads the area registry, which still holds every room.
+2. **Apply to Home Assistant** — this writes `rooms:` back into
+   `house.yaml` (`vssp_rooms_apply.py`).
+3. ADMIN > **DASHBOARDS** > **REGENERATE ALL**. Room views are rebuilt
+   and the fragment is rewritten with them.
+4. Reload Lovelace. If a room URL still 404s, the fragment reached
+   `configuration.yaml` but Home Assistant has not restarted — see case 1.
+
+**Diagnostic reflex.** Before regenerating anything, check what the
+fragment declares:
+
+```sh
+NS=home-assistant; POD=home-assistant-0; C=home-assistant
+kubectl -n $NS exec $POD -c $C -- cat /config/config-fragment-rooms.yaml
+kubectl -n $NS exec $POD -c $C -- \
+  grep -c "^  - id:" /config/dashboards/model/house.yaml
+```
+
+A fragment with no `visio-sapiens-<room>` key, or a model whose `rooms:`
+is empty, is this exact case.
+
+## 4. ADMIN panel FAQ
 
 ### "script.vssp_… not found" / "Entity not found"
 
@@ -427,7 +490,7 @@ Developer Tools → Actions: the picker only offers services that are
 actually registered. Typing `lovelace.` there shows only
 `reload_resources`, which confirms the diagnosis in two seconds.
 
-## 4. slot_set / default_slot (or an ASSIGN / THEME save) silently reverts
+## 5. slot_set / default_slot (or an ASSIGN / THEME save) silently reverts
 
 ### What it looks like
 

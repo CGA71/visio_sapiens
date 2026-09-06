@@ -2,10 +2,12 @@
 
 **Français** · [English](Troubleshooting.md)
 
-Ce document réunit trois post-mortems de terrain : pourquoi le déploiement
+Ce document réunit quatre post-mortems de terrain : pourquoi le déploiement
 semblait ne jamais atteindre le staging, pourquoi les tableaux ENERGY
-restaient vides après une synchronisation annoncée comme réussie, et une FAQ
-de dépannage pour le panneau ADMIN. Chaque cas garde sa forme narrative —
+restaient vides après une synchronisation annoncée comme réussie, pourquoi
+toutes les pièces ont disparu de la navigation après un seul clic dans la
+console, et pourquoi une modification de slot_set revenait en silence — plus
+une FAQ de dépannage pour le panneau ADMIN. Chaque cas garde sa forme narrative —
 symptôme, cause, correctif ou commandes de diagnostic — pour servir de
 matière à un futur épisode « sessions de debug ».
 
@@ -244,7 +246,74 @@ Home Assistant connaît les appareils, mais le scan n'a pas pu les
 
 ---
 
-## 3. FAQ du panneau ADMIN
+## 3. Toutes les pièces disparaissent de la navigation après une régénération
+
+**Symptôme.** Les pièces étaient là. Un clic dans la console ADMIN —
+RÉGÉNÉRER HOME, APPLIQUER AU BANDEAU, ou n'importe quel bouton
+créer/régénérer d'une ligne du tableau — et le bandeau de navigation se
+réduit à CORE, ENERGY et ADMIN. Aucune erreur, aucune notification.
+*Paramètres > Tableaux de bord* de Home Assistant ne liste plus aucune
+entrée `visio-sapiens-<pièce>`.
+
+**Ce qui n'est PAS perdu.** Le **registre des zones** de Home Assistant —
+la véritable source de vérité des pièces — est intact, étages compris.
+Les affectations entité → zone aussi. Ce qui a disparu est généré : les
+fichiers de vue des pièces et, surtout, `config-fragment-rooms.yaml`, le
+fragment qui déclare ces dashboards à Home Assistant.
+
+**Cause.** Six `shell_command` de `vssp_admin.yaml`
+(`vssp_create_home` / `vssp_regenerate_home` et les mêmes paires pour
+core et energy) passaient `--rooms-fragment` **sans `--rooms`**. Cette
+combinaison réécrit le fragment depuis le seul `rooms:` du modèle — et
+le défaut de `--rooms` dans `generate_dashboards.py` est un chemin
+relatif *au dépôt* (`home-assistant/dashboards/model/house_rooms.yaml`)
+qui n'existe pas sur le pod, donc rien ne comble le manque. Cette liste
+vide, la réécriture déclare zéro dashboard de pièce et toutes les pièces
+sont déliées d'un coup.
+
+Seul `vssp_generate_dashboards` (le bouton RÉGÉNÉRER TOUT) passait
+`--rooms` : d'où une console qui pouvait paraître saine à un instant et
+vide juste après, selon le bouton pressé.
+
+**Correctif.** Deux verrous indépendants, car chacun aurait suffi à
+l'éviter et aucun ne suffit pour toujours :
+
+1. Les six commandes passent désormais
+   `--rooms /config/dashboards/model/house_rooms.yaml`.
+2. `generate_dashboards.py` **refuse** de réécrire un fragment de pièces
+   en fragment vide quand le fichier existant en déclare — voir
+   *Garde-fous* dans
+   [Dashboard_Generator.fr.md](Dashboard_Generator.fr.md).
+   `--allow-empty-rooms` y renonce pour le cas légitime « les pièces ont
+   vraiment toutes disparu ».
+
+**Récupération**, dans l'ordre — rien ici n'a besoin des fichiers perdus :
+
+1. ADMIN > **PIÈCES & ÉTAGES**, coller un jeton longue durée, *Se
+   connecter*. Le formulaire lit le registre des zones, qui contient
+   encore toutes les pièces.
+2. **Appliquer à Home Assistant** — cela réécrit `rooms:` dans
+   `house.yaml` (`vssp_rooms_apply.py`).
+3. ADMIN > **DASHBOARDS** > **RÉGÉNÉRER TOUT**. Les vues de pièce sont
+   reconstruites et le fragment réécrit avec elles.
+4. Recharger Lovelace. Si une URL de pièce reste en 404, le fragment est
+   bien arrivé dans `configuration.yaml` mais Home Assistant n'a pas
+   redémarré — voir le cas 1.
+
+**Réflexe de diagnostic.** Avant de régénérer quoi que ce soit, regarder
+ce que le fragment déclare :
+
+```sh
+NS=home-assistant; POD=home-assistant-0; C=home-assistant
+kubectl -n $NS exec $POD -c $C -- cat /config/config-fragment-rooms.yaml
+kubectl -n $NS exec $POD -c $C -- \
+  grep -c "^  - id:" /config/dashboards/model/house.yaml
+```
+
+Un fragment sans aucune clé `visio-sapiens-<pièce>`, ou un modèle dont
+`rooms:` est vide, c'est exactement ce cas.
+
+## 4. FAQ du panneau ADMIN
 
 ### « script.vssp_… introuvable » / « Entité non trouvée »
 
@@ -430,7 +499,7 @@ Outils de développement → Actions : le sélecteur ne propose que les
 services réellement enregistrés. Taper `lovelace.` n'y fait apparaître
 que `reload_resources`, ce qui confirme le diagnostic en deux secondes.
 
-## 4. slot_set / default_slot (ou une sauvegarde ASSIGN / THEME) revient en silence
+## 5. slot_set / default_slot (ou une sauvegarde ASSIGN / THEME) revient en silence
 
 ### Ce que ça donne
 
