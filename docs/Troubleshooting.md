@@ -259,29 +259,60 @@ entity-to-area assignments. What was lost is generated: the room view
 files and, above all, `config-fragment-rooms.yaml`, the fragment that
 declares those dashboards to Home Assistant.
 
-**Cause.** Six `shell_command`s in `vssp_admin.yaml`
-(`vssp_create_home` / `vssp_regenerate_home` and the same pair for core
-and energy) passed `--rooms-fragment` **without `--rooms`**. That
-combination rewrites the fragment from the model's `rooms:` alone —
-and `generate_dashboards.py`'s `--rooms` default is a *repo*-relative
-path (`home-assistant/dashboards/model/house_rooms.yaml`) that does not
-exist on the pod, so nothing fills the gap. With that list empty, the
-rewrite declares zero room dashboards and every room is unlinked in one
-step.
+**Cause — the one that mattered.** A `card_mod` on the CALENDAR screen
+read `design.palette.input_background`. Under `StrictUndefined` that
+raises as soon as `design` is empty, and `design` **is** empty on every
+dashboard run: only the `--only theme` command passes `--design-model`,
+and the generator's default for that flag is a *repo*-relative path that
+resolves in a checkout and never on the pod. So the crash was invisible
+to every local test and certain on the instance:
 
-Only `vssp_generate_dashboards` (the REGENERATE ALL button) passed
-`--rooms`, which is why the same console could look fine one moment and
-empty the next depending on which button was pressed.
+```
+admin.yaml.j2, line 870, in top-level template code
+    --ha-color-form-background: {{ design.palette.input_background }};
+jinja2.exceptions.UndefinedError: 'dict object' has no attribute 'palette'
+```
 
-**Fix.** Two independent locks, because either alone would have been
-enough to prevent this and neither is sufficient forever:
+The damage is out of all proportion to the cause. ADMIN renders **fourth**,
+before the room dashboards and before the rooms fragment is written, so
+the exception aborted every run at the same point: no room view
+generated, fragment never rewritten, no room dashboard declared.
+**Regenerating did not fix it — regenerating was what kept failing**, and
+it failed silently as far as the console was concerned, since the
+traceback only exists in the shell_command's stderr.
 
-1. All six commands now pass
+That is the tell for this whole class: *if regenerating does not change
+anything at all, the generator is not running to completion.* Read its
+stderr before believing any theory about the model.
+
+**Cause — the latent one found on the way.** Six `shell_command`s in
+`vssp_admin.yaml` (`vssp_create_home` / `vssp_regenerate_home` and the
+same pair for core and energy) passed `--rooms-fragment` **without
+`--rooms`**. That rewrites the fragment from the model's `rooms:` alone,
+and with the same repo-relative-default problem nothing fills the gap. It
+did not cause this incident — `house.yaml` held all six rooms throughout
+— but one click on REGENERATE HOME against an empty list would have done
+the same damage on its own.
+
+**Fix.** Three locks:
+
+1. The template uses
+   `design.get('palette', {}).get('<token>', '<hex>')` with literal
+   fallbacks. One unreachable value in a `card_mod` must never be able to
+   take the rooms down with it.
+2. All nine `generate_dashboards.py` commands pass `--design-model`, and
+   the six above also pass
    `--rooms /config/dashboards/model/house_rooms.yaml`.
-2. `generate_dashboards.py` **refuses** to rewrite a rooms fragment into
+3. `generate_dashboards.py` **refuses** to rewrite a rooms fragment into
    an empty one when the existing file declares rooms — see *Guardrails*
    in [Dashboard_Generator.md](Dashboard_Generator.md). `--allow-empty-rooms`
    opts out for the genuine "all rooms really are gone" case.
+
+**A repo-relative default path is not a default**, it is a local-only
+convenience: it makes a pod-only failure invisible to every test run in a
+checkout. Any new flag pointing at instance state should have no default
+at all, so a caller that forgets it fails loudly instead of silently
+reading nothing.
 
 **Recovery**, in order — nothing here needs the lost files:
 

@@ -261,31 +261,62 @@ Les affectations entité → zone aussi. Ce qui a disparu est généré : les
 fichiers de vue des pièces et, surtout, `config-fragment-rooms.yaml`, le
 fragment qui déclare ces dashboards à Home Assistant.
 
-**Cause.** Six `shell_command` de `vssp_admin.yaml`
-(`vssp_create_home` / `vssp_regenerate_home` et les mêmes paires pour
-core et energy) passaient `--rooms-fragment` **sans `--rooms`**. Cette
-combinaison réécrit le fragment depuis le seul `rooms:` du modèle — et
-le défaut de `--rooms` dans `generate_dashboards.py` est un chemin
-relatif *au dépôt* (`home-assistant/dashboards/model/house_rooms.yaml`)
-qui n'existe pas sur le pod, donc rien ne comble le manque. Cette liste
-vide, la réécriture déclare zéro dashboard de pièce et toutes les pièces
-sont déliées d'un coup.
+**Cause — celle qui comptait.** Un `card_mod` de l'écran CALENDRIER
+lisait `design.palette.input_background`. Sous `StrictUndefined`, cela
+lève dès que `design` est vide — et `design` **est** vide sur tout
+lancement de dashboards : seule la commande `--only theme` passe
+`--design-model`, et le défaut de cette option est un chemin relatif *au
+dépôt*, qui se résout dans une copie de travail et jamais sur le pod. Le
+crash était donc invisible à tout test local et certain sur l'instance :
 
-Seul `vssp_generate_dashboards` (le bouton RÉGÉNÉRER TOUT) passait
-`--rooms` : d'où une console qui pouvait paraître saine à un instant et
-vide juste après, selon le bouton pressé.
+```
+admin.yaml.j2, line 870, in top-level template code
+    --ha-color-form-background: {{ design.palette.input_background }};
+jinja2.exceptions.UndefinedError: 'dict object' has no attribute 'palette'
+```
 
-**Correctif.** Deux verrous indépendants, car chacun aurait suffi à
-l'éviter et aucun ne suffit pour toujours :
+Les dégâts sont sans commune mesure avec la cause. ADMIN est rendu en
+**quatrième**, avant les dashboards de pièce et avant l'écriture du
+fragment : l'exception interrompait donc chaque lancement au même point —
+aucune vue de pièce générée, fragment jamais réécrit, aucun dashboard de
+pièce déclaré. **Régénérer ne réparait rien : régénérer était ce qui
+échouait**, et en silence du point de vue de la console, puisque la trace
+n'existe que dans la stderr du shell_command.
 
-1. Les six commandes passent désormais
+C'est le signe distinctif de toute cette classe : *si régénérer ne change
+strictement rien, c'est que le générateur ne va pas au bout.* Lire sa
+stderr avant de croire à la moindre théorie sur le modèle.
+
+**Cause — la latente trouvée en chemin.** Six `shell_command` de
+`vssp_admin.yaml` (`vssp_create_home` / `vssp_regenerate_home` et les
+mêmes paires pour core et energy) passaient `--rooms-fragment` **sans
+`--rooms`**. Cela réécrit le fragment depuis le seul `rooms:` du modèle,
+avec le même problème de défaut relatif au dépôt. Ce n'est pas la cause
+de cet incident — `house.yaml` a gardé ses six pièces tout du long — mais
+un clic sur RÉGÉNÉRER HOME face à une liste vide aurait produit les mêmes
+dégâts à lui seul.
+
+**Correctif.** Trois verrous :
+
+1. Le template utilise
+   `design.get('palette', {}).get('<token>', '<hex>')` avec des replis
+   littéraux. Une seule valeur inatteignable dans un `card_mod` ne doit
+   jamais pouvoir emporter les pièces avec elle.
+2. Les neuf commandes `generate_dashboards.py` passent `--design-model`,
+   et les six ci-dessus passent aussi
    `--rooms /config/dashboards/model/house_rooms.yaml`.
-2. `generate_dashboards.py` **refuse** de réécrire un fragment de pièces
+3. `generate_dashboards.py` **refuse** de réécrire un fragment de pièces
    en fragment vide quand le fichier existant en déclare — voir
    *Garde-fous* dans
    [Dashboard_Generator.fr.md](Dashboard_Generator.fr.md).
    `--allow-empty-rooms` y renonce pour le cas légitime « les pièces ont
    vraiment toutes disparu ».
+
+**Un chemin par défaut relatif au dépôt n'est pas un défaut**, c'est une
+commodité locale : il rend une panne propre au pod invisible à tout test
+lancé depuis une copie de travail. Toute nouvelle option pointant vers de
+l'état d'instance devrait n'avoir aucun défaut, pour qu'un appelant qui
+l'oublie échoue bruyamment au lieu de lire silencieusement du vide.
 
 **Récupération**, dans l'ordre — rien ici n'a besoin des fichiers perdus :
 
