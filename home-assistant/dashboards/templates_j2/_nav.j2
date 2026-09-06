@@ -36,12 +36,12 @@
               min-width: 200px;
               background: rgba(5,11,18,0.85);
               border-radius: 20px;
-              border: 1px solid color-mix(in srgb, var(--primary-color, #00E5FF) 18%, transparent);
+              border: 1px solid rgba(0, 229, 255, 0.18);
               padding: 16px 10px;
-              box-shadow: 0 0 18px color-mix(in srgb, var(--primary-color, #00E5FF) 12%, transparent);
+              box-shadow: 0 0 18px rgba(0, 229, 255, 0.12);
               overflow-y: auto;
               scrollbar-width: thin;
-              scrollbar-color: color-mix(in srgb, var(--primary-color, #00E5FF) 35%, transparent) color-mix(in srgb, var(--primary-color, #00E5FF) 6%, transparent);
+              scrollbar-color: rgba(0, 229, 255, 0.35) rgba(0, 229, 255, 0.06);
             }
         cards:
           - type: custom:button-card
@@ -78,7 +78,7 @@
             custom_fields:
               logo: >
                 <img src="{{ house.logo }}"
-                     style="width:100%;max-width:160px;display:block;margin:0 auto;mix-blend-mode:screen;filter:drop-shadow(0 0 8px color-mix(in srgb, var(--primary-color, #00E5FF) 28%, transparent));" />
+                     style="width:100%;max-width:160px;display:block;margin:0 auto;mix-blend-mode:screen;filter:drop-shadow(0 0 8px rgba(0, 229, 255, 0.28));" />
             styles:
               card:
                 - background: transparent

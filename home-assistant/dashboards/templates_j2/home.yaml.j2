@@ -48,6 +48,38 @@
 #   button-card, card-mod, layout-card,
 #   apexcharts-card, config-template-card, decluttering-card, browser_mod,
 #   calendar-card-pro
+#
+# EN | COLOR-MIX FIX (2026-09-06): every translucent cyan border/box-shadow/
+# EN | scrollbar-color in this project used to read
+# EN | `color-mix(in srgb, var(--primary-color, #00E5FF) N%, transparent)`.
+# EN | On this install's rendering engine that CSS function silently failed
+# EN | (the whole `border` shorthand was dropped, not just miscolored), so
+# EN | System Status / Energy Status / Rooms & Devices / Thermostat rendered
+# EN | with NO visible frame while Security (vssp_kpi_card, a plain rgba()
+# EN | border) still showed one — same 20% alpha, only the CSS function
+# EN | differed. Replaced project-wide with the precomputed
+# EN | `rgba(0, 229, 255, 0.NN)` equivalent (identical output under the
+# EN | default theme, since design_system.yaml's palette.primary IS
+# EN | #00E5FF) in every .j2 template and button_card_templates.yaml. A
+# EN | custom accent color set later via the ADMIN theme editor will no
+# EN | longer tint these borders — an acceptable trade given color-mix()
+# EN | was not rendering ANY border here regardless of color.
+# FR | CORRECTIF COLOR-MIX (2026-09-06) : chaque bordure/ombre/couleur de
+# FR | scrollbar cyan translucide du projet s'ecrivait
+# FR | `color-mix(in srgb, var(--primary-color, #00E5FF) N%, transparent)`.
+# FR | Sur le moteur de rendu de cette installation, cette fonction CSS
+# FR | echouait silencieusement (tout le raccourci `border` etait rejete, pas
+# FR | seulement mal colore), donc System Status / Energy Status / Rooms &
+# FR | Devices / Thermostat s'affichaient SANS cadre visible alors que
+# FR | Security (vssp_kpi_card, une bordure rgba() brute) en montrait un —
+# FR | meme alpha 20%, seule la fonction CSS differait. Remplace partout par
+# FR | l'equivalent precalcule `rgba(0, 229, 255, 0.NN)` (rendu identique
+# FR | avec le theme par defaut, palette.primary de design_system.yaml
+# FR | valant deja #00E5FF) dans chaque template .j2 et dans
+# FR | button_card_templates.yaml. Une couleur d'accent personnalisee via
+# FR | l'editeur de theme ADMIN ne teintera plus ces bordures — compromis
+# FR | acceptable puisque color-mix() n'affichait AUCUNE bordure ici, quelle
+# FR | que soit la couleur.
 ########################################################################
 
 title: {{ house.name | title }}
@@ -200,7 +232,7 @@ views:
               card:
                 - background: var(--card-background-color, rgba(8,18,28,0.72))
                 - border-radius: var(--ha-card-border-radius, 18px)
-                - border: 1px solid color-mix(in srgb, var(--primary-color, #00E5FF) 20%, transparent)
+                - border: 1px solid rgba(0, 229, 255, 0.2)
                 - padding: 14px 18px
                 - height: 100%
               name:
@@ -292,7 +324,7 @@ views:
               card:
                 - background: var(--card-background-color, rgba(8,18,28,0.72))
                 - border-radius: var(--ha-card-border-radius, 18px)
-                - border: 1px solid color-mix(in srgb, var(--primary-color, #00E5FF) 20%, transparent)
+                - border: 1px solid rgba(0, 229, 255, 0.2)
                 - padding: 14px 18px
                 - height: 100%
               name:
@@ -391,7 +423,7 @@ views:
               card:
                 - background: var(--card-background-color, rgba(8,18,28,0.72))
                 - border-radius: var(--ha-card-border-radius, 18px)
-                - border: 1px solid color-mix(in srgb, var(--primary-color, #00E5FF) 20%, transparent)
+                - border: 1px solid rgba(0, 229, 255, 0.2)
                 - padding: 14px 18px
                 - height: 100%
               name:
@@ -475,7 +507,7 @@ views:
               card:
                 - background: var(--card-background-color, rgba(8,18,28,0.72))
                 - border-radius: var(--ha-card-border-radius, 18px)
-                - border: 1px solid color-mix(in srgb, var(--primary-color, #00E5FF) 20%, transparent)
+                - border: 1px solid rgba(0, 229, 255, 0.2)
                 - padding: 14px 18px
                 - height: 100%
               name:
@@ -536,8 +568,8 @@ views:
           card:
             - padding: 0
             - background: transparent
-            - border: 1px solid color-mix(in srgb, var(--primary-color, #00E5FF) 28%, transparent)
-            - box-shadow: 0 0 24px color-mix(in srgb, var(--primary-color, #00E5FF) 12%, transparent)
+            - border: 1px solid rgba(0, 229, 255, 0.28)
+            - box-shadow: 0 0 24px rgba(0, 229, 255, 0.12)
             - border-radius: var(--ha-card-border-radius, 20px)
             - overflow: hidden
             - height: 100%
@@ -739,21 +771,25 @@ views:
           # EN | (those keep background:transparent/border:none so the title
           # EN | and list don't double-frame each other) — this draws the
           # EN | single outer border/background around both, same recipe
-          # EN | (background/border-radius/border color-mix) as the KPI row
-          # EN | cards (System Status, Energy Status...) above.
+          # EN | (background/border-radius/border) as the KPI row cards
+          # EN | (System Status, Energy Status...) above — plain rgba(), not
+          # EN | color-mix(): see the project-wide color-mix fix note near
+          # EN | the top of this file.
           # FR | card_mod sur #root, pas styles.card sur les button-cards
           # FR | enfants (qui gardent background:transparent/border:none pour
           # FR | ne pas s'encadrer deux fois) — ceci dessine le seul cadre
           # FR | exterieur autour des deux, meme recette (background/
-          # FR | border-radius/border color-mix) que les cartes de la ligne
-          # FR | KPI (System Status, Energy Status...) ci-dessus.
+          # FR | border-radius/border) que les cartes de la ligne KPI (System
+          # FR | Status, Energy Status...) ci-dessus — rgba() brut, pas
+          # FR | color-mix() : voir la note de correction color-mix pres du
+          # FR | debut de ce fichier.
           - type: vertical-stack
             card_mod:
               style: |
                 #root {
                   background: var(--card-background-color, rgba(8,18,28,0.72));
                   border-radius: var(--ha-card-border-radius, 18px);
-                  border: 1px solid color-mix(in srgb, var(--primary-color, #00E5FF) 20%, transparent);
+                  border: 1px solid rgba(0, 229, 255, 0.2);
                   padding: 14px 18px;
                 }
             cards:
@@ -831,7 +867,7 @@ views:
                       - overflow-x: hidden
                       - padding-right: 4px
                       - scrollbar-width: thin
-                      - scrollbar-color: color-mix(in srgb, var(--primary-color, #00E5FF) 35%, transparent) color-mix(in srgb, var(--primary-color, #00E5FF) 6%, transparent)
+                      - scrollbar-color: rgba(0, 229, 255, 0.35) rgba(0, 229, 255, 0.06)
                 custom_fields:
                   list:
                     card:

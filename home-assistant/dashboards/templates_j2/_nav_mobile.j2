@@ -110,12 +110,12 @@
                       - padding: 0px 8px
                       - border-radius: 12px
 {% if item.id == active_nav %}
-                      - background: color-mix(in srgb, var(--primary-color, #00E5FF) 14%, transparent)
-                      - border: 1px solid color-mix(in srgb, var(--primary-color, #00E5FF) 55%, transparent)
-                      - box-shadow: 0 0 12px color-mix(in srgb, var(--primary-color, #00E5FF) 25%, transparent)
+                      - background: rgba(0, 229, 255, 0.14)
+                      - border: 1px solid rgba(0, 229, 255, 0.55)
+                      - box-shadow: 0 0 12px rgba(0, 229, 255, 0.25)
 {% else %}
                       - background: rgba(16,27,39,0.85)
-                      - border: 1px solid color-mix(in srgb, var(--primary-color, #00E5FF) 18%, transparent)
+                      - border: 1px solid rgba(0, 229, 255, 0.18)
                       - box-shadow: none
 {% endif %}
                     icon:

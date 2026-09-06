@@ -311,9 +311,9 @@ vssp_nav_button:
   card_mod:
     style: |
       ha-card:hover {
-        background: color-mix(in srgb, var(--primary-color, #00E5FF) 25%, transparent) !important;
-        border: 1px solid color-mix(in srgb, var(--primary-color, #00E5FF) 65%, transparent) !important;
-        box-shadow: 0 0 18px color-mix(in srgb, var(--primary-color, #00E5FF) 35%, transparent) !important;
+        background: rgba(0, 229, 255, 0.25) !important;
+        border: 1px solid rgba(0, 229, 255, 0.65) !important;
+        box-shadow: 0 0 18px rgba(0, 229, 255, 0.35) !important;
       }
   styles:
     grid:
@@ -337,7 +337,7 @@ vssp_nav_button:
           [[[ return variables.active ? 'var(--sidebar-selected-background-color, rgba(0,229,255,0.10))' : 'transparent'; ]]]
       - border-radius: 12px
       - border: >
-          [[[ return variables.active ? '1px solid color-mix(in srgb, var(--primary-color, #00E5FF) 35%, transparent)' : '1px solid transparent'; ]]]
+          [[[ return variables.active ? '1px solid rgba(0, 229, 255, 0.35)' : '1px solid transparent'; ]]]
       - padding: 10px 12px
       - margin-bottom: 4px
       - width: 100%
