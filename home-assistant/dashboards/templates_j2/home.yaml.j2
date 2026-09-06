@@ -124,14 +124,24 @@ views:
 {% set page_title = t('page.home.name') %}
 {% set page_subtitle = t('page.home.subtitle') %}
 {% set page_path = '/visio-sapiens/home' %}
-{# EN | calendar.calebar is the only calendar.* entity in this install
-   EN | (Local Calendar integration, "calebar" entry) — used here to show
-   EN | today's agenda alongside the clock, per user request.
-   FR | calendar.calebar est la seule entite calendar.* de cette
-   FR | installation (integration Local Calendar, entree « calebar ») —
-   FR | utilisee ici pour afficher l'agenda du jour a cote de l'horloge, a
-   FR | la demande de l'utilisateur. #}
-{% set calendar_entity = 'calendar.calebar' %}
+{# EN | WAS HARDCODED to calendar.calebar (the only calendar.* entity this
+   EN | install had when the header's agenda cell was added). It is now
+   EN | chosen in the ADMIN console's GOOGLE CALENDAR screen, which stores
+   EN | the entity in input_text.vssp_google_calendar_entity and passes it to
+   EN | generate_dashboards.py as --calendar-entity; house.calendar_entity
+   EN | (model/house.yaml) is the default when the flag is absent. Linking a
+   EN | Google account therefore changes what this header shows without
+   EN | touching this template.
+   FR | ETAIT CODE EN DUR sur calendar.calebar (la seule entite calendar.* de
+   FR | cette installation quand la case agenda du bandeau a ete ajoutee).
+   FR | L'entite se choisit desormais dans l'ecran CALENDRIER GOOGLE de la
+   FR | console ADMIN, qui la memorise dans
+   FR | input_text.vssp_google_calendar_entity et la passe a
+   FR | generate_dashboards.py via --calendar-entity ; house.calendar_entity
+   FR | (model/house.yaml) sert de defaut en l'absence du flag. Lier un
+   FR | compte Google change donc ce qu'affiche ce bandeau sans toucher a ce
+   FR | template. #}
+{% set calendar_entity = house.calendar_entity | default('calendar.calebar', true) %}
 {# EN | No regenerate_dashboard_service here on purpose: the header's
    EN | optional Cell 4 (mdi:refresh, calls script.vssp_regenerate_home_
    EN | dashboard) was removed from HOME per user request — use ADMIN's own

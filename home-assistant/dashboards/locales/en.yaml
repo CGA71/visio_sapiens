@@ -420,6 +420,18 @@ admin:
   add_room: Add a room
   remove_room: Remove
   generated_at: Last generated
+  google_state: Setup state
+  google_message: Detail
+  google_calendars: Calendars found
+  google_header_entity: Calendar shown in the header
+  google_header_entity_hint: Applied on the next dashboard regeneration
+  google_connect: CONNECT
+  google_connect_hint: Registers the OAuth client in Home Assistant and starts the linking
+  google_refresh: REFRESH
+  google_refresh_hint: Re-reads the calendar.* entity list after the Google consent
+  google_apply: APPLY TO HEADER
+  google_apply_hint: Regenerates HOME with the selected calendar
+  google_apply_confirm: Regenerate the HOME dashboard with this calendar? The current file is backed up before being overwritten.
   restore_theme_reference: RESTORE REFERENCE
   restore_theme_reference_hint: Reset every color/shape token to the factory default
   restore_theme_reference_confirm: Reset the design system to its factory reference? A backup of the current design_system.yaml is kept, and the theme reloads live.
@@ -482,6 +494,8 @@ adminmenu:
     assign_hint: Send each discovered device to a room and a slot
     energy: ENERGY DEVICES
     energy_hint: Create or update the measured fleet and the breaker panel
+    calendar: GOOGLE CALENDAR
+    calendar_hint: Set up the Google Calendar integration and the header calendar
     theme: GRAPHIC TEMPLATE
     theme_hint: Import or export the CSS design system
     dashboards: DASHBOARDS

@@ -309,6 +309,18 @@ admin:
   add_room: Ajouter une pièce
   remove_room: Retirer
   generated_at: Dernière génération
+  google_state: État de la configuration
+  google_message: Détail
+  google_calendars: Calendriers détectés
+  google_header_entity: Calendrier affiché dans le bandeau
+  google_header_entity_hint: Pris en compte à la prochaine régénération des dashboards
+  google_connect: CONNECTER
+  google_connect_hint: Enregistre le client OAuth dans Home Assistant et démarre la liaison
+  google_refresh: ACTUALISER
+  google_refresh_hint: Relit la liste des entités calendar.* après le consentement Google
+  google_apply: APPLIQUER AU BANDEAU
+  google_apply_hint: Régénère HOME avec le calendrier sélectionné
+  google_apply_confirm: Régénérer le dashboard HOME avec ce calendrier ? Le fichier actuel est sauvegardé avant écrasement.
   restore_theme_reference: RESTAURER LA RÉFÉRENCE
   restore_theme_reference_hint: Réinitialise chaque couleur/forme à la valeur d'usine
   restore_theme_reference_confirm: Réinitialiser la charte graphique à sa référence d'usine ? Une sauvegarde du design_system.yaml actuel est conservée, et le thème se recharge à chaud.
@@ -363,6 +375,8 @@ adminmenu:
     assign_hint: Envoyer chaque appareil découvert vers une pièce et un tableau
     energy: APPAREILS ÉNERGIE
     energy_hint: Créer ou mettre à jour le parc mesuré et le tableau électrique
+    calendar: CALENDRIER GOOGLE
+    calendar_hint: Configurer l'intégration Google Calendar et le calendrier du bandeau
     theme: TEMPLATE GRAPHIQUE
     theme_hint: Importer ou exporter la charte graphique CSS
     dashboards: DASHBOARDS

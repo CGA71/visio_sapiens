@@ -1122,6 +1122,11 @@ def main() -> int:
                     help="Interface language. Overrides house.locale. English "
                          "is the reference: any key missing from another "
                          "catalogue falls back to it.")
+    ap.add_argument("--calendar-entity", default=None,
+                    help="calendar.* entity shown in every dashboard header. "
+                         "Overrides house.calendar_entity; set by the ADMIN "
+                         "console's Google Calendar screen. An empty or "
+                         "'unknown' value falls back to the model.")
     ap.add_argument("--format", default=None,
                     choices=["tablet", "mobile", "both"],
                     help="Target layout. Overrides house.format.")
@@ -1187,6 +1192,35 @@ def main() -> int:
     fmt = args.format or house.get("format") or "tablet"
     formats = ["tablet", "mobile"] if fmt == "both" else [fmt]
     print(f"[i] format: {', '.join(formats)}")
+
+    # --- EN | Header calendar / FR | Calendrier du bandeau ---------------
+    # EN | Same precedence trick as --locale: the ADMIN console's Google
+    # EN | Calendar screen stores the chosen entity in
+    # EN | input_text.vssp_google_calendar_entity, and the shell_command
+    # EN | passes it here — so switching calendars never means rewriting
+    # EN | house.yaml. house.calendar_entity remains the default for a
+    # EN | command-line run, and the header partial keeps its own fallback
+    # EN | for a model that predates this key.
+    # EN | An empty/unknown/unavailable value (an input_text that was never
+    # EN | filled renders as "unknown") must NOT win over the model — that is
+    # EN | what the guard below is for.
+    # FR | Meme mecanique de priorite que --locale : l'ecran Google Calendar
+    # FR | de la console ADMIN memorise l'entite choisie dans
+    # FR | input_text.vssp_google_calendar_entity, et le shell_command la
+    # FR | passe ici — changer de calendrier n'impose donc jamais de reecrire
+    # FR | house.yaml. house.calendar_entity reste le defaut pour un lancement
+    # FR | en ligne de commande, et le partial d'en-tete garde son propre
+    # FR | repli pour un modele anterieur a cette cle.
+    # FR | Une valeur vide/unknown/unavailable (un input_text jamais rempli
+    # FR | vaut « unknown ») ne doit PAS l'emporter sur le modele — c'est le
+    # FR | role du garde-fou ci-dessous.
+    cal_arg = (args.calendar_entity or "").strip()
+    if cal_arg in ("", "unknown", "unavailable", "None"):
+        cal_arg = ""
+    calendar_entity = cal_arg or house.get("calendar_entity") or ""
+    if calendar_entity:
+        house["calendar_entity"] = calendar_entity
+        print(f"[i] header calendar: {calendar_entity}")
 
     # --- EN | Rooms fragment from the discovery wizard (steps 2-4) -------
     # --- FR | Fragment rooms du Discovery Wizard (etapes 2-4) ------------

@@ -272,6 +272,7 @@ shell_command:
   vssp_generate_dashboards: >-
     python3 /config/vssp/generate_dashboards.py
     --locale {{ states('input_select.vssp_language') }}
+    --calendar-entity '{{ states('input_text.vssp_google_calendar_entity') }}'
     --model /config/dashboards/model/house.yaml
     --rooms /config/dashboards/model/house_rooms.yaml
     --devices /config/dashboards/model/energy_devices.yaml
@@ -326,6 +327,7 @@ shell_command:
   vssp_create_home: >-
     python3 /config/vssp/generate_dashboards.py
     --locale {{ states('input_select.vssp_language') }}
+    --calendar-entity '{{ states('input_text.vssp_google_calendar_entity') }}'
     --only home --if-missing
     --model /config/dashboards/model/house.yaml
     --devices /config/dashboards/model/energy_devices.yaml
@@ -343,6 +345,7 @@ shell_command:
   vssp_regenerate_home: >-
     python3 /config/vssp/generate_dashboards.py
     --locale {{ states('input_select.vssp_language') }}
+    --calendar-entity '{{ states('input_text.vssp_google_calendar_entity') }}'
     --only home
     --protect-existing ""
     --model /config/dashboards/model/house.yaml
@@ -376,6 +379,7 @@ shell_command:
   vssp_create_core: >-
     python3 /config/vssp/generate_dashboards.py
     --locale {{ states('input_select.vssp_language') }}
+    --calendar-entity '{{ states('input_text.vssp_google_calendar_entity') }}'
     --only core --if-missing
     --model /config/dashboards/model/house.yaml
     --devices /config/dashboards/model/energy_devices.yaml
@@ -389,6 +393,7 @@ shell_command:
   vssp_regenerate_core: >-
     python3 /config/vssp/generate_dashboards.py
     --locale {{ states('input_select.vssp_language') }}
+    --calendar-entity '{{ states('input_text.vssp_google_calendar_entity') }}'
     --only core
     --model /config/dashboards/model/house.yaml
     --devices /config/dashboards/model/energy_devices.yaml
@@ -413,6 +418,7 @@ shell_command:
   vssp_create_energy: >-
     python3 /config/vssp/generate_dashboards.py
     --locale {{ states('input_select.vssp_language') }}
+    --calendar-entity '{{ states('input_text.vssp_google_calendar_entity') }}'
     --only energy --if-missing
     --model /config/dashboards/model/house.yaml
     --devices /config/dashboards/model/energy_devices.yaml
@@ -427,6 +433,7 @@ shell_command:
   vssp_regenerate_energy: >-
     python3 /config/vssp/generate_dashboards.py
     --locale {{ states('input_select.vssp_language') }}
+    --calendar-entity '{{ states('input_text.vssp_google_calendar_entity') }}'
     --only energy
     --model /config/dashboards/model/house.yaml
     --devices /config/dashboards/model/energy_devices.yaml
@@ -498,6 +505,7 @@ shell_command:
   vssp_generate_preview: >-
     python3 /config/vssp/generate_dashboards.py
     --locale {{ states('input_select.vssp_language') }}
+    --calendar-entity '{{ states('input_text.vssp_google_calendar_entity') }}'
     --model /config/dashboards/model/house.yaml
     --rooms /config/dashboards/model/house_rooms.preview.yaml
     --templates /config/dashboards/templates_j2
@@ -511,6 +519,7 @@ shell_command:
   vssp_validate_preview: >-
     python3 /config/vssp/generate_dashboards.py
     --locale {{ states('input_select.vssp_language') }}
+    --calendar-entity '{{ states('input_text.vssp_google_calendar_entity') }}'
     --model /config/dashboards/model/house.yaml
     --rooms /config/dashboards/model/house_rooms.preview.yaml
     --templates /config/dashboards/templates_j2

@@ -36,6 +36,22 @@ house:
   # EN | "time_date" integration / FR | integration « time_date »
   time_entity: sensor.time
 
+  # EN | calendar.* entity shown in the header's agenda cell (_header.j2).
+  # EN | The ADMIN console's GOOGLE CALENDAR screen overrides this at
+  # EN | generate time (--calendar-entity, fed by
+  # EN | input_text.vssp_google_calendar_entity), so linking a Google account
+  # EN | switches the header without rewriting this file — same mechanism as
+  # EN | locale/format above. This value stays the default for a plain
+  # EN | command-line run.
+  # FR | Entite calendar.* affichee dans la case agenda du bandeau
+  # FR | (_header.j2). L'ecran CALENDRIER GOOGLE de la console ADMIN la
+  # FR | surcharge au moment de la generation (--calendar-entity, alimente
+  # FR | par input_text.vssp_google_calendar_entity), donc lier un compte
+  # FR | Google change le bandeau sans reecrire ce fichier — meme mecanique
+  # FR | que locale/format ci-dessus. Cette valeur reste le defaut pour un
+  # FR | lancement en ligne de commande simple.
+  calendar_entity: calendar.calebar
+
   # EN | Interface language. English is the reference: any key missing from
   # EN | another catalogue falls back to it, so a partial translation is safe.
   # EN | `generate_dashboards.py --locale <code>` overrides this value, which

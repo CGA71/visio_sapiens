@@ -52,7 +52,16 @@
    FR | traduction, et il continuera de fonctionner pour toute langue
    FR | ajoutee plus tard.
    ================================================================== #}
-{% set calendar_entity = calendar_entity | default('calendar.calebar') %}
+{# EN | Precedence: an explicit calendar_entity set by the calling template >
+   EN | house.calendar_entity (model, or --calendar-entity from the ADMIN
+   EN | console's Google Calendar screen) > the historical hardcoded default,
+   EN | kept so a model predating that key still renders.
+   FR | Priorite : un calendar_entity explicite pose par le template
+   FR | appelant > house.calendar_entity (modele, ou --calendar-entity depuis
+   FR | l'ecran Google Calendar de la console ADMIN) > l'ancien defaut code
+   FR | en dur, conserve pour qu'un modele anterieur a cette cle s'affiche
+   FR | encore. #}
+{% set calendar_entity = calendar_entity | default(house.calendar_entity | default('calendar.calebar', true), true) %}
       - type: horizontal-stack
         view_layout:
           grid-area: header

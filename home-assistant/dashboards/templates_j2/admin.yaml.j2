@@ -68,6 +68,7 @@
   ('rooms',      'mdi:floor-plan',        'rooms'),
   ('assign',     'mdi:transit-connection-variant', 'assign'),
   ('energy',     'mdi:lightning-bolt',    'energy'),
+  ('calendar',   'mdi:calendar-account',  'calendar'),
   ('theme',      'mdi:palette',           'theme'),
   ('dashboards', 'mdi:view-dashboard-variant', 'dashboards'),
 ] %}
@@ -198,7 +199,7 @@ views:
       # FR | (energy, dashboards) gardent auto : leur contenu doit se
       # FR | dimensionner a lui-meme et laisser la page defiler, pas
       # FR | s'etirer jusqu'a la fenetre.
-      grid-template-rows: 130px {{ '1fr' if screen in ['rooms', 'assign', 'theme'] else 'auto' }}
+      grid-template-rows: 130px {{ '1fr' if screen in ['rooms', 'assign', 'theme', 'calendar'] else 'auto' }}
       grid-template-areas: |
         "nav header header header"
         "nav body body body"
@@ -719,6 +720,137 @@ views:
                   navigation_path: {{ r.path }}
 {% endfor %}
 
+{% elif screen == 'calendar' %}
+          # EN | GOOGLE CALENDAR — the setup that normally happens in
+          # EN | Settings > Devices & services (Application credentials, then
+          # EN | Add integration > Google Calendar), brought into the console.
+          # EN | Same iframe + webhook pattern as ASSIGN and THEME: the form
+          # EN | lives in vssp_google.html, posts to webhook
+          # EN | `vssp_google_config` (packages/vssp_google.yaml), and
+          # EN | vssp_google_setup.py does the real work against Home
+          # EN | Assistant's websocket API (application_credentials, which has
+          # EN | NO REST endpoint) and its config-flow REST API.
+          # EN |
+          # EN | WHAT THIS SCREEN CANNOT REMOVE — the Google consent click.
+          # EN | OAuth is designed so the account owner approves in Google's
+          # EN | own UI; the flow therefore ends by handing back a consent
+          # EN | URL, which the embedded form shows as a button. Everything
+          # EN | around it is automated.
+          # EN |
+          # EN | The status rows sit OUTSIDE the iframe on purpose: they are
+          # EN | Home Assistant entities (command_line sensors reading
+          # EN | google_status.json), so they keep reporting even if the
+          # EN | iframe fails to load, and they survive closing the form.
+          # FR | GOOGLE CALENDAR — la configuration qui se fait normalement
+          # FR | dans Parametres > Appareils et services (Identifiants
+          # FR | d'application, puis Ajouter l'integration > Google Calendar),
+          # FR | ramenee dans la console. Meme patron iframe + webhook
+          # FR | qu'ASSIGN et THEME : le formulaire vit dans vssp_google.html,
+          # FR | poste vers le webhook `vssp_google_config`
+          # FR | (packages/vssp_google.yaml), et vssp_google_setup.py fait le
+          # FR | vrai travail contre l'API websocket de Home Assistant
+          # FR | (application_credentials, qui n'a AUCUN point d'acces REST)
+          # FR | et son API REST de config flow.
+          # FR |
+          # FR | CE QUE CET ECRAN NE PEUT PAS SUPPRIMER — le clic de
+          # FR | consentement Google. OAuth est concu pour que le
+          # FR | proprietaire du compte approuve dans l'interface de Google ;
+          # FR | le flux se termine donc en renvoyant une URL de
+          # FR | consentement, que le formulaire integre affiche en bouton.
+          # FR | Tout ce qui l'entoure est automatise.
+          # FR |
+          # FR | Les lignes d'etat sont VOLONTAIREMENT hors de l'iframe : ce
+          # FR | sont des entites Home Assistant (capteurs command_line qui
+          # FR | lisent google_status.json), donc elles continuent de
+          # FR | rapporter meme si l'iframe ne se charge pas, et elles
+          # FR | survivent a la fermeture du formulaire.
+          - type: entities
+            entities:
+              - entity: sensor.vssp_google_state
+                name: "{{ t('admin.google_state') }}"
+              - entity: sensor.vssp_google_message
+                name: "{{ t('admin.google_message') }}"
+              - entity: sensor.vssp_google_calendars
+                name: "{{ t('admin.google_calendars') }}"
+              - type: divider
+              - entity: input_text.vssp_google_calendar_entity
+                name: "{{ t('admin.google_header_entity') }}"
+                secondary_info: "{{ t('admin.google_header_entity_hint') }}"
+            card_mod:
+              style: |
+                ha-card {
+                  background: var(--card-background-color, rgba(8,18,28,0.75)) !important;
+                  border: 1px solid rgba(0, 229, 255, 0.28) !important;
+                  border-radius: var(--ha-card-border-radius, 20px) !important;
+                }
+          - type: grid
+            columns: 3
+            square: false
+            cards:
+              # EN | Re-runs the whole automatable part with what is already
+              # EN | stored — the button to press after fixing a wrong client
+              # EN | id, or when the consent link has expired.
+              # FR | Rejoue toute la partie automatisable avec ce qui est deja
+              # FR | memorise — le bouton a presser apres avoir corrige un id
+              # FR | client errone, ou quand le lien de consentement a expire.
+              - type: custom:button-card
+                template: vssp_admin_button
+                icon: mdi:link-variant
+                name: "{{ t('admin.google_connect') }}"
+                label: "{{ t('admin.google_connect_hint') }}"
+                tap_action:
+                  action: call-service
+                  service: script.vssp_google_connect
+              # EN | Read-only: re-lists calendar.* entities. This is the
+              # EN | button to press right after finishing the Google consent,
+              # EN | rather than waiting for the 30s sensor scan_interval.
+              # FR | Lecture seule : relit les entites calendar.*. C'est le
+              # FR | bouton a presser juste apres le consentement Google,
+              # FR | plutot que d'attendre le scan_interval de 30 s.
+              - type: custom:button-card
+                template: vssp_admin_button
+                icon: mdi:refresh
+                name: "{{ t('admin.google_refresh') }}"
+                label: "{{ t('admin.google_refresh_hint') }}"
+                tap_action:
+                  action: call-service
+                  service: script.vssp_google_refresh
+              # EN | The header only changes on regeneration: the calendar
+              # EN | entity is baked into the dashboard YAML at generate time
+              # EN | (--calendar-entity), it is not read live. HOME is the
+              # EN | protected dashboard, so this is the REGENERATE HOME
+              # EN | script with its usual confirmation, not a plain generate.
+              # FR | Le header ne change qu'a la regeneration : l'entite
+              # FR | calendrier est figee dans le YAML du dashboard au moment
+              # FR | de la generation (--calendar-entity), elle n'est pas lue
+              # FR | en direct. HOME est le dashboard protege, donc c'est le
+              # FR | script REGENERER HOME avec sa confirmation habituelle,
+              # FR | pas une generation simple.
+              - type: custom:button-card
+                template: vssp_admin_button
+                icon: mdi:cog-sync
+                name: "{{ t('admin.google_apply') }}"
+                label: "{{ t('admin.google_apply_hint') }}"
+                confirmation:
+                  text: "{{ t('admin.google_apply_confirm') }}"
+                tap_action:
+                  action: call-service
+                  service: script.vssp_regenerate_home_dashboard
+          - type: iframe
+            url: /local/vssp/wizard/vssp_google.html?v={{ build_stamp }}
+            card_mod:
+              style: |
+                :host {
+                  flex: 1 1 0;
+                  min-height: 520px;
+                }
+                ha-card {
+                  background: transparent !important;
+                  border: none !important;
+                  box-shadow: none !important;
+                  overflow: hidden;
+                  height: 100%;
+                }
 {% elif screen == 'theme' %}
           # EN | Same iframe + webhook pattern as ASSIGN above: the editor
           # EN | cannot reach the parent `hass` object, and colors/rgba()

@@ -1,0 +1,424 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Visio Sapiens — Google Calendar</title>
+<!--
+  EN | Served as /local/vssp/wizard/vssp_google.html, opened in a browser_mod
+  EN | popup from the ADMIN console's CALENDAR screen (admin.yaml.j2).
+  EN |
+  EN | WHY A WEBHOOK AND NOT THE REST API — same reasoning as
+  EN | vssp_chatbot.html and vssp_theme_editor.html: this page cannot reach
+  EN | the parent page's `hass` object, and the REST API needs a Bearer token
+  EN | that has no business sitting in a browser. A webhook needs none, and
+  EN | local_only: true keeps it on the LAN.
+  EN |
+  EN | WHY THE PAGE POLLS A FILE — the webhook returns as soon as the
+  EN | automation is queued, long before vssp_google_setup.py has talked to
+  EN | Home Assistant's websocket API and to Google. The script writes its
+  EN | outcome to google_status.json; this page polls that file, exactly like
+  EN | the chatbot page polls chatbot_status.json for a reply.
+  EN |
+  EN | THE CONSENT CLICK IS DELIBERATE, NOT A MISSING FEATURE — OAuth is
+  EN | designed so the account owner approves access in Google's own UI. No
+  EN | form can sign that on their behalf, so this page's job is to make that
+  EN | one click obvious and to automate everything on either side of it.
+  FR | Servi comme /local/vssp/wizard/vssp_google.html, ouvert dans un popup
+  FR | browser_mod depuis l'ecran CALENDRIER de la console ADMIN
+  FR | (admin.yaml.j2).
+  FR |
+  FR | POURQUOI UN WEBHOOK ET PAS L'API REST — meme raisonnement que
+  FR | vssp_chatbot.html et vssp_theme_editor.html : cette page ne peut pas
+  FR | atteindre l'objet `hass` de la page parente, et l'API REST exige un
+  FR | jeton Bearer qui n'a rien a faire dans un navigateur. Un webhook n'en
+  FR | exige aucun, et local_only: true le maintient sur le reseau local.
+  FR |
+  FR | POURQUOI LA PAGE INTERROGE UN FICHIER — le webhook rend la main des que
+  FR | l'automatisation est mise en file, bien avant que
+  FR | vssp_google_setup.py ait parle a l'API websocket de Home Assistant et
+  FR | a Google. Le script ecrit son resultat dans google_status.json ; cette
+  FR | page interroge ce fichier, exactement comme la page chatbot interroge
+  FR | chatbot_status.json pour une reponse.
+  FR |
+  FR | LE CLIC DE CONSENTEMENT EST VOULU, PAS UNE FONCTION MANQUANTE — OAuth
+  FR | est concu pour que le proprietaire du compte approuve l'acces dans
+  FR | l'interface de Google. Aucun formulaire ne peut signer a sa place :
+  FR | le role de cette page est de rendre ce clic unique evident et
+  FR | d'automatiser tout ce qui l'entoure.
+-->
+<style>
+  :root {
+    --bg: #050b12;
+    --panel: rgba(8,18,28,0.75);
+    --line: rgba(0,229,255,0.28);
+    --line-soft: rgba(0,229,255,0.12);
+    --cyan: #00E5FF;
+    --green: #00FFC3;
+    --amber: #FFA726;
+    --red: #FF4D6D;
+    --text: #DCEEF6;
+    --muted: #8FB6C9;
+    --dim: #56707E;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, Roboto, "Helvetica Neue", sans-serif;
+    font-size: 13px;
+  }
+  body { display: flex; flex-direction: column; }
+  h1 {
+    font-family: Orbitron, sans-serif; font-size: 13px; letter-spacing: 2px;
+    color: var(--cyan); margin: 0; text-transform: uppercase;
+  }
+  .header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 14px; border-bottom: 1px solid var(--line-soft); flex: 0 0 auto;
+  }
+  .header .dot {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--cyan);
+    box-shadow: 0 0 8px var(--cyan); flex: none;
+  }
+  .sub { color: var(--dim); font-size: 10px; margin-top: 2px; }
+  main { flex: 1 1 auto; overflow-y: auto; padding: 14px; }
+
+  .step { margin-bottom: 18px; }
+  .step-title {
+    display: flex; align-items: center; gap: 8px;
+    font-size: 11px; letter-spacing: 1px; text-transform: uppercase;
+    color: var(--cyan); margin-bottom: 8px;
+  }
+  .step-num {
+    width: 18px; height: 18px; border-radius: 50%; flex: none;
+    border: 1px solid var(--line); display: grid; place-items: center;
+    font-size: 10px; color: var(--cyan);
+  }
+  .hint { color: var(--muted); font-size: 11px; margin: 0 0 10px; line-height: 1.55; }
+  ol.steps { margin: 0 0 10px; padding-left: 18px; color: var(--muted); font-size: 11px; line-height: 1.7; }
+  ol.steps code, .mono {
+    font-family: ui-monospace, Menlo, Consolas, monospace;
+    background: rgba(255,255,255,.05); border-radius: 4px; padding: 1px 5px;
+    color: var(--text); font-size: 11px;
+  }
+  a { color: var(--cyan); }
+
+  .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+  .field label { font-size: 11px; color: var(--muted); letter-spacing: .5px; }
+  .field input {
+    background: rgba(255,255,255,.03); border: 1px solid var(--line-soft);
+    border-radius: 8px; color: var(--text); font-size: 13px; padding: 8px 10px;
+    font-family: inherit; width: 100%;
+  }
+  .field input:focus { outline: none; border-color: var(--line); }
+  .row { display: flex; gap: 8px; align-items: center; }
+  .row input { flex: 1 1 auto; min-width: 0; }
+
+  button.primary, a.primary {
+    background: var(--cyan); color: #06121A; border: none; border-radius: 10px;
+    padding: 10px 16px; font-weight: 700; letter-spacing: .5px; cursor: pointer;
+    font-size: 12px; text-transform: uppercase; text-decoration: none;
+    display: inline-block; text-align: center;
+  }
+  button.ghost {
+    background: transparent; color: var(--muted); border: 1px solid var(--line-soft);
+    border-radius: 8px; padding: 8px 12px; cursor: pointer; font-size: 11px;
+  }
+  button.primary:disabled { opacity: .5; cursor: default; }
+  a.consent { background: var(--green); width: 100%; padding: 12px; font-size: 13px; }
+
+  .status {
+    border: 1px solid var(--line-soft); border-radius: 10px; padding: 10px 12px;
+    background: var(--panel); font-size: 11px; line-height: 1.6;
+  }
+  .status .state { font-weight: 700; letter-spacing: .5px; text-transform: uppercase; font-size: 10px; }
+  .state.ok { color: var(--green); }
+  .state.wait { color: var(--amber); }
+  .state.err { color: var(--red); }
+  .state.idle { color: var(--dim); }
+  .msg { font-size: 11px; margin-top: 6px; }
+  .msg.ok { color: var(--green); }
+  .msg.err { color: var(--red); }
+
+  .cal-list { display: flex; flex-direction: column; gap: 6px; margin: 10px 0; }
+  .cal {
+    display: flex; align-items: center; gap: 8px; padding: 8px 10px;
+    border: 1px solid var(--line-soft); border-radius: 8px; cursor: pointer;
+  }
+  .cal.sel { border-color: var(--cyan); background: rgba(0,229,255,.08); }
+  .cal .eid { color: var(--dim); font-size: 10px; margin-left: auto; }
+  .hidden { display: none !important; }
+</style>
+</head>
+<body>
+  <div class="header">
+    <span class="dot"></span>
+    <div>
+      <h1>Google Calendar</h1>
+      <div class="sub">Configuration complete — console Visio Sapiens</div>
+    </div>
+  </div>
+
+  <main>
+    <!-- STEP 1 — Google side prerequisites -->
+    <section class="step">
+      <div class="step-title"><span class="step-num">1</span> Cote Google (une fois)</div>
+      <ol class="steps">
+        <li>Console Google Cloud &gt; creer un projet, puis activer
+          <a href="https://console.cloud.google.com/apis/library/calendar-json.googleapis.com"
+             target="_blank" rel="noopener">Google Calendar API</a>.</li>
+        <li>Ecran de consentement OAuth : type <code>External</code>, puis
+          <b>publier</b> l'application (sinon les identifiants expirent au bout de 7 jours).</li>
+        <li><a href="https://console.cloud.google.com/apis/credentials" target="_blank"
+               rel="noopener">Identifiants</a> &gt; creer un <b>ID client OAuth</b>,
+          type <code>Application Web</code>.</li>
+        <li>Y coller cette URI de redirection autorisee, exactement :</li>
+      </ol>
+      <div class="row" style="margin-bottom:10px;">
+        <input class="mono" id="redirectUri" readonly
+               value="https://my.home-assistant.io/redirect/oauth">
+        <button class="ghost" id="copyUri" type="button">Copier</button>
+      </div>
+      <p class="hint">
+        Documentation officielle :
+        <a href="https://www.home-assistant.io/integrations/google/" target="_blank"
+           rel="noopener">home-assistant.io/integrations/google</a>.
+      </p>
+    </section>
+
+    <!-- STEP 2 — the form -->
+    <section class="step">
+      <div class="step-title"><span class="step-num">2</span> Identifiants OAuth</div>
+      <p class="hint">
+        Colles ici les deux valeurs affichees par Google apres creation de l'ID client.
+        Le secret n'est jamais passe en ligne de commande : il est ecrit dans un fichier
+        protege (0600) sur le pod, comme les autres cles du projet.
+      </p>
+      <div class="field">
+        <label for="clientId">ID client (…apps.googleusercontent.com)</label>
+        <input id="clientId" type="text" autocomplete="off" spellcheck="false"
+               placeholder="123456789-abcdef.apps.googleusercontent.com">
+      </div>
+      <div class="field">
+        <label for="clientSecret">Secret client</label>
+        <input id="clientSecret" type="password" autocomplete="off" spellcheck="false"
+               placeholder="GOCSPX-…">
+      </div>
+      <button class="primary" id="saveBtn" type="button">Enregistrer &amp; connecter</button>
+      <div class="msg" id="formMsg"></div>
+    </section>
+
+    <!-- STEP 3 — status / consent / calendar picking -->
+    <section class="step">
+      <div class="step-title"><span class="step-num">3</span> Liaison du compte</div>
+      <div class="status">
+        <span class="state idle" id="stateLabel">EN ATTENTE</span>
+        <div class="msg" id="stateMsg">Renseigne les identifiants ci-dessus pour demarrer.</div>
+      </div>
+
+      <div id="consentBox" class="hidden" style="margin-top:12px;">
+        <p class="hint">
+          Derniere etape, imposee par Google : autoriser l'acces avec le compte
+          proprietaire du calendrier. Cette page ne peut pas le faire a ta place.
+        </p>
+        <a class="primary consent" id="consentLink" href="#" target="_blank" rel="noopener">
+          Autoriser chez Google
+        </a>
+      </div>
+
+      <div id="calBox" class="hidden" style="margin-top:12px;">
+        <p class="hint">
+          Calendriers detectes. Choisis celui que le bandeau des dashboards doit afficher,
+          puis regenere les dashboards depuis l'ecran GENERATION.
+        </p>
+        <div class="cal-list" id="calList"></div>
+        <button class="primary" id="useBtn" type="button" disabled>
+          Utiliser pour le header
+        </button>
+        <div class="msg" id="calMsg"></div>
+      </div>
+    </section>
+  </main>
+
+<script>
+'use strict';
+
+const WEBHOOK = '/api/webhook/vssp_google_config';
+const STATUS_URL = '/local/vssp/google_status.json';
+
+const $ = (id) => document.getElementById(id);
+let selectedCalendar = '';
+let pollTimer = null;
+
+/* ---- helpers ---------------------------------------------------- */
+function setState(cls, label, message) {
+  const el = $('stateLabel');
+  el.className = 'state ' + cls;
+  el.textContent = label;
+  $('stateMsg').textContent = message || '';
+}
+
+function show(el, on) { el.classList.toggle('hidden', !on); }
+
+async function post(payload) {
+  const res = await fetch(WEBHOOK, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload),
+  });
+  // EN | A webhook answers 200 with an empty body; anything else is a real
+  // EN | transport failure worth surfacing.
+  // FR | Un webhook repond 200 avec un corps vide ; tout le reste est une
+  // FR | vraie panne de transport, qui merite d'etre affichee.
+  if (!res.ok) throw new Error('HTTP ' + res.status);
+}
+
+/* ---- status polling --------------------------------------------- */
+async function refreshStatus() {
+  let data;
+  try {
+    const res = await fetch(STATUS_URL + '?t=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) return;                       // not written yet: stay quiet
+    data = await res.json();
+  } catch (e) { return; }
+
+  const state = data.state || 'idle';
+  const calendars = data.calendars || [];
+
+  if (state === 'awaiting_consent' && data.auth_url) {
+    setState('wait', 'Consentement requis', data.message || '');
+    $('consentLink').href = data.auth_url;
+    show($('consentBox'), true);
+  } else if (state === 'connected') {
+    setState('ok', 'Connecte', data.message || '');
+    show($('consentBox'), false);
+  } else if (state === 'error') {
+    setState('err', 'Erreur', data.message || '');
+  } else if (state === 'credentials_ok') {
+    setState('wait', 'Client enregistre', data.message || '');
+  } else {
+    setState('idle', 'En attente', data.message || '');
+  }
+
+  // EN | Prefill the id field with what is stored, so reopening the popup
+  // EN | shows the current setup instead of an empty form. Only the tail is
+  // EN | published by the script — never the secret.
+  // FR | Pre-remplit le champ id avec ce qui est memorise, pour qu'a la
+  // FR | reouverture le popup montre la configuration courante plutot qu'un
+  // FR | formulaire vide. Seule la fin est publiee par le script — jamais le
+  // FR | secret.
+  if (data.client_id_tail && !$('clientId').value) {
+    $('clientId').placeholder = '…' + data.client_id_tail;
+  }
+
+  renderCalendars(calendars, data.selected || '');
+}
+
+function renderCalendars(calendars, selected) {
+  show($('calBox'), calendars.length > 0);
+  const list = $('calList');
+  const signature = calendars.map(c => c.entity_id).join('|');
+  if (list.dataset.sig === signature) return;         // no churn while typing
+  list.dataset.sig = signature;
+  list.innerHTML = '';
+  calendars.forEach((cal) => {
+    const row = document.createElement('div');
+    row.className = 'cal' + (cal.entity_id === selected ? ' sel' : '');
+    row.innerHTML = '<span>' + (cal.name || cal.entity_id) +
+                    '</span><span class="eid">' + cal.entity_id + '</span>';
+    row.addEventListener('click', () => {
+      selectedCalendar = cal.entity_id;
+      [...list.children].forEach(c => c.classList.remove('sel'));
+      row.classList.add('sel');
+      $('useBtn').disabled = false;
+    });
+    list.appendChild(row);
+  });
+  if (selected) { selectedCalendar = selected; $('useBtn').disabled = false; }
+}
+
+/* ---- actions ----------------------------------------------------- */
+$('copyUri').addEventListener('click', async () => {
+  const input = $('redirectUri');
+  input.select();
+  try {
+    await navigator.clipboard.writeText(input.value);
+    $('copyUri').textContent = 'Copie';
+    setTimeout(() => { $('copyUri').textContent = 'Copier'; }, 1500);
+  } catch (e) {
+    // EN | clipboard API needs a secure context; the manual select above is
+    // EN | the fallback, so say so instead of failing silently.
+    // FR | L'API presse-papier exige un contexte securise ; la selection
+    // FR | manuelle ci-dessus est le repli, autant le dire.
+    $('copyUri').textContent = 'Ctrl+C';
+  }
+});
+
+$('saveBtn').addEventListener('click', async () => {
+  const clientId = $('clientId').value.trim();
+  const clientSecret = $('clientSecret').value.trim();
+  const msg = $('formMsg');
+  msg.className = 'msg';
+  if (!clientId.endsWith('.apps.googleusercontent.com')) {
+    msg.className = 'msg err';
+    msg.textContent = "L'ID client doit se terminer par .apps.googleusercontent.com.";
+    return;
+  }
+  if (!clientSecret) {
+    msg.className = 'msg err';
+    msg.textContent = 'Le secret client est obligatoire.';
+    return;
+  }
+  $('saveBtn').disabled = true;
+  msg.textContent = 'Enregistrement et connexion…';
+  try {
+    await post({ client_id: clientId, client_secret: clientSecret, connect: true });
+    msg.className = 'msg ok';
+    msg.textContent = 'Envoye. Suivi de la liaison ci-dessous.';
+    setState('wait', 'Connexion…', 'Enregistrement du client OAuth dans Home Assistant.');
+  } catch (e) {
+    msg.className = 'msg err';
+    msg.textContent = 'Echec de l\'envoi (' + e.message +
+      '). Verifie que Home Assistant et l\'automatisation webhook sont joignables.';
+  } finally {
+    $('saveBtn').disabled = false;
+  }
+});
+
+$('useBtn').addEventListener('click', async () => {
+  const msg = $('calMsg');
+  msg.className = 'msg';
+  if (!selectedCalendar) return;
+  $('useBtn').disabled = true;
+  msg.textContent = 'Enregistrement…';
+  try {
+    // EN | ONLY the calendar entity — no credentials in this payload. The
+    // EN | webhook automation has a dedicated branch for this shape; sending
+    // EN | a placeholder secret here would overwrite the real stored one,
+    // EN | and re-running the OAuth flow would hand back a second consent
+    // EN | URL for an account that is already linked.
+    // FR | UNIQUEMENT l'entite calendrier — aucun identifiant dans ce
+    // FR | payload. L'automatisation webhook a une branche dediee a cette
+    // FR | forme ; envoyer un secret bouche-trou ici ecraserait le vrai
+    // FR | secret memorise, et relancer le flux OAuth renverrait une
+    // FR | seconde URL de consentement pour un compte deja lie.
+    await post({ calendar_entity: selectedCalendar });
+    msg.className = 'msg ok';
+    msg.textContent = selectedCalendar +
+      ' sera affiche dans le bandeau apres la prochaine regeneration.';
+  } catch (e) {
+    msg.className = 'msg err';
+    msg.textContent = 'Echec (' + e.message + ').';
+  } finally {
+    $('useBtn').disabled = false;
+  }
+});
+
+/* ---- boot -------------------------------------------------------- */
+refreshStatus();
+pollTimer = setInterval(refreshStatus, 3000);
+window.addEventListener('beforeunload', () => clearInterval(pollTimer));
+</script>
+</body>
+</html>

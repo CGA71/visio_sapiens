@@ -1,0 +1,331 @@
+########################################################################
+# Visio Sapiens — GOOGLE CALENDAR (ADMIN console form)
+#
+# EN | Replaces the manual Home Assistant setup path for the Google Calendar
+# EN | integration (Settings > Devices & services > Application credentials,
+# EN | then Add integration > Google Calendar). The ADMIN console's CALENDAR
+# EN | screen fills this form, and vssp_google_setup.py does the rest through
+# EN | Home Assistant's own websocket + REST APIs.
+# FR | Remplace le parcours manuel de configuration de l'integration Google
+# FR | Calendar dans Home Assistant (Parametres > Appareils et services >
+# FR | Identifiants d'application, puis Ajouter l'integration > Google
+# FR | Calendar). L'ecran CALENDRIER de la console ADMIN remplit ce
+# FR | formulaire, et vssp_google_setup.py fait le reste via les API
+# FR | websocket + REST propres a Home Assistant.
+#
+# EN | THE ONE STEP THAT CANNOT BE AUTOMATED — the Google consent click.
+# EN | OAuth exists precisely so the account owner approves access in
+# EN | Google's own UI; no form can sign that on their behalf. The flow here
+# EN | therefore ends by handing back a consent URL, which the console shows
+# EN | as a button. Everything before it (registering the OAuth client) and
+# EN | after it (finding the calendar entities, feeding the header) is
+# EN | automated.
+# FR | LA SEULE ETAPE NON AUTOMATISABLE — le clic de consentement Google.
+# FR | OAuth existe precisement pour que le proprietaire du compte approuve
+# FR | l'acces dans l'interface de Google ; aucun formulaire ne peut signer a
+# FR | sa place. Le flux se termine donc en renvoyant une URL de
+# FR | consentement, que la console affiche en bouton. Tout ce qui precede
+# FR | (enregistrement du client OAuth) et tout ce qui suit (recherche des
+# FR | entites calendrier, alimentation du header) est automatise.
+#
+# EN | PREREQUISITE ON THE GOOGLE SIDE (nothing here can create it for you):
+# EN |   Google Cloud project > enable "Google Calendar API" > OAuth consent
+# EN |   screen (External, published) > Credentials > OAuth client ID, type
+# EN |   "Web application", with this exact authorized redirect URI:
+# EN |       https://my.home-assistant.io/redirect/oauth
+# FR | PREREQUIS COTE GOOGLE (rien ici ne peut le creer a votre place) :
+# FR |   projet Google Cloud > activer « Google Calendar API » > ecran de
+# FR |   consentement OAuth (External, publie) > Identifiants > ID client
+# FR |   OAuth, type « Application Web », avec cette URI de redirection
+# FR |   autorisee exacte :
+# FR |       https://my.home-assistant.io/redirect/oauth
+#
+# EN | Depends on: vssp/vssp_google_setup.py, www/vssp/wizard/vssp_google.html
+# FR | Depend de : vssp/vssp_google_setup.py, www/vssp/wizard/vssp_google.html
+########################################################################
+
+# --------------------------------------------------------------------
+# EN | HELPERS — what the form stores
+# FR | HELPERS — ce que le formulaire memorise
+# --------------------------------------------------------------------
+input_text:
+  # EN | The OAuth client id is PUBLIC by design (it travels in the consent
+  # EN | URL every user sees), so it is a normal text helper and may be
+  # EN | passed on a command line. The secret next to it is not.
+  # FR | L'ID client OAuth est PUBLIC par conception (il voyage dans l'URL de
+  # FR | consentement que tout utilisateur voit) : simple helper texte, et il
+  # FR | peut passer en ligne de commande. Le secret a cote, non.
+  vssp_google_client_id:
+    name: "Visio Sapiens — Google : ID client OAuth"
+    max: 255
+  # EN | Same convention as vssp_ha_token and the chatbot API keys: the value
+  # EN | never reaches a command line, it is written to a 0600 file by
+  # EN | shell_command.vssp_write_google_secret and read from there.
+  # FR | Meme convention que vssp_ha_token et les cles API du chatbot : la
+  # FR | valeur n'atteint jamais une ligne de commande, elle est ecrite dans
+  # FR | un fichier 0600 par shell_command.vssp_write_google_secret et lue de
+  # FR | la.
+  vssp_google_client_secret:
+    name: "Visio Sapiens — Google : secret client OAuth"
+    mode: password
+    max: 255
+  # EN | Which calendar.* entity the dashboards' header shows. Read by
+  # EN | generate_dashboards.py through --calendar-entity, so changing it
+  # EN | here + regenerating is all it takes to switch calendars.
+  # FR | Quelle entite calendar.* le header des dashboards affiche. Lue par
+  # FR | generate_dashboards.py via --calendar-entity : la changer ici puis
+  # FR | regenerer suffit a changer de calendrier.
+  vssp_google_calendar_entity:
+    name: "Visio Sapiens — Google : entite calendrier du header"
+    max: 255
+
+# --------------------------------------------------------------------
+# EN | COMMANDS
+# FR | COMMANDES
+# --------------------------------------------------------------------
+shell_command:
+  # EN | Secret -> protected file. Same shape as vssp_write_token.
+  # FR | Secret -> fichier protege. Meme forme que vssp_write_token.
+  vssp_write_google_secret: >-
+    sh -c "mkdir -p /config/vssp &&
+    printf '%s' '{{ states('input_text.vssp_google_client_secret') }}'
+    > /config/vssp/.google_client_secret &&
+    chmod 600 /config/vssp/.google_client_secret"
+
+  # EN | Register the OAuth client in Home Assistant, then start the config
+  # EN | flow and write the Google consent URL into the status file.
+  # FR | Enregistre le client OAuth dans Home Assistant, puis demarre le
+  # FR | config flow et ecrit l'URL de consentement Google dans le fichier
+  # FR | d'etat.
+  vssp_google_connect: >-
+    python3 /config/vssp/vssp_google_setup.py
+    --action connect
+    --url http://localhost:8123
+    --client-id '{{ states('input_text.vssp_google_client_id') }}'
+    --secret-file /config/vssp/.google_client_secret
+    --token-file /config/vssp/.ha_token
+    --status-file /config/www/vssp/google_status.json
+
+  # EN | Read-only refresh: which calendar.* entities exist right now. Run
+  # EN | after finishing the consent step, to populate the entity picker.
+  # FR | Rafraichissement en lecture seule : quelles entites calendar.*
+  # FR | existent maintenant. A lancer apres l'etape de consentement, pour
+  # FR | remplir le selecteur d'entite.
+  vssp_google_refresh: >-
+    python3 /config/vssp/vssp_google_setup.py
+    --action status
+    --url http://localhost:8123
+    --client-id '{{ states('input_text.vssp_google_client_id') }}'
+    --secret-file /config/vssp/.google_client_secret
+    --token-file /config/vssp/.ha_token
+    --status-file /config/www/vssp/google_status.json
+
+# --------------------------------------------------------------------
+# EN | STATE READ BACK INTO THE CONSOLE
+# FR | ETAT RELU PAR LA CONSOLE
+# --------------------------------------------------------------------
+# EN | The console needs three things at a glance: where the setup stands,
+# EN | why (when it failed), and how many calendars were found. Parsed with
+# EN | python3 rather than grep so a message containing a quote or a comma
+# EN | cannot corrupt the reading.
+# FR | La console a besoin de trois choses d'un coup d'oeil : ou en est la
+# FR | configuration, pourquoi (en cas d'echec), et combien de calendriers
+# FR | ont ete trouves. Analyse avec python3 plutot que grep pour qu'un
+# FR | message contenant une apostrophe ou une virgule ne corrompe pas la
+# FR | lecture.
+command_line:
+  - sensor:
+      name: "VSSP Google State"
+      unique_id: vssp_google_state
+      command: >-
+        python3 -c "import json;print(json.load(open('/config/www/vssp/google_status.json'))['state'])"
+        2>/dev/null || echo "not_configured"
+      scan_interval: 30
+
+  - sensor:
+      name: "VSSP Google Message"
+      unique_id: vssp_google_message
+      command: >-
+        python3 -c "import json;print(json.load(open('/config/www/vssp/google_status.json')).get('message','')[:250])"
+        2>/dev/null || echo "Aucune configuration Google enregistree."
+      scan_interval: 30
+
+  - sensor:
+      name: "VSSP Google Calendars"
+      unique_id: vssp_google_calendars
+      unit_of_measurement: "calendriers"
+      command: >-
+        python3 -c "import json;print(len(json.load(open('/config/www/vssp/google_status.json')).get('calendars',[])))"
+        2>/dev/null || echo 0
+      scan_interval: 30
+
+# --------------------------------------------------------------------
+# EN | SCRIPTS — what the ADMIN buttons call
+# FR | SCRIPTS — ce qu'appellent les boutons de l'ADMIN
+# --------------------------------------------------------------------
+script:
+  # EN | One button, the whole automatable part: persist the secret, register
+  # EN | the OAuth client, start the flow, then surface the consent link.
+  # FR | Un bouton, toute la partie automatisable : persister le secret,
+  # FR | enregistrer le client OAuth, demarrer le flux, puis exposer le lien
+  # FR | de consentement.
+  vssp_google_connect:
+    alias: "Visio Sapiens — Google : connecter"
+    mode: single
+    sequence:
+      - action: shell_command.vssp_write_google_secret
+      - action: shell_command.vssp_google_connect
+      # EN | Force the status sensors to re-read the file now rather than
+      # EN | waiting up to scan_interval — the console is looking at them.
+      # FR | Force les capteurs d'etat a relire le fichier maintenant plutot
+      # FR | que d'attendre scan_interval — la console les regarde.
+      - action: homeassistant.update_entity
+        target:
+          entity_id:
+            - sensor.vssp_google_state
+            - sensor.vssp_google_message
+            - sensor.vssp_google_calendars
+
+  vssp_google_refresh:
+    alias: "Visio Sapiens — Google : rafraichir les calendriers"
+    mode: single
+    sequence:
+      - action: shell_command.vssp_google_refresh
+      - action: homeassistant.update_entity
+        target:
+          entity_id:
+            - sensor.vssp_google_state
+            - sensor.vssp_google_message
+            - sensor.vssp_google_calendars
+
+# --------------------------------------------------------------------
+# EN | FORM INTAKE — the wizard page posts here
+# FR | RECEPTION DU FORMULAIRE — la page wizard poste ici
+# --------------------------------------------------------------------
+# EN | Same reasoning as vssp_chatbot.yaml's config webhook: the page lives
+# EN | in an iframe, cannot reach the parent's `hass` object, and a REST call
+# EN | would need a Bearer token that has no business in a browser. A webhook
+# EN | needs none, and local_only: true keeps it on the LAN.
+# EN | The values only ever reach native input_text.set_value calls — no
+# EN | shell in the loop — so a quote inside a secret is just a character,
+# EN | not a quoting hazard. The shell_command that DOES touch a shell reads
+# EN | the helper's state through its own quoting, after this.
+# FR | Meme raisonnement que le webhook de configuration de
+# FR | vssp_chatbot.yaml : la page vit dans une iframe, ne peut pas atteindre
+# FR | l'objet `hass` du parent, et un appel REST exigerait un jeton Bearer
+# FR | qui n'a rien a faire dans un navigateur. Un webhook n'en exige aucun,
+# FR | et local_only: true le maintient sur le reseau local.
+# FR | Les valeurs n'atteignent que des appels natifs input_text.set_value —
+# FR | aucun shell dans la boucle — donc une apostrophe dans un secret n'est
+# FR | qu'un caractere, pas un risque de quoting. Le shell_command qui touche
+# FR | un shell lit l'etat du helper avec son propre quoting, ensuite.
+automation:
+  - alias: "Visio Sapiens — Receive Google Calendar config"
+    id: vssp_receive_google_config
+    mode: queued
+    max: 10
+    triggers:
+      - trigger: webhook
+        webhook_id: vssp_google_config
+        local_only: true
+        allowed_methods:
+          - POST
+    actions:
+      - choose:
+          # EN | SHAPE 1 — calendar pick only. The page sends just
+          # EN | {calendar_entity}, never the credentials, when the user
+          # EN | chooses which calendar feeds the header. Handled FIRST and
+          # EN | separately because the credential branch below overwrites
+          # EN | both helpers: routing a calendar pick through it would
+          # EN | replace the stored secret with whatever placeholder the page
+          # EN | happened to send.
+          # FR | FORME 1 — choix du calendrier seul. La page n'envoie que
+          # FR | {calendar_entity}, jamais les identifiants, quand
+          # FR | l'utilisateur choisit le calendrier qui alimente le header.
+          # FR | Traitee EN PREMIER et separement parce que la branche
+          # FR | identifiants ci-dessous ecrase les deux helpers : y faire
+          # FR | passer un choix de calendrier remplacerait le secret
+          # FR | memorise par le bouche-trou que la page aurait envoye.
+          - conditions:
+              - condition: template
+                value_template: >-
+                  {{ trigger.json.client_secret is not defined
+                     and (trigger.json.calendar_entity | default('') | trim
+                          | regex_match('^calendar\.')) }}
+            sequence:
+              - action: input_text.set_value
+                target:
+                  entity_id: input_text.vssp_google_calendar_entity
+                data:
+                  value: "{{ trigger.json.calendar_entity | trim | truncate(255, True, '') }}"
+
+          # EN | SHAPE 2 — credentials.
+          # FR | FORME 2 — identifiants.
+          # EN | A Google OAuth client id always ends in
+          # EN | .apps.googleusercontent.com — checking that here turns the
+          # EN | most common paste mistake (pasting the project id, or the
+          # EN | secret into the id field) into a clear message instead of an
+          # EN | opaque failure three steps later, inside the config flow.
+          # FR | Un ID client OAuth Google se termine toujours par
+          # FR | .apps.googleusercontent.com — le verifier ici transforme
+          # FR | l'erreur de copier-coller la plus frequente (coller l'id de
+          # FR | projet, ou le secret dans le champ id) en message clair
+          # FR | plutot qu'en echec opaque trois etapes plus loin, dans le
+          # FR | config flow.
+          - conditions:
+              - condition: template
+                value_template: >-
+                  {{ trigger.json.client_id is defined
+                     and (trigger.json.client_id | trim
+                          | regex_search('\.apps\.googleusercontent\.com$'))
+                     and (trigger.json.client_secret | default('') | trim) != '' }}
+            sequence:
+              - action: input_text.set_value
+                target:
+                  entity_id: input_text.vssp_google_client_id
+                data:
+                  value: "{{ trigger.json.client_id | trim | truncate(255, True, '') }}"
+              - action: input_text.set_value
+                target:
+                  entity_id: input_text.vssp_google_client_secret
+                data:
+                  value: "{{ trigger.json.client_secret | trim | truncate(255, True, '') }}"
+              # EN | Optional: the form may also carry the calendar entity to
+              # EN | show in the header, chosen from the list the status file
+              # EN | published after a successful link.
+              # FR | Optionnel : le formulaire peut aussi porter l'entite
+              # FR | calendrier a afficher dans le header, choisie dans la
+              # FR | liste publiee par le fichier d'etat apres une liaison
+              # FR | reussie.
+              - if:
+                  - condition: template
+                    value_template: >-
+                      {{ (trigger.json.calendar_entity | default('') | trim
+                          | regex_match('^calendar\.')) }}
+                then:
+                  - action: input_text.set_value
+                    target:
+                      entity_id: input_text.vssp_google_calendar_entity
+                    data:
+                      value: "{{ trigger.json.calendar_entity | trim | truncate(255, True, '') }}"
+              # EN | Saving and connecting are one gesture here, unlike the
+              # EN | three built-in chatbot providers where the key is saved
+              # EN | by its own button: there is nothing useful to do with a
+              # EN | stored client id that was never registered.
+              # FR | Enregistrer et connecter ne font qu'un geste ici,
+              # FR | contrairement aux trois fournisseurs de chatbot natifs ou
+              # FR | la cle a son propre bouton : un id client memorise mais
+              # FR | jamais enregistre ne sert a rien.
+              - if:
+                  - condition: template
+                    value_template: "{{ trigger.json.connect | default(true) }}"
+                then:
+                  - action: script.vssp_google_connect
+        default:
+          - action: persistent_notification.create
+            data:
+              title: "Visio Sapiens — Configuration Google refusee"
+              message: >
+                L'ID client doit se terminer par .apps.googleusercontent.com
+                et le secret client ne peut pas etre vide. Rien n'a ete
+                enregistre.
