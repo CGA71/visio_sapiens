@@ -1,6 +1,6 @@
 # Deploying the device assignment feature
 
-**English** · [Français](DEPLOYMENT.fr.md)
+**English** · [Français](Deployment.fr.md)
 
 This feature closes the gap between the discovery scan and the dashboard
 generator. Before it, the scan wrote a report nobody consumed and the

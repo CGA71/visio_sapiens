@@ -39,7 +39,7 @@ vssp/vssp_google_setup.py
 
 The OAuth consent cannot be removed: OAuth exists precisely so the
 account owner approves access in Google's own UI. The form therefore
-ends by showing an **Autoriser chez Google** button; everything around
+ends by showing an **Authorize with Google** button; everything around
 it is automated.
 
 ## Google-side prerequisites (once)
@@ -63,12 +63,61 @@ Official documentation:
 
 1. ADMIN console → **GOOGLE CALENDAR**.
 2. Paste the **client ID** and **client secret**, then
-   *Enregistrer & connecter*.
-3. Click **Autoriser chez Google** and approve with the account that
+   *Save & connect*.
+3. Click **Authorize with Google** and approve with the account that
    owns the calendar.
 4. Click **REFRESH**: the `calendar.*` entities appear.
-5. Pick the calendar you want, then **Utiliser pour le header**.
+5. Pick the calendar you want, then **Use for the header**.
 6. **APPLY TO HEADER** (regenerates HOME) so the header shows it.
+
+(Button labels above are the English ones — the screen follows the
+interface language, see below.)
+
+## Interface language
+
+This screen is assembled from three sources that each used to decide the
+language on their own, which is how it ended up showing French and
+English side by side on one page. All three now follow
+`input_select.vssp_language`:
+
+| Part of the screen | Language comes from | Mechanism |
+|---|---|---|
+| Console labels, buttons, nav (`admin.google_*`) | the generated locale | `t()` + `locales/<code>.yaml`, as everywhere else |
+| The embedded form (`vssp_google.html`) | `?lang=` in the iframe URL | written by `admin.yaml.j2` from `{{ locale }}`, resolved by the page's `I18N` table |
+| Status sentences (`sensor.vssp_google_message`, the form's status line) | `--locale` given to `vssp_google_setup.py` | `MESSAGES` / `STATE_LABELS` tables in the script |
+
+The status file carries **both** forms of each message:
+
+```json
+{
+  "state": "awaiting_consent",
+  "state_label": "Consent required",
+  "message_key": "awaiting_consent",
+  "message_vars": {},
+  "message": "Open the Google consent link to finish linking the account."
+}
+```
+
+- `state` stays an untranslated machine token — it is what the form
+  branches on. Only `state_label` is translated.
+- `message` is rendered by the script in `--locale`, because a
+  `command_line` sensor cannot translate anything by itself.
+- `message_key` + `message_vars` let the form re-render the same sentence
+  in **its** language, so a status file written by a run in the other
+  language still displays correctly.
+- Technical failure text (an HTTP body, a socket error) is never
+  translated: it travels in `message_vars` and is framed by a translated
+  sentence.
+
+Two consequences worth knowing:
+
+- **Changing the language needs a regeneration**, like everywhere else in
+  the project: the `?lang=` parameter is baked into the dashboard YAML at
+  generate time. APPLY LANGUAGE already does this.
+- **`sensor.vssp_google_calendars` has no unit**. `unit_of_measurement`
+  is not templatable, so any word there would be hardcoded in one
+  language next to a label translated into the other. The row label
+  ("Calendars found" / "Calendriers détectés") carries the meaning.
 
 ## Where the values live
 
@@ -121,6 +170,8 @@ never filled reads as `unknown` — never wins over the model.
 | The consent link leads nowhere | redirect URI missing or different on the Google side |
 | No calendar after consenting | click **REFRESH** (sensors only rescan every 30 s) |
 | Header still shows the old calendar | regenerate: **APPLY TO HEADER** |
+| The form is in a different language than the labels around it | the dashboard was generated before `?lang=` existed, or the language was changed without regenerating — run APPLY LANGUAGE |
+| A status line stays in the previous language | it was written by an earlier run; press **CONNECT** or **REFRESH** to rewrite `google_status.json` |
 
 ## Files
 
@@ -129,6 +180,7 @@ never filled reads as `unknown` — never wins over the model.
 | `vssp/vssp_google_setup.py` | websocket + REST client, writes `google_status.json` |
 | `home-assistant/packages/vssp_google.yaml` | helpers, shell_commands, sensors, scripts, webhook |
 | `home-assistant/www/vssp/wizard/vssp_google.html` | the form (iframe) |
-| `home-assistant/dashboards/templates_j2/admin.yaml.j2` | GOOGLE CALENDAR screen |
+| `home-assistant/dashboards/templates_j2/admin.yaml.j2` | GOOGLE CALENDAR screen, passes `?lang=` to the iframe |
+| `home-assistant/dashboards/locales/{en,fr}.yaml` | `admin.google_*` labels of the screen |
 | `home-assistant/dashboards/templates_j2/_header.j2` | header agenda cell |
 | `vssp/generate_dashboards.py` | `--calendar-entity` option |

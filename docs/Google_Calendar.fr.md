@@ -68,9 +68,59 @@ Documentation officielle :
 3. Cliquer **Autoriser chez Google**, approuver avec le compte
    propriétaire du calendrier.
 4. Cliquer **ACTUALISER** : les entités `calendar.*` apparaissent.
-5. Choisir le calendrier voulu, puis **Utiliser pour le header**.
+5. Choisir le calendrier voulu, puis **Utiliser pour le bandeau**.
 6. **APPLIQUER AU BANDEAU** (régénère HOME) pour que le bandeau
    l'affiche.
+
+(Les libellés ci-dessus sont ceux de la version française — l'écran suit
+la langue de l'interface, voir ci-dessous.)
+
+## Langue de l'interface
+
+Cet écran est assemblé à partir de trois sources qui décidaient chacune
+de la langue dans leur coin, ce qui aboutissait à du français et de
+l'anglais côte à côte sur une seule page. Les trois suivent désormais
+`input_select.vssp_language` :
+
+| Partie de l'écran | La langue vient de | Mécanisme |
+|---|---|---|
+| Libellés, boutons et navigation de la console (`admin.google_*`) | la locale générée | `t()` + `locales/<code>.yaml`, comme partout ailleurs |
+| Le formulaire intégré (`vssp_google.html`) | `?lang=` dans l'URL de l'iframe | écrit par `admin.yaml.j2` depuis `{{ locale }}`, résolu par la table `I18N` de la page |
+| Les phrases d'état (`sensor.vssp_google_message`, la ligne d'état du formulaire) | `--locale` passé à `vssp_google_setup.py` | tables `MESSAGES` / `STATE_LABELS` du script |
+
+Le fichier d'état porte **les deux** formes de chaque message :
+
+```json
+{
+  "state": "awaiting_consent",
+  "state_label": "Consentement requis",
+  "message_key": "awaiting_consent",
+  "message_vars": {},
+  "message": "Ouvrez le lien de consentement Google pour terminer la liaison du compte."
+}
+```
+
+- `state` reste un jeton machine non traduit — c'est sur lui que le
+  formulaire s'aiguille. Seul `state_label` est traduit.
+- `message` est rendu par le script dans `--locale`, parce qu'un capteur
+  `command_line` ne sait rien traduire seul.
+- `message_key` + `message_vars` permettent au formulaire de re-rendre la
+  même phrase dans **sa** langue : un fichier d'état écrit par un
+  lancement dans l'autre langue s'affiche quand même correctement.
+- Le texte d'échec technique (corps HTTP, erreur socket) n'est jamais
+  traduit : il voyage dans `message_vars` et une phrase traduite
+  l'encadre.
+
+Deux conséquences à connaître :
+
+- **Changer de langue impose une régénération**, comme partout ailleurs
+  dans le projet : le paramètre `?lang=` est figé dans le YAML du
+  dashboard au moment de la génération. APPLIQUER LA LANGUE le fait déjà.
+- **`sensor.vssp_google_calendars` n'a pas d'unité.**
+  `unit_of_measurement` n'est pas templatable : tout mot y serait figé
+  dans une langue, à côté d'un libellé traduit dans l'autre. Le libellé
+  de la ligne (« Calendriers détectés » / « Calendars found ») porte déjà
+  le sens.
 
 ## Où vivent les valeurs
 
@@ -123,6 +173,8 @@ clé). Une valeur vide ou `unknown` — un `input_text` jamais rempli vaut
 | Le lien de consentement ne mène nulle part | URI de redirection absente ou différente côté Google |
 | Aucun calendrier après le consentement | cliquer **ACTUALISER** (les capteurs ne rescannent que toutes les 30 s) |
 | Le bandeau montre encore l'ancien calendrier | régénérer : **APPLIQUER AU BANDEAU** |
+| Le formulaire est dans une autre langue que les libellés autour | le dashboard a été généré avant l'existence de `?lang=`, ou la langue a changé sans régénération — lancer APPLIQUER LA LANGUE |
+| Une ligne d'état reste dans la langue précédente | elle vient d'un lancement antérieur ; presser **CONNECTER** ou **ACTUALISER** pour réécrire `google_status.json` |
 
 ## Fichiers
 
@@ -131,6 +183,7 @@ clé). Une valeur vide ou `unknown` — un `input_text` jamais rempli vaut
 | `vssp/vssp_google_setup.py` | client websocket + REST, écrit `google_status.json` |
 | `home-assistant/packages/vssp_google.yaml` | helpers, shell_commands, capteurs, scripts, webhook |
 | `home-assistant/www/vssp/wizard/vssp_google.html` | le formulaire (iframe) |
-| `home-assistant/dashboards/templates_j2/admin.yaml.j2` | écran CALENDRIER GOOGLE |
+| `home-assistant/dashboards/templates_j2/admin.yaml.j2` | écran CALENDRIER GOOGLE, passe `?lang=` à l'iframe |
+| `home-assistant/dashboards/locales/{en,fr}.yaml` | libellés `admin.google_*` de l'écran |
 | `home-assistant/dashboards/templates_j2/_header.j2` | case agenda du bandeau |
 | `vssp/generate_dashboards.py` | option `--calendar-entity` |

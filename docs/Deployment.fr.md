@@ -1,6 +1,6 @@
 # Déploiement de l'assignation des appareils
 
-[English](DEPLOYMENT.md) · **Français**
+[English](Deployment.md) · **Français**
 
 Cette fonctionnalité ferme l'écart entre le scan de découverte et le
 générateur de dashboards. Avant elle, le scan écrivait un rapport que

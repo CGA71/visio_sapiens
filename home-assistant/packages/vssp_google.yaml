@@ -97,6 +97,16 @@ shell_command:
   # FR | Enregistre le client OAuth dans Home Assistant, puis demarre le
   # FR | config flow et ecrit l'URL de consentement Google dans le fichier
   # FR | d'etat.
+  # EN | --locale: the script publishes sentences a human reads in the
+  # EN | console, under labels the generator has already translated. Feeding
+  # EN | it the same selector the generator reads is what keeps one screen in
+  # EN | one language. An unset selector reads "unknown" and the script falls
+  # EN | back to English rather than failing.
+  # FR | --locale : le script publie des phrases lues par un humain dans la
+  # FR | console, sous des libelles que le generateur a deja traduits. Lui
+  # FR | donner le meme selecteur que celui lu par le generateur est ce qui
+  # FR | garde un ecran dans une seule langue. Un selecteur non pose vaut
+  # FR | « unknown » et le script retombe sur l'anglais plutot que d'echouer.
   vssp_google_connect: >-
     python3 /config/vssp/vssp_google_setup.py
     --action connect
@@ -104,6 +114,7 @@ shell_command:
     --client-id '{{ states('input_text.vssp_google_client_id') }}'
     --secret-file /config/vssp/.google_client_secret
     --token-file /config/vssp/.ha_token
+    --locale {{ states('input_select.vssp_language') }}
     --status-file /config/www/vssp/google_status.json
 
   # EN | Read-only refresh: which calendar.* entities exist right now. Run
@@ -118,6 +129,7 @@ shell_command:
     --client-id '{{ states('input_text.vssp_google_client_id') }}'
     --secret-file /config/vssp/.google_client_secret
     --token-file /config/vssp/.ha_token
+    --locale {{ states('input_select.vssp_language') }}
     --status-file /config/www/vssp/google_status.json
 
 # --------------------------------------------------------------------
@@ -133,13 +145,39 @@ shell_command:
 # FR | ont ete trouves. Analyse avec python3 plutot que grep pour qu'un
 # FR | message contenant une apostrophe ou une virgule ne corrompe pas la
 # FR | lecture.
+#
+# EN | LANGUAGE — these three rows sit under labels the generator translated,
+# EN | so what they DISPLAY must follow the same language. Two mechanisms,
+# EN | because a command_line sensor cannot translate anything by itself:
+# EN |   - normal path: the script already rendered `state_label` and
+# EN |     `message` in --locale, so the sensor only has to read them;
+# EN |   - no status file yet: the command itself is a Jinja template, so the
+# EN |     fallback is chosen from input_select.vssp_language here. Written
+# EN |     without accents on purpose — it travels through a shell.
+# FR | LANGUE — ces trois lignes vivent sous des libelles traduits par le
+# FR | generateur : ce qu'elles AFFICHENT doit donc suivre la meme langue.
+# FR | Deux mecanismes, parce qu'un capteur command_line ne sait rien
+# FR | traduire seul :
+# FR |   - cas normal : le script a deja rendu `state_label` et `message`
+# FR |     dans --locale, le capteur n'a qu'a les lire ;
+# FR |   - pas encore de fichier d'etat : la commande est elle-meme un
+# FR |     template Jinja, le repli est donc choisi ici depuis
+# FR |     input_select.vssp_language. Ecrit sans accents volontairement — il
+# FR |     passe par un shell.
 command_line:
+  # EN | `state_label` is the translated form; `state` (the machine token the
+  # EN | wizard page branches on) is the fallback for a status file written
+  # EN | before this key existed.
+  # FR | `state_label` est la forme traduite ; `state` (le jeton machine sur
+  # FR | lequel la page wizard s'aiguille) sert de repli pour un fichier
+  # FR | d'etat ecrit avant l'existence de cette cle.
   - sensor:
       name: "VSSP Google State"
       unique_id: vssp_google_state
       command: >-
-        python3 -c "import json;print(json.load(open('/config/www/vssp/google_status.json'))['state'])"
-        2>/dev/null || echo "not_configured"
+        python3 -c "import json;d=json.load(open('/config/www/vssp/google_status.json'));print(d.get('state_label') or d.get('state',''))"
+        2>/dev/null ||
+        echo "{{ 'Non configure' if states('input_select.vssp_language') == 'fr' else 'Not configured' }}"
       scan_interval: 30
 
   - sensor:
@@ -147,13 +185,21 @@ command_line:
       unique_id: vssp_google_message
       command: >-
         python3 -c "import json;print(json.load(open('/config/www/vssp/google_status.json')).get('message','')[:250])"
-        2>/dev/null || echo "Aucune configuration Google enregistree."
+        2>/dev/null ||
+        echo "{{ 'Aucune configuration Google enregistree.' if states('input_select.vssp_language') == 'fr' else 'No Google setup recorded yet.' }}"
       scan_interval: 30
 
+  # EN | No unit_of_measurement: it is not templatable, so any word here
+  # EN | would be hardcoded in ONE language and appear next to a label
+  # EN | translated into the other. The row label ("Calendriers detectes" /
+  # EN | "Calendars found") already says what the number counts.
+  # FR | Pas d'unit_of_measurement : elle n'est pas templatable, donc tout mot
+  # FR | ici serait fige dans UNE langue et s'afficherait a cote d'un libelle
+  # FR | traduit dans l'autre. Le libelle de la ligne (« Calendriers
+  # FR | detectes » / « Calendars found ») dit deja ce que le nombre compte.
   - sensor:
       name: "VSSP Google Calendars"
       unique_id: vssp_google_calendars
-      unit_of_measurement: "calendriers"
       command: >-
         python3 -c "import json;print(len(json.load(open('/config/www/vssp/google_status.json')).get('calendars',[])))"
         2>/dev/null || echo 0
@@ -321,11 +367,27 @@ automation:
                     value_template: "{{ trigger.json.connect | default(true) }}"
                 then:
                   - action: script.vssp_google_connect
+        # EN | Rejection notice — a Home Assistant notification, outside the
+        # EN | console and its generated labels, so it follows the same
+        # EN | selector rather than being hardcoded in one language.
+        # FR | Avis de refus — une notification Home Assistant, hors de la
+        # FR | console et de ses libelles generes : elle suit donc le meme
+        # FR | selecteur plutot que d'etre figee dans une langue.
         default:
           - action: persistent_notification.create
             data:
-              title: "Visio Sapiens — Configuration Google refusee"
-              message: >
+              title: >-
+                {%- if states('input_select.vssp_language') == 'fr' -%}
+                Visio Sapiens — Configuration Google refusée
+                {%- else -%}
+                Visio Sapiens — Google setup rejected
+                {%- endif -%}
+              message: >-
+                {%- if states('input_select.vssp_language') == 'fr' -%}
                 L'ID client doit se terminer par .apps.googleusercontent.com
-                et le secret client ne peut pas etre vide. Rien n'a ete
-                enregistre.
+                et le secret client ne peut pas être vide. Rien n'a été
+                enregistré.
+                {%- else -%}
+                The client ID must end with .apps.googleusercontent.com and
+                the client secret cannot be empty. Nothing was saved.
+                {%- endif -%}

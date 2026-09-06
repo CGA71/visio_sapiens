@@ -836,8 +836,20 @@ views:
                 tap_action:
                   action: call-service
                   service: script.vssp_regenerate_home_dashboard
+          # EN | `lang` carries the GENERATED locale into the iframe. Without
+          # EN | it the embedded form keeps its own hardcoded language, and the
+          # EN | screen ends up showing translated labels around a form in the
+          # EN | other language — one screen, two languages. `v` stays the
+          # EN | cache-buster (see Troubleshooting: an iframe missing it served
+          # EN | a stale page for a whole session).
+          # FR | `lang` transmet la locale GENEREE a l'iframe. Sans lui, le
+          # FR | formulaire integre garde sa propre langue figee, et l'ecran
+          # FR | finit par afficher des libelles traduits autour d'un
+          # FR | formulaire dans l'autre langue — un ecran, deux langues. `v`
+          # FR | reste l'anti-cache (voir Troubleshooting : une iframe sans lui
+          # FR | a servi une page perimee toute une session).
           - type: iframe
-            url: /local/vssp/wizard/vssp_google.html?v={{ build_stamp }}
+            url: /local/vssp/wizard/vssp_google.html?v={{ build_stamp }}&lang={{ locale }}
             card_mod:
               style: |
                 :host {

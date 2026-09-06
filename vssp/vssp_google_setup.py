@@ -51,9 +51,23 @@
 # FR | fichier. Le client_id est public par conception OAuth (il voyage dans
 # FR | l'URL de consentement), il reste donc un simple flag.
 #
+# EN | LANGUAGE — every sentence written to the status file is read by a
+# EN | human in the ADMIN console, under labels the dashboard generator has
+# EN | already translated. `--locale` (fed by input_select.vssp_language, the
+# EN | same selector the generator reads) therefore renders `message` and
+# EN | `state_label` in that language, and `message_key` + `message_vars` are
+# EN | published alongside so the wizard page can re-translate on its own.
+# FR | LANGUE — chaque phrase ecrite dans le fichier d'etat est lue par un
+# FR | humain dans la console ADMIN, sous des libelles que le generateur de
+# FR | dashboards a deja traduits. `--locale` (alimente par
+# FR | input_select.vssp_language, le meme selecteur que lit le generateur)
+# FR | rend donc `message` et `state_label` dans cette langue, et
+# FR | `message_key` + `message_vars` sont publies a cote pour que la page
+# FR | wizard puisse retraduire elle-meme.
+#
 # EN | USAGE / FR | UTILISATION
-#   python3 vssp_google_setup.py --action connect  --client-id "…apps.googleusercontent.com"
-#   python3 vssp_google_setup.py --action status
+#   python3 vssp_google_setup.py --action connect  --client-id "…apps.googleusercontent.com" --locale fr
+#   python3 vssp_google_setup.py --action status   --locale en
 #   python3 vssp_google_setup.py --action calendars
 #
 # EN | Exit codes: 0 = OK, 1 = error (the status file always gets written, so
@@ -93,6 +107,144 @@ GOOGLE_DOMAIN = "google"
 # FR | que le formulaire ADMIN affiche la valeur a coller dans Google Cloud
 # FR | plutot que de la coder en dur a deux endroits.
 REDIRECT_URI = "https://my.home-assistant.io/redirect/oauth"
+
+
+# ── EN | Interface language / FR | Langue de l'interface ─────────────────
+# EN | Every sentence this script publishes is read by a HUMAN in the ADMIN
+# EN | console, next to labels that the dashboard generator has already
+# EN | translated. English-only messages under French labels is exactly the
+# EN | mismatch this table exists to remove, so the status file carries BOTH:
+# EN |   message_key + message_vars  — machine form, re-translated by the
+# EN |                                 wizard page in ITS own language;
+# EN |   message + state_label       — rendered here in --locale, because a
+# EN |                                 command_line sensor cannot translate.
+# EN | English is the reference: a locale missing a key falls back to it, so
+# EN | adding a language never breaks the flow.
+# FR | Chaque phrase publiee par ce script est lue par un HUMAIN dans la
+# FR | console ADMIN, a cote de libelles que le generateur de dashboards a
+# FR | deja traduits. Des messages en anglais sous des libelles francais,
+# FR | c'est exactement le melange que cette table sert a supprimer : le
+# FR | fichier d'etat porte donc LES DEUX :
+# FR |   message_key + message_vars  — forme machine, retraduite par la page
+# FR |                                 wizard dans SA propre langue ;
+# FR |   message + state_label       — rendus ici dans --locale, parce qu'un
+# FR |                                 capteur command_line ne sait pas
+# FR |                                 traduire.
+# FR | L'anglais est la reference : une locale sans la cle y retombe, donc
+# FR | ajouter une langue ne casse jamais le flux.
+BASE_LOCALE = "en"
+SUPPORTED_LOCALES = ("en", "fr")
+
+MESSAGES = {
+    "no_token": {
+        "en": "Home Assistant token missing — fill input_text.vssp_ha_token "
+              "and run SAVE TOKEN first.",
+        "fr": "Jeton Home Assistant absent — renseignez "
+              "input_text.vssp_ha_token puis lancez ENREGISTRER LE JETON.",
+    },
+    "calendars_found": {
+        "en": "{n} calendar entity(ies) found.",
+        "fr": "{n} entite(s) calendrier trouvee(s).",
+    },
+    "no_calendar_yet": {
+        "en": "No calendar entity yet — finish the Google consent step.",
+        "fr": "Aucune entite calendrier — terminez l'etape de consentement "
+              "Google.",
+    },
+    "credentials_required": {
+        "en": "Client ID and client secret are both required. Fill them in "
+              "the ADMIN Google Calendar form.",
+        "fr": "L'ID client et le secret client sont tous deux obligatoires. "
+              "Renseignez-les dans le formulaire Google Calendar de l'ADMIN.",
+    },
+    "credentials_ok": {
+        "en": "OAuth client registered in Home Assistant. Start the "
+              "connection to get the Google consent link.",
+        "fr": "Client OAuth enregistre dans Home Assistant. Lancez la "
+              "connexion pour obtenir le lien de consentement Google.",
+    },
+    "awaiting_consent": {
+        "en": "Open the Google consent link to finish linking the account.",
+        "fr": "Ouvrez le lien de consentement Google pour terminer la "
+              "liaison du compte.",
+    },
+    "already_linked": {
+        "en": "Google Calendar is already linked to Home Assistant — nothing "
+              "to do.",
+        "fr": "Google Calendar est deja lie a Home Assistant — rien a faire.",
+    },
+    "flow_aborted": {
+        "en": "Config flow aborted: {reason}",
+        "fr": "Config flow interrompu : {reason}",
+    },
+    "unexpected_step": {
+        "en": "Unexpected config-flow step '{step}' ({type}) — finish this "
+              "one in Settings > Devices & services.",
+        "fr": "Etape de config flow inattendue « {step} » ({type}) — "
+              "terminez celle-ci dans Parametres > Appareils et services.",
+    },
+    # EN | Technical failure text (HTTP body, socket error). Not translatable
+    # EN | — it comes from Home Assistant or the OS — so the key only frames
+    # EN | it, and the raw string travels in message_vars.
+    # FR | Texte d'echec technique (corps HTTP, erreur socket). Non
+    # FR | traduisible — il vient de Home Assistant ou de l'OS — donc la cle
+    # FR | ne fait que l'encadrer, la chaine brute voyage dans message_vars.
+    "failure": {
+        "en": "Failure: {detail}",
+        "fr": "Echec : {detail}",
+    },
+}
+
+# EN | Shown by sensor.vssp_google_state, which would otherwise display the
+# EN | raw machine token ("awaiting_consent") under a translated label. The
+# EN | token itself stays in `state`, untranslated, because that is what the
+# EN | wizard page branches on.
+# FR | Affiche par sensor.vssp_google_state, qui sinon montrerait le jeton
+# FR | machine brut (« awaiting_consent ») sous un libelle traduit. Le jeton
+# FR | lui-meme reste dans `state`, non traduit, car c'est sur lui que la
+# FR | page wizard s'aiguille.
+STATE_LABELS = {
+    "not_configured": {"en": "Not configured", "fr": "Non configure"},
+    "idle": {"en": "Waiting", "fr": "En attente"},
+    "credentials_ok": {"en": "Client registered", "fr": "Client enregistre"},
+    "awaiting_consent": {"en": "Consent required", "fr": "Consentement requis"},
+    "connected": {"en": "Connected", "fr": "Connecte"},
+    "error": {"en": "Error", "fr": "Erreur"},
+}
+
+
+def pick_locale(value: str) -> str:
+    """EN | Normalise whatever input_select.vssp_language holds ('fr', 'en',
+    EN | 'unknown' before the selector is set) to a supported code.
+    FR | Normalise ce que contient input_select.vssp_language ('fr', 'en',
+    FR | 'unknown' tant que le selecteur n'est pas pose) vers un code
+    FR | supporte."""
+    code = (value or "").strip().lower().replace("_", "-").split("-")[0]
+    return code if code in SUPPORTED_LOCALES else BASE_LOCALE
+
+
+def msg(key: str, locale: str, **fields) -> str:
+    entry = MESSAGES.get(key, {})
+    text = entry.get(locale) or entry.get(BASE_LOCALE) or key
+    return text.format(**fields) if fields else text
+
+
+def say(key: str, locale: str, **fields) -> dict:
+    """EN | The three status keys that describe one message: the key and its
+    EN | variables for consumers that translate on their own, plus the
+    EN | rendered sentence for the ones that cannot.
+    FR | Les trois cles d'etat qui decrivent un message : la cle et ses
+    FR | variables pour les consommateurs qui traduisent eux-memes, plus la
+    FR | phrase rendue pour ceux qui ne savent pas."""
+    return {"message_key": key,
+            "message_vars": fields,
+            "message": msg(key, locale, **fields)}
+
+
+def stated(state: str, locale: str) -> dict:
+    label = STATE_LABELS.get(state, {})
+    return {"state": state,
+            "state_label": label.get(locale) or label.get(BASE_LOCALE) or state}
 
 
 # ── EN | Status file / FR | Fichier d'etat ───────────────────────────────
@@ -469,8 +621,22 @@ def main() -> int:
     ap.add_argument("--name", default="Visio Sapiens — Google Calendar")
     ap.add_argument("--status-file",
                     default="/config/www/vssp/google_status.json")
+    # EN | Interface language, fed by input_select.vssp_language (the same
+    # EN | selector the dashboard generator reads through its own --locale).
+    # EN | Anything unknown falls back to English rather than failing: a
+    # EN | selector that has never been set reads as "unknown", and that must
+    # EN | not stop a setup run.
+    # FR | Langue de l'interface, alimentee par input_select.vssp_language (le
+    # FR | selecteur que le generateur de dashboards lit deja via son propre
+    # FR | --locale). Toute valeur inconnue retombe sur l'anglais plutot que
+    # FR | d'echouer : un selecteur jamais pose vaut « unknown », et cela ne
+    # FR | doit pas interrompre une configuration.
+    ap.add_argument("--locale", default=BASE_LOCALE,
+                    help="Interface language for the published messages "
+                         "(en/fr). Unknown values fall back to English.")
     args = ap.parse_args()
 
+    locale = pick_locale(args.locale)
     client_id = (args.client_id or "").strip()
     secret = read_secret(args.secret_file)
     token = resolve_token(args)
@@ -478,9 +644,7 @@ def main() -> int:
     if not token:
         write_status(args.status_file, build_status(
             args.url, "", client_id, bool(secret),
-            {"state": "error",
-             "message": "Home Assistant token missing — fill "
-                        "input_text.vssp_ha_token and run SAVE TOKEN first."}))
+            {**stated("error", locale), **say("no_token", locale)}))
         print("[ERR] no Home Assistant token", file=sys.stderr)
         return 1
 
@@ -488,11 +652,12 @@ def main() -> int:
     # FR | Actions en lecture seule d'abord : elles ne touchent jamais au flow.
     if args.action in ("status", "calendars"):
         status = build_status(args.url, token, client_id, bool(secret))
-        status["state"] = "connected" if status["connected"] else "idle"
-        status["message"] = (
-            f"{len(status['calendars'])} calendar entity(ies) found."
+        status.update(stated("connected" if status["connected"] else "idle",
+                             locale))
+        status.update(
+            say("calendars_found", locale, n=len(status["calendars"]))
             if status["connected"]
-            else "No calendar entity yet — finish the Google consent step.")
+            else say("no_calendar_yet", locale))
         write_status(args.status_file, status)
         print(json.dumps(status, indent=2, ensure_ascii=False))
         return 0
@@ -500,9 +665,8 @@ def main() -> int:
     if not client_id or not secret:
         write_status(args.status_file, build_status(
             args.url, token, client_id, bool(secret),
-            {"state": "error",
-             "message": "Client ID and client secret are both required. "
-                        "Fill them in the ADMIN Google Calendar form."}))
+            {**stated("error", locale),
+             **say("credentials_required", locale)}))
         print("[ERR] client id and/or secret missing", file=sys.stderr)
         return 1
 
@@ -517,9 +681,8 @@ def main() -> int:
         if args.action == "credentials":
             status = build_status(args.url, token, client_id, True, {
                 "credentials_registered": registered,
-                "state": "credentials_ok",
-                "message": "OAuth client registered in Home Assistant. "
-                           "Start the connection to get the Google consent link.",
+                **stated("credentials_ok", locale),
+                **say("credentials_ok", locale),
             })
             write_status(args.status_file, status)
             return 0
@@ -529,11 +692,10 @@ def main() -> int:
         if flow_type in ("external", "external_step"):
             status = build_status(args.url, token, client_id, True, {
                 "credentials_registered": True,
-                "state": "awaiting_consent",
+                **stated("awaiting_consent", locale),
                 "flow_id": res.get("flow_id", ""),
                 "auth_url": res.get("url", ""),
-                "message": "Open the Google consent link to finish linking "
-                           "the account.",
+                **say("awaiting_consent", locale),
             })
             write_status(args.status_file, status)
             print(f"[i] consent url: {res.get('url', '')}")
@@ -543,10 +705,9 @@ def main() -> int:
             already = reason in ("already_configured", "single_instance_allowed")
             status = build_status(args.url, token, client_id, True, {
                 "credentials_registered": True,
-                "state": "connected" if already else "error",
-                "message": ("Google Calendar is already linked to Home "
-                            "Assistant — nothing to do."
-                            if already else f"Config flow aborted: {reason}"),
+                **stated("connected" if already else "error", locale),
+                **(say("already_linked", locale) if already
+                   else say("flow_aborted", locale, reason=reason)),
             })
             write_status(args.status_file, status)
             return 0 if already else 1
@@ -557,10 +718,9 @@ def main() -> int:
         # FR | deviner.
         status = build_status(args.url, token, client_id, True, {
             "credentials_registered": registered,
-            "state": "error",
-            "message": f"Unexpected config-flow step '{res.get('step_id')}' "
-                       f"({flow_type}) — finish this one in Settings > "
-                       f"Devices & services.",
+            **stated("error", locale),
+            **say("unexpected_step", locale,
+                  step=res.get("step_id"), type=flow_type),
         })
         write_status(args.status_file, status)
         return 1
@@ -576,7 +736,8 @@ def main() -> int:
         write_status(args.status_file, build_status(
             args.url, token, client_id, bool(secret),
             {"credentials_registered": registered,
-             "state": "error", "message": detail}))
+             **stated("error", locale),
+             **say("failure", locale, detail=detail)}))
         print(f"[ERR] {detail}", file=sys.stderr)
         return 1
 

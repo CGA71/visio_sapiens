@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -46,6 +46,27 @@
   FR | l'interface de Google. Aucun formulaire ne peut signer a sa place :
   FR | le role de cette page est de rendre ce clic unique evident et
   FR | d'automatiser tout ce qui l'entoure.
+
+  EN | LANGUAGE — this page sits INSIDE a dashboard the generator already
+  EN | translated, so a hardcoded language would put French buttons under
+  EN | English labels (or the reverse) on one and the same screen. The
+  EN | template therefore passes `?lang=` (admin.yaml.j2, from the generated
+  EN | locale) and every visible string comes from the I18N table below.
+  EN | Two things are deliberately NOT translated here:
+  EN |   - the status `state` token (`awaiting_consent`…), which is what this
+  EN |     page branches on — only its label is translated;
+  EN |   - technical failure text from Home Assistant or the OS, carried in
+  EN |     message_vars and framed by a translated sentence.
+  FR | LANGUE — cette page vit DANS un dashboard que le generateur a deja
+  FR | traduit : une langue figee mettrait donc des boutons francais sous des
+  FR | libelles anglais (ou l'inverse) sur un seul et meme ecran. Le template
+  FR | passe donc `?lang=` (admin.yaml.j2, depuis la locale generee) et
+  FR | chaque chaine visible vient de la table I18N ci-dessous. Deux choses
+  FR | ne sont VOLONTAIREMENT pas traduites ici :
+  FR |   - le jeton `state` du fichier d'etat (`awaiting_consent`…), sur
+  FR |     lequel cette page s'aiguille — seul son libelle est traduit ;
+  FR |   - le texte d'echec technique venant de Home Assistant ou de l'OS,
+  FR |     porte par message_vars et encadre par une phrase traduite.
 -->
 <style>
   :root {
@@ -156,86 +177,74 @@
     <span class="dot"></span>
     <div>
       <h1>Google Calendar</h1>
-      <div class="sub">Configuration complete — console Visio Sapiens</div>
+      <div class="sub" data-i18n="hdr_sub"></div>
     </div>
   </div>
 
   <main>
-    <!-- STEP 1 — Google side prerequisites -->
+    <!-- EN | STEP 1 — Google side prerequisites -->
+    <!-- FR | ETAPE 1 — prerequis cote Google -->
     <section class="step">
-      <div class="step-title"><span class="step-num">1</span> Cote Google (une fois)</div>
+      <div class="step-title">
+        <span class="step-num">1</span><span data-i18n="s1_title"></span>
+      </div>
       <ol class="steps">
-        <li>Console Google Cloud &gt; creer un projet, puis activer
-          <a href="https://console.cloud.google.com/apis/library/calendar-json.googleapis.com"
-             target="_blank" rel="noopener">Google Calendar API</a>.</li>
-        <li>Ecran de consentement OAuth : type <code>External</code>, puis
-          <b>publier</b> l'application (sinon les identifiants expirent au bout de 7 jours).</li>
-        <li><a href="https://console.cloud.google.com/apis/credentials" target="_blank"
-               rel="noopener">Identifiants</a> &gt; creer un <b>ID client OAuth</b>,
-          type <code>Application Web</code>.</li>
-        <li>Y coller cette URI de redirection autorisee, exactement :</li>
+        <li data-i18n-html="s1_li1"></li>
+        <li data-i18n-html="s1_li2"></li>
+        <li data-i18n-html="s1_li3"></li>
+        <li data-i18n="s1_li4"></li>
       </ol>
       <div class="row" style="margin-bottom:10px;">
         <input class="mono" id="redirectUri" readonly
                value="https://my.home-assistant.io/redirect/oauth">
-        <button class="ghost" id="copyUri" type="button">Copier</button>
+        <button class="ghost" id="copyUri" type="button" data-i18n="btn_copy"></button>
       </div>
-      <p class="hint">
-        Documentation officielle :
-        <a href="https://www.home-assistant.io/integrations/google/" target="_blank"
-           rel="noopener">home-assistant.io/integrations/google</a>.
-      </p>
+      <p class="hint" data-i18n-html="s1_doc"></p>
     </section>
 
-    <!-- STEP 2 — the form -->
+    <!-- EN | STEP 2 — the form -->
+    <!-- FR | ETAPE 2 — le formulaire -->
     <section class="step">
-      <div class="step-title"><span class="step-num">2</span> Identifiants OAuth</div>
-      <p class="hint">
-        Colles ici les deux valeurs affichees par Google apres creation de l'ID client.
-        Le secret n'est jamais passe en ligne de commande : il est ecrit dans un fichier
-        protege (0600) sur le pod, comme les autres cles du projet.
-      </p>
+      <div class="step-title">
+        <span class="step-num">2</span><span data-i18n="s2_title"></span>
+      </div>
+      <p class="hint" data-i18n="s2_hint"></p>
       <div class="field">
-        <label for="clientId">ID client (…apps.googleusercontent.com)</label>
+        <label for="clientId" data-i18n="lbl_client_id"></label>
         <input id="clientId" type="text" autocomplete="off" spellcheck="false"
                placeholder="123456789-abcdef.apps.googleusercontent.com">
       </div>
       <div class="field">
-        <label for="clientSecret">Secret client</label>
+        <label for="clientSecret" data-i18n="lbl_client_secret"></label>
         <input id="clientSecret" type="password" autocomplete="off" spellcheck="false"
                placeholder="GOCSPX-…">
       </div>
-      <button class="primary" id="saveBtn" type="button">Enregistrer &amp; connecter</button>
+      <button class="primary" id="saveBtn" type="button" data-i18n="btn_save"></button>
       <div class="msg" id="formMsg"></div>
     </section>
 
-    <!-- STEP 3 — status / consent / calendar picking -->
+    <!-- EN | STEP 3 — status / consent / calendar picking -->
+    <!-- FR | ETAPE 3 — etat / consentement / choix du calendrier -->
     <section class="step">
-      <div class="step-title"><span class="step-num">3</span> Liaison du compte</div>
+      <div class="step-title">
+        <span class="step-num">3</span><span data-i18n="s3_title"></span>
+      </div>
       <div class="status">
-        <span class="state idle" id="stateLabel">EN ATTENTE</span>
-        <div class="msg" id="stateMsg">Renseigne les identifiants ci-dessus pour demarrer.</div>
+        <span class="state idle" id="stateLabel"></span>
+        <div class="msg" id="stateMsg"></div>
       </div>
 
       <div id="consentBox" class="hidden" style="margin-top:12px;">
-        <p class="hint">
-          Derniere etape, imposee par Google : autoriser l'acces avec le compte
-          proprietaire du calendrier. Cette page ne peut pas le faire a ta place.
-        </p>
-        <a class="primary consent" id="consentLink" href="#" target="_blank" rel="noopener">
-          Autoriser chez Google
-        </a>
+        <p class="hint" data-i18n="consent_hint"></p>
+        <a class="primary consent" id="consentLink" href="#" target="_blank"
+           rel="noopener" data-i18n="btn_consent"></a>
       </div>
 
       <div id="calBox" class="hidden" style="margin-top:12px;">
-        <p class="hint">
-          Calendriers detectes. Choisis celui que le bandeau des dashboards doit afficher,
-          puis regenere les dashboards depuis l'ecran GENERATION.
-        </p>
+        <p class="hint" data-i18n="cal_hint"></p>
         <div class="cal-list" id="calList"></div>
-        <button class="primary" id="useBtn" type="button" disabled>
-          Utiliser pour le header
-        </button>
+        <button class="primary" id="useBtn" type="button" disabled
+                data-i18n="btn_use"></button>
         <div class="msg" id="calMsg"></div>
       </div>
     </section>
@@ -247,16 +256,245 @@
 const WEBHOOK = '/api/webhook/vssp_google_config';
 const STATUS_URL = '/local/vssp/google_status.json';
 
+/* ---- i18n -------------------------------------------------------------
+   EN | Every visible string, in both project languages. English is the
+   EN | reference: a key missing from another catalogue falls back to it, so
+   EN | a partial translation degrades instead of showing a raw key.
+   EN | The `msg_*` block mirrors the MESSAGES table of vssp_google_setup.py
+   EN | one key for one key — the script publishes `message_key` +
+   EN | `message_vars` precisely so this page can render the sentence in ITS
+   EN | own language rather than displaying whatever locale the last shell
+   EN | run happened to use.
+   FR | Chaque chaine visible, dans les deux langues du projet. L'anglais est
+   FR | la reference : une cle absente d'un autre catalogue y retombe, donc
+   FR | une traduction partielle se degrade au lieu d'afficher une cle brute.
+   FR | Le bloc `msg_*` reproduit cle pour cle la table MESSAGES de
+   FR | vssp_google_setup.py — le script publie `message_key` et
+   FR | `message_vars` justement pour que cette page rende la phrase dans SA
+   FR | langue plutot que d'afficher la locale du dernier lancement shell.
+   ---------------------------------------------------------------------- */
+const I18N = {
+  en: {
+    doc_title: 'Visio Sapiens — Google Calendar',
+    hdr_sub: 'Full setup — Visio Sapiens console',
+
+    s1_title: 'Google side (once)',
+    s1_li1: 'Google Cloud Console &gt; create a project, then enable ' +
+            '<a href="https://console.cloud.google.com/apis/library/calendar-json.googleapis.com" ' +
+            'target="_blank" rel="noopener">Google Calendar API</a>.',
+    s1_li2: 'OAuth consent screen: type <code>External</code>, then ' +
+            '<b>publish</b> the app (otherwise the credentials expire after 7 days).',
+    s1_li3: '<a href="https://console.cloud.google.com/apis/credentials" target="_blank" ' +
+            'rel="noopener">Credentials</a> &gt; create an <b>OAuth client ID</b>, ' +
+            'type <code>Web application</code>.',
+    s1_li4: 'Paste this authorized redirect URI into it, exactly:',
+    btn_copy: 'Copy',
+    btn_copied: 'Copied',
+    btn_copy_manual: 'Ctrl+C',
+    s1_doc: 'Official documentation: ' +
+            '<a href="https://www.home-assistant.io/integrations/google/" target="_blank" ' +
+            'rel="noopener">home-assistant.io/integrations/google</a>.',
+
+    s2_title: 'OAuth credentials',
+    s2_hint: 'Paste here the two values Google shows after creating the client ID. ' +
+             'The secret is never passed on a command line: it is written to a ' +
+             'protected file (0600) on the pod, like the project’s other keys.',
+    lbl_client_id: 'Client ID (…apps.googleusercontent.com)',
+    lbl_client_secret: 'Client secret',
+    btn_save: 'Save &amp; connect',
+
+    s3_title: 'Account linking',
+    init_msg: 'Fill in the credentials above to start.',
+    consent_hint: 'Last step, imposed by Google: authorize access with the account ' +
+                  'that owns the calendar. This page cannot do it for you.',
+    btn_consent: 'Authorize with Google',
+    cal_hint: 'Calendars found. Pick the one the dashboards header should show, ' +
+              'then regenerate the dashboards from the GENERATION screen.',
+    btn_use: 'Use for the header',
+
+    st_not_configured: 'Not configured',
+    st_idle: 'Waiting',
+    st_credentials_ok: 'Client registered',
+    st_awaiting_consent: 'Consent required',
+    st_connected: 'Connected',
+    st_error: 'Error',
+
+    err_client_id_format: 'The client ID must end with .apps.googleusercontent.com.',
+    err_secret_required: 'The client secret is required.',
+    form_sending: 'Saving and connecting…',
+    form_sent: 'Sent. Follow the linking below.',
+    form_connecting_detail: 'Registering the OAuth client in Home Assistant.',
+    form_post_failed: 'Sending failed ({msg}). Check that Home Assistant and the ' +
+                      'webhook automation are reachable.',
+    cal_saving: 'Saving…',
+    cal_saved: '{entity} will be shown in the header after the next regeneration.',
+    cal_failed: 'Failed ({msg}).',
+
+    msg_no_token: 'Home Assistant token missing — fill input_text.vssp_ha_token ' +
+                  'and run SAVE TOKEN first.',
+    msg_calendars_found: '{n} calendar entity(ies) found.',
+    msg_no_calendar_yet: 'No calendar entity yet — finish the Google consent step.',
+    msg_credentials_required: 'Client ID and client secret are both required. ' +
+                              'Fill them in the ADMIN Google Calendar form.',
+    msg_credentials_ok: 'OAuth client registered in Home Assistant. Start the ' +
+                        'connection to get the Google consent link.',
+    msg_awaiting_consent: 'Open the Google consent link to finish linking the account.',
+    msg_already_linked: 'Google Calendar is already linked to Home Assistant — ' +
+                        'nothing to do.',
+    msg_flow_aborted: 'Config flow aborted: {reason}',
+    msg_unexpected_step: 'Unexpected config-flow step ‘{step}’ ({type}) — ' +
+                         'finish this one in Settings &gt; Devices &amp; services.',
+    msg_failure: 'Failure: {detail}'
+  },
+  fr: {
+    doc_title: 'Visio Sapiens — Google Calendar',
+    hdr_sub: 'Configuration complète — console Visio Sapiens',
+
+    s1_title: 'Côté Google (une fois)',
+    s1_li1: 'Console Google Cloud &gt; créer un projet, puis activer ' +
+            '<a href="https://console.cloud.google.com/apis/library/calendar-json.googleapis.com" ' +
+            'target="_blank" rel="noopener">Google Calendar API</a>.',
+    s1_li2: 'Écran de consentement OAuth : type <code>External</code>, puis ' +
+            '<b>publier</b> l’application (sinon les identifiants expirent au ' +
+            'bout de 7 jours).',
+    s1_li3: '<a href="https://console.cloud.google.com/apis/credentials" target="_blank" ' +
+            'rel="noopener">Identifiants</a> &gt; créer un <b>ID client OAuth</b>, ' +
+            'type <code>Application Web</code>.',
+    s1_li4: 'Y coller cette URI de redirection autorisée, exactement :',
+    btn_copy: 'Copier',
+    btn_copied: 'Copié',
+    btn_copy_manual: 'Ctrl+C',
+    s1_doc: 'Documentation officielle : ' +
+            '<a href="https://www.home-assistant.io/integrations/google/" target="_blank" ' +
+            'rel="noopener">home-assistant.io/integrations/google</a>.',
+
+    s2_title: 'Identifiants OAuth',
+    s2_hint: 'Collez ici les deux valeurs affichées par Google après création ' +
+             'de l’ID client. Le secret n’est jamais passé en ligne de ' +
+             'commande : il est écrit dans un fichier protégé (0600) sur le ' +
+             'pod, comme les autres clés du projet.',
+    lbl_client_id: 'ID client (…apps.googleusercontent.com)',
+    lbl_client_secret: 'Secret client',
+    btn_save: 'Enregistrer &amp; connecter',
+
+    s3_title: 'Liaison du compte',
+    init_msg: 'Renseignez les identifiants ci-dessus pour démarrer.',
+    consent_hint: 'Dernière étape, imposée par Google : autoriser l’accès ' +
+                  'avec le compte propriétaire du calendrier. Cette page ne peut ' +
+                  'pas le faire à votre place.',
+    btn_consent: 'Autoriser chez Google',
+    cal_hint: 'Calendriers détectés. Choisissez celui que le bandeau des ' +
+              'dashboards doit afficher, puis régénérez les dashboards depuis ' +
+              'l’écran GÉNÉRATION.',
+    btn_use: 'Utiliser pour le bandeau',
+
+    st_not_configured: 'Non configuré',
+    st_idle: 'En attente',
+    st_credentials_ok: 'Client enregistré',
+    st_awaiting_consent: 'Consentement requis',
+    st_connected: 'Connecté',
+    st_error: 'Erreur',
+
+    err_client_id_format: 'L’ID client doit se terminer par .apps.googleusercontent.com.',
+    err_secret_required: 'Le secret client est obligatoire.',
+    form_sending: 'Enregistrement et connexion…',
+    form_sent: 'Envoyé. Suivi de la liaison ci-dessous.',
+    form_connecting_detail: 'Enregistrement du client OAuth dans Home Assistant.',
+    form_post_failed: 'Échec de l’envoi ({msg}). Vérifiez que Home Assistant ' +
+                      'et l’automatisation webhook sont joignables.',
+    cal_saving: 'Enregistrement…',
+    cal_saved: '{entity} sera affiché dans le bandeau après la prochaine ' +
+               'régénération.',
+    cal_failed: 'Échec ({msg}).',
+
+    msg_no_token: 'Jeton Home Assistant absent — renseignez ' +
+                  'input_text.vssp_ha_token puis lancez ENREGISTRER LE JETON.',
+    msg_calendars_found: '{n} entité(s) calendrier trouvée(s).',
+    msg_no_calendar_yet: 'Aucune entité calendrier — terminez l’étape de ' +
+                         'consentement Google.',
+    msg_credentials_required: 'L’ID client et le secret client sont tous deux ' +
+                              'obligatoires. Renseignez-les dans le formulaire ' +
+                              'Google Calendar de l’ADMIN.',
+    msg_credentials_ok: 'Client OAuth enregistré dans Home Assistant. Lancez la ' +
+                        'connexion pour obtenir le lien de consentement Google.',
+    msg_awaiting_consent: 'Ouvrez le lien de consentement Google pour terminer la ' +
+                          'liaison du compte.',
+    msg_already_linked: 'Google Calendar est déjà lié à Home Assistant — ' +
+                        'rien à faire.',
+    msg_flow_aborted: 'Config flow interrompu : {reason}',
+    msg_unexpected_step: 'Étape de config flow inattendue « {step} » ({type}) ' +
+                         '— terminez celle-ci dans Paramètres &gt; Appareils et ' +
+                         'services.',
+    msg_failure: 'Échec : {detail}'
+  }
+};
+
+// EN | Language order: ?lang= written by admin.yaml.j2 from the generated
+// EN | locale (the authority — it is the language of the labels sitting
+// EN | around this iframe) > the browser > English. There is no live read of
+// EN | input_select.vssp_language: that would need a Bearer token, and the
+// EN | selector already forces a regeneration to take effect, which rewrites
+// EN | this URL anyway.
+// FR | Ordre de la langue : ?lang= ecrit par admin.yaml.j2 depuis la locale
+// FR | generee (l'autorite — c'est la langue des libelles qui entourent
+// FR | cette iframe) > le navigateur > l'anglais. Aucune lecture directe de
+// FR | input_select.vssp_language : elle exigerait un jeton Bearer, et le
+// FR | selecteur impose deja une regeneration pour prendre effet, ce qui
+// FR | reecrit cette URL de toute facon.
+const LANG = (function () {
+  const asked = (new URLSearchParams(location.search).get('lang') || '').toLowerCase();
+  const guess = asked || (navigator.language || 'en').toLowerCase();
+  return guess.slice(0, 2) === 'fr' ? 'fr' : 'en';
+})();
+
+function t(key, vars) {
+  let s = (I18N[LANG] && I18N[LANG][key]) || I18N.en[key] || key;
+  if (vars) Object.keys(vars).forEach((k) => {
+    s = s.split('{' + k + '}').join(vars[k]);
+  });
+  return s;
+}
+
+function applyLang() {
+  document.documentElement.lang = LANG;
+  document.title = t('doc_title');
+  // EN | innerHTML, not textContent: several of these strings carry an
+  // EN | escaped ampersand ("Save &amp; connect") or inline markup. They are
+  // EN | literals from the table above, never user input.
+  // FR | innerHTML, pas textContent : plusieurs de ces chaines portent une
+  // FR | esperluette echappee (« Enregistrer &amp; connecter ») ou du balisage
+  // FR | en ligne. Ce sont des litteraux de la table ci-dessus, jamais une
+  // FR | saisie.
+  document.querySelectorAll('[data-i18n]').forEach((el) => {
+    el.innerHTML = t(el.dataset.i18n);
+  });
+  document.querySelectorAll('[data-i18n-html]').forEach((el) => {
+    el.innerHTML = t(el.dataset.i18nHtml);
+  });
+}
+
 const $ = (id) => document.getElementById(id);
 let selectedCalendar = '';
 let pollTimer = null;
 
 /* ---- helpers ---------------------------------------------------- */
-function setState(cls, label, message) {
+function setState(cls, stateKey, message) {
   const el = $('stateLabel');
   el.className = 'state ' + cls;
-  el.textContent = label;
+  el.textContent = t('st_' + stateKey);
   $('stateMsg').textContent = message || '';
+}
+
+// EN | Re-render the script's message in THIS page's language. `message_key`
+// EN | is the machine form; the pre-rendered `message` is the fallback for a
+// EN | key this page does not know (an older status file, a newer script).
+// FR | Rend le message du script dans la langue de CETTE page. `message_key`
+// FR | est la forme machine ; le `message` deja rendu sert de repli pour une
+// FR | cle inconnue ici (fichier d'etat ancien, script plus recent).
+function statusMessage(data) {
+  const key = data.message_key ? 'msg_' + data.message_key : '';
+  if (key && I18N.en[key]) return t(key, data.message_vars || {});
+  return data.message || '';
 }
 
 function show(el, on) { el.classList.toggle('hidden', !on); }
@@ -285,20 +523,23 @@ async function refreshStatus() {
 
   const state = data.state || 'idle';
   const calendars = data.calendars || [];
+  const message = statusMessage(data);
 
   if (state === 'awaiting_consent' && data.auth_url) {
-    setState('wait', 'Consentement requis', data.message || '');
+    setState('wait', 'awaiting_consent', message);
     $('consentLink').href = data.auth_url;
     show($('consentBox'), true);
   } else if (state === 'connected') {
-    setState('ok', 'Connecte', data.message || '');
+    setState('ok', 'connected', message);
     show($('consentBox'), false);
   } else if (state === 'error') {
-    setState('err', 'Erreur', data.message || '');
+    setState('err', 'error', message);
   } else if (state === 'credentials_ok') {
-    setState('wait', 'Client enregistre', data.message || '');
+    setState('wait', 'credentials_ok', message);
+  } else if (state === 'not_configured') {
+    setState('idle', 'not_configured', message);
   } else {
-    setState('idle', 'En attente', data.message || '');
+    setState('idle', 'idle', message);
   }
 
   // EN | Prefill the id field with what is stored, so reopening the popup
@@ -344,14 +585,14 @@ $('copyUri').addEventListener('click', async () => {
   input.select();
   try {
     await navigator.clipboard.writeText(input.value);
-    $('copyUri').textContent = 'Copie';
-    setTimeout(() => { $('copyUri').textContent = 'Copier'; }, 1500);
+    $('copyUri').textContent = t('btn_copied');
+    setTimeout(() => { $('copyUri').textContent = t('btn_copy'); }, 1500);
   } catch (e) {
     // EN | clipboard API needs a secure context; the manual select above is
     // EN | the fallback, so say so instead of failing silently.
     // FR | L'API presse-papier exige un contexte securise ; la selection
     // FR | manuelle ci-dessus est le repli, autant le dire.
-    $('copyUri').textContent = 'Ctrl+C';
+    $('copyUri').textContent = t('btn_copy_manual');
   }
 });
 
@@ -362,25 +603,24 @@ $('saveBtn').addEventListener('click', async () => {
   msg.className = 'msg';
   if (!clientId.endsWith('.apps.googleusercontent.com')) {
     msg.className = 'msg err';
-    msg.textContent = "L'ID client doit se terminer par .apps.googleusercontent.com.";
+    msg.textContent = t('err_client_id_format');
     return;
   }
   if (!clientSecret) {
     msg.className = 'msg err';
-    msg.textContent = 'Le secret client est obligatoire.';
+    msg.textContent = t('err_secret_required');
     return;
   }
   $('saveBtn').disabled = true;
-  msg.textContent = 'Enregistrement et connexion…';
+  msg.textContent = t('form_sending');
   try {
     await post({ client_id: clientId, client_secret: clientSecret, connect: true });
     msg.className = 'msg ok';
-    msg.textContent = 'Envoye. Suivi de la liaison ci-dessous.';
-    setState('wait', 'Connexion…', 'Enregistrement du client OAuth dans Home Assistant.');
+    msg.textContent = t('form_sent');
+    setState('wait', 'credentials_ok', t('form_connecting_detail'));
   } catch (e) {
     msg.className = 'msg err';
-    msg.textContent = 'Echec de l\'envoi (' + e.message +
-      '). Verifie que Home Assistant et l\'automatisation webhook sont joignables.';
+    msg.textContent = t('form_post_failed', { msg: e.message });
   } finally {
     $('saveBtn').disabled = false;
   }
@@ -391,7 +631,7 @@ $('useBtn').addEventListener('click', async () => {
   msg.className = 'msg';
   if (!selectedCalendar) return;
   $('useBtn').disabled = true;
-  msg.textContent = 'Enregistrement…';
+  msg.textContent = t('cal_saving');
   try {
     // EN | ONLY the calendar entity — no credentials in this payload. The
     // EN | webhook automation has a dedicated branch for this shape; sending
@@ -405,17 +645,18 @@ $('useBtn').addEventListener('click', async () => {
     // FR | seconde URL de consentement pour un compte deja lie.
     await post({ calendar_entity: selectedCalendar });
     msg.className = 'msg ok';
-    msg.textContent = selectedCalendar +
-      ' sera affiche dans le bandeau apres la prochaine regeneration.';
+    msg.textContent = t('cal_saved', { entity: selectedCalendar });
   } catch (e) {
     msg.className = 'msg err';
-    msg.textContent = 'Echec (' + e.message + ').';
+    msg.textContent = t('cal_failed', { msg: e.message });
   } finally {
     $('useBtn').disabled = false;
   }
 });
 
 /* ---- boot -------------------------------------------------------- */
+applyLang();
+setState('idle', 'idle', t('init_msg'));
 refreshStatus();
 pollTimer = setInterval(refreshStatus, 3000);
 window.addEventListener('beforeunload', () => clearInterval(pollTimer));
