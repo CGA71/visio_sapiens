@@ -7,3 +7,6 @@ vssp/livebox.env
 # Python
 __pycache__/
 *.pyc
+
+# Playwright MCP scratch output (browser snapshots, screenshots)
+.playwright-mcp/
