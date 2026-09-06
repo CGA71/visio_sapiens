@@ -735,7 +735,27 @@ views:
           # vssp_energy_device_row, meme liste defilante dans un unique
           # button-card) — seule la source change : les 10 premieres
           # entrees de energy_devices au lieu de la liste complete.
+          # EN | card_mod on #root, not styles.card on the child button-cards
+          # EN | (those keep background:transparent/border:none so the title
+          # EN | and list don't double-frame each other) — this draws the
+          # EN | single outer border/background around both, same recipe
+          # EN | (background/border-radius/border color-mix) as the KPI row
+          # EN | cards (System Status, Energy Status...) above.
+          # FR | card_mod sur #root, pas styles.card sur les button-cards
+          # FR | enfants (qui gardent background:transparent/border:none pour
+          # FR | ne pas s'encadrer deux fois) — ceci dessine le seul cadre
+          # FR | exterieur autour des deux, meme recette (background/
+          # FR | border-radius/border color-mix) que les cartes de la ligne
+          # FR | KPI (System Status, Energy Status...) ci-dessus.
           - type: vertical-stack
+            card_mod:
+              style: |
+                #root {
+                  background: var(--card-background-color, rgba(8,18,28,0.72));
+                  border-radius: var(--ha-card-border-radius, 18px);
+                  border: 1px solid color-mix(in srgb, var(--primary-color, #00E5FF) 20%, transparent);
+                  padding: 14px 18px;
+                }
             cards:
               # EN | Not `template: vssp_section_title` — that template is
               # EN | shared by every panel title across the whole project
