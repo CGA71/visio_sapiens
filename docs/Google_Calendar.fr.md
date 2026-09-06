@@ -57,6 +57,11 @@ bouton **Autoriser chez Google** ; tout ce qui l'entoure est automatisé.
    https://my.home-assistant.io/redirect/oauth
    ```
 
+Le formulaire affiche cette URI dans une pastille gris clair avec un
+bouton **Copier** à côté : c'est la seule valeur de l'écran qu'on copie
+*vers l'extérieur* au lieu de la saisir, elle est donc stylée comme un
+jeton et non comme un champ de formulaire.
+
 Documentation officielle :
 <https://www.home-assistant.io/integrations/google/>
 

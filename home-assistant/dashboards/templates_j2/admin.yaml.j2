@@ -73,6 +73,42 @@
   ('dashboards', 'mdi:view-dashboard-variant', 'dashboards'),
 ] %}
 
+# EN | THE SELECTOR TILE LOOK — every input_select in this console renders
+# EN | as a `tile` card with inline `select-options` chips, NOT as an
+# EN | `entities` row. The native Material picker inside an entities card
+# EN | falls back to a wide white fill until every MDC theme variable is
+# EN | defined, and stays a full-width inline picker rather than this compact
+# EN | chip row. The background points at `selector_background` (editable in
+# EN | the THEME screen) so it stays adjustable independently of every other
+# EN | card.
+# EN | Emitted by a macro rather than a YAML anchor on purpose: all screens
+# EN | land in ONE document, in `screens` order, so an alias would depend on
+# EN | which screen happens to be emitted first. A macro does not.
+# EN | Both call sites nest the tile at the same depth, so the indentation is
+# EN | fixed rather than a parameter.
+# FR | L'ASPECT DES TUILES DE SELECTION — chaque input_select de cette
+# FR | console se rend en carte `tile` avec des pastilles `select-options` en
+# FR | ligne, PAS en ligne d'`entities`. Le picker Material natif d'une carte
+# FR | entities retombe sur un remplissage blanc large tant que chaque
+# FR | variable de theme MDC n'est pas definie, et reste un picker pleine
+# FR | largeur plutot que cette rangee compacte. Le fond pointe vers
+# FR | `selector_background` (modifiable dans l'ecran THEME) pour rester
+# FR | ajustable independamment de toutes les autres cartes.
+# FR | Emis par une macro plutot que par une ancre YAML a dessein : tous les
+# FR | ecrans atterrissent dans UN document, dans l'ordre de `screens`, donc
+# FR | un alias dependrait de l'ecran emis en premier. Une macro, non.
+# FR | Les deux points d'appel imbriquent la tuile a la meme profondeur,
+# FR | l'indentation est donc figee plutot que parametree.
+{% macro selector_card_mod() -%}
+card_mod:
+                  style: |
+                    ha-card {
+                      background: var(--selector-background, #000000) !important;
+                      border: 1px solid rgba(0,229,255,0.25) !important;
+                      border-radius: var(--ha-card-border-radius, 16px) !important;
+                    }
+{%- endmacro %}
+
 title: {{ t('adminmenu.title') }}
 theme: {{ house.theme }}
 
@@ -310,28 +346,35 @@ views:
           # FR | la page.
           - type: horizontal-stack
             cards:
-              - type: entities
-                entities:
-                  - entity: input_select.vssp_language
-                    name: "{{ t('admin.select_language') }}"
-                card_mod:
-                  style: |
-                    ha-card {
-                      background: var(--card-background-color, rgba(8,18,28,0.75)) !important;
-                      border: 1px solid rgba(0, 229, 255, 0.28) !important;
-                      border-radius: var(--ha-card-border-radius, 20px) !important;
-                    }
-              - type: entities
-                entities:
-                  - entity: input_select.vssp_format
-                    name: "{{ t('admin.select_format') }}"
-                card_mod:
-                  style: |
-                    ha-card {
-                      background: var(--card-background-color, rgba(8,18,28,0.75)) !important;
-                      border: 1px solid rgba(0, 229, 255, 0.28) !important;
-                      border-radius: var(--ha-card-border-radius, 20px) !important;
-                    }
+              # EN | Same tile model as the DASHBOARDS screen — see the
+              # EN | selector_card_mod macro at the top of this file for why
+              # EN | an input_select is never an `entities` row here. These
+              # EN | two used to be entities cards, which is exactly the
+              # EN | native Material picker that renders as a wide white fill.
+              # FR | Meme modele de tuile que l'ecran DASHBOARDS — voir la
+              # FR | macro selector_card_mod en haut de ce fichier pour
+              # FR | comprendre pourquoi un input_select n'est jamais une
+              # FR | ligne d'`entities` ici. Ces deux-la etaient des cartes
+              # FR | entities, c'est-a-dire precisement le picker Material
+              # FR | natif qui se rend en remplissage blanc large.
+              - type: tile
+                entity: input_select.vssp_language
+                name: "{{ t('admin.select_language') }}"
+                icon: mdi:translate
+                vertical: false
+                features:
+                  - type: select-options
+                features_position: inline
+                {{ selector_card_mod() }}
+              - type: tile
+                entity: input_select.vssp_format
+                name: "{{ t('admin.select_format') }}"
+                icon: mdi:tablet-cellphone
+                vertical: false
+                features:
+                  - type: select-options
+                features_position: inline
+                {{ selector_card_mod() }}
               - type: entities
                 entities:
                   - entity: sensor.vssp_deployed_locale
@@ -476,13 +519,7 @@ views:
                 features:
                   - type: select-options
                 features_position: inline
-                card_mod: &vssp_selector_card_mod
-                  style: |
-                    ha-card {
-                      background: var(--selector-background, #000000) !important;
-                      border: 1px solid rgba(0,229,255,0.25) !important;
-                      border-radius: var(--ha-card-border-radius, 16px) !important;
-                    }
+                {{ selector_card_mod() }}
               - type: tile
                 entity: input_select.vssp_format
                 name: "{{ t('admin.select_format') }}"
@@ -491,7 +528,7 @@ views:
                 features:
                   - type: select-options
                 features_position: inline
-                card_mod: *vssp_selector_card_mod
+                {{ selector_card_mod() }}
               - type: tile
                 entity: input_select.vssp_chatbot_provider
                 name: "{{ t('admin.select_chatbot') }}"
@@ -500,7 +537,7 @@ views:
                 features:
                   - type: select-options
                 features_position: inline
-                card_mod: *vssp_selector_card_mod
+                {{ selector_card_mod() }}
           # EN | Only shown once "custom" is selected above — opens the
           # EN | popup where the local/self-hosted model's fields
           # EN | (endpoint, model, API key...) are filled in. See

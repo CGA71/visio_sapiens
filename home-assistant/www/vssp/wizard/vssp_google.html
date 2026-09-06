@@ -81,6 +81,11 @@
     --text: #DCEEF6;
     --muted: #8FB6C9;
     --dim: #56707E;
+    /* EN | Light grey chip, for a read-only value meant to be copied out.
+       FR | Pastille gris clair, pour une valeur en lecture seule a copier. */
+    --chip: #C9D6DE;
+    --chip-text: #0A1720;
+    --chip-line: #9FB4C0;
   }
   * { box-sizing: border-box; }
   html, body {
@@ -123,6 +128,30 @@
     background: rgba(255,255,255,.05); border-radius: 4px; padding: 1px 5px;
     color: var(--text); font-size: 11px;
   }
+  /* EN | The redirect URI field is the one input on this page that is not a
+     EN | form field: it is a value to COPY into Google Cloud, never typed
+     EN | into. It read as a white box because it is also the only input
+     EN | outside `.field`, so it kept the browser's default `border: 2px
+     EN | inset` — a light grey that renders as a hard white outline on this
+     EN | background. Rather than hide it in the dark theme, it is given a
+     EN | light grey chip look on purpose: a value to copy should read as a
+     EN | token, distinct from the two fields below that expect input.
+     FR | Le champ URI de redirection est le seul input de cette page qui
+     FR | n'est pas un champ de saisie : c'est une valeur a COPIER vers
+     FR | Google Cloud, jamais tapee. Il se lisait comme une boite blanche
+     FR | parce que c'est aussi le seul input hors de `.field` : il gardait
+     FR | donc le `border: 2px inset` par defaut du navigateur — un gris
+     FR | clair qui rend un contour blanc dur sur ce fond. Plutot que de le
+     FR | fondre dans le theme sombre, on lui donne volontairement un aspect
+     FR | de pastille gris clair : une valeur a copier doit se lire comme un
+     FR | jeton, distincte des deux champs en dessous qui attendent une
+     FR | saisie. */
+  input.mono {
+    background: var(--chip); color: var(--chip-text);
+    border: 1px solid var(--chip-line); border-radius: 8px;
+    padding: 8px 10px; width: 100%;
+  }
+  input.mono:focus { outline: none; border-color: var(--cyan); }
   a { color: var(--cyan); }
 
   .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }

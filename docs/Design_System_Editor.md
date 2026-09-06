@@ -158,6 +158,31 @@ Splitting the vocabulary out this way means the editor's form, the
 webhook's validation and the status file it reads back can never drift
 from one another — there is exactly one list of token names.
 
+## `selector_background` — one look for every selector
+
+The ADMIN console holds five `input_select` controls: language and
+format appear twice (ROOMS & FLOORS and GENERATION), plus the chatbot
+provider. All five render the same way, and `selector_background` is the
+token that colors them.
+
+The rule behind it: **an `input_select` in this console is always a
+`tile` card with an inline `select-options` feature, never a row inside
+an `entities` card.** The native Material picker an entities row falls
+back to renders as a wide white fill until every MDC theme variable is
+defined, and it stays a full-width inline picker rather than the compact
+chip row the console uses everywhere else.
+
+In `admin.yaml.j2` the look is emitted by a `selector_card_mod()` Jinja
+macro rather than a YAML anchor. Every screen lands in **one** generated
+document, in `screens` order, so an anchor defined on one screen and
+aliased from another silently depends on which of the two is emitted
+first — reordering `screens` would break it. A macro has no such
+coupling.
+
+Pointing the background at `selector_background` rather than
+`card-background-color` is deliberate: it keeps the selectors adjustable
+from the THEME screen independently of every other card in the console.
+
 ## Scope of this phase (MVP)
 
 Only the Home Assistant **native theme tokens** are covered: the ones

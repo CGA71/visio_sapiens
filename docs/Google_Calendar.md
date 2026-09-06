@@ -56,6 +56,10 @@ it is automated.
    https://my.home-assistant.io/redirect/oauth
    ```
 
+The form shows that URI in a light grey chip with a **Copy** button
+next to it — it is the one value on the screen you copy *out* rather
+than type in, so it is styled as a token instead of as a form field.
+
 Official documentation:
 <https://www.home-assistant.io/integrations/google/>
 

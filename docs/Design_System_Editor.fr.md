@@ -169,6 +169,33 @@ l'éditeur, la validation du webhook et le fichier de statut qu'il lit
 en retour ne peuvent jamais diverger — il n'existe qu'une seule liste
 de noms de tokens.
 
+## `selector_background` — un seul aspect pour tous les sélecteurs
+
+La console ADMIN contient cinq contrôles `input_select` : langue et
+format apparaissent deux fois (PIÈCES & ÉTAGES et GÉNÉRATION), plus le
+fournisseur de chatbot. Les cinq se rendent de la même manière, et
+`selector_background` est le token qui les colore.
+
+La règle derrière cela : **un `input_select` dans cette console est
+toujours une carte `tile` avec une fonctionnalité `select-options` en
+ligne, jamais une ligne dans une carte `entities`.** Le picker Material
+natif sur lequel retombe une ligne d'entities se rend en remplissage
+blanc large tant que chaque variable de thème MDC n'est pas définie, et
+reste un picker pleine largeur plutôt que la rangée de pastilles
+compacte utilisée partout ailleurs dans la console.
+
+Dans `admin.yaml.j2`, cet aspect est émis par une macro Jinja
+`selector_card_mod()` plutôt que par une ancre YAML. Tous les écrans
+atterrissent dans **un seul** document généré, dans l'ordre de `screens`
+: une ancre définie sur un écran et aliasée depuis un autre dépend donc
+silencieusement de celui des deux qui est émis en premier — réordonner
+`screens` la casserait. Une macro n'a pas ce couplage.
+
+Pointer le fond vers `selector_background` plutôt que vers
+`card-background-color` est délibéré : cela garde les sélecteurs
+ajustables depuis l'écran THEME, indépendamment de toutes les autres
+cartes de la console.
+
 ## Périmètre de cette phase (MVP)
 
 Seuls les **tokens de thème natifs Home Assistant** sont couverts :
