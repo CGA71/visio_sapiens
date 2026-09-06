@@ -51,6 +51,42 @@ design:
     background_secondary: "#101B27"
     card_background: "rgba(16,27,39,0.85)"
     selector_background: "#000000"
+    # EN | TEXT FIELDS — the editable box an input_text row renders as
+    # EN | (CALENDAR's "Calendar shown in the header"). Home Assistant now
+    # EN | builds these on Web Awesome (`wa-input` inside `ha-input`), whose
+    # EN | fill comes from --ha-color-form-background: a LIGHT value by
+    # EN | default, which is why the field showed up as a white box on this
+    # EN | dark console, with the pale cyan label and white value inside it
+    # EN | both unreadable.
+    # EN | Light grey rather than dark on purpose: a place you type reads
+    # EN | better as a light surface than as one more dark panel. That only
+    # EN | works if the two texts on it come along, hence three tokens —
+    # EN | fill, value ink, and a softer label ink for hierarchy.
+    # EN | Applied by admin.yaml.j2 as a card-scoped card_mod, NOT through
+    # EN | the theme: the label reads --secondary-text-color, which is a
+    # EN | GLOBAL token (pale cyan here, correct on every dark surface in the
+    # EN | interface). Redefining it theme-wide to suit one field would break
+    # EN | secondary text everywhere else.
+    # FR | CHAMPS TEXTE — la boite editable que rend une ligne input_text
+    # FR | (« Calendrier affiche dans le bandeau » de l'ecran CALENDRIER).
+    # FR | Home Assistant les construit desormais sur Web Awesome (`wa-input`
+    # FR | dans `ha-input`), dont le remplissage vient de
+    # FR | --ha-color-form-background : une valeur CLAIRE par defaut, d'ou la
+    # FR | boite blanche sur cette console sombre, avec un libelle cyan pale
+    # FR | et une valeur blanche tous deux illisibles dessus.
+    # FR | Gris clair plutot que sombre a dessein : un endroit ou l'on saisit
+    # FR | se lit mieux en surface claire qu'en enieme panneau sombre. Cela
+    # FR | ne marche que si les deux textes suivent, d'ou trois tokens —
+    # FR | remplissage, encre de la valeur, et une encre de libelle plus
+    # FR | douce pour la hierarchie.
+    # FR | Applique par admin.yaml.j2 en card_mod limite a la carte, PAS via
+    # FR | le theme : le libelle lit --secondary-text-color, un token GLOBAL
+    # FR | (cyan pale ici, correct sur toutes les surfaces sombres de
+    # FR | l'interface). Le redefinir pour tout le theme afin d'arranger un
+    # FR | champ casserait le texte secondaire partout ailleurs.
+    input_background: "#C9D6DE"
+    input_ink: "#0A1720"
+    input_label: "#3A4E5A"
     text_primary: "#FFFFFF"
     text_secondary: "#B8E8F5"
 

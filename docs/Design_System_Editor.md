@@ -183,6 +183,45 @@ Pointing the background at `selector_background` rather than
 `card-background-color` is deliberate: it keeps the selectors adjustable
 from the THEME screen independently of every other card in the console.
 
+## Text fields — `input_background` / `input_ink` / `input_label`
+
+The editable box an `input_text` row renders as (CALENDAR's *Calendar
+shown in the header*) is the one text field in the whole console, and it
+arrived as a white box holding a pale cyan label and a white value —
+both unreadable on a dark screen.
+
+The cause is worth recording, because two plausible answers are wrong.
+Home Assistant has shipped three generations of form components, and a
+theme can set the names of all three while affecting nothing:
+
+| Generation | Fill variable | Read by this widget? |
+|---|---|---|
+| Material (MDC) | `--mdc-text-field-fill-color` | no |
+| HA's own wrapper | `--input-fill-color` | no |
+| **Web Awesome** (`ha-input` > `wa-input`) | **`--ha-color-form-background`** | **yes** |
+
+The theme already set the first two. Measured on the live console, the
+field was `rgb(243,243,243)` with `rgb(255,255,255)` text while
+`--mdc-text-field-fill-color` was correctly dark — the widget simply
+never reads it. The winning declaration is `.input::part(base)` inside
+`ha-input`'s shadow root.
+
+The field is now a deliberate light grey with dark ink: a place you type
+reads better as a light surface than as one more dark panel. That needs
+three tokens, not one — the fill plus the two texts that sit on it, the
+value and a softer label.
+
+**These are applied by `admin.yaml.j2` as a card-scoped `card_mod`, not
+through the theme.** The floating label reads `--secondary-text-color`,
+which is a *global* token and is correct everywhere else in the
+interface. Flipping it to a dark ink theme-wide to suit one field would
+break secondary text across the whole UI, so it is flipped only where a
+light field actually sits.
+
+If a second text field ever appears on another screen, it needs the same
+three lines — that is the cost of scoping, and it is the cheaper side of
+the trade.
+
 ## Scope of this phase (MVP)
 
 Only the Home Assistant **native theme tokens** are covered: the ones

@@ -810,15 +810,66 @@ views:
               - entity: sensor.vssp_google_calendars
                 name: "{{ t('admin.google_calendars') }}"
               - type: divider
+              # EN | No secondary_info here: it takes an enum (last-changed,
+              # EN | entity-id...), not free text, so a translated sentence
+              # EN | passed to it renders nothing at all. The hint it used to
+              # EN | carry is already on the APPLY TO HEADER button below.
+              # FR | Pas de secondary_info ici : il attend une enumeration
+              # FR | (last-changed, entity-id...), pas du texte libre — une
+              # FR | phrase traduite qu'on lui passe ne s'affiche donc pas du
+              # FR | tout. L'indication qu'il portait est deja sur le bouton
+              # FR | APPLIQUER AU BANDEAU en dessous.
               - entity: input_text.vssp_google_calendar_entity
                 name: "{{ t('admin.google_header_entity') }}"
-                secondary_info: "{{ t('admin.google_header_entity_hint') }}"
             card_mod:
               style: |
                 ha-card {
                   background: var(--card-background-color, rgba(8,18,28,0.75)) !important;
                   border: 1px solid rgba(0, 229, 255, 0.28) !important;
                   border-radius: var(--ha-card-border-radius, 20px) !important;
+                  {# EN | THE ONE TEXT FIELD IN THIS CONSOLE.
+                     EN | An input_text row is rendered by Home Assistant as
+                     EN | `ha-input` > `wa-input` (Web Awesome), and the fill
+                     EN | of that box comes from --ha-color-form-background,
+                     EN | whose default is LIGHT. On this dark console that is
+                     EN | a white box holding a pale cyan label and a white
+                     EN | value — both unreadable. Measured on the live
+                     EN | console: rgb(243,243,243) fill, rgb(255,255,255)
+                     EN | text.
+                     EN | Note it is NOT the mdc-text-field-* / input-* names
+                     EN | the theme also sets; those belong to the two earlier
+                     EN | component generations and this widget ignores them.
+                     EN | SCOPED TO THIS CARD, deliberately. The floating
+                     EN | label reads --secondary-text-color, a GLOBAL token
+                     EN | that is correct everywhere else in the interface, so
+                     EN | it can only be flipped to a dark ink where a light
+                     EN | field actually sits. Setting these three in the
+                     EN | theme would fix this row and break secondary text
+                     EN | across the whole UI.
+                     FR | LE SEUL CHAMP TEXTE DE CETTE CONSOLE.
+                     FR | Une ligne input_text est rendue par Home Assistant
+                     FR | en `ha-input` > `wa-input` (Web Awesome), et le
+                     FR | remplissage de cette boite vient de
+                     FR | --ha-color-form-background, dont le defaut est
+                     FR | CLAIR. Sur cette console sombre, cela donne une
+                     FR | boite blanche contenant un libelle cyan pale et une
+                     FR | valeur blanche — illisibles tous les deux. Mesure
+                     FR | sur la console en production : remplissage
+                     FR | rgb(243,243,243), texte rgb(255,255,255).
+                     FR | Ce ne sont PAS les noms mdc-text-field-* / input-*
+                     FR | que le theme pose aussi : ceux-la appartiennent aux
+                     FR | deux generations de composants precedentes et ce
+                     FR | widget les ignore.
+                     FR | LIMITE A CETTE CARTE, volontairement. Le libelle
+                     FR | flottant lit --secondary-text-color, un token GLOBAL
+                     FR | correct partout ailleurs dans l'interface : il ne
+                     FR | peut donc basculer vers une encre sombre que la ou
+                     FR | un champ clair se trouve reellement. Poser ces trois
+                     FR | variables dans le theme reparerait cette ligne et
+                     FR | casserait le texte secondaire dans toute l'UI. #}
+                  --ha-color-form-background: {{ design.palette.input_background }};
+                  --wa-form-control-value-color: {{ design.palette.input_ink }};
+                  --secondary-text-color: {{ design.palette.input_label }};
                 }
           - type: grid
             columns: 3

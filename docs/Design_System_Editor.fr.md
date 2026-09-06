@@ -196,6 +196,47 @@ Pointer le fond vers `selector_background` plutôt que vers
 ajustables depuis l'écran THEME, indépendamment de toutes les autres
 cartes de la console.
 
+## Champs texte — `input_background` / `input_ink` / `input_label`
+
+La boîte éditable que rend une ligne `input_text` (« Calendrier affiché
+dans le bandeau » de l'écran CALENDRIER) est le seul champ texte de toute
+la console, et elle est arrivée en boîte blanche contenant un libellé
+cyan pâle et une valeur blanche — illisibles tous les deux sur un écran
+sombre.
+
+La cause mérite d'être notée, car deux réponses plausibles sont fausses.
+Home Assistant a livré trois générations de composants de formulaire, et
+un thème peut poser les noms des trois sans aucun effet :
+
+| Génération | Variable de remplissage | Lue par ce widget ? |
+|---|---|---|
+| Material (MDC) | `--mdc-text-field-fill-color` | non |
+| Couche propre à HA | `--input-fill-color` | non |
+| **Web Awesome** (`ha-input` > `wa-input`) | **`--ha-color-form-background`** | **oui** |
+
+Le thème posait déjà les deux premières. Mesuré sur la console en
+production : le champ était en `rgb(243,243,243)` avec du texte en
+`rgb(255,255,255)` alors que `--mdc-text-field-fill-color` était bien
+sombre — le widget ne la lit tout simplement pas. La déclaration gagnante
+est `.input::part(base)`, dans le shadow root de `ha-input`.
+
+Le champ est désormais volontairement gris clair avec une encre sombre :
+un endroit où l'on saisit se lit mieux en surface claire qu'en énième
+panneau sombre. Cela demande trois tokens et non un — le remplissage plus
+les deux textes qui reposent dessus, la valeur et un libellé plus doux.
+
+**Ces trois valeurs sont appliquées par `admin.yaml.j2` en `card_mod`
+limité à la carte, pas via le thème.** Le libellé flottant lit
+`--secondary-text-color`, un token *global*, correct partout ailleurs
+dans l'interface. Le basculer vers une encre sombre pour tout le thème
+afin d'arranger un seul champ casserait le texte secondaire dans toute
+l'UI : il n'est donc basculé que là où un champ clair se trouve
+réellement.
+
+Si un second champ texte apparaît un jour sur un autre écran, il faudra
+les trois mêmes lignes — c'est le coût de cette limitation de portée, et
+c'est le côté le moins cher de l'arbitrage.
+
 ## Périmètre de cette phase (MVP)
 
 Seuls les **tokens de thème natifs Home Assistant** sont couverts :
