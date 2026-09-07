@@ -338,6 +338,23 @@ def validate_model(model: dict) -> tuple[list, list]:
             warnings.append(f"Circuit \u00ab {c.get('name', '?')} \u00bb: "
                             f"rating (amp) to fill in")
 
+    # EN | Modules of the virtual breaker panel. A module with no channel
+    # EN | would draw an empty rail: worth saying, never worth blocking.
+    # FR | Modules du tableau electrique virtuel. Un module sans voie
+    # FR | dessinerait un rail vide : a signaler, jamais a bloquer.
+    for m in model.get("modules") or []:
+        if not m.get("id"):
+            errors.append("Module \u00ab %s \u00bb: missing field `id`"
+                          % m.get("name", "?"))
+        if not (m.get("channels") or []):
+            warnings.append(f"Module \u00ab {m.get('name', '?')} \u00bb: "
+                            f"no channel")
+        for chan in m.get("channels") or []:
+            if not chan.get("entity") and not chan.get("power_entity"):
+                errors.append(f"Module \u00ab {m.get('name', '?')} \u00bb: "
+                              f"a channel has neither `entity` nor "
+                              f"`power_entity`")
+
     # EN | Rooms: an unknown slot would silently never be rendered.
     # FR | Pieces : un tableau inconnu ne serait jamais rendu, en silence.
     slot_sets = {**DEFAULT_SLOT_SETS, **(model.get("slot_sets") or {})}
@@ -1325,9 +1342,24 @@ def main() -> int:
         model["energy_devices"] = dev_doc.get("devices", [])
         if dev_doc.get("circuits") is not None:
             model["circuits"] = dev_doc["circuits"]
+        if dev_doc.get("modules") is not None:
+            model["modules"] = dev_doc["modules"]
+        # EN | The rating is typed once, on the circuit. The virtual panel
+        # EN | reads it from there instead of asking for it a second time:
+        # EN | one entity, one rating, whichever side of the panel shows it.
+        # FR | Le calibre se saisit une fois, sur le circuit. Le tableau
+        # FR | virtuel le lit la plutot que de le redemander : une entite, un
+        # FR | calibre, quel que soit le cote du panneau qui l'affiche.
+        amps = {c.get("entity"): c.get("amp")
+                for c in model.get("circuits") or [] if c.get("amp")}
+        for mod in model.get("modules") or []:
+            for chan in mod.get("channels") or []:
+                if not chan.get("amp") and amps.get(chan.get("entity")):
+                    chan["amp"] = amps[chan["entity"]]
         print(f"[i] ENERGY devices: {devices_path} "
               f"({len(model['energy_devices'])} device(s), "
-              f"{len(model.get('circuits', []))} circuit(s))")
+              f"{len(model.get('circuits', []))} circuit(s), "
+              f"{len(model.get('modules', []))} module(s))")
     else:
         model["energy_devices"] = flatten_rooms(model.get("rooms", []))
 
@@ -1686,6 +1718,9 @@ def main() -> int:
     status["energy_devices"] = n_dev
     status["devices"] = n_dev
     status["circuits"] = len(model.get("circuits", []))
+    status["modules"] = len(model.get("modules", []))
+    status["channels"] = sum(len(m.get("channels") or [])
+                             for m in model.get("modules") or [])
     status["todo_devices"] = todo_count
     if args.preview:
         print("\n-> Preview available at /vssp-energy-preview/energy "

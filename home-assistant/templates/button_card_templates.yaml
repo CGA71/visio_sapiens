@@ -897,6 +897,52 @@ vssp_section_title:
       - font-family: "Orbitron, sans-serif"
 
 # ---------------------------------------------------------------------
+# EN | Sub-section title — a heading INSIDE a panel that already has one,
+# FR | Titre de sous-section — un intitule A L'INTERIEUR d'un panneau qui
+# EN | such as the two halves of the breaker panel. Smaller and cyan, so
+# FR | en a deja un, comme les deux moities du tableau electrique. Plus
+# EN | the panel title above keeps the eye first.
+# FR | petit et cyan, pour que le titre du panneau garde la priorite.
+# EN |   template: vssp_subsection_title
+# EN |   name: "Switches"
+# EN |   icon: mdi:toggle-switch-outline
+# ---------------------------------------------------------------------
+vssp_subsection_title:
+  show_icon: true
+  show_name: true
+  show_state: false
+  show_label: false
+  styles:
+    grid:
+      - grid-template-areas: '"i n"'
+      - grid-template-columns: min-content 1fr
+      - column-gap: 7px
+      - justify-items: start
+      - align-items: center
+    card:
+      - background: transparent
+      - box-shadow: none
+      - border: none
+      - padding: 2px 2px 10px 2px
+      - cursor: default
+      - pointer-events: none
+    img_cell:
+      - background: none
+      - width: 16px
+      - height: 16px
+    icon:
+      - color: "#00E5FF"
+      - "--mdc-icon-size": 15px
+    name:
+      - color: "#00E5FF"
+      - font-size: 11px
+      - font-weight: 600
+      - letter-spacing: 1.2px
+      - justify-self: start
+      - text-align: left
+      - font-family: "Orbitron, sans-serif"
+
+# ---------------------------------------------------------------------
 # EN | Simple statistic: discreet label on top, large value below.
 # FR | Statistique simple : libelle discret au-dessus, valeur en gros dessous.
 # EN | The value colour is driven by `variables.accent`.
@@ -1335,6 +1381,292 @@ vssp_circuit_switch:
         border-color: rgba(0,229,255,0.55) !important;
         box-shadow: 0 0 18px rgba(0,229,255,.22) !important;
       }
+
+# ---------------------------------------------------------------------
+# EN | VIRTUAL BREAKER PANEL — three templates that draw the hardware:
+# FR | TABLEAU ELECTRIQUE VIRTUEL — trois templates qui dessinent le materiel :
+#   vssp_din_module   EN | module header (model, name, live total)
+#                     FR | en-tete de module (modele, nom, total en direct)
+#   vssp_din_pole     EN | one channel of the module, drawn as a pole
+#                     FR | une voie du module, dessinee en pole
+#   vssp_din_blank    EN | blanking plate for an unused slot
+#                     FR | obturateur pour un emplacement libre
+#
+# EN | The left half of the panel lists the switches by name — that is the
+# EN | control surface. This right half answers a different question: what
+# EN | is physically installed, and which way out of which box each circuit
+# EN | leaves by. So a channel here shows its pole, its rating and its live
+# EN | draw, and stays grouped under the box it belongs to.
+# FR | La moitie gauche du panneau liste les interrupteurs par leur nom :
+# FR | c'est la surface de commande. Cette moitie droite repond a une autre
+# FR | question : qu'est-ce qui est physiquement installe, et par quelle
+# FR | sortie de quel boitier part chaque circuit. Une voie y montre donc
+# FR | son pole, son calibre et sa consommation instantanee, et reste
+# FR | groupee sous le boitier auquel elle appartient.
+# ---------------------------------------------------------------------
+
+# EN | Module header. `powers` carries the channel power entities so the
+# FR | En-tete de module. `powers` porte les entites de puissance des voies
+# EN | header can show what the whole box draws, which no single entity
+# FR | pour que l'en-tete affiche ce que tire le boitier entier, ce qu'aucune
+# EN | gives: Shelly exposes per-outlet meters, never a strip total.
+# FR | entite ne donne : Shelly expose des compteurs par prise, jamais un
+# FR | total de multiprise.
+# EN |   template: vssp_din_module
+# EN |   name: "MultiPrise"          # the box
+# EN |   label: "Shelly Pro 4PM"     # its model
+# EN |   variables:
+# EN |     powers: [sensor.a_power, sensor.b_power]
+# ---------------------------------------------------------------------
+vssp_din_module:
+  show_icon: true
+  show_name: true
+  show_state: false
+  show_label: true
+  variables:
+    powers: []
+  custom_fields:
+    pw: >
+      [[[
+        const ids = variables.powers || [];
+        let total = 0, seen = false;
+        for (const id of ids) {
+          const s = states[id];
+          if (s && !isNaN(Number(s.state))) { total += Number(s.state); seen = true; }
+        }
+        if (!seen)
+          return '<span style="color:#56707E;font-size:12px;">—</span>';
+        // EN | Same rule as the device rows: the number format is a per-user
+        // EN | preference, read off hass, not baked into the dashboard.
+        // FR | Meme regle que les lignes d'appareil : le format des nombres
+        // FR | est une preference par utilisateur, lue sur hass, pas figee
+        // FR | dans le dashboard.
+        const LOCALE = (hass && hass.locale && hass.locale.language) || 'en-US';
+        const kilo = total >= 1000;
+        const v = (kilo ? total / 1000 : total).toLocaleString(LOCALE,
+          { minimumFractionDigits: kilo ? 2 : 0, maximumFractionDigits: kilo ? 2 : 0 });
+        const col = total > 0 ? '#00E5FF' : '#56707E';
+        return '<span style="color:' + col + ';font-size:14px;font-weight:700;' +
+               'font-family:Orbitron,sans-serif;">' + v + '</span>' +
+               '<span style="color:#56707E;font-size:10px;"> ' + (kilo ? 'kW' : 'W') + '</span>';
+      ]]]
+  styles:
+    grid:
+      - grid-template-areas: '"i n pw" "i l pw"'
+      - grid-template-columns: 28px 1fr auto
+      - grid-template-rows: min-content min-content
+      - column-gap: 9px
+      - justify-items: start
+      - align-items: center
+    card:
+      - background: transparent
+      - box-shadow: none
+      - border: none
+      # EN | The rail itself: the metallic line every pole below clips onto.
+      # FR | Le rail lui-meme : la ligne metallique sur laquelle chaque pole
+      # FR | ci-dessous vient se clipser.
+      - border-bottom: 2px solid rgba(150,170,185,0.30)
+      - border-radius: 0
+      - padding: 2px 2px 8px 2px
+      - cursor: default
+      - pointer-events: none
+    img_cell:
+      - background: rgba(0,229,255,0.10)
+      - border-radius: 8px
+      - width: 26px
+      - height: 26px
+    icon:
+      - color: "#00E5FF"
+      - "--mdc-icon-size": 15px
+    name:
+      - color: "var(--text-primary-color, #FFFFFF)"
+      - font-size: 12px
+      - font-weight: 600
+      - justify-self: start
+      - text-align: left
+    label:
+      - color: "var(--secondary-text-color, #56707E)"
+      - font-size: 10px
+      - justify-self: start
+      - text-align: left
+    custom_fields:
+      pw:
+        - justify-self: end
+        - text-align: right
+
+# ---------------------------------------------------------------------
+# EN | One pole = one channel of the module. Lever up and lit = closed
+# FR | Un pole = une voie du module. Manette en haut et allumee = circuit
+# EN | circuit, lever down and grey = open, dashed slot = a measuring
+# FR | ferme, manette en bas et grise = ouvert, fente en pointilles = voie
+# EN | channel (a meter with nothing to switch).
+# FR | de mesure (un compteur sans rien a commander).
+# EN |   template: vssp_din_pole
+# EN |   entity: switch.technical_room_livebox
+# EN |   name: "Livebox"
+# EN |   variables:
+# EN |     amp: "16A"
+# EN |     power_entity: sensor.technical_room_livebox_puissance
+# EN |     kind: switch | cover | meter
+# ---------------------------------------------------------------------
+vssp_din_pole:
+  show_icon: true
+  show_name: true
+  show_state: false
+  show_label: false
+  variables:
+    amp: ""
+    power_entity: ""
+    kind: switch
+  tap_action:
+    action: toggle
+  hold_action:
+    action: more-info
+  custom_fields:
+    lever: >
+      [[[
+        const kind = variables.kind || 'switch';
+        const st = entity ? entity.state : null;
+        const on = st === 'on' || st === 'open' || st === 'opening';
+        const meter = kind === 'meter' || !entity;
+        const amp = variables.amp
+          ? '<div style="margin-top:5px;font-size:9px;letter-spacing:.5px;' +
+            'font-family:Orbitron,sans-serif;color:#8FB6C9;">' + variables.amp + '</div>'
+          : '';
+        if (meter) {
+          // EN | Nothing to switch: draw the slot, not a lever that lies.
+          // FR | Rien a commander : on dessine la fente, pas une manette qui
+          // FR | mentirait sur l'etat du circuit.
+          return '<div style="display:flex;flex-direction:column;align-items:center;">' +
+                 '<div style="width:24px;height:36px;border-radius:4px;background:rgba(10,20,28,.9);' +
+                 'border:1px dashed rgba(143,182,201,.35);display:flex;align-items:center;' +
+                 'justify-content:center;">' +
+                 '<ha-icon icon="mdi:gauge" style="--mdc-icon-size:14px;color:#8FB6C9;"></ha-icon>' +
+                 '</div>' + amp + '</div>';
+        }
+        const col = on ? '#00FFC3' : '#56707E';
+        const glow = on ? 'box-shadow:0 0 10px rgba(0,255,195,.45);' : '';
+        return '<div style="display:flex;flex-direction:column;align-items:center;">' +
+               '<div style="width:24px;height:36px;border-radius:4px;background:rgba(10,20,28,.95);' +
+               'border:1px solid rgba(255,255,255,.16);position:relative;">' +
+                 '<div style="position:absolute;left:3px;right:3px;height:15px;top:' +
+                 (on ? '3px' : '16px') + ';border-radius:2px;background:' + col + ';' + glow +
+                 'transition:top .25s ease;"></div>' +
+               '</div>' + amp + '</div>';
+      ]]]
+    pw: >
+      [[[
+        const s = states[variables.power_entity];
+        if (!s || isNaN(Number(s.state)))
+          return '<span style="color:#56707E;font-size:10px;">—</span>';
+        const LOCALE = (hass && hass.locale && hass.locale.language) || 'en-US';
+        const w = Number(s.state);
+        const kilo = w >= 1000;
+        const v = (kilo ? w / 1000 : w).toLocaleString(LOCALE,
+          { minimumFractionDigits: kilo ? 2 : 0, maximumFractionDigits: kilo ? 2 : 0 });
+        return '<span style="color:' + (w > 0 ? '#B8E8F5' : '#56707E') +
+               ';font-size:11px;font-weight:600;">' + v + ' ' + (kilo ? 'kW' : 'W') + '</span>';
+      ]]]
+  styles:
+    grid:
+      - grid-template-areas: '"lever" "i" "n" "pw"'
+      - grid-template-rows: min-content min-content min-content min-content
+      - row-gap: 4px
+      - justify-items: center
+      - align-items: center
+    card:
+      # EN | A module body: light on top, shadowed at the bottom, like a
+      # FR | Un corps de module : clair en haut, ombre en bas, comme une
+      # EN | plastic case seen from the front.
+      # FR | coque plastique vue de face.
+      - background: linear-gradient(180deg, rgba(26,38,50,0.95), rgba(12,20,28,0.95))
+      - border-radius: 5px
+      - border: >
+          [[[
+            const st = entity ? entity.state : null;
+            return (st === 'on' || st === 'open')
+              ? "1px solid rgba(0,255,195,0.28)" : "1px solid rgba(255,255,255,0.10)";
+          ]]]
+      - padding: 12px 4px 9px 4px
+      - min-height: 118px
+      - position: relative
+      - transition: all .2s ease
+    img_cell:
+      - background: none
+      - width: 18px
+      - height: 18px
+    icon:
+      - color: >
+          [[[
+            const st = entity ? entity.state : null;
+            return (st === 'on' || st === 'open') ? "#00FFC3" : "#8FB6C9";
+          ]]]
+      - "--mdc-icon-size": 15px
+    name:
+      - color: "var(--text-primary-color, #FFFFFF)"
+      - font-size: 10px
+      - font-weight: 600
+      - justify-self: center
+      - text-align: center
+      - line-height: 1.15
+      - max-width: 100%
+      - overflow: hidden
+      - text-overflow: ellipsis
+      - white-space: nowrap
+    custom_fields:
+      lever:
+        - justify-self: center
+      pw:
+        - justify-self: center
+  card_mod:
+    style: |
+      /* EN | The clip that holds the module onto the rail above it.
+         FR | Le clip qui tient le module sur le rail juste au-dessus. */
+      ha-card {
+        position: relative;
+        overflow: visible;
+      }
+      ha-card::before {
+        content: "";
+        position: absolute;
+        top: -1px;
+        left: 50%;
+        transform: translateX(-50%);
+        width: 58%;
+        height: 3px;
+        border-radius: 0 0 3px 3px;
+        background: rgba(150,170,185,0.40);
+      }
+      ha-card:hover {
+        border-color: rgba(0,229,255,0.50) !important;
+        box-shadow: 0 0 14px rgba(0,229,255,.18) !important;
+      }
+
+# ---------------------------------------------------------------------
+# EN | Blanking plate: a slot left free on the rail. Drawn rather than
+# FR | Obturateur : un emplacement libre sur le rail. Dessine plutot
+# EN | omitted, because an enclosure with room to spare is information —
+# FR | qu'omis, parce qu'un coffret qui a de la reserve est une information —
+# EN | it says how many channels this box still has for the next circuit.
+# FR | il dit combien de voies ce boitier garde pour le prochain circuit.
+# EN |   template: vssp_din_blank
+# ---------------------------------------------------------------------
+vssp_din_blank:
+  show_icon: false
+  show_name: false
+  show_state: false
+  show_label: false
+  styles:
+    card:
+      - background: rgba(255,255,255,0.015)
+      - border: 1px dashed rgba(255,255,255,0.09)
+      - border-radius: 5px
+      - box-shadow: none
+      - padding: 12px 4px 9px 4px
+      - min-height: 118px
+      - cursor: default
+      - pointer-events: none
+
 # ============================================================================
 # vssp_nav_chip
 #

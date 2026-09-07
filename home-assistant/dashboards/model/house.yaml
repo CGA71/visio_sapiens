@@ -331,5 +331,35 @@ energy:
 # FR | ecrits dans model/energy_devices.yaml, avec leur modele Shelly. Seul le
 # FR | calibre (amp) est a renseigner a la main — il est ensuite preserve a
 # FR | chaque scan.
-circuits_per_row: 6
+# EN | Three per row: the switches now share the panel with the virtual
+# EN | board on their right, so they get half the width they used to have.
+# FR | Trois par rangee : les interrupteurs partagent desormais le panneau
+# FR | avec le tableau virtuel a leur droite, ils disposent donc de la moitie
+# FR | de la largeur qu'ils avaient.
+circuits_per_row: 3
 circuits: []
+
+# ── EN | Virtual breaker panel / FR | Tableau electrique virtuel ───────
+# EN | The right-hand half of the panel draws the HARDWARE: one rail per
+# EN | physical module (Shelly Pro 4PM, Pro Dual Cover, a 4-outlet strip, a
+# EN | plug), each carrying its channels. The list is discovered by
+# EN | vssp_energy_sync.py from the Home Assistant device registry — the
+# EN | parent/child device link is what says which outlets belong to the
+# EN | same box — and written into model/energy_devices.yaml. Empty here for
+# EN | the same reason as `devices`: a hardcoded fleet would survive a broken
+# EN | scan and hide the breakage.
+# FR | La moitie droite du panneau dessine le MATERIEL : un rail par module
+# FR | physique (Shelly Pro 4PM, Pro Dual Cover, multiprise 4 voies, prise),
+# FR | chacun portant ses voies. La liste est decouverte par
+# FR | vssp_energy_sync.py depuis le registre d'appareils de Home Assistant —
+# FR | c'est le lien parent/enfant qui dit quelles prises appartiennent au
+# FR | meme boitier — et ecrite dans model/energy_devices.yaml. Vide ici pour
+# FR | la meme raison que `devices` : un parc code en dur survivrait a un
+# FR | scan casse et masquerait la panne.
+#
+# EN | poles_per_rail = slots drawn per rail. A module shorter than that is
+# EN | completed with blanking plates, exactly like a real enclosure.
+# FR | poles_per_rail = emplacements dessines par rail. Un module plus court
+# FR | est complete par des obturateurs, comme dans un coffret reel.
+poles_per_rail: 4
+modules: []

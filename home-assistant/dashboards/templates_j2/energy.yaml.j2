@@ -909,7 +909,11 @@ views:
                 - text-align: right
 
       # ═══════════════════════════════════════════════════════════════
-      # PANNEAU 6 — TABLEAU ÉLECTRIQUE (contrôle des circuits Shelly)
+      # PANNEAU 6 — TABLEAU ÉLECTRIQUE
+      # EN | One frame, two halves: the switches on the left, the
+      # EN | virtual board — the hardware, rail by rail — on the right.
+      # FR | Un cadre, deux moities : les interrupteurs a gauche, le
+      # FR | tableau virtuel — le materiel, rail par rail — a droite.
       # ═══════════════════════════════════════════════════════════════
       - type: vertical-stack
         view_layout:
@@ -931,56 +935,166 @@ views:
             template: vssp_section_title
             name: "{{ t('energy.panel.breaker_panel') }}"
 
-          # ── Circuits (générés depuis house.yaml, par rangées) ──────
-{% if not circuits %}
-          - type: custom:button-card
-            template: vssp_section_title
-            name: "{{ t('energy.empty.circuits') }}"
-{% endif %}
-{% for row in circuits | batch(circuits_per_row | default(6)) %}
+          # ── EN | Two halves under one frame ────────────────────────
+          # ── FR | Deux moities sous un meme cadre ───────────────────
+          # EN | LEFT: the switches — the control surface, one card per
+          # EN | circuit, named the way the house names them.
+          # EN | RIGHT: the hardware — one rail per physical module, each
+          # EN | carrying its channels. The same circuit appears on both
+          # EN | sides, answering two different questions: "turn it off"
+          # EN | on the left, "where does it come from" on the right.
+          # FR | GAUCHE : les interrupteurs — la surface de commande, une
+          # FR | carte par circuit, nommee comme la maison les nomme.
+          # FR | DROITE : le materiel — un rail par module physique, chacun
+          # FR | portant ses voies. Le meme circuit figure des deux cotes,
+          # FR | et repond a deux questions differentes : « coupe-le » a
+          # FR | gauche, « d'ou vient-il » a droite.
           - type: horizontal-stack
             cards:
+              # ═════════ EN | LEFT — SWITCHES / FR | GAUCHE — INTERRUPTEURS
+              - type: vertical-stack
+                card_mod:
+                  style: |
+                    :host {
+                      display: block;
+                      padding-right: 16px;
+                    }
+                cards:
+                  - type: custom:button-card
+                    template: vssp_subsection_title
+                    name: "{{ t('energy.panel.switches') }}"
+                    icon: mdi:toggle-switch-outline
+
+{% if not circuits %}
+                  - type: custom:button-card
+                    template: vssp_section_title
+                    name: "{{ t('energy.empty.circuits') }}"
+{% endif %}
+{% for row in circuits | batch(circuits_per_row | default(3)) %}
+                  - type: horizontal-stack
+                    cards:
 {% for c in row %}
-              - type: custom:button-card
-                template: vssp_circuit_switch
-                entity: {{ c.entity }}
-                name: "{{ c.name }}"
-                icon: {{ c.icon }}
-                variables:
-                  model: "{{ c.model | default('', true) }}"
-                  amp: "{{ c.amp | default('—', true) }}"
+                      - type: custom:button-card
+                        template: vssp_circuit_switch
+                        entity: {{ c.entity }}
+                        name: "{{ c.name }}"
+                        icon: {{ c.icon }}
+                        variables:
+                          model: "{{ c.model | default('', true) }}"
+                          amp: "{{ c.amp | default('—', true) }}"
 {% endfor %}
 
 {% endfor %}
-          # ── Légende ────────────────────────────────────────────────
-          - type: custom:button-card
-            show_icon: false
-            show_name: false
-            show_state: false
-            custom_fields:
-              legend: >
-                <div style="display:flex;gap:24px;justify-content:center;padding-top:12px;">
-                  <div style="display:flex;align-items:center;gap:6px;">
-                    <div style="width:9px;height:9px;border-radius:50%;background:#00FFC3;
-                      box-shadow:0 0 8px rgba(0,255,195,.6);"></div>
-                    <span style="color:#8FB6C9;font-size:11px;">{{ t('energy.legend.state_on') }}</span></div>
-                  <div style="display:flex;align-items:center;gap:6px;">
-                    <div style="width:9px;height:9px;border-radius:50%;background:#56707E;"></div>
-                    <span style="color:#8FB6C9;font-size:11px;">{{ t('energy.legend.state_off') }}</span></div>
-                </div>
-            styles:
-              grid:
-                - grid-template-areas: '"legend"'
-              card:
-                - background: transparent
-                - box-shadow: none
-                - border: none
-                - padding: 0
-                - cursor: default
-                - pointer-events: none
-              custom_fields:
-                legend:
-                  - width: 100%
+                  # ── Légende ────────────────────────────────────────
+                  - type: custom:button-card
+                    show_icon: false
+                    show_name: false
+                    show_state: false
+                    custom_fields:
+                      legend: >
+                        <div style="display:flex;gap:24px;justify-content:center;padding-top:12px;">
+                          <div style="display:flex;align-items:center;gap:6px;">
+                            <div style="width:9px;height:9px;border-radius:50%;background:#00FFC3;
+                              box-shadow:0 0 8px rgba(0,255,195,.6);"></div>
+                            <span style="color:#8FB6C9;font-size:11px;">{{ t('energy.legend.state_on') }}</span></div>
+                          <div style="display:flex;align-items:center;gap:6px;">
+                            <div style="width:9px;height:9px;border-radius:50%;background:#56707E;"></div>
+                            <span style="color:#8FB6C9;font-size:11px;">{{ t('energy.legend.state_off') }}</span></div>
+                        </div>
+                    styles:
+                      grid:
+                        - grid-template-areas: '"legend"'
+                      card:
+                        - background: transparent
+                        - box-shadow: none
+                        - border: none
+                        - padding: 0
+                        - cursor: default
+                        - pointer-events: none
+                      custom_fields:
+                        legend:
+                          - width: 100%
+
+              # ═════ EN | RIGHT — VIRTUAL BOARD / FR | DROITE — TABLEAU VIRTUEL
+              - type: vertical-stack
+                card_mod:
+                  style: |
+                    :host {
+                      display: block;
+                      padding-left: 18px;
+                      border-left: 1px solid rgba(0, 229, 255, 0.18);
+                    }
+                cards:
+                  - type: custom:button-card
+                    template: vssp_subsection_title
+                    name: "{{ t('energy.panel.virtual_board') }}"
+                    icon: mdi:electric-switch
+
+{% if not modules %}
+                  - type: custom:button-card
+                    template: vssp_section_title
+                    name: "{{ t('energy.empty.modules') }}"
+{% endif %}
+{% for m in modules %}
+{% set channels = m.channels | default([], true) %}
+{% set powers = channels | selectattr('power_entity') | map(attribute='power_entity') | list %}
+                  # ── EN | Rail: {{ m.model | default('module', true) }} — {{ m.name }}
+                  # ── FR | Rail : {{ m.model | default('module', true) }} — {{ m.name }}
+                  - type: vertical-stack
+                    card_mod:
+                      style: |
+                        :host {
+                          display: block;
+                          background: rgba(0, 0, 0, 0.22);
+                          border: 1px solid rgba(0, 229, 255, 0.12);
+                          border-radius: 12px;
+                          padding: 10px 12px 12px 12px;
+                          margin-bottom: 10px;
+                        }
+                    cards:
+                      - type: custom:button-card
+                        template: vssp_din_module
+                        name: "{{ m.name }}"
+                        label: "{{ m.model | default(t('energy.board.unknown_model'), true) }}"
+                        icon: {{ m.icon | default('mdi:chip', true) }}
+{% if powers %}
+                        # EN | Without this the header total would only
+                        # EN | refresh when the module's own entity changes,
+                        # EN | and a module has no entity of its own.
+                        # FR | Sans ceci le total de l'en-tete ne se
+                        # FR | rafraichirait qu'au changement de l'entite du
+                        # FR | module, or un module n'en a pas.
+                        triggers_update:
+{% for e in powers %}
+                          - {{ e }}
+{% endfor %}
+{% endif %}
+                        variables:
+                          powers: [{{ powers | join(', ') }}]
+
+                      - type: horizontal-stack
+                        cards:
+{% for c in channels %}
+{% set kind = 'meter' if not c.entity else ('cover' if c.entity.startswith('cover.') else 'switch') %}
+                          - type: custom:button-card
+                            template: vssp_din_pole
+                            entity: {{ c.entity | default(c.power_entity, true) }}
+                            name: "{{ c.name }}"
+                            icon: {{ c.icon | default('mdi:power-plug', true) }}
+{% if kind != 'switch' %}
+                            tap_action:
+                              action: more-info
+{% endif %}
+                            variables:
+                              kind: {{ kind }}
+                              amp: "{{ c.amp | default('', true) }}"
+                              power_entity: "{{ c.power_entity | default('', true) }}"
+{% endfor %}
+{% for _ in range([(poles_per_rail | default(4)) - (channels | length), 0] | max) %}
+                          - type: custom:button-card
+                            template: vssp_din_blank
+{% endfor %}
+{% endfor %}
 
     # ── Fond de vue (même principe que core.yaml) ────────────────────
     # Déposez energy.png dans www/vssp/backgrounds/, ou

@@ -150,6 +150,10 @@ energy:
     per_device: Consommation par appareil
     total_consumption: Consommation totale
     breaker_panel: Tableau électrique
+    # FR | Les deux moitiés du tableau : la commande à gauche, le matériel
+    # FR | à droite.
+    switches: Interrupteurs
+    virtual_board: Tableau virtuel
     grid: Réseau
     flow: Schéma de fonctionnement
     security: Sécurité
@@ -167,10 +171,13 @@ energy:
   legend:
     state_on: "Allumé"
     state_off: "Éteint"
+  board:
+    unknown_model: Module inconnu
   empty:
     devices: Aucun appareil détecté
     devices_hint: lancez vssp_energy_sync.py
     circuits: Aucun circuit détecté — lancez vssp_energy_sync.py
+    modules: Aucun module détecté — lancez vssp_energy_sync.py
   tab:
     day: Jour
     month: Mois

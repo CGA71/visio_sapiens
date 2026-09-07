@@ -231,6 +231,10 @@ energy:
     per_device: Per-Device Consumption
     total_consumption: Total Consumption
     breaker_panel: Breaker Panel
+    # EN | The two halves of the breaker panel: control on the left,
+    # EN | hardware on the right.
+    switches: Switches
+    virtual_board: Virtual board
     grid: Grid
     flow: Energy flow diagram
     security: Security
@@ -254,10 +258,15 @@ energy:
   legend:
     state_on: "On"
     state_off: "Off"
+  # EN | Virtual breaker panel — hardware wording.
+  # FR | Tableau electrique virtuel — vocabulaire materiel.
+  board:
+    unknown_model: Unknown module
   empty:
     devices: No device detected
     devices_hint: run vssp_energy_sync.py
     circuits: No circuit detected — run vssp_energy_sync.py
+    modules: No module detected — run vssp_energy_sync.py
   tab:
     day: Day
     month: Month
