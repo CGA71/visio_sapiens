@@ -1352,10 +1352,29 @@ def main() -> int:
         # FR | calibre, quel que soit le cote du panneau qui l'affiche.
         amps = {c.get("entity"): c.get("amp")
                 for c in model.get("circuits") or [] if c.get("amp")}
+        # EN | Picture and master switch are DERIVED, never stored: the
+        # EN | picture from the model name (so N identical boxes share one
+        # EN | file), the master switch from the channels that can actually be
+        # EN | switched — covers and metering channels are not toggled.
+        # FR | Image et interrupteur maitre sont DERIVES, jamais stockes :
+        # FR | l'image depuis le nom de modele (pour que N boitiers
+        # FR | identiques partagent un fichier), l'interrupteur maitre depuis
+        # FR | les voies reellement commandables — un volet ou une voie de
+        # FR | mesure ne se bascule pas.
+        pictures = model.get("module_images") or []
+        base = (model.get("module_image_base") or "").rstrip("/")
         for mod in model.get("modules") or []:
             for chan in mod.get("channels") or []:
                 if not chan.get("amp") and amps.get(chan.get("entity")):
                     chan["amp"] = amps[chan["entity"]]
+            mod["switches"] = [c["entity"] for c in mod.get("channels") or []
+                               if (c.get("entity") or "").startswith("switch.")]
+            mod["image"] = ""
+            for rule in pictures:
+                if re.search(rule.get("match", ""), mod.get("model") or "",
+                             re.IGNORECASE):
+                    mod["image"] = f"{base}/{rule.get('image', '')}"
+                    break
         print(f"[i] ENERGY devices: {devices_path} "
               f"({len(model['energy_devices'])} device(s), "
               f"{len(model.get('circuits', []))} circuit(s), "

@@ -1054,23 +1054,51 @@ views:
                     cards:
                       - type: custom:button-card
                         template: vssp_din_module
-                        name: "{{ m.name }}"
-                        label: "{{ m.model | default(t('energy.board.unknown_model'), true) }}"
-                        icon: {{ m.icon | default('mdi:chip', true) }}
-{% if powers %}
-                        # EN | Without this the header total would only
-                        # EN | refresh when the module's own entity changes,
-                        # EN | and a module has no entity of its own.
-                        # FR | Sans ceci le total de l'en-tete ne se
-                        # FR | rafraichirait qu'au changement de l'entite du
-                        # FR | module, or un module n'en a pas.
+                        # EN | Title = the MODEL. This side answers "what is
+                        # EN | installed", so the box's own name is the
+                        # EN | subtitle, and identical boxes read alike.
+                        # FR | Titre = le MODELE. Ce cote repond a « qu'est-ce
+                        # FR | qui est installe », le nom du boitier passe donc
+                        # FR | en sous-titre, et deux boitiers identiques se
+                        # FR | lisent pareil.
+                        name: "{{ m.model | default(t('energy.board.unknown_model'), true) }}"
+                        label: "{{ m.name }}"
+{% if m.switches | default([], true) %}
+                        # EN | Master switch: the whole header is the target.
+                        # FR | Interrupteur maitre : l'en-tete entier est la
+                        # FR | cible.
+                        tap_action:
+                          action: call-service
+                          service: homeassistant.toggle
+                          service_data:
+                            entity_id:
+{% for e in m.switches %}
+                              - {{ e }}
+{% endfor %}
+{% else %}
+                        tap_action:
+                          action: none
+{% endif %}
+{% set watched = powers + (m.switches | default([], true)) %}
+{% if watched %}
+                        # EN | A module has no entity of its own, so without
+                        # EN | this the header would never repaint: neither
+                        # EN | its total nor its master toggle would follow a
+                        # EN | channel flipped from the list on the left.
+                        # FR | Un module n'a pas d'entite propre : sans ceci
+                        # FR | l'en-tete ne se redessinerait jamais, ni son
+                        # FR | total ni sa bascule maitre ne suivraient une
+                        # FR | voie basculee depuis la liste de gauche.
                         triggers_update:
-{% for e in powers %}
+{% for e in watched %}
                           - {{ e }}
 {% endfor %}
 {% endif %}
                         variables:
                           powers: [{{ powers | join(', ') }}]
+                          switches: [{{ m.switches | default([], true) | join(', ') }}]
+                          image: "{{ m.image | default('', true) }}"
+                          icon: {{ m.icon | default('mdi:chip', true) }}
 
                       - type: horizontal-stack
                         cards:

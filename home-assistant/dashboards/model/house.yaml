@@ -363,3 +363,32 @@ circuits: []
 # FR | est complete par des obturateurs, comme dans un coffret reel.
 poles_per_rail: 4
 modules: []
+
+# ── EN | Product pictures / FR | Visuels produits ─────────────────────
+# EN | Each rail shows the photo of the module it draws. The match is on the
+# EN | MODEL reported by Home Assistant, by regular expression and in this
+# EN | order, so any number of identical boxes share one picture — three
+# EN | Shelly Pro 4PM are three rails and one file. Files live in
+# EN | www/vssp/modules/ and are served from /local/vssp/modules/.
+# EN | A model that matches nothing falls back to the module icon; nothing
+# EN | breaks, the rail just has no photo.
+# FR | Chaque rail montre la photo du module qu'il dessine. La correspondance
+# FR | porte sur le MODELE remonte par Home Assistant, par expression
+# FR | reguliere et dans cet ordre, si bien que n'importe quel nombre de
+# FR | boitiers identiques partagent une seule image — trois Shelly Pro 4PM
+# FR | font trois rails et un seul fichier. Les fichiers vivent dans
+# FR | www/vssp/modules/ et sont servis depuis /local/vssp/modules/.
+# FR | Un modele qui ne correspond a rien retombe sur l'icone du module ;
+# FR | rien ne casse, le rail n'a simplement pas de photo.
+module_image_base: /local/vssp/modules
+module_images:
+  - match: "pro.?dual.?cover|dual.?(cover|shutter)"
+    image: shelly-pro-dual-cover-pm.png
+  - match: "pro.?4.?pm"
+    image: shelly-pro-4pm.png
+  - match: "lan.?switch"
+    image: shelly-lan-switch.png
+  - match: "power.?strip"
+    image: shelly-power-strip-4-gen4.png
+  - match: "plug"
+    image: shelly-plug-m-gen3.png

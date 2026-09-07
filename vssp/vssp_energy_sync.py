@@ -148,9 +148,22 @@ def ha_states(url: str, token: str) -> list[dict]:
 # EN | its channels are covers, not switches.
 # FR | cover.* est scanne aussi : une Shelly Pro Dual Cover pilote des
 # FR | volets, ses voies sont donc des covers, pas des switches.
+#
+# EN | update.* is scanned for one reason: a module that switches nothing and
+# EN | measures nothing — a Shelly LAN Switch on the rail — has no sensor, no
+# EN | switch and no cover, so nothing else would prove it exists. Every
+# EN | Shelly exposes a firmware entity, which makes it a reliable presence
+# EN | marker for hardware that is real but silent.
+# FR | update.* est scanne pour une seule raison : un module qui ne commande
+# FR | rien et ne mesure rien — un Shelly LAN Switch sur le rail — n'a ni
+# FR | capteur, ni switch, ni cover, donc rien d'autre ne prouverait son
+# FR | existence. Chaque Shelly expose une entite de micrologiciel, ce qui en
+# FR | fait un marqueur de presence fiable pour du materiel bien reel mais
+# FR | muet.
 REGISTRY_TEMPLATE = """
 {%- set ns = namespace(lines=[]) -%}
-{%- for s in (states.sensor | list) + (states.switch | list) + (states.cover | list) -%}
+{%- for s in (states.sensor | list) + (states.switch | list) + (states.cover | list)
+             + (states.update | list) -%}
   {%- set eid = s.entity_id -%}
   {%- set did = device_id(eid) or '' -%}
   {%- set par = (device_attr(did, 'via_device_id') or did) if did else '' -%}
@@ -352,6 +365,22 @@ MODULE_MODEL_PATTERNS = (
 # FR | Domaines qui peuvent ETRE une voie : ce qui se commande, ou un volet.
 CONTROL_DOMAINS = ("switch", "cover")
 
+# EN | Models that belong on the rail even with nothing to switch and nothing
+# EN | to measure — a Shelly LAN Switch is a DIN module and takes its slot in
+# EN | the enclosure like any other. Kept deliberately narrow: it is what
+# EN | separates the panel hardware from a Shelly BLU button, which is also a
+# EN | Shelly and has no business on a breaker rail.
+# FR | Modeles qui ont leur place sur le rail meme sans rien a commander ni a
+# FR | mesurer — un Shelly LAN Switch est un module DIN et occupe son
+# FR | emplacement dans le coffret comme un autre. Volontairement etroit :
+# FR | c'est ce qui separe le materiel de tableau d'un bouton Shelly BLU, qui
+# FR | est un Shelly lui aussi et n'a rien a faire sur un rail.
+PANEL_MODEL_PATTERNS = (r"\bpro\b", r"lan\s*switch", r"\bdin\b")
+
+
+def is_panel_module(model: str) -> bool:
+    return any(re.search(pat, (model or "").lower()) for pat in PANEL_MODEL_PATTERNS)
+
 
 def is_module_model(model: str, manufacturer: str) -> bool:
     text = f"{model} {manufacturer}".lower()
@@ -486,9 +515,32 @@ def discover_modules(states: list[dict], registry: dict | None = None,
             "energy_entity": sensor_for(energies.get(dev, []), eid),
         })
 
+    # 4. Materiel de tableau present mais muet : ni voie, ni mesure. Il est
+    #    sur le rail dans la vraie vie, il l'est ici aussi.
+    for eid, reg in registry.items():
+        if not eid.startswith("update."):
+            continue
+        dev = reg.get("device_id")
+        mid = reg.get("parent_id") or dev
+        if not mid or mid in modules or dev in controls:
+            continue
+        standalone = mid == dev
+        model = ("" if standalone else reg.get("parent_model")) or reg.get("model") or ""
+        if not (is_module_model(model, reg.get("manufacturer", ""))
+                and is_panel_module(model)):
+            continue
+        module_of(reg)          # cree le module, sans aucune voie
+
     out = []
     for mod in modules.values():
         measured = any(c["power_entity"] for c in mod["channels"])
+        # EN | A silent panel module has no channel to vouch for it; its model
+        # EN | is the whole evidence, and step 4 already checked it.
+        # FR | Un module de tableau muet n'a aucune voie pour l'attester ; son
+        # FR | modele est toute la preuve, et l'etape 4 l'a deja verifie.
+        if not mod["channels"] and is_panel_module(mod["model"]):
+            out.append(mod)
+            continue
         # EN | Measured, or a recognised electrical model. A device that is
         # EN | neither is a toggle on something else entirely.
         # FR | Mesure, ou modele electrique reconnu. Un appareil qui n'est ni

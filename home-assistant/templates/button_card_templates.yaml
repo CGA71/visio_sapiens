@@ -1523,13 +1523,73 @@ vssp_circuit_row:
 # EN |     powers: [sensor.a_power, sensor.b_power]
 # ---------------------------------------------------------------------
 vssp_din_module:
-  show_icon: true
+  show_icon: false
   show_name: true
   show_state: false
   show_label: true
   variables:
     powers: []
+    switches: []
+    image: ""
+    icon: "mdi:chip"
   custom_fields:
+    # EN | The product, and its master switch directly underneath. The switch
+    # FR | Le produit, et son interrupteur maitre juste en dessous. La bascule
+    # EN | is drawn, not clicked: the whole header carries the tap action, so
+    # FR | est dessinee, pas cliquee : l'en-tete entier porte l'action, si
+    # EN | the target is the card, not a 44px sliver.
+    # FR | bien que la cible est la carte, pas un ruban de 44px.
+    # EN | A module with nothing to switch — a LAN switch on the rail, a
+    # EN | shutter controller — shows the product alone. Drawing a dead toggle
+    # EN | under it would be a lie about what the hardware can do.
+    # FR | Un module sans rien a commander — un switch LAN sur le rail, un
+    # FR | controleur de volets — montre le produit seul. Dessiner dessous une
+    # FR | bascule morte mentirait sur ce que sait faire le materiel.
+    unit: >
+      [[[
+        const ids = variables.switches || [];
+        let on = 0, known = 0;
+        for (const id of ids) {
+          const s = states[id];
+          if (!s) continue;
+          known++;
+          if (s.state === 'on') on++;
+        }
+        const lit = on > 0;
+        const bg   = lit ? 'rgba(0,255,195,.85)' : 'rgba(255,255,255,.12)';
+        const brd  = lit ? 'rgba(0,255,195,.90)' : 'rgba(255,255,255,.22)';
+        const glow = lit ? '0 0 12px rgba(0,255,195,.45)' : 'none';
+        const knob = lit ? '22px' : '2px';
+        const visual = variables.image
+          ? '<img src="' + variables.image + '" style="display:block;margin:0 auto;' +
+            'max-width:64px;max-height:50px;object-fit:contain;' +
+            'filter:drop-shadow(0 2px 6px rgba(0,0,0,.55));">'
+          : '<div style="width:44px;height:44px;margin:0 auto;border-radius:10px;' +
+            'background:rgba(0,229,255,.10);display:flex;align-items:center;' +
+            'justify-content:center;"><ha-icon icon="' + (variables.icon || 'mdi:chip') +
+            '" style="--mdc-icon-size:22px;color:#00E5FF;"></ha-icon></div>';
+        // EN | Partial: some channels on, some off. Said in words, because a
+        // EN | two-position toggle cannot say it.
+        // FR | Partiel : des voies allumees, d'autres non. Dit en toutes
+        // FR | lettres, une bascule a deux positions ne sachant pas le dire.
+        const partial = on > 0 && on < known;
+        const sw = known
+          ? '<div style="margin-top:7px;display:flex;flex-direction:column;' +
+            'align-items:center;gap:3px;">' +
+              '<div style="width:44px;height:24px;border-radius:12px;background:' + bg +
+              ';border:1px solid ' + brd + ';box-shadow:' + glow +
+              ';position:relative;transition:all .25s ease;">' +
+                '<div style="position:absolute;top:2px;left:' + knob +
+                ';width:18px;height:18px;border-radius:50%;background:#FFFFFF;' +
+                'transition:all .25s ease;"></div>' +
+              '</div>' +
+              (partial ? '<div style="font-size:9px;color:#8FB6C9;">' + on + '/' +
+                         known + '</div>' : '') +
+            '</div>'
+          : '';
+        return '<div style="display:flex;flex-direction:column;align-items:center;">' +
+               visual + sw + '</div>';
+      ]]]
     pw: >
       [[[
         const ids = variables.powers || [];
@@ -1556,10 +1616,10 @@ vssp_din_module:
       ]]]
   styles:
     grid:
-      - grid-template-areas: '"i n pw" "i l pw"'
-      - grid-template-columns: 28px 1fr auto
+      - grid-template-areas: '"unit n pw" "unit l pw"'
+      - grid-template-columns: 78px 1fr auto
       - grid-template-rows: min-content min-content
-      - column-gap: 9px
+      - column-gap: 12px
       - justify-items: start
       - align-items: center
     card:
@@ -1571,20 +1631,16 @@ vssp_din_module:
       # FR | ci-dessous vient se clipser.
       - border-bottom: 2px solid rgba(150,170,185,0.30)
       - border-radius: 0
-      - padding: 2px 2px 8px 2px
-      - cursor: default
-      - pointer-events: none
-    img_cell:
-      - background: rgba(0,229,255,0.10)
-      - border-radius: 8px
-      - width: 26px
-      - height: 26px
-    icon:
-      - color: "#00E5FF"
-      - "--mdc-icon-size": 15px
+      - padding: 4px 2px 10px 2px
+      - transition: background .2s ease
+    # EN | The MODEL is the title here. On this side of the panel the question
+    # FR | Le MODELE est le titre ici. De ce cote du panneau la question est
+    # EN | is "what is installed", so the box's own name is the subtitle.
+    # FR | « qu'est-ce qui est installe », le nom du boitier passe donc en
+    # FR | sous-titre.
     name:
       - color: "var(--text-primary-color, #FFFFFF)"
-      - font-size: 12px
+      - font-size: 13px
       - font-weight: 600
       - justify-self: start
       - text-align: left
@@ -1594,9 +1650,17 @@ vssp_din_module:
       - justify-self: start
       - text-align: left
     custom_fields:
+      unit:
+        - justify-self: center
+        - grid-row: span 2
       pw:
         - justify-self: end
         - text-align: right
+  card_mod:
+    style: |
+      ha-card:hover {
+        background: rgba(0,229,255,0.05) !important;
+      }
 
 # ---------------------------------------------------------------------
 # EN | One pole = one channel of the module. Lever up and lit = closed
