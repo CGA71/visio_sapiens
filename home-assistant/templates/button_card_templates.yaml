@@ -959,9 +959,13 @@ vssp_energy_kpi:
   styles:
     grid:
       - grid-template-areas: '"i s" "i l"'
-      - grid-template-columns: 54px 1fr
+      # EN | 46px = exactly the icon square, so no column is wasted; every
+      # EN | pixel saved here goes to the value, which is what overflows.
+      # FR | 46px = exactement le carre de l'icone, aucune colonne perdue ;
+      # FR | chaque pixel gagne ici va a la valeur, c'est elle qui deborde.
+      - grid-template-columns: 46px 1fr
       - grid-template-rows: min-content min-content
-      - column-gap: 14px
+      - column-gap: 12px
       - justify-items: start
       - align-items: center
     card:
@@ -982,7 +986,25 @@ vssp_energy_kpi:
       - "--mdc-icon-size": 24px
     state:
       - color: "var(--text-primary-color, #FFFFFF)"
-      - font-size: 22px
+      # EN | The tile is narrow. A yearly total ("1 268,825 kWh") does not fit
+      # EN | at 22px and gets chopped by the ellipsis. Step the size down with
+      # EN | the number of integer digits, so the whole value - thousands
+      # EN | separator and unit included - always stays complete and readable.
+      # FR | La tuile est etroite. Un total annuel ("1 268,825 kWh") ne tient
+      # FR | pas a 22px et se fait couper par les points de suspension. On
+      # FR | reduit la taille selon le nombre de chiffres entiers, pour que la
+      # FR | valeur entiere - separateur de milliers et unite compris - reste
+      # FR | toujours complete et lisible.
+      - font-size: >
+          [[[
+            const v = entity ? Math.abs(parseFloat(entity.state)) : 0;
+            const digits = isNaN(v) ? 1 : String(Math.floor(v)).length;
+            if (digits >= 7) return "13px";
+            if (digits >= 6) return "15px";
+            if (digits >= 5) return "17px";
+            if (digits >= 4) return "19px";
+            return "22px";
+          ]]]
       - font-weight: 700
       - justify-self: start
       - text-align: left
