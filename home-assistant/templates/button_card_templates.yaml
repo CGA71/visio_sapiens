@@ -1382,6 +1382,110 @@ vssp_circuit_switch:
         box-shadow: 0 0 18px rgba(0,229,255,.22) !important;
       }
 
+
+# ---------------------------------------------------------------------
+# EN | Circuit row — the LIST form of a breaker-panel circuit: no box of
+# FR | Ligne de circuit — la forme LISTE d'un circuit du tableau : pas de
+# EN | its own, one line per switch, toggle on the same line, separated
+# FR | cadre propre, une ligne par interrupteur, bascule sur la meme ligne,
+# EN | from the next by a rule. Same reading as the per-device table just
+# FR | separee de la suivante par un filet. Meme lecture que le tableau par
+# EN | above it, which is the point: a list of circuits scans far faster
+# FR | appareil juste au-dessus, et c'est le but : une liste de circuits se
+# EN | than a grid of tiles when you are looking for one name.
+# FR | parcourt bien plus vite qu'une grille de tuiles quand on cherche un
+# FR | nom precis.
+# EN | Tapping the row toggles the circuit; holding opens more-info.
+# FR | Le tap bascule le circuit ; l'appui long ouvre more-info.
+# EN |   template: vssp_circuit_row
+# EN |   entity: switch.technical_room_livebox
+# EN |   name: "Livebox"
+# EN |   variables:
+# EN |     model: "Shelly Power Strip 4 Gen4"
+# EN |     amp: "16A"
+# ---------------------------------------------------------------------
+vssp_circuit_row:
+  show_icon: true
+  show_name: true
+  show_state: false
+  show_label: true
+  variables:
+    model: ""
+    amp: ""
+  label: "[[[ return variables.model ]]]"
+  tap_action:
+    action: toggle
+  hold_action:
+    action: more-info
+  custom_fields:
+    amp: >
+      [[[
+        if (!variables.amp || variables.amp === '—') return '';
+        return '<span style="color:#00E5FF;font-size:12px;font-weight:700;' +
+               'font-family:Orbitron,sans-serif;">' + variables.amp + '</span>';
+      ]]]
+    sw: >
+      [[[
+        const on = entity && entity.state === 'on';
+        const bg   = on ? 'rgba(0,255,195,.85)' : 'rgba(255,255,255,.12)';
+        const brd  = on ? 'rgba(0,255,195,.90)' : 'rgba(255,255,255,.22)';
+        const glow = on ? '0 0 12px rgba(0,255,195,.45)' : 'none';
+        const knob = on ? '22px' : '2px';
+        return '<div style="width:44px;height:24px;border-radius:12px;background:' + bg +
+               ';border:1px solid ' + brd + ';box-shadow:' + glow +
+               ';position:relative;transition:all .25s ease;">' +
+               '<div style="position:absolute;top:2px;left:' + knob +
+               ';width:18px;height:18px;border-radius:50%;background:#FFFFFF;' +
+               'transition:all .25s ease;"></div></div>';
+      ]]]
+  styles:
+    grid:
+      - grid-template-areas: '"i n amp sw" "i l amp sw"'
+      - grid-template-columns: 30px 1fr auto 52px
+      - grid-template-rows: min-content min-content
+      - column-gap: 10px
+      - justify-items: start
+      - align-items: center
+    card:
+      - background: transparent
+      - box-shadow: none
+      - border: none
+      - border-bottom: 1px solid var(--divider-color, rgba(0,229,255,0.08))
+      - border-radius: 0
+      - padding: 9px 4px
+      - transition: background .2s ease
+    img_cell:
+      - background: rgba(0,229,255,0.10)
+      - border-radius: 9px
+      - width: 28px
+      - height: 28px
+    icon:
+      - color: >
+          [[[ return (entity && entity.state === 'on') ? "#00FFC3" : "#8FB6C9"; ]]]
+      - "--mdc-icon-size": 16px
+    name:
+      - color: "var(--text-primary-color, #FFFFFF)"
+      - font-size: 13px
+      - font-weight: 600
+      - justify-self: start
+      - text-align: left
+    label:
+      - color: "var(--secondary-text-color, #56707E)"
+      - font-size: 10px
+      - justify-self: start
+      - text-align: left
+    custom_fields:
+      amp:
+        - justify-self: end
+        - text-align: right
+      sw:
+        - justify-self: end
+  card_mod:
+    style: |
+      ha-card:hover {
+        background: rgba(0,229,255,0.06) !important;
+      }
+
 # ---------------------------------------------------------------------
 # EN | VIRTUAL BREAKER PANEL — three templates that draw the hardware:
 # FR | TABLEAU ELECTRIQUE VIRTUEL — trois templates qui dessinent le materiel :

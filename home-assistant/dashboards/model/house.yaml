@@ -331,12 +331,12 @@ energy:
 # FR | ecrits dans model/energy_devices.yaml, avec leur modele Shelly. Seul le
 # FR | calibre (amp) est a renseigner a la main — il est ensuite preserve a
 # FR | chaque scan.
-# EN | Three per row: the switches now share the panel with the virtual
-# EN | board on their right, so they get half the width they used to have.
-# FR | Trois par rangee : les interrupteurs partagent desormais le panneau
-# FR | avec le tableau virtuel a leur droite, ils disposent donc de la moitie
-# FR | de la largeur qu'ils avaient.
-circuits_per_row: 3
+# EN | No `circuits_per_row` any more: the switches are a LIST, one line
+# EN | per circuit, so there is no row width left to tune. The knob was
+# EN | removed rather than left pointing at nothing.
+# FR | Plus de `circuits_per_row` : les interrupteurs forment une LISTE, une
+# FR | ligne par circuit, il n'y a donc plus de largeur de rangee a regler.
+# FR | Le reglage a ete retire plutot que laisse a pointer dans le vide.
 circuits: []
 
 # ── EN | Virtual breaker panel / FR | Tableau electrique virtuel ───────

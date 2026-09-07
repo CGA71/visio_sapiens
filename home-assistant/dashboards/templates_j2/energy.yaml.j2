@@ -937,14 +937,19 @@ views:
 
           # ── EN | Two halves under one frame ────────────────────────
           # ── FR | Deux moities sous un meme cadre ───────────────────
-          # EN | LEFT: the switches — the control surface, one card per
-          # EN | circuit, named the way the house names them.
+          # EN | LEFT: the switches — the control surface, one LINE per
+          # EN | circuit, named the way the house names them, toggle on the
+          # EN | same line. A list, not a grid of tiles: looking for one
+          # EN | name among ten is a scan down a column, not a hunt.
           # EN | RIGHT: the hardware — one rail per physical module, each
           # EN | carrying its channels. The same circuit appears on both
           # EN | sides, answering two different questions: "turn it off"
           # EN | on the left, "where does it come from" on the right.
           # FR | GAUCHE : les interrupteurs — la surface de commande, une
-          # FR | carte par circuit, nommee comme la maison les nomme.
+          # FR | LIGNE par circuit, nommee comme la maison les nomme, avec la
+          # FR | bascule sur la meme ligne. Une liste, pas une grille de
+          # FR | tuiles : chercher un nom parmi dix se parcourt en colonne,
+          # FR | ce n'est pas une chasse.
           # FR | DROITE : le materiel — un rail par module physique, chacun
           # FR | portant ses voies. Le meme circuit figure des deux cotes,
           # FR | et repond a deux questions differentes : « coupe-le » a
@@ -970,20 +975,15 @@ views:
                     template: vssp_section_title
                     name: "{{ t('energy.empty.circuits') }}"
 {% endif %}
-{% for row in circuits | batch(circuits_per_row | default(3)) %}
-                  - type: horizontal-stack
-                    cards:
-{% for c in row %}
-                      - type: custom:button-card
-                        template: vssp_circuit_switch
-                        entity: {{ c.entity }}
-                        name: "{{ c.name }}"
-                        icon: {{ c.icon }}
-                        variables:
-                          model: "{{ c.model | default('', true) }}"
-                          amp: "{{ c.amp | default('—', true) }}"
-{% endfor %}
-
+{% for c in circuits %}
+                  - type: custom:button-card
+                    template: vssp_circuit_row
+                    entity: {{ c.entity }}
+                    name: "{{ c.name }}"
+                    icon: {{ c.icon }}
+                    variables:
+                      model: "{{ c.model | default('', true) }}"
+                      amp: "{{ c.amp | default('', true) }}"
 {% endfor %}
                   # ── Légende ────────────────────────────────────────
                   - type: custom:button-card
