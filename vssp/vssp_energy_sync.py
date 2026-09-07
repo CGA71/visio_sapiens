@@ -569,6 +569,36 @@ def merge(existing: list[dict], found: list[dict], key: str,
     return result, report
 
 
+def heal_lan_icons(existing: list[dict], found: list[dict], key: str) -> int:
+    """Rend leur icone aux entrees a qui l'ancienne regle avait donne
+    mdi:lan.
+
+    EN | Icons are preserved from one scan to the next, which is right: they
+    EN | can be hand-picked. But the rule that produced them used to match
+    EN | the whole entity_id, so the "switch" of the network-switch rule hit
+    EN | EVERY switch.* entity — a wine fridge came out with a LAN icon. Any
+    EN | stored mdi:lan is therefore suspect, and only that one: "switch" is
+    EN | the only leaked token, and it belongs to no other rule. A real
+    EN | network switch still scans as mdi:lan and does not move.
+    FR | Les icones sont preservees d'un scan a l'autre, et c'est justifie :
+    FR | elles peuvent avoir ete choisies a la main. Mais la regle qui les
+    FR | produisait comparait l'entity_id entier, si bien que le « switch »
+    FR | de la regle du commutateur reseau touchait TOUTE entite switch.* —
+    FR | une cave a vin ressortait avec une icone LAN. Tout mdi:lan stocke
+    FR | est donc suspect, et lui seul : « switch » est le seul jeton qui
+    FR | fuyait, et il n'appartient a aucune autre regle. Un vrai commutateur
+    FR | reseau se rescanne en mdi:lan et ne bouge pas.
+    """
+    fresh = {f[key]: f.get("icon") for f in found}
+    healed = 0
+    for item in existing:
+        want = fresh.get(item.get(key))
+        if item.get("icon") == "mdi:lan" and want and want != "mdi:lan":
+            item["icon"] = want
+            healed += 1
+    return healed
+
+
 def merge_modules(existing: list[dict], found: list[dict],
                   prune: bool) -> tuple[list[dict], dict]:
     """Fusion des modules : meme regle de diff que merge(), mais les voies
@@ -714,6 +744,12 @@ def main() -> int:
 
     found_devices, found_circuits = discover(states, registry, ignore)
 
+    healed = (heal_lan_icons(existing_devices, found_devices, "power_entity")
+              + heal_lan_icons(existing_circuits, found_circuits, "entity"))
+    if healed:
+        print(f"  {healed} icone(s) mdi:lan corrigee(s) "
+              f"(ancienne regle qui matchait le domaine switch.)")
+
     devices, dev_report = merge(existing_devices, found_devices,
                                 "power_entity", PRESERVED_DEVICE, args.prune)
     circuits, cir_report = merge(existing_circuits, found_circuits,
@@ -754,7 +790,7 @@ def main() -> int:
     # FR | tableau electrique virtuel reste vide jusqu'a ce qu'un appareil
     # FR | sans rapport change.
     schema_upgrade = "modules" not in doc
-    changed = bool(dev_report["added"] or cir_report["added"]
+    changed = bool(healed or dev_report["added"] or cir_report["added"]
                    or mod_report["added"] or schema_upgrade
                    or (args.prune and (dev_report["removed"]
                                        or cir_report["removed"]
