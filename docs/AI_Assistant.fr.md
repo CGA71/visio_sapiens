@@ -154,6 +154,39 @@ désarmer l'alarme — et un jeton admin peut appeler *n'importe quel*
 service, y compris les `shell_command.*` du projet, ce qui équivaut à une
 exécution de code arbitraire dans le conteneur Home Assistant.
 
+### Le modèle, et pourquoi le schéma est imposé par le moteur
+
+Ollama est le moteur d'inférence ; le modèle qu'il sert est un choix
+distinct.
+
+**Le schéma est imposé par le moteur, pas confié au bon vouloir du
+modèle.** Ollama accepte un schéma JSON complet dans le paramètre `format`
+de `/api/chat`, et son point d'accès compatible OpenAI fait correspondre
+`response_format: {"type": "json_schema", ...}` au même mécanisme.
+Combiné à `temperature: 0`, la réponse est contrainte au moment de la
+génération plutôt qu'analysée en espérant le meilleur. C'est le détail
+d'implémentation le plus important du broker : il rend le contrat de liste
+blanche structurel au lieu d'en faire une question de bonne conduite du
+modèle.
+
+| Modèle | Verdict pour ce travail |
+|---|---|
+| **Qwen (classe 8B), variante instruct** | **Recommandé.** Meilleur suivi d'instructions et meilleure sortie structurée à cette taille, bon français, environ 5 Go en Q4 — passe même sur une carte de 6 Go. Désactiver tout mode « réflexion » : le broker veut une réponse compacte, pas une trace de raisonnement. |
+| **Gemma 3 (12B)** | Bonne alternative **si la carte a réellement 12 Go**. Meilleure prose française, contexte long. Pas Gemma **2** : il est dépassé, et son contexte de 8 K est une contrainte réelle dès que les états d'entités, l'historique et la liste blanche sont tous dans le prompt. |
+| **DeepSeek (distills R1)** | **Pas pour ce travail.** Ce sont des modèles de raisonnement qui émettent de longues traces de réflexion : la latence gonfle, et l'imposition du schéma bâillonne précisément le raisonnement qui fait leur qualité. Bons modèles, mauvais rôle. Les V3/R1 complets sont bien trop gros pour tourner en local. |
+
+Choisir sur mesure, pas sur benchmark : passer les mêmes dix anomalies
+réelles dans deux candidats et compter combien produisent un `action_id`
+valide et présent dans la liste blanche, en français correct. Un benchmark
+généraliste ne dit rien de la façon dont un modèle 7B traite
+« *l'arrosage ne s'est pas déclenché* » face à la liste d'actions
+spécifique de ce projet.
+
+Vérifier ce qui est courant dans la bibliothèque Ollama au moment de la
+mise en place — cette classe de modèles évolue vite, et le tableau
+ci-dessus énonce une forme (taille, variante instruct, pas de trace de
+raisonnement) plus qu'un nom figé.
+
 ### L'échelle d'actions
 
 | Niveau | Exemple | Qui décide |
@@ -247,16 +280,22 @@ Trois conteneurs, joignables depuis le LAN :
 
 | Service | Port | Rôle |
 |---|---|---|
-| Ollama | 11434 | le modèle de diagnostic |
+| Ollama | 11434 | **moteur d'inférence** — sert le modèle de diagnostic (section 4) |
 | Piper | 10200 | synthèse vocale (Wyoming) |
 | Whisper | 10300 | reconnaissance vocale (Wyoming) |
+
+Ollama est le moteur d'exécution, pas l'intelligence. Le modèle qu'il sert
+est une décision distincte, documentée en section 4 — et modifiable plus
+tard par un simple `ollama pull`, sans toucher une ligne du code de ce
+projet.
 
 À vérifier depuis **les deux** environnements avant d'aller plus loin — si
 ces trois-là ne répondent pas, rien d'autre dans cette fonctionnalité ne
 peut fonctionner :
 
 ```bash
-curl -s http://<machine-inference>:11434/api/tags   # Ollama : la liste des modèles
+ollama pull <modele>                                # voir la section 4 pour le choix
+curl -s http://<machine-inference>:11434/api/tags   # le modèle est bien servi
 nc -z <machine-inference> 10200 && echo "piper ok"
 nc -z <machine-inference> 10300 && echo "whisper ok"
 ```
@@ -335,11 +374,13 @@ susceptibles d'être oubliées :
 1. **Paramètres > Appareils et services > Ajouter une intégration >
    Wyoming** — `<machine-inference>:10200` (Piper), puis à nouveau pour
    `<machine-inference>:10300` (Whisper).
-2. **Le modèle de diagnostic.** Pointer le fournisseur `custom` du chatbot
-   existant sur `http://<machine-inference>:11434/v1/chat/completions`. Ce
-   fournisseur parle déjà le contrat OpenAI (`vssp_chatbot_send.py`), qu'Ollama
-   sert — aucun nouveau code de transport n'est donc nécessaire. À régler
-   depuis le popup fournisseur de l'ADMIN, pas en éditant des fichiers.
+2. **Le point d'accès d'inférence.** Pointer le fournisseur `custom` du
+   chatbot existant sur
+   `http://<machine-inference>:11434/v1/chat/completions`, et renseigner le
+   nom du modèle téléchargé en 7.1. Ce fournisseur parle déjà le contrat
+   OpenAI (`vssp_chatbot_send.py`), qu'Ollama sert — aucun nouveau code de
+   transport n'est donc nécessaire. À régler depuis le popup fournisseur de
+   l'ADMIN, pas en éditant des fichiers.
 3. **Production uniquement — l'enceinte réseau.** Confirmer que l'entité
    `media_player` Cast/Sonos existe et noter son identifiant. Elle
    n'apparaîtra pas en staging ; c'est attendu, voir la section 6.

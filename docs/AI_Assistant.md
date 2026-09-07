@@ -150,6 +150,35 @@ calendar invitation, to disarm the alarm — and an admin token can call
 which amounts to arbitrary code execution inside the Home Assistant
 container.
 
+### The model, and why the engine enforces the schema
+
+Ollama is the inference engine; the model it serves is a separate choice.
+
+**The schema is enforced by the engine, not trusted to the model.** Ollama
+accepts a full JSON schema in the `format` parameter of `/api/chat`, and
+its OpenAI-compatible endpoint maps
+`response_format: {"type": "json_schema", ...}` onto the same mechanism.
+Combined with `temperature: 0`, the reply is constrained at generation
+time rather than parsed hopefully afterwards. This is the single most
+important implementation detail of the broker: it makes the whitelist
+contract structural instead of a matter of the model behaving well.
+
+| Model | Verdict for this job |
+|---|---|
+| **Qwen (8B class), instruct variant** | **Recommended.** Best instruction-following and structured output at this size, solid French, roughly 5 GB at Q4 — fits even a 6 GB card. Disable any "thinking" mode: the broker wants a compact answer, not a reasoning trace. |
+| **Gemma 3 (12B)** | Good alternative **if the card really has 12 GB**. Better French prose, long context. Not Gemma **2** — it is superseded and its 8 K context is a real constraint once entity states, history and the whitelist are all in the prompt. |
+| **DeepSeek (R1 distills)** | **Not for this job.** They are reasoning models that emit long thinking traces: latency inflates, and schema enforcement gags the very reasoning that makes them good. Fine models, wrong role. The full V3/R1 are far too large to run locally. |
+
+Pick on measurement, not on benchmarks: run the same ten real anomalies
+through two candidates and count how many produce a valid, whitelisted
+`action_id` in correct French. A general benchmark says nothing about how
+a 7B model handles *"l'arrosage ne s'est pas déclenché"* against this
+project's specific action list.
+
+Check what is current in the Ollama library at build time — this class of
+model moves fast, and the table above states a shape (size, instruct
+variant, no reasoning traces) more than a fixed name.
+
 ### The action ladder
 
 | Level | Example | Who decides |
@@ -239,15 +268,20 @@ Three containers, reachable from the LAN:
 
 | Service | Port | Role |
 |---|---|---|
-| Ollama | 11434 | the diagnosis model |
+| Ollama | 11434 | **inference engine** — serves the diagnosis model (section 4) |
 | Piper | 10200 | text to speech (Wyoming) |
 | Whisper | 10300 | speech to text (Wyoming) |
+
+Ollama is the runtime, not the intelligence. Which model it serves is a
+separate decision, documented in section 4 — and one that can be changed
+later with `ollama pull` without touching a line of this project's code.
 
 Verify from **both** environments before going further — if these three do
 not answer, nothing else in this feature can work:
 
 ```bash
-curl -s http://<inference-host>:11434/api/tags     # Ollama: the model list
+ollama pull <model>                                # see section 4 for the choice
+curl -s http://<inference-host>:11434/api/tags     # the model is served
 nc -z <inference-host> 10200 && echo "piper ok"
 nc -z <inference-host> 10300 && echo "whisper ok"
 ```
@@ -320,11 +354,12 @@ environment, and they are the steps most likely to be forgotten:
 1. **Settings > Devices & Services > Add integration > Wyoming** —
    `<inference-host>:10200` (Piper), then again for
    `<inference-host>:10300` (Whisper).
-2. **The diagnosis model.** Point the existing chatbot `custom` provider at
-   `http://<inference-host>:11434/v1/chat/completions`. That provider
-   already speaks the OpenAI contract (`vssp_chatbot_send.py`), which
-   Ollama serves — so no new transport code is needed. Set it from the
-   ADMIN provider popup, not by editing files.
+2. **The inference endpoint.** Point the existing chatbot `custom` provider
+   at `http://<inference-host>:11434/v1/chat/completions`, and set the
+   model name to whichever model was pulled in 7.1. That provider already
+   speaks the OpenAI contract (`vssp_chatbot_send.py`), which Ollama
+   serves — so no new transport code is needed. Set it from the ADMIN
+   provider popup, not by editing files.
 3. **Production only — the network speaker.** Confirm the Cast/Sonos
    `media_player` entity exists and note its entity id. It will not appear
    on staging; that is expected, see section 6.
