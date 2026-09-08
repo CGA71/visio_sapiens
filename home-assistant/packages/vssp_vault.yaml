@@ -117,6 +117,19 @@ sensor:
   # FR | n est pas de la telemetrie, elle change quand quelqu un la
   # FR | change, et l ecran ADMIN force un rafraichissement apres chacune
   # FR | de ses propres ecritures.
+  # EN | data['keys'], never data.keys. Vault returns {"data": {"keys":
+  # EN | [...]}}, but in Jinja `data.keys` resolves the ATTRIBUTE first and
+  # EN | finds the dict's own built-in `keys` method — so `| length` was
+  # EN | applied to a bound method, raised, and left all three sensors
+  # EN | permanently unavailable while the seal sensor (which touches no
+  # EN | field called keys) worked fine. Subscript syntax asks for the item.
+  # FR | data['keys'], jamais data.keys. Vault renvoie {"data": {"keys":
+  # FR | [...]}}, mais en Jinja `data.keys` resout d abord l ATTRIBUT et
+  # FR | trouve la methode `keys` propre au dictionnaire — `| length`
+  # FR | s appliquait donc a une methode liee, levait une erreur, et laissait
+  # FR | les trois capteurs indisponibles a demeure pendant que le capteur de
+  # FR | scellement (qui ne touche aucun champ nomme keys) fonctionnait. La
+  # FR | syntaxe indicee, elle, demande bien l element.
   - platform: rest
     name: VSSP Vault infra
     unique_id: vssp_vault_infra
@@ -126,7 +139,7 @@ sensor:
     timeout: 10
     headers:
       X-Vault-Token: !secret vault_ha_token
-    value_template: "{{ (value_json.data.keys | default([])) | length }}"
+    value_template: "{{ (value_json.data['keys'] | default([])) | length }}"
     unit_of_measurement: "entrées"
     json_attributes_path: "$.data"
     json_attributes:
@@ -141,7 +154,7 @@ sensor:
     timeout: 10
     headers:
       X-Vault-Token: !secret vault_ha_token
-    value_template: "{{ (value_json.data.keys | default([])) | length }}"
+    value_template: "{{ (value_json.data['keys'] | default([])) | length }}"
     unit_of_measurement: "entrées"
     json_attributes_path: "$.data"
     json_attributes:
@@ -156,7 +169,7 @@ sensor:
     timeout: 10
     headers:
       X-Vault-Token: !secret vault_ha_token
-    value_template: "{{ (value_json.data.keys | default([])) | length }}"
+    value_template: "{{ (value_json.data['keys'] | default([])) | length }}"
     unit_of_measurement: "entrées"
     json_attributes_path: "$.data"
     json_attributes:
