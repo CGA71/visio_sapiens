@@ -181,11 +181,39 @@ echo "  Paste the token below into Home Assistant's /config/secrets.yaml as:"
 echo "      vault_ha_token: <token>"
 echo "  It grants entry NAMES and deletion, never a single value."
 echo
-vault token create \
+# EN | -field=token, not JSON scraped with grep. The previous version
+# EN | matched '"client_token":"..."' with no space after the colon, and
+# EN | Vault pretty-prints -format=json as '"client_token": "hvs..."' WITH
+# EN | one — so it matched nothing and printed an empty line where the token
+# EN | should be. set -e did not catch it either: a pipeline's exit status is
+# EN | the last command's, and `cut` succeeds happily on empty input, so the
+# EN | script announced success having handed over nothing.
+# EN | -field asks Vault for the one value, with no format to parse and
+# EN | nothing that can get out of step with it.
+# FR | -field=token, pas du JSON racle au grep. La version precedente
+# FR | cherchait '"client_token":"..."' sans espace apres les deux-points, or
+# FR | Vault met en forme -format=json en '"client_token": "hvs..."' AVEC
+# FR | une espace — elle ne trouvait donc rien et imprimait une ligne vide la
+# FR | ou devait etre le token. set -e ne l a pas vu non plus : le code de
+# FR | sortie d un pipeline est celui du dernier maillon, et `cut` reussit
+# FR | tres bien sur une entree vide, donc le script annoncait la reussite
+# FR | sans avoir rien remis.
+# FR | -field demande a Vault la seule valeur voulue, sans format a analyser
+# FR | ni rien qui puisse s en desaccorder.
+HA_TOKEN="$(vault token create \
   -policy=vssp-ha \
   -period=720h \
   -display-name=visio-sapiens-ha \
-  -format=json | grep -o '"client_token":"[^"]*"' | cut -d'"' -f4
+  -field=token)"
+
+if [ -z "$HA_TOKEN" ]; then
+  echo "[ERR] Vault created no token. Nothing to paste into secrets.yaml."
+  echo "      Create one by hand with:"
+  echo "      docker exec -e VAULT_TOKEN=<root> -it vssp-vault \\"
+  echo "        vault token create -policy=vssp-ha -period=720h -field=token"
+  exit 1
+fi
+printf '%s\n' "$HA_TOKEN"
 
 echo
 echo "[OK] Safe ready. Next: docs/platform/Vault.md, section \"After bootstrap\"."
