@@ -1,0 +1,355 @@
+########################################################################
+# Visio Sapiens — VAULT package (HashiCorp Vault safe)
+#
+# EN | The native half of the safe. Everything here reads or deletes; not
+# EN | one line of it can obtain a secret VALUE, and that is enforced by
+# EN | Vault rather than promised by this file. The token in
+# EN | secrets.yaml carries the `vssp-ha` policy, which grants
+# EN | secret/metadata/* and nothing at all on secret/data/*: Home
+# EN | Assistant may list entries, describe them, and delete them, and is
+# EN | refused if it ever asks what one contains.
+# EN | The reason is that anything Home Assistant reads becomes an entity
+# EN | state, and every entity state is written in clear text to
+# EN | home-assistant_v2.db by the recorder, shown in Developer Tools >
+# EN | States to any administrator, and liable to surface in automation
+# EN | traces. A safe whose contents are copied into that database the
+# EN | moment they are displayed protects nothing.
+# EN | Revealing, creating and modifying therefore happen in the ADMIN
+# EN | screen's iframe, which talks to Vault directly with a separate
+# EN | short-lived token — the value never passes through Home Assistant.
+# EN | See vault/policies/vssp-ha.hcl and docs/Vault.md.
+# FR | La moitie native du coffre. Tout ici lit ou supprime ; pas une
+# FR | ligne ne peut obtenir la VALEUR d un secret, et c est Vault qui
+# FR | l impose plutot que ce fichier qui le promet. Le token de
+# FR | secrets.yaml porte la policy `vssp-ha`, qui accorde
+# FR | secret/metadata/* et absolument rien sur secret/data/* : Home
+# FR | Assistant peut lister les entrees, les decrire et les supprimer, et
+# FR | se fait refuser s il demande ce que l une d elles contient.
+# FR | La raison est que tout ce que lit Home Assistant devient un etat
+# FR | d entite, et que tout etat d entite est ecrit en clair dans
+# FR | home-assistant_v2.db par le recorder, affiche dans Outils de
+# FR | developpement > Etats a tout administrateur, et susceptible
+# FR | d apparaitre dans les traces d automatisation. Un coffre dont le
+# FR | contenu est recopie dans cette base des qu il s affiche ne protege
+# FR | rien.
+# FR | Reveler, creer et modifier se passent donc dans l iframe de l ecran
+# FR | ADMIN, qui parle a Vault directement avec un token distinct de
+# FR | courte duree — la valeur ne transite jamais par Home Assistant.
+# FR | Voir vault/policies/vssp-ha.hcl et docs/Vault.fr.md.
+#
+# EN | BEFORE DEPLOYING — check for duplicate keys, same as every other
+# EN | package here:
+# FR | AVANT DE DEPLOYER — verifier les cles en double, comme pour tout
+# FR | autre package ici :
+#
+#   grep -n "vssp_vault" home-assistant/packages/*.yaml
+#
+# EN | PREREQUISITE: /config/secrets.yaml must define `vault_ha_token`.
+# EN | vssp_ensure_secret.py adds it empty at deploy time if missing, so a
+# EN | fresh instance starts normally and simply shows the safe as
+# EN | unreachable until the real token is pasted in. Without that, a
+# EN | missing !secret takes the WHOLE Home Assistant configuration down.
+# FR | PREREQUIS : /config/secrets.yaml doit definir `vault_ha_token`.
+# FR | vssp_ensure_secret.py l ajoute vide au deploiement s il manque,
+# FR | pour qu une instance neuve demarre normalement et affiche
+# FR | simplement le coffre comme injoignable jusqu a ce que le vrai token
+# FR | y soit colle. Sans cela, un !secret manquant fait tomber TOUTE la
+# FR | configuration de Home Assistant.
+########################################################################
+
+# ═══════════════════════════════════════════════════════════════════════
+# EN | SENSORS — RESTful, native
+# FR | CAPTEURS — RESTful, natifs
+# ═══════════════════════════════════════════════════════════════════════
+sensor:
+  # EN | SEAL STATE — the one sensor that must keep working when the safe
+  # EN | is shut. sys/seal-status is UNAUTHENTICATED and answers 200 even
+  # EN | while sealed; sys/health answers 503 in that state, which HA
+  # EN | treats as an error and turns into an unavailable entity —
+  # EN | precisely when you need the screen to tell you why nothing works.
+  # EN | Vault reseals itself on every restart, so this is not an exotic
+  # EN | case: it is the state of the safe after each reboot of the host.
+  # FR | ETAT DE SCELLEMENT — le seul capteur qui doit continuer a
+  # FR | fonctionner quand le coffre est ferme. sys/seal-status n est PAS
+  # FR | authentifie et repond 200 meme scelle ; sys/health repond 503
+  # FR | dans cet etat, ce que HA traite comme une erreur et transforme en
+  # FR | entite indisponible — precisement quand tu as besoin que l ecran
+  # FR | te dise pourquoi plus rien ne marche.
+  # FR | Vault se rescelle a chaque redemarrage, ce n est donc pas un cas
+  # FR | exotique : c est l etat du coffre apres chaque reboot de l hote.
+  - platform: rest
+    name: VSSP Vault seal
+    unique_id: vssp_vault_seal
+    resource: http://192.168.1.11:8200/v1/sys/seal-status
+    method: GET
+    scan_interval: 60
+    timeout: 10
+    value_template: >-
+      {% if value_json.sealed %}sealed{% else %}unsealed{% endif %}
+    json_attributes:
+      - sealed
+      - initialized
+      - t
+      - n
+      - progress
+      - version
+      - cluster_name
+
+  # EN | THE THREE BRANCHES. `?list=true` is the GET form of Vault's LIST
+  # EN | verb, which the RESTful sensor cannot issue on its own. The
+  # EN | metadata path returns entry NAMES only — the data path, which
+  # EN | would return values, is not reachable with this token at all.
+  # EN | The state is the entry count so the entities card reads as a
+  # EN | tally; the names ride along as an attribute for the markdown
+  # EN | card.
+  # EN | scan_interval is deliberately slow: a password list is not
+  # EN | telemetry, it changes when someone changes it, and the ADMIN
+  # EN | screen forces a refresh after every write of its own.
+  # FR | LES TROIS BRANCHES. `?list=true` est la forme GET du verbe LIST
+  # FR | de Vault, que le capteur RESTful ne sait pas emettre autrement.
+  # FR | Le chemin metadata ne renvoie que les NOMS d entrees — le chemin
+  # FR | data, qui renverrait les valeurs, n est pas joignable du tout
+  # FR | avec ce token.
+  # FR | L etat est le nombre d entrees pour que la carte entities se lise
+  # FR | comme un decompte ; les noms voyagent en attribut pour la carte
+  # FR | markdown.
+  # FR | scan_interval volontairement lent : une liste de mots de passe
+  # FR | n est pas de la telemetrie, elle change quand quelqu un la
+  # FR | change, et l ecran ADMIN force un rafraichissement apres chacune
+  # FR | de ses propres ecritures.
+  - platform: rest
+    name: VSSP Vault infra
+    unique_id: vssp_vault_infra
+    resource: http://192.168.1.11:8200/v1/secret/metadata/vssp/infra?list=true
+    method: GET
+    scan_interval: 300
+    timeout: 10
+    headers:
+      X-Vault-Token: !secret vault_ha_token
+    value_template: "{{ (value_json.data.keys | default([])) | length }}"
+    unit_of_measurement: "entrées"
+    json_attributes_path: "$.data"
+    json_attributes:
+      - keys
+
+  - platform: rest
+    name: VSSP Vault accounts
+    unique_id: vssp_vault_accounts
+    resource: http://192.168.1.11:8200/v1/secret/metadata/vssp/accounts?list=true
+    method: GET
+    scan_interval: 300
+    timeout: 10
+    headers:
+      X-Vault-Token: !secret vault_ha_token
+    value_template: "{{ (value_json.data.keys | default([])) | length }}"
+    unit_of_measurement: "entrées"
+    json_attributes_path: "$.data"
+    json_attributes:
+      - keys
+
+  - platform: rest
+    name: VSSP Vault apps
+    unique_id: vssp_vault_apps
+    resource: http://192.168.1.11:8200/v1/secret/metadata/vssp/apps?list=true
+    method: GET
+    scan_interval: 300
+    timeout: 10
+    headers:
+      X-Vault-Token: !secret vault_ha_token
+    value_template: "{{ (value_json.data.keys | default([])) | length }}"
+    unit_of_measurement: "entrées"
+    json_attributes_path: "$.data"
+    json_attributes:
+      - keys
+
+# ═══════════════════════════════════════════════════════════════════════
+# EN | COMMANDS — the write half, and the only writes that involve no
+# EN | value. Every one of them is a deletion or a token renewal.
+# FR | COMMANDES — la moitie en ecriture, et les seules ecritures qui ne
+# FR | mettent en jeu aucune valeur. Toutes sont une suppression ou un
+# FR | renouvellement de token.
+# ═══════════════════════════════════════════════════════════════════════
+rest_command:
+  # EN | SOFT DELETE — hides the latest version, recoverable with
+  # EN | vssp_vault_restore below. This is what the screen's "Supprimer"
+  # EN | does, because a deleted password that turns out to still be
+  # EN | needed is a common Tuesday and an unrecoverable one is not worth
+  # EN | the convenience.
+  # FR | SUPPRESSION DOUCE — masque la derniere version, recuperable par
+  # FR | vssp_vault_restore ci-dessous. C est ce que fait le bouton
+  # FR | « Supprimer » de l ecran, parce qu un mot de passe supprime dont
+  # FR | on a finalement besoin est un mardi ordinaire, et qu une
+  # FR | suppression irrattrapable ne vaut pas le confort gagne.
+  vssp_vault_delete:
+    url: "http://192.168.1.11:8200/v1/secret/data/vssp/{{ path }}"
+    method: DELETE
+    timeout: 15
+    headers:
+      X-Vault-Token: !secret vault_ha_token
+
+  vssp_vault_restore:
+    url: "http://192.168.1.11:8200/v1/secret/undelete/vssp/{{ path }}"
+    method: POST
+    timeout: 15
+    content_type: "application/json"
+    headers:
+      X-Vault-Token: !secret vault_ha_token
+    payload: '{"versions": [{{ version }}]}'
+
+  # EN | DESTROY — the metadata path takes the entry and EVERY version of
+  # EN | it, with no undo. Separate from the soft delete on purpose, and
+  # EN | the script below makes you name the entry before it runs.
+  # FR | DESTRUCTION — le chemin metadata emporte l entree et TOUTES ses
+  # FR | versions, sans retour. Separe de la suppression douce a dessein,
+  # FR | et le script ci-dessous exige que tu nommes l entree avant de le
+  # FR | lancer.
+  vssp_vault_destroy:
+    url: "http://192.168.1.11:8200/v1/secret/metadata/vssp/{{ path }}"
+    method: DELETE
+    timeout: 15
+    headers:
+      X-Vault-Token: !secret vault_ha_token
+
+  # EN | The Home Assistant token is periodic: it never hits a maximum
+  # EN | TTL, but it does have to be renewed within its period or it dies
+  # EN | quietly and the safe simply stops answering one day, for no
+  # EN | visible reason. The automation below renews it daily.
+  # FR | Le token de Home Assistant est periodique : il n atteint jamais
+  # FR | de TTL maximum, mais il doit etre renouvele dans sa periode,
+  # FR | sinon il meurt sans bruit et le coffre cesse simplement de
+  # FR | repondre un jour, sans raison visible. L automatisation
+  # FR | ci-dessous le renouvelle chaque jour.
+  vssp_vault_renew_token:
+    url: "http://192.168.1.11:8200/v1/auth/token/renew-self"
+    method: POST
+    timeout: 15
+    headers:
+      X-Vault-Token: !secret vault_ha_token
+
+# ═══════════════════════════════════════════════════════════════════════
+# EN | HELPERS — an entry path and a version number. No secret value ever
+# EN | goes in one of these: they name WHAT to act on, never what it
+# EN | contains.
+# FR | HELPERS — un chemin d entree et un numero de version. Aucune valeur
+# FR | secrete ne passe jamais par la : ils designent SUR QUOI agir,
+# FR | jamais ce qu elle contient.
+# ═══════════════════════════════════════════════════════════════════════
+input_text:
+  vssp_vault_target:
+    name: "Entrée visée"
+    icon: mdi:target
+    max: 255
+    initial: ""
+
+input_number:
+  vssp_vault_version:
+    name: "Version à restaurer"
+    icon: mdi:history
+    min: 1
+    max: 9999
+    step: 1
+    mode: box
+
+# ═══════════════════════════════════════════════════════════════════════
+# EN | SCRIPTS
+# FR | SCRIPTS
+# ═══════════════════════════════════════════════════════════════════════
+script:
+  vssp_vault_refresh:
+    alias: "Visio Sapiens — Coffre : rafraîchir"
+    sequence:
+      - service: homeassistant.update_entity
+        target:
+          entity_id:
+            - sensor.vssp_vault_seal
+            - sensor.vssp_vault_infra
+            - sensor.vssp_vault_accounts
+            - sensor.vssp_vault_apps
+
+  vssp_vault_delete_entry:
+    alias: "Visio Sapiens — Coffre : supprimer l'entrée visée"
+    mode: single
+    sequence:
+      # EN | Refuse rather than send a DELETE to secret/data/vssp/ with an
+      # EN | empty path — Vault would answer 404 and the screen would
+      # EN | report a failure that says nothing about the real mistake.
+      # FR | Refuser plutot qu envoyer un DELETE sur secret/data/vssp/ avec
+      # FR | un chemin vide — Vault repondrait 404 et l ecran signalerait
+      # FR | un echec qui ne dit rien de la vraie erreur.
+      - condition: template
+        value_template: "{{ states('input_text.vssp_vault_target') | trim | length > 0 }}"
+      - service: rest_command.vssp_vault_delete
+        data:
+          path: "{{ states('input_text.vssp_vault_target') | trim }}"
+      - service: script.vssp_vault_refresh
+      - service: persistent_notification.create
+        data:
+          title: "Visio Sapiens — Coffre"
+          message: >-
+            « {{ states('input_text.vssp_vault_target') }} » supprimée. La
+            version reste récupérable : note son numéro et utilise
+            « Restaurer ».
+
+  vssp_vault_restore_entry:
+    alias: "Visio Sapiens — Coffre : restaurer une version"
+    mode: single
+    sequence:
+      - condition: template
+        value_template: "{{ states('input_text.vssp_vault_target') | trim | length > 0 }}"
+      - service: rest_command.vssp_vault_restore
+        data:
+          path: "{{ states('input_text.vssp_vault_target') | trim }}"
+          version: "{{ states('input_number.vssp_vault_version') | int(1) }}"
+      - service: script.vssp_vault_refresh
+      - service: persistent_notification.create
+        data:
+          title: "Visio Sapiens — Coffre"
+          message: >-
+            Version {{ states('input_number.vssp_vault_version') | int(1) }}
+            de « {{ states('input_text.vssp_vault_target') }} » restaurée.
+
+  vssp_vault_destroy_entry:
+    alias: "Visio Sapiens — Coffre : DÉTRUIRE l'entrée et tout son historique"
+    mode: single
+    sequence:
+      - condition: template
+        value_template: "{{ states('input_text.vssp_vault_target') | trim | length > 0 }}"
+      - service: rest_command.vssp_vault_destroy
+        data:
+          path: "{{ states('input_text.vssp_vault_target') | trim }}"
+      - service: script.vssp_vault_refresh
+      - service: persistent_notification.create
+        data:
+          title: "Visio Sapiens — Coffre"
+          message: >-
+            « {{ states('input_text.vssp_vault_target') }} » détruite, avec
+            toutes ses versions. Cette opération n'a pas d'annulation.
+
+# ═══════════════════════════════════════════════════════════════════════
+# EN | AUTOMATION
+# FR | AUTOMATISATION
+# ═══════════════════════════════════════════════════════════════════════
+automation:
+  - id: vssp_vault_renew
+    alias: "Visio Sapiens — Coffre : renouveler le jeton HA"
+    description: >-
+      Le jeton périodique doit être renouvelé dans sa période, sinon il
+      expire en silence et le coffre cesse de répondre sans raison
+      visible. Aussi au démarrage : après une longue coupure, la période
+      a pu s'écouler.
+    mode: single
+    trigger:
+      - platform: time
+        at: "04:17:00"
+      - platform: homeassistant
+        event: start
+    condition:
+      # EN | Pointless while the safe is shut, and it would log an error
+      # EN | every morning until someone unseals it.
+      # FR | Sans objet tant que le coffre est ferme, et cela journaliserait
+      # FR | une erreur chaque matin jusqu a ce que quelqu un le descelle.
+      - condition: state
+        entity_id: sensor.vssp_vault_seal
+        state: "unsealed"
+    action:
+      - service: rest_command.vssp_vault_renew_token

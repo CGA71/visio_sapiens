@@ -231,6 +231,7 @@ validate:
     - test -f home-assistant/config-fragment.yaml || { echo "[ERR] home-assistant/config-fragment.yaml missing"; exit 1; }
     - test -f vssp/vssp_apply_config.py    || { echo "[ERR] vssp/vssp_apply_config.py missing"; exit 1; }
     - test -f vssp/vssp_ensure_packages.py || { echo "[ERR] vssp/vssp_ensure_packages.py missing"; exit 1; }
+    - test -f vssp/vssp_ensure_secret.py   || { echo "[ERR] vssp/vssp_ensure_secret.py missing"; exit 1; }
     - test -f vssp/vssp_sanitize_resources.py || { echo "[ERR] vssp/vssp_sanitize_resources.py missing"; exit 1; }
     - test -f vssp/vssp_lan_probe.py || { echo "[ERR] vssp/vssp_lan_probe.py missing"; exit 1; }
     - test -f vssp/livebox.env || { echo "[ERR] vssp/livebox.env missing"; exit 1; }
@@ -1278,6 +1279,28 @@ deploy:staging:
         # FR | (idempotent) la cle packages qui charge /config/packages/
         python3 /config/vssp/vssp_ensure_packages.py \
           --config /config/configuration.yaml
+        # EN | packages/vssp_vault.yaml says `!secret vault_ha_token`. A
+        # EN | secrets.yaml that does not define it does NOT produce a
+        # EN | broken sensor — it produces a Home Assistant that refuses to
+        # EN | start, taking every dashboard with it, over one missing
+        # EN | line. And the package ships from here, so the breakage would
+        # EN | land on an instance whose owner never asked for the safe.
+        # EN | Seeded empty, the failure is proportionate: Vault answers
+        # EN | 403, the safe reads as unreachable, everything else works.
+        # EN | Never overwrites an existing value.
+        # FR | packages/vssp_vault.yaml dit `!secret vault_ha_token`. Un
+        # FR | secrets.yaml qui ne la definit pas ne produit PAS un capteur
+        # FR | casse — il produit un Home Assistant qui refuse de demarrer,
+        # FR | emportant chaque dashboard, pour une ligne manquante. Et le
+        # FR | package part d ici, donc la panne atterrirait sur une
+        # FR | instance dont le proprietaire n a jamais demande le coffre.
+        # FR | Amorcee vide, la defaillance est proportionnee : Vault
+        # FR | repond 403, le coffre se lit comme injoignable, tout le
+        # FR | reste fonctionne. N ecrase jamais une valeur existante.
+        python3 /config/vssp/vssp_ensure_secret.py \
+          --config /config/secrets.yaml \
+          --key vault_ha_token \
+          --comment "Visio Sapiens - jeton Vault, policy vssp-ha (noms, jamais valeurs). Voir docs/Vault.md."
         # EN | The patcher dedupes resources by full URL: since ?v= changes on
         # EN | every build, each deployment used to ADD 6 entries. We clean up.
         # FR | Le patcher dedupe les ressources par URL complete : le ?v=
@@ -1615,6 +1638,19 @@ deploy:production:
     - |
       python3 /tmp/osv_pkg/vssp/vssp_ensure_packages.py \
         --config /tmp/prod_configuration.yaml || { echo "[ERR] ensure packages failed"; exit 1; }
+    # EN | Same seeding as staging, but run ON the instance: secrets.yaml is
+    # EN | never copied to the runner. A file full of credentials has no
+    # EN | reason to make a round trip through CI to gain one empty line.
+    # FR | Meme amorcage qu en staging, mais execute SUR l instance :
+    # FR | secrets.yaml n est jamais copie sur le runner. Un fichier plein
+    # FR | d identifiants n a aucune raison de faire l aller-retour par le
+    # FR | CI pour gagner une ligne vide.
+    - |
+      ssh ha "python3 $HA_CFG/vssp/vssp_ensure_secret.py \
+        --config $HA_CFG/secrets.yaml \
+        --key vault_ha_token \
+        --comment 'Visio Sapiens - jeton Vault, policy vssp-ha (noms, jamais valeurs). Voir docs/Vault.md.'" \
+        || { echo "[ERR] ensure secret failed"; exit 1; }
     # EN | Dedupe Lovelace resources (the patcher accumulates successive ?v=)
     # FR | Dedup des ressources Lovelace (le patcher accumule les ?v= successifs)
     - |

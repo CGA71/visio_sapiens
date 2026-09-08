@@ -1,0 +1,873 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Visio Sapiens — Coffre-fort</title>
+<!--
+  EN | Served as /local/vssp/wizard/vssp_vault.html, embedded in the ADMIN
+  EN | console through an iframe, screen "SAFE".
+  FR | Servi comme /local/vssp/wizard/vssp_vault.html, integre dans la
+  FR | console ADMIN via une iframe, ecran « COFFRE-FORT ».
+
+  EN | WHY THIS PAGE TALKS TO VAULT AND NOT TO HOME ASSISTANT
+  EN | This is the only part of the safe that ever sees a secret VALUE, and
+  EN | it is built so that value never touches Home Assistant. Anything HA
+  EN | reads becomes an entity state, and every entity state is written in
+  EN | clear text to home-assistant_v2.db by the recorder, shown in
+  EN | Developer Tools > States to any administrator, and liable to surface
+  EN | in automation traces. Routing a password through HA to display it
+  EN | would copy it out of the safe into a plain file, which is the one
+  EN | thing the safe exists to prevent.
+  EN | So the browser asks Vault directly. The value goes from the safe to
+  EN | the screen and nowhere else.
+  EN | The counterpart lives in packages/vssp_vault.yaml: RESTful sensors
+  EN | carrying entry NAMES and the seal state, with a token whose policy
+  EN | (vssp-ha) grants secret/metadata/* and nothing at all on
+  EN | secret/data/*. Home Assistant is not trusted to avoid the values —
+  EN | it is refused them by Vault.
+  FR | POURQUOI CETTE PAGE PARLE A VAULT ET PAS A HOME ASSISTANT
+  FR | C est la seule partie du coffre qui voie jamais la VALEUR d un
+  FR | secret, et elle est batie pour que cette valeur ne touche jamais
+  FR | Home Assistant. Tout ce que HA lit devient un etat d entite, et tout
+  FR | etat d entite est ecrit en clair dans home-assistant_v2.db par le
+  FR | recorder, affiche dans Outils de developpement > Etats a tout
+  FR | administrateur, et susceptible d apparaitre dans les traces
+  FR | d automatisation. Faire transiter un mot de passe par HA pour
+  FR | l afficher le recopierait hors du coffre dans un fichier en clair,
+  FR | soit precisement ce que le coffre existe pour empecher.
+  FR | Le navigateur interroge donc Vault directement. La valeur va du
+  FR | coffre a l ecran et nulle part ailleurs.
+  FR | Le pendant vit dans packages/vssp_vault.yaml : des capteurs RESTful
+  FR | portant les NOMS d entrees et l etat de scellement, avec un token
+  FR | dont la policy (vssp-ha) accorde secret/metadata/* et absolument
+  FR | rien sur secret/data/*. Home Assistant n est pas cru sur parole
+  FR | quant aux valeurs — Vault les lui refuse.
+
+  EN | PREREQUISITE — Vault must allow this origin. The page is served from
+  EN | Home Assistant on :8123 and calls Vault on :8200, a different origin
+  EN | as far as the browser is concerned, so every request is blocked
+  EN | before it leaves unless sys/config/cors names it. vault/bootstrap.sh
+  EN | sets that.
+  FR | PREREQUIS — Vault doit autoriser cette origine. La page est servie
+  FR | par Home Assistant sur le :8123 et appelle Vault sur le :8200, une
+  FR | origine differente du point de vue du navigateur : chaque requete
+  FR | est donc bloquee avant de partir tant que sys/config/cors ne la
+  FR | nomme pas. vault/bootstrap.sh s en charge.
+-->
+<style>
+  :root{
+    --cy:#00E5FF; --cy-dim:rgba(0,229,255,.25); --gr:#00FFC3;
+    --or:#FF9800; --rd:#FF3D71; --txt:#FFFFFF; --dim:#8FB6C9; --mut:#56707E;
+    --bg:#050B12; --panel:rgba(8,18,28,.72);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:'Rajdhani','Segoe UI',system-ui,sans-serif;font-size:14px;
+    background-image:radial-gradient(circle at 20% 0%,rgba(0,229,255,.07),transparent 55%)}
+  .page{max-width:1100px;margin:0 auto;padding:24px 18px 80px}
+
+  .header{display:flex;align-items:center;gap:14px;margin-bottom:22px}
+  .logo{width:42px;height:42px;border-radius:12px;border:1px solid var(--cy-dim);
+    display:grid;place-items:center;color:var(--cy);font-size:20px;
+    box-shadow:0 0 18px rgba(0,229,255,.18)}
+  .header h1{margin:0;font-family:'Orbitron','Courier New',monospace;font-size:17px;
+    letter-spacing:3px;color:var(--cy)}
+  .header p{margin:2px 0 0;font-size:11px;letter-spacing:2px;color:var(--mut)}
+  .ha-url{margin-left:auto;font-size:11px;color:var(--mut);text-align:right;line-height:1.5}
+
+  .card{background:var(--panel);border:1px solid var(--cy-dim);border-radius:18px;
+    padding:18px;margin-bottom:16px;backdrop-filter:blur(12px)}
+  .card-title{font-family:'Orbitron',monospace;font-size:12px;letter-spacing:2px;color:var(--cy)}
+  .card-sub{font-size:12px;color:var(--dim);margin-top:4px;line-height:1.5}
+
+  input[type=text],input[type=password]{background:rgba(0,0,0,.35);
+    border:1px solid rgba(0,229,255,.22);border-radius:10px;color:var(--txt);
+    padding:9px 12px;font-size:13px;font-family:inherit;outline:none;width:100%}
+  input:focus{border-color:var(--cy);box-shadow:0 0 0 2px rgba(0,229,255,.12)}
+  label{display:block;font-size:11px;letter-spacing:1px;color:var(--mut);
+    text-transform:uppercase;margin:0 0 5px}
+  .field{margin-bottom:12px}
+  .btn{background:rgba(0,229,255,.10);border:1px solid rgba(0,229,255,.45);color:var(--cy);
+    border-radius:12px;padding:10px 18px;font-family:'Orbitron',monospace;font-size:11px;
+    letter-spacing:1.5px;cursor:pointer;transition:.2s;display:inline-block}
+  .btn:hover:not(:disabled){background:rgba(0,229,255,.2);box-shadow:0 0 16px rgba(0,229,255,.25)}
+  .btn:disabled{opacity:.35;cursor:not-allowed}
+  .btn:focus-visible{outline:2px solid var(--cy);outline-offset:2px}
+  .btn-sm{padding:6px 12px;font-size:10px}
+  .btn-ghost{background:transparent;border-color:rgba(143,182,201,.3);color:var(--dim)}
+  .btn-danger{background:rgba(255,61,113,.10);border-color:rgba(255,61,113,.5);color:var(--rd)}
+  .btn-danger:hover:not(:disabled){background:rgba(255,61,113,.2)}
+  .bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+  .spacer{flex:1}
+
+  .msg{border-radius:12px;padding:10px 14px;margin-bottom:14px;font-size:13px;
+    white-space:pre-line;line-height:1.5}
+  .msg.err{background:rgba(255,61,113,.10);border:1px solid rgba(255,61,113,.4);color:#FFC2D2}
+  .msg.ok{background:rgba(0,255,195,.08);border:1px solid rgba(0,255,195,.35);color:#B6FFEC}
+  .msg.warn{background:rgba(255,152,0,.10);border:1px solid rgba(255,152,0,.4);color:#FFD9A0}
+
+  .row{display:grid;grid-template-columns:28px 1fr auto;gap:12px;align-items:center;
+    padding:11px 4px;border-bottom:1px solid rgba(0,229,255,.08)}
+  .row:last-child{border-bottom:none}
+  .row .ico{font-size:17px;text-align:center;color:var(--cy)}
+  .row .nm{font-size:14px;font-weight:600;letter-spacing:.3px;word-break:break-all}
+  .row .sub{font-size:11px;color:var(--mut);margin-top:2px}
+  .row .act{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+  .tag{display:inline-block;font-family:'Orbitron',monospace;font-size:9px;letter-spacing:1px;
+    padding:2px 7px;border-radius:6px;margin-left:8px;vertical-align:1px}
+  .tag.info{background:rgba(0,229,255,.08);color:var(--cy);border:1px solid var(--cy-dim)}
+  .tag.warn{background:rgba(255,152,0,.12);color:var(--or);border:1px solid rgba(255,152,0,.35)}
+  .empty{color:var(--mut);font-size:13px;padding:14px 4px}
+  .count{font-family:'Orbitron',monospace;font-size:11px;color:var(--dim);margin-left:8px}
+
+  /* EN | The revealed panel. Monospace because a password is read
+     EN | character by character, and a font that distinguishes l/1/I and
+     EN | O/0 is the difference between a copy that works and ten minutes
+     EN | lost.
+     FR | Le panneau revele. Monospace parce qu un mot de passe se lit
+     FR | caractere par caractere, et qu une police qui distingue l/1/I et
+     FR | O/0 fait la difference entre une recopie qui marche et dix
+     FR | minutes perdues. */
+  .secret{background:rgba(0,0,0,.45);border:1px dashed rgba(0,255,195,.35);
+    border-radius:12px;padding:12px 14px;margin-top:10px}
+  .kv{display:grid;grid-template-columns:minmax(90px,auto) 1fr auto;gap:10px;
+    align-items:center;padding:6px 0}
+  .kv .k{font-size:11px;letter-spacing:1px;color:var(--mut);text-transform:uppercase}
+  .kv .v{font-family:'Courier New',monospace;font-size:14px;color:var(--gr);
+    word-break:break-all;user-select:all}
+  .kv .v.masked{color:var(--mut);letter-spacing:2px;user-select:none}
+  .countdown{font-family:'Orbitron',monospace;font-size:10px;color:var(--or);
+    letter-spacing:1px;margin-top:8px}
+  .pairs .kv{grid-template-columns:1fr 1fr auto}
+  a{color:var(--cy)}
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="header">
+    <div class="logo">⬡</div>
+    <div>
+      <h1>VISIO SAPIENS</h1>
+      <p id="page-subtitle">COFFRE-FORT</p>
+    </div>
+    <div class="ha-url" id="ha-url"></div>
+  </div>
+  <div id="content"></div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+// EN | Vault's address is derived from the address you are already using to
+// EN | reach Home Assistant, not hardcoded. Vault's CORS allow-list names
+// EN | one exact origin, so the two must agree: reaching HA by IP and Vault
+// EN | by hostname (or the reverse) is blocked by the browser with nothing
+// EN | in either log to explain it. Deriving keeps them in step by
+// EN | construction. ?vault= overrides it for a split deployment.
+// FR | L adresse de Vault est derivee de celle par laquelle tu joins deja
+// FR | Home Assistant, pas ecrite en dur. La liste CORS de Vault nomme une
+// FR | origine exacte, les deux doivent donc concorder : joindre HA par IP
+// FR | et Vault par nom d hote (ou l inverse) est bloque par le navigateur
+// FR | sans rien dans aucun des deux journaux pour l expliquer. La deriver
+// FR | les garde accordees par construction. ?vault= permet de forcer une
+// FR | autre adresse pour un deploiement separe.
+// ═══════════════════════════════════════════════════════════════════════════
+const QS = new URLSearchParams(location.search);
+const VAULT = (QS.get("vault") || (location.protocol + "//" + location.hostname + ":8200"))
+                .replace(/\/+$/, "");
+
+// EN | sessionStorage, never localStorage: the Vault token is a live
+// EN | credential to every secret in the safe. sessionStorage dies with the
+// EN | tab, so closing the console ends the session; localStorage would
+// EN | leave it on disk until something got round to clearing it.
+// FR | sessionStorage, jamais localStorage : le token Vault est un
+// FR | identifiant vivant vers chaque secret du coffre. sessionStorage meurt
+// FR | avec l onglet, donc fermer la console met fin a la session ;
+// FR | localStorage le laisserait sur disque jusqu a ce que quelque chose
+// FR | pense a l effacer.
+const SS_TOKEN = "vssp_vault_token";
+const SS_USER  = "vssp_vault_user";
+
+// EN | Branches. Each is a KV v2 path under secret/vssp/ and a card on
+// EN | screen. Adding one here and to vault/policies + the package's
+// EN | sensors is all it takes.
+// FR | Branches. Chacune est un chemin KV v2 sous secret/vssp/ et une carte
+// FR | a l ecran. En ajouter une ici, dans vault/policies et dans les
+// FR | capteurs du package suffit.
+const BRANCHES = [
+  {id: "infra",    icon: "⛨", key: "branch_infra"},
+  {id: "accounts", icon: "◍", key: "branch_accounts"},
+  {id: "apps",     icon: "◈", key: "branch_apps"}
+];
+
+// EN | How long a revealed value stays on screen. Long enough to read a
+// EN | long password out or paste it somewhere, short enough that walking
+// EN | away from the tablet does not leave the safe open on the wall.
+// FR | Combien de temps une valeur revelee reste a l ecran. Assez pour lire
+// FR | un long mot de passe ou le coller ailleurs, assez peu pour que
+// FR | s eloigner de la tablette ne laisse pas le coffre ouvert au mur.
+const REVEAL_SECONDS = 45;
+
+const I18N = {
+  fr: {
+    subtitle: "COFFRE-FORT",
+    sealed_title: "COFFRE SCELLÉ",
+    sealed_msg: "Vault s'est rescellé — c'est ce qu'il fait à chaque redémarrage. Il ne peut rien lire ni écrire tant que {t} des {n} clés de descellement n'ont pas été saisies ({progress} fournie(s)).",
+    sealed_how: "Sur l'hôte : docker exec -it vssp-vault vault operator unseal — trois fois, une clé différente à chaque appel.",
+    unreachable_title: "COFFRE INJOIGNABLE",
+    unreachable_msg: "Aucune réponse de {url}. Le conteneur ne tourne pas, ou l'origine de cette page n'est pas autorisée dans le CORS de Vault. Voir docs/Vault.fr.md.",
+    login_title: "OUVRIR LE COFFRE",
+    login_sub: "Identifiants Vault (méthode userpass) — distincts de ceux de Home Assistant. La session dure 1 h et meurt avec cet onglet.",
+    user: "Utilisateur",
+    password: "Mot de passe",
+    login: "Ouvrir",
+    logout: "Fermer la session",
+    busy_login: "Ouverture…",
+    busy_loading: "Lecture du coffre…",
+    busy_saving: "Enregistrement…",
+    busy_deleting: "Suppression…",
+    reload: "Recharger",
+    session_until: "Session jusqu'à {time}",
+
+    branch_infra: "INFRASTRUCTURE",
+    branch_infra_sub: "Accès SSH, k3s, routeur — ce qui ouvre les machines.",
+    branch_accounts: "COMPTES",
+    branch_accounts_sub: "Comptes personnels et professionnels.",
+    branch_apps: "APPLICATIONS",
+    branch_apps_sub: "Clés d'API et mots de passe applicatifs.",
+    empty_branch: "Aucune entrée.",
+
+    reveal: "Révéler",
+    hide: "Masquer",
+    edit: "Modifier",
+    del: "Supprimer",
+    copy: "Copier",
+    copied: "Copié",
+    copy_failed: "Copie impossible — sélectionne la valeur et copie-la à la main.",
+    new_entry: "Nouvelle entrée",
+    entry_name: "Nom de l'entrée",
+    entry_name_hint: "Lettres, chiffres, tiret, underscore, point. Par exemple : k3s-neo ou livebox-admin.",
+    field_name: "Champ",
+    field_value: "Valeur",
+    add_field: "Ajouter un champ",
+    save: "Enregistrer",
+    cancel: "Annuler",
+    version: "version {v}",
+    updated: "modifiée le {d}",
+    hides_in: "Se masque dans {s} s",
+
+    confirm_delete: "Supprimer « {name} » ?\n\nLa version reste récupérable depuis Home Assistant tant qu'elle n'est pas détruite.",
+    notice_saved: "« {name} » enregistrée (version {v}).",
+    notice_deleted: "« {name} » supprimée.",
+    err_login: "Connexion refusée : {msg}",
+    err_failed: "Échec : {msg}",
+    err_denied: "Refusé par Vault — cette policy ne donne pas ce droit.",
+    err_name: "Nom invalide. Lettres, chiffres, tiret, underscore et point seulement.",
+    err_no_field: "Ajoute au moins un champ avec un nom.",
+  },
+  en: {
+    subtitle: "SAFE",
+    sealed_title: "SAFE SEALED",
+    sealed_msg: "Vault resealed itself — it does that on every restart. It can neither read nor write until {t} of the {n} unseal keys are entered ({progress} so far).",
+    sealed_how: "On the host: docker exec -it vssp-vault vault operator unseal — three times, a different key each call.",
+    unreachable_title: "SAFE UNREACHABLE",
+    unreachable_msg: "No answer from {url}. Either the container is not running, or this page's origin is not allowed in Vault's CORS config. See docs/Vault.md.",
+    login_title: "OPEN THE SAFE",
+    login_sub: "Vault credentials (userpass method) — separate from your Home Assistant ones. The session lasts 1 h and dies with this tab.",
+    user: "User",
+    password: "Password",
+    login: "Open",
+    logout: "Close session",
+    busy_login: "Opening…",
+    busy_loading: "Reading the safe…",
+    busy_saving: "Saving…",
+    busy_deleting: "Deleting…",
+    reload: "Reload",
+    session_until: "Session until {time}",
+
+    branch_infra: "INFRASTRUCTURE",
+    branch_infra_sub: "SSH, k3s and router access — what opens the machines.",
+    branch_accounts: "ACCOUNTS",
+    branch_accounts_sub: "Personal and work accounts.",
+    branch_apps: "APPLICATIONS",
+    branch_apps_sub: "API keys and application passwords.",
+    empty_branch: "No entry.",
+
+    reveal: "Reveal",
+    hide: "Hide",
+    edit: "Edit",
+    del: "Delete",
+    copy: "Copy",
+    copied: "Copied",
+    copy_failed: "Copy unavailable — select the value and copy it by hand.",
+    new_entry: "New entry",
+    entry_name: "Entry name",
+    entry_name_hint: "Letters, digits, dash, underscore, dot. For example: k3s-neo or livebox-admin.",
+    field_name: "Field",
+    field_value: "Value",
+    add_field: "Add a field",
+    save: "Save",
+    cancel: "Cancel",
+    version: "version {v}",
+    updated: "updated {d}",
+    hides_in: "Hides in {s} s",
+
+    confirm_delete: "Delete \"{name}\"?\n\nThe version stays recoverable from Home Assistant until it is destroyed.",
+    notice_saved: "\"{name}\" saved (version {v}).",
+    notice_deleted: "\"{name}\" deleted.",
+    err_login: "Login refused: {msg}",
+    err_failed: "Failed: {msg}",
+    err_denied: "Refused by Vault — this policy does not grant that.",
+    err_name: "Invalid name. Letters, digits, dash, underscore and dot only.",
+    err_no_field: "Add at least one field with a name.",
+  }
+};
+
+function t(key, vars){
+  const dict = I18N[state.lang] || I18N.fr;
+  let s = dict[key] != null ? dict[key] : (I18N.fr[key] != null ? I18N.fr[key] : key);
+  if (vars) Object.keys(vars).forEach(k => { s = s.split("{" + k + "}").join(vars[k]); });
+  return s;
+}
+
+let state = {
+  // EN | ?lang= comes from the ADMIN template, which knows the generated
+  // EN | locale. This page has no Home Assistant token and so cannot read
+  // EN | input_select.vssp_language the way the other wizards do.
+  // FR | ?lang= vient du template ADMIN, qui connait la locale generee.
+  // FR | Cette page n a pas de token Home Assistant et ne peut donc pas
+  // FR | lire input_select.vssp_language comme le font les autres
+  // FR | assistants.
+  lang: (I18N[QS.get("lang")] ? QS.get("lang") : "fr"),
+  token: sessionStorage.getItem(SS_TOKEN) || "",
+  user: sessionStorage.getItem(SS_USER) || "",
+  expiry: null,
+  seal: null,          // null = unknown, {sealed, t, n, progress}
+  reachable: true,
+  loading: false,
+  busyLabel: "",
+  error: "",
+  notice: "",
+  entries: {},         // branch -> [{name, version, updated}]
+  revealed: null,      // {branch, name, data, shown:bool, left:int}
+  editing: null,       // {branch, name, pairs:[{k,v}], isNew:bool}
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// EN | VAULT
+// FR | VAULT
+// ═══════════════════════════════════════════════════════════════════════════
+async function vault(method, path, body, opts){
+  const headers = {};
+  if (state.token && !(opts && opts.anon)) headers["X-Vault-Token"] = state.token;
+  if (body !== undefined) headers["Content-Type"] = "application/json";
+  let res;
+  try{
+    res = await fetch(VAULT + "/v1/" + path, {
+      method, headers,
+      body: body === undefined ? undefined : JSON.stringify(body)
+    });
+  }catch(e){
+    // EN | A network-level failure here is almost never the network: it is
+    // EN | CORS refusing the request before it leaves, or the container
+    // EN | being down. Both surface as an opaque TypeError with nothing
+    // EN | useful in it, so the message has to name both causes.
+    // FR | Un echec au niveau reseau ici n est presque jamais le reseau :
+    // FR | c est CORS qui refuse la requete avant son depart, ou le
+    // FR | conteneur qui est arrete. Les deux se presentent en TypeError
+    // FR | opaque sans rien d exploitable, donc le message doit nommer les
+    // FR | deux causes.
+    state.reachable = false;
+    throw new Error("unreachable");
+  }
+  state.reachable = true;
+  if (res.status === 204) return null;
+  const text = await res.text();
+  const json = text ? JSON.parse(text) : null;
+  if (!res.ok){
+    if (res.status === 403) throw new Error(t("err_denied"));
+    const msg = json && json.errors && json.errors.length
+      ? json.errors.join(", ") : ("HTTP " + res.status);
+    throw new Error(msg);
+  }
+  return json;
+}
+
+async function checkSeal(){
+  try{
+    // EN | Unauthenticated on purpose, and the only call that still works
+    // EN | when the safe is shut — which is exactly when the screen has
+    // EN | something worth saying.
+    // FR | Non authentifie a dessein, et le seul appel qui fonctionne
+    // FR | encore quand le coffre est ferme — soit precisement le moment ou
+    // FR | l ecran a quelque chose a dire.
+    const s = await vault("GET", "sys/seal-status", undefined, {anon: true});
+    state.seal = s;
+  }catch(e){ state.seal = null; }
+}
+
+async function login(){
+  const u = (document.getElementById("v-user") || {}).value || "";
+  const p = (document.getElementById("v-pass") || {}).value || "";
+  if (!u.trim() || !p) return;
+  setBusy(true, t("busy_login"));
+  try{
+    const r = await vault("POST", "auth/userpass/login/" + encodeURIComponent(u.trim()),
+                          {password: p}, {anon: true});
+    state.token = r.auth.client_token;
+    state.user = u.trim();
+    state.expiry = Date.now() + (r.auth.lease_duration || 3600) * 1000;
+    sessionStorage.setItem(SS_TOKEN, state.token);
+    sessionStorage.setItem(SS_USER, state.user);
+    await loadAll();
+  }catch(e){
+    state.error = e.message === "unreachable"
+      ? t("unreachable_msg", {url: VAULT})
+      : t("err_login", {msg: e.message});
+  }finally{ setBusy(false); }
+}
+
+async function logout(){
+  // EN | Revoke rather than merely forget: a token dropped from
+  // EN | sessionStorage is still valid at Vault until its TTL runs out.
+  // FR | Revoquer plutot que simplement oublier : un token retire de
+  // FR | sessionStorage reste valide cote Vault jusqu a expiration de son
+  // FR | TTL.
+  try{ await vault("POST", "auth/token/revoke-self"); }catch(_){}
+  state.token = ""; state.user = ""; state.expiry = null;
+  state.entries = {}; state.revealed = null; state.editing = null;
+  sessionStorage.removeItem(SS_TOKEN);
+  sessionStorage.removeItem(SS_USER);
+  render();
+}
+
+// EN | One LIST per branch, then one metadata read per entry for its
+// EN | version and update time. Metadata never carries a value, so this
+// EN | whole pass is safe to run on load; the values are fetched only when
+// EN | you explicitly reveal one.
+// FR | Un LIST par branche, puis une lecture de metadonnees par entree pour
+// FR | sa version et sa date de modification. Les metadonnees ne portent
+// FR | jamais de valeur, cette passe entiere est donc sans risque au
+// FR | chargement ; les valeurs ne sont recuperees que lorsqu on en revele
+// FR | une explicitement.
+async function loadAll(){
+  await checkSeal();
+  if (state.seal && state.seal.sealed){ state.entries = {}; return; }
+  const out = {};
+  for (const b of BRANCHES){
+    let names = [];
+    try{
+      const r = await vault("GET", "secret/metadata/vssp/" + b.id + "?list=true");
+      names = (r && r.data && r.data.keys) || [];
+    }catch(e){
+      // EN | 404 simply means the branch holds nothing yet — not an error
+      // EN | worth a red banner on a safe that is merely new.
+      // FR | Un 404 signifie simplement que la branche ne contient encore
+      // FR | rien — pas une erreur meritant un bandeau rouge sur un coffre
+      // FR | simplement neuf.
+      names = [];
+    }
+    // EN | The bootstrap placeholder is bookkeeping, not an entry.
+    // FR | Le marqueur pose par le bootstrap est de la comptabilite, pas
+    // FR | une entree.
+    names = names.filter(n => !n.startsWith("."));
+    const rows = await Promise.all(names.map(async name => {
+      try{
+        const m = await vault("GET", "secret/metadata/vssp/" + b.id + "/" + name);
+        return {name, version: m.data.current_version, updated: m.data.updated_time};
+      }catch(_){ return {name, version: null, updated: null}; }
+    }));
+    out[b.id] = rows.sort((x, y) => x.name.localeCompare(y.name));
+  }
+  state.entries = out;
+}
+
+async function reveal(branch, name){
+  if (state.revealed && state.revealed.branch === branch && state.revealed.name === name){
+    return hideSecret();
+  }
+  setBusy(true, t("busy_loading"));
+  try{
+    const r = await vault("GET", "secret/data/vssp/" + branch + "/" + name);
+    state.revealed = {branch, name, data: r.data.data || {}, shown: false,
+                      left: REVEAL_SECONDS};
+    startCountdown();
+  }catch(e){ state.error = t("err_failed", {msg: e.message}); }
+  finally{ setBusy(false); }
+}
+
+let countdownTimer = null;
+function startCountdown(){
+  clearInterval(countdownTimer);
+  countdownTimer = setInterval(() => {
+    if (!state.revealed) return clearInterval(countdownTimer);
+    state.revealed.left -= 1;
+    if (state.revealed.left <= 0) return hideSecret();
+    const el = document.getElementById("countdown");
+    // EN | Tick the counter in place instead of re-rendering: a full render
+    // EN | every second would drop the focus of anyone typing in the edit
+    // EN | form open beside it.
+    // FR | Faire avancer le compteur sur place plutot que de re-rendre :
+    // FR | un rendu complet chaque seconde ferait perdre le focus a qui
+    // FR | saisit dans le formulaire d edition ouvert a cote.
+    if (el) el.textContent = t("hides_in", {s: state.revealed.left});
+  }, 1000);
+}
+function hideSecret(){
+  clearInterval(countdownTimer);
+  state.revealed = null;
+  render();
+}
+function toggleShown(){
+  if (!state.revealed) return;
+  state.revealed.shown = !state.revealed.shown;
+  render();
+}
+
+// EN | navigator.clipboard is undefined outside a secure context, and this
+// EN | console is served over plain http on the LAN — so the modern API is
+// EN | simply not there. The textarea + execCommand fallback is deprecated
+// EN | and still the only thing that works here; without it the Copy button
+// EN | would fail silently on every click.
+// FR | navigator.clipboard n existe pas hors contexte securise, et cette
+// FR | console est servie en http simple sur le reseau local — l API
+// FR | moderne est donc tout bonnement absente. Le repli textarea +
+// FR | execCommand est deprecie et reste la seule chose qui fonctionne ici ;
+// FR | sans lui le bouton Copier echouerait en silence a chaque clic.
+async function copyValue(key){
+  if (!state.revealed) return;
+  const value = state.revealed.data[key];
+  let ok = false;
+  try{
+    if (navigator.clipboard && window.isSecureContext){
+      await navigator.clipboard.writeText(value);
+      ok = true;
+    }
+  }catch(_){ ok = false; }
+  if (!ok){
+    try{
+      const ta = document.createElement("textarea");
+      ta.value = value;
+      ta.style.position = "fixed"; ta.style.opacity = "0";
+      document.body.appendChild(ta);
+      ta.select();
+      ok = document.execCommand("copy");
+      document.body.removeChild(ta);
+    }catch(_){ ok = false; }
+  }
+  state.notice = ok ? t("copied") : "";
+  state.error = ok ? "" : t("copy_failed");
+  render();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// EN | EDITING
+// FR | EDITION
+// ═══════════════════════════════════════════════════════════════════════════
+// EN | Vault path segments have to stay simple: a slash would silently
+// EN | create a sub-branch the list never shows, and the sensors in
+// EN | packages/vssp_vault.yaml list one level only.
+// FR | Les segments de chemin Vault doivent rester simples : une barre
+// FR | oblique creerait en silence une sous-branche que la liste n affiche
+// FR | jamais, et les capteurs de packages/vssp_vault.yaml ne listent qu un
+// FR | seul niveau.
+const NAME_OK = /^[A-Za-z0-9._-]{1,128}$/;
+
+function startNew(branch){
+  state.editing = {branch, name: "", pairs: [{k: "", v: ""}], isNew: true};
+  state.revealed = null;
+  render();
+}
+async function startEdit(branch, name){
+  setBusy(true, t("busy_loading"));
+  try{
+    const r = await vault("GET", "secret/data/vssp/" + branch + "/" + name);
+    const d = r.data.data || {};
+    const pairs = Object.keys(d).map(k => ({k, v: d[k]}));
+    state.editing = {branch, name, pairs: pairs.length ? pairs : [{k: "", v: ""}],
+                     isNew: false};
+    state.revealed = null;
+  }catch(e){ state.error = t("err_failed", {msg: e.message}); }
+  finally{ setBusy(false); }
+}
+function cancelEdit(){ state.editing = null; render(); }
+function addPair(){
+  if (!state.editing) return;
+  collectPairs();
+  state.editing.pairs.push({k: "", v: ""});
+  render();
+}
+function dropPair(i){
+  if (!state.editing) return;
+  collectPairs();
+  state.editing.pairs.splice(i, 1);
+  if (!state.editing.pairs.length) state.editing.pairs.push({k: "", v: ""});
+  render();
+}
+// EN | Read the inputs back into state before any re-render, or adding a
+// EN | field would silently discard everything typed into the others.
+// FR | Relire les champs dans l etat avant tout re-rendu, sinon ajouter une
+// FR | ligne effacerait en silence tout ce qui a ete saisi dans les autres.
+function collectPairs(){
+  if (!state.editing) return;
+  state.editing.pairs.forEach((p, i) => {
+    const k = document.getElementById("pk-" + i);
+    const v = document.getElementById("pv-" + i);
+    if (k) p.k = k.value;
+    if (v) p.v = v.value;
+  });
+  const n = document.getElementById("e-name");
+  if (n) state.editing.name = n.value;
+}
+
+async function saveEntry(){
+  if (!state.editing) return;
+  collectPairs();
+  const {branch, isNew} = state.editing;
+  const name = (state.editing.name || "").trim();
+  if (!NAME_OK.test(name)){ state.error = t("err_name"); return render(); }
+  const data = {};
+  state.editing.pairs.forEach(p => {
+    const k = (p.k || "").trim();
+    if (k) data[k] = p.v == null ? "" : p.v;
+  });
+  if (!Object.keys(data).length){ state.error = t("err_no_field"); return render(); }
+  setBusy(true, t("busy_saving"));
+  try{
+    // EN | KV v2 wraps the payload in `data`. Writing the bare object
+    // EN | stores a secret whose only field is called "data" — it succeeds,
+    // EN | which is what makes the mistake hard to spot.
+    // FR | KV v2 enveloppe la charge utile dans `data`. Ecrire l objet nu
+    // FR | enregistre un secret dont l unique champ s appelle « data » —
+    // FR | l appel reussit, ce qui rend l erreur difficile a reperer.
+    const r = await vault("POST", "secret/data/vssp/" + branch + "/" + name, {data});
+    state.editing = null;
+    state.notice = t("notice_saved", {name, v: (r && r.data && r.data.version) || "?"});
+    await loadAll();
+  }catch(e){ state.error = t("err_failed", {msg: e.message}); }
+  finally{ setBusy(false); }
+}
+
+async function deleteEntry(branch, name){
+  if (!confirm(t("confirm_delete", {name}))) return;
+  setBusy(true, t("busy_deleting"));
+  try{
+    await vault("DELETE", "secret/data/vssp/" + branch + "/" + name);
+    if (state.revealed && state.revealed.name === name) state.revealed = null;
+    state.notice = t("notice_deleted", {name});
+    await loadAll();
+  }catch(e){ state.error = t("err_failed", {msg: e.message}); }
+  finally{ setBusy(false); }
+}
+
+async function reload(){
+  setBusy(true, t("busy_loading"));
+  try{ await loadAll(); }
+  catch(e){ state.error = t("err_failed", {msg: e.message}); }
+  finally{ setBusy(false); }
+}
+
+function setBusy(on, label){
+  state.loading = on;
+  state.busyLabel = label || "";
+  if (on){ state.error = ""; state.notice = ""; }
+  render();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// EN | RENDER
+// FR | RENDU
+// ═══════════════════════════════════════════════════════════════════════════
+function esc(s){
+  return String(s == null ? "" : s)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+function fmtDate(iso){
+  if (!iso) return "";
+  const d = new Date(iso);
+  return isNaN(d) ? "" : d.toLocaleDateString() + " " + d.toLocaleTimeString().slice(0,5);
+}
+
+function renderSeal(){
+  if (!state.reachable){
+    return `<div class="card">
+      <div class="card-title">${esc(t("unreachable_title"))}</div>
+      <div class="card-sub">${esc(t("unreachable_msg", {url: VAULT}))}</div>
+    </div>`;
+  }
+  if (state.seal && state.seal.sealed){
+    return `<div class="msg warn"><b>${esc(t("sealed_title"))}</b>
+      ${esc(t("sealed_msg", {t: state.seal.t, n: state.seal.n,
+                             progress: state.seal.progress}))}
+      ${esc(t("sealed_how"))}</div>`;
+  }
+  return "";
+}
+
+function renderLogin(){
+  return `<div class="card">
+    <div class="card-title">${esc(t("login_title"))}</div>
+    <div class="card-sub">${esc(t("login_sub"))}</div>
+    <div style="height:14px"></div>
+    <div class="field"><label>${esc(t("user"))}</label>
+      <input type="text" id="v-user" value="${esc(state.user)}" autocomplete="username"/></div>
+    <div class="field"><label>${esc(t("password"))}</label>
+      <input type="password" id="v-pass" autocomplete="current-password"
+             onkeydown="if(event.key==='Enter')login()"/></div>
+    <button class="btn" onclick="login()" ${state.loading ? "disabled" : ""}>`
+    + `${esc(state.loading ? state.busyLabel : t("login"))}</button>
+  </div>`;
+}
+
+function renderSecret(){
+  const r = state.revealed;
+  if (!r) return "";
+  const keys = Object.keys(r.data);
+  let h = `<div class="secret">`;
+  keys.forEach(k => {
+    const shown = r.shown;
+    h += `<div class="kv">
+      <div class="k">${esc(k)}</div>
+      <div class="v ${shown ? "" : "masked"}">`
+      + (shown ? esc(r.data[k]) : "••••••••••••")
+      + `</div>
+      <div><button class="btn btn-sm btn-ghost" onclick="copyValue('${esc(k)}')">`
+      + `${esc(t("copy"))}</button></div>
+    </div>`;
+  });
+  h += `<div class="bar" style="margin:8px 0 0">
+      <button class="btn btn-sm" onclick="toggleShown()">`
+      + `${esc(r.shown ? t("hide") : t("reveal"))}</button>
+      <button class="btn btn-sm btn-ghost" onclick="hideSecret()">${esc(t("cancel"))}</button>
+    </div>
+    <div class="countdown" id="countdown">${esc(t("hides_in", {s: r.left}))}</div>`;
+  return h + `</div>`;
+}
+
+function renderEditor(){
+  const e = state.editing;
+  if (!e) return "";
+  let h = `<div class="secret">
+    <div class="field"><label>${esc(t("entry_name"))}</label>
+      <input type="text" id="e-name" value="${esc(e.name)}" ${e.isNew ? "" : "readonly"}/>
+      <div class="card-sub">${esc(t("entry_name_hint"))}</div></div>
+    <div class="pairs">`;
+  e.pairs.forEach((p, i) => {
+    h += `<div class="kv">
+      <div><input type="text" id="pk-${i}" value="${esc(p.k)}"
+                  placeholder="${esc(t("field_name"))}"/></div>
+      <div><input type="text" id="pv-${i}" value="${esc(p.v)}"
+                  placeholder="${esc(t("field_value"))}"/></div>
+      <div><button class="btn btn-sm btn-ghost" onclick="dropPair(${i})">✕</button></div>
+    </div>`;
+  });
+  h += `</div><div class="bar" style="margin:10px 0 0">
+      <button class="btn btn-sm btn-ghost" onclick="addPair()">${esc(t("add_field"))}</button>
+      <div class="spacer"></div>
+      <button class="btn btn-sm" onclick="saveEntry()">${esc(t("save"))}</button>
+      <button class="btn btn-sm btn-ghost" onclick="cancelEdit()">${esc(t("cancel"))}</button>
+    </div></div>`;
+  return h;
+}
+
+function renderBranch(b){
+  const rows = state.entries[b.id] || [];
+  let h = `<div class="card">
+    <div class="card-title">${esc(t(b.key))}<span class="count">${rows.length}</span></div>
+    <div class="card-sub">${esc(t(b.key + "_sub"))}</div>
+    <div style="height:10px"></div>`;
+
+  if (state.editing && state.editing.branch === b.id && state.editing.isNew){
+    h += renderEditor();
+  }
+
+  if (!rows.length){
+    h += `<div class="empty">${esc(t("empty_branch"))}</div>`;
+  } else {
+    rows.forEach(r => {
+      const open = state.revealed && state.revealed.branch === b.id
+                   && state.revealed.name === r.name;
+      const editingThis = state.editing && state.editing.branch === b.id
+                          && state.editing.name === r.name && !state.editing.isNew;
+      h += `<div class="row">
+        <div class="ico">${b.icon}</div>
+        <div>
+          <div class="nm">${esc(r.name)}`
+          + (r.version ? `<span class="tag info">${esc(t("version", {v: r.version}))}</span>` : "")
+          + `</div>
+          <div class="sub">${esc(r.updated ? t("updated", {d: fmtDate(r.updated)}) : "")}</div>
+        </div>
+        <div class="act">
+          <button class="btn btn-sm" onclick="reveal('${esc(b.id)}','${esc(r.name)}')">`
+          + `${esc(open ? t("hide") : t("reveal"))}</button>
+          <button class="btn btn-sm btn-ghost" onclick="startEdit('${esc(b.id)}','${esc(r.name)}')">`
+          + `${esc(t("edit"))}</button>
+          <button class="btn btn-sm btn-danger" onclick="deleteEntry('${esc(b.id)}','${esc(r.name)}')">`
+          + `${esc(t("del"))}</button>
+        </div>
+      </div>`;
+      if (open) h += renderSecret();
+      if (editingThis) h += renderEditor();
+    });
+  }
+
+  h += `<div style="height:12px"></div>
+    <button class="btn btn-sm btn-ghost" onclick="startNew('${esc(b.id)}')">`
+    + `＋ ${esc(t("new_entry"))}</button>`;
+  return h + `</div>`;
+}
+
+function render(){
+  const c = document.getElementById("content");
+  const u = document.getElementById("ha-url");
+  if (u) u.innerHTML = esc(VAULT)
+    + (state.expiry
+        ? "<br>" + esc(t("session_until",
+            {time: new Date(state.expiry).toLocaleTimeString().slice(0,5)}))
+        : "");
+
+  let html = "";
+  if (state.error) html += `<div class="msg err">${esc(state.error)}</div>`;
+  if (state.notice) html += `<div class="msg ok">${esc(state.notice)}</div>`;
+  html += renderSeal();
+
+  if (!state.token || (state.seal && state.seal.sealed) || !state.reachable){
+    if (state.reachable && !(state.seal && state.seal.sealed)) html += renderLogin();
+    c.innerHTML = html;
+    return;
+  }
+
+  html += `<div class="bar">
+    <button class="btn btn-sm btn-ghost" onclick="reload()" ${state.loading ? "disabled" : ""}>`
+    + `${esc(state.loading ? state.busyLabel : t("reload"))}</button>
+    <div class="spacer"></div>
+    <button class="btn btn-sm btn-ghost" onclick="logout()">${esc(t("logout"))}</button>
+  </div>`;
+  BRANCHES.forEach(b => { html += renderBranch(b); });
+  c.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// EN | A session restored from sessionStorage may already have expired at
+// EN | Vault. Rather than showing an empty safe and a puzzling 403 on the
+// EN | first click, the load failure drops straight back to the login form.
+// FR | Une session restauree depuis sessionStorage peut avoir deja expire
+// FR | cote Vault. Plutot que d afficher un coffre vide et un 403
+// FR | deroutant au premier clic, l echec de chargement ramene directement
+// FR | au formulaire de connexion.
+// ═══════════════════════════════════════════════════════════════════════════
+(async function init(){
+  document.documentElement.lang = state.lang;
+  const sub = document.getElementById("page-subtitle");
+  if (sub) sub.textContent = t("subtitle");
+  render();
+  await checkSeal();
+  if (state.token && !(state.seal && state.seal.sealed)){
+    try { await loadAll(); }
+    catch(_){ state.token = ""; sessionStorage.removeItem(SS_TOKEN); }
+  }
+  render();
+})();
+</script>
+</body>
+</html>

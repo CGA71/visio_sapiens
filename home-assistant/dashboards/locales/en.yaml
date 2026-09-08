@@ -370,6 +370,19 @@ common:
 # ----------------------------------------------------------------------
 admin:
   console_title: Admin console
+  vault_state: SAFE STATE
+  vault_seal: Seal
+  vault_infra: Infrastructure
+  vault_accounts: Accounts
+  vault_apps: Applications
+  vault_entries: ENTRIES
+  vault_maintenance: MAINTENANCE
+  vault_target: Target entry (e.g. accounts/gmail)
+  vault_version: Version to restore
+  vault_delete: Delete (recoverable)
+  vault_restore: Restore version
+  vault_destroy: DESTROY permanently
+  vault_refresh: Refresh
   discovery: DISCOVERY SCAN
   upgrade: UPGRADE
   generate: GENERATE DASHBOARDS
@@ -517,6 +530,8 @@ adminmenu:
     theme_hint: Import or export the CSS design system
     dashboards: DASHBOARDS
     dashboards_hint: List, regenerate and delete the generated dashboards
+    vault: SAFE
+    vault_hint: Server access secrets, accounts and application passwords
   scan: DISCOVERY SCAN
   scan_hint: Read every Home Assistant entity, writes report.json
   not_built: Not built yet

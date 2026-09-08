@@ -253,6 +253,19 @@ common:
 
 admin:
   console_title: Console d'administration
+  vault_state: ÉTAT DU COFFRE
+  vault_seal: Scellement
+  vault_infra: Infrastructure
+  vault_accounts: Comptes
+  vault_apps: Applications
+  vault_entries: ENTRÉES
+  vault_maintenance: MAINTENANCE
+  vault_target: Entrée visée (ex. accounts/gmail)
+  vault_version: Version à restaurer
+  vault_delete: Supprimer (récupérable)
+  vault_restore: Restaurer la version
+  vault_destroy: DÉTRUIRE définitivement
+  vault_refresh: Rafraîchir
   discovery: SCAN DE DÉCOUVERTE
   upgrade: MISE À NIVEAU
   generate: GÉNÉRER LES DASHBOARDS
@@ -392,6 +405,8 @@ adminmenu:
     theme_hint: Importer ou exporter la charte graphique CSS
     dashboards: DASHBOARDS
     dashboards_hint: Lister, regénérer et supprimer les dashboards générés
+    vault: COFFRE-FORT
+    vault_hint: Secrets d'accès aux serveurs, comptes et mots de passe applicatifs
   scan: SCAN DE DÉCOUVERTE
   scan_hint: Lit toutes les entités Home Assistant, écrit report.json
   not_built: Pas encore construit

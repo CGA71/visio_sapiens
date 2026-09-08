@@ -72,6 +72,7 @@
   ('calendar',   'mdi:calendar-account',  'calendar'),
   ('theme',      'mdi:palette',           'theme'),
   ('dashboards', 'mdi:view-dashboard-variant', 'dashboards'),
+  ('vault',      'mdi:safe',              'vault'),
 ] %}
 
 # EN | THE SELECTOR TILE LOOK — every input_select in this console renders
@@ -236,7 +237,7 @@ views:
       # FR | (energy, dashboards) gardent auto : leur contenu doit se
       # FR | dimensionner a lui-meme et laisser la page defiler, pas
       # FR | s'etirer jusqu'a la fenetre.
-      grid-template-rows: 130px {{ '1fr' if screen in ['rooms', 'devices', 'assign', 'theme', 'calendar'] else 'auto' }}
+      grid-template-rows: 130px {{ '1fr' if screen in ['rooms', 'devices', 'assign', 'theme', 'calendar', 'vault'] else 'auto' }}
       grid-template-areas: |
         "nav header header header"
         "nav body body body"
@@ -508,6 +509,193 @@ views:
                 :host {
                   flex: 1 1 0;
                   min-height: 520px;
+                }
+                ha-card {
+                  background: transparent !important;
+                  border: none !important;
+                  box-shadow: none !important;
+                  overflow: hidden;
+                  height: 100%;
+                  border-radius: var(--ha-card-border-radius, 16px);
+                }
+                iframe { width: 100%; height: 100% !important; border: none; }
+
+{% elif screen == 'vault' %}
+          # EN | THE SAFE — split in two on purpose, and the split is the
+          # EN | whole security argument rather than a layout choice.
+          # EN | Above: native cards. An entities card for the state of the
+          # EN | safe and a tally per branch, a markdown card listing the
+          # EN | entry NAMES, and the maintenance controls. Everything they
+          # EN | show comes from RESTful sensors whose Vault token carries
+          # EN | the vssp-ha policy — secret/metadata/* and nothing at all
+          # EN | on secret/data/*. These cards are structurally incapable of
+          # EN | displaying a password: Vault refuses to give Home Assistant
+          # EN | one.
+          # EN | Below: the iframe, the only part that sees values. It talks
+          # EN | to Vault directly with its own short-lived token, so a
+          # EN | revealed password never becomes an entity state — never
+          # EN | written in clear to home-assistant_v2.db by the recorder,
+          # EN | never visible in Developer Tools > States, never in an
+          # EN | automation trace.
+          # EN | So create, modify and reveal live in the iframe; listing,
+          # EN | state and deletion — which involve no value — stay native.
+          # FR | LE COFFRE — coupe en deux a dessein, et cette coupure est
+          # FR | tout l argument de securite plutot qu un choix de mise en
+          # FR | page.
+          # FR | Au-dessus : des cartes natives. Une carte entities pour
+          # FR | l etat du coffre et un decompte par branche, une carte
+          # FR | markdown listant les NOMS d entrees, et les commandes de
+          # FR | maintenance. Tout ce qu elles affichent vient de capteurs
+          # FR | RESTful dont le token Vault porte la policy vssp-ha —
+          # FR | secret/metadata/* et absolument rien sur secret/data/*. Ces
+          # FR | cartes sont structurellement incapables d afficher un mot
+          # FR | de passe : Vault refuse d en donner un a Home Assistant.
+          # FR | En dessous : l iframe, seule partie qui voie les valeurs.
+          # FR | Elle parle a Vault directement avec son propre token de
+          # FR | courte duree, donc un mot de passe revele ne devient jamais
+          # FR | un etat d entite — jamais ecrit en clair dans
+          # FR | home-assistant_v2.db par le recorder, jamais visible dans
+          # FR | Outils de developpement > Etats, jamais dans une trace
+          # FR | d automatisation.
+          # FR | Creer, modifier et reveler vivent donc dans l iframe ;
+          # FR | lister, l etat et la suppression — qui ne mettent en jeu
+          # FR | aucune valeur — restent natifs.
+          - type: horizontal-stack
+            cards:
+              - type: entities
+                title: "{{ t('admin.vault_state') }}"
+                entities:
+                  - entity: sensor.vssp_vault_seal
+                    name: "{{ t('admin.vault_seal') }}"
+                  - entity: sensor.vssp_vault_infra
+                    name: "{{ t('admin.vault_infra') }}"
+                  - entity: sensor.vssp_vault_accounts
+                    name: "{{ t('admin.vault_accounts') }}"
+                  - entity: sensor.vssp_vault_apps
+                    name: "{{ t('admin.vault_apps') }}"
+                card_mod:
+                  style: |
+                    ha-card {
+                      background: var(--card-background-color, rgba(8,18,28,0.75)) !important;
+                      border: 1px solid rgba(0, 229, 255, 0.28) !important;
+                      border-radius: var(--ha-card-border-radius, 20px) !important;
+                    }
+              # EN | Names only, straight from the sensors' `keys` attribute.
+              # EN | state_attr returns None when the sensor is unavailable
+              # EN | — which it is whenever the safe is sealed, since those
+              # EN | three sensors are authenticated — so every branch is
+              # EN | guarded rather than rendering the word "None".
+              # FR | Les noms seulement, directement depuis l attribut
+              # FR | `keys` des capteurs. state_attr renvoie None quand le
+              # FR | capteur est indisponible — ce qu il est des que le
+              # FR | coffre est scelle, ces trois capteurs etant
+              # FR | authentifies — donc chaque branche est gardee plutot
+              # FR | que d afficher le mot « None ».
+              # EN | The raw tag below opens with a plus sign right after
+              # EN | its brace. That is not decoration: the environment runs
+              # EN | with lstrip_blocks, which strips the whitespace in front
+              # EN | of a block tag — here the eighteen spaces that indent
+              # EN | the first line inside the `content: |` block scalar.
+              # EN | Stripped, the Home Assistant template lands at column
+              # EN | zero and the rendered dashboard stops being valid YAML.
+              # EN | The plus modifier turns that off for that one tag.
+              # EN | Note also that these comment lines carefully avoid
+              # EN | writing the tag itself. A YAML comment is still template
+              # EN | source: Jinja lexes it like any other text, so quoting
+              # EN | the raw tag here would genuinely open a raw block from
+              # EN | inside the explanation, and everything below — the card
+              # EN | title included — would render as literal text.
+              # FR | La balise raw ci-dessous s ouvre avec un signe plus
+              # FR | juste apres son accolade. Ce n est pas decoratif :
+              # FR | l environnement tourne avec lstrip_blocks, qui retire
+              # FR | l espace devant une balise de bloc — ici les dix-huit
+              # FR | espaces qui indentent la premiere ligne du bloc
+              # FR | litteral `content: |`. Retires, le template Home
+              # FR | Assistant atterrit en colonne zero et le dashboard
+              # FR | rendu cesse d etre du YAML valide. Le modificateur plus
+              # FR | desactive cela pour cette seule balise.
+              # FR | A noter aussi que ces lignes de commentaire evitent
+              # FR | soigneusement d ecrire la balise elle-meme. Un
+              # FR | commentaire YAML reste du source de template : Jinja le
+              # FR | lexe comme n importe quel autre texte, donc citer la
+              # FR | balise raw ici ouvrirait pour de bon un bloc raw depuis
+              # FR | l interieur de l explication, et tout ce qui suit — le
+              # FR | titre de la carte compris — se rendrait en texte
+              # FR | litteral.
+              - type: markdown
+                title: "{{ t('admin.vault_entries') }}"
+                content: |
+                  {%+ raw %}{% set branches = [
+                       ('sensor.vssp_vault_infra', 'INFRA'),
+                       ('sensor.vssp_vault_accounts', 'COMPTES'),
+                       ('sensor.vssp_vault_apps', 'APPS')] %}
+                  {% for eid, label in branches %}
+                  **{{ label }}**
+                  {% set keys = state_attr(eid, 'keys') %}
+                  {% if keys %}{% for k in keys if not k.startswith('.') %}
+                  - `{{ k }}`
+                  {% endfor %}{% else %}
+                  _—_
+                  {% endif %}
+                  {% endfor %}{% endraw +%}
+                card_mod:
+                  style: |
+                    ha-card {
+                      background: var(--card-background-color, rgba(8,18,28,0.75)) !important;
+                      border: 1px solid rgba(0, 229, 255, 0.28) !important;
+                      border-radius: var(--ha-card-border-radius, 20px) !important;
+                    }
+          # EN | Maintenance, native and value-free. `Supprimer` is a soft
+          # EN | delete: the version is hidden and stays restorable, which is
+          # EN | why the restore row sits right beside it. `Detruire` takes
+          # EN | the entry and every version of it, with no undo — hence its
+          # EN | own row, and a wording that does not pretend otherwise.
+          # FR | Maintenance, native et sans valeur. « Supprimer » est une
+          # FR | suppression douce : la version est masquee et reste
+          # FR | restaurable, d ou la ligne de restauration juste a cote.
+          # FR | « Detruire » emporte l entree et toutes ses versions, sans
+          # FR | retour — d ou sa propre ligne, et un libelle qui ne pretend
+          # FR | pas le contraire.
+          - type: entities
+            title: "{{ t('admin.vault_maintenance') }}"
+            entities:
+              - entity: input_text.vssp_vault_target
+                name: "{{ t('admin.vault_target') }}"
+              - entity: input_number.vssp_vault_version
+                name: "{{ t('admin.vault_version') }}"
+              - entity: script.vssp_vault_delete_entry
+                name: "{{ t('admin.vault_delete') }}"
+                icon: mdi:delete-outline
+              - entity: script.vssp_vault_restore_entry
+                name: "{{ t('admin.vault_restore') }}"
+                icon: mdi:history
+              - entity: script.vssp_vault_destroy_entry
+                name: "{{ t('admin.vault_destroy') }}"
+                icon: mdi:delete-forever
+              - entity: script.vssp_vault_refresh
+                name: "{{ t('admin.vault_refresh') }}"
+                icon: mdi:refresh
+                card_mod:
+                  style: |
+                    ha-card {
+                      background: var(--card-background-color, rgba(8,18,28,0.75)) !important;
+                      border: 1px solid rgba(0, 229, 255, 0.28) !important;
+                      border-radius: var(--ha-card-border-radius, 20px) !important;
+                    }
+          # EN | `lang` carries the GENERATED locale into the iframe: this
+          # EN | page has no Home Assistant token, so unlike the other
+          # EN | wizards it cannot read input_select.vssp_language itself.
+          # FR | `lang` transmet la locale GENEREE a l iframe : cette page
+          # FR | n a pas de token Home Assistant, donc contrairement aux
+          # FR | autres assistants elle ne peut pas lire
+          # FR | input_select.vssp_language elle-meme.
+          - type: iframe
+            url: /local/vssp/wizard/vssp_vault.html?v={{ build_stamp }}&lang={{ locale }}
+            card_mod:
+              style: |
+                :host {
+                  flex: 1 1 0;
+                  min-height: 560px;
                 }
                 ha-card {
                   background: transparent !important;

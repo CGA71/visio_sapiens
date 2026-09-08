@@ -1,0 +1,89 @@
+########################################################################
+# EN | The Visio Sapiens safe — HashiCorp Vault, Docker, on the
+# EN | 192.168.1.11 host. Deploy with:
+# FR | Le coffre Visio Sapiens — HashiCorp Vault, Docker, sur l hote
+# FR | 192.168.1.11. Deployer avec :
+#
+#     cd /opt/vssp-vault && docker compose up -d
+#
+# EN | First run only, then follow docs/Vault.md: initialise, write down
+# EN | the five unseal keys and the root token OFF this machine, unseal,
+# EN | then run bootstrap.sh.
+# FR | Premier lancement seulement, puis suivre docs/Vault.fr.md :
+# FR | initialiser, noter les cinq cles de descellement et le token root
+# FR | HORS de cette machine, desceller, puis lancer bootstrap.sh.
+########################################################################
+services:
+  vault:
+    image: hashicorp/vault:1.20
+    container_name: vssp-vault
+    restart: unless-stopped
+
+    # EN | IPC_LOCK lets Vault mlock its memory so the master key and
+    # EN | decrypted secrets are never written to swap. Without it Vault
+    # EN | starts anyway but warns, and a swapped page can leave secret
+    # EN | material on disk outside the encrypted store — which is the one
+    # EN | thing the safe exists to prevent.
+    # FR | IPC_LOCK permet a Vault de verrouiller sa memoire (mlock) pour
+    # FR | que la cle maitre et les secrets dechiffres ne partent jamais en
+    # FR | swap. Sans lui Vault demarre quand meme mais avertit, et une
+    # FR | page swappee peut laisser de la matiere secrete sur disque hors
+    # FR | du stockage chiffre — precisement ce que le coffre existe pour
+    # FR | empecher.
+    cap_add:
+      - IPC_LOCK
+
+    # EN | Bound to the LAN address, not 0.0.0.0: the safe has no business
+    # EN | listening on every interface of a machine that also faces the
+    # EN | router.
+    # FR | Lie a l adresse du reseau local, pas 0.0.0.0 : le coffre n a
+    # FR | rien a faire a l ecoute sur toutes les interfaces d une machine
+    # FR | qui fait aussi face au routeur.
+    ports:
+      - "192.168.1.11:8200:8200"
+
+    volumes:
+      - ./config/vault.hcl:/vault/config/vault.hcl:ro
+      # EN | Mounted read-only so bootstrap.sh and the policies can be run
+      # EN | from inside the container without copying them in — and so a
+      # EN | policy change is a `git pull` plus a re-run, not an edit made
+      # EN | on the host and lost at the next deploy.
+      # FR | Montes en lecture seule pour que bootstrap.sh et les policies
+      # FR | soient executables depuis le conteneur sans les y copier — et
+      # FR | pour qu une modification de policy soit un `git pull` suivi
+      # FR | d une re-execution, pas une retouche faite sur l hote et
+      # FR | perdue au deploiement suivant.
+      - ./policies:/vault/policies:ro
+      - ./bootstrap.sh:/vault/bootstrap.sh:ro
+      - vault-file:/vault/file
+      - vault-logs:/vault/logs
+
+    environment:
+      # EN | For the CLI *inside* the container (bootstrap.sh runs there).
+      # FR | Pour la CLI *dans* le conteneur (bootstrap.sh y tourne).
+      VAULT_ADDR: "http://127.0.0.1:8200"
+
+    command: ["vault", "server", "-config=/vault/config/vault.hcl"]
+
+    # EN | sys/seal-status answers 200 even when the safe is sealed, which
+    # EN | is exactly what a health check should measure here: "the
+    # EN | process is up and talking", not "the safe is open". Checking
+    # EN | sys/health instead would mark a correctly-sealed Vault as
+    # EN | unhealthy and make restart:unless-stopped fight it.
+    # FR | sys/seal-status repond 200 meme quand le coffre est scelle, et
+    # FR | c est exactement ce qu un healthcheck doit mesurer ici : « le
+    # FR | processus tourne et repond », pas « le coffre est ouvert ».
+    # FR | Interroger sys/health marquerait un Vault correctement scelle
+    # FR | comme malade et ferait lutter restart:unless-stopped contre lui.
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "-", "http://127.0.0.1:8200/v1/sys/seal-status"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+volumes:
+  vault-file:
+    name: vssp-vault-file
+  vault-logs:
+    name: vssp-vault-logs
