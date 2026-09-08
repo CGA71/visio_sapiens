@@ -228,13 +228,14 @@ const I18N = {
     goto_assign: "→ Assigner ces appareils à une pièce",
 
     unused_title: "PLUS UTILISÉS",
-    unused_sub: "Intégrations installées dont plus rien ne répond, ou qui ne fournissent aucune entité. Désinstaller retire l'intégration, ses appareils et ses entités — c'est définitif, mais l'appareil sera redécouvert s'il se rallume sur le réseau.",
+    unused_sub: "Intégrations installées dont plus rien ne répond. Désinstaller retire l'intégration, ses appareils et ses entités — c'est définitif, mais l'appareil sera redécouvert s'il se rallume sur le réseau. Celles marquées « service » (MQTT, Thread, Matter…) n'ont normalement ni appareil ni entité : elles ne sont jamais proposées au retrait, on ne les voit qu'en tout affichant.",
     unused_empty: "Rien à retirer — chaque intégration installée répond encore.",
     show_all: "Tout afficher",
     show_unused: "Seulement les inutilisées",
     uninstall: "Désinstaller",
     confirm_uninstall: "Désinstaller « {name} » ?\n\nCela retire l'intégration, ses {devices} appareil(s) et ses {entities} entité(s) de Home Assistant.",
-    reason_no_entities: "aucune entité",
+    reason_no_entities: "aucune entité produite",
+    tag_service: "service",
     reason_all_unavailable: "toutes les entités indisponibles",
     reason_not_loaded: "non chargée",
     entity_count: "{live}/{total} entité(s) en ligne",
@@ -277,13 +278,14 @@ const I18N = {
     goto_assign: "→ Assign these devices to a room",
 
     unused_title: "NO LONGER USED",
-    unused_sub: "Installed integrations nothing answers for any more, or that provide no entity at all. Uninstalling removes the integration, its devices and its entities — that is final, but the device will be discovered again if it comes back on the network.",
+    unused_sub: "Installed integrations nothing answers for any more. Uninstalling removes the integration, its devices and its entities — that is final, but the device will be discovered again if it comes back on the network. The ones marked \"service\" (MQTT, Thread, Matter…) normally have neither device nor entity: they are never proposed for removal, and only appear when showing all.",
     unused_empty: "Nothing to remove — every installed integration still answers.",
     show_all: "Show all",
     show_unused: "Unused only",
     uninstall: "Uninstall",
     confirm_uninstall: "Uninstall \"{name}\"?\n\nThis removes the integration, its {devices} device(s) and its {entities} entity(ies) from Home Assistant.",
-    reason_no_entities: "no entity",
+    reason_no_entities: "produces no entity",
+    tag_service: "service",
     reason_all_unavailable: "every entity unavailable",
     reason_not_loaded: "not loaded",
     entity_count: "{live}/{total} entity(ies) online",
@@ -462,22 +464,43 @@ function describeEntry(entry){
     const s = state.states[e.entity_id];
     return s !== undefined && s !== "unavailable" && s !== "unknown";
   });
+  // EN | No device AND no entity is the signature of a SERVICE integration —
+  // EN | the MQTT broker connection, Thread, Matter, go2rtc, Analytics,
+  // EN | Browser Mod. They are supposed to look like that; several are
+  // EN | load-bearing. Counting emptiness as "unused" put an Uninstall
+  // EN | button next to the MQTT broker, which is a trap, not a feature. It
+  // EN | is a neutral label here, never a removal candidate.
+  // FR | Aucun appareil ET aucune entite est la signature d une integration
+  // FR | de SERVICE — la connexion au broker MQTT, Thread, Matter, go2rtc,
+  // FR | Analytics, Browser Mod. Elles sont censees avoir cette tete, et
+  // FR | plusieurs sont porteuses. Compter le vide comme « inutilise »
+  // FR | mettait un bouton Desinstaller a cote du broker MQTT : un piege,
+  // FR | pas une fonction. C est ici une etiquette neutre, jamais un
+  // FR | candidat au retrait.
+  const service = !devices.length && !entities.length;
   let reason = null;
-  // EN | A disabled integration is never proposed for removal: it reads as
-  // EN | "not loaded, no live entity", which is precisely what an abandoned
-  // EN | one looks like — but somebody switched it off on purpose and
-  // EN | expects to switch it back on. Same principle as the disabled
+  // EN | A disabled integration is never proposed for removal either: it
+  // EN | reads as "not loaded, no live entity", which is precisely what an
+  // EN | abandoned one looks like — but somebody switched it off on purpose
+  // EN | and expects to switch it back on. Same principle as the disabled
   // EN | entities filtered out above.
-  // FR | Une integration desactivee n est jamais proposee au retrait : elle
-  // FR | se lit « non chargee, aucune entite vivante », soit exactement
+  // FR | Une integration desactivee n est pas non plus proposee au retrait :
+  // FR | elle se lit « non chargee, aucune entite vivante », soit exactement
   // FR | l apparence d une integration abandonnee — mais quelqu un l a
   // FR | coupee expres et compte la rallumer. Meme principe que les entites
   // FR | desactivees ecartees plus haut.
   if (entry.disabled_by) reason = null;
   else if (entry.state && entry.state !== "loaded") reason = "reason_not_loaded";
-  else if (!entities.length && !devices.length) reason = "reason_no_entities";
   else if (entities.length && !live.length) reason = "reason_all_unavailable";
-  return {entry, devices, entities, live, reason};
+  // EN | Devices registered but not one entity between them: the integration
+  // EN | loaded and found its hardware, then produced nothing from it. That
+  // EN | is a real leftover, unlike the empty service entries above.
+  // FR | Des appareils enregistres mais pas une entite entre eux :
+  // FR | l integration a charge, trouve son materiel, puis n en a rien tire.
+  // FR | C est un vrai residu, contrairement aux entrees de service vides
+  // FR | ci-dessus.
+  else if (devices.length && !entities.length) reason = "reason_no_entities";
+  return {entry, devices, entities, live, reason, service};
 }
 
 function flowName(f){
@@ -720,7 +743,7 @@ function renderEntries(){
   list.forEach(i => {
     const tag = i.reason
       ? `<span class="tag ${i.reason === "reason_not_loaded" ? "dead" : "warn"}">${esc(t(i.reason))}</span>`
-      : "";
+      : (i.service ? `<span class="tag info">${esc(t("tag_service"))}</span>` : "");
     h += `<div class="row">
       <div class="ico">▣</div>
       <div>
