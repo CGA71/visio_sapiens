@@ -18,7 +18,13 @@ __pycache__/
 # FR | direct. Elles atterrissent a la racine parce que c'est le repertoire
 # FR | de travail de l'outil navigateur ; l'une d'elles s'est glissee dans un
 # FR | commit avant que cette regle existe.
-/board-*.png
-/room-*.png
-/energy-*.png
+# EN | Any PNG at the repo root is a screenshot, never a deliverable: the
+# EN | project's own images live under home-assistant/www/. Listing prefixes
+# EN | one at a time was a losing game — `computer-1.png` slipped through the
+# EN | very next commit.
+# FR | Tout PNG a la racine du depot est une capture, jamais un livrable :
+# FR | les images du projet vivent sous home-assistant/www/. Enumerer les
+# FR | prefixes un par un etait perdu d'avance — « computer-1.png » est passe
+# FR | au travers des le commit suivant.
+/*.png
 /ha-dump.json
