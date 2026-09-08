@@ -117,6 +117,23 @@ sensor:
   # FR | n est pas de la telemetrie, elle change quand quelqu un la
   # FR | change, et l ecran ADMIN force un rafraichissement apres chacune
   # FR | de ses propres ecritures.
+  # EN | .keep is excluded from the count. bootstrap creates one per
+  # EN | branch so that a LIST on an untouched branch returns an empty list
+  # EN | instead of 404, and both the iframe and the markdown card hide
+  # EN | dotted names — so without this the entities card announced "1
+  # EN | entry" beside a list showing none, on a safe that was simply new.
+  # EN | `reject('eq', ...)` rather than a regex on the leading dot: `eq` is
+  # EN | plain Jinja and cannot go missing, and .keep is the only dotted
+  # EN | name anything here creates.
+  # FR | .keep est exclu du decompte. bootstrap en cree un par branche pour
+  # FR | qu un LIST sur une branche vierge renvoie une liste vide plutot
+  # FR | qu un 404, et l iframe comme la carte markdown masquent les noms
+  # FR | commencant par un point — sans ceci la carte entities annoncait
+  # FR | donc « 1 entree » a cote d une liste qui n en montrait aucune, sur
+  # FR | un coffre simplement neuf.
+  # FR | `reject('eq', ...)` plutot qu une regex sur le point initial : `eq`
+  # FR | est du Jinja standard et ne peut pas manquer a l appel, et .keep est
+  # FR | le seul nom pointe que quoi que ce soit cree ici.
   # EN | data['keys'], never data.keys. Vault returns {"data": {"keys":
   # EN | [...]}}, but in Jinja `data.keys` resolves the ATTRIBUTE first and
   # EN | finds the dict's own built-in `keys` method — so `| length` was
@@ -139,7 +156,9 @@ sensor:
     timeout: 10
     headers:
       X-Vault-Token: !secret vault_ha_token
-    value_template: "{{ (value_json.data['keys'] | default([])) | length }}"
+    value_template: >-
+      {{ (value_json.data['keys'] | default([])
+          | reject('eq', '.keep') | list) | length }}
     unit_of_measurement: "entrées"
     json_attributes_path: "$.data"
     json_attributes:
@@ -154,7 +173,9 @@ sensor:
     timeout: 10
     headers:
       X-Vault-Token: !secret vault_ha_token
-    value_template: "{{ (value_json.data['keys'] | default([])) | length }}"
+    value_template: >-
+      {{ (value_json.data['keys'] | default([])
+          | reject('eq', '.keep') | list) | length }}
     unit_of_measurement: "entrées"
     json_attributes_path: "$.data"
     json_attributes:
@@ -169,7 +190,9 @@ sensor:
     timeout: 10
     headers:
       X-Vault-Token: !secret vault_ha_token
-    value_template: "{{ (value_json.data['keys'] | default([])) | length }}"
+    value_template: >-
+      {{ (value_json.data['keys'] | default([])
+          | reject('eq', '.keep') | list) | length }}
     unit_of_measurement: "entrées"
     json_attributes_path: "$.data"
     json_attributes:
