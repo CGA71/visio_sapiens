@@ -928,12 +928,81 @@ deploy:staging:
         # FR | www/ : TOUTES les entrees du paquet, pas seulement vssp/. Avant,
         # FR | le reste de www/ etait package, transfere, puis efface avec le staging.
         mkdir -p /config/www
+        # EN | POD-SIDE STATE UNDER www/ — same problem as dashboards/
+        # EN | above, same rule. Every entry the package ships REPLACES its
+        # EN | counterpart wholesale (rm -rf then mv), and www/vssp is one
+        # EN | single entry — so the whole directory goes, including the
+        # EN | files no commit ever produced because the POD writes them:
+        # EN |   vssp/*.json                 every wizard's status/data file
+        # EN |                               (rooms_sync_status.json,
+        # EN |                               assign_data.json,
+        # EN |                               energy_sync_status.json,
+        # EN |                               theme_status.json...)
+        # EN |   vssp/images/floorplan.svg   the floor plan drawn by the user
+        # EN |   vssp/modules/               product photos
+        # EN |                               vssp_module_images.py fetched
+        # EN |                               for hardware discovered after
+        # EN |                               the last commit
+        # EN | Losing rooms_sync_status.json is not cosmetic: it is the ONLY
+        # EN | mirror of each room's slot_set/default_slot a browser can read
+        # EN | (the HA Area registry has no such concept), so ROOMS & FLOORS
+        # EN | came back showing "default" for every room — and the sync it
+        # EN | fires on connect then wrote that lie straight into house.yaml,
+        # EN | destroying the real assignment instead of merely hiding it.
+        # EN | Restoring is conditional: a file the package ships wins, so
+        # EN | the product photos tracked in git still update normally and
+        # EN | only the pod's own extras survive.
+        # FR | ETAT COTE POD SOUS www/ — meme probleme que dashboards/
+        # FR | ci-dessus, meme regle. Chaque entree livree par le paquet
+        # FR | REMPLACE son homologue en bloc (rm -rf puis mv), et www/vssp
+        # FR | est une seule entree — donc tout le repertoire disparait, y
+        # FR | compris les fichiers qu aucun commit n a jamais produits
+        # FR | parce que c est le POD qui les ecrit :
+        # FR |   vssp/*.json                 le fichier de statut/donnees de
+        # FR |                               chaque assistant
+        # FR |                               (rooms_sync_status.json,
+        # FR |                               assign_data.json,
+        # FR |                               energy_sync_status.json,
+        # FR |                               theme_status.json...)
+        # FR |   vssp/images/floorplan.svg   le plan dessine par l utilisateur
+        # FR |   vssp/modules/               les photos produit recuperees
+        # FR |                               par vssp_module_images.py pour
+        # FR |                               du materiel decouvert apres le
+        # FR |                               dernier commit
+        # FR | Perdre rooms_sync_status.json n est pas cosmetique : c est le
+        # FR | SEUL miroir du slot_set/default_slot de chaque piece qu un
+        # FR | navigateur puisse lire (le registre Zones HA n a pas cette
+        # FR | notion), donc PIECES & ETAGES revenait en affichant
+        # FR | « default » partout — et la synchro qu il declenche a la
+        # FR | connexion ecrivait ensuite ce mensonge directement dans
+        # FR | house.yaml, detruisant l assignation reelle au lieu de
+        # FR | seulement la masquer.
+        # FR | La restauration est conditionnelle : un fichier livre par le
+        # FR | paquet gagne, donc les photos produit versionnees se mettent
+        # FR | a jour normalement et seuls les extras du pod survivent.
+        rm -rf /config/.osv_www_keep
+        mkdir -p /config/.osv_www_keep
+        for pth in /config/www/vssp/*.json /config/www/vssp/images/floorplan.svg /config/www/vssp/modules; do
+          [ -e "$pth" ] || continue
+          rel=${pth#/config/www/}
+          mkdir -p "/config/.osv_www_keep/$(dirname "$rel")"
+          cp -r "$pth" "/config/.osv_www_keep/$rel"
+        done
         for e in /config/.osv_stage/www/* /config/.osv_stage/www/.[!.]*; do
           [ -e "$e" ] || continue
           n=$(basename "$e")
           rm -rf /config/www/$n
           mv "$e" /config/www/$n
         done
+        find /config/.osv_www_keep -type f | while read -r kept; do
+          rel=${kept#/config/.osv_www_keep/}
+          if [ ! -e "/config/www/$rel" ]; then
+            mkdir -p "/config/www/$(dirname "$rel")"
+            cp "$kept" "/config/www/$rel"
+            echo "[i] preserved pod-side state: www/$rel"
+          fi
+        done
+        rm -rf /config/.osv_www_keep
         rmdir /config/.osv_stage/www 2>/dev/null || true
         mv /config/.osv_stage/VSSP_VERSION /config/VSSP_VERSION
         mv /config/.osv_stage/VSSP_LOCALE  /config/VSSP_LOCALE
@@ -1352,12 +1421,37 @@ deploy:production:
         # EN | www/: ALL package entries, not just vssp/
         # FR | www/ : TOUTES les entrees du paquet, pas seulement vssp/
         mkdir -p $HA_CFG/www
+        # EN | Pod-side state under www/, same rule as staging: the wizard
+        # EN | status files, the drawn floor plan and the fetched product
+        # EN | photos are written on the instance, never shipped — see the
+        # EN | full explanation on the staging job.
+        # FR | Etat cote pod sous www/, meme regle qu en staging : les
+        # FR | fichiers de statut des assistants, le plan dessine et les
+        # FR | photos produit recuperees sont ecrits sur l instance, jamais
+        # FR | livres — voir l explication complete sur le job staging.
+        rm -rf $HA_CFG/.osv_www_keep
+        mkdir -p $HA_CFG/.osv_www_keep
+        for pth in $HA_CFG/www/vssp/*.json $HA_CFG/www/vssp/images/floorplan.svg $HA_CFG/www/vssp/modules; do
+          [ -e \"\$pth\" ] || continue
+          rel=\${pth#$HA_CFG/www/}
+          mkdir -p \"$HA_CFG/.osv_www_keep/\$(dirname \"\$rel\")\"
+          cp -r \"\$pth\" \"$HA_CFG/.osv_www_keep/\$rel\"
+        done
         for e in $HA_CFG/.osv_stage/www/* $HA_CFG/.osv_stage/www/.[!.]*; do
           [ -e \"\$e\" ] || continue
           n=\$(basename \"\$e\")
           rm -rf $HA_CFG/www/\$n
           mv \"\$e\" $HA_CFG/www/\$n
         done
+        find $HA_CFG/.osv_www_keep -type f | while read -r kept; do
+          rel=\${kept#$HA_CFG/.osv_www_keep/}
+          if [ ! -e \"$HA_CFG/www/\$rel\" ]; then
+            mkdir -p \"$HA_CFG/www/\$(dirname \"\$rel\")\"
+            cp \"\$kept\" \"$HA_CFG/www/\$rel\"
+            echo \"[i] preserved pod-side state: www/\$rel\"
+          fi
+        done
+        rm -rf $HA_CFG/.osv_www_keep
         rmdir $HA_CFG/.osv_stage/www 2>/dev/null || true
         mv $HA_CFG/.osv_stage/VSSP_VERSION $HA_CFG/VSSP_VERSION
         mv $HA_CFG/.osv_stage/VSSP_LOCALE  $HA_CFG/VSSP_LOCALE

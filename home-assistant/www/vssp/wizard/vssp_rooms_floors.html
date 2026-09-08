@@ -300,6 +300,7 @@ const I18N = {
     err_no_token: "Colle un jeton d'accès longue durée.",
     notice_registry_read: "Registre lu : {floors} étage(s), {areas} pièce(s).",
     notice_registry_reloaded: "Registre rechargé.",
+    warn_slot_sets_unknown: "Jeu de tableaux et tableau prioritaire illisibles (rooms_sync_status.json absent) — les colonnes ci-dessous affichent « default » sans que ce soit forcément la valeur réelle. Elles ne seront PAS écrites : les vraies valeurs sont conservées telles quelles. Relance une synchronisation des pièces, puis recharge.",
     diff_nothing_to_apply: "Rien à appliquer — la structure est déjà à jour.",
     confirm_apply_header: "Appliquer {total} modification(s) au registre Home Assistant ?",
     confirm_apply_rooms_deleted: "\n\n{n} pièce(s) seront supprimées",
@@ -380,6 +381,7 @@ const I18N = {
     err_no_token: "Paste a long-lived access token.",
     notice_registry_read: "Registry read: {floors} floor(s), {areas} room(s).",
     notice_registry_reloaded: "Registry reloaded.",
+    warn_slot_sets_unknown: "Slot set and priority slot could not be read (rooms_sync_status.json is missing) — the columns below show \"default\" without that necessarily being the real value. They will NOT be written: the real values are left as they are. Run a room sync again, then reload.",
     diff_nothing_to_apply: "Nothing to apply — the structure is already up to date.",
     confirm_apply_header: "Apply {total} change(s) to the Home Assistant registry?",
     confirm_apply_rooms_deleted: "\n\n{n} room(s) will be deleted",
@@ -478,7 +480,31 @@ let state = {
   // Brouillon éditable
   draft: { floors: [], exteriors: [] },
   selection: new Set(),   // area_id cochés dans l'inventaire
-  colors: JSON.parse(localStorage.getItem(LS_COLORS) || "{}")
+  colors: JSON.parse(localStorage.getItem(LS_COLORS) || "{}"),
+  // EN | Has the draft's slot_set/default_slot been read from the status
+  // EN | file, or is it still the "default"/"" placeholder
+  // EN | buildDraftFromRegistry() stamps on every room? The HA registry has
+  // EN | no notion of either field, so the draft alone cannot tell the two
+  // EN | apart — and syncRoomsToModel() would happily post the placeholder
+  // EN | as if it were the admin's choice. It did: a deployment wiped
+  // EN | /config/www/vssp (see the www/ preservation block in
+  // EN | .gitlab-ci.yml), the status file went with it, and simply OPENING
+  // EN | this screen reset every room to slot_set default / default_slot
+  // EN | automatic in house.yaml. The entrance hall lost its `entrance` set
+  // EN | and its `security` priority slot that way, twice.
+  // FR | Le slot_set/default_slot du brouillon a-t-il ete lu dans le
+  // FR | fichier de statut, ou est-ce encore le placeholder "default"/""
+  // FR | que buildDraftFromRegistry() appose sur chaque piece ? Le registre
+  // FR | HA n a aucune notion de ces deux champs, donc le brouillon seul ne
+  // FR | peut pas les distinguer — et syncRoomsToModel() postait volontiers
+  // FR | le placeholder comme si c etait le choix de l administrateur. Ce
+  // FR | qui est arrive : un deploiement effacait /config/www/vssp (voir le
+  // FR | bloc de preservation de www/ dans .gitlab-ci.yml), le fichier de
+  // FR | statut partait avec, et le simple fait d OUVRIR cet ecran
+  // FR | remettait chaque piece a slot_set default / default_slot
+  // FR | automatique dans house.yaml. L entree y a perdu son jeu `entrance`
+  // FR | et son tableau prioritaire `security`, deux fois.
+  slotSetsKnown: false
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -604,6 +630,12 @@ async function loadRegistry(){
 
 // Le brouillon reflète le registre : l'admin voit l'existant et l'édite.
 function buildDraftFromRegistry(){
+  // EN | Every slot_set/default_slot below is a placeholder — the registry
+  // EN | carries neither. Only applyDraftSlotSets() can turn them real.
+  // FR | Chaque slot_set/default_slot ci-dessous est un placeholder — le
+  // FR | registre ne porte ni l un ni l autre. Seul applyDraftSlotSets()
+  // FR | peut les rendre reels.
+  state.slotSetsKnown = false;
   const isExtFloor = f => EXTERIOR_FLOOR_NAMES.includes(String(f.name||"").toLowerCase());
   const extFloorIds = new Set(state.ha.floors.filter(isExtFloor).map(f => f.floor_id));
 
@@ -746,6 +778,16 @@ async function applyDiff(){
   // FR | currentSlotSetByName().
   const pendingSlotSets = currentSlotSetByName();
   const pendingDefaultSlots = currentDefaultSlotByName();
+  // EN | Captured with them: those two maps are only worth posting if what
+  // EN | they were read from was real. loadRegistry() below clears the flag
+  // EN | (it rebuilds the draft from placeholders), so it has to be put
+  // EN | back at the same moment the values are — see state.slotSetsKnown.
+  // FR | Capture avec elles : ces deux tables ne valent d etre postees que
+  // FR | si ce dont elles sont issues etait reel. loadRegistry() plus bas
+  // FR | remet le drapeau a zero (il rebatit le brouillon a partir de
+  // FR | placeholders), il faut donc le retablir au moment meme ou les
+  // FR | valeurs le sont — voir state.slotSetsKnown.
+  const pendingSlotSetsKnown = state.slotSetsKnown;
   const diff = computeDiff();
   if (!diff.total){
     // EN | Nothing pending for the HA registry, but house.yaml can still
@@ -813,6 +855,7 @@ async function applyDiff(){
     localStorage.setItem(LS_COLORS, JSON.stringify(state.colors));
     await loadRegistry();
     applyPendingLocalSlotSets(pendingSlotSets, pendingDefaultSlots);
+    state.slotSetsKnown = pendingSlotSetsKnown;
     saveHouse();
     // EN | Best-effort: the HA registry write above already succeeded and
     // EN | is the part that must not be reported as failed — see
@@ -937,12 +980,34 @@ async function syncRoomsToModel(pendingSlotSetByName, pendingDefaultSlotByName){
   const byAreaId = currentSlotSetMap();
   const byNameDefault = pendingDefaultSlotByName || {};
   const byAreaIdDefault = currentDefaultSlotMap();
+  // EN | Linking (area_id <-> room) is always sent — it is what this call
+  // EN | is for, and a first-ever setup depends on it. slot_set and
+  // EN | default_slot are sent only when the draft actually knows them:
+  // EN | vssp_rooms_apply.py treats an ABSENT key as "leave this room
+  // EN | alone" (a deliberate contract, see its default_slot_present), so
+  // EN | omitting both is how the browser says "I have nothing to assert"
+  // EN | instead of asserting a placeholder. The pod keeps its own values,
+  // EN | rewrites the status file from them, and the next read here picks
+  // EN | the truth back up.
+  // FR | Le rattachement (area_id <-> piece) est toujours envoye — c est
+  // FR | l objet meme de cet appel, et une premiere installation en depend.
+  // FR | slot_set et default_slot ne sont envoyes que si le brouillon les
+  // FR | connait vraiment : vssp_rooms_apply.py traite une cle ABSENTE
+  // FR | comme « ne touche pas a cette piece » (contrat delibere, voir son
+  // FR | default_slot_present), donc les omettre est la facon pour le
+  // FR | navigateur de dire « je n ai rien a affirmer » plutot que
+  // FR | d affirmer un placeholder. Le pod garde ses propres valeurs,
+  // FR | reecrit le fichier de statut a partir d elles, et la lecture
+  // FR | suivante ici recupere la verite.
   const payload = JSON.stringify({
-    rooms: state.ha.areas.map(a => ({
-      area_id: a.area_id, name: a.name,
-      slot_set: byName[a.name] || byAreaId[a.area_id] || "default",
-      default_slot: byNameDefault[a.name] || byAreaIdDefault[a.area_id] || "",
-    })),
+    rooms: state.ha.areas.map(a => {
+      const room = {area_id: a.area_id, name: a.name};
+      if (state.slotSetsKnown){
+        room.slot_set = byName[a.name] || byAreaId[a.area_id] || "default";
+        room.default_slot = byNameDefault[a.name] || byAreaIdDefault[a.area_id] || "";
+      }
+      return room;
+    }),
   });
   const b64 = btoa(unescape(encodeURIComponent(payload)));
   const res = await fetch(WEBHOOK_ROOMS, {
@@ -1000,7 +1065,66 @@ async function applyDraftSlotSets(){
       r._baseSlotSet = r.slot_set;
       r._baseDefaultSlot = r.default_slot;
     }));
+    // EN | Reached only when the fetch parsed: the draft now mirrors the
+    // EN | file, so it may be posted back. Every early return above leaves
+    // EN | the flag false and syncRoomsToModel() stays silent on both
+    // EN | fields — see state.slotSetsKnown.
+    // FR | Atteint seulement si le fetch a abouti : le brouillon reflete
+    // FR | desormais le fichier, il peut donc etre renvoye. Chaque retour
+    // FR | anticipe ci-dessus laisse le drapeau a false et
+    // FR | syncRoomsToModel() se tait sur les deux champs — voir
+    // FR | state.slotSetsKnown.
+    state.slotSetsKnown = true;
   } catch (e) { /* best-effort — see comment above */ }
+}
+
+// EN | Recovers from a missing status file — the state after a deployment
+// EN | that replaced www/vssp before .gitlab-ci.yml learned to preserve it,
+// EN | and after a brand-new install where no sync has ever run.
+// EN | syncRoomsToModel() has just posted the webhook; vssp_rooms_apply.py
+// EN | rewrites the status file on EVERY run, from house.yaml — which the
+// EN | deploy DID preserve (vssp_preserve_rooms.py). So the real values are
+// EN | a few seconds away, and waiting for them is what turns a screen full
+// EN | of "default" back into the truth without the admin having to guess
+// EN | that "Reload" would fix it.
+// EN | The webhook returns as soon as HA accepts it, not when the
+// EN | automation finishes (mode: queued, 4-5s), hence the poll rather than
+// EN | a single re-read. Bounded: after that it gives up quietly and the
+// EN | screen keeps its placeholders — which are now harmless, since
+// EN | syncRoomsToModel() will not post them.
+// FR | Rattrape un fichier de statut absent — l etat apres un deploiement
+// FR | qui a remplace www/vssp avant que .gitlab-ci.yml n apprenne a le
+// FR | preserver, et apres une installation neuve ou aucune synchro n a
+// FR | jamais tourne. syncRoomsToModel() vient de poster le webhook ;
+// FR | vssp_rooms_apply.py reecrit le fichier de statut a CHAQUE execution,
+// FR | depuis house.yaml — que le deploiement, lui, a bien preserve
+// FR | (vssp_preserve_rooms.py). Les vraies valeurs sont donc a quelques
+// FR | secondes, et les attendre est ce qui retransforme un ecran plein de
+// FR | « default » en la verite sans que l administrateur ait a deviner que
+// FR | « Recharger » arrangerait les choses.
+// FR | Le webhook rend la main des que HA l accepte, pas quand
+// FR | l automatisation se termine (mode: queued, 4-5 s), d ou le sondage
+// FR | plutot qu une simple relecture. Borne : passe ce delai il abandonne
+// FR | en silence et l ecran garde ses placeholders — desormais inoffensifs,
+// FR | puisque syncRoomsToModel() ne les postera pas.
+async function recoverSlotSetsAfterSync(){
+  if (state.slotSetsKnown) return;
+  for (let i = 0; i < 10 && !state.slotSetsKnown; i++){
+    await new Promise(r => setTimeout(r, 1000));
+    await applyDraftSlotSets();
+  }
+  // EN | Still nothing after ten seconds. Say so: the two columns are about
+  // EN | to show "default" everywhere, which is exactly what a lost
+  // EN | assignment looks like, and the admin deserves to know which of the
+  // EN | two it is — and that nothing of theirs is being overwritten.
+  // FR | Toujours rien apres dix secondes. Le dire : les deux colonnes vont
+  // FR | afficher « default » partout, ce qui ressemble trait pour trait a
+  // FR | une assignation perdue, et l administrateur merite de savoir
+  // FR | laquelle des deux c est — et que rien de ce qui lui appartient
+  // FR | n est en train d etre ecrase.
+  if (!state.slotSetsKnown){
+    state.notice = (state.notice ? state.notice + "\n" : "") + t("warn_slot_sets_unknown");
+  }
 }
 
 // EN | Wraps syncRoomsToModel() for the three callers that read the
@@ -1204,6 +1328,7 @@ async function connect(){
     subscribeLanguage();
     state.notice = await syncRoomsBestEffort(
       t("notice_registry_read", {floors: state.ha.floors.length, areas: state.ha.areas.length}));
+    await recoverSlotSetsAfterSync();
   }catch(e){
     state.connected = false;
     state.error = e.message;
@@ -1215,6 +1340,7 @@ async function reload(){
     await loadRegistry();
     await applyDraftSlotSets();
     state.notice = await syncRoomsBestEffort(t("notice_registry_reloaded"));
+    await recoverSlotSetsAfterSync();
   }
   catch(e){ state.error = e.message; }
   finally{ setBusy(false); }
