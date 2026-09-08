@@ -380,6 +380,8 @@ adminmenu:
   section:
     rooms: PIÈCES & ÉTAGES
     rooms_hint: Déclarer les pièces de la maison et leurs étages
+    devices: APPAREILS DÉTECTÉS
+    devices_hint: Valider les appareils qui apparaissent sur le réseau, retirer ceux qui ne répondent plus
     assign: ASSIGNATION DES APPAREILS
     assign_hint: Envoyer chaque appareil découvert vers une pièce et un tableau
     energy: APPAREILS ÉNERGIE

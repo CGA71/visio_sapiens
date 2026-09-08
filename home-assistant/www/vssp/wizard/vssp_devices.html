@@ -1,0 +1,788 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>Visio Sapiens — Appareils détectés</title>
+<!--
+  EN | Served as /local/vssp/wizard/vssp_devices.html, embedded in the ADMIN
+  EN | console through an iframe, screen "DETECTED DEVICES".
+  FR | Servi comme /local/vssp/wizard/vssp_devices.html, integre dans la
+  FR | console ADMIN via une iframe, ecran « APPAREILS DETECTES ».
+
+  EN | WHAT THIS SCREEN IS FOR
+  EN | A new device announcing itself on the wifi (a Shelly over zeroconf, a
+  EN | printer over SSDP...) sits in Home Assistant as a discovery FLOW: seen,
+  EN | named, addressable, but not yet part of the house. Turning it into a
+  EN | real device means opening Settings > Devices & services and clicking
+  EN | through HA own UI — leaving this console for the very step that starts
+  EN | everything else here. This screen brings that step home, and its
+  EN | opposite with it: retiring an integration that no longer answers.
+  FR | A QUOI SERT CET ECRAN
+  FR | Un nouvel appareil qui s annonce sur le wifi (un Shelly en zeroconf,
+  FR | une imprimante en SSDP...) attend dans Home Assistant sous forme de
+  FR | FLUX de decouverte : vu, nomme, adressable, mais pas encore membre de
+  FR | la maison. En faire un vrai appareil demande d ouvrir Parametres >
+  FR | Appareils et services et de cliquer dans l interface de HA — donc de
+  FR | quitter cette console pour l etape meme qui declenche tout le reste
+  FR | ici. Cet ecran rapatrie cette etape, et son inverse avec elle :
+  FR | retirer une integration qui ne repond plus.
+
+  EN | WHY A TOKEN AND NOT A WEBHOOK
+  EN | assign.html deliberately uses a webhook: it only ever posts one list,
+  EN | so a credential in browser storage would be out of proportion. This
+  EN | screen cannot: listing pending discoveries exists ONLY on the
+  EN | WebSocket API (config_entries/flow/progress — the REST route answers
+  EN | 405 to GET), and validating one is a REST POST that must carry the
+  EN | flow reply back to the page. Same reasoning, same token, same
+  EN | localStorage key as vssp_rooms_floors.html, which already drives the
+  EN | area registry this way — connect once, both screens work.
+  FR | POURQUOI UN JETON ET PAS UN WEBHOOK
+  FR | assign.html utilise deliberement un webhook : il ne poste jamais
+  FR | qu une liste, un identifiant dans le stockage du navigateur y serait
+  FR | disproportionne. Cet ecran ne peut pas : lister les decouvertes en
+  FR | attente n existe QUE sur l API WebSocket
+  FR | (config_entries/flow/progress — la route REST repond 405 en GET), et
+  FR | en valider une est un POST REST dont la reponse doit revenir a la
+  FR | page. Meme raisonnement, meme jeton, meme cle localStorage que
+  FR | vssp_rooms_floors.html, qui pilote deja le registre des zones ainsi —
+  FR | on se connecte une fois, les deux ecrans marchent.
+-->
+<style>
+  :root{
+    --cy:#00E5FF; --cy-dim:rgba(0,229,255,.25); --gr:#00FFC3;
+    --or:#FF9800; --rd:#FF3D71; --txt:#FFFFFF; --dim:#8FB6C9; --mut:#56707E;
+    --bg:#050B12; --panel:rgba(8,18,28,.72);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--txt);
+    font-family:'Rajdhani','Segoe UI',system-ui,sans-serif;font-size:14px;
+    background-image:radial-gradient(circle at 20% 0%,rgba(0,229,255,.07),transparent 55%)}
+  .page{max-width:1100px;margin:0 auto;padding:24px 18px 80px}
+
+  .header{display:flex;align-items:center;gap:14px;margin-bottom:22px}
+  .logo{width:42px;height:42px;border-radius:12px;border:1px solid var(--cy-dim);
+    display:grid;place-items:center;color:var(--cy);font-size:20px;
+    box-shadow:0 0 18px rgba(0,229,255,.18)}
+  .header h1{margin:0;font-family:'Orbitron','Courier New',monospace;font-size:17px;
+    letter-spacing:3px;color:var(--cy)}
+  .header p{margin:2px 0 0;font-size:11px;letter-spacing:2px;color:var(--mut)}
+  .ha-url{margin-left:auto;font-size:11px;color:var(--mut)}
+
+  .card{background:var(--panel);border:1px solid var(--cy-dim);border-radius:18px;
+    padding:18px;margin-bottom:16px;backdrop-filter:blur(12px)}
+  .card-title{font-family:'Orbitron',monospace;font-size:12px;letter-spacing:2px;color:var(--cy)}
+  .card-sub{font-size:12px;color:var(--dim);margin-top:4px;line-height:1.5}
+
+  input[type=text]{background:rgba(0,0,0,.35);border:1px solid rgba(0,229,255,.22);
+    border-radius:10px;color:var(--txt);padding:9px 12px;font-size:13px;
+    font-family:inherit;outline:none;width:100%}
+  input[type=text]:focus{border-color:var(--cy);box-shadow:0 0 0 2px rgba(0,229,255,.12)}
+  .btn{background:rgba(0,229,255,.10);border:1px solid rgba(0,229,255,.45);color:var(--cy);
+    border-radius:12px;padding:10px 18px;font-family:'Orbitron',monospace;font-size:11px;
+    letter-spacing:1.5px;cursor:pointer;transition:.2s;text-decoration:none;display:inline-block}
+  .btn:hover:not(:disabled){background:rgba(0,229,255,.2);box-shadow:0 0 16px rgba(0,229,255,.25)}
+  .btn:disabled{opacity:.35;cursor:not-allowed}
+  .btn:focus-visible{outline:2px solid var(--cy);outline-offset:2px}
+  .btn-sm{padding:6px 12px;font-size:10px}
+  .btn-ghost{background:transparent;border-color:rgba(143,182,201,.3);color:var(--dim)}
+  .btn-danger{background:rgba(255,61,113,.10);border-color:rgba(255,61,113,.5);color:var(--rd)}
+  .btn-danger:hover:not(:disabled){background:rgba(255,61,113,.2);box-shadow:0 0 16px rgba(255,61,113,.25)}
+  .bar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:14px}
+  .spacer{flex:1}
+
+  .msg{border-radius:12px;padding:10px 14px;margin-bottom:14px;font-size:13px;
+    white-space:pre-line;line-height:1.5}
+  .msg.err{background:rgba(255,61,113,.10);border:1px solid rgba(255,61,113,.4);color:#FFC2D2}
+  .msg.ok{background:rgba(0,255,195,.08);border:1px solid rgba(0,255,195,.35);color:#B6FFEC}
+
+  /* EN | One row per device / integration. The grid gives the actions a
+     EN | fixed column on the right so buttons line up down the list instead
+     EN | of drifting with the length of each name.
+     FR | Une ligne par appareil / integration. La grille reserve aux actions
+     FR | une colonne fixe a droite pour que les boutons s alignent sur toute
+     FR | la liste au lieu de deriver avec la longueur de chaque nom. */
+  .row{display:grid;grid-template-columns:32px 1fr auto;gap:12px;align-items:center;
+    padding:11px 4px;border-bottom:1px solid rgba(0,229,255,.08)}
+  .row:last-child{border-bottom:none}
+  .row .ico{font-size:19px;text-align:center;color:var(--cy)}
+  .row .nm{font-size:14px;font-weight:600;letter-spacing:.3px}
+  .row .sub{font-size:11px;color:var(--mut);margin-top:2px}
+  .row .act{display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end}
+  .tag{display:inline-block;font-family:'Orbitron',monospace;font-size:9px;letter-spacing:1px;
+    padding:2px 7px;border-radius:6px;margin-left:8px;vertical-align:1px}
+  .tag.new{background:rgba(0,255,195,.12);color:var(--gr);border:1px solid rgba(0,255,195,.35)}
+  .tag.warn{background:rgba(255,152,0,.12);color:var(--or);border:1px solid rgba(255,152,0,.35)}
+  .tag.dead{background:rgba(255,61,113,.10);color:var(--rd);border:1px solid rgba(255,61,113,.35)}
+  .tag.info{background:rgba(0,229,255,.08);color:var(--cy);border:1px solid var(--cy-dim)}
+  .empty{color:var(--mut);font-size:13px;padding:14px 4px}
+  .count{font-family:'Orbitron',monospace;font-size:11px;color:var(--dim);margin-left:8px}
+  a{color:var(--cy)}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="header">
+    <div class="logo">⬡</div>
+    <div>
+      <h1>VISIO SAPIENS</h1>
+      <p id="page-subtitle">APPAREILS DÉTECTÉS</p>
+    </div>
+    <div class="ha-url" id="ha-url"></div>
+  </div>
+
+  <div id="content"></div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════════════════
+// EN | Same localStorage key as vssp_rooms_floors.html on purpose: one
+// EN | long-lived token for the whole console. A second key would mean
+// EN | pasting the same credential twice and revoking it twice.
+// FR | Meme cle localStorage que vssp_rooms_floors.html a dessein : un seul
+// FR | jeton longue duree pour toute la console. Une seconde cle voudrait
+// FR | dire coller le meme identifiant deux fois et le revoquer deux fois.
+// ═══════════════════════════════════════════════════════════════════════════
+const LS_TOKEN = "osv_ha_token";
+
+// EN | Where "assign these devices to a room" goes. Navigating this iframe's
+// EN | OWN location, never window.top and never target="_top": the ADMIN
+// EN | console embeds these wizards in a sandboxed iframe that grants
+// EN | neither allow-top-navigation nor its by-user-activation variant, so
+// EN | any attempt to move an ANCESTOR throws a SecurityError and silently
+// EN | does nothing. A frame may always navigate itself. Same constant, same
+// EN | reason as NEXT_URL in vssp_rooms_floors.html — the timestamp is added
+// EN | at click time because the build's cache-busting step rewrites *.yaml
+// EN | only, so a token hardcoded in this .html would be a permanently stale
+// EN | cache key rather than a fix.
+// FR | Ou mene « assigner ces appareils a une piece ». On navigue la
+// FR | location PROPRE de cette iframe, jamais window.top ni target="_top" :
+// FR | la console ADMIN integre ces assistants dans une iframe sandboxee qui
+// FR | n accorde ni allow-top-navigation ni sa variante par activation
+// FR | utilisateur, donc toute tentative de deplacer un ANCETRE leve une
+// FR | SecurityError et ne fait rien, en silence. Une frame peut toujours se
+// FR | naviguer elle-meme. Meme constante, meme raison que NEXT_URL dans
+// FR | vssp_rooms_floors.html — l horodatage est ajoute au clic parce que
+// FR | l etape de cache-busting du build ne reecrit que les *.yaml, donc un
+// FR | jeton fige dans ce .html serait une cle de cache perpetuellement
+// FR | perimee plutot qu un correctif.
+const ASSIGN_URL = "/local/vssp/wizard/assign.html";
+function gotoAssign(){
+  location.href = ASSIGN_URL + "?v=" + Date.now();
+}
+
+// EN | A flow whose context.source is one of these was started by HA itself
+// EN | noticing something on the network — that is a "new device" in the
+// EN | sense meant here. `user` (someone adding an integration by hand) and
+// EN | `reauth` (an existing integration asking for credentials again) are
+// EN | deliberately excluded: neither is a new arrival, and offering to
+// EN | "validate" a reauth prompt from a screen that cannot show its form
+// EN | would be worse than not listing it.
+// FR | Un flux dont context.source vaut l une de ces valeurs a ete lance par
+// FR | HA lui-meme reperant quelque chose sur le reseau — c est un
+// FR | « nouvel appareil » au sens voulu ici. `user` (quelqu un ajoute une
+// FR | integration a la main) et `reauth` (une integration existante
+// FR | redemande ses identifiants) sont volontairement exclus : ni l un ni
+// FR | l autre n est une arrivee, et proposer de « valider » une demande de
+// FR | reauthentification depuis un ecran incapable d en afficher le
+// FR | formulaire serait pire que de ne pas la lister.
+const DISCOVERY_SOURCES = ["zeroconf", "dhcp", "ssdp", "mqtt", "usb", "bluetooth",
+                           "homekit", "discovery", "integration_discovery",
+                           "hardware", "hassio"];
+
+// EN | How long a device counts as "just arrived" in the second section.
+// EN | Seven days: long enough that a device added before a weekend is still
+// EN | there on Monday, short enough that the list stays a short list.
+// FR | Combien de temps un appareil compte comme « tout juste arrive » dans
+// FR | la deuxieme section. Sept jours : assez long pour qu un appareil
+// FR | ajoute avant un week-end y soit encore le lundi, assez court pour que
+// FR | la liste reste courte.
+const RECENT_DAYS = 7;
+
+const I18N = {
+  fr: {
+    subtitle: "APPAREILS DÉTECTÉS",
+    connect_title: "CONNEXION HOME ASSISTANT",
+    connect_help: "Jeton d'accès longue durée — Profil → Sécurité → Jetons d'accès longue durée. C'est le même jeton que l'écran PIÈCES & ÉTAGES.",
+    connect: "Se connecter",
+    err_no_token: "Colle un jeton d'accès longue durée.",
+    busy_connecting: "Connexion…",
+    busy_loading: "Lecture des appareils…",
+    busy_validating: "Validation…",
+    busy_removing: "Suppression…",
+    reload: "Recharger",
+
+    pending_title: "EN ATTENTE DE VALIDATION",
+    pending_sub: "Ce que Home Assistant a vu apparaître sur le réseau et qui n'est pas encore installé. Valider crée l'intégration et ses appareils ; ils apparaîtront ensuite dans ASSIGNATION DES APPAREILS pour recevoir une pièce.",
+    pending_empty: "Rien en attente — aucun nouvel appareil ne s'est annoncé sur le réseau.",
+    validate: "Valider",
+    ignore: "Ignorer",
+    dismiss: "Rejeter",
+    needs_form: "Configuration requise",
+    needs_form_hint: "Cette intégration demande des informations (mot de passe, choix d'options) que cet écran ne peut pas afficher — termine-la dans Home Assistant : Paramètres → Appareils et services.",
+
+    recent_title: "ARRIVÉS RÉCEMMENT",
+    recent_sub: "Les appareils entrés dans Home Assistant ces {days} derniers jours, le plus récent en premier. C'est ici qu'on retrouve ce qu'une validation vient de créer.",
+    recent_empty: "Aucun appareil ajouté ces {days} derniers jours.",
+    goto_assign: "→ Assigner ces appareils à une pièce",
+
+    unused_title: "PLUS UTILISÉS",
+    unused_sub: "Intégrations installées dont plus rien ne répond, ou qui ne fournissent aucune entité. Désinstaller retire l'intégration, ses appareils et ses entités — c'est définitif, mais l'appareil sera redécouvert s'il se rallume sur le réseau.",
+    unused_empty: "Rien à retirer — chaque intégration installée répond encore.",
+    show_all: "Tout afficher",
+    show_unused: "Seulement les inutilisées",
+    uninstall: "Désinstaller",
+    confirm_uninstall: "Désinstaller « {name} » ?\n\nCela retire l'intégration, ses {devices} appareil(s) et ses {entities} entité(s) de Home Assistant.",
+    reason_no_entities: "aucune entité",
+    reason_all_unavailable: "toutes les entités indisponibles",
+    reason_not_loaded: "non chargée",
+    entity_count: "{live}/{total} entité(s) en ligne",
+    device_count: "{n} appareil(s)",
+    restart_needed: "Home Assistant demande un redémarrage pour terminer.",
+
+    notice_validated: "« {name} » installé.",
+    notice_form: "« {name} » demande une configuration supplémentaire — termine-la dans Home Assistant.",
+    notice_ignored: "« {name} » ignoré. Il ne réapparaîtra plus dans cette liste.",
+    notice_dismissed: "« {name} » rejeté. Il reviendra à la prochaine annonce de l'appareil.",
+    notice_removed: "« {name} » désinstallé.",
+    err_failed: "Échec : {msg}",
+    age_today: "aujourd'hui",
+    age_days: "il y a {n} j",
+  },
+  en: {
+    subtitle: "DETECTED DEVICES",
+    connect_title: "HOME ASSISTANT CONNECTION",
+    connect_help: "Long-lived access token — Profile → Security → Long-lived access tokens. Same token as the ROOMS & FLOORS screen.",
+    connect: "Connect",
+    err_no_token: "Paste a long-lived access token.",
+    busy_connecting: "Connecting…",
+    busy_loading: "Reading devices…",
+    busy_validating: "Validating…",
+    busy_removing: "Removing…",
+    reload: "Reload",
+
+    pending_title: "WAITING FOR VALIDATION",
+    pending_sub: "What Home Assistant has seen appear on the network and has not installed yet. Validating creates the integration and its devices; they then show up in DEVICE ASSIGNMENT to be given a room.",
+    pending_empty: "Nothing pending — no new device has announced itself on the network.",
+    validate: "Validate",
+    ignore: "Ignore",
+    dismiss: "Dismiss",
+    needs_form: "Setup required",
+    needs_form_hint: "This integration asks for information (a password, a choice of options) this screen cannot draw — finish it inside Home Assistant: Settings > Devices & services.",
+
+    recent_title: "RECENTLY ARRIVED",
+    recent_sub: "Devices that entered Home Assistant in the last {days} days, newest first. This is where what a validation just created shows up.",
+    recent_empty: "No device added in the last {days} days.",
+    goto_assign: "→ Assign these devices to a room",
+
+    unused_title: "NO LONGER USED",
+    unused_sub: "Installed integrations nothing answers for any more, or that provide no entity at all. Uninstalling removes the integration, its devices and its entities — that is final, but the device will be discovered again if it comes back on the network.",
+    unused_empty: "Nothing to remove — every installed integration still answers.",
+    show_all: "Show all",
+    show_unused: "Unused only",
+    uninstall: "Uninstall",
+    confirm_uninstall: "Uninstall \"{name}\"?\n\nThis removes the integration, its {devices} device(s) and its {entities} entity(ies) from Home Assistant.",
+    reason_no_entities: "no entity",
+    reason_all_unavailable: "every entity unavailable",
+    reason_not_loaded: "not loaded",
+    entity_count: "{live}/{total} entity(ies) online",
+    device_count: "{n} device(s)",
+    restart_needed: "Home Assistant asks for a restart to finish.",
+
+    notice_validated: "\"{name}\" installed.",
+    notice_form: "\"{name}\" needs extra setup — finish it inside Home Assistant.",
+    notice_ignored: "\"{name}\" ignored. It will not come back in this list.",
+    notice_dismissed: "\"{name}\" dismissed. It will return the next time the device announces itself.",
+    notice_removed: "\"{name}\" uninstalled.",
+    err_failed: "Failed: {msg}",
+    age_today: "today",
+    age_days: "{n} d ago",
+  }
+};
+
+function t(key, vars){
+  const dict = I18N[state.lang] || I18N.fr;
+  let s = dict[key] != null ? dict[key] : (I18N.fr[key] != null ? I18N.fr[key] : key);
+  if (vars) Object.keys(vars).forEach(k => { s = s.split("{" + k + "}").join(vars[k]); });
+  return s;
+}
+function applyLang(code){
+  state.lang = (I18N[code] ? code : "fr");
+  document.documentElement.lang = state.lang;
+  const sub = document.getElementById("page-subtitle");
+  if (sub) sub.textContent = t("subtitle");
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// STATE
+// ═══════════════════════════════════════════════════════════════════════════
+let state = {
+  token: localStorage.getItem(LS_TOKEN) || "",
+  lang: "fr",
+  connected: false,
+  loading: false,
+  busyLabel: "",
+  error: "",
+  notice: "",
+  flows: [],
+  entries: [],
+  devices: [],
+  entities: [],
+  states: {},
+  // EN | The unused list opens filtered, because 48 integrations scrolled in
+  // EN | full is not a list of things to act on. The toggle is right there.
+  // FR | La liste des inutilisees s ouvre filtree : 48 integrations deroulees
+  // FR | en entier ne sont pas une liste sur laquelle agir. La bascule est la.
+  showAllEntries: false
+};
+
+// ═══════════════════════════════════════════════════════════════════════════
+// WEBSOCKET HA — same helper as vssp_rooms_floors.html
+// ═══════════════════════════════════════════════════════════════════════════
+let ws = null, msgId = 1;
+const pending = {};
+const subscriptions = {};
+
+function wsConnect(token){
+  return new Promise((resolve,reject)=>{
+    const proto = location.protocol === "https:" ? "wss:" : "ws:";
+    let settled = false;
+    const sock = new WebSocket(`${proto}//${location.host}/api/websocket`);
+    sock.onmessage = ev => {
+      const m = JSON.parse(ev.data);
+      if (m.type === "auth_required"){
+        sock.send(JSON.stringify({type:"auth", access_token:token}));
+      } else if (m.type === "auth_ok"){
+        ws = sock; settled = true; resolve(sock);
+      } else if (m.type === "auth_invalid"){
+        settled = true; sock.close();
+        reject(new Error("Token refusé par Home Assistant."));
+      } else if (m.type === "result"){
+        const p = pending[m.id];
+        if (!p) return;
+        delete pending[m.id];
+        m.success ? p.resolve(m.result) : p.reject(new Error(m.error && m.error.message || "Erreur HA"));
+      } else if (m.type === "event"){
+        const cb = subscriptions[m.id];
+        if (cb) cb(m.event);
+      }
+    };
+    sock.onerror = () => { if(!settled){ settled = true; reject(new Error("WebSocket injoignable.")); } };
+    sock.onclose = () => {
+      ws = null; state.connected = false;
+      Object.keys(pending).forEach(k => { pending[k].reject(new Error("Connexion fermée")); delete pending[k]; });
+      if (!settled){ settled = true; reject(new Error("Connexion fermée avant authentification.")); }
+    };
+  });
+}
+function wsCall(type, payload){
+  return new Promise((resolve,reject)=>{
+    if (!ws) return reject(new Error("Non connecté à Home Assistant."));
+    const id = msgId++;
+    pending[id] = {resolve,reject};
+    ws.send(JSON.stringify(Object.assign({id, type}, payload || {})));
+  });
+}
+function wsSubscribe(type, payload, callback){
+  return new Promise((resolve,reject)=>{
+    if (!ws) return reject(new Error("Non connecté à Home Assistant."));
+    const id = msgId++;
+    subscriptions[id] = callback;
+    pending[id] = {resolve,reject};
+    ws.send(JSON.stringify(Object.assign({id, type}, payload || {})));
+  });
+}
+
+// EN | The config-entry side of the API is REST, not WebSocket: submitting a
+// EN | discovery flow, aborting one and deleting an entry all live under
+// EN | /api/config/config_entries/. (config_entries/remove does NOT exist as
+// EN | a WS command — it answers "unknown_command".) Verified against the
+// EN | live instance before this screen was written.
+// FR | Le pan « config entry » de l API est REST, pas WebSocket : soumettre
+// FR | un flux de decouverte, en abandonner un et supprimer une entree
+// FR | vivent tous sous /api/config/config_entries/. (config_entries/remove
+// FR | n existe PAS en commande WS — il repond « unknown_command ».) Verifie
+// FR | sur l instance en direct avant d ecrire cet ecran.
+async function api(method, path, body){
+  const res = await fetch("/api/" + path, {
+    method,
+    headers: Object.assign({"Authorization": "Bearer " + state.token},
+                           body === undefined ? {} : {"Content-Type": "application/json"}),
+    body: body === undefined ? undefined : JSON.stringify(body)
+  });
+  const txt = await res.text();
+  if (!res.ok) throw new Error("HTTP " + res.status + (txt ? " — " + txt.slice(0, 160) : ""));
+  return txt ? JSON.parse(txt) : null;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// LECTURE
+// ═══════════════════════════════════════════════════════════════════════════
+async function loadAll(){
+  const [flows, entries, devices, entities, states] = await Promise.all([
+    wsCall("config_entries/flow/progress").catch(()=>[]),
+    wsCall("config_entries/get").catch(()=>[]),
+    wsCall("config/device_registry/list").catch(()=>[]),
+    wsCall("config/entity_registry/list").catch(()=>[]),
+    wsCall("get_states").catch(()=>[])
+  ]);
+  state.flows = (flows || []).filter(f =>
+    DISCOVERY_SOURCES.includes(String((f.context||{}).source||"")));
+  state.entries = entries || [];
+  state.devices = devices || [];
+  state.entities = entities || [];
+  state.states = {};
+  (states || []).forEach(s => { state.states[s.entity_id] = s.state; });
+}
+
+// EN | Everything the two lower sections need about one integration, derived
+// EN | once instead of at every render: its devices, its entities, and how
+// EN | many of those entities are actually answering right now.
+// EN | "Unused" is deliberately conservative — an integration is only ever
+// EN | proposed for removal when NOTHING of it responds, never merely
+// EN | because it looks idle. A disabled entity is not counted as dead: the
+// EN | admin disabled it on purpose, and holding that against the whole
+// EN | integration would suggest uninstalling something deliberately kept.
+// FR | Tout ce dont les deux sections du bas ont besoin sur une integration,
+// FR | derive une fois plutot qu a chaque rendu : ses appareils, ses
+// FR | entites, et combien de ces entites repondent effectivement.
+// FR | « Inutilisee » est volontairement prudent — une integration n est
+// FR | proposee au retrait que quand RIEN d elle ne repond, jamais
+// FR | simplement parce qu elle a l air inactive. Une entite desactivee ne
+// FR | compte pas pour morte : l administrateur l a desactivee expres, et le
+// FR | retenir contre toute l integration reviendrait a suggerer de
+// FR | desinstaller quelque chose de garde volontairement.
+function describeEntry(entry){
+  const devices = state.devices.filter(d =>
+    (d.config_entries || []).includes(entry.entry_id));
+  const entities = state.entities.filter(e =>
+    e.config_entry_id === entry.entry_id && !e.disabled_by);
+  const live = entities.filter(e => {
+    const s = state.states[e.entity_id];
+    return s !== undefined && s !== "unavailable" && s !== "unknown";
+  });
+  let reason = null;
+  // EN | A disabled integration is never proposed for removal: it reads as
+  // EN | "not loaded, no live entity", which is precisely what an abandoned
+  // EN | one looks like — but somebody switched it off on purpose and
+  // EN | expects to switch it back on. Same principle as the disabled
+  // EN | entities filtered out above.
+  // FR | Une integration desactivee n est jamais proposee au retrait : elle
+  // FR | se lit « non chargee, aucune entite vivante », soit exactement
+  // FR | l apparence d une integration abandonnee — mais quelqu un l a
+  // FR | coupee expres et compte la rallumer. Meme principe que les entites
+  // FR | desactivees ecartees plus haut.
+  if (entry.disabled_by) reason = null;
+  else if (entry.state && entry.state !== "loaded") reason = "reason_not_loaded";
+  else if (!entities.length && !devices.length) reason = "reason_no_entities";
+  else if (entities.length && !live.length) reason = "reason_all_unavailable";
+  return {entry, devices, entities, live, reason};
+}
+
+function flowName(f){
+  const ph = (f.context || {}).title_placeholders || {};
+  return ph.name || ph.title || f.handler || "?";
+}
+function flowHost(f){
+  const url = (f.context || {}).configuration_url || "";
+  const m = url.match(/^https?:\/\/([^/:]+)/);
+  return m ? m[1] : "";
+}
+// EN | confirm_only means the flow's only remaining step is "yes, add it" —
+// EN | a POST with an empty body finishes it. Anything else wants a form
+// EN | this screen has no generic way to draw, so it says so and hands over
+// EN | to HA rather than posting {} and hoping.
+// FR | confirm_only signifie que la seule etape restante du flux est
+// FR | « oui, ajoute-le » — un POST au corps vide le termine. Tout le reste
+// FR | reclame un formulaire que cet ecran n a aucun moyen generique de
+// FR | dessiner : il le dit et passe la main a HA plutot que de poster {} en
+// FR | esperant.
+function flowIsOneClick(f){
+  return (f.context || {}).confirm_only === true;
+}
+
+function ageLabel(ts){
+  if (!ts) return "";
+  const days = Math.floor((Date.now()/1000 - ts) / 86400);
+  return days <= 0 ? t("age_today") : t("age_days", {n: days});
+}
+function recentDevices(){
+  const cut = Date.now()/1000 - RECENT_DAYS * 86400;
+  return state.devices
+    .filter(d => d.created_at && d.created_at >= cut && !d.disabled_by)
+    .sort((a,b) => b.created_at - a.created_at);
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// ACTIONS
+// ═══════════════════════════════════════════════════════════════════════════
+async function withBusy(label, fn){
+  setBusy(true, label);
+  try { await fn(); }
+  catch(e){ state.error = t("err_failed", {msg: e.message}); }
+  finally { setBusy(false); }
+}
+
+async function validateFlow(flowId){
+  const f = state.flows.find(x => x.flow_id === flowId);
+  if (!f) return;
+  const name = flowName(f);
+  await withBusy(t("busy_validating"), async () => {
+    const res = await api("POST", "config/config_entries/flow/" + flowId, {});
+    // EN | A flow answers with what it became. create_entry is done; `form`
+    // EN | means it asked a question we cannot show — say so plainly instead
+    // EN | of reporting a success that did not happen.
+    // FR | Un flux repond par ce qu il est devenu. create_entry est fini ;
+    // FR | `form` signifie qu il a pose une question que nous ne pouvons pas
+    // FR | afficher — le dire franchement plutot que d annoncer une reussite
+    // FR | qui n a pas eu lieu.
+    if (res && res.type === "create_entry"){
+      state.notice = t("notice_validated", {name: (res.title || name)});
+    } else if (res && res.type === "abort"){
+      state.notice = t("err_failed", {msg: res.reason || "abort"});
+    } else {
+      state.notice = t("notice_form", {name});
+    }
+    await loadAll();
+  });
+}
+
+async function ignoreFlow(flowId){
+  const f = state.flows.find(x => x.flow_id === flowId);
+  if (!f) return;
+  const name = flowName(f);
+  await withBusy(t("busy_removing"), async () => {
+    await wsCall("config_entries/ignore_flow", {flow_id: flowId, title: name});
+    state.notice = t("notice_ignored", {name});
+    await loadAll();
+  });
+}
+
+async function dismissFlow(flowId){
+  const f = state.flows.find(x => x.flow_id === flowId);
+  if (!f) return;
+  const name = flowName(f);
+  await withBusy(t("busy_removing"), async () => {
+    await api("DELETE", "config/config_entries/flow/" + flowId);
+    state.notice = t("notice_dismissed", {name});
+    await loadAll();
+  });
+}
+
+async function uninstallEntry(entryId){
+  const info = state.entries.map(describeEntry).find(i => i.entry.entry_id === entryId);
+  if (!info) return;
+  const name = info.entry.title || info.entry.domain;
+  if (!confirm(t("confirm_uninstall", {name, devices: info.devices.length,
+                                       entities: info.entities.length}))) return;
+  await withBusy(t("busy_removing"), async () => {
+    const res = await api("DELETE", "config/config_entries/entry/" + entryId);
+    state.notice = t("notice_removed", {name})
+      + (res && res.require_restart ? "\n" + t("restart_needed") : "");
+    await loadAll();
+  });
+}
+
+function toggleEntries(){ state.showAllEntries = !state.showAllEntries; render(); }
+
+async function connect(){
+  const inp = document.getElementById("token-input");
+  if (inp) state.token = inp.value.trim();
+  if (!state.token){ state.error = t("err_no_token"); return render(); }
+  localStorage.setItem(LS_TOKEN, state.token);
+  setBusy(true, t("busy_connecting"));
+  try{
+    await wsConnect(state.token);
+    state.connected = true;
+    await loadLanguage();
+    subscribeLanguage();
+    setBusy(true, t("busy_loading"));
+    await loadAll();
+  }catch(e){
+    state.connected = false;
+    state.error = e.message;
+  }finally{ setBusy(false); }
+}
+async function reload(){
+  await withBusy(t("busy_loading"), loadAll);
+}
+
+async function loadLanguage(){
+  try{
+    const states = await wsCall("get_states");
+    const ent = states.find(s => s.entity_id === "input_select.vssp_language");
+    if (ent) applyLang(ent.state);
+  }catch(_){ /* garde le fr par defaut si la lecture echoue */ }
+}
+function subscribeLanguage(){
+  wsSubscribe("subscribe_events", {event_type:"state_changed"}, ev => {
+    const d = ev && ev.data;
+    if (d && d.entity_id === "input_select.vssp_language" && d.new_state){
+      applyLang(d.new_state.state);
+      render();
+    }
+  }).catch(()=>{});
+}
+
+function setBusy(on, label){
+  state.loading = on;
+  state.busyLabel = label || "";
+  if (on){ state.error = ""; state.notice = ""; }
+  render();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// RENDU
+// ═══════════════════════════════════════════════════════════════════════════
+function esc(s){
+  return String(s == null ? "" : s)
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+}
+
+function renderPending(){
+  let h = `<div class="card"><div class="card-title">${esc(t("pending_title"))}`
+        + `<span class="count">${state.flows.length}</span></div>`
+        + `<div class="card-sub">${esc(t("pending_sub"))}</div><div style="height:10px"></div>`;
+  if (!state.flows.length){
+    h += `<div class="empty">${esc(t("pending_empty"))}</div></div>`;
+    return h;
+  }
+  state.flows.forEach(f => {
+    const host = flowHost(f);
+    const one = flowIsOneClick(f);
+    const src = esc((f.context || {}).source || "");
+    h += `<div class="row">
+      <div class="ico">◇</div>
+      <div>
+        <div class="nm">${esc(flowName(f))}
+          <span class="tag info">${esc(f.handler)}</span>
+          ${one ? "" : `<span class="tag warn">${esc(t("needs_form"))}</span>`}</div>
+        <div class="sub">${src}${host ? " · " + esc(host) : ""}`
+        + `${one ? "" : " · " + esc(t("needs_form_hint"))}</div>
+      </div>
+      <div class="act">`
+      + (one
+          ? `<button class="btn btn-sm" onclick="validateFlow('${esc(f.flow_id)}')">${esc(t("validate"))}</button>`
+          : "")
+      + `<button class="btn btn-sm btn-ghost" onclick="ignoreFlow('${esc(f.flow_id)}')">${esc(t("ignore"))}</button>
+         <button class="btn btn-sm btn-ghost" onclick="dismissFlow('${esc(f.flow_id)}')">${esc(t("dismiss"))}</button>
+      </div></div>`;
+  });
+  return h + "</div>";
+}
+
+function renderRecent(){
+  const list = recentDevices();
+  let h = `<div class="card"><div class="card-title">${esc(t("recent_title"))}`
+        + `<span class="count">${list.length}</span></div>`
+        + `<div class="card-sub">${esc(t("recent_sub", {days: RECENT_DAYS}))}</div>`
+        + `<div style="height:10px"></div>`;
+  if (!list.length){
+    h += `<div class="empty">${esc(t("recent_empty", {days: RECENT_DAYS}))}</div>`;
+  } else {
+    list.forEach(d => {
+      const n = state.entities.filter(e => e.device_id === d.id && !e.disabled_by).length;
+      h += `<div class="row">
+        <div class="ico">＋</div>
+        <div>
+          <div class="nm">${esc(d.name_by_user || d.name || d.id)}
+            <span class="tag new">${esc(ageLabel(d.created_at))}</span></div>
+          <div class="sub">${esc([d.manufacturer, d.model].filter(Boolean).join(" "))}`
+          + `${n ? " · " + esc(t("entity_count", {live: n, total: n})) : ""}`
+          + `${d.area_id ? "" : ""}</div>
+        </div>
+        <div class="act"></div></div>`;
+    });
+    h += `<div style="height:12px"></div>`
+       + `<button class="btn btn-sm btn-ghost" onclick="gotoAssign()">`
+       + `${esc(t("goto_assign"))}</button>`;
+  }
+  return h + "</div>";
+}
+
+function renderEntries(){
+  const all = state.entries.map(describeEntry)
+    .sort((a,b) => (a.entry.title||"").localeCompare(b.entry.title||""));
+  const unused = all.filter(i => i.reason);
+  const list = state.showAllEntries ? all : unused;
+  let h = `<div class="card"><div class="card-title">${esc(t("unused_title"))}`
+        + `<span class="count">${unused.length}</span></div>`
+        + `<div class="card-sub">${esc(t("unused_sub"))}</div>`
+        + `<div style="height:10px"></div>`
+        + `<div class="bar"><button class="btn btn-sm btn-ghost" onclick="toggleEntries()">`
+        + `${esc(state.showAllEntries ? t("show_unused") : t("show_all"))}</button>`
+        + `<span class="count">${all.length}</span></div>`;
+  if (!list.length){
+    h += `<div class="empty">${esc(t("unused_empty"))}</div></div>`;
+    return h;
+  }
+  list.forEach(i => {
+    const tag = i.reason
+      ? `<span class="tag ${i.reason === "reason_not_loaded" ? "dead" : "warn"}">${esc(t(i.reason))}</span>`
+      : "";
+    h += `<div class="row">
+      <div class="ico">▣</div>
+      <div>
+        <div class="nm">${esc(i.entry.title || i.entry.domain)}
+          <span class="tag info">${esc(i.entry.domain)}</span>${tag}</div>
+        <div class="sub">${esc(t("device_count", {n: i.devices.length}))} · `
+        + `${esc(t("entity_count", {live: i.live.length, total: i.entities.length}))}</div>
+      </div>
+      <div class="act">
+        <button class="btn btn-sm btn-danger" onclick="uninstallEntry('${esc(i.entry.entry_id)}')">`
+        + `${esc(t("uninstall"))}</button>
+      </div></div>`;
+  });
+  return h + "</div>";
+}
+
+function render(){
+  const c = document.getElementById("content");
+  const urlEl = document.getElementById("ha-url");
+  if (urlEl) urlEl.textContent = location.origin;
+  let html = "";
+
+  if (state.error) html += `<div class="msg err">${esc(state.error)}</div>`;
+  if (state.notice) html += `<div class="msg ok">${esc(state.notice)}</div>`;
+
+  if (!state.connected){
+    html += `<div class="card">
+      <div class="card-title">${esc(t("connect_title"))}</div>
+      <div class="card-sub">${esc(t("connect_help"))}</div>
+      <div style="height:12px"></div>
+      <input type="text" id="token-input" value="${esc(state.token)}" placeholder="eyJhbGciOi…"/>
+      <div style="height:12px"></div>
+      <button class="btn" onclick="connect()" ${state.loading ? "disabled" : ""}>`
+      + `${esc(state.loading ? state.busyLabel : t("connect"))}</button>
+    </div>`;
+    c.innerHTML = html;
+    return;
+  }
+
+  html += `<div class="bar">
+    <button class="btn btn-sm btn-ghost" onclick="reload()" ${state.loading ? "disabled" : ""}>`
+    + `${esc(state.loading ? state.busyLabel : t("reload"))}</button>
+    <div class="spacer"></div></div>`;
+  html += renderPending();
+  html += renderRecent();
+  html += renderEntries();
+  c.innerHTML = html;
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
+// EN | Auto-connect when a token is already stored — the console embeds this
+// EN | page in an iframe, and asking for the same credential again on every
+// EN | navigation would make the screen feel like a login wall rather than a
+// EN | panel.
+// FR | Connexion automatique si un jeton est deja stocke — la console
+// FR | integre cette page en iframe, et redemander le meme identifiant a
+// FR | chaque navigation ferait de l ecran un mur de connexion plutot qu un
+// FR | panneau.
+// ═══════════════════════════════════════════════════════════════════════════
+applyLang("fr");
+render();
+if (state.token) connect();
+</script>
+</body>
+</html>

@@ -505,6 +505,8 @@ adminmenu:
   section:
     rooms: ROOMS & FLOORS
     rooms_hint: Declare the rooms of the home and their floors
+    devices: DETECTED DEVICES
+    devices_hint: Validate devices appearing on the network, remove the ones that stopped answering
     assign: DEVICE ASSIGNMENT
     assign_hint: Send each discovered device to a room and a slot
     energy: ENERGY DEVICES

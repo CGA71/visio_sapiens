@@ -66,6 +66,7 @@
 {% set admin_path = '/visio-sapiens-admin' %}
 {% set screens = [
   ('rooms',      'mdi:floor-plan',        'rooms'),
+  ('devices',    'mdi:access-point-network', 'devices'),
   ('assign',     'mdi:transit-connection-variant', 'assign'),
   ('energy',     'mdi:lightning-bolt',    'energy'),
   ('calendar',   'mdi:calendar-account',  'calendar'),
@@ -235,7 +236,7 @@ views:
       # FR | (energy, dashboards) gardent auto : leur contenu doit se
       # FR | dimensionner a lui-meme et laisser la page defiler, pas
       # FR | s'etirer jusqu'a la fenetre.
-      grid-template-rows: 130px {{ '1fr' if screen in ['rooms', 'assign', 'theme', 'calendar'] else 'auto' }}
+      grid-template-rows: 130px {{ '1fr' if screen in ['rooms', 'devices', 'assign', 'theme', 'calendar'] else 'auto' }}
       grid-template-areas: |
         "nav header header header"
         "nav body body body"
@@ -456,6 +457,52 @@ views:
             # FR | plutot qu'un calc(100vh-260px) fige devenu obsolete des
             # FR | l'ajout de ce bouton, laissant une bande de fond de page
             # FR | morte sous la carte.
+            card_mod:
+              style: |
+                :host {
+                  flex: 1 1 0;
+                  min-height: 520px;
+                }
+                ha-card {
+                  background: transparent !important;
+                  border: none !important;
+                  box-shadow: none !important;
+                  overflow: hidden;
+                  height: 100%;
+                  border-radius: var(--ha-card-border-radius, 16px);
+                }
+                iframe { width: 100%; height: 100% !important; border: none; }
+
+{% elif screen == 'devices' %}
+          # EN | DETECTED DEVICES — the only screen made entirely of one
+          # EN | iframe, with not a single card above it. Everything it does
+          # EN | needs a live answer from Home Assistant: what is waiting on
+          # EN | the network right now, what arrived this week, what stopped
+          # EN | answering. None of that can be a button wired to a
+          # EN | shell_command, so there is nothing to put outside the frame
+          # EN | — unlike ROOMS & FLOORS, whose DISCOVERY SCAN button belongs
+          # EN | to the console rather than to the page.
+          # EN | Listing pending discoveries exists only on the WebSocket API,
+          # EN | so this page authenticates with the same long-lived token as
+          # EN | vssp_rooms_floors.html rather than through a webhook — see
+          # EN | the header of vssp_devices.html for why that is the right
+          # EN | trade here and the wrong one in assign.html.
+          # FR | APPAREILS DETECTES — le seul ecran fait entierement d une
+          # FR | iframe, sans une seule carte au-dessus. Tout ce qu il fait
+          # FR | exige une reponse en direct de Home Assistant : ce qui attend
+          # FR | sur le reseau maintenant, ce qui est arrive cette semaine, ce
+          # FR | qui a cesse de repondre. Rien de tout cela ne peut etre un
+          # FR | bouton cable sur un shell_command, donc il n y a rien a
+          # FR | mettre hors du cadre — contrairement a PIECES & ETAGES, dont
+          # FR | le bouton DISCOVERY SCAN appartient a la console plutot qu a
+          # FR | la page.
+          # FR | Lister les decouvertes en attente n existe que sur l API
+          # FR | WebSocket, donc cette page s authentifie avec le meme jeton
+          # FR | longue duree que vssp_rooms_floors.html plutot que par un
+          # FR | webhook — voir l en-tete de vssp_devices.html pour pourquoi
+          # FR | c est le bon compromis ici et le mauvais dans assign.html.
+          - type: iframe
+            url: /local/vssp/wizard/vssp_devices.html?v={{ build_stamp }}
             card_mod:
               style: |
                 :host {
