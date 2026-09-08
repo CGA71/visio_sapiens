@@ -8,7 +8,7 @@
 # FR | coffre initialise et descelle. A executer depuis le conteneur, en
 # FR | lui passant ton token root pour la duree de l appel seulement :
 #
-#     docker exec -e VAULT_TOKEN=hvs.xxxxx -it vssp-vault sh /vault/bootstrap.sh
+#     docker exec -e VAULT_TOKEN=<YOUR-ROOT-TOKEN> -it vssp-vault sh /vault/bootstrap.sh
 #
 # EN | The token is passed as an environment variable of that one exec, so
 # EN | it lands in neither the image, nor a file, nor this repository. It
@@ -33,13 +33,42 @@ ADMIN_USER="${ADMIN_USER:-neo}"
 
 if [ -z "$VAULT_TOKEN" ]; then
   echo "[ERR] VAULT_TOKEN is not set. Pass your root token to this one exec:"
-  echo "      docker exec -e VAULT_TOKEN=hvs.xxxxx -it vssp-vault sh /vault/bootstrap.sh"
+  echo "      docker exec -e VAULT_TOKEN=<YOUR-ROOT-TOKEN> -it vssp-vault sh /vault/bootstrap.sh"
   exit 1
 fi
 
 if vault status 2>/dev/null | grep -q "Sealed *true"; then
   echo "[ERR] The safe is sealed. Unseal it first:"
   echo "      docker exec -it vssp-vault vault operator unseal   (three times)"
+  exit 1
+fi
+
+
+# EN | Fail here, on purpose, rather than at the first real call. Without
+# EN | this the script walked straight into step 1 and answered a wrong
+# EN | token with two raw 403 dumps naming sys/mounts — which reads as
+# EN | "the safe is broken" when the actual cause is a token that was
+# EN | never valid. The commonest wrong token is the placeholder from the
+# EN | documentation, pasted verbatim, so that case is named outright.
+# FR | Echouer ici, a dessein, plutot qu au premier appel reel. Sans ceci
+# FR | le script fonçait a l etape 1 et repondait a un mauvais token par
+# FR | deux 403 bruts nommant sys/mounts — ce qui se lit « le coffre est
+# FR | casse » alors que la vraie cause est un token qui n a jamais ete
+# FR | valide. Le mauvais token le plus frequent est le texte d exemple de
+# FR | la documentation, colle tel quel : ce cas est donc nomme
+# FR | explicitement.
+case "$VAULT_TOKEN" in
+  hvs.xxx*|"<"*|*your-root-token*|*ton-token-root*)
+    echo "[ERR] VAULT_TOKEN is the example text from the documentation, not a token."
+    echo "      Use the real root token printed once by 'vault operator init',"
+    echo "      the line reading 'Initial Root Token: hvs....'."
+    exit 1 ;;
+esac
+
+if ! vault token lookup >/dev/null 2>&1; then
+  echo "[ERR] Vault refuses this token (permission denied / invalid token)."
+  echo "      It is not the root token, or it has expired or been revoked."
+  echo "      The safe itself is fine - it is unsealed and answering."
   exit 1
 fi
 

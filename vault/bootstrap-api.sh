@@ -24,7 +24,7 @@
 #
 #     VAULT_ADDR=http://192.168.1.11:8200 \
 #     HA_URL=http://192.168.1.11:8123 \
-#     VAULT_TOKEN=hvs.xxxxx \
+#     VAULT_TOKEN=<YOUR-ROOT-TOKEN> \
 #     sh vault/bootstrap-api.sh
 #
 # EN | It does end up in your shell history — clear it afterwards, or
@@ -56,7 +56,7 @@ HERE="$(dirname "$0")"
 
 if [ -z "$VAULT_TOKEN" ]; then
   echo "[ERR] VAULT_TOKEN is not set. Pass your root token to this one call:"
-  echo "      VAULT_TOKEN=hvs.xxxxx sh $0"
+  echo "      VAULT_TOKEN=<YOUR-ROOT-TOKEN> sh $0"
   exit 1
 fi
 
@@ -121,6 +121,35 @@ fi
 if [ "$SEALED" = "True" ] || [ "$SEALED" = "true" ]; then
   echo "[ERR] The safe is sealed. Unseal it first (web UI at $VAULT_ADDR/ui,"
   echo "      or vault operator unseal, three times)."
+  exit 1
+fi
+
+
+# EN | Fail here, on purpose, rather than at the first real call. Without
+# EN | this the script walked straight into step 1 and answered a wrong
+# EN | token with two raw 403 dumps naming sys/mounts — which reads as
+# EN | "the safe is broken" when the actual cause is a token that was
+# EN | never valid. The commonest wrong token is the placeholder from the
+# EN | documentation, pasted verbatim, so that case is named outright.
+# FR | Echouer ici, a dessein, plutot qu au premier appel reel. Sans ceci
+# FR | le script fonçait a l etape 1 et repondait a un mauvais token par
+# FR | deux 403 bruts nommant sys/mounts — ce qui se lit « le coffre est
+# FR | casse » alors que la vraie cause est un token qui n a jamais ete
+# FR | valide. Le mauvais token le plus frequent est le texte d exemple de
+# FR | la documentation, colle tel quel : ce cas est donc nomme
+# FR | explicitement.
+case "$VAULT_TOKEN" in
+  hvs.xxx*|"<"*|*your-root-token*|*ton-token-root*)
+    echo "[ERR] VAULT_TOKEN is the example text from the documentation, not a token."
+    echo "      Use the real root token printed once by 'vault operator init',"
+    echo "      the line reading 'Initial Root Token: hvs....'."
+    exit 1 ;;
+esac
+
+if [ -z "$(api GET auth/token/lookup-self | jget data.id)" ]; then
+  echo "[ERR] Vault refuses this token (permission denied / invalid token)."
+  echo "      It is not the root token, or it has expired or been revoked."
+  echo "      The safe itself is fine - it is unsealed and answering."
   exit 1
 fi
 

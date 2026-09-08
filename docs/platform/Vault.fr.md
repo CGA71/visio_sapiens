@@ -107,6 +107,10 @@ docker exec -it vssp-vault vault operator init
 
 **Cinq clés de descellement et un token root s'affichent. C'est la seule fois.**
 
+Le token root est la ligne `Initial Root Token: hvs.` suivie d'une longue
+chaîne. C'est lui qu'attend l'étape 5 — pas les clés de descellement, et pas
+le `<TON-TOKEN-ROOT>` d'exemple ci-dessous.
+
 Note-les **hors de cette machine** — sur papier, ou dans un gestionnaire de mots
 de passe sur un autre appareil. C'est le bris de glace : sans elles, le coffre
 est définitivement fermé, et avec elles seules quelqu'un l'ouvre entièrement.
@@ -120,7 +124,7 @@ docker exec -it vssp-vault vault operator unseal   # trois fois, clé différent
 ### 5. Configurer
 
 ```bash
-docker exec -e VAULT_TOKEN=hvs.xxxxx -it vssp-vault sh /vault/bootstrap.sh
+docker exec -e VAULT_TOKEN=<TON-TOKEN-ROOT> -it vssp-vault sh /vault/bootstrap.sh
 ```
 
 Le script monte KV v2, écrit les deux policies, active `userpass`, demande
@@ -133,7 +137,7 @@ Assistant**.
 Coller le token affiché dans `/config/secrets.yaml` :
 
 ```yaml
-vault_ha_token: hvs.xxxxxxxx
+vault_ha_token: <LE-TOKEN-AFFICHE-CI-DESSUS>
 ```
 
 La clé y est déjà, vide : le déploiement l'ajoute avec
@@ -176,7 +180,7 @@ la machine.
 Depuis n'importe quelle machine qui joint le coffre :
 
 ```bash
-VAULT_ADDR=http://<instance>:8200 HA_URL=http://<instance>:8123 VAULT_TOKEN=hvs.xxxxx sh vault/bootstrap-api.sh
+VAULT_ADDR=http://<instance>:8200 HA_URL=http://<instance>:8123 VAULT_TOKEN=<TON-TOKEN-ROOT> sh vault/bootstrap-api.sh
 ```
 
 Puis coller le token affiché dans `secrets.yaml`, comme en staging.

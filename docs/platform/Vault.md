@@ -103,6 +103,10 @@ docker exec -it vssp-vault vault operator init
 
 **Five unseal keys and a root token are printed. This is the only time.**
 
+The root token is the line reading `Initial Root Token: hvs.` followed by a
+long string. That is what step 5 wants — not the unseal keys, and not the
+`<YOUR-ROOT-TOKEN>` placeholder below.
+
 Write them down **off this machine** — on paper, or in a password manager on
 another device. That is the break-glass: without them the safe is shut for
 good, and with them alone someone opens it completely.
@@ -116,7 +120,7 @@ docker exec -it vssp-vault vault operator unseal   # three times, different key
 ### 5. Configure
 
 ```bash
-docker exec -e VAULT_TOKEN=hvs.xxxxx -it vssp-vault sh /vault/bootstrap.sh
+docker exec -e VAULT_TOKEN=<YOUR-ROOT-TOKEN> -it vssp-vault sh /vault/bootstrap.sh
 ```
 
 The script mounts KV v2, writes both policies, enables `userpass`, prompts
@@ -129,7 +133,7 @@ token**.
 Paste the printed token into `/config/secrets.yaml`:
 
 ```yaml
-vault_ha_token: hvs.xxxxxxxx
+vault_ha_token: <THE-TOKEN-PRINTED-ABOVE>
 ```
 
 The key is already there, empty: the deploy adds it with
@@ -169,7 +173,7 @@ and the root token are shown once**: write them down off the machine.
 From any machine that can reach the safe:
 
 ```bash
-VAULT_ADDR=http://<instance>:8200 HA_URL=http://<instance>:8123 VAULT_TOKEN=hvs.xxxxx sh vault/bootstrap-api.sh
+VAULT_ADDR=http://<instance>:8200 HA_URL=http://<instance>:8123 VAULT_TOKEN=<YOUR-ROOT-TOKEN> sh vault/bootstrap-api.sh
 ```
 
 Then paste the printed token into `secrets.yaml`, as in staging.
