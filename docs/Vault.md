@@ -54,7 +54,26 @@ What follows from that:
 
 ---
 
-## Install
+## Two installations
+
+| | Staging (k3s host) | Production (HAOS) |
+|---|---|---|
+| Form | Docker container | **local add-on** |
+| Files | `vault/` | `addons/vssp-vault/` |
+| Start | `docker compose up -d` | Settings → Add-ons → Install |
+| `init` / unseal | `docker exec … vault operator init` | **web UI** on `:8200/ui` |
+| Bootstrap | `bootstrap.sh` or `bootstrap-api.sh` | `bootstrap-api.sh` |
+
+HAOS cannot do `docker compose`: the Supervisor owns the Docker daemon, and
+`docker exec` is unsupported there. The supported route is a **local add-on**, a
+container the Supervisor builds and manages itself. That is also why
+`bootstrap-api.sh` exists: it does the same job as `bootstrap.sh` over the HTTP
+API, so it never needs to get inside the container. It runs from the k3s host,
+from your PC or from the SSH add-on, against either deployment.
+
+---
+
+## Install — staging (k3s host)
 
 ### 1. Docker access
 
@@ -121,6 +140,47 @@ Then restart Home Assistant.
 
 ---
 
+## Install — production (HAOS)
+
+### 1. Drop the add-on in
+
+The production deploy copies it to `/addons/vssp-vault` when `/addons` is
+reachable over SSH (Terminal & SSH add-on). Otherwise, by hand through the
+Samba `addons` share.
+
+Copying the files does **not** install it: Settings → Add-ons → Add-on store →
+(three dots) **Check for updates**. It shows up under "Local add-ons".
+
+### 2. Configure before starting
+
+In the add-on's Configuration tab, set **`api_addr`** to the address your
+browser actually uses to reach the instance, e.g. `http://192.168.1.20:8200`.
+Not `127.0.0.1`: Vault would send the SAFE screen to the visitor's own machine.
+
+Then **Start**.
+
+### 3. Initialise and unseal — in the browser
+
+`http://<instance>:8200/ui` offers initialisation and unsealing. **The 5 keys
+and the root token are shown once**: write them down off the machine.
+
+### 4. Bootstrap
+
+From any machine that can reach the safe:
+
+```bash
+VAULT_ADDR=http://<instance>:8200 HA_URL=http://<instance>:8123 VAULT_TOKEN=hvs.xxxxx sh vault/bootstrap-api.sh
+```
+
+Then paste the printed token into `secrets.yaml`, as in staging.
+
+> **Untested.** I have no access to a HAOS instance: the add-on is written
+> against the Supervisor's constraints, not verified against it. Storage points
+> at `/data`, the only volume that survives an add-on update — that is the first
+> thing to check if something goes wrong.
+
+---
+
 ## Day to day
 
 After **every host restart** the safe is sealed. The screen says so in an
@@ -162,7 +222,9 @@ whole history, with no undo.
 | `vault/config/vault.hcl` | server configuration |
 | `vault/policies/vssp-ha.hcl` | Home Assistant policy — names, never values |
 | `vault/policies/vssp-admin.hcl` | administrator policy — the values |
-| `vault/bootstrap.sh` | one-shot setup |
+| `vault/bootstrap.sh` | one-shot setup, from inside the container |
+| `vault/bootstrap-api.sh` | the same over the API — the only route on HAOS |
+| `addons/vssp-vault/` | the HAOS add-on (config, Dockerfile, run.sh) |
 | `home-assistant/packages/vssp_vault.yaml` | sensors, commands, scripts |
 | `home-assistant/www/vssp/wizard/vssp_vault.html` | the screen |
 | `vssp/vssp_ensure_secret.py` | seeds `vault_ha_token` in `secrets.yaml` |

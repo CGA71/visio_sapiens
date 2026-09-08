@@ -1,0 +1,95 @@
+########################################################################
+# EN | Visio Sapiens Vault — LOCAL ADD-ON for Home Assistant OS.
+# FR | Visio Sapiens Vault — ADD-ON LOCAL pour Home Assistant OS.
+#
+# EN | On the k3s host the safe is a Docker container (vault/
+# EN | docker-compose.yml). On HAOS that is not available: the Supervisor
+# EN | owns the Docker daemon, there is no `docker compose`, and
+# EN | `docker exec` is explicitly unsupported. The supported way to run
+# EN | anything else on HAOS is an add-on — a container the Supervisor
+# EN | builds and manages — so that is what this is.
+# EN | Install: copy this directory to /addons/vssp-vault on the instance,
+# EN | then Settings > Add-ons > Add-on store > (three dots) Check for
+# EN | updates. It appears under "Local add-ons".
+# FR | Sur l hote k3s, le coffre est un conteneur Docker (vault/
+# FR | docker-compose.yml). Sur HAOS ce n est pas possible : le
+# FR | Superviseur possede le demon Docker, `docker compose` n existe pas,
+# FR | et `docker exec` est explicitement non supporte. La facon supportee
+# FR | de faire tourner autre chose sur HAOS est un add-on — un conteneur
+# FR | que le Superviseur construit et gere — c est donc ce que ceci est.
+# FR | Installation : copier ce repertoire vers /addons/vssp-vault sur
+# FR | l instance, puis Parametres > Modules complementaires > Boutique >
+# FR | (trois points) Verifier les mises a jour. Il apparait sous
+# FR | « Modules complementaires locaux ».
+########################################################################
+name: Visio Sapiens Vault
+version: "1.20.4"
+slug: vssp_vault
+description: >-
+  HashiCorp Vault for the Visio Sapiens SAFE screen — server access
+  secrets, accounts and application passwords.
+url: https://github.com/neo/visio-sapiens
+# EN | hashicorp/vault publishes both, and those are the two architectures
+# EN | Home Assistant OS actually runs on in practice.
+# FR | hashicorp/vault publie les deux, et ce sont les deux architectures
+# FR | sur lesquelles Home Assistant OS tourne reellement en pratique.
+arch:
+  - amd64
+  - aarch64
+
+# EN | The image has no s6-overlay, so the Supervisor must not try to run
+# EN | its init. Without this the add-on exits immediately at start with
+# EN | nothing useful in the log.
+# FR | L image n a pas de s6-overlay, le Superviseur ne doit donc pas
+# FR | tenter d executer son init. Sans ceci l add-on s arrete
+# FR | immediatement au demarrage, sans rien d exploitable dans le journal.
+init: false
+
+startup: services
+boot: auto
+
+ports:
+  8200/tcp: 8200
+ports_description:
+  8200/tcp: >-
+    Vault API and web UI. The SAFE screen calls it from your browser, so
+    it has to stay reachable on the LAN.
+
+# EN | IPC_LOCK lets Vault mlock its memory, so the master key and
+# EN | decrypted secrets never reach swap. It is one of the capabilities
+# EN | the Supervisor allows an add-on to request; without it Vault starts
+# EN | anyway but warns, and a swapped page can leave secret material on
+# EN | disk outside the encrypted store — the one thing the safe exists to
+# EN | prevent.
+# FR | IPC_LOCK permet a Vault de verrouiller sa memoire (mlock), pour que
+# FR | la cle maitre et les secrets dechiffres n atteignent jamais le swap.
+# FR | C est l une des capacites que le Superviseur autorise un add-on a
+# FR | demander ; sans elle Vault demarre quand meme mais avertit, et une
+# FR | page swappee peut laisser de la matiere secrete sur disque hors du
+# FR | stockage chiffre — precisement ce que le coffre existe pour
+# FR | empecher.
+privileged:
+  - IPC_LOCK
+
+# EN | No host network: the port mapping above is enough, and the safe has
+# EN | no business seeing the rest of the host's traffic.
+# FR | Pas de reseau hote : le mappage de port ci-dessus suffit, et le
+# FR | coffre n a rien a voir du reste du trafic de l hote.
+host_network: false
+
+options:
+  # EN | The address Vault hands back to clients. It MUST be the address
+  # EN | the browser and Home Assistant actually use to reach the add-on —
+  # EN | not 127.0.0.1, which would redirect the SAFE screen to the
+  # EN | visitor's own machine. Set it to your instance's LAN address.
+  # FR | L adresse que Vault renvoie aux clients. Elle DOIT etre celle par
+  # FR | laquelle le navigateur et Home Assistant joignent reellement
+  # FR | l add-on — pas 127.0.0.1, qui redirigerait l ecran COFFRE-FORT
+  # FR | vers la machine du visiteur. A regler sur l adresse LAN de ton
+  # FR | instance.
+  api_addr: "http://homeassistant.local:8200"
+  log_level: info
+
+schema:
+  api_addr: url
+  log_level: list(trace|debug|info|warn|error)

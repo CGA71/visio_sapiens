@@ -232,6 +232,11 @@ validate:
     - test -f vssp/vssp_apply_config.py    || { echo "[ERR] vssp/vssp_apply_config.py missing"; exit 1; }
     - test -f vssp/vssp_ensure_packages.py || { echo "[ERR] vssp/vssp_ensure_packages.py missing"; exit 1; }
     - test -f vssp/vssp_ensure_secret.py   || { echo "[ERR] vssp/vssp_ensure_secret.py missing"; exit 1; }
+    # EN | The HAOS add-on: three files, all required by the Supervisor.
+    # FR | L add-on HAOS : trois fichiers, tous requis par le Superviseur.
+    - test -f addons/vssp-vault/config.yaml || { echo "[ERR] addons/vssp-vault/config.yaml missing"; exit 1; }
+    - test -f addons/vssp-vault/Dockerfile  || { echo "[ERR] addons/vssp-vault/Dockerfile missing"; exit 1; }
+    - test -f addons/vssp-vault/run.sh      || { echo "[ERR] addons/vssp-vault/run.sh missing"; exit 1; }
     - test -f vssp/vssp_sanitize_resources.py || { echo "[ERR] vssp/vssp_sanitize_resources.py missing"; exit 1; }
     - test -f vssp/vssp_lan_probe.py || { echo "[ERR] vssp/vssp_lan_probe.py missing"; exit 1; }
     - test -f vssp/livebox.env || { echo "[ERR] vssp/livebox.env missing"; exit 1; }
@@ -1562,6 +1567,51 @@ deploy:production:
         printf 'LIVEBOX_PASSWORD=%s\n' "$LIVEBOX_PASSWORD" \
           | ssh ha "umask 077; cat > $HA_CFG/vssp/.livebox.env"
         echo "[OK] Router secret deployed"
+      fi
+    # --- EN | VAULT ADD-ON (HAOS only) --------------------------------------
+    # --- FR | ADD-ON VAULT (HAOS uniquement) --------------------------------
+    # EN | On the k3s host the safe is a plain Docker container. HAOS cannot
+    # EN | do that: the Supervisor owns the Docker daemon, there is no
+    # EN | `docker compose`, and `docker exec` is unsupported. The supported
+    # EN | route is a local add-on the Supervisor builds itself, which is
+    # EN | what addons/vssp-vault is.
+    # EN | Copied from the CHECKOUT, not from the package: putting addons/ in
+    # EN | the tarball would trip WHITELIST GUARD #2 on staging, which is a
+    # EN | k3s pod with no /addons and no Supervisor to install one — and the
+    # EN | guard would be right to complain.
+    # EN | Non-fatal. /addons is only reachable when the Terminal & SSH
+    # EN | add-on maps it, and a production deploy has no business failing
+    # EN | over an optional component; the message says what to do by hand.
+    # EN | Copying the files does NOT install the add-on: the Supervisor has
+    # EN | to be told to look, and someone has to press Install. That is
+    # EN | deliberate — a safe should not appear and start on its own.
+    # FR | Sur l hote k3s, le coffre est un simple conteneur Docker. HAOS ne
+    # FR | peut pas faire cela : le Superviseur possede le demon Docker,
+    # FR | `docker compose` n existe pas et `docker exec` n est pas supporte.
+    # FR | La voie supportee est un add-on local que le Superviseur construit
+    # FR | lui-meme, et c est ce qu est addons/vssp-vault.
+    # FR | Copie depuis le DEPOT, pas depuis le paquet : mettre addons/ dans
+    # FR | l archive declencherait le GARDE-FOU liste blanche n2 en staging,
+    # FR | qui est un pod k3s sans /addons et sans Superviseur pour en
+    # FR | installer un — et le garde-fou aurait raison de protester.
+    # FR | Non bloquant. /addons n est joignable que si l add-on Terminal &
+    # FR | SSH le mappe, et un deploiement de production n a pas a echouer
+    # FR | pour un composant optionnel ; le message dit quoi faire a la main.
+    # FR | Copier les fichiers n INSTALLE PAS l add-on : il faut dire au
+    # FR | Superviseur de regarder, et quelqu un doit cliquer sur Installer.
+    # FR | C est delibere — un coffre ne doit pas apparaitre et demarrer tout
+    # FR | seul.
+    - |
+      if ssh ha "test -d /addons"; then
+        ssh ha "mkdir -p /addons/vssp-vault"
+        scp addons/vssp-vault/config.yaml             addons/vssp-vault/Dockerfile             addons/vssp-vault/run.sh             ha:/addons/vssp-vault/
+        echo "[OK] add-on vssp-vault copied to /addons"
+        echo "     To pick it up: Settings > Add-ons > Add-on store >"
+        echo "     three dots > Check for updates, then install it."
+      else
+        echo "[warn] /addons is not reachable over ssh - add-on not copied."
+        echo "       Copy addons/vssp-vault/ by hand (Samba share 'addons'),"
+        echo "       then Settings > Add-ons > Store > Check for updates."
       fi
     # --- EN | configuration.yaml patch: run inside the RUNNER (ruamel is
     # ---      available there), then sent back over scp. More reliable than

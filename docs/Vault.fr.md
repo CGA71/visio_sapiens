@@ -57,7 +57,27 @@ Répartition qui en découle :
 
 ---
 
-## Installation
+## Deux installations
+
+| | Staging (hôte k3s) | Production (HAOS) |
+|---|---|---|
+| Forme | conteneur Docker | **add-on local** |
+| Fichiers | `vault/` | `addons/vssp-vault/` |
+| Démarrage | `docker compose up -d` | Paramètres → Modules complémentaires → Installer |
+| `init` / descellement | `docker exec … vault operator init` | **interface web** sur `:8200/ui` |
+| Bootstrap | `bootstrap.sh` ou `bootstrap-api.sh` | `bootstrap-api.sh` |
+
+HAOS ne permet pas `docker compose` : le Superviseur possède le démon Docker,
+et `docker exec` n'y est pas supporté. La voie supportée est un **add-on
+local**, un conteneur que le Superviseur construit et gère lui-même. C'est
+aussi pourquoi `bootstrap-api.sh` existe : il fait le même travail que
+`bootstrap.sh` en passant par l'API HTTP, donc sans avoir à entrer dans le
+conteneur. Il tourne depuis l'hôte k3s, depuis ton PC ou depuis l'add-on SSH,
+contre l'un ou l'autre déploiement.
+
+---
+
+## Installation — staging (hôte k3s)
 
 ### 1. Accès Docker
 
@@ -124,6 +144,50 @@ Puis redémarrer Home Assistant.
 
 ---
 
+## Installation — production (HAOS)
+
+### 1. Déposer l'add-on
+
+Le déploiement production le copie vers `/addons/vssp-vault` si `/addons` est
+joignable en SSH (add-on Terminal & SSH). Sinon, à la main via le partage Samba
+`addons`.
+
+Copier les fichiers **n'installe pas** l'add-on : Paramètres → Modules
+complémentaires → Boutique → (trois points) **Vérifier les mises à jour**. Il
+apparaît sous « Modules complémentaires locaux ».
+
+### 2. Configurer avant de démarrer
+
+Dans l'onglet Configuration de l'add-on, régler **`api_addr`** sur l'adresse par
+laquelle ton navigateur joint réellement l'instance, par exemple
+`http://192.168.1.20:8200`. Pas `127.0.0.1` : Vault renverrait l'écran
+COFFRE-FORT vers la machine du visiteur.
+
+Puis **Démarrer**.
+
+### 3. Initialiser et desceller — dans le navigateur
+
+`http://<instance>:8200/ui` propose l'initialisation et le descellement.
+**Les 5 clés et le token root ne s'affichent qu'une fois** : les noter hors de
+la machine.
+
+### 4. Bootstrap
+
+Depuis n'importe quelle machine qui joint le coffre :
+
+```bash
+VAULT_ADDR=http://<instance>:8200 HA_URL=http://<instance>:8123 VAULT_TOKEN=hvs.xxxxx sh vault/bootstrap-api.sh
+```
+
+Puis coller le token affiché dans `secrets.yaml`, comme en staging.
+
+> **Non testé.** Je n'ai pas d'accès à une instance HAOS : l'add-on est écrit
+> d'après les contraintes du Superviseur, pas vérifié contre lui. Le stockage
+> pointe sur `/data`, seul volume qui survit à une mise à jour de l'add-on —
+> c'est le point à vérifier en premier si quelque chose se passe mal.
+
+---
+
 ## Au quotidien
 
 Après **chaque redémarrage de l'hôte**, le coffre est scellé. L'écran l'annonce
@@ -165,7 +229,9 @@ l'entrée et tout son historique, sans retour.
 | `vault/config/vault.hcl` | configuration serveur |
 | `vault/policies/vssp-ha.hcl` | policy Home Assistant — noms, jamais valeurs |
 | `vault/policies/vssp-admin.hcl` | policy administrateur — les valeurs |
-| `vault/bootstrap.sh` | mise en place unique |
+| `vault/bootstrap.sh` | mise en place unique, depuis le conteneur |
+| `vault/bootstrap-api.sh` | la meme, via l'API — seule voie sur HAOS |
+| `addons/vssp-vault/` | l'add-on HAOS (config, Dockerfile, run.sh) |
 | `home-assistant/packages/vssp_vault.yaml` | capteurs, commandes, scripts |
 | `home-assistant/www/vssp/wizard/vssp_vault.html` | l'écran |
 | `vssp/vssp_ensure_secret.py` | amorce `vault_ha_token` dans `secrets.yaml` |
