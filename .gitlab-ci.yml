@@ -933,7 +933,7 @@ deploy:staging:
         # EN | counterpart wholesale (rm -rf then mv), and www/vssp is one
         # EN | single entry — so the whole directory goes, including the
         # EN | files no commit ever produced because the POD writes them:
-        # EN |   vssp/*.json                 every wizard's status/data file
+        # EN |   vssp/*.json                 every wizard status/data file
         # EN |                               (rooms_sync_status.json,
         # EN |                               assign_data.json,
         # EN |                               energy_sync_status.json,
@@ -944,14 +944,14 @@ deploy:staging:
         # EN |                               for hardware discovered after
         # EN |                               the last commit
         # EN | Losing rooms_sync_status.json is not cosmetic: it is the ONLY
-        # EN | mirror of each room's slot_set/default_slot a browser can read
+        # EN | mirror of each room slot_set/default_slot a browser can read
         # EN | (the HA Area registry has no such concept), so ROOMS & FLOORS
         # EN | came back showing "default" for every room — and the sync it
         # EN | fires on connect then wrote that lie straight into house.yaml,
         # EN | destroying the real assignment instead of merely hiding it.
         # EN | Restoring is conditional: a file the package ships wins, so
         # EN | the product photos tracked in git still update normally and
-        # EN | only the pod's own extras survive.
+        # EN | only the pod own extras survive.
         # FR | ETAT COTE POD SOUS www/ — meme probleme que dashboards/
         # FR | ci-dessus, meme regle. Chaque entree livree par le paquet
         # FR | REMPLACE son homologue en bloc (rm -rf puis mv), et www/vssp
