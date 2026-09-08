@@ -454,8 +454,10 @@ vérifier dans l'ordre :
 
 1. **Les scripts Python sont-ils sur le pod ?**
    `ls /config/vssp/generate_dashboards.py /config/vssp/vssp_energy_sync.py`
-   S'ils manquent : le job `build` du CI ne les copie pas encore dans
-   `dist/vssp/` — voir `PATCH_gitlab-ci.md` (deux lignes à ajouter).
+   S'ils manquent : le job `build` ne les a pas copiés dans `dist/vssp/`.
+   Il copie le répertoire en bloc (`cp -r vssp/. dist/vssp/`), donc un
+   manque signifie que le fichier est absent du dépôt ou exclu — voir
+   [CI_CD.fr.md](CI_CD.fr.md).
 2. **Les dépendances sont-elles présentes ?** `python3 -c "import jinja2, yaml"`
    — sinon `pip install jinja2 pyyaml` dans le conteneur, ou ajouter la
    dépendance à votre image.

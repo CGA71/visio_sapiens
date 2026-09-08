@@ -51,12 +51,6 @@ moment de monter l'instance, ou quand quelque chose cloche sous l'interface.
 | [Vision](project/Vision.fr.md) | à quoi tout cela sert |
 | [Integration_Case_Study](project/Integration_Case_Study.fr.md) | intégrer TECHNICAL ROOM dans le dépôt |
 | [YouTube_Series](project/YouTube_Series.fr.md) | le plan de la série |
-| [Manifest](project/Manifest.md) | ⚠ **périmé** — une liste de livrables de session qui nomme des fichiers disparus, gardée comme trace et non comme consigne |
-
-## `assets/`
-
-Images référencées par les documents. `frame_dashboard.png` n'est actuellement
-référencée par aucun.
 
 ---
 

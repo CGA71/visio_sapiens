@@ -275,8 +275,7 @@ i18n.
 │   ├── dashboards/              l'interface et sa génération
 │   ├── platform/                le socle : installation, services, sécurité
 │   ├── ci-cd/                   le pipeline, et les postmortems
-│   ├── project/                 vision, étude de cas, série YouTube
-│   └── assets/                  images
+│   └── project/                 vision, étude de cas, série YouTube
 │
 ├── kubernetes/                  manifestes k3s (cible staging)
 ├── scripts/                     package.sh / deploy.sh / reload.sh / validate.sh

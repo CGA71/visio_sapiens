@@ -217,7 +217,7 @@ Le même arbitrage vaut pour les 8 appareils du local technique déjà listés d
 `energy.yaml`, qui pointent aujourd'hui vers les `*_energie`.
 
 > Quand `energy.yaml` sera généré depuis `model/house.yaml` (voir
-> `Generator_templating.md`), cette correction se fera **dans le modèle**, une
+> [Dashboard_Generator.fr.md](../dashboards/Dashboard_Generator.fr.md)), cette correction se fera **dans le modèle**, une
 > seule fois, et se propagera aux deux vues à la génération suivante. Il peut
 > être rentable d'attendre ce moment plutôt que de patcher les deux YAML à la
 > main maintenant.

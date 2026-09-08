@@ -222,7 +222,7 @@ The same trade-off applies to the 8 technical-room devices already listed in
 `energy.yaml`, which currently point to the `*_energie` entities.
 
 > Once `energy.yaml` is generated from `model/house.yaml` (see
-> `Generator_templating.md`), this fix will be made **in the model**, a
+> [Dashboard_Generator.md](../dashboards/Dashboard_Generator.md)), this fix will be made **in the model**, a
 > single time, and will propagate to both views on the next generation. It
 > may be worth waiting for that moment rather than patching both YAML files
 > by hand now.

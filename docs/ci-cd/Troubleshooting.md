@@ -446,8 +446,10 @@ in this order:
 
 1. **Are the Python scripts on the pod?**
    `ls /config/vssp/generate_dashboards.py /config/vssp/vssp_energy_sync.py`
-   If missing: the CI `build` job isn't copying them into `dist/vssp/` yet —
-   see `PATCH_gitlab-ci.md` (two lines to add).
+   If missing: the `build` job did not copy them into `dist/vssp/`. It
+   copies the directory wholesale (`cp -r vssp/. dist/vssp/`), so a gap
+   there means the file is absent from the repository or excluded — see
+   [CI_CD.md](CI_CD.md).
 2. **Are the dependencies present?** `python3 -c "import jinja2, yaml"` —
    if not, `pip install jinja2 pyyaml` inside the container, or add the
    dependency to your image.

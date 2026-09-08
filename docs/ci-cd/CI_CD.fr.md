@@ -169,7 +169,7 @@ Image `bitnami/kubectl`. Séquence réelle :
 12. trace de la version réellement présente dans le conteneur.
 
 L'étape 9 est indispensable : `lovelace.dashboards` et `homeassistant.packages`
-ne sont **pas** rechargeables à chaud (voir `DIAGNOSTIC_staging.md`).
+ne sont **pas** rechargeables à chaud (voir [Troubleshooting.fr.md](Troubleshooting.fr.md)).
 
 ---
 
@@ -360,7 +360,7 @@ unitaires vers `/config/vssp/` :
     - test -f vssp/vssp_upgrade.py   || { echo "[ERR] vssp/vssp_upgrade.py manquant"; exit 1; }
 ```
 
-> Voir aussi le point 5 de `Generator_templating.md` : `vssp_admin_config.yaml`
+> Voir aussi le point 5 de [Dashboard_Generator.fr.md](../dashboards/Dashboard_Generator.fr.md) : `vssp_admin_config.yaml`
 > pointe sur `/config/home-assistant/dashboards/home.yaml`, chemin qui n'existe
 > pas sur le pod (le déploiement met les dashboards en `/config/dashboards/`).
 > La sauvegarde et la suppression sont donc actuellement des no-ops.

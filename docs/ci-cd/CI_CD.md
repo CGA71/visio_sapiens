@@ -172,7 +172,7 @@ Points worth knowing:
 12. log the version actually present in the container.
 
 Step 9 is essential: `lovelace.dashboards` and `homeassistant.packages`
-**cannot** be hot-reloaded (see `DIAGNOSTIC_staging.md`).
+**cannot** be hot-reloaded (see [Troubleshooting.md](Troubleshooting.md)).
 
 ---
 
@@ -362,7 +362,7 @@ individual `cp`s to `/config/vssp/`:
     - test -f vssp/vssp_upgrade.py   || { echo "[ERR] vssp/vssp_upgrade.py manquant"; exit 1; }
 ```
 
-> See also point 5 of `Generator_templating.md`: `vssp_admin_config.yaml`
+> See also point 5 of [Dashboard_Generator.md](../dashboards/Dashboard_Generator.md): `vssp_admin_config.yaml`
 > points at `/config/home-assistant/dashboards/home.yaml`, a path that
 > doesn't exist on the pod (the deployment lays dashboards out under
 > `/config/dashboards/`). Backup and deletion are therefore currently no-ops.

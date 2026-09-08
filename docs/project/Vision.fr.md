@@ -244,7 +244,7 @@ fichier s'appelle `js/osvision.js`. Le CSS Engine part donc en 404 et le job
   natives HA **et** iframe vers `core.html`, qui recrée déjà tout en JS. Les
   cartes natives ont été retirées ; la vue ne contient plus que sidebar +
   première ligne du bandeau + iframe + footer.
-* Voir `docs/core.md` pour la chaîne complète Glances → HA → page.
+* Voir [Core_Dashboard.fr.md](../dashboards/Core_Dashboard.fr.md) pour la chaîne complète Glances → HA → page.
 
 ## Composants JS
 
@@ -275,7 +275,7 @@ fichier s'appelle `js/osvision.js`. Le CSS Engine part donc en 404 et le job
   le pod (le déploiement installe les dashboards en `/config/dashboards/`) —
   la sauvegarde du bouton DELETE est donc un no-op ; et
   `input_text.vssp_ha_token` est utilisé sans être déclaré. Détails dans
-  `Generator_templating.md`.
+  [Dashboard_Generator.fr.md](../dashboards/Dashboard_Generator.fr.md).
 * ⚠️ Les scripts `vssp_discovery.py` / `vssp_upgrade.py` **ne sont pas
   copiés dans le paquet de déploiement** : les boutons sont inertes en
   staging comme en production tant que le correctif G2 de `CI_CD.md` n'est
@@ -316,7 +316,7 @@ fichier s'appelle `js/osvision.js`. Le CSS Engine part donc en 404 et le job
 * Appliquer les correctifs G1 → G5 de `CI_CD.md` (dans cet ordre :
   ressources, scripts admin, version, générateur, robustesse).
 * Générateur de dashboards piloté par modèle (`model/house.yaml` +
-  `templates_j2/*.j2`) — voir `Generator_templating.md`. Étape suivante :
+  `templates_j2/*.j2`) — voir [Dashboard_Generator.fr.md](../dashboards/Dashboard_Generator.fr.md). Étape suivante :
   `vssp_model_sync.py`, pont entre le rapport de découverte et le modèle.
 * Basculer les popups **Discovery** et **Upgrade** sur
   `browser_mod.popup` (actuellement encore en `persistent_notification`).

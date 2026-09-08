@@ -243,7 +243,7 @@ actually named `js/osvision.js`. The CSS Engine therefore returns 404 and the
   **and** an iframe to `core.html`, which already recreates all of it in JS.
   The native cards were removed; the view now contains only sidebar + first
   row of the banner + iframe + footer.
-* See `docs/core.md` for the full Glances → HA → page chain.
+* See [Core_Dashboard.md](../dashboards/Core_Dashboard.md) for the full Glances → HA → page chain.
 
 ## JS components
 
@@ -272,7 +272,7 @@ actually named `js/osvision.js`. The CSS Engine therefore returns 404 and the
   `/config/home-assistant/dashboards/home.yaml`, a path that does not exist
   on the pod (deployment installs the dashboards under `/config/dashboards/`)
   — so the DELETE button's backup is a no-op; and `input_text.vssp_ha_token`
-  is used without being declared. Details in `Generator_templating.md`.
+  is used without being declared. Details in [Dashboard_Generator.md](../dashboards/Dashboard_Generator.md).
 * ⚠️ The `vssp_discovery.py` / `vssp_upgrade.py` scripts **are not copied into
   the deployment package**: the buttons are inert in both staging and
   production until fix G2 of `CI_CD.md` is applied.
@@ -311,7 +311,7 @@ actually named `js/osvision.js`. The CSS Engine therefore returns 404 and the
 * Apply fixes G1 → G5 of `CI_CD.md` (in this order: resources, admin scripts,
   version, generator, robustness).
 * Model-driven dashboard generator (`model/house.yaml` + `templates_j2/*.j2`)
-  — see `Generator_templating.md`. Next step: `vssp_model_sync.py`, a bridge
+  — see [Dashboard_Generator.md](../dashboards/Dashboard_Generator.md). Next step: `vssp_model_sync.py`, a bridge
   between the discovery report and the model.
 * Switch the **Discovery** and **Upgrade** popups to `browser_mod.popup`
   (currently still on `persistent_notification`).

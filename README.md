@@ -263,8 +263,7 @@ by the dashboard generator and the i18n layer.
 │   ├── dashboards/              the interface and how it is generated
 │   ├── platform/                the foundation: install, services, security
 │   ├── ci-cd/                   the pipeline, and the postmortems
-│   ├── project/                 vision, case study, YouTube series
-│   └── assets/                  images
+│   └── project/                 vision, case study, YouTube series
 │
 ├── kubernetes/                  k3s manifests (staging target)
 ├── scripts/                     package.sh / deploy.sh / reload.sh / validate.sh

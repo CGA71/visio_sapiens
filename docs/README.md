@@ -51,12 +51,6 @@ setting the instance up, or when something below the interface is wrong.
 | [Vision](project/Vision.md) | what this is for |
 | [Integration_Case_Study](project/Integration_Case_Study.md) | integrating TECHNICAL ROOM into the repo |
 | [YouTube_Series](project/YouTube_Series.md) | the series plan |
-| [Manifest](project/Manifest.md) | ⚠ **stale** — a session deliverables list naming files that no longer exist, kept as history rather than guidance |
-
-## `assets/`
-
-Images referenced by the documents. `frame_dashboard.png` is currently
-referenced by none of them.
 
 ---
 
