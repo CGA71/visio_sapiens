@@ -346,10 +346,24 @@ automation:
     condition:
       # EN | Pointless while the safe is shut, and it would log an error
       # EN | every morning until someone unseals it.
-      # FR | Sans objet tant que le coffre est ferme, et cela journaliserait
-      # FR | une erreur chaque matin jusqu a ce que quelqu un le descelle.
-      - condition: state
-        entity_id: sensor.vssp_vault_seal
-        state: "unsealed"
+      # EN | A template condition rather than `condition: state`, because
+      # EN | the entity does not exist until Vault answers for the first
+      # EN | time: the rest platform raises PlatformNotReady and retries in
+      # EN | the background, so before the container is ever started there
+      # EN | is no sensor at all. A state condition warns "unknown entity"
+      # EN | on every evaluation in that window; is_state() simply returns
+      # EN | false. Same verdict, no noise on an instance where the safe
+      # EN | has not been deployed yet.
+      # FR | Une condition template plutot que `condition: state`, parce
+      # FR | que l entite n existe pas tant que Vault n a pas repondu une
+      # FR | premiere fois : la plateforme rest leve PlatformNotReady et
+      # FR | reessaie en arriere-plan, donc avant tout demarrage du
+      # FR | conteneur il n y a aucun capteur. Une condition d etat
+      # FR | avertit « unknown entity » a chaque evaluation dans cet
+      # FR | intervalle ; is_state() renvoie simplement faux. Meme verdict,
+      # FR | aucun bruit sur une instance ou le coffre n est pas encore
+      # FR | deploye.
+      - condition: template
+        value_template: "{{ is_state('sensor.vssp_vault_seal', 'unsealed') }}"
     action:
       - service: rest_command.vssp_vault_renew_token
