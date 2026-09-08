@@ -46,16 +46,31 @@
                       border-radius: 16px;
                       padding: 8px 10px;
                     }
-                    /* EN | The list takes whatever the title leaves, and
-                       EN | min-height:0 is what lets a flex child actually
-                       EN | shrink and scroll instead of pushing the frame
-                       EN | taller than its slot.
-                       FR | La liste prend ce que le titre laisse, et
-                       FR | min-height:0 est ce qui autorise un enfant flex a
-                       FR | vraiment retrecir et defiler au lieu de pousser le
-                       FR | cadre plus haut que son slot. */
+                    /* EN | `auto` basis, never 0. A slot's height is
+                       EN | sometimes definite (the entrance strip is 220px)
+                       EN | and sometimes not (a room's default slot is 1fr,
+                       EN | and the frame ends up content-sized). From a zero
+                       EN | basis the list collapsed to nothing in the second
+                       EN | case and its rows spilled OUTSIDE the frame — the
+                       EN | border wrapped the title alone. From `auto` it
+                       EN | starts at its content height, grows into the space
+                       EN | a fixed slot leaves, and min-height:0 still lets
+                       EN | it shrink and scroll rather than push the frame
+                       EN | past its slot.
+                       FR | Base `auto`, jamais 0. La hauteur d'un slot est
+                       FR | parfois definie (le bandeau de l'entree fait
+                       FR | 220px), parfois non (le slot par defaut d'une
+                       FR | piece vaut 1fr, et le cadre finit dimensionne par
+                       FR | son contenu). Depuis une base nulle, la liste
+                       FR | s'effondrait a rien dans le second cas et ses
+                       FR | lignes debordaient HORS du cadre — la bordure
+                       FR | n'entourait que le titre. Depuis `auto`, elle part
+                       FR | de la hauteur de son contenu, s'etend dans la
+                       FR | place qu'un slot fixe laisse, et min-height:0 lui
+                       FR | permet toujours de retrecir et defiler plutot que
+                       FR | de pousser le cadre au-dela de son slot. */
                     #root > *:last-child {
-                      flex: 1 1 0;
+                      flex: 1 1 auto;
                       min-height: 0;
                     }
                 cards:
