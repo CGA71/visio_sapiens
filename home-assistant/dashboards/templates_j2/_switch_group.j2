@@ -1,0 +1,112 @@
+{#
+########################################################################
+# EN | ONE FRAMED GROUP OF SWITCHES — the reference presentation for the
+# FR | UN GROUPE ENCADRE D'INTERRUPTEURS — la presentation de reference
+# EN | `switches` slot, everywhere it is drawn EXCEPT the ENERGY breaker
+# FR | du slot `switches`, partout ou il est dessine SAUF le tableau
+# EN | panel, which keeps its own two-column layout.
+# FR | electrique d'ENERGY, qui garde sa mise en page a deux colonnes.
+#
+# EN | The shape comes from the entrance hall panel: a titled frame per
+# EN | kind of switch — lights, outlets, shutters — side by side, each
+# EN | holding a list of vssp_circuit_row lines. Two things make it worth
+# EN | generalising. The frame says what the group IS, where a bare label
+# EN | above a list only whispers it. And side by side, three short
+# EN | groups read at once instead of scrolling past one another in a
+# EN | single pile.
+# FR | La forme vient du panneau de l'entree : un cadre titre par nature
+# FR | d'interrupteur — lumieres, prises, volets — cote a cote, chacun
+# FR | portant une liste de lignes vssp_circuit_row. Deux choses valent
+# FR | de la generaliser. Le cadre dit ce qu'EST le groupe, la ou un
+# FR | simple libelle au-dessus d'une liste ne fait que le murmurer. Et
+# FR | cote a cote, trois groupes courts se lisent d'un coup au lieu de
+# FR | defiler l'un derriere l'autre dans un tas unique.
+#
+# EN | Called as:
+# FR | Appel :
+#     {% import '_switch_group.j2' as sw %}
+#     {{ sw.group(title, rows, format) }}
+#
+# EN | `rows` is a list of mappings: entity (required), icon, name, tap.
+# FR | `rows` est une liste de mappings : entity (requis), icon, name, tap.
+########################################################################
+#}
+{% macro group(title, rows, format) %}
+              - type: vertical-stack
+                card_mod:
+                  style: |
+                    :host { flex: 1 1 0; height: 100%; }
+                    #root {
+                      height: 100%;
+                      box-sizing: border-box;
+                      background: rgba(0,0,0,.16);
+                      border: 1px solid rgba(0, 229, 255, 0.15);
+                      border-radius: 16px;
+                      padding: 8px 10px;
+                    }
+                cards:
+                  - type: custom:button-card
+                    template: vssp_section_title
+                    name: "{{ title }}"
+                  # EN | max-height, not height: a group of two lines has no
+                  # EN | reason to reserve the room of six. It scrolls only
+                  # EN | once it actually overflows, and the slot's own height
+                  # EN | varies with how the room's layout was computed.
+                  # FR | max-height, pas height : un groupe de deux lignes n'a
+                  # FR | aucune raison de reserver la place de six. Il ne
+                  # FR | defile qu'une fois reellement deborde, et la hauteur
+                  # FR | du slot lui-meme varie selon la mise en page calculee
+                  # FR | pour la piece.
+                  - type: custom:button-card
+                    show_icon: false
+                    show_name: false
+                    show_state: false
+                    tap_action:
+                      action: none
+                    styles:
+                      grid:
+                        - grid-template-areas: '"list"'
+                      card:
+                        - background: transparent
+                        - box-shadow: none
+                        - border: none
+                        - border-radius: 0
+                        - padding: 0
+                        - cursor: default
+                      custom_fields:
+                        list:
+                          - display: block
+                          - width: 100%
+                          - max-height: {{ '150px' if format != 'mobile' else '260px' }}
+                          - overflow-y: auto
+                          - overflow-x: hidden
+                          - padding-right: 4px
+                          - scrollbar-width: thin
+                          - scrollbar-color: rgba(0, 229, 255, 0.35) rgba(0, 229, 255, 0.06)
+                    custom_fields:
+                      list:
+                        card:
+                          type: vertical-stack
+                          cards:
+{% for r in rows %}
+                            - type: custom:button-card
+                              template: vssp_circuit_row
+                              entity: {{ r.entity }}
+{% if r.get('name') %}
+                              name: "{{ r.get('name') }}"
+{% endif %}
+{% if r.get('icon') %}
+                              icon: {{ r.get('icon') }}
+{% endif %}
+{% if r.get('tap') %}
+                              tap_action:
+                                action: {{ r.get('tap') }}
+                              hold_action:
+                                action: toggle
+{% endif %}
+                              variables:
+                                model: ""
+                                amp: ""
+                                image: ""
+{% endfor %}
+{% endmacro %}

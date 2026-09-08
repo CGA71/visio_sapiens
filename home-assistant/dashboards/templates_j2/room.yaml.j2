@@ -20,11 +20,12 @@
 # EN | THE FIVE SLOTS / FR | LES CINQ TABLEAUX
 #   1 sensors        temperature, humidity, heating, ventilation (VMC),
 #                    battery — environmental readings and climate control
-#   2 switches       ALWAYS a full-width horizontal strip with a scrollbar:
-#                    a grouped listing — lights, then connected outlets,
-#                    then shutters — each row with a state indicator
-#                    (see vssp_circuit_row — the reference presentation
-#                    for a switch list, shared with the ENERGY panel)
+#   2 switches       ALWAYS a full-width horizontal strip, holding one
+#                    titled FRAME per kind of switch, side by side:
+#                    lights, connected outlets, shutters — each frame a
+#                    list of rows with a state indicator on every line
+#                    (see _switch_group.j2 and vssp_circuit_row — the
+#                    reference presentation for a switch list)
 #   3 appliances     white goods, TV, home cinema, console, wine fridge, spa,
 #                    towel rail — LINE BY LINE, with a scrollbar
 #   4 security       alarm, intercom, camera — OVERSIZED: an intercom video
@@ -179,6 +180,7 @@ views:
             template: vssp_section_title
             name: "{{ t('slot.' ~ slot_id) }}"
 
+{% import '_switch_group.j2' as sw %}
 {% set is_entrance_special = room.slot_set == 'entrance' and slot_id in ['switches', 'security'] %}
 {% if slot.state == 'empty' and not is_entrance_special %}
           # EN | The slot belongs to this room's set but holds no device yet.
@@ -1149,256 +1151,109 @@ views:
           # FR | Home Assistant.
 {% set entrance_switches = ['switch.entree_interrupteur_1', 'switch.entree_interrupteur_2', 'switch.entree_interrupteur_3'] %}
 {% set entrance_outlets = ['switch.entree_prise_1', 'switch.entree_prise_2'] %}
+{% set entrance_switch_rows = [] %}
+{% for e in entrance_switches %}
+{% set _ = entrance_switch_rows.append({'entity': e, 'icon': 'mdi:light-switch',
+                                        'name': t('slot.switch') ~ ' ' ~ loop.index}) %}
+{% endfor %}
+{% set entrance_outlet_rows = [] %}
+{% for e in entrance_outlets %}
+{% set _ = entrance_outlet_rows.append({'entity': e, 'icon': 'mdi:power-socket-fr',
+                                        'name': t('slot.outlet') ~ ' ' ~ loop.index}) %}
+{% endfor %}
           - type: horizontal-stack
             card_mod:
               style: |
                 :host { height: 100%; }
                 #root { height: 100%; align-items: stretch; }
             cards:
-              - type: vertical-stack
-                card_mod:
-                  style: |
-                    :host { flex: 1 1 0; height: 100%; }
-                    #root {
-                      height: 100%;
-                      box-sizing: border-box;
-                      background: rgba(0,0,0,.16);
-                      border: 1px solid rgba(0, 229, 255, 0.15);
-                      border-radius: 16px;
-                      padding: 8px 10px;
-                    }
-                cards:
-                  - type: custom:button-card
-                    template: vssp_section_title
-                    name: "{{ t('slot.lights_switches') }}"
-{% for e in entrance_switches %}
-                  - type: custom:button-card
-                    template: vssp_circuit_row
-                    entity: {{ e }}  # TODO: remplacer par le vrai interrupteur
-                    name: "{{ t('slot.switch') }} {{ loop.index }}"
-                    icon: mdi:light-switch
-                    variables:
-                      model: ""
-                      amp: ""
-                      image: ""
-{% endfor %}
-              - type: vertical-stack
-                card_mod:
-                  style: |
-                    :host { flex: 1 1 0; height: 100%; }
-                    #root {
-                      height: 100%;
-                      box-sizing: border-box;
-                      background: rgba(0,0,0,.16);
-                      border: 1px solid rgba(0, 229, 255, 0.15);
-                      border-radius: 16px;
-                      padding: 8px 10px;
-                    }
-                cards:
-                  - type: custom:button-card
-                    template: vssp_section_title
-                    name: "{{ t('slot.lights_outlets') }}"
-{% for e in entrance_outlets %}
-                  - type: custom:button-card
-                    template: vssp_circuit_row
-                    entity: {{ e }}  # TODO: remplacer par la vraie prise — nouvel objet domotique
-                    name: "{{ t('slot.outlet') }} {{ loop.index }}"
-                    icon: mdi:power-socket-fr
-                    variables:
-                      model: ""
-                      amp: ""
-                      image: ""
-{% endfor %}
+{{ sw.group(t('slot.lights_switches'), entrance_switch_rows, format) }}
+{{ sw.group(t('slot.lights_outlets'), entrance_outlet_rows, format) }}
 
 {% elif slot_id == 'switches' %}
-          # EN | SWITCHES — ALWAYS a full-width horizontal strip (see
-          # EN | DEFAULT_LAYOUTS) holding a grouped, scrollable listing:
-          # EN | lights, then connected outlets, then shutters, each as its
-          # EN | own labeled group — never one mixed pile. Every row is
-          # EN | vssp_circuit_row, the reference presentation for a list of
-          # EN | switches, shared with the ENERGY breaker panel: no box of its
-          # EN | own, one line per switch, toggle on the same line, a rule
-          # EN | between lines. The icon colour and the toggle already react
-          # EN | to entity.state — that IS the on/off indicator, no separate
-          # EN | widget needed. The slot is full-width by construction, which
-          # EN | is the width this presentation needs; where a switch has to
-          # EN | live in a narrow column, vssp_circuit_switch is still the
-          # EN | tile to use.
-          # EN | Same scrollable-list mechanics as the appliances slot below
-          # EN | (custom_fields.list, fixed height + overflow-y, handled by
-          # EN | button-card's own style engine, not card-mod).
-          # FR | SWITCHES — TOUJOURS un bandeau horizontal pleine largeur
-          # FR | (voir DEFAULT_LAYOUTS) portant un listing groupe et
-          # FR | defilant : lumieres, puis prises connectees, puis volets,
-          # FR | chacun son propre groupe etiquete — jamais un tas melange.
-          # FR | Chaque ligne est vssp_circuit_row, la presentation de
-          # FR | reference d'une liste d'interrupteurs, partagee avec le
-          # FR | tableau electrique d'ENERGY : pas de cadre propre, une ligne
-          # FR | par interrupteur, la bascule sur la meme ligne, un filet
-          # FR | entre les lignes. La couleur d'icone et la bascule reagissent
-          # FR | deja a entity.state — c'EST le voyant allume/eteint, pas
-          # FR | besoin d'un widget separe. Le slot est pleine largeur par
-          # FR | construction, et c'est la largeur qu'exige cette
-          # FR | presentation ; la ou un interrupteur doit tenir dans une
-          # FR | colonne etroite, vssp_circuit_switch reste la tuile a
-          # FR | utiliser.
-          # FR | Meme mecanique de liste defilante que le tableau appliances
-          # FR | plus bas (custom_fields.list, hauteur fixe + overflow-y,
-          # FR | gere par le moteur de styles de button-card, pas card-mod).
-          - type: custom:button-card
-            show_icon: false
-            show_name: false
-            show_state: false
-            tap_action:
-              action: none
-            styles:
-              grid:
-                - grid-template-areas: '"list"'
-              card:
-                - background: transparent
-                - box-shadow: none
-                - border: none
-                - border-radius: 0
-                - padding: 0
-                - cursor: default
-              custom_fields:
-                list:
-                  - display: block
-                  - width: 100%
-                  - height: {{ '150px' if format != 'mobile' else '260px' }}
-                  - overflow-y: auto
-                  - overflow-x: hidden
-                  - padding-right: 4px
-                  - scrollbar-width: thin
-                  - scrollbar-color: rgba(0, 229, 255, 0.35) rgba(0, 229, 255, 0.06)
-            custom_fields:
-              list:
-                card:
-                  type: vertical-stack
-                  cards:
+          # EN | SWITCHES — the reference presentation, the one the entrance
+          # EN | hall panel established: a titled FRAME per kind of switch —
+          # EN | lights, outlets, shutters — side by side, each holding a list
+          # EN | of vssp_circuit_row lines. It replaces a single scrollable
+          # EN | pile under three faint labels: a frame says what the group
+          # EN | IS, where a bare label above a list only whispers it, and
+          # EN | three short groups side by side read at once instead of
+          # EN | scrolling past one another.
+          # EN | The slot is a full-width strip by construction, which is the
+          # EN | width this asks for. On mobile the frames stack one under the
+          # EN | other instead — side by side on a phone would give each group
+          # EN | a third of a narrow screen, and a row list needs its width
+          # EN | more than the groups need to be adjacent.
+          # EN | ENERGY keeps its own two-column breaker panel: same rows,
+          # EN | different question asked of them.
+          # FR | SWITCHES — la presentation de reference, celle qu'a etablie
+          # FR | le panneau de l'entree : un CADRE titre par nature
+          # FR | d'interrupteur — lumieres, prises, volets — cote a cote,
+          # FR | chacun portant une liste de lignes vssp_circuit_row. Elle
+          # FR | remplace un tas defilant unique sous trois libelles palots :
+          # FR | un cadre dit ce qu'EST le groupe, la ou un simple libelle
+          # FR | au-dessus d'une liste ne fait que le murmurer, et trois
+          # FR | groupes courts cote a cote se lisent d'un coup au lieu de
+          # FR | defiler l'un derriere l'autre.
+          # FR | Le slot est un bandeau pleine largeur par construction, et
+          # FR | c'est la largeur que cela demande. En mobile les cadres
+          # FR | s'empilent l'un sous l'autre — cote a cote sur un telephone
+          # FR | donnerait a chaque groupe un tiers d'ecran etroit, et une
+          # FR | liste de lignes a plus besoin de sa largeur que les groupes
+          # FR | d'etre voisins.
+          # FR | ENERGY garde son tableau electrique a deux colonnes : memes
+          # FR | lignes, autre question posee.
+{% set known_switch_domains = ['light', 'switch', 'cover'] %}
+{% set groups = [] %}
 {% if slot.by_domain.get('light', []) %}
-                    - type: custom:button-card
-                      show_icon: false
-                      show_name: false
-                      show_state: false
-                      show_label: true
-                      label: "{{ t('slot.switches_lights') }}"
-                      tap_action:
-                        action: none
-                      styles:
-                        card:
-                          - background: transparent
-                          - box-shadow: none
-                          - border: none
-                          - padding: 8px 0 4px 0
-                          - cursor: default
-                        label:
-                          - justify-self: start
-                          - text-align: left
-                          - font-size: 11px
-                          - letter-spacing: .6px
-                          - color: "var(--secondary-text-color, #8FB6C9)"
+{% set rows = [] %}
 {% for e in slot.by_domain.get('light', []) %}
-                    - type: custom:button-card
-                      template: vssp_circuit_row
-                      entity: {{ e }}
-                      icon: mdi:lightbulb
-                      variables:
-                        model: ""
-                        amp: ""
-                        image: ""
+{% set _ = rows.append({'entity': e, 'icon': 'mdi:lightbulb'}) %}
 {% endfor %}
+{% set _ = groups.append({'title': t('slot.switches_lights'), 'rows': rows}) %}
 {% endif %}
 {% if slot.by_domain.get('switch', []) %}
-                    - type: custom:button-card
-                      show_icon: false
-                      show_name: false
-                      show_state: false
-                      show_label: true
-                      label: "{{ t('slot.switches_outlets') }}"
-                      tap_action:
-                        action: none
-                      styles:
-                        card:
-                          - background: transparent
-                          - box-shadow: none
-                          - border: none
-                          - padding: 8px 0 4px 0
-                          - cursor: default
-                        label:
-                          - justify-self: start
-                          - text-align: left
-                          - font-size: 11px
-                          - letter-spacing: .6px
-                          - color: "var(--secondary-text-color, #8FB6C9)"
+{% set rows = [] %}
 {% for e in slot.by_domain.get('switch', []) %}
-                    - type: custom:button-card
-                      template: vssp_circuit_row
-                      entity: {{ e }}
-                      icon: mdi:power-socket-fr
-                      variables:
-                        model: ""
-                        amp: ""
-                        image: ""
+{% set _ = rows.append({'entity': e, 'icon': 'mdi:power-socket-fr'}) %}
 {% endfor %}
+{% set _ = groups.append({'title': t('slot.switches_outlets'), 'rows': rows}) %}
 {% endif %}
 {% if slot.by_domain.get('cover', []) %}
-                    - type: custom:button-card
-                      show_icon: false
-                      show_name: false
-                      show_state: false
-                      show_label: true
-                      label: "{{ t('slot.switches_shutters') }}"
-                      tap_action:
-                        action: none
-                      styles:
-                        card:
-                          - background: transparent
-                          - box-shadow: none
-                          - border: none
-                          - padding: 8px 0 4px 0
-                          - cursor: default
-                        label:
-                          - justify-self: start
-                          - text-align: left
-                          - font-size: 11px
-                          - letter-spacing: .6px
-                          - color: "var(--secondary-text-color, #8FB6C9)"
+{% set rows = [] %}
 {% for e in slot.by_domain.get('cover', []) %}
-                    - type: custom:button-card
-                      template: vssp_circuit_row
-                      entity: {{ e }}
-                      icon: mdi:window-shutter
-                      tap_action:
-                        action: more-info
-                      hold_action:
-                        action: toggle
-                      variables:
-                        model: ""
-                        amp: ""
-                        image: ""
+{% set _ = rows.append({'entity': e, 'icon': 'mdi:window-shutter', 'tap': 'more-info'}) %}
 {% endfor %}
+{% set _ = groups.append({'title': t('slot.switches_shutters'), 'rows': rows}) %}
 {% endif %}
 {# EN | Anything assigned to switches outside light/switch/cover — an
    EN | edge case DEVICE_CLASS_HINT/DOMAIN_HINT never suggests, but the
-   EN | admin can still assign by hand. Listed rather than silently
-   EN | dropped, same principle as everywhere else in this project.
+   EN | admin can still assign by hand. It gets its own frame rather than
+   EN | being silently dropped, same principle as everywhere else here.
    FR | Tout ce qui est assigne a switches hors light/switch/cover — un cas
    FR | limite que DEVICE_CLASS_HINT/DOMAIN_HINT ne suggere jamais, mais que
-   FR | l'administrateur peut quand meme assigner a la main. Liste plutot
-   FR | qu'abandonne en silence, meme principe que partout ailleurs dans ce
-   FR | projet. #}
-{% set known_switch_domains = ['light', 'switch', 'cover'] %}
+   FR | l'administrateur peut quand meme assigner a la main. Il recoit son
+   FR | propre cadre plutot que d'etre abandonne en silence, meme principe
+   FR | que partout ailleurs ici. #}
+{% set other = [] %}
 {% for domain, ents in slot.by_domain.items() if domain not in known_switch_domains %}
 {% for e in ents %}
-                    - type: custom:button-card
-                      template: vssp_circuit_row
-                      entity: {{ e }}
-                      variables:
-                        model: ""
-                        amp: ""
-                        image: ""
+{% set _ = other.append({'entity': e}) %}
 {% endfor %}
+{% endfor %}
+{% if other %}
+{% set _ = groups.append({'title': t('slot.switches_other'), 'rows': other}) %}
+{% endif %}
+          - type: {{ 'vertical-stack' if format == 'mobile' else 'horizontal-stack' }}
+{% if format != 'mobile' %}
+            card_mod:
+              style: |
+                :host { height: 100%; }
+                #root { height: 100%; align-items: stretch; }
+{% endif %}
+            cards:
+{% for g in groups %}
+{{ sw.group(g.title, g.rows, format) }}
 {% endfor %}
 
 {% elif slot_id == 'infrastructure' %}

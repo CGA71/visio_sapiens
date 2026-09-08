@@ -92,6 +92,9 @@ slot:
   # FR | En-tetes de groupe dans le listing groupe du tableau switches.
   switches_lights: Lights
   switches_outlets: Connected outlets
+  # EN | Frame for anything assigned to switches that is
+  # EN | neither a light, an outlet nor a shutter.
+  switches_other: Other
   switches_shutters: Shutters
   # EN | Shown when a slot belongs to the room's slot set but holds no
   # EN | device yet. A slot that does not apply to the room at all is not
