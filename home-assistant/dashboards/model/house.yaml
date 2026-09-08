@@ -370,6 +370,17 @@ circuits: []
 # FR | poles_per_rail = emplacements dessines par rail. Un module plus court
 # FR | est complete par des obturateurs, comme dans un coffret reel.
 poles_per_rail: 4
+
+# EN | How many module bays the enclosure shows. Real modules take theirs
+# EN | first; the rest stay drawn as free bays, so an empty panel is an empty
+# EN | ENCLOSURE — with room for four — rather than a blank half-page. Raise
+# EN | it when the real cabinet grows.
+# FR | Combien d'emplacements le coffret montre. Les modules reels prennent
+# FR | le leur d'abord ; les autres restent dessines en emplacements libres,
+# FR | pour qu'un tableau vide soit un COFFRET vide — avec de la place pour
+# FR | quatre — et non une demi-page blanche. A augmenter quand le vrai
+# FR | coffret grandit.
+board_slots: 4
 modules: []
 
 # ── EN | Product pictures / FR | Visuels produits ─────────────────────

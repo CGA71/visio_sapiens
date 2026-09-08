@@ -1364,7 +1364,19 @@ def main() -> int:
         pictures = model.get("module_images") or []
         base = (model.get("module_image_base") or "").rstrip("/")
 
+        # EN | Two sources, in this order: the table the scan filled in
+        # EN | when it discovered the box — exact, model by model — then the
+        # EN | curated rules of house.yaml, which cover the shipped pictures
+        # EN | and any instance with no internet access.
+        # FR | Deux sources, dans cet ordre : la table remplie par le scan au
+        # FR | moment ou il a decouvert le boitier — exacte, modele par
+        # FR | modele — puis les regles curatees de house.yaml, qui couvrent
+        # FR | les visuels livres et toute instance sans acces internet.
+        fetched = dev_doc.get("images") or {}
+
         def picture_for(model_name: str) -> str:
+            if fetched.get(model_name):
+                return f"{base}/{fetched[model_name]}"
             for rule in pictures:
                 if re.search(rule.get("match", ""), model_name or "",
                              re.IGNORECASE):

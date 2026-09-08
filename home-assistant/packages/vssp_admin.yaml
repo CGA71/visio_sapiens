@@ -500,10 +500,18 @@ shell_command:
   # commande : un helper vide donnait un 401 « Login attempt failed »
   # sans explication, et le jeton apparaissait en clair dans les
   # journaux et la table des processus.
+  #
+  # --images-dir est OBLIGATOIRE ici. Le defaut du script est un chemin
+  # relatif au depot (home-assistant/www/vssp/modules) qui ne veut rien
+  # dire cote pod : le scan y creerait une arborescence fantome sous le
+  # repertoire courant, et les visuels produits telecharges ne seraient
+  # jamais servis par /local/. Meme piege que --rooms-fragment sans
+  # --rooms : un defaut pense pour le depot, execute sur l'instance.
   vssp_energy_sync: >-
     python3 /config/vssp/vssp_energy_sync.py
     --url http://localhost:8123
     --devices /config/dashboards/model/energy_devices.yaml
+    --images-dir /config/www/vssp/modules
     --status-file /config/www/vssp/energy_sync_status.json
 
   # Idem, mais applique reellement les retraits (bouton PRUNE de l'ADMIN).
@@ -511,15 +519,18 @@ shell_command:
     python3 /config/vssp/vssp_energy_sync.py
     --url http://localhost:8123
     --devices /config/dashboards/model/energy_devices.yaml
+    --images-dir /config/www/vssp/modules
     --status-file /config/www/vssp/energy_sync_status.json
     --prune
 
   # Diff seul : rien n'est ecrit, le rapport dit ce qui changerait.
+  # --no-images : un diff ne doit rien telecharger non plus.
   vssp_energy_sync_dryrun: >-
     python3 /config/vssp/vssp_energy_sync.py
     --url http://localhost:8123
     --devices /config/dashboards/model/energy_devices.yaml
     --status-file /config/www/vssp/energy_sync_status.json
+    --no-images
     --dry-run
 
   # ------------------------------------------------------------------

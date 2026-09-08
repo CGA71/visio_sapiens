@@ -45,6 +45,8 @@ from pathlib import Path
 
 import yaml
 
+import vssp_module_images
+
 # ── Conventions de nommage (cf. packages/vssp_energy_totaux.yaml) ────
 # *_puissance / *_power        → puissance instantanée (W ou kW)
 # *_energie / *_energy         → compteur CUMULATIF (kWh, lifetime)
@@ -781,6 +783,13 @@ def main() -> int:
     ap.add_argument("--exclude", action="append", default=[],
                     help="Expression reguliere d'exclusion (repetable). "
                          "S'ajoute a la cle `ignore:` du fichier devices.")
+    ap.add_argument("--images-dir",
+                    default="home-assistant/www/vssp/modules",
+                    help="Ou deposer les visuels produits telecharges "
+                         "(cote pod : /config/www/vssp/modules)")
+    ap.add_argument("--no-images", action="store_true",
+                    help="Ne pas chercher les visuels produits manquants "
+                         "sur internet")
     ap.add_argument("--status-file", default=None)
     args = ap.parse_args()
 
@@ -870,6 +879,10 @@ def main() -> int:
         "# faire apparaitre (multiprises, agregats...). Testees sur\n"
         "# l'entity_id ET sur le nom de l'appareil du registre.\n"
         "#\n"
+        "# `images:` = modele -> fichier de www/vssp/modules/, rempli\n"
+        "# automatiquement par vssp_module_images.py quand un nouveau\n"
+        "# modele apparait. Une entree ici n'est jamais retelechargee.\n"
+        "#\n"
         "# `modules:` = le materiel du tableau electrique virtuel, groupe\n"
         "# par boitier physique (Shelly Pro 4PM, Pro Dual Cover, multiprise,\n"
         "# prise). Les VOIES sont relues du materiel a chaque scan ; le nom\n"
@@ -877,9 +890,34 @@ def main() -> int:
         f"# Derniere synchronisation : {datetime.now():%Y-%m-%d %H:%M}\n"
         "########################################################################\n"
     )
+    # EN | A newly wired box brings a model the dashboard has never seen.
+    # EN | Fetching its picture belongs here, at the moment it is discovered,
+    # EN | rather than as a chore for later. Best-effort by construction: no
+    # EN | network, no match, no picture — and a scan that still succeeds.
+    # FR | Un boitier fraichement cable amene un modele que le dashboard n'a
+    # FR | jamais vu. Aller chercher sa photo a sa place ici, au moment ou il
+    # FR | est decouvert, plutot qu'en corvee pour plus tard. Best-effort par
+    # FR | construction : pas de reseau, pas de correspondance, pas de photo —
+    # FR | et un scan qui reussit quand meme.
+    images = doc.get("images") or {}
+    # EN | A dry run promises to write nothing. Downloading a file is
+    # EN | writing, so it waits for a real run too.
+    # FR | Un dry-run promet de ne rien ecrire. Telecharger un fichier
+    # FR | est une ecriture : cela attend aussi un vrai passage.
+    if not args.no_images and not args.dry_run:
+        try:
+            images = vssp_module_images.resolve(
+                vssp_module_images.models_in(
+                    {"devices": devices, "circuits": circuits,
+                     "modules": modules}),
+                Path(args.images_dir), images)
+        except Exception as exc:                      # noqa: BLE001
+            print(f"  ⚠ visuels produits : {exc} — on continue sans.")
+    print(f"VISUELS    : {len(images)} modele(s) illustre(s)")
+
     body = yaml.safe_dump(
-        {"ignore": ignore, "devices": devices, "circuits": circuits,
-         "modules": modules},
+        {"ignore": ignore, "images": images, "devices": devices,
+         "circuits": circuits, "modules": modules},
         allow_unicode=True, sort_keys=False, default_flow_style=False)
     out = header + body
 
@@ -923,6 +961,7 @@ def main() -> int:
             "ok": True, "timestamp": datetime.now().isoformat(timespec="seconds"),
             "devices": len(devices), "circuits": len(circuits),
             "modules": len(modules), "channels": n_channels,
+            "images": len(images),
             "devices_report": dev_report, "circuits_report": cir_report,
             "modules_report": mod_report,
             "changed": changed, "pruned": args.prune,

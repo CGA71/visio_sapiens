@@ -1043,12 +1043,6 @@ views:
                     icon: mdi:electric-switch
 
 {% set rails = modules | selectattr('panel') | list %}
-{% if not rails %}
-                  - type: custom:button-card
-                    template: vssp_subsection_title
-                    icon: mdi:information-outline
-                    name: "{{ t('energy.empty.modules') }}"
-{% endif %}
 {% for m in rails %}
 {% set channels = m.channels | default([], true) %}
 {% set powers = channels | selectattr('power_entity') | map(attribute='power_entity') | list %}
@@ -1136,6 +1130,15 @@ views:
                           - type: custom:button-card
                             template: vssp_din_blank
 {% endfor %}
+{% endfor %}
+
+                  # ── EN | Bays the enclosure has and nothing occupies yet.
+                  # ── FR | Emplacements que le coffret a, et que rien n'occupe.
+{% for _ in range([(board_slots | default(4)) - (rails | length), 0] | max) %}
+                  - type: custom:button-card
+                    template: vssp_din_bay
+                    icon: mdi:plus-box-outline
+                    name: "{{ t('energy.board.free_slot') }}"
 {% endfor %}
 
     # ── Fond de vue (même principe que core.yaml) ────────────────────

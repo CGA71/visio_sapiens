@@ -1837,6 +1837,54 @@ vssp_din_pole:
       }
 
 # ---------------------------------------------------------------------
+# EN | Free bay: a module position the enclosure has and nothing occupies.
+# FR | Emplacement libre : une position que le coffret a, et que rien
+# FR | n'occupe.
+# EN | Drawn rather than left blank, because an empty panel is not an empty
+# EN | page: it is a cabinet with room for four more modules, and that is
+# EN | worth seeing before buying the fifth.
+# FR | Dessine plutot que laisse blanc, parce qu'un tableau vide n'est pas
+# FR | une page blanche : c'est un coffret avec de la place pour quatre
+# FR | modules de plus, et cela vaut d'etre vu avant d'acheter le cinquieme.
+# EN |   template: vssp_din_bay
+# EN |   name: "Free slot"
+# ---------------------------------------------------------------------
+vssp_din_bay:
+  show_icon: true
+  show_name: true
+  show_state: false
+  show_label: false
+  styles:
+    grid:
+      - grid-template-areas: '"i n"'
+      - grid-template-columns: min-content 1fr
+      - column-gap: 10px
+      - justify-items: start
+      - align-items: center
+    card:
+      - background: rgba(255,255,255,0.015)
+      - border: 1px dashed rgba(0,229,255,0.20)
+      - border-radius: 12px
+      - box-shadow: none
+      - padding: 20px 16px
+      - margin-bottom: 10px
+      - cursor: default
+      - pointer-events: none
+    img_cell:
+      - background: none
+      - width: 22px
+      - height: 22px
+    icon:
+      - color: "#56707E"
+      - "--mdc-icon-size": 20px
+    name:
+      - color: "var(--secondary-text-color, #56707E)"
+      - font-size: 11px
+      - letter-spacing: 0.5px
+      - justify-self: start
+      - text-align: left
+
+# ---------------------------------------------------------------------
 # EN | Blanking plate: a slot left free on the rail. Drawn rather than
 # FR | Obturateur : un emplacement libre sur le rail. Dessine plutot
 # EN | omitted, because an enclosure with room to spare is information —

@@ -173,6 +173,7 @@ energy:
     state_off: "Éteint"
   board:
     unknown_model: Module inconnu
+    free_slot: Emplacement libre — en attente d'un module DIN
   empty:
     devices: Aucun appareil détecté
     devices_hint: lancez vssp_energy_sync.py

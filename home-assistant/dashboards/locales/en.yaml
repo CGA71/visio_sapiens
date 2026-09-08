@@ -262,6 +262,7 @@ energy:
   # FR | Tableau electrique virtuel — vocabulaire materiel.
   board:
     unknown_model: Unknown module
+    free_slot: Free slot — waiting for a DIN module
   empty:
     devices: No device detected
     devices_hint: run vssp_energy_sync.py
