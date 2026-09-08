@@ -369,7 +369,7 @@ views:
           - type: vertical-stack
             cards:
 {% for g in groups %}
-{{ sw.group(g.title, g.rows, format) }}
+{{ sw.group(g.title, g.rows) }}
 {% endfor %}
 
 {% elif slot_id == 'infrastructure' %}

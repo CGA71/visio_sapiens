@@ -1167,8 +1167,8 @@ views:
                 :host { height: 100%; }
                 #root { height: 100%; align-items: stretch; }
             cards:
-{{ sw.group(t('slot.lights_switches'), entrance_switch_rows, format) }}
-{{ sw.group(t('slot.lights_outlets'), entrance_outlet_rows, format) }}
+{{ sw.group(t('slot.lights_switches'), entrance_switch_rows) }}
+{{ sw.group(t('slot.lights_outlets'), entrance_outlet_rows) }}
 
 {% elif slot_id == 'switches' %}
           # EN | SWITCHES — the reference presentation, the one the entrance
@@ -1253,7 +1253,7 @@ views:
 {% endif %}
             cards:
 {% for g in groups %}
-{{ sw.group(g.title, g.rows, format) }}
+{{ sw.group(g.title, g.rows) }}
 {% endfor %}
 
 {% elif slot_id == 'infrastructure' %}

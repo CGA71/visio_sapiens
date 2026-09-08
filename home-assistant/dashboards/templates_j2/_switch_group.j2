@@ -25,13 +25,13 @@
 # EN | Called as:
 # FR | Appel :
 #     {% import '_switch_group.j2' as sw %}
-#     {{ sw.group(title, rows, format) }}
+#     {{ sw.group(title, rows) }}
 #
 # EN | `rows` is a list of mappings: entity (required), icon, name, tap.
 # FR | `rows` est une liste de mappings : entity (requis), icon, name, tap.
 ########################################################################
 #}
-{% macro group(title, rows, format) %}
+{% macro group(title, rows) %}
               - type: vertical-stack
                 card_mod:
                   style: |
@@ -39,24 +39,41 @@
                     #root {
                       height: 100%;
                       box-sizing: border-box;
+                      display: flex;
+                      flex-direction: column;
                       background: rgba(0,0,0,.16);
                       border: 1px solid rgba(0, 229, 255, 0.15);
                       border-radius: 16px;
                       padding: 8px 10px;
                     }
+                    /* EN | The list takes whatever the title leaves, and
+                       EN | min-height:0 is what lets a flex child actually
+                       EN | shrink and scroll instead of pushing the frame
+                       EN | taller than its slot.
+                       FR | La liste prend ce que le titre laisse, et
+                       FR | min-height:0 est ce qui autorise un enfant flex a
+                       FR | vraiment retrecir et defiler au lieu de pousser le
+                       FR | cadre plus haut que son slot. */
+                    #root > *:last-child {
+                      flex: 1 1 0;
+                      min-height: 0;
+                    }
                 cards:
                   - type: custom:button-card
                     template: vssp_section_title
                     name: "{{ title }}"
-                  # EN | max-height, not height: a group of two lines has no
-                  # EN | reason to reserve the room of six. It scrolls only
-                  # EN | once it actually overflows, and the slot's own height
-                  # EN | varies with how the room's layout was computed.
-                  # FR | max-height, pas height : un groupe de deux lignes n'a
-                  # FR | aucune raison de reserver la place de six. Il ne
-                  # FR | defile qu'une fois reellement deborde, et la hauteur
-                  # FR | du slot lui-meme varie selon la mise en page calculee
-                  # FR | pour la piece.
+                  # EN | The list fills the frame rather than capping at a
+                  # EN | fixed height: the slot's own height is computed per
+                  # EN | room (260px, 140px or 1fr), so any number written
+                  # EN | here would be wrong somewhere — three rows drew a
+                  # EN | scrollbar for the sake of eight pixels. It scrolls
+                  # EN | only when the content really exceeds the frame.
+                  # FR | La liste remplit le cadre plutot que de plafonner a
+                  # FR | une hauteur fixe : la hauteur du slot est calculee
+                  # FR | par piece (260px, 140px ou 1fr), donc tout nombre
+                  # FR | ecrit ici serait faux quelque part — trois lignes
+                  # FR | affichaient une barre de defilement pour huit pixels.
+                  # FR | Elle ne defile que si le contenu deborde vraiment.
                   - type: custom:button-card
                     show_icon: false
                     show_name: false
@@ -77,7 +94,7 @@
                         list:
                           - display: block
                           - width: 100%
-                          - max-height: {{ '150px' if format != 'mobile' else '260px' }}
+                          - height: 100%
                           - overflow-y: auto
                           - overflow-x: hidden
                           - padding-right: 4px
