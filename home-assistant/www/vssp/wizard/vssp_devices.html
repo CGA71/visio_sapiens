@@ -223,8 +223,14 @@ const I18N = {
     needs_form_hint: "Cette intégration demande des informations (mot de passe, choix d'options) que cet écran ne peut pas afficher — termine-la dans Home Assistant : Paramètres → Appareils et services.",
 
     recent_title: "ARRIVÉS RÉCEMMENT",
-    recent_sub: "Les appareils entrés dans Home Assistant ces {days} derniers jours, le plus récent en premier. C'est ici qu'on retrouve ce qu'une validation vient de créer.",
+    recent_sub: "Les appareils entrés dans Home Assistant ces {days} derniers jours, le plus récent en premier. C'est ici qu'on retrouve ce qu'une validation vient de créer — et qu'on lui donne un vrai nom à la place de celui annoncé par son firmware.",
     recent_empty: "Aucun appareil ajouté ces {days} derniers jours.",
+    rename: "Renommer",
+    save: "Enregistrer",
+    cancel: "Annuler",
+    busy_renaming: "Renommage…",
+    notice_renamed: "« {from} » renommé en « {to} ».",
+    notice_rename_cleared: "Nom personnalisé retiré — l'appareil reprend « {name} ».",
     goto_assign: "→ Assigner ces appareils à une pièce",
 
     unused_title: "PLUS UTILISÉS",
@@ -273,8 +279,14 @@ const I18N = {
     needs_form_hint: "This integration asks for information (a password, a choice of options) this screen cannot draw — finish it inside Home Assistant: Settings > Devices & services.",
 
     recent_title: "RECENTLY ARRIVED",
-    recent_sub: "Devices that entered Home Assistant in the last {days} days, newest first. This is where what a validation just created shows up.",
+    recent_sub: "Devices that entered Home Assistant in the last {days} days, newest first. This is where what a validation just created shows up — and where it gets a real name instead of the one its firmware announces.",
     recent_empty: "No device added in the last {days} days.",
+    rename: "Rename",
+    save: "Save",
+    cancel: "Cancel",
+    busy_renaming: "Renaming…",
+    notice_renamed: "\"{from}\" renamed to \"{to}\".",
+    notice_rename_cleared: "Custom name removed — the device goes back to \"{name}\".",
     goto_assign: "→ Assign these devices to a room",
 
     unused_title: "NO LONGER USED",
@@ -336,7 +348,10 @@ let state = {
   // EN | full is not a list of things to act on. The toggle is right there.
   // FR | La liste des inutilisees s ouvre filtree : 48 integrations deroulees
   // FR | en entier ne sont pas une liste sur laquelle agir. La bascule est la.
-  showAllEntries: false
+  showAllEntries: false,
+  // EN | The device whose name is being edited in place, or null.
+  // FR | L appareil dont le nom est en cours d edition sur place, ou null.
+  renaming: null
 };
 
 // ═══════════════════════════════════════════════════════════════════════════
@@ -609,6 +624,59 @@ async function uninstallEntry(entryId){
 
 function toggleEntries(){ state.showAllEntries = !state.showAllEntries; render(); }
 
+// ═══════════════════════════════════════════════════════════════════════════
+// EN | RENAMING A DEVICE
+// EN | Writes `name_by_user`, the field Home Assistant itself sets when you
+// EN | rename a device in its UI — the instance already carries "MultiPrise"
+// EN | and "SPA Exterieur" written that way. It leaves the manufacturer's
+// EN | own `name` untouched underneath, so clearing the field restores the
+// EN | original instead of destroying it, and it never touches entity_ids:
+// EN | HA offers that as a separate, irreversible step, and a screen whose
+// EN | job is adopting hardware has no business silently rewriting the
+// EN | identifiers every dashboard, automation and template refers to.
+// FR | RENOMMER UN APPAREIL
+// FR | Ecrit `name_by_user`, le champ que Home Assistant lui-meme renseigne
+// FR | quand on renomme un appareil dans son interface — l instance porte
+// FR | deja « MultiPrise » et « SPA Exterieur » ecrits ainsi. Le `name` du
+// FR | fabricant reste intact en dessous, donc vider le champ restaure
+// FR | l original au lieu de le detruire, et cela ne touche jamais aux
+// FR | entity_ids : HA en fait une etape separee et irreversible, et un
+// FR | ecran dont le role est d adopter du materiel n a pas a reecrire en
+// FR | silence les identifiants auxquels renvoient chaque dashboard, chaque
+// FR | automatisation et chaque template.
+// ═══════════════════════════════════════════════════════════════════════════
+function startRename(deviceId){
+  state.renaming = deviceId;
+  render();
+  const inp = document.getElementById("rename-input");
+  if (inp){ inp.focus(); inp.select(); }
+}
+function cancelRename(){ state.renaming = null; render(); }
+function renameKey(ev, deviceId){
+  if (ev.key === "Enter"){ ev.preventDefault(); saveRename(deviceId); }
+  else if (ev.key === "Escape"){ ev.preventDefault(); cancelRename(); }
+}
+async function saveRename(deviceId){
+  const inp = document.getElementById("rename-input");
+  const value = inp ? inp.value.trim() : "";
+  const dev = state.devices.find(d => d.id === deviceId);
+  const before = dev ? (dev.name_by_user || dev.name || deviceId) : deviceId;
+  state.renaming = null;
+  if (dev && value === (dev.name_by_user || "")) return render();
+  await withBusy(t("busy_renaming"), async () => {
+    // EN | An emptied field means "drop my name", not "name it the empty
+    // EN | string" — null is what the registry reads as a reset.
+    // FR | Un champ vide signifie « retire mon nom », pas « nomme-le chaine
+    // FR | vide » — null est ce que le registre lit comme une remise a zero.
+    await wsCall("config/device_registry/update",
+                 {device_id: deviceId, name_by_user: value || null});
+    state.notice = value
+      ? t("notice_renamed", {from: before, to: value})
+      : t("notice_rename_cleared", {name: (dev && dev.name) || deviceId});
+    await loadAll();
+  });
+}
+
 async function connect(){
   const inp = document.getElementById("token-input");
   if (inp) state.token = inp.value.trim();
@@ -706,16 +774,45 @@ function renderRecent(){
   } else {
     list.forEach(d => {
       const n = state.entities.filter(e => e.device_id === d.id && !e.disabled_by).length;
+      const editing = state.renaming === d.id;
+      const shown = d.name_by_user || d.name || d.id;
+      // EN | The name a device arrives with is the one its firmware
+      // EN | announces — shellyplugmg3-08927259dfd8, GC108P-6930DC. Renaming
+      // EN | it is the first thing anyone does after adopting it, and the
+      // EN | moment to do it is here, while the device is still identifiable
+      // EN | as "the one I just plugged in" — not later, in a registry of a
+      // EN | hundred and nineteen.
+      // EN | The row swaps to an input in place rather than opening a
+      // EN | prompt(): the model line stays visible underneath, which is
+      // EN | often the only way to tell two identical plugs apart while
+      // EN | naming them.
+      // FR | Le nom avec lequel un appareil arrive est celui qu annonce son
+      // FR | firmware — shellyplugmg3-08927259dfd8, GC108P-6930DC. Le
+      // FR | renommer est la premiere chose que l on fait apres l avoir
+      // FR | adopte, et le moment de le faire est ici, tant qu il est encore
+      // FR | identifiable comme « celui que je viens de brancher » — pas plus
+      // FR | tard, dans un registre de cent dix-neuf.
+      // FR | La ligne bascule en champ de saisie sur place plutot que
+      // FR | d ouvrir un prompt() : la ligne du modele reste visible en
+      // FR | dessous, ce qui est souvent le seul moyen de distinguer deux
+      // FR | prises identiques au moment de les nommer.
       h += `<div class="row">
         <div class="ico">＋</div>
-        <div>
-          <div class="nm">${esc(d.name_by_user || d.name || d.id)}
-            <span class="tag new">${esc(ageLabel(d.created_at))}</span></div>
-          <div class="sub">${esc([d.manufacturer, d.model].filter(Boolean).join(" "))}`
-          + `${n ? " · " + esc(t("entity_count", {live: n, total: n})) : ""}`
-          + `${d.area_id ? "" : ""}</div>
+        <div>`
+        + (editing
+            ? `<input type="text" id="rename-input" value="${esc(shown)}"
+                      onkeydown="renameKey(event, '${esc(d.id)}')"/>`
+            : `<div class="nm">${esc(shown)}
+                 <span class="tag new">${esc(ageLabel(d.created_at))}</span></div>`)
+        + `<div class="sub">${esc([d.manufacturer, d.model].filter(Boolean).join(" "))}`
+          + `${n ? " · " + esc(t("entity_count", {live: n, total: n})) : ""}</div>
         </div>
-        <div class="act"></div></div>`;
+        <div class="act">`
+        + (editing
+            ? `<button class="btn btn-sm" onclick="saveRename('${esc(d.id)}')">${esc(t("save"))}</button>
+               <button class="btn btn-sm btn-ghost" onclick="cancelRename()">${esc(t("cancel"))}</button>`
+            : `<button class="btn btn-sm btn-ghost" onclick="startRename('${esc(d.id)}')">${esc(t("rename"))}</button>`)
+        + `</div></div>`;
     });
     h += `<div style="height:12px"></div>`
        + `<button class="btn btn-sm btn-ghost" onclick="gotoAssign()">`
