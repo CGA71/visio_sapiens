@@ -23,7 +23,8 @@
 #   2 switches       ALWAYS a full-width horizontal strip with a scrollbar:
 #                    a grouped listing — lights, then connected outlets,
 #                    then shutters — each row with a state indicator
-#                    (see vssp_circuit_switch)
+#                    (see vssp_circuit_row — the reference presentation
+#                    for a switch list, shared with the ENERGY panel)
 #   3 appliances     white goods, TV, home cinema, console, wine fridge, spa,
 #                    towel rail — LINE BY LINE, with a scrollbar
 #   4 security       alarm, intercom, camera — OVERSIZED: an intercom video
@@ -1112,10 +1113,12 @@ views:
           # EN | `entrance` layout in house.yaml where switches is the
           # EN | full-width 220px horizontal strip under the header, not a
           # EN | side column.
-          # EN | Two framed groups side by side, breaker-styled
-          # EN | (vssp_circuit_switch, same template as the ENERGY
-          # EN | electrical panel) rather than the grouped scrollable listing
+          # EN | Two framed groups side by side, each a LIST on the
+          # EN | reference model (vssp_circuit_row, shared with the ENERGY
+          # EN | breaker panel) rather than the grouped scrollable listing
           # EN | used by other rooms' switches slot: 3 switches, 2 outlets.
+          # EN | Half of a full-width strip is width enough for a row list,
+          # EN | which is the condition this presentation asks for.
           # EN | Hardcoded directly, same spirit as the entrance cameras
           # EN | and the Jessica vacuum entities above — nothing usable is
           # EN | assigned to this slot via the admin console, and the
@@ -1129,11 +1132,13 @@ views:
           # FR | reellement le gabarit `entrance` de house.yaml, ou switches
           # FR | est le bandeau horizontal pleine largeur de 220px sous
           # FR | l'en-tete, pas une colonne laterale.
-          # FR | Deux groupes encadres cote a cote, façon interrupteur de
-          # FR | tableau electrique (vssp_circuit_switch, meme template que
-          # FR | le tableau electrique d'ENERGY) plutot que le listing
-          # FR | groupe et defilant utilise par le tableau switches des
-          # FR | autres pieces : 3 interrupteurs, 2 prises. Code en dur, meme
+          # FR | Deux groupes encadres cote a cote, chacun une LISTE au
+          # FR | modele de reference (vssp_circuit_row, partage avec le
+          # FR | tableau electrique d'ENERGY) plutot que le listing groupe et
+          # FR | defilant utilise par le tableau switches des autres pieces :
+          # FR | 3 interrupteurs, 2 prises. La moitie d'un bandeau pleine
+          # FR | largeur suffit largement a une liste de lignes, et c'est la
+          # FR | condition qu'exige cette presentation. Code en dur, meme
           # FR | esprit que les cameras de l'entree et les entites du robot
           # FR | Jessica ci-dessus — rien d'exploitable n'est assigne a ce
           # FR | tableau via la console admin, et les prises sont un
@@ -1166,17 +1171,16 @@ views:
                   - type: custom:button-card
                     template: vssp_section_title
                     name: "{{ t('slot.lights_switches') }}"
-                  - type: horizontal-stack
-                    cards:
 {% for e in entrance_switches %}
-                      - type: custom:button-card
-                        template: vssp_circuit_switch
-                        entity: {{ e }}  # TODO: remplacer par le vrai interrupteur
-                        name: "{{ t('slot.switch') }} {{ loop.index }}"
-                        icon: mdi:light-switch
-                        variables:
-                          model: ""
-                          amp: ""
+                  - type: custom:button-card
+                    template: vssp_circuit_row
+                    entity: {{ e }}  # TODO: remplacer par le vrai interrupteur
+                    name: "{{ t('slot.switch') }} {{ loop.index }}"
+                    icon: mdi:light-switch
+                    variables:
+                      model: ""
+                      amp: ""
+                      image: ""
 {% endfor %}
               - type: vertical-stack
                 card_mod:
@@ -1194,17 +1198,16 @@ views:
                   - type: custom:button-card
                     template: vssp_section_title
                     name: "{{ t('slot.lights_outlets') }}"
-                  - type: horizontal-stack
-                    cards:
 {% for e in entrance_outlets %}
-                      - type: custom:button-card
-                        template: vssp_circuit_switch
-                        entity: {{ e }}  # TODO: remplacer par la vraie prise — nouvel objet domotique
-                        name: "{{ t('slot.outlet') }} {{ loop.index }}"
-                        icon: mdi:power-socket-fr
-                        variables:
-                          model: ""
-                          amp: ""
+                  - type: custom:button-card
+                    template: vssp_circuit_row
+                    entity: {{ e }}  # TODO: remplacer par la vraie prise — nouvel objet domotique
+                    name: "{{ t('slot.outlet') }} {{ loop.index }}"
+                    icon: mdi:power-socket-fr
+                    variables:
+                      model: ""
+                      amp: ""
+                      image: ""
 {% endfor %}
 
 {% elif slot_id == 'switches' %}
@@ -1212,10 +1215,15 @@ views:
           # EN | DEFAULT_LAYOUTS) holding a grouped, scrollable listing:
           # EN | lights, then connected outlets, then shutters, each as its
           # EN | own labeled group — never one mixed pile. Every row is
-          # EN | vssp_circuit_switch (same breaker-style card as the entrance
-          # EN | panel above and the ENERGY electrical panel), whose icon
-          # EN | color and toggle pill already react to entity.state — that
-          # EN | IS the on/off indicator, no separate widget needed.
+          # EN | vssp_circuit_row, the reference presentation for a list of
+          # EN | switches, shared with the ENERGY breaker panel: no box of its
+          # EN | own, one line per switch, toggle on the same line, a rule
+          # EN | between lines. The icon colour and the toggle already react
+          # EN | to entity.state — that IS the on/off indicator, no separate
+          # EN | widget needed. The slot is full-width by construction, which
+          # EN | is the width this presentation needs; where a switch has to
+          # EN | live in a narrow column, vssp_circuit_switch is still the
+          # EN | tile to use.
           # EN | Same scrollable-list mechanics as the appliances slot below
           # EN | (custom_fields.list, fixed height + overflow-y, handled by
           # EN | button-card's own style engine, not card-mod).
@@ -1223,11 +1231,17 @@ views:
           # FR | (voir DEFAULT_LAYOUTS) portant un listing groupe et
           # FR | defilant : lumieres, puis prises connectees, puis volets,
           # FR | chacun son propre groupe etiquete — jamais un tas melange.
-          # FR | Chaque ligne est vssp_circuit_switch (meme carte facon
-          # FR | tableau electrique que le panneau entree ci-dessus et le
-          # FR | tableau electrique d'ENERGY), dont la couleur d'icone et le
-          # FR | curseur bascule reagissent deja a entity.state — c'EST le
-          # FR | voyant allume/eteint, pas besoin d'un widget separe.
+          # FR | Chaque ligne est vssp_circuit_row, la presentation de
+          # FR | reference d'une liste d'interrupteurs, partagee avec le
+          # FR | tableau electrique d'ENERGY : pas de cadre propre, une ligne
+          # FR | par interrupteur, la bascule sur la meme ligne, un filet
+          # FR | entre les lignes. La couleur d'icone et la bascule reagissent
+          # FR | deja a entity.state — c'EST le voyant allume/eteint, pas
+          # FR | besoin d'un widget separe. Le slot est pleine largeur par
+          # FR | construction, et c'est la largeur qu'exige cette
+          # FR | presentation ; la ou un interrupteur doit tenir dans une
+          # FR | colonne etroite, vssp_circuit_switch reste la tuile a
+          # FR | utiliser.
           # FR | Meme mecanique de liste defilante que le tableau appliances
           # FR | plus bas (custom_fields.list, hauteur fixe + overflow-y,
           # FR | gere par le moteur de styles de button-card, pas card-mod).
@@ -1286,12 +1300,13 @@ views:
                           - color: "var(--secondary-text-color, #8FB6C9)"
 {% for e in slot.by_domain.get('light', []) %}
                     - type: custom:button-card
-                      template: vssp_circuit_switch
+                      template: vssp_circuit_row
                       entity: {{ e }}
                       icon: mdi:lightbulb
                       variables:
                         model: ""
                         amp: ""
+                        image: ""
 {% endfor %}
 {% endif %}
 {% if slot.by_domain.get('switch', []) %}
@@ -1318,12 +1333,13 @@ views:
                           - color: "var(--secondary-text-color, #8FB6C9)"
 {% for e in slot.by_domain.get('switch', []) %}
                     - type: custom:button-card
-                      template: vssp_circuit_switch
+                      template: vssp_circuit_row
                       entity: {{ e }}
                       icon: mdi:power-socket-fr
                       variables:
                         model: ""
                         amp: ""
+                        image: ""
 {% endfor %}
 {% endif %}
 {% if slot.by_domain.get('cover', []) %}
@@ -1350,7 +1366,7 @@ views:
                           - color: "var(--secondary-text-color, #8FB6C9)"
 {% for e in slot.by_domain.get('cover', []) %}
                     - type: custom:button-card
-                      template: vssp_circuit_switch
+                      template: vssp_circuit_row
                       entity: {{ e }}
                       icon: mdi:window-shutter
                       tap_action:
@@ -1360,6 +1376,7 @@ views:
                       variables:
                         model: ""
                         amp: ""
+                        image: ""
 {% endfor %}
 {% endif %}
 {# EN | Anything assigned to switches outside light/switch/cover — an
@@ -1375,11 +1392,12 @@ views:
 {% for domain, ents in slot.by_domain.items() if domain not in known_switch_domains %}
 {% for e in ents %}
                     - type: custom:button-card
-                      template: vssp_circuit_switch
+                      template: vssp_circuit_row
                       entity: {{ e }}
                       variables:
                         model: ""
                         amp: ""
+                        image: ""
 {% endfor %}
 {% endfor %}
 

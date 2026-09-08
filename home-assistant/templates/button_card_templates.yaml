@@ -1384,17 +1384,29 @@ vssp_circuit_switch:
 
 
 # ---------------------------------------------------------------------
-# EN | Circuit row — the LIST form of a breaker-panel circuit: no box of
-# FR | Ligne de circuit — la forme LISTE d'un circuit du tableau : pas de
-# EN | its own, one line per switch, toggle on the same line, separated
-# FR | cadre propre, une ligne par interrupteur, bascule sur la meme ligne,
-# EN | from the next by a rule. Same reading as the per-device table just
-# FR | separee de la suivante par un filet. Meme lecture que le tableau par
-# EN | above it, which is the point: a list of circuits scans far faster
-# FR | appareil juste au-dessus, et c'est le but : une liste de circuits se
+# EN | Circuit row — THE REFERENCE PRESENTATION FOR A LIST OF SWITCHES,
+# FR | Ligne de circuit — LA PRESENTATION DE REFERENCE D'UNE LISTE
+# EN | wherever one is drawn: the ENERGY breaker panel, and the `switches`
+# FR | D'INTERRUPTEURS, partout ou l'on en dessine une : le tableau
+# EN | slot of every room dashboard. No box of its own, one line per
+# FR | electrique d'ENERGY, et le slot `switches` de chaque dashboard de
+# EN | switch, toggle on the same line, separated from the next by a rule.
+# FR | piece. Pas de cadre propre, une ligne par interrupteur, la bascule
+# EN | Same reading as a table, which is the point: a list scans far faster
+# FR | sur la meme ligne, separee de la suivante par un filet. Meme lecture
 # EN | than a grid of tiles when you are looking for one name.
-# FR | parcourt bien plus vite qu'une grille de tuiles quand on cherche un
-# FR | nom precis.
+# FR | qu'un tableau, et c'est le but : une liste se parcourt bien plus vite
+# FR | qu'une grille de tuiles quand on cherche un nom precis.
+#
+# EN | It asks for width: the row lays out icon, name, model, picture,
+# EN | rating and toggle on one line. Give it a full-width slot, or half of
+# EN | one. In a genuinely narrow column, vssp_circuit_switch is still the
+# EN | tile to reach for — a squeezed list is worse than an honest grid.
+# FR | Elle demande de la largeur : la ligne pose l'icone, le nom, le
+# FR | modele, l'image, le calibre et la bascule sur un seul rang. Lui
+# FR | donner un slot pleine largeur, ou la moitie d'un. Dans une colonne
+# FR | vraiment etroite, vssp_circuit_switch reste la tuile a choisir — une
+# FR | liste comprimee vaut moins qu'une grille assumee.
 # EN | Tapping the row toggles the circuit; holding opens more-info.
 # FR | Le tap bascule le circuit ; l'appui long ouvre more-info.
 # EN |   template: vssp_circuit_row
@@ -1462,7 +1474,17 @@ vssp_circuit_row:
   styles:
     grid:
       - grid-template-areas: '"i n pic amp sw" "i l pic amp sw"'
-      - grid-template-columns: 30px 1fr 60px auto 52px
+      # EN | `auto` on the picture column, not a fixed width: a room's
+      # EN | switches carry no product model and therefore no picture, and a
+      # EN | column reserving 60px of nothing on every row is 60px stolen
+      # EN | from the names. It collapses when empty and sizes to the image
+      # EN | when there is one.
+      # FR | `auto` sur la colonne image, pas une largeur fixe : les
+      # FR | interrupteurs d'une piece ne portent aucun modele produit donc
+      # FR | aucune image, et une colonne qui reserve 60px de vide sur chaque
+      # FR | ligne, ce sont 60px pris aux noms. Elle disparait a vide et se
+      # FR | dimensionne sur l'image quand il y en a une.
+      - grid-template-columns: 30px 1fr auto auto 52px
       - grid-template-rows: min-content min-content
       - column-gap: 10px
       - justify-items: start
