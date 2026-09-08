@@ -61,6 +61,11 @@ def main() -> int:
     ap.add_argument("--new", required=True,
                     help="house.yaml just written by this deployment, "
                          "to merge rooms: into in place")
+    ap.add_argument("--fallback", default=None,
+                    help="house.yaml copied aside BEFORE the dashboards/ swap "
+                         "(e.g. /config/vssp/house.yaml.live). Used only when "
+                         "--old declares no rooms — see the comment on the "
+                         "fallback below.")
     args = ap.parse_args()
 
     old_path = Path(args.old)
@@ -85,6 +90,46 @@ def main() -> int:
 
     old_model = y.load(old_path.read_text(encoding="utf-8")) or {}
     old_rooms = old_model.get("rooms")
+
+    # EN | FALLBACK — the previous deployment's copy is not always the last
+    # EN | one that HAD rooms. `dashboards.old` is rotated by the directory
+    # EN | swap at the top of the deploy, and this script runs in a LATER
+    # EN | step: a job that dies in between (it happened — a quoting error
+    # EN | killed the shell right after the swap) leaves dashboards/ holding
+    # EN | the repository's room-less house.yaml, and the NEXT deploy then
+    # EN | rotates that room-less copy into dashboards.old and deletes the
+    # EN | only one that still had the rooms. From there nothing recovers on
+    # EN | its own: the pod regenerates 0 room dashboards, --prune-dashboards
+    # EN | strips them out of configuration.yaml, and every room link in the
+    # EN | navigation bar lands back on HOME.
+    # EN | The fallback is written before the swap, into /config/vssp/ —
+    # EN | which is copied additively and never replaced — so it survives
+    # EN | exactly the failure the rotation cannot.
+    # FR | REPLI — la copie du deploiement precedent n est pas toujours la
+    # FR | derniere a AVOIR eu des pieces. `dashboards.old` est fait tourner
+    # FR | par l echange de repertoires en debut de deploiement, et ce script
+    # FR | tourne dans une etape PLUS TARD : un job qui meurt entre les deux
+    # FR | (c est arrive — une erreur de quoting a tue le shell juste apres
+    # FR | l echange) laisse dashboards/ avec le house.yaml sans pieces du
+    # FR | depot, et le deploiement SUIVANT fait alors tourner cette copie
+    # FR | sans pieces vers dashboards.old en supprimant la seule qui avait
+    # FR | encore les pieces. Des lors plus rien ne se retablit tout seul :
+    # FR | le pod regenere 0 dashboard de piece, --prune-dashboards les
+    # FR | retire de configuration.yaml, et chaque lien de piece de la barre
+    # FR | de navigation retombe sur HOME.
+    # FR | Le repli est ecrit avant l echange, dans /config/vssp/ — copie en
+    # FR | additif et jamais remplace — donc il survit precisement a la
+    # FR | defaillance que la rotation ne peut pas encaisser.
+    if not old_rooms and args.fallback:
+        fb_path = Path(args.fallback)
+        if fb_path.is_file():
+            fb_model = y.load(fb_path.read_text(encoding="utf-8")) or {}
+            fb_rooms = fb_model.get("rooms")
+            if fb_rooms:
+                print(f"[i] {old_path} declares no rooms — falling back to "
+                      f"{fb_path}")
+                old_rooms = fb_rooms
+
     if not old_rooms:
         print(f"[i] {old_path} declares no rooms — nothing to preserve")
         return 0

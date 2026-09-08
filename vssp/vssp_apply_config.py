@@ -380,6 +380,11 @@ def main():
                     help="Print without writing")
     ap.add_argument("--prune-resources", action="store_true",
                     help="Drop Visio Sapiens resources absent from the fragment")
+    ap.add_argument("--allow-empty-dashboards", action="store_true",
+                    help="let --prune-dashboards act even when a fragment "
+                         "declares no dashboard at all. Off by default: that "
+                         "is nearly always a missing source, and pruning on "
+                         "it unlinks every room at once.")
     ap.add_argument("--prune-dashboards", action="store_true",
                     help="Remove Visio Sapiens dashboards absent from the "
                          "fragments. Needed after deleting a room: the merge "
@@ -414,12 +419,23 @@ def main():
 
     changed = False
     declared = set()
+    empty_fragments = []
     for frag in args.fragment:
         fragment = _load(frag, y)
         _apply_vtoken(fragment, args.vtoken)
         lova = fragment.get("lovelace")
         if isinstance(lova, CommentedMap) and isinstance(lova.get("dashboards"), dict):
             declared |= set(lova["dashboards"])
+            # EN | A fragment that carries a `dashboards:` key and declares
+            # EN | nothing under it. Not the same as a fragment with no
+            # EN | lovelace section at all, which simply has nothing to say
+            # EN | on the subject — see the guard below.
+            # FR | Un fragment qui porte une cle `dashboards:` et ne declare
+            # FR | rien dessous. Pas la meme chose qu un fragment sans section
+            # FR | lovelace, qui n a simplement rien a dire la-dessus — voir
+            # FR | le garde-fou plus bas.
+            if not lova["dashboards"]:
+                empty_fragments.append(frag)
         print(f"[i] merging {frag}")
         if merge(config, fragment, prune_resources=args.prune_resources):
             changed = True
@@ -434,7 +450,46 @@ def main():
     # FR | indefiniment dans configuration.yaml, pointant vers un fichier qui
     # FR | n'existe plus. Sur demande, car c'est la seule operation
     # FR | destructive ici et elle doit etre un choix delibere.
-    if args.prune_dashboards and declared:
+    # EN | GUARD — a fragment that declares NO dashboard at all is a missing
+    # EN | source, not an instruction to delete. Pruning against one is how
+    # EN | every room dashboard left configuration.yaml at once: the pod-side
+    # EN | regeneration wrote config-fragment-rooms.yaml from a house.yaml
+    # EN | that had lost its rooms, so the fragment declared zero rooms, and
+    # EN | this prune obediently removed all twelve entries. `declared` was
+    # EN | still non-empty — the OTHER fragment holds the system dashboards —
+    # EN | so the existing check waved it through. Nothing on screen
+    # EN | explained it: the nav bar simply sent every room link back to
+    # EN | HOME.
+    # EN | Same reasoning, and the same deliberate opt-out, as
+    # EN | write_rooms_fragment()'s --allow-empty-rooms in
+    # EN | generate_dashboards.py. Removing SOME dashboards still works
+    # EN | normally; only "this file declares none" is refused.
+    # FR | GARDE-FOU — un fragment qui ne declare AUCUN dashboard est une
+    # FR | source manquante, pas une instruction de suppression. Elaguer
+    # FR | contre un tel fragment est la facon dont tous les dashboards de
+    # FR | piece ont quitte configuration.yaml d un coup : la regeneration
+    # FR | cote pod a ecrit config-fragment-rooms.yaml depuis un house.yaml
+    # FR | qui avait perdu ses pieces, le fragment declarait donc zero piece,
+    # FR | et cet elagage a docilement retire les douze entrees. `declared`
+    # FR | restait non vide — l AUTRE fragment porte les dashboards systeme —
+    # FR | donc le controle existant a laisse passer. Rien a l ecran ne
+    # FR | l expliquait : la barre de navigation renvoyait simplement chaque
+    # FR | lien de piece vers HOME.
+    # FR | Meme raisonnement, et meme sortie deliberee, que le
+    # FR | --allow-empty-rooms de write_rooms_fragment() dans
+    # FR | generate_dashboards.py. Retirer CERTAINS dashboards fonctionne
+    # FR | toujours normalement ; seul « ce fichier n en declare aucun » est
+    # FR | refuse.
+    if args.prune_dashboards and empty_fragments and not args.allow_empty_dashboards:
+        for frag in empty_fragments:
+            print(f"[REFUSED] {frag} declares no dashboard at all — "
+                  f"refusing to prune.")
+        print("          Likely cause: the rooms were lost from house.yaml, "
+              "so the fragment was regenerated empty.")
+        print("          Nothing was removed from configuration.yaml. Fix the "
+              "source, or pass --allow-empty-dashboards if the dashboards "
+              "really are all gone.")
+    elif args.prune_dashboards and declared:
         if prune_dashboards(config, declared):
             changed = True
 

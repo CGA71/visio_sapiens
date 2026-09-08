@@ -854,6 +854,36 @@ deploy:staging:
         set -e
         rm -rf /config/.osv_stage && mkdir -p /config/.osv_stage
         tar xzf /config/.osv.tar.gz -C /config/.osv_stage
+        # EN | LAST-GOOD ROOMS, set aside before the swap below rotates
+        # EN | dashboards.old. That rotation is only safe if the deploy
+        # EN | reaches the preservation step further down; a job that dies in
+        # EN | between (a quoting error did exactly that) leaves dashboards/
+        # EN | holding the repository room-less house.yaml, and the NEXT
+        # EN | deploy rotates THAT into dashboards.old, deleting the only
+        # EN | copy that still had the rooms. Nothing recovers on its own
+        # EN | from there: 0 room dashboards regenerated, pruned out of
+        # EN | configuration.yaml, every room link in the nav bar back to
+        # EN | HOME.
+        # EN | /config/vssp/ is copied additively and never replaced, so this
+        # EN | copy survives precisely the failure the rotation cannot.
+        # FR | DERNIERES PIECES VALIDES, mises de cote avant que l echange
+        # FR | ci-dessous ne fasse tourner dashboards.old. Cette rotation
+        # FR | n est sure que si le deploiement atteint l etape de
+        # FR | preservation plus bas ; un job qui meurt entre les deux (une
+        # FR | erreur de quoting l a fait exactement) laisse dashboards/ avec
+        # FR | le house.yaml sans pieces du depot, et le deploiement SUIVANT
+        # FR | fait tourner CELUI-LA vers dashboards.old, supprimant la seule
+        # FR | copie qui avait encore les pieces. Des lors plus rien ne se
+        # FR | retablit tout seul : 0 dashboard de piece regenere, elagues de
+        # FR | configuration.yaml, chaque lien de piece de la barre de
+        # FR | navigation de retour sur HOME.
+        # FR | /config/vssp/ est copie en additif et jamais remplace, donc
+        # FR | cette copie survit precisement a la defaillance que la
+        # FR | rotation ne peut pas encaisser.
+        mkdir -p /config/vssp
+        if [ -f /config/dashboards/model/house.yaml ]; then
+          cp /config/dashboards/model/house.yaml /config/vssp/house.yaml.live
+        fi
         for d in dashboards themes; do
           rm -rf /config/$d.old
           [ -d /config/$d ] && mv /config/$d /config/$d.old
@@ -1081,6 +1111,7 @@ deploy:staging:
           fi
         fi
         python3 /config/vssp/vssp_preserve_rooms.py \
+          --fallback /config/vssp/house.yaml.live \
           --old /config/dashboards.old/model/house.yaml \
           --new /config/dashboards/model/house.yaml
       '
@@ -1398,6 +1429,15 @@ deploy:production:
     - cat $PACKAGE_NAME.tar.gz | ssh ha "rm -rf $HA_CFG/.osv_stage && mkdir -p $HA_CFG/.osv_stage && tar xzf - -C $HA_CFG/.osv_stage"
     - |
       ssh ha "set -e
+        # EN | Last-good rooms set aside before the rotation, same rule and
+        # EN | same reason as staging — see the full explanation there.
+        # FR | Dernieres pieces valides mises de cote avant la rotation, meme
+        # FR | regle et meme raison qu en staging — voir l explication
+        # FR | complete la-bas.
+        mkdir -p $HA_CFG/vssp
+        if [ -f $HA_CFG/dashboards/model/house.yaml ]; then
+          cp $HA_CFG/dashboards/model/house.yaml $HA_CFG/vssp/house.yaml.live
+        fi
         for d in dashboards themes; do
           rm -rf $HA_CFG/\$d.old
           [ -d $HA_CFG/\$d ] && mv $HA_CFG/\$d $HA_CFG/\$d.old
@@ -1541,8 +1581,10 @@ deploy:production:
     - |
       scp ha:$HA_CFG/dashboards/model/house.yaml /tmp/prod_house.yaml
       scp ha:$HA_CFG/dashboards.old/model/house.yaml /tmp/prod_house.yaml.old 2>/dev/null || true
+      scp ha:$HA_CFG/vssp/house.yaml.live /tmp/prod_house.yaml.live 2>/dev/null || true
       python3 /tmp/osv_pkg/vssp/vssp_preserve_rooms.py \
         --old /tmp/prod_house.yaml.old \
+        --fallback /tmp/prod_house.yaml.live \
         --new /tmp/prod_house.yaml
       scp /tmp/prod_house.yaml ha:$HA_CFG/dashboards/model/house.yaml
     - scp ha:$HA_CFG/configuration.yaml /tmp/prod_configuration.yaml
