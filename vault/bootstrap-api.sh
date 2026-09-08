@@ -112,6 +112,25 @@ json_file() {
 print(json.dumps({'policy': open(sys.argv[1], encoding='utf-8').read()}))" "$1"
 }
 
+# EN | This one is pure string matching and needs no Vault at all, so it
+# EN | runs BEFORE the seal check. A sealed safe and a placeholder token are
+# EN | two separate mistakes, and checking the safe first would have you fix
+# EN | the sealing, re-run, and only then discover the token — two round
+# EN | trips for two things knowable at once.
+# FR | Celui-ci est de la simple comparaison de chaine et n a besoin
+# FR | d aucun Vault, il tourne donc AVANT le controle de scellement. Un
+# FR | coffre scelle et un token d exemple sont deux erreurs distinctes, et
+# FR | verifier le coffre d abord ferait corriger le descellement, relancer,
+# FR | et seulement alors decouvrir le token — deux allers-retours pour deux
+# FR | choses connaissables d un coup.
+case "$VAULT_TOKEN" in
+  hvs.xxx*|"<"*|*your-root-token*|*ton-token-root*)
+    echo "[ERR] VAULT_TOKEN is the example text from the documentation, not a token."
+    echo "      Use the real root token printed once by 'vault operator init',"
+    echo "      the line reading 'Initial Root Token: hvs....'."
+    exit 1 ;;
+esac
+
 echo "[0/6] Reaching $VAULT_ADDR"
 SEALED="$(curl -sS "$VAULT_ADDR/v1/sys/seal-status" | jget sealed)"
 if [ -z "$SEALED" ]; then
@@ -138,14 +157,6 @@ fi
 # FR | valide. Le mauvais token le plus frequent est le texte d exemple de
 # FR | la documentation, colle tel quel : ce cas est donc nomme
 # FR | explicitement.
-case "$VAULT_TOKEN" in
-  hvs.xxx*|"<"*|*your-root-token*|*ton-token-root*)
-    echo "[ERR] VAULT_TOKEN is the example text from the documentation, not a token."
-    echo "      Use the real root token printed once by 'vault operator init',"
-    echo "      the line reading 'Initial Root Token: hvs....'."
-    exit 1 ;;
-esac
-
 if [ -z "$(api GET auth/token/lookup-self | jget data.id)" ]; then
   echo "[ERR] Vault refuses this token (permission denied / invalid token)."
   echo "      It is not the root token, or it has expired or been revoked."
