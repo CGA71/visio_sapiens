@@ -1428,8 +1428,15 @@ vssp_circuit_row:
     pic: >
       [[[
         if (!variables.image) return '';
+        // EN | A power strip is long and flat: sized at 42px it reads as a
+        // EN | sliver. The box is cut for the WIDEST product, not the
+        // EN | squarest, and object-fit keeps every other one honest.
+        // FR | Une multiprise est longue et plate : calibree a 42px elle se
+        // FR | lit comme un copeau. La boite est taillee pour le produit le
+        // FR | plus LARGE, pas le plus carre, et object-fit garde tous les
+        // FR | autres a leurs proportions.
         return '<img src="' + variables.image + '" style="display:block;' +
-               'max-width:42px;max-height:30px;object-fit:contain;' +
+               'max-width:56px;max-height:32px;object-fit:contain;' +
                'filter:drop-shadow(0 1px 3px rgba(0,0,0,.5));">';
       ]]]
     amp: >
@@ -1455,7 +1462,7 @@ vssp_circuit_row:
   styles:
     grid:
       - grid-template-areas: '"i n pic amp sw" "i l pic amp sw"'
-      - grid-template-columns: 30px 1fr 46px auto 52px
+      - grid-template-columns: 30px 1fr 60px auto 52px
       - grid-template-rows: min-content min-content
       - column-gap: 10px
       - justify-items: start
