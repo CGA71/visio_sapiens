@@ -852,19 +852,6 @@ def main() -> int:
     for n in mod_report["removed"]:
         print(f"  - {n}" + ("" if args.prune else "  (absent de HA)"))
 
-    # EN | `modules` absent from the file = it predates this key. The scan
-    # EN | must write even when nothing else moved, otherwise the virtual
-    # EN | breaker panel stays empty until some unrelated device changes.
-    # FR | `modules` absent du fichier = il est anterieur a cette cle. Le
-    # FR | scan doit ecrire meme si rien d'autre n'a bouge, sans quoi le
-    # FR | tableau electrique virtuel reste vide jusqu'a ce qu'un appareil
-    # FR | sans rapport change.
-    schema_upgrade = "modules" not in doc
-    changed = bool(healed or dev_report["added"] or cir_report["added"]
-                   or mod_report["added"] or schema_upgrade
-                   or (args.prune and (dev_report["removed"]
-                                       or cir_report["removed"]
-                                       or mod_report["removed"])))
 
     header = (
         "########################################################################\n"
@@ -890,14 +877,39 @@ def main() -> int:
         f"# Derniere synchronisation : {datetime.now():%Y-%m-%d %H:%M}\n"
         "########################################################################\n"
     )
-    out = header + yaml.safe_dump(
+    body = yaml.safe_dump(
         {"ignore": ignore, "devices": devices, "circuits": circuits,
          "modules": modules},
         allow_unicode=True, sort_keys=False, default_flow_style=False)
+    out = header + body
+
+    # EN | "Has anything changed?" used to mean "was a device added or
+    # EN | removed?", which silently missed everything else: a healed icon, a
+    # EN | renamed channel, and above all a NEW KEY. Adding `modules` wrote
+    # EN | nothing on an instance whose fleet had not moved, so the virtual
+    # EN | panel stayed empty behind a scan reporting success. Comparing the
+    # EN | document itself — header excluded, it carries the run timestamp
+    # EN | and would always differ — answers the real question, and the next
+    # EN | key added here will not outgrow it.
+    # FR | « Quelque chose a-t-il change ? » signifiait « un appareil a-t-il
+    # FR | ete ajoute ou retire ? », ce qui ratait en silence tout le reste :
+    # FR | une icone reparee, une voie renommee, et surtout une CLE NOUVELLE.
+    # FR | L'ajout de `modules` n'ecrivait rien sur une instance dont le parc
+    # FR | n'avait pas bouge, et le tableau virtuel restait vide derriere un
+    # FR | scan qui annoncait un succes. Comparer le document lui-meme —
+    # FR | en-tete exclu, il porte l'horodatage du passage et differerait
+    # FR | toujours — repond a la vraie question, et la prochaine cle ajoutee
+    # FR | ici ne la perimera pas.
+    def content(text: str) -> str:
+        lines = [l for l in text.splitlines() if not l.startswith("#")]
+        return '\n'.join(lines)
+
+    previous = path.read_text(encoding="utf-8") if path.exists() else ""
+    changed = content(out) != content(previous)
 
     if args.dry_run:
         print("\n(--dry-run : aucun fichier écrit)")
-    elif not changed and path.exists() and existing_devices:
+    elif not changed and path.exists():
         print("\n= Aucun changement — fichier laissé tel quel.")
     else:
         path.parent.mkdir(parents=True, exist_ok=True)
