@@ -1117,17 +1117,30 @@ views:
           # EN | side column.
           # EN | Two framed groups side by side, each a LIST on the
           # EN | reference model (vssp_circuit_row, shared with the ENERGY
-          # EN | breaker panel) rather than the grouped scrollable listing
-          # EN | used by other rooms' switches slot: 3 switches, 2 outlets.
-          # EN | Half of a full-width strip is width enough for a row list,
-          # EN | which is the condition this presentation asks for.
-          # EN | Hardcoded directly, same spirit as the entrance cameras
-          # EN | and the Jessica vacuum entities above — nothing usable is
-          # EN | assigned to this slot via the admin console, and the
-          # EN | outlets are a new device type with no real entities yet.
-          # EN | VISUAL TRIAL — entity ids below are placeholders
-          # EN | (switch.entree_*), TODO: replace with the real ones once
-          # EN | the switches/outlets exist in Home Assistant.
+          # EN | breaker panel). Half of a full-width strip is width enough
+          # EN | for a row list, which is the condition this presentation
+          # EN | asks for.
+          # EN | The rows come from what the admin console ASSIGNED to this
+          # EN | slot. They used to be five hardcoded switch.entree_*
+          # EN | placeholders — a visual trial from when no real switch or
+          # EN | outlet existed yet — and that stopped being harmless the
+          # EN | day one did: a plug assigned here through ASSIGN was saved
+          # EN | correctly, regenerated correctly, and still did not appear,
+          # EN | because this panel never looked. The placeholders also
+          # EN | pointed at entities Home Assistant does not have, so the
+          # EN | frames showed five permanently unavailable rows.
+          # EN | Domain routing is the same rule the generic switches slot
+          # EN | below already applies — `light` reads as a light switch,
+          # EN | `switch` as a connected outlet — so there is ONE convention
+          # EN | in this file rather than two. device_class would be a finer
+          # EN | signal, but entities reach the template as plain entity ids
+          # EN | (see by_domain in generate_dashboards.py) and real plugs
+          # EN | frequently declare no device_class at all.
+          # EN | Both frames are drawn even when empty: this strip has a
+          # EN | fixed height and a two-column shape, and a frame that
+          # EN | vanishes when nothing is assigned to it would leave the
+          # EN | other stretched across the whole width, reading as a layout
+          # EN | fault rather than as an empty group.
           # FR | room.slot_set, pas room.type : les deux sont des champs
           # FR | independants (une piece pourrait avoir type: entrance avec
           # FR | un autre slot_set) et c'est slot_set qui selectionne
@@ -1136,39 +1149,94 @@ views:
           # FR | l'en-tete, pas une colonne laterale.
           # FR | Deux groupes encadres cote a cote, chacun une LISTE au
           # FR | modele de reference (vssp_circuit_row, partage avec le
-          # FR | tableau electrique d'ENERGY) plutot que le listing groupe et
-          # FR | defilant utilise par le tableau switches des autres pieces :
-          # FR | 3 interrupteurs, 2 prises. La moitie d'un bandeau pleine
+          # FR | tableau electrique d'ENERGY). La moitie d'un bandeau pleine
           # FR | largeur suffit largement a une liste de lignes, et c'est la
-          # FR | condition qu'exige cette presentation. Code en dur, meme
-          # FR | esprit que les cameras de l'entree et les entites du robot
-          # FR | Jessica ci-dessus — rien d'exploitable n'est assigne a ce
-          # FR | tableau via la console admin, et les prises sont un
-          # FR | nouveau type d'appareil sans entite reelle pour l'instant.
-          # FR | ESSAI VISUEL — les entity id ci-dessous sont des
-          # FR | remplisseurs (switch.entree_*), TODO : les remplacer par
-          # FR | les vraies une fois les interrupteurs/prises presents dans
-          # FR | Home Assistant.
-{% set entrance_switches = ['switch.entree_interrupteur_1', 'switch.entree_interrupteur_2', 'switch.entree_interrupteur_3'] %}
-{% set entrance_outlets = ['switch.entree_prise_1', 'switch.entree_prise_2'] %}
+          # FR | condition qu'exige cette presentation.
+          # FR | Les lignes viennent de ce que la console admin a ASSIGNE a
+          # FR | ce tableau. C'etaient auparavant cinq remplisseurs
+          # FR | switch.entree_* codes en dur — un essai visuel datant de
+          # FR | l'epoque ou aucun interrupteur ni aucune prise reelle
+          # FR | n'existait — et cela a cesse d'etre anodin le jour ou il en
+          # FR | est arrive une : une prise assignee ici via ASSIGN etait
+          # FR | bien enregistree, bien regeneree, et n'apparaissait
+          # FR | toujours pas, parce que ce panneau ne regardait jamais. Les
+          # FR | remplisseurs pointaient de plus vers des entites que Home
+          # FR | Assistant n'a pas, donc les cadres affichaient cinq lignes
+          # FR | indisponibles a demeure.
+          # FR | L'aiguillage par domaine est la regle qu'applique deja le
+          # FR | tableau switches generique plus bas — `light` se lit comme
+          # FR | un interrupteur d'eclairage, `switch` comme une prise
+          # FR | connectee — pour qu'il y ait UNE convention dans ce fichier
+          # FR | et non deux. device_class serait un signal plus fin, mais
+          # FR | les entites arrivent au template en simples entity id (voir
+          # FR | by_domain dans generate_dashboards.py) et les vraies prises
+          # FR | ne declarent souvent aucun device_class.
+          # FR | Les deux cadres sont dessines meme vides : ce bandeau a une
+          # FR | hauteur fixe et une forme a deux colonnes, et un cadre qui
+          # FR | disparaitrait faute d'affectation laisserait l'autre etale
+          # FR | sur toute la largeur, ce qui se lirait comme un defaut de
+          # FR | mise en page plutot que comme un groupe vide.
+{% set entrance_known = ['light', 'switch', 'cover'] %}
 {% set entrance_switch_rows = [] %}
-{% for e in entrance_switches %}
-{% set _ = entrance_switch_rows.append({'entity': e, 'icon': 'mdi:light-switch',
-                                        'name': t('slot.switch') ~ ' ' ~ loop.index}) %}
+{% for e in slot.by_domain.get('light', []) %}
+{% set _ = entrance_switch_rows.append({'entity': e, 'icon': 'mdi:light-switch'}) %}
 {% endfor %}
 {% set entrance_outlet_rows = [] %}
-{% for e in entrance_outlets %}
-{% set _ = entrance_outlet_rows.append({'entity': e, 'icon': 'mdi:power-socket-fr',
-                                        'name': t('slot.outlet') ~ ' ' ~ loop.index}) %}
+{% for e in slot.by_domain.get('switch', []) %}
+{% set _ = entrance_outlet_rows.append({'entity': e, 'icon': 'mdi:power-socket-fr'}) %}
 {% endfor %}
+{# EN | Shutters and anything else assigned here get their own frame rather
+   EN | than being dropped: the entrance strip is not a special case about
+   EN | WHAT may be assigned to it, only about how it is laid out.
+   FR | Les volets et tout autre appareil assigne ici recoivent leur propre
+   FR | cadre plutot que d'etre abandonnes : le bandeau de l'entree n'est pas
+   FR | un cas particulier sur CE qu'on peut lui assigner, seulement sur sa
+   FR | mise en page. #}
+{% set entrance_extra = [] %}
+{% if slot.by_domain.get('cover', []) %}
+{% set rows = [] %}
+{% for e in slot.by_domain.get('cover', []) %}
+{% set _ = rows.append({'entity': e, 'icon': 'mdi:window-shutter', 'tap': 'more-info'}) %}
+{% endfor %}
+{% set _ = entrance_extra.append({'title': t('slot.switches_shutters'), 'rows': rows}) %}
+{% endif %}
+{% set other = [] %}
+{% for domain, ents in slot.by_domain.items() if domain not in entrance_known %}
+{% for e in ents %}
+{% set _ = other.append({'entity': e}) %}
+{% endfor %}
+{% endfor %}
+{% if other %}
+{% set _ = entrance_extra.append({'title': t('slot.switches_other'), 'rows': other}) %}
+{% endif %}
           - type: horizontal-stack
             card_mod:
               style: |
                 :host { height: 100%; }
                 #root { height: 100%; align-items: stretch; }
             cards:
-{{ sw.group(t('slot.lights_switches'), entrance_switch_rows) }}
-{{ sw.group(t('slot.lights_outlets'), entrance_outlet_rows) }}
+{# EN | The same two titles the generic switches slot uses, not the
+   EN | entrance's own `lights_switches`/`lights_outlets`. That pair read
+   EN | "Interrupteurs"/"Prises", and the panel header above already says
+   EN | "Interrupteurs" (t('slot.switches')) — so the strip opened on the
+   EN | same word twice, once as the panel and once as its first frame.
+   EN | Harmless while that frame held three placeholder rows; plainly
+   EN | wrong the moment it can be empty. The generic pair names the same
+   EN | two things and keeps one vocabulary across the file.
+   FR | Les deux memes titres qu'utilise le tableau switches generique, pas
+   FR | les `lights_switches`/`lights_outlets` propres a l'entree. Cette
+   FR | paire donnait « Interrupteurs »/« Prises », et l'en-tete du panneau
+   FR | au-dessus dit deja « Interrupteurs » (t('slot.switches')) — le
+   FR | bandeau s'ouvrait donc deux fois sur le meme mot, une fois comme
+   FR | panneau et une fois comme premier cadre. Sans consequence tant que
+   FR | ce cadre portait trois lignes remplisseuses ; franchement faux des
+   FR | qu'il peut etre vide. La paire generique nomme les deux memes
+   FR | choses et garde un seul vocabulaire dans le fichier. #}
+{{ sw.group(t('slot.switches_lights'), entrance_switch_rows) }}
+{{ sw.group(t('slot.switches_outlets'), entrance_outlet_rows) }}
+{% for g in entrance_extra %}
+{{ sw.group(g.title, g.rows) }}
+{% endfor %}
 
 {% elif slot_id == 'switches' %}
           # EN | SWITCHES — the reference presentation, the one the entrance
