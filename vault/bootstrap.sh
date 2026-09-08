@@ -148,4 +148,4 @@ vault token create \
   -format=json | grep -o '"client_token":"[^"]*"' | cut -d'"' -f4
 
 echo
-echo "[OK] Safe ready. Next: docs/Vault.md, section \"After bootstrap\"."
+echo "[OK] Safe ready. Next: docs/platform/Vault.md, section \"After bootstrap\"."

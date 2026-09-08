@@ -308,7 +308,7 @@ dégâts à lui seul.
 3. `generate_dashboards.py` **refuse** de réécrire un fragment de pièces
    en fragment vide quand le fichier existant en déclare — voir
    *Garde-fous* dans
-   [Dashboard_Generator.fr.md](Dashboard_Generator.fr.md).
+   [Dashboard_Generator.fr.md](../dashboards/Dashboard_Generator.fr.md).
    `--allow-empty-rooms` y renonce pour le cas légitime « les pièces ont
    vraiment toutes disparu ».
 

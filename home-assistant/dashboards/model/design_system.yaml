@@ -30,13 +30,13 @@
 # EN | palette, header, sidebar, card/dialog shape. The neon glass-panel
 # EN | look baked directly into card_mod blocks across templates_j2/*.j2
 # EN | (borders, blur, box-shadow) is NOT driven by this file yet — that is
-# EN | phase 2, tracked in docs/Design_System_Editor.md.
+# EN | phase 2, tracked in docs/dashboards/Design_System_Editor.md.
 # FR | PERIMETRE (phase 1 / MVP) — seulement les tokens de theme natifs Home
 # FR | Assistant : palette, en-tete, sidebar, forme des cartes/dialogues.
 # FR | L'aspect vitre neon code en dur dans les blocs card_mod des
 # FR | templates_j2/*.j2 (bordures, flou, ombre) n'est PAS encore pilote par
 # FR | ce fichier — c'est la phase 2, suivie dans
-# FR | docs/Design_System_Editor.md.
+# FR | docs/dashboards/Design_System_Editor.md.
 #
 # EN | To reset to factory values: use the RESTORE REFERENCE button of the
 # EN | THEME screen (copies design_system.default.yaml back here, with a

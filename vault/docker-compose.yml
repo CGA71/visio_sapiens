@@ -6,10 +6,10 @@
 #
 #     cd /opt/vssp-vault && docker compose up -d
 #
-# EN | First run only, then follow docs/Vault.md: initialise, write down
+# EN | First run only, then follow docs/platform/Vault.md: initialise, write down
 # EN | the five unseal keys and the root token OFF this machine, unseal,
 # EN | then run bootstrap.sh.
-# FR | Premier lancement seulement, puis suivre docs/Vault.fr.md :
+# FR | Premier lancement seulement, puis suivre docs/platform/Vault.fr.md :
 # FR | initialiser, noter les cinq cles de descellement et le token root
 # FR | HORS de cette machine, desceller, puis lancer bootstrap.sh.
 ########################################################################

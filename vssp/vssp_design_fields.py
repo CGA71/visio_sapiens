@@ -7,7 +7,7 @@
 # EN | one maps onto the nested `design:` structure of design_system.yaml.
 # EN | Deliberately stdlib-only: generate_dashboards.py imports it to write
 # EN | design_system_status.json, and its only other dependencies are jinja2
-# EN | + pyyaml (see docs/Dashboard_Generator.md) — it must never gain a hard
+# EN | + pyyaml (see docs/dashboards/Dashboard_Generator.md) — it must never gain a hard
 # EN | dependency on ruamel.yaml, which vssp_theme_apply.py needs only to
 # EN | rewrite design_system.yaml with its comments intact. Splitting this
 # EN | table out of vssp_theme_apply.py is what keeps that boundary real.
@@ -17,7 +17,7 @@
 # FR | `design:` de design_system.yaml.
 # FR | Deliberement stdlib uniquement : generate_dashboards.py l importe pour
 # FR | ecrire design_system_status.json, et ses seules autres dependances sont
-# FR | jinja2 + pyyaml (voir docs/Dashboard_Generator.md) — il ne doit jamais
+# FR | jinja2 + pyyaml (voir docs/dashboards/Dashboard_Generator.md) — il ne doit jamais
 # FR | acquerir de dependance dure a ruamel.yaml, dont vssp_theme_apply.py a
 # FR | seul besoin pour reecrire design_system.yaml sans perdre ses
 # FR | commentaires. Extraire cette table de vssp_theme_apply.py est ce qui

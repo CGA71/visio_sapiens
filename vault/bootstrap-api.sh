@@ -233,4 +233,4 @@ api POST auth/token/create \
   | jget auth.client_token
 
 echo
-echo "[OK] Safe ready. Next: docs/Vault.md, section \"After bootstrap\"."
+echo "[OK] Safe ready. Next: docs/platform/Vault.md, section \"After bootstrap\"."

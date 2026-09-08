@@ -14,7 +14,7 @@
 # EN | This script is the other half: keep the N most recent backups PER
 # EN | PREFIX (home, energy, core, theme, house, design_system, ...) in a
 # EN | directory, delete the rest. Run daily by vssp_maintenance.yaml — see
-# EN | docs/Backup_Retention.md.
+# EN | docs/platform/Backup_Retention.md.
 # FR | Chaque bouton REGENERER (HOME/ENERGY/CORE) et chaque application
 # FR | THEME/ASSIGN/ROOMS ecrit une sauvegarde horodatee avant d'ecraser quoi
 # FR | que ce soit — vssp_backup_dashboard, vssp_backup_energy,
@@ -28,7 +28,7 @@
 # FR | Ce script est l'autre moitie : garder les N sauvegardes les plus
 # FR | recentes PAR PREFIXE (home, energy, core, theme, house, design_system,
 # FR | ...) dans un repertoire, supprimer le reste. Lance quotidiennement par
-# FR | vssp_maintenance.yaml — voir docs/Backup_Retention.md.
+# FR | vssp_maintenance.yaml — voir docs/platform/Backup_Retention.md.
 #
 # EN | USAGE / FR | UTILISATION
 #   python3 vssp_prune_backups.py --dir /config/vssp/backups --keep 5

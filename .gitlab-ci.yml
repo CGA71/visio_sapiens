@@ -1263,7 +1263,7 @@ deploy:staging:
           else
             echo "[ERR] ruamel.yaml could not be installed on this pod."
             echo "      ROOMS sync and ASSIGN save will reject every request"
-            echo "      until this is fixed. See docs/Deployment.md."
+            echo "      until this is fixed. See docs/platform/Deployment.md."
             exit 1
           fi
         fi
@@ -1305,7 +1305,7 @@ deploy:staging:
         python3 /config/vssp/vssp_ensure_secret.py \
           --config /config/secrets.yaml \
           --key vault_ha_token \
-          --comment "Visio Sapiens - jeton Vault, policy vssp-ha (noms, jamais valeurs). Voir docs/Vault.md."
+          --comment "Visio Sapiens - jeton Vault, policy vssp-ha (noms, jamais valeurs). Voir docs/platform/Vault.md."
         # EN | The patcher dedupes resources by full URL: since ?v= changes on
         # EN | every build, each deployment used to ADD 6 entries. We clean up.
         # FR | Le patcher dedupe les ressources par URL complete : le ?v=
@@ -1421,7 +1421,7 @@ deploy:staging:
           else
             echo "[ERR] ruamel.yaml could not be installed on this pod."
             echo "      ROOMS sync and ASSIGN save will reject every request"
-            echo "      until this is fixed. See docs/Deployment.md."
+            echo "      until this is fixed. See docs/platform/Deployment.md."
             exit 1
           fi
         fi
@@ -1699,7 +1699,7 @@ deploy:production:
       ssh ha "python3 $HA_CFG/vssp/vssp_ensure_secret.py \
         --config $HA_CFG/secrets.yaml \
         --key vault_ha_token \
-        --comment 'Visio Sapiens - jeton Vault, policy vssp-ha (noms, jamais valeurs). Voir docs/Vault.md.'" \
+        --comment 'Visio Sapiens - jeton Vault, policy vssp-ha (noms, jamais valeurs). Voir docs/platform/Vault.md.'" \
         || { echo "[ERR] ensure secret failed"; exit 1; }
     # EN | Dedupe Lovelace resources (the patcher accumulates successive ?v=)
     # FR | Dedup des ressources Lovelace (le patcher accumule les ?v= successifs)

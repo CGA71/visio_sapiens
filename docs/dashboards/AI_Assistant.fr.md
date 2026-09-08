@@ -428,6 +428,6 @@ Aucun n'existe encore. Les chemins sont les destinations retenues.
 ## Voir aussi
 
 - [Chatbot_Integration.fr.md](Chatbot_Integration.fr.md) — le pont fournisseur réutilisé ici
-- [Security.fr.md](Security.fr.md) — conventions de gestion des secrets
-- [CI_CD.fr.md](CI_CD.fr.md) — les deux jobs de déploiement cités tout au long de la section 7
-- [Troubleshooting.fr.md](Troubleshooting.fr.md)
+- [Security.fr.md](../platform/Security.fr.md) — conventions de gestion des secrets
+- [CI_CD.fr.md](../ci-cd/CI_CD.fr.md) — les deux jobs de déploiement cités tout au long de la section 7
+- [Troubleshooting.fr.md](../ci-cd/Troubleshooting.fr.md)

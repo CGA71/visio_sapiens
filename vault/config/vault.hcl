@@ -7,13 +7,13 @@
 # EN | credentials, so putting it inside the cluster it protects would
 # EN | lock the keys to the cluster inside the cluster. Docker on the host
 # EN | survives a k3s failure; it does not survive a host failure, hence
-# EN | the break-glass copy described in docs/Vault.md.
+# EN | the break-glass copy described in docs/platform/Vault.md.
 # FR | Tourne en conteneur Docker sur l hote 192.168.1.11, PAS dans k3s.
 # FR | C est deliberé : le coffre detient les acces SSH et k3s, donc le
 # FR | placer dans le cluster qu il protege enfermerait les cles du
 # FR | cluster dans le cluster. Docker sur l hote survit a une panne k3s ;
 # FR | il ne survit pas a une panne de l hote, d ou la copie de bris de
-# FR | glace decrite dans docs/Vault.fr.md.
+# FR | glace decrite dans docs/platform/Vault.fr.md.
 ########################################################################
 
 # EN | File storage, not the in-memory dev backend: the safe must survive
@@ -37,7 +37,7 @@ listener "tcp" {
   # EN | TLS here would protect a hop that is already the least exposed
   # EN | part of the path while adding a certificate to renew and a
   # EN | browser warning inside the ADMIN iframe. Turn it on the day the
-  # EN | safe becomes reachable from outside the LAN — see docs/Vault.md,
+  # EN | safe becomes reachable from outside the LAN — see docs/platform/Vault.md,
   # EN | which spells out exactly what changes.
   # FR | TLS desactive volontairement, et c est le seul vrai compromis de
   # FR | l installation. Le coffre n est joignable que sur le reseau
@@ -46,7 +46,7 @@ listener "tcp" {
   # FR | expose du trajet, tout en ajoutant un certificat a renouveler et
   # FR | un avertissement navigateur dans l iframe ADMIN. A activer le
   # FR | jour ou le coffre devient joignable hors du reseau local — voir
-  # FR | docs/Vault.fr.md, qui detaille exactement ce qui change.
+  # FR | docs/platform/Vault.fr.md, qui detaille exactement ce qui change.
   tls_disable = 1
 }
 

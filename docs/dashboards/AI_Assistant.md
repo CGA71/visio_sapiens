@@ -406,6 +406,6 @@ None of these exist yet. Paths are the agreed destinations.
 ## See also
 
 - [Chatbot_Integration.md](Chatbot_Integration.md) — the provider bridge this feature reuses
-- [Security.md](Security.md) — secret handling conventions
-- [CI_CD.md](CI_CD.md) — the two deploy jobs referenced throughout section 7
-- [Troubleshooting.md](Troubleshooting.md)
+- [Security.md](../platform/Security.md) — secret handling conventions
+- [CI_CD.md](../ci-cd/CI_CD.md) — the two deploy jobs referenced throughout section 7
+- [Troubleshooting.md](../ci-cd/Troubleshooting.md)

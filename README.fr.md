@@ -270,13 +270,13 @@ i18n.
 ├── README.md                    version anglaise (rendue par défaut par GitLab)
 ├── README.fr.md                 ← ce fichier
 │
-├── docs/
-│   ├── project.md               architecture, changelog des itérations
-│   ├── modules.md
-│   ├── desygn-system.md         charte graphique
-│   ├── osvision.md
-│   ├── CI_INTEGRATION.md        patch configuration.yaml dans le pipeline
-│   └── Generator_templating.md  générateur de dashboards (étape 5)
+├── docs/                        chaque document existe dans les deux langues
+│   │                            (X.md / X.fr.md) — voir docs/README.fr.md
+│   ├── dashboards/              l'interface et sa génération
+│   ├── platform/                le socle : installation, services, sécurité
+│   ├── ci-cd/                   le pipeline, et les postmortems
+│   ├── project/                 vision, étude de cas, série YouTube
+│   └── assets/                  images
 │
 ├── kubernetes/                  manifestes k3s (cible staging)
 ├── scripts/                     package.sh / deploy.sh / reload.sh / validate.sh
@@ -366,7 +366,7 @@ python3 vssp/generate_dashboards.py    # défauts alignés sur ce repo
 Le générateur lit `locale:`, `format:` et la liste des pièces depuis
 `house.yaml`, et injecte `t()`, `locale` et `locale_tag` dans
 l'environnement Jinja2. Détails, garde-fous et intégration
-`shell_command` : voir `docs/Generator_templating.md`.
+`shell_command` : voir `docs/dashboards/Dashboard_Generator.fr.md`.
 
 ## CI/CD
 
@@ -386,7 +386,22 @@ valeur par défaut et produit le libellé de référence inchangé. Une langue
 sans catalogue fait échouer `validate` au lieu d'envoyer des
 substitutions non remplacées dans la sidebar de Home Assistant.
 
+## Documentation
+
+Tout vit dans [`docs/`](docs/README.fr.md), dans les deux langues (`X.md` /
+`X.fr.md`, côte à côte). Quatre domaines, qui répondent à quatre questions
+différentes :
+
+| | |
+|---|---|
+| [`docs/dashboards/`](docs/dashboards) | l'interface et sa génération — générateur, charte graphique, CORE, chatbot, calendrier |
+| [`docs/platform/`](docs/platform) | le socle — déploiement, coffre-fort Vault, sécurité, sauvegardes, MQTT sur k3s |
+| [`docs/ci-cd/`](docs/ci-cd) | le pipeline, et les postmortems de terrain |
+| [`docs/project/`](docs/project) | vision, étude de cas, série YouTube |
+
+Commencer par [`docs/README.fr.md`](docs/README.fr.md) pour l'index commenté.
+
 ## Statut
 
-🚧 En développement actif — voir `docs/project.md` (changelog) pour le
+🚧 En développement actif — voir `docs/project/Vision.fr.md` et `docs/ci-cd/Troubleshooting.fr.md` pour le
 détail des itérations.

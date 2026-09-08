@@ -258,13 +258,13 @@ by the dashboard generator and the i18n layer.
 ├── README.md                    ← this file (English, rendered by default)
 ├── README.fr.md                 ← NEW — French version
 │
-├── docs/
-│   ├── project.md               architecture, iteration changelog
-│   ├── modules.md
-│   ├── desygn-system.md         design system
-│   ├── osvision.md
-│   ├── CI_INTEGRATION.md        configuration.yaml patch in the pipeline
-│   └── Generator_templating.md  dashboard generator (step 5)
+├── docs/                        every document exists in both languages
+│   │                            (X.md / X.fr.md) — see docs/README.md
+│   ├── dashboards/              the interface and how it is generated
+│   ├── platform/                the foundation: install, services, security
+│   ├── ci-cd/                   the pipeline, and the postmortems
+│   ├── project/                 vision, case study, YouTube series
+│   └── assets/                  images
 │
 ├── kubernetes/                  k3s manifests (staging target)
 ├── scripts/                     package.sh / deploy.sh / reload.sh / validate.sh
@@ -353,7 +353,7 @@ python3 vssp/generate_dashboards.py    # defaults aligned with this repo
 The generator reads `locale:`, `format:` and the room list from
 `house.yaml`, and injects `t()`, `locale` and `locale_tag` into the Jinja2
 environment. Details, safety rails and `shell_command` integration: see
-`docs/Generator_templating.md`.
+`docs/dashboards/Dashboard_Generator.md`.
 
 ## CI/CD
 
@@ -373,7 +373,21 @@ the untouched reference wording. A locale with no catalogue fails
 `validate` rather than shipping unreplaced placeholders to the Home
 Assistant sidebar.
 
+## Documentation
+
+Everything lives in [`docs/`](docs/README.md), in both languages (`X.md` /
+`X.fr.md`, side by side). Four areas, answering four different questions:
+
+| | |
+|---|---|
+| [`docs/dashboards/`](docs/dashboards) | the interface and how it is generated — generator, design system, CORE, chatbot, calendar |
+| [`docs/platform/`](docs/platform) | the foundation — deployment, the Vault safe, security, backups, MQTT on k3s |
+| [`docs/ci-cd/`](docs/ci-cd) | the pipeline, and the field postmortems |
+| [`docs/project/`](docs/project) | vision, case study, YouTube series |
+
+Start at [`docs/README.md`](docs/README.md) for the annotated index.
+
 ## Status
 
-🚧 Under active development — see `docs/project.md` (changelog) for the
+🚧 Under active development — see `docs/project/Vision.md` and `docs/ci-cd/Troubleshooting.md` for the
 iteration details.

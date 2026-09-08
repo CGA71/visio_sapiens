@@ -319,7 +319,7 @@ class VsspChatbotBar {
         },
       });
     } catch (e) {
-      /* browser_mod not installed yet — see docs/Security.md */
+      /* browser_mod not installed yet — see docs/platform/Security.md */
     }
   }
 }

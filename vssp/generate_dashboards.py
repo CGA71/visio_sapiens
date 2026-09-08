@@ -205,13 +205,13 @@ DEFAULT_SLOT_SETS = {
 
 # ----------------------------------------------------------------------------
 # EN | GRID LAYOUT — computed per room by compute_room_layout(), not a fixed
-# EN | preset per slot_set. See docs/Dashboard_Generator.md, "Room dashboard
+# EN | preset per slot_set. See docs/dashboards/Dashboard_Generator.md, "Room dashboard
 # EN | grid — dynamic slot layout" for the full design. Replaced the old
 # EN | hand-drawn DEFAULT_LAYOUTS (one grid per slot_set, same proportions for
 # EN | every room sharing a set regardless of how many devices each slot
 # EN | actually held, and an empty slot still rendered a "no device" card).
 # FR | GABARIT DE GRILLE — calcule par piece par compute_room_layout(), plus
-# FR | un preset fixe par slot_set. Voir docs/Dashboard_Generator.md,
+# FR | un preset fixe par slot_set. Voir docs/dashboards/Dashboard_Generator.md,
 # FR | « Room dashboard grid — dynamic slot layout » pour la conception
 # FR | complete. Remplace l'ancien DEFAULT_LAYOUTS ecrit a la main (une grille
 # FR | par slot_set, memes proportions pour toute piece partageant ce jeu quel
@@ -531,7 +531,7 @@ def compute_room_layout(rendered: dict, default_slot: str | None) -> dict:
     """
     EN | Computes a room's CSS grid from what it actually renders (see
     EN | rendered_slots()). Replaces the old DEFAULT_LAYOUTS per-slot_set
-    EN | presets — see docs/Dashboard_Generator.md, "Room dashboard grid —
+    EN | presets — see docs/dashboards/Dashboard_Generator.md, "Room dashboard grid —
     EN | dynamic slot layout" for the full design this implements.
     EN | Every rendered, non-default slot ("secondary") is ordered by device
     EN | count descending (ties by SLOTS order) and split into at most two
@@ -542,7 +542,7 @@ def compute_room_layout(rendered: dict, default_slot: str | None) -> dict:
     EN | sized 1fr so it takes whatever space is left.
     FR | Calcule la grille CSS d'une piece a partir de ce qu'elle rend
     FR | reellement (voir rendered_slots()). Remplace les anciens gabarits
-    FR | DEFAULT_LAYOUTS par slot_set — voir docs/Dashboard_Generator.md,
+    FR | DEFAULT_LAYOUTS par slot_set — voir docs/dashboards/Dashboard_Generator.md,
     FR | « Room dashboard grid — dynamic slot layout » pour la conception
     FR | complete que ceci met en oeuvre.
     FR | Chaque tableau rendu et non-defaut (« secondaire ») est ordonne par

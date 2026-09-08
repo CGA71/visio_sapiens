@@ -6,7 +6,7 @@
 # EN | vssp_backup_energy, vssp_backup_theme in the other packages, plus the
 # EN | backup step inside vssp_assign_apply.py / vssp_rooms_apply.py /
 # EN | vssp_theme_apply.py). None of them ever delete an old one — see
-# EN | docs/Backup_Retention.md for the full reasoning and the incident that
+# EN | docs/platform/Backup_Retention.md for the full reasoning and the incident that
 # EN | prompted this package (62 files, three weeks, most from a few minutes
 # EN | of testing, on the very first instance this ran against).
 # EN |
@@ -21,7 +21,7 @@
 # FR | autres packages, plus l'etape de sauvegarde a l'interieur de
 # FR | vssp_assign_apply.py / vssp_rooms_apply.py / vssp_theme_apply.py).
 # FR | Aucun d'eux ne supprime jamais une ancienne sauvegarde — voir
-# FR | docs/Backup_Retention.md pour le raisonnement complet et l'incident
+# FR | docs/platform/Backup_Retention.md pour le raisonnement complet et l'incident
 # FR | qui a motive ce package (62 fichiers, trois semaines, la plupart issus
 # FR | de quelques minutes de tests, sur la toute premiere instance contre
 # FR | laquelle ceci a tourne).

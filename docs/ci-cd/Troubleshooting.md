@@ -305,7 +305,7 @@ the same damage on its own.
    `--rooms /config/dashboards/model/house_rooms.yaml`.
 3. `generate_dashboards.py` **refuses** to rewrite a rooms fragment into
    an empty one when the existing file declares rooms — see *Guardrails*
-   in [Dashboard_Generator.md](Dashboard_Generator.md). `--allow-empty-rooms`
+   in [Dashboard_Generator.md](../dashboards/Dashboard_Generator.md). `--allow-empty-rooms`
    opts out for the genuine "all rooms really are gone" case.
 
 **A repo-relative default path is not a default**, it is a local-only

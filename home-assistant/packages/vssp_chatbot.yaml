@@ -36,11 +36,11 @@
 # FR |   argument de ligne de commande).
 #
 # EN | REQUIRES browser_mod (HACS integration) installed on the live pod —
-# EN | not something this repo can install for you. See docs/Security.md
+# EN | not something this repo can install for you. See docs/platform/Security.md
 # EN | and the plan this feature shipped from for the manual steps.
 # FR | REQUIERT browser_mod (integration HACS) installee sur le pod en
 # FR | production — ce depot ne peut pas l'installer a votre place. Voir
-# FR | docs/Security.md et le plan a l'origine de cette fonctionnalite pour
+# FR | docs/platform/Security.md et le plan a l'origine de cette fonctionnalite pour
 # FR | les etapes manuelles.
 #
 # EN | BEFORE DEPLOYING — check for duplicate keys, same as every package:

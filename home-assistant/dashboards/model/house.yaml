@@ -189,14 +189,14 @@ slot_sets:
 # EN | generate_dashboards.py now builds each room's grid from what it
 # EN | actually contains (device counts per slot + its `default_slot`, see
 # EN | that field below) instead of a fixed preset — see
-# EN | docs/Dashboard_Generator.md, "Room dashboard grid — dynamic slot
+# EN | docs/dashboards/Dashboard_Generator.md, "Room dashboard grid — dynamic slot
 # EN | layout". Nothing to declare or override here any more.
 # FR | Il y avait ici un bloc `layouts:` de surcharge, une grille ecrite a la
 # FR | main par slot_set. Il a disparu : compute_room_layout() dans
 # FR | generate_dashboards.py construit desormais la grille de chaque piece
 # FR | a partir de ce qu'elle contient reellement (nombre d'appareils par
 # FR | tableau + son `default_slot`, voir ce champ plus bas) plutot qu'un
-# FR | preset fixe — voir docs/Dashboard_Generator.md, « Room dashboard
+# FR | preset fixe — voir docs/dashboards/Dashboard_Generator.md, « Room dashboard
 # FR | grid — dynamic slot layout ». Plus rien a declarer ou surcharger ici.
 
 # ── EN | Default icon per room type ───────────────────────────────────

@@ -17,7 +17,7 @@
 # EN | Revealing, creating and modifying therefore happen in the ADMIN
 # EN | screen's iframe, which talks to Vault directly with a separate
 # EN | short-lived token — the value never passes through Home Assistant.
-# EN | See vault/policies/vssp-ha.hcl and docs/Vault.md.
+# EN | See vault/policies/vssp-ha.hcl and docs/platform/Vault.md.
 # FR | La moitie native du coffre. Tout ici lit ou supprime ; pas une
 # FR | ligne ne peut obtenir la VALEUR d un secret, et c est Vault qui
 # FR | l impose plutot que ce fichier qui le promet. Le token de
@@ -35,7 +35,7 @@
 # FR | Reveler, creer et modifier se passent donc dans l iframe de l ecran
 # FR | ADMIN, qui parle a Vault directement avec un token distinct de
 # FR | courte duree — la valeur ne transite jamais par Home Assistant.
-# FR | Voir vault/policies/vssp-ha.hcl et docs/Vault.fr.md.
+# FR | Voir vault/policies/vssp-ha.hcl et docs/platform/Vault.fr.md.
 #
 # EN | BEFORE DEPLOYING — check for duplicate keys, same as every other
 # EN | package here:
