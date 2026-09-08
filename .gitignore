@@ -10,3 +10,15 @@ __pycache__/
 
 # Playwright MCP scratch output (browser snapshots, screenshots)
 .playwright-mcp/
+
+# EN | Screenshots taken while checking a change in the live dashboard.
+# EN | They land in the repo root because that is the browser tool's working
+# EN | directory; one slipped into a commit before this rule existed.
+# FR | Captures prises en verifiant une modification sur le dashboard en
+# FR | direct. Elles atterrissent a la racine parce que c'est le repertoire
+# FR | de travail de l'outil navigateur ; l'une d'elles s'est glissee dans un
+# FR | commit avant que cette regle existe.
+/board-*.png
+/room-*.png
+/energy-*.png
+/ha-dump.json
