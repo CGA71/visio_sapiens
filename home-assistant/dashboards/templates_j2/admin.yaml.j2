@@ -580,6 +580,21 @@ views:
                       border: 1px solid rgba(0, 229, 255, 0.28) !important;
                       border-radius: var(--ha-card-border-radius, 20px) !important;
                     }
+              # EN | The placeholder is filtered BEFORE the emptiness test, not
+              # EN | inside the loop. Filtering inside meant `keys` was truthy
+              # EN | on a new branch (it held .keep), the if-branch was taken,
+              # EN | the loop then dropped everything, and the card showed a
+              # EN | bold label with nothing under it — never the em dash the
+              # EN | else-branch exists to print. Same mistake as the sensor
+              # EN | counts, and the same fix.
+              # FR | Le marqueur est filtre AVANT le test de vacuite, pas dans
+              # FR | la boucle. Le filtrer dans la boucle rendait `keys` vrai
+              # FR | sur une branche neuve (elle contenait .keep), la branche
+              # FR | if etait prise, la boucle jetait ensuite tout, et la carte
+              # FR | montrait un titre en gras sans rien dessous — jamais le
+              # FR | tiret cadratin que la branche else existe pour afficher.
+              # FR | Meme erreur que sur les decomptes de capteurs, meme
+              # FR | correction.
               # EN | Names only, straight from the sensors' `keys` attribute.
               # EN | state_attr returns None when the sensor is unavailable
               # EN | — which it is whenever the safe is sealed, since those
@@ -631,8 +646,9 @@ views:
                        ('sensor.vssp_vault_apps', 'APPS')] %}
                   {% for eid, label in branches %}
                   **{{ label }}**
-                  {% set keys = state_attr(eid, 'keys') %}
-                  {% if keys %}{% for k in keys if not k.startswith('.') %}
+                  {% set keys = (state_attr(eid, 'keys') or [])
+                       | reject('eq', '.keep') | list %}
+                  {% if keys %}{% for k in keys %}
                   - `{{ k }}`
                   {% endfor %}{% else %}
                   _—_
