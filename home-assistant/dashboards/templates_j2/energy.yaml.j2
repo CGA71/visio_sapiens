@@ -941,19 +941,30 @@ views:
           # EN | circuit, named the way the house names them, toggle on the
           # EN | same line. A list, not a grid of tiles: looking for one
           # EN | name among ten is a scan down a column, not a hunt.
-          # EN | RIGHT: the hardware — one rail per physical module, each
-          # EN | carrying its channels. The same circuit appears on both
-          # EN | sides, answering two different questions: "turn it off"
-          # EN | on the left, "where does it come from" on the right.
+          # EN | RIGHT: the enclosure — one rail per module MOUNTED IN THE
+          # EN | PANEL (Shelly Pro, LAN Switch, anything on a DIN rail),
+          # EN | each carrying its channels. A plug or a power strip is a
+          # EN | Shelly module too, and it is still discovered, but it hangs
+          # EN | off a wall socket: it is not in the enclosure, so it is not
+          # EN | drawn on a rail. That is what `panel` filters.
+          # EN | A circuit can appear on both sides, answering two different
+          # EN | questions: "turn it off" left, "where does it come from"
+          # EN | right.
           # FR | GAUCHE : les interrupteurs — la surface de commande, une
           # FR | LIGNE par circuit, nommee comme la maison les nomme, avec la
           # FR | bascule sur la meme ligne. Une liste, pas une grille de
           # FR | tuiles : chercher un nom parmi dix se parcourt en colonne,
           # FR | ce n'est pas une chasse.
-          # FR | DROITE : le materiel — un rail par module physique, chacun
-          # FR | portant ses voies. Le meme circuit figure des deux cotes,
-          # FR | et repond a deux questions differentes : « coupe-le » a
-          # FR | gauche, « d'ou vient-il » a droite.
+          # FR | DROITE : le coffret — un rail par module MONTE DANS LE
+          # FR | TABLEAU (Shelly Pro, LAN Switch, tout ce qui est sur rail
+          # FR | DIN), chacun portant ses voies. Une prise ou une multiprise
+          # FR | est un module Shelly elle aussi, et reste decouverte, mais
+          # FR | elle pend au bout d'une prise murale : elle n'est pas dans
+          # FR | le coffret, elle n'est donc pas dessinee sur un rail. C'est
+          # FR | ce que filtre `panel`.
+          # FR | Un circuit peut figurer des deux cotes, et repond a deux
+          # FR | questions differentes : « coupe-le » a gauche, « d'ou
+          # FR | vient-il » a droite.
           - type: horizontal-stack
             cards:
               # ═════════ EN | LEFT — SWITCHES / FR | GAUCHE — INTERRUPTEURS
@@ -984,6 +995,7 @@ views:
                     variables:
                       model: "{{ c.model | default('', true) }}"
                       amp: "{{ c.amp | default('', true) }}"
+                      image: "{{ c.image | default('', true) }}"
 {% endfor %}
                   # ── Légende ────────────────────────────────────────
                   - type: custom:button-card
@@ -1030,12 +1042,14 @@ views:
                     name: "{{ t('energy.panel.virtual_board') }}"
                     icon: mdi:electric-switch
 
-{% if not modules %}
+{% set rails = modules | selectattr('panel') | list %}
+{% if not rails %}
                   - type: custom:button-card
-                    template: vssp_section_title
+                    template: vssp_subsection_title
+                    icon: mdi:information-outline
                     name: "{{ t('energy.empty.modules') }}"
 {% endif %}
-{% for m in modules %}
+{% for m in rails %}
 {% set channels = m.channels | default([], true) %}
 {% set powers = channels | selectattr('power_entity') | map(attribute='power_entity') | list %}
                   # ── EN | Rail: {{ m.model | default('module', true) }} — {{ m.name }}

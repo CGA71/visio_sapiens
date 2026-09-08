@@ -266,7 +266,9 @@ energy:
     devices: No device detected
     devices_hint: run vssp_energy_sync.py
     circuits: No circuit detected — run vssp_energy_sync.py
-    modules: No module detected — run vssp_energy_sync.py
+    # EN | Not an error: the enclosure is simply empty. DIN hardware
+    # EN | shows up on its own once it is wired and paired.
+    modules: No panel module yet — DIN hardware appears here once wired
   tab:
     day: Day
     month: Month

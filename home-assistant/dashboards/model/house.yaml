@@ -340,17 +340,25 @@ energy:
 circuits: []
 
 # ── EN | Virtual breaker panel / FR | Tableau electrique virtuel ───────
-# EN | The right-hand half of the panel draws the HARDWARE: one rail per
-# EN | physical module (Shelly Pro 4PM, Pro Dual Cover, a 4-outlet strip, a
-# EN | plug), each carrying its channels. The list is discovered by
+# EN | The right-hand half of the panel draws the ENCLOSURE: one rail per
+# EN | module MOUNTED IN THE PANEL (Shelly Pro 4PM, Pro Dual Cover, LAN
+# EN | Switch), each carrying its channels. A plug or a power strip is
+# EN | discovered too and is listed in `modules`, but with `panel: false` —
+# EN | it hangs off a wall socket, it is not in the enclosure, and the rail
+# EN | skips it. Flip `panel` to true by hand on a module the rule misses.
+# EN | The list is discovered by
 # EN | vssp_energy_sync.py from the Home Assistant device registry — the
 # EN | parent/child device link is what says which outlets belong to the
 # EN | same box — and written into model/energy_devices.yaml. Empty here for
 # EN | the same reason as `devices`: a hardcoded fleet would survive a broken
 # EN | scan and hide the breakage.
-# FR | La moitie droite du panneau dessine le MATERIEL : un rail par module
-# FR | physique (Shelly Pro 4PM, Pro Dual Cover, multiprise 4 voies, prise),
-# FR | chacun portant ses voies. La liste est decouverte par
+# FR | La moitie droite du panneau dessine le COFFRET : un rail par module
+# FR | MONTE DANS LE TABLEAU (Shelly Pro 4PM, Pro Dual Cover, LAN Switch),
+# FR | chacun portant ses voies. Une prise ou une multiprise est decouverte
+# FR | elle aussi et figure dans `modules`, mais avec `panel: false` — elle
+# FR | pend au bout d'une prise murale, elle n'est pas dans le coffret, et le
+# FR | rail la saute. Mettre `panel` a true a la main sur un module que la
+# FR | regle rate. La liste est decouverte par
 # FR | vssp_energy_sync.py depuis le registre d'appareils de Home Assistant —
 # FR | c'est le lien parent/enfant qui dit quelles prises appartiennent au
 # FR | meme boitier — et ecrite dans model/energy_devices.yaml. Vide ici pour

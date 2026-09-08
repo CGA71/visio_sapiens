@@ -477,6 +477,22 @@ def discover_modules(states: list[dict], registry: dict | None = None,
                          reg.get("model") or "",
                 "manufacturer": reg.get("manufacturer", ""),
                 "room": pretty_area(reg.get("area", "")),
+                # EN | `panel` is what the virtual board filters on. A plug
+                # EN | and a power strip are Shelly modules and are listed
+                # EN | here, but they hang off a socket — they are not
+                # EN | mounted in the enclosure, so they do not belong on a
+                # EN | rail. Set it to true by hand on a module the rule
+                # EN | misses; the value is preserved from then on.
+                # FR | `panel` est ce sur quoi filtre le tableau virtuel. Une
+                # FR | prise et une multiprise sont des modules Shelly et
+                # FR | figurent bien ici, mais elles pendent au bout d'une
+                # FR | prise murale — elles ne sont pas montees dans le
+                # FR | coffret, elles n'ont donc rien a faire sur un rail.
+                # FR | Mettre true a la main sur un module que la regle rate ;
+                # FR | la valeur est preservee ensuite.
+                "panel": is_panel_module(
+                    ("" if standalone else reg.get("parent_model"))
+                    or reg.get("model") or ""),
                 "channels": [],
             }
         return modules[mid]
@@ -584,7 +600,7 @@ PRESERVED_CIRCUIT = ("name", "icon", "model", "amp", "keep")
 # FR | du scan, sinon une Shelly Pro 4PM dont la quatrieme voie a ete cablee
 # FR | la semaine derniere en afficherait toujours trois. Seul ce qu'une
 # FR | personne a saisi est preserve.
-PRESERVED_MODULE = ("name", "model", "room", "keep")
+PRESERVED_MODULE = ("name", "model", "room", "keep", "panel")
 PRESERVED_CHANNEL = ("name", "icon", "amp")
 
 
@@ -828,7 +844,9 @@ def main() -> int:
         print(f"  - {n}" + ("" if args.prune else "  (absent de HA)"))
 
     n_channels = sum(len(m.get("channels") or []) for m in modules)
-    print(f"MODULES    : {len(modules)} module(s), {n_channels} voie(s)")
+    n_panel = sum(1 for m in modules if m.get("panel"))
+    print(f"MODULES    : {len(modules)} module(s), {n_channels} voie(s), "
+          f"dont {n_panel} sur le rail du tableau")
     for n in mod_report["added"]:
         print(f"  + {n}")
     for n in mod_report["removed"]:

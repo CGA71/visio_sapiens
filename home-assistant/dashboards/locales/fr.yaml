@@ -177,7 +177,7 @@ energy:
     devices: Aucun appareil détecté
     devices_hint: lancez vssp_energy_sync.py
     circuits: Aucun circuit détecté — lancez vssp_energy_sync.py
-    modules: Aucun module détecté — lancez vssp_energy_sync.py
+    modules: Aucun module de tableau — le matériel DIN apparaît ici une fois câblé
   tab:
     day: Jour
     month: Mois

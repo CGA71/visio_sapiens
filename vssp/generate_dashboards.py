@@ -1363,18 +1363,42 @@ def main() -> int:
         # FR | mesure ne se bascule pas.
         pictures = model.get("module_images") or []
         base = (model.get("module_image_base") or "").rstrip("/")
+
+        def picture_for(model_name: str) -> str:
+            for rule in pictures:
+                if re.search(rule.get("match", ""), model_name or "",
+                             re.IGNORECASE):
+                    return f"{base}/{rule.get('image', '')}"
+            return ""
+
+        # EN | The switch list shows the same product pictures: a row names
+        # EN | its model already, and the picture is what makes it recognised
+        # EN | at a glance rather than read.
+        # FR | La liste des interrupteurs montre les memes visuels : une ligne
+        # FR | nomme deja son modele, et l'image est ce qui le fait
+        # FR | reconnaitre d'un coup d'oeil au lieu de le lire.
+        for cir in model.get("circuits") or []:
+            cir["image"] = picture_for(cir.get("model") or "")
         for mod in model.get("modules") or []:
             for chan in mod.get("channels") or []:
                 if not chan.get("amp") and amps.get(chan.get("entity")):
                     chan["amp"] = amps[chan["entity"]]
             mod["switches"] = [c["entity"] for c in mod.get("channels") or []
                                if (c.get("entity") or "").startswith("switch.")]
-            mod["image"] = ""
-            for rule in pictures:
-                if re.search(rule.get("match", ""), mod.get("model") or "",
-                             re.IGNORECASE):
-                    mod["image"] = f"{base}/{rule.get('image', '')}"
-                    break
+            mod["image"] = picture_for(mod.get("model") or "")
+            # EN | `panel` says whether the module is mounted in the
+            # EN | enclosure, and the rail renders on it. A model written
+            # EN | before that key existed has no opinion, and the honest
+            # EN | default is "not on the rail" — the scan decides on its next
+            # EN | run. Without this default the template would hit an
+            # EN | undefined attribute and the whole render would fail.
+            # FR | `panel` dit si le module est monte dans le coffret, et le
+            # FR | rail se rend la-dessus. Un modele ecrit avant l'existence
+            # FR | de cette cle n'a pas d'avis, et le defaut honnete est
+            # FR | « pas sur le rail » — le scan tranchera a son prochain
+            # FR | passage. Sans ce defaut le template tomberait sur un
+            # FR | attribut indefini et tout le rendu echouerait.
+            mod.setdefault("panel", False)
         print(f"[i] ENERGY devices: {devices_path} "
               f"({len(model['energy_devices'])} device(s), "
               f"{len(model.get('circuits', []))} circuit(s), "
