@@ -105,6 +105,28 @@ alarm_control_panel:
     # FR | avant de revenir a son etat precedent. Quatre minutes, assez long
     # FR | pour etre impossible a manquer, assez court pour ne pas sonner
     # FR | toute la nuit sur une fausse alerte.
+    # EN | NO CODE REQUIRED TO ARM — and this line is not optional, it is the
+    # EN | difference between three working buttons and three that raise
+    # EN | "Validation error: code_arm_required" on every press.
+    # EN | Leaving `code:` out is NOT enough: the platform defaults
+    # EN | `code_arm_required` to True, and Home Assistant's own service
+    # EN | handler refuses alarm_arm_* without a code whenever the entity
+    # EN | advertises that it needs one — before the platform's own validator,
+    # EN | which would have let it through (it returns early when no code is
+    # EN | configured). Disarm was unaffected, so the panel armed nothing
+    # EN | while looking perfectly healthy.
+    # FR | AUCUN CODE POUR ARMER — et cette ligne n est pas facultative, elle
+    # FR | fait la difference entre trois boutons qui marchent et trois qui
+    # FR | levent « Validation error: code_arm_required » a chaque pression.
+    # FR | Omettre `code:` ne suffit PAS : la plateforme met
+    # FR | `code_arm_required` a True par defaut, et le gestionnaire de
+    # FR | service de Home Assistant refuse alarm_arm_* sans code des lors que
+    # FR | l entite annonce en exiger un — avant le validateur de la
+    # FR | plateforme, qui l aurait laisse passer (il sort immediatement quand
+    # FR | aucun code n est configure). Le desarmement n etait pas concerne,
+    # FR | donc le panneau n armait rien tout en paraissant parfaitement sain.
+    code_arm_required: false
+
     arming_time: 30
     delay_time: 20
     trigger_time: 240
