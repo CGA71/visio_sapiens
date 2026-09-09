@@ -160,6 +160,21 @@ the card perfectly formed and no dialog ever appeared. The ADMIN
 chatbot's "custom provider" tile carried the same defect from the day it
 was written and has been fixed alongside.
 
+**The first tap after a page load is swallowed.** Not by this card: by
+browser_mod, which consumes the first click or touch on every freshly
+loaded page to unlock audio and video playback. Observed directly —
+`_clickTouchEventHandled` flips from false to true on that tap, and the
+card's own event never fires. It affects every interactive card on a page
+where browser_mod is loaded, so it is not something this feature can fix
+in the right place. In practice a tablet has usually been touched once
+before anyone reaches for the clock; on a cold load, tap twice.
+
+**The popup's height comes from three rules, not one.** `hui-iframe-card`
+holds its aspect ratio with a `padding-top` in pixels on a wrapper div,
+and `ha-card` clips what overflows — so sizing only the iframe grows it
+inside a box that stays 282px tall and cuts the form off. The card, the
+wrapper and the iframe all have to grow.
+
 ## Related
 
 - [Dashboard_Generator.md](Dashboard_Generator.md) — the generator, slots

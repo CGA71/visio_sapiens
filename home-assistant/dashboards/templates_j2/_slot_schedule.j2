@@ -203,6 +203,26 @@
                         # FR | viewport, plafonnee, donne de la place au
                         # FR | formulaire sur tablette sans deborder du bas d'un
                         # FR | telephone.
+                        # EN | THE WRAPPER DIV IS THE FIX, not the iframe rule.
+                        # EN | hui-iframe-card holds its aspect ratio with a
+                        # EN | `padding-top` in PIXELS on a wrapper div — 282px
+                        # EN | for a 564px-wide popup — and ha-card clips what
+                        # EN | overflows. Sizing the iframe alone grew it to
+                        # EN | 700px inside a 282px box and cut the form off at
+                        # EN | "Time", which is exactly what shipped first and
+                        # EN | what a screenshot of the open popup showed.
+                        # EN | The card and the wrapper have to grow with it.
+                        # FR | LE DIV D'ENVELOPPE EST LA CORRECTION, pas la
+                        # FR | regle sur l'iframe. hui-iframe-card tient son
+                        # FR | ratio d'aspect par un `padding-top` en PIXELS
+                        # FR | sur un div d'enveloppe — 282px pour un popup
+                        # FR | large de 564px — et ha-card rogne ce qui
+                        # FR | deborde. Dimensionner la seule iframe la faisait
+                        # FR | passer a 700px dans une boite de 282px et
+                        # FR | coupait le formulaire a « Heure », ce qui est
+                        # FR | exactement ce qui est parti en premier et ce
+                        # FR | qu'a montre une capture du popup ouvert. La
+                        # FR | carte et l'enveloppe doivent grandir avec elle.
                         card_mod:
                           style: |
                             ha-card {
@@ -210,10 +230,15 @@
                               border: none !important;
                               box-shadow: none !important;
                               overflow: hidden;
+                              height: min(76vh, 700px) !important;
+                            }
+                            ha-card > div {
+                              padding-top: 0 !important;
+                              height: 100% !important;
                             }
                             iframe {
                               width: 100%;
-                              height: min(76vh, 700px) !important;
+                              height: 100% !important;
                               border: none;
                             }
 {% endmacro %}

@@ -167,6 +167,24 @@ n'apparaissait jamais. La tuile « fournisseur personnalisé » du chatbot
 de l'ADMIN portait le même défaut depuis le jour de son écriture ; elle
 est corrigée en même temps.
 
+**Le premier appui après un chargement de page est avalé.** Pas par cette
+carte : par browser_mod, qui consomme le premier clic ou toucher de
+chaque page fraîchement chargée pour débloquer la lecture audio et vidéo.
+Constaté directement — `_clickTouchEventHandled` bascule de faux à vrai
+sur cet appui, et l'événement propre à la carte ne part jamais. Cela
+touche toutes les cartes interactives d'une page où browser_mod est
+chargé, ce n'est donc pas une chose que cette fonctionnalité puisse
+corriger au bon endroit. En pratique, une tablette a généralement déjà
+été touchée avant qu'on aille chercher l'horloge ; sur un chargement à
+froid, appuyer deux fois.
+
+**La hauteur du popup vient de trois règles, pas d'une.**
+`hui-iframe-card` tient son ratio d'aspect par un `padding-top` en pixels
+sur un div d'enveloppe, et `ha-card` rogne ce qui déborde — dimensionner
+la seule iframe la fait donc grandir dans une boîte qui reste haute de
+282px et coupe le formulaire. La carte, l'enveloppe et l'iframe doivent
+grandir ensemble.
+
 ## Voir aussi
 
 - [Dashboard_Generator.fr.md](Dashboard_Generator.fr.md) — le générateur,
