@@ -373,24 +373,24 @@ views:
               [[[
                 const v = variables.verdict;
                 if (v === 'red') return 'mdi:shield-alert';
+                if (variables.unverified) return 'mdi:shield-off-outline';
                 if (v === 'orange') return 'mdi:shield-sync';
-                if (v === 'grey') return 'mdi:shield-off-outline';
                 return 'mdi:shield-check';
               ]]]
             state_display: >
               [[[
                 const v = variables.verdict;
                 if (v === 'red') return '{{ t("home.upgrade.major") | js }}';
+                if (variables.unverified) return '{{ t("home.upgrade.unknown") | js }}';
                 if (v === 'orange') return '{{ t("home.upgrade.security") | js }}';
-                if (v === 'grey') return '{{ t("home.upgrade.unknown") | js }}';
                 return '{{ t("home.upgrade.clear") | js }}';
               ]]]
             label: >
               [[[
                 const v = variables.verdict;
                 if (v === 'red') return variables.major_name || '{{ t("home.upgrade.major_hint") | js }}';
+                if (variables.unverified) return '{{ t("home.upgrade.unknown_hint") | js }}';
                 if (v === 'orange') return variables.security_count + ' {{ t("home.upgrade.security_hint") | js }}';
-                if (v === 'grey') return '{{ t("home.upgrade.unknown_hint") | js }}';
                 return '{{ t("home.upgrade.clear_hint") | js }}';
               ]]]
             variables:
@@ -444,34 +444,54 @@ views:
                   }
                   return hits.length ? hits.slice(0, 2).join(', ') : '';
                 ]]]
-              verdict: >
+              # EN | THREE COLOURS, never a fourth. An earlier revision
+              # EN | had a grey "not probed" state; the light is a traffic
+              # EN | light and it now always shows one of the three.
+              # EN | Which leaves the honest question: what colour is an
+              # EN | estate we could not inspect? Not green. Green is a
+              # EN | claim - "nothing here is exposed" - and making that
+              # EN | claim without having looked is the one failure mode a
+              # EN | security light cannot afford, because it is indis-
+              # EN | tinguishable from the real thing precisely when it
+              # EN | matters. So an unverified estate wears the orange:
+              # EN | attention needed. The label says why, and the icon
+              # EN | differs from a genuine patch backlog.
+              # FR | TROIS COULEURS, jamais une quatrieme. Une revision
+              # FR | precedente avait un etat gris « non sonde » ; c est un
+              # FR | feu tricolore et il affiche desormais toujours l une
+              # FR | des trois.
+              # FR | Reste la question honnete : de quelle couleur est un
+              # FR | parc qu on n a pas pu inspecter ? Pas vert. Le vert est
+              # FR | une affirmation — « rien ici n est expose » — et la
+              # FR | porter sans avoir regarde est la seule defaillance
+              # FR | qu un feu de securite ne peut pas se permettre, car
+              # FR | elle est indiscernable du vrai precisement quand cela
+              # FR | compte. Un parc non verifie porte donc l orange :
+              # FR | attention requise. Le libelle dit pourquoi, et l icone
+              # FR | differe d un vrai retard de correctifs.
+              unverified: >
                 [[[
                   const infra = states['sensor.vssp_updates_infra'];
-                  const probed = infra && infra.state !== 'unavailable'
-                                       && infra.state !== 'unknown';
+                  return !(infra && infra.state !== 'unavailable'
+                                 && infra.state !== 'unknown');
+                ]]]
+              verdict: >
+                [[[
                   if (variables.major_name) return 'red';
                   if (variables.security_count > 0) return 'orange';
-                  // EN | Green only once the infrastructure has actually been
-                  // EN | looked at. Home Assistant's own updates are always
-                  // EN | known, so an unprobed host is the only thing that can
-                  // EN | leave this grey.
-                  // FR | Vert seulement une fois l infrastructure reellement
-                  // FR | regardee. Les mises a jour propres a Home Assistant
-                  // FR | sont toujours connues, donc un hote non sonde est la
-                  // FR | seule chose qui puisse laisser ceci en gris.
-                  if (!probed) return 'grey';
+                  if (variables.unverified) return 'orange';
                   return 'green';
                 ]]]
               icon_color: >
                 [[[
                   const c = { red: '#FF3D71', orange: '#FF9800',
-                              grey: '#56707E', green: '#00FFC3' };
+                              green: '#00FFC3' };
                   return c[variables.verdict] || c.green;
                 ]]]
               value_color: >
                 [[[
                   const c = { red: '#FF3D71', orange: '#FF9800',
-                              grey: '#56707E', green: '#00FFC3' };
+                              green: '#00FFC3' };
                   return c[variables.verdict] || c.green;
                 ]]]
             styles:
@@ -486,7 +506,6 @@ views:
                     [[[
                       const c = { red: 'rgba(255,61,113,0.75)',
                                   orange: 'rgba(255,152,0,0.75)',
-                                  grey: 'rgba(86,112,126,0.45)',
                                   green: 'rgba(0,255,195,0.45)' };
                       return '1px solid ' + (c[variables.verdict] || c.green);
                     ]]]
@@ -494,7 +513,6 @@ views:
                     [[[
                       const c = { red: '0 0 18px rgba(255,61,113,0.35)',
                                   orange: '0 0 18px rgba(255,152,0,0.28)',
-                                  grey: 'none',
                                   green: 'none' };
                       return c[variables.verdict] || 'none';
                     ]]]

@@ -410,7 +410,15 @@ slot where ROOMS & DEVICES used to sit.
 | 🟢 **PATCHED** | nothing is exposed to a known vulnerability | no security patch pending, no major version available |
 | 🟠 **PATCHES DUE** | security patches are waiting | the host has packages from a `-security` pocket |
 | 🔴 **MAJOR VERSION** | something needs a real migration | any component's *first* version number has moved |
-| ⚪ **NOT PROBED** | we have not looked | `sensor.vssp_updates_infra` is unavailable |
+
+**Three colours, never a fourth.** An estate that could not be inspected —
+`sensor.vssp_updates_infra` unavailable because the probe has never run —
+also wears the **orange**, with its own icon and the label NOT PROBED. It
+is not green: green is a claim, *nothing here is exposed*, and making that
+claim without having looked is the one failure mode a security light
+cannot afford, because it is indistinguishable from the real thing exactly
+when it matters. Orange says what is true — attention needed — and the
+label says why.
 
 **It is not a count of pending updates.** The screen already lists those.
 A light that turns orange because a Lovelace card has a new version

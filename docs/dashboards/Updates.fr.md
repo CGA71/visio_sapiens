@@ -433,7 +433,15 @@ où se trouvait PIÈCES & APPAREILS.
 | 🟢 **À JOUR** | rien n'est exposé à une faille connue | aucun correctif de sécurité en attente, aucune version majeure disponible |
 | 🟠 **CORRECTIFS DUS** | des correctifs de sécurité attendent | l'hôte a des paquets issus d'une poche `-security` |
 | 🔴 **VERSION MAJEURE** | quelque chose réclame une vraie migration | le *premier* nombre de version d'un composant a bougé |
-| ⚪ **NON SONDÉ** | nous n'avons pas regardé | `sensor.vssp_updates_infra` est indisponible |
+
+**Trois couleurs, jamais une quatrième.** Un parc qu'on n'a pas pu
+inspecter — `sensor.vssp_updates_infra` indisponible parce que la sonde
+n'a jamais tourné — porte lui aussi l'**orange**, avec sa propre icône et
+le libellé NON SONDÉ. Il n'est pas vert : le vert est une affirmation,
+*rien ici n'est exposé*, et la porter sans avoir regardé est la seule
+défaillance qu'un feu de sécurité ne peut pas se permettre, car elle est
+indiscernable du vrai précisément quand cela compte. L'orange dit ce qui
+est vrai — attention requise — et le libellé dit pourquoi.
 
 **Ce n'est pas un décompte de mises à jour en attente.** L'écran les liste
 déjà. Un feu qui passe à l'orange parce qu'une carte Lovelace a une
