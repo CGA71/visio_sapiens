@@ -50,7 +50,7 @@ setting the instance up, or when something below the interface is wrong.
 
 | | |
 |---|---|
-| [Vision](project/Vision.md) | what this is for |
+| [Vision](project/Vision.md) | what this is for, and the complete architecture of the system |
 | [Integration_Case_Study](project/Integration_Case_Study.md) | integrating TECHNICAL ROOM into the repo |
 | [YouTube_Series](project/YouTube_Series.md) | the series plan |
 
