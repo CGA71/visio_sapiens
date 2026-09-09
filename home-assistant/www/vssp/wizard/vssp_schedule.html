@@ -1,0 +1,732 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Visio Sapiens — Planification</title>
+<!--
+  EN | Served as /local/vssp/wizard/vssp_schedule.html, opened by the clock
+  EN | icon on a room's SWITCHES panel through a browser_mod popup (NOT a
+  EN | Lovelace iframe card sitting on a dashboard).
+  EN |
+  EN | WHAT IT IS FOR — saying "turn this off at ten", "open the shutter on
+  EN | Saturday morning", "cut the socket for forty minutes", without opening
+  EN | the automation editor.
+  EN |
+  EN | WHY A WEBHOOK AND NOT THE REST API — same reasoning as
+  EN | vssp_chatbot.html and vssp_theme_editor.html: this page cannot reach
+  EN | the parent page's `hass` object, and the REST API needs a Bearer token
+  EN | that has no business sitting in a browser. It matters more here than
+  EN | anywhere else, because this popup opens from a ROOM dashboard on a
+  EN | wall tablet: asking someone to paste a long-lived token to schedule a
+  EN | lamp would be absurd. A webhook needs none, and local_only: true keeps
+  EN | it on the LAN.
+  EN |
+  EN | WHERE THE NAMES COME FROM — the popup is handed entity IDS by the
+  EN | generator, because that is all the room model holds. Friendly names
+  EN | are looked up in assign_data.json, the file the ASSIGN wizard already
+  EN | builds after every discovery scan. When it is missing or stale the
+  EN | page falls back to prettifying the id rather than showing nothing:
+  EN | "Prise Salon" beats "switch.prise_salon", but both beat an empty list.
+  EN |
+  EN | WHAT THIS PAGE DOES NOT DO — it does not execute anything. It writes
+  EN | rules; packages/vssp_schedule.yaml executes them, one minute at a
+  EN | time. Closing this popup, or the tablet going to sleep, changes
+  EN | nothing about what will happen tonight.
+  FR | Servi comme /local/vssp/wizard/vssp_schedule.html, ouvert par l'icone
+  FR | d'horloge du tableau INTERRUPTEURS d'une piece via un popup
+  FR | browser_mod (PAS une carte iframe Lovelace posee sur un dashboard).
+  FR |
+  FR | A QUOI IL SERT — dire « eteins ca a vingt-deux heures », « ouvre le
+  FR | volet samedi matin », « coupe la prise quarante minutes », sans ouvrir
+  FR | l'editeur d'automatisations.
+  FR |
+  FR | POURQUOI UN WEBHOOK ET PAS L'API REST — meme raisonnement que
+  FR | vssp_chatbot.html et vssp_theme_editor.html : cette page ne peut pas
+  FR | atteindre l'objet `hass` de la page parente, et l'API REST exige un
+  FR | jeton Bearer qui n'a rien a faire dans un navigateur. Cela compte plus
+  FR | ici qu'ailleurs, parce que ce popup s'ouvre depuis le dashboard d'une
+  FR | PIECE sur une tablette murale : demander a quelqu'un de coller un
+  FR | jeton longue duree pour programmer une lampe serait absurde. Un
+  FR | webhook n'en exige aucun, et local_only: true le maintient sur le LAN.
+  FR |
+  FR | D'OU VIENNENT LES NOMS — le generateur transmet au popup des
+  FR | IDENTIFIANTS d'entites, parce que c'est tout ce que contient le modele
+  FR | de piece. Les noms lisibles sont cherches dans assign_data.json, le
+  FR | fichier que construit deja l'assistant ASSIGN apres chaque scan. Quand
+  FR | il manque ou a vieilli, la page embellit l'identifiant plutot que de
+  FR | ne rien montrer : « Prise Salon » vaut mieux que
+  FR | « switch.prise_salon », mais les deux valent mieux qu'une liste vide.
+  FR |
+  FR | CE QUE CETTE PAGE NE FAIT PAS — elle n'execute rien. Elle ecrit des
+  FR | regles ; packages/vssp_schedule.yaml les execute, une minute a la
+  FR | fois. Fermer ce popup, ou laisser la tablette s'endormir, ne change
+  FR | rien a ce qui se passera cette nuit.
+-->
+<style>
+  :root {
+    --bg: #050b12;
+    --panel: rgba(8,18,28,0.75);
+    --line: rgba(0,229,255,0.28);
+    --line-soft: rgba(0,229,255,0.12);
+    --cyan: #00E5FF;
+    --green: #00FFC3;
+    --amber: #FFB347;
+    --red: #FF4D6D;
+    --text: #DCEEF6;
+    --muted: #8FB6C9;
+    --dim: #56707E;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, Roboto, "Helvetica Neue", sans-serif;
+    font-size: 13px;
+  }
+  body { display: flex; flex-direction: column; }
+  h1 {
+    font-family: Orbitron, sans-serif; font-size: 13px; letter-spacing: 2px;
+    color: var(--cyan); margin: 0; text-transform: uppercase;
+  }
+  .header {
+    display: flex; align-items: center; gap: 10px;
+    padding: 12px 14px; border-bottom: 1px solid var(--line-soft); flex: 0 0 auto;
+  }
+  .header .dot {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--cyan);
+    box-shadow: 0 0 8px var(--cyan); flex: none;
+  }
+  .sub { color: var(--dim); font-size: 10px; margin-top: 2px; }
+
+  .scroll { flex: 1 1 auto; overflow-y: auto; padding: 14px; min-height: 0; }
+
+  .msg { padding: 8px 14px; font-size: 11px; white-space: pre-wrap; }
+  .msg.ok  { color: var(--green); }
+  .msg.err { color: var(--red); }
+
+  /* ---- Tabs ------------------------------------------------------ */
+  .tabs { display: flex; gap: 6px; margin-bottom: 14px; }
+  .tab {
+    flex: 1 1 0; padding: 8px 4px; text-align: center; cursor: pointer;
+    background: rgba(255,255,255,.03); border: 1px solid var(--line-soft);
+    border-radius: 10px; color: var(--muted); font-size: 11px;
+    letter-spacing: .5px; text-transform: uppercase; user-select: none;
+  }
+  .tab[aria-selected="true"] {
+    background: rgba(0,229,255,.14); border-color: var(--line); color: var(--cyan);
+  }
+
+  /* ---- Form ------------------------------------------------------ */
+  .field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 12px; }
+  .field label { font-size: 11px; color: var(--muted); letter-spacing: .5px; }
+  .field select, .field input {
+    background: rgba(255,255,255,.03); border: 1px solid var(--line-soft);
+    border-radius: 8px; color: var(--text); font-size: 13px; padding: 8px 10px;
+    font-family: inherit; width: 100%;
+  }
+  .field select option { background: #08131d; color: var(--text); }
+  .row { display: flex; gap: 10px; }
+  .row > .field { flex: 1 1 0; }
+
+  .actions { display: flex; gap: 6px; }
+  .act {
+    flex: 1 1 0; padding: 10px 4px; text-align: center; cursor: pointer;
+    border-radius: 10px; border: 1px solid var(--line-soft); font-size: 12px;
+    background: rgba(255,255,255,.03); color: var(--muted); user-select: none;
+  }
+  .act[aria-pressed="true"] { color: #06121A; font-weight: 600; }
+  .act.on[aria-pressed="true"]    { background: var(--green); border-color: var(--green); }
+  .act.pause[aria-pressed="true"] { background: var(--amber); border-color: var(--amber); }
+  .act.off[aria-pressed="true"]   { background: var(--red);   border-color: var(--red); }
+
+  .days { display: flex; gap: 5px; }
+  .day {
+    flex: 1 1 0; padding: 8px 0; text-align: center; cursor: pointer;
+    border-radius: 8px; border: 1px solid var(--line-soft); font-size: 11px;
+    background: rgba(255,255,255,.03); color: var(--muted); user-select: none;
+  }
+  .day[aria-pressed="true"] {
+    background: rgba(0,229,255,.16); border-color: var(--line); color: var(--cyan);
+  }
+  .presets { display: flex; gap: 6px; margin-top: 6px; }
+  .preset {
+    padding: 4px 10px; border-radius: 999px; cursor: pointer; font-size: 10px;
+    border: 1px solid var(--line-soft); background: transparent; color: var(--dim);
+  }
+
+  .primary {
+    width: 100%; padding: 11px; border-radius: 10px; border: none; cursor: pointer;
+    background: var(--cyan); color: #06121A; font-size: 12px; font-weight: 600;
+    letter-spacing: 1px; text-transform: uppercase;
+  }
+  .primary:disabled { opacity: .4; cursor: default; }
+
+  /* ---- Rule list ------------------------------------------------- */
+  .list-title {
+    font-size: 10px; letter-spacing: 1.4px; text-transform: uppercase;
+    color: var(--dim); margin: 18px 0 8px;
+    border-top: 1px solid var(--line-soft); padding-top: 14px;
+  }
+  .rule {
+    display: flex; align-items: center; gap: 10px; padding: 9px 11px;
+    border: 1px solid var(--line-soft); border-radius: 10px; margin-bottom: 7px;
+    background: rgba(255,255,255,.03);
+  }
+  .rule.off-state { opacity: .45; }
+  .rule.expired { opacity: .35; }
+  .rule .pill {
+    flex: none; width: 8px; height: 8px; border-radius: 50%;
+  }
+  .rule .pill.on    { background: var(--green); }
+  .rule .pill.pause { background: var(--amber); }
+  .rule .pill.off   { background: var(--red); }
+  .rule .body { flex: 1 1 auto; min-width: 0; }
+  .rule .name {
+    font-size: 12px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  }
+  .rule .when { font-size: 10px; color: var(--dim); margin-top: 2px; }
+  .rule .btn {
+    flex: none; background: transparent; border: 1px solid var(--line-soft);
+    color: var(--muted); border-radius: 8px; cursor: pointer;
+    font-size: 11px; padding: 5px 8px;
+  }
+  .rule .btn.del { color: var(--red); border-color: rgba(255,77,109,.3); }
+  .empty-hint { color: var(--dim); text-align: center; font-size: 12px; padding: 18px 0; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <span class="dot"></span>
+  <div>
+    <h1 id="ttl">Planification</h1>
+    <div class="sub" id="sub"></div>
+  </div>
+</div>
+
+<div class="msg" id="msg" hidden></div>
+
+<div class="scroll">
+  <div class="tabs" id="tabs"></div>
+
+  <div class="field">
+    <label id="lblDevice"></label>
+    <select id="device"></select>
+  </div>
+
+  <div class="field">
+    <label id="lblAction"></label>
+    <div class="actions" id="actions"></div>
+  </div>
+
+  <div id="paneRecurring" hidden>
+    <div class="field">
+      <label id="lblTime"></label>
+      <input type="time" id="recTime" value="22:00">
+    </div>
+    <div class="field">
+      <label id="lblDays"></label>
+      <div class="days" id="days"></div>
+      <div class="presets" id="presets"></div>
+    </div>
+  </div>
+
+  <div id="paneOnce" hidden>
+    <div class="row">
+      <div class="field">
+        <label id="lblDate"></label>
+        <input type="date" id="onceDate">
+      </div>
+      <div class="field">
+        <label id="lblTime2"></label>
+        <input type="time" id="onceTime" value="18:30">
+      </div>
+    </div>
+  </div>
+
+  <div id="paneTimer" hidden>
+    <div class="field">
+      <label id="lblMinutes"></label>
+      <input type="number" id="timerMinutes" min="1" max="10080" value="45">
+    </div>
+  </div>
+
+  <div class="field" id="fieldDuration" hidden>
+    <label id="lblDuration"></label>
+    <input type="number" id="duration" min="1" max="1440" value="30">
+  </div>
+
+  <button class="primary" id="save"></button>
+
+  <div class="list-title" id="listTitle"></div>
+  <div id="rules"></div>
+</div>
+
+<script>
+// ======================================================================
+// EN | Endpoints. The store and the status file are read straight from
+// EN | /local, which Home Assistant serves without authentication — the
+// EN | same door assign_data.json already uses. Nothing secret goes
+// EN | through here: entity ids and clock times.
+// FR | Points d'entree. Le magasin et le fichier d'etat sont lus
+// FR | directement depuis /local, que Home Assistant sert sans
+// FR | authentification — la porte qu'emprunte deja assign_data.json.
+// FR | Rien de secret n'y passe : des identifiants d'entites et des heures.
+// ======================================================================
+const WEBHOOK    = '/api/webhook/vssp_schedule';
+const STORE_URL  = '/local/vssp/schedules.json';
+const STATUS_URL = '/local/vssp/schedule_status.json';
+const NAMES_URL  = '/local/vssp/assign_data.json';
+
+const params = new URLSearchParams(location.search);
+// EN | The locale comes from the TEMPLATE, not from the browser: the popup
+// EN | must speak the language the dashboards were generated in, which is a
+// EN | property of the installation and not of whoever is holding the
+// EN | tablet.
+// FR | La langue vient du TEMPLATE, pas du navigateur : le popup doit parler
+// FR | la langue de generation des dashboards, qui est une propriete de
+// FR | l'installation et non de qui tient la tablette.
+const LANG = (params.get('lang') || 'en').toLowerCase().startsWith('fr') ? 'fr' : 'en';
+const ROOM = params.get('room') || '';
+const SCOPE = (params.get('entities') || '')
+  .split(',').map(s => s.trim()).filter(Boolean);
+
+const STR = {
+  fr: {
+    title: 'Planification', sub_room: 'Tableau interrupteurs — {room}',
+    sub_plain: 'Tableau interrupteurs',
+    tab_recurring: 'Récurrent', tab_once: 'Ponctuel', tab_timer: 'Minuterie',
+    device: 'Appareil', action: 'Action',
+    on: 'Marche', pause: 'Pause', off: 'Arrêt',
+    time: 'Heure', days: 'Jours', date: 'Date',
+    minutes: 'Dans (minutes)', duration: 'Durée de la pause (minutes)',
+    save: 'Planifier', saving: 'Enregistrement…',
+    list: 'Règles en place', none: 'Aucune règle pour ce tableau.',
+    d: ['L', 'M', 'M', 'J', 'V', 'S', 'D'],
+    dlong: ['lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'],
+    p_week: 'Semaine', p_weekend: 'Week-end', p_all: 'Tous',
+    every: 'Chaque {days} à {time}', at: 'Le {date} à {time}',
+    in_min: 'Dans {n} min ({time})',
+    then_on: ' puis marche à {time}', expired: 'terminé',
+    disabled: 'suspendue',
+    del: 'Suppr.', enable: 'Activer', disable: 'Suspendre',
+    no_devices: 'Aucun appareil planifiable dans ce tableau.',
+    send_fail: "Envoi impossible ({e}).\nVérifiez que l'automatisation webhook est chargée et que ce navigateur est sur le réseau local.",
+    timeout: "Enregistré, mais aucune confirmation reçue. Rouvrez le popup pour vérifier.",
+    confirm_del: 'Supprimer cette règle ?',
+  },
+  en: {
+    title: 'Schedule', sub_room: 'Switches panel — {room}',
+    sub_plain: 'Switches panel',
+    tab_recurring: 'Recurring', tab_once: 'One-off', tab_timer: 'Countdown',
+    device: 'Device', action: 'Action',
+    on: 'On', pause: 'Pause', off: 'Off',
+    time: 'Time', days: 'Days', date: 'Date',
+    minutes: 'In (minutes)', duration: 'Pause length (minutes)',
+    save: 'Schedule', saving: 'Saving…',
+    list: 'Rules in place', none: 'No rule for this panel.',
+    d: ['M', 'T', 'W', 'T', 'F', 'S', 'S'],
+    dlong: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
+    p_week: 'Weekdays', p_weekend: 'Weekend', p_all: 'Every day',
+    every: 'Every {days} at {time}', at: 'On {date} at {time}',
+    in_min: 'In {n} min ({time})',
+    then_on: ' then on at {time}', expired: 'done',
+    disabled: 'suspended',
+    del: 'Delete', enable: 'Enable', disable: 'Suspend',
+    no_devices: 'No schedulable device in this panel.',
+    send_fail: 'Send failed ({e}).\nCheck that the webhook automation is loaded and that this browser is on the local network.',
+    timeout: 'Saved, but no confirmation came back. Reopen the popup to check.',
+    confirm_del: 'Delete this rule?',
+  },
+};
+const T = STR[LANG];
+const t = (k, vars) => (T[k] || k).replace(/\{(\w+)\}/g, (_, n) => (vars || {})[n] ?? '');
+
+const el = (id) => document.getElementById(id);
+const esc = (s) => String(s).replace(/[&<>"']/g,
+  c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+
+// ======================================================================
+// EN | State
+// FR | Etat
+// ======================================================================
+const state = {
+  kind: 'recurring',
+  action: 'off',
+  days: [0, 1, 2, 3, 4],
+  names: {},
+  rules: [],
+  busy: false,
+};
+
+// EN | The last resort when assign_data.json is missing: turn
+// EN | switch.prise_salon into "Prise Salon". Not the friendly name, but
+// EN | readable, and readable beats an entity id in a dropdown someone has
+// EN | to choose from.
+// FR | Le dernier recours quand assign_data.json manque : transformer
+// FR | switch.prise_salon en « Prise Salon ». Pas le nom convivial, mais
+// FR | lisible, et lisible vaut mieux qu'un identifiant d'entite dans une
+// FR | liste ou quelqu'un doit choisir.
+function prettify(entityId) {
+  return entityId.split('.').slice(1).join('.')
+    .replace(/_/g, ' ')
+    .replace(/\b\w/g, c => c.toUpperCase());
+}
+const nameOf = (id) => state.names[id] || prettify(id);
+
+function show(cls, text) {
+  const m = el('msg');
+  if (!text) { m.hidden = true; return; }
+  m.hidden = false;
+  m.className = 'msg ' + cls;
+  m.textContent = text;
+}
+
+// ======================================================================
+// EN | Rendering
+// FR | Rendu
+// ======================================================================
+function renderStatic() {
+  document.documentElement.lang = LANG;
+  el('ttl').textContent = t('title');
+  el('sub').textContent = ROOM ? t('sub_room', { room: ROOM }) : t('sub_plain');
+  el('lblDevice').textContent = t('device');
+  el('lblAction').textContent = t('action');
+  el('lblTime').textContent = t('time');
+  el('lblTime2').textContent = t('time');
+  el('lblDays').textContent = t('days');
+  el('lblDate').textContent = t('date');
+  el('lblMinutes').textContent = t('minutes');
+  el('lblDuration').textContent = t('duration');
+  el('save').textContent = t('save');
+  el('listTitle').textContent = t('list');
+
+  el('tabs').innerHTML = ['recurring', 'once', 'timer'].map(k =>
+    `<div class="tab" role="tab" data-kind="${k}">${esc(t('tab_' + k))}</div>`).join('');
+  el('actions').innerHTML = ['on', 'pause', 'off'].map(a =>
+    `<div class="act ${a}" role="button" data-action="${a}">${esc(t(a))}</div>`).join('');
+  el('days').innerHTML = T.d.map((label, i) =>
+    `<div class="day" role="button" data-day="${i}" title="${esc(T.dlong[i])}">${esc(label)}</div>`).join('');
+  el('presets').innerHTML =
+    `<button class="preset" data-preset="week">${esc(t('p_week'))}</button>` +
+    `<button class="preset" data-preset="weekend">${esc(t('p_weekend'))}</button>` +
+    `<button class="preset" data-preset="all">${esc(t('p_all'))}</button>`;
+
+  // EN | Default the one-off date to today, in LOCAL time. toISOString()
+  // EN | would convert to UTC first and hand back yesterday to anyone east
+  // EN | of Greenwich in the evening.
+  // FR | Date par defaut du ponctuel a aujourd'hui, en heure LOCALE.
+  // FR | toISOString() convertirait d'abord en UTC et renverrait hier a
+  // FR | quiconque est a l'est de Greenwich en soiree.
+  const now = new Date();
+  el('onceDate').value = [
+    now.getFullYear(),
+    String(now.getMonth() + 1).padStart(2, '0'),
+    String(now.getDate()).padStart(2, '0'),
+  ].join('-');
+}
+
+function renderDevices() {
+  const sel = el('device');
+  if (!SCOPE.length) {
+    sel.innerHTML = `<option value="">${esc(t('no_devices'))}</option>`;
+    sel.disabled = true;
+    el('save').disabled = true;
+    return;
+  }
+  const previous = sel.value;
+  sel.innerHTML = SCOPE.map(id =>
+    `<option value="${esc(id)}">${esc(nameOf(id))}</option>`).join('');
+  if (previous && SCOPE.includes(previous)) sel.value = previous;
+}
+
+function renderForm() {
+  for (const [k, pane] of Object.entries({
+    recurring: 'paneRecurring', once: 'paneOnce', timer: 'paneTimer',
+  })) el(pane).hidden = state.kind !== k;
+
+  for (const tab of el('tabs').children)
+    tab.setAttribute('aria-selected', String(tab.dataset.kind === state.kind));
+  for (const act of el('actions').children)
+    act.setAttribute('aria-pressed', String(act.dataset.action === state.action));
+  for (const day of el('days').children)
+    day.setAttribute('aria-pressed', String(state.days.includes(+day.dataset.day)));
+
+  el('fieldDuration').hidden = state.action !== 'pause';
+}
+
+// EN | The sentence under a rule. It is rebuilt from the STORED fields —
+// EN | fire_time, fire_days, resume_at — rather than from what was typed,
+// EN | so what the list says is what the engine will actually read. A
+// EN | summary computed from the form would agree with the engine right up
+// EN | until the day the two drift.
+// FR | La phrase sous une regle. Elle est reconstruite depuis les champs
+// FR | STOCKES — fire_time, fire_days, resume_at — et non depuis ce qui a
+// FR | ete saisi, pour que ce que dit la liste soit ce que lira le moteur.
+// FR | Un resume calcule depuis le formulaire concorderait avec le moteur
+// FR | jusqu'au jour ou les deux divergeraient.
+function describe(rule) {
+  let main;
+  if (rule.kind === 'recurring') {
+    const days = (rule.fire_days || []).map(d => T.d[d]).join(' ');
+    main = t('every', { days: days, time: rule.fire_time || '?' });
+  } else {
+    const at = String(rule.fire_at || '');
+    const [date, time] = at.split('T');
+    main = rule.kind === 'timer' && rule.minutes
+      ? t('in_min', { n: rule.minutes, time: time || '?' })
+      : t('at', { date: date || '?', time: time || '?' });
+  }
+  if (rule.action === 'pause') {
+    const back = rule.kind === 'recurring'
+      ? rule.resume_time
+      : String(rule.resume_at || '').split('T')[1];
+    if (back) main += t('then_on', { time: back });
+  }
+  return main;
+}
+
+// EN | A dated rule whose last moment has passed. The store keeps those for
+// EN | a day on purpose — reopening the popup to check that last night's
+// EN | rule ran is exactly what someone does — so the list shows them,
+// EN | greyed and labelled, rather than pretending they never existed.
+// FR | Une regle datee dont le dernier moment est passe. Le magasin les
+// FR | garde un jour a dessein — rouvrir le popup pour verifier que la regle
+// FR | d'hier soir est bien passee est precisement ce qu'on fait — donc la
+// FR | liste les montre, grisees et etiquetees, plutot que de faire comme si
+// FR | elles n'avaient jamais existe.
+function isExpired(rule) {
+  if (rule.kind === 'recurring') return false;
+  const last = rule.resume_at || rule.fire_at;
+  if (!last) return false;
+  return new Date(last).getTime() < Date.now();
+}
+
+function renderRules() {
+  const mine = state.rules.filter(r => SCOPE.includes(r.entity_id));
+  const box = el('rules');
+  if (!mine.length) {
+    box.innerHTML = `<div class="empty-hint">${esc(t('none'))}</div>`;
+    return;
+  }
+  mine.sort((a, b) => (a.entity_id + (a.fire_time || a.fire_at || ''))
+    .localeCompare(b.entity_id + (b.fire_time || b.fire_at || '')));
+  box.innerHTML = mine.map(r => {
+    const expired = isExpired(r);
+    const enabled = r.enabled !== false;
+    const flags = [];
+    if (expired) flags.push(t('expired'));
+    else if (!enabled) flags.push(t('disabled'));
+    const suffix = flags.length ? ' · ' + flags.join(' · ') : '';
+    return `<div class="rule${enabled ? '' : ' off-state'}${expired ? ' expired' : ''}">
+      <span class="pill ${esc(r.action)}"></span>
+      <div class="body">
+        <div class="name">${esc(nameOf(r.entity_id))} — ${esc(t(r.action))}</div>
+        <div class="when">${esc(describe(r) + suffix)}</div>
+      </div>
+      ${expired ? '' : `<button class="btn" data-toggle="${esc(r.id)}" data-enabled="${enabled}">${esc(enabled ? t('disable') : t('enable'))}</button>`}
+      <button class="btn del" data-del="${esc(r.id)}">${esc(t('del'))}</button>
+    </div>`;
+  }).join('');
+}
+
+// ======================================================================
+// EN | Loading
+// FR | Chargement
+// ======================================================================
+async function loadNames() {
+  // EN | Best effort, and deliberately so. A missing assign_data.json means
+  // EN | prettified ids, not a broken popup: the page's job is scheduling,
+  // EN | and it can do that job with ugly labels.
+  // FR | Au mieux, et deliberement. Un assign_data.json absent signifie des
+  // FR | identifiants embellis, pas un popup casse : le travail de cette
+  // FR | page est de planifier, et elle peut le faire avec des libelles
+  // FR | disgracieux.
+  try {
+    const res = await fetch(NAMES_URL + '?t=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) return;
+    const data = await res.json();
+    for (const e of (data.entities || [])) {
+      if (e && e.entity_id && e.name) state.names[e.entity_id] = e.name;
+    }
+  } catch (e) { /* EN | ids it is / FR | ce seront les identifiants */ }
+}
+
+async function loadRules() {
+  try {
+    const res = await fetch(STORE_URL + '?t=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) { state.rules = []; return; }
+    const data = await res.json();
+    state.rules = Array.isArray(data.rules) ? data.rules : [];
+  } catch (e) { state.rules = []; }
+}
+
+// ======================================================================
+// EN | Sending
+// FR | Envoi
+// ======================================================================
+// EN | btoa() alone throws on any character above U+00FF, and a room is
+// EN | called "Séjour". encodeURIComponent first turns the string into
+// EN | UTF-8 percent escapes, unescape brings those back as single bytes,
+// EN | and btoa encodes the bytes. Same three-step dance as assign.html,
+// EN | for the same reason.
+// FR | btoa() seul leve sur tout caractere au-dessus de U+00FF, et une piece
+// FR | s'appelle « Sejour ». encodeURIComponent transforme d'abord la chaine
+// FR | en echappements UTF-8, unescape les ramene en octets simples, et
+// FR | btoa encode les octets. Meme pas de trois temps qu'assign.html, pour
+// FR | la meme raison.
+const toB64 = (obj) => btoa(unescape(encodeURIComponent(JSON.stringify(obj))));
+
+async function send(payload) {
+  if (state.busy) return;
+  state.busy = true;
+  el('save').disabled = true;
+  show('ok', t('saving'));
+  const before = await statusStamp();
+  try {
+    const res = await fetch(WEBHOOK, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ content_b64: toB64(payload) }),
+    });
+    if (!res.ok) throw new Error('HTTP ' + res.status);
+    const status = await pollStatus(before);
+    if (!status) show('ok', t('timeout'));
+    else show(status.ok ? 'ok' : 'err', status.message || '');
+    await loadRules();
+    renderRules();
+  } catch (e) {
+    show('err', t('send_fail', { e: e.message }));
+  } finally {
+    state.busy = false;
+    el('save').disabled = false;
+  }
+}
+
+async function statusStamp() {
+  try {
+    const res = await fetch(STATUS_URL + '?t=' + Date.now(), { cache: 'no-store' });
+    if (!res.ok) return null;
+    return (await res.json()).generated || null;
+  } catch (e) { return null; }
+}
+
+// EN | Poll for a status file NEWER than the one that was there before the
+// EN | webhook fired. Reading the file alone would hand back the previous
+// EN | run's verdict — very often "saved" — and report success for a rule
+// EN | the script has just refused.
+// FR | Attendre un fichier d'etat PLUS RECENT que celui present avant le
+// FR | declenchement du webhook. Lire le fichier seul renverrait le verdict
+// FR | de l'execution precedente — tres souvent « enregistree » — et
+// FR | annoncerait le succes d'une regle que le script vient de refuser.
+async function pollStatus(before, tries = 25) {
+  for (let i = 0; i < tries; i++) {
+    await new Promise(r => setTimeout(r, 400));
+    try {
+      const res = await fetch(STATUS_URL + '?t=' + Date.now(), { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.generated && data.generated !== before) return data;
+      }
+    } catch (e) { /* EN | keep waiting / FR | continuer d'attendre */ }
+  }
+  return null;
+}
+
+function collect() {
+  const rule = {
+    entity_id: el('device').value,
+    kind: state.kind,
+    action: state.action,
+  };
+  if (state.action === 'pause') rule.duration = +el('duration').value;
+  if (state.kind === 'recurring') {
+    rule.time = el('recTime').value;
+    rule.days = state.days.slice();
+  } else if (state.kind === 'once') {
+    rule.date = el('onceDate').value;
+    rule.time = el('onceTime').value;
+  } else {
+    rule.minutes = +el('timerMinutes').value;
+  }
+  return rule;
+}
+
+// ======================================================================
+// EN | Wiring
+// FR | Cablage
+// ======================================================================
+el('tabs').addEventListener('click', (ev) => {
+  const tab = ev.target.closest('.tab');
+  if (!tab) return;
+  state.kind = tab.dataset.kind;
+  renderForm();
+});
+
+el('actions').addEventListener('click', (ev) => {
+  const act = ev.target.closest('.act');
+  if (!act) return;
+  state.action = act.dataset.action;
+  renderForm();
+});
+
+el('days').addEventListener('click', (ev) => {
+  const day = ev.target.closest('.day');
+  if (!day) return;
+  const d = +day.dataset.day;
+  state.days = state.days.includes(d)
+    ? state.days.filter(x => x !== d)
+    : state.days.concat(d).sort((a, b) => a - b);
+  renderForm();
+});
+
+el('presets').addEventListener('click', (ev) => {
+  const p = ev.target.closest('.preset');
+  if (!p) return;
+  state.days = p.dataset.preset === 'week' ? [0, 1, 2, 3, 4]
+    : p.dataset.preset === 'weekend' ? [5, 6]
+    : [0, 1, 2, 3, 4, 5, 6];
+  renderForm();
+});
+
+el('save').addEventListener('click', () => {
+  const rule = collect();
+  if (!rule.entity_id) return;
+  // EN | The script validates again and is the authority. This check only
+  // EN | spares a round trip for the one mistake the form makes easy.
+  // FR | Le script revalide et fait autorite. Ce controle epargne seulement
+  // FR | un aller-retour pour la seule erreur que le formulaire rend facile.
+  if (rule.kind === 'recurring' && !(rule.days || []).length) {
+    show('err', t('days'));
+    return;
+  }
+  send({ op: 'save', rule: rule });
+});
+
+el('rules').addEventListener('click', (ev) => {
+  const del = ev.target.closest('[data-del]');
+  if (del) {
+    if (!confirm(t('confirm_del'))) return;
+    send({ op: 'delete', id: del.dataset.del });
+    return;
+  }
+  const tog = ev.target.closest('[data-toggle]');
+  if (tog) {
+    send({ op: 'toggle', id: tog.dataset.toggle,
+           enabled: tog.dataset.enabled !== 'true' });
+  }
+});
+
+(async function init() {
+  renderStatic();
+  renderForm();
+  renderDevices();
+  await loadNames();
+  renderDevices();
+  await loadRules();
+  renderRules();
+})();
+</script>
+</body>
+</html>

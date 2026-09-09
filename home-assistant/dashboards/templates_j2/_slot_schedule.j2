@@ -1,0 +1,182 @@
+{#
+########################################################################
+# EN | THE CLOCK ON A PANEL TITLE — shared partial
+# FR | L'HORLOGE SUR UN TITRE DE TABLEAU — partiel partage
+#
+# EN | Draws a panel's title row with a clock button on its right, which
+# EN | opens the scheduling popup for that panel's devices. Used by the
+# EN | SWITCHES slot on both formats.
+# EN |
+# EN | WHY A PARTIAL AND NOT TWO COPIES — room.yaml.j2 and
+# EN | room_mobile.yaml.j2 both draw this row, and the popup call carries
+# EN | four parameters that have to agree exactly (the entity list above
+# EN | all). Two copies would agree until the first edit touched only one.
+# EN |
+# EN | Called as:
+# FR | Appel :
+#     {% import '_slot_schedule.j2' as sched %}
+#     {{ sched.title_with_clock(title, popup_title, ids, room_name, locale, build_stamp, mobile) }}
+#
+# EN | `title` and `popup_title` both arrive ALREADY translated. An imported
+# EN | macro does not receive the template context, so t() is not callable in
+# EN | here — the same constraint _switch_group.j2 works under, solved the
+# EN | same way.
+# FR | `title` et `popup_title` arrivent DEJA traduits. Une macro importee ne
+# FR | recoit pas le contexte du template, t() n'y est donc pas appelable — la
+# FR | contrainte sous laquelle travaille deja _switch_group.j2, resolue de la
+# FR | meme facon.
+#
+# EN | `ids`   the entity ids the popup may schedule — ALREADY filtered by
+# EN |         the caller to the domains the engine accepts.
+# EN | `mobile` shrinks the title the way room_mobile.yaml.j2 does on its
+# EN |         own titles; the clock keeps its size, being a touch target.
+# FR | `ids`   les identifiants d'entites que le popup peut planifier —
+# FR |         DEJA filtres par l'appelant sur les domaines qu'accepte le
+# FR |         moteur.
+# FR | `mobile` retrecit le titre comme le fait room_mobile.yaml.j2 sur ses
+# FR |         propres titres ; l'horloge garde sa taille, etant une cible
+# FR |         tactile.
+#
+# EN | The indentation is fixed rather than a parameter: both call sites
+# EN | nest this row at exactly ten spaces. Same choice, same reason, as
+# EN | _switch_group.j2.
+# FR | L'indentation est figee plutot que parametree : les deux points
+# FR | d'appel imbriquent cette ligne a exactement dix espaces. Meme choix,
+# FR | meme raison, que _switch_group.j2.
+#
+# EN | REQUIRES browser_mod (HACS), like every other popup in this project
+# EN | — see docs/platform/Security.md. Without it the icon is inert: it
+# EN | draws, it takes the tap, and nothing opens.
+# FR | REQUIERT browser_mod (HACS), comme tout autre popup de ce projet —
+# FR | voir docs/platform/Security.fr.md. Sans lui l'icone est inerte :
+# FR | elle s'affiche, elle prend le toucher, et rien ne s'ouvre.
+######################################################################## #}
+{% macro title_with_clock(title, popup_title, ids, room_name, locale, build_stamp, mobile=false) %}
+          # EN | A horizontal-stack gives its children `flex: 1 1 0` — an
+          # EN | even split, which would hand half the width to a 34px icon
+          # EN | and squeeze the title into the other half. The card_mod
+          # EN | below undoes that: the title takes what it needs, the clock
+          # EN | takes its own size. Same technique the SWITCHES slot already
+          # EN | uses on its own stack a few hundred lines down.
+          # FR | Un horizontal-stack donne `flex: 1 1 0` a ses enfants — un
+          # FR | partage egal, qui donnerait la moitie de la largeur a une
+          # FR | icone de 34px et comprimerait le titre dans l'autre moitie.
+          # FR | Le card_mod ci-dessous defait cela : le titre prend ce qu'il
+          # FR | lui faut, l'horloge prend sa propre taille. Meme technique
+          # FR | que celle deja employee par le tableau INTERRUPTEURS sur son
+          # FR | propre stack quelques centaines de lignes plus bas.
+          - type: horizontal-stack
+            card_mod:
+              style: |
+                #root { align-items: center; }
+                #root > *:first-child { flex: 1 1 auto; min-width: 0; }
+                #root > *:last-child { flex: 0 0 auto; }
+            cards:
+              - type: custom:button-card
+                template: vssp_section_title
+                name: "{{ title }}"
+{% if mobile %}
+                card_mod:
+                  style: |
+                    ha-card { padding: 0 0 6px 0 !important; }
+                    #name { font-size: 12px !important; letter-spacing: 1px !important; }
+{% endif %}
+              # EN | The quotes around the colour are load-bearing. In YAML a
+              # EN | `#` that follows whitespace opens a comment, so an
+              # EN | unquoted `var(--primary-color, #00E5FF)` is silently cut
+              # EN | to `var(--primary-color,` — a broken function that
+              # EN | resolves to nothing. This project has already lost an
+              # EN | afternoon to that exact line.
+              # FR | Les guillemets autour de la couleur portent la charge. En
+              # FR | YAML, un `#` precede d'une espace ouvre un commentaire,
+              # FR | donc un `var(--primary-color, #00E5FF)` non quote est
+              # FR | coupe en silence a `var(--primary-color,` — une fonction
+              # FR | cassee qui ne resout rien. Ce projet a deja perdu un
+              # FR | apres-midi sur cette ligne exacte.
+              - type: custom:button-card
+                show_icon: true
+                show_name: false
+                show_label: false
+                show_state: false
+                icon: mdi:clock-outline
+                styles:
+                  card:
+                    - background: rgba(0, 229, 255, 0.08)
+                    - border: 1px solid rgba(0, 229, 255, 0.25)
+                    - border-radius: 10px
+                    - width: 34px
+                    - height: 34px
+                    - padding: 0
+                    - cursor: pointer
+                  icon:
+                    - color: "var(--primary-color, #00E5FF)"
+                    - "--mdc-icon-size": 18px
+                # EN | `browser_id: this` opens the popup on the screen that
+                # EN | was tapped and nowhere else. Without it browser_mod
+                # EN | broadcasts, and a schedule form appears on every
+                # EN | registered tablet in the house at once.
+                # FR | `browser_id: this` ouvre le popup sur l'ecran touche et
+                # FR | nulle part ailleurs. Sans cela browser_mod diffuse, et
+                # FR | un formulaire de planification apparait d'un coup sur
+                # FR | chaque tablette enregistree de la maison.
+                tap_action:
+                  action: perform-action
+                  perform_action: browser_mod.popup
+                  data:
+                    browser_id: this
+                    title: "{{ popup_title }}{{ ' — ' ~ room_name if room_name }}"
+                    size: normal
+                    content:
+                      # EN | The entity list travels in the URL because it is
+                      # EN | the ONE thing the popup cannot work out for
+                      # EN | itself: which devices belong to this panel is a
+                      # EN | Visio Sapiens decision recorded in house.yaml,
+                      # EN | not a Home Assistant fact the page could query.
+                      # EN | Everything else it looks up on its own.
+                      # EN | `v=` is the build stamp, and it is not
+                      # EN | decoration: an iframe URL cached once by a
+                      # EN | browser keeps its first content for ever, which
+                      # EN | is how a shipped fix stays invisible on the
+                      # EN | tablet that needed it.
+                      # FR | La liste d'entites voyage dans l'URL parce que
+                      # FR | c'est la SEULE chose que le popup ne peut pas
+                      # FR | deduire seul : quels appareils appartiennent a ce
+                      # FR | tableau est une decision Visio Sapiens consignee
+                      # FR | dans house.yaml, pas un fait Home Assistant que
+                      # FR | la page pourrait interroger. Tout le reste, elle
+                      # FR | le retrouve elle-meme.
+                      # FR | `v=` est l'empreinte de build, et ce n'est pas
+                      # FR | decoratif : une URL d'iframe mise en cache une
+                      # FR | fois par un navigateur garde son premier contenu
+                      # FR | pour toujours, et c'est ainsi qu'un correctif
+                      # FR | livre reste invisible sur la tablette qui en
+                      # FR | avait besoin.
+                      type: iframe
+                      url: /local/vssp/wizard/vssp_schedule.html?v={{ build_stamp }}&lang={{ locale }}&room={{ room_name | urlencode }}&entities={{ ids | join(',') | urlencode }}
+                      # EN | An iframe card defaults to aspect_ratio 50% —
+                      # EN | half its width in height, which for a popup this
+                      # EN | narrow is a letterbox with a form crushed inside
+                      # EN | it. A viewport-relative height, capped, gives the
+                      # EN | form room on a tablet without running off the
+                      # EN | bottom of a phone.
+                      # FR | Une carte iframe vaut par defaut aspect_ratio 50%
+                      # FR | — la moitie de sa largeur en hauteur, ce qui pour
+                      # FR | un popup aussi etroit donne une meurtriere avec un
+                      # FR | formulaire ecrase dedans. Une hauteur relative au
+                      # FR | viewport, plafonnee, donne de la place au
+                      # FR | formulaire sur tablette sans deborder du bas d'un
+                      # FR | telephone.
+                      card_mod:
+                        style: |
+                          ha-card {
+                            background: transparent !important;
+                            border: none !important;
+                            box-shadow: none !important;
+                            overflow: hidden;
+                          }
+                          iframe {
+                            width: 100%;
+                            height: min(76vh, 700px) !important;
+                            border: none;
+                          }
+{% endmacro %}

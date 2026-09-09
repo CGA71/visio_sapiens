@@ -94,6 +94,7 @@ slot:
   switches_outlets: Connected outlets
   # EN | Frame for anything assigned to switches that is
   # EN | neither a light, an outlet nor a shutter.
+  schedule: SCHEDULE
   switches_other: Other
   switches_shutters: Shutters
   # EN | Shown when a slot belongs to the room's slot set but holds no

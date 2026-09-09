@@ -59,6 +59,7 @@ slot:
   infrastructure: Infrastructure
   switches_lights: Éclairages
   switches_outlets: Prises connectées
+  schedule: PLANIFICATION
   switches_other: Autres
   switches_shutters: Volets roulants
   empty: Aucun appareil

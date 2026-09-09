@@ -1,0 +1,334 @@
+########################################################################
+# Visio Sapiens — SCHEDULE package (planned actions on switches)
+#
+# EN | The engine behind the clock icon on a room's SWITCHES panel. A popup
+# EN | writes rules, this file executes them.
+# EN |
+# EN | THE CHAIN
+# EN |   the popup      -> webhook vssp_schedule     (what should happen)
+# EN |   this package   -> vssp_schedule_apply.py    (the rule, normalised)
+# EN |                  -> www/vssp/schedules.json   (the rule, recorded)
+# EN |   sensor         -> reads that file back      (the rule, in HA)
+# EN |   tick automation-> homeassistant.turn_on/off (the rule, executed)
+# EN |
+# EN | WHY A TICK RATHER THAN REAL AUTOMATIONS. Creating a genuine Home
+# EN | Assistant automation goes through the authenticated API, and this
+# EN | popup opens from a room dashboard on a wall tablet. Nobody should have
+# EN | to paste a long-lived token to say "turn the lamp off at ten". The
+# EN | webhook needs no token and `local_only: true` keeps it on the LAN.
+# EN |
+# EN | WHY THE TICK IS SO DUMB. Every rule was reduced by the Python script
+# EN | to absolute moments — a wall-clock time plus weekdays, or a dated
+# EN | timestamp. So this file does no date arithmetic: it wakes once a
+# EN | minute and compares strings. No timer object to lose across a restart,
+# EN | no running script holding a delay, no second source of truth. A
+# EN | restart in the middle of a pause is a non-event, because the resume
+# EN | moment was written down when the rule was saved.
+# EN |
+# EN | ONE ACTION PAIR FOR EVERY DOMAIN. homeassistant.turn_on / turn_off
+# EN | work on a light, a switch, a fan AND a cover, where they mean open and
+# EN | close. That is what lets a single pair of service calls at the bottom
+# EN | serve the whole panel with no per-domain branch.
+# FR | Le moteur derriere l'icone d'horloge du tableau INTERRUPTEURS d'une
+# FR | piece. Un popup ecrit des regles, ce fichier les execute.
+# FR |
+# FR | LA CHAINE
+# FR |   le popup       -> webhook vssp_schedule     (ce qui doit arriver)
+# FR |   ce package     -> vssp_schedule_apply.py    (la regle, normalisee)
+# FR |                  -> www/vssp/schedules.json   (la regle, enregistree)
+# FR |   capteur        -> relit ce fichier          (la regle, dans HA)
+# FR |   automatisation -> homeassistant.turn_on/off (la regle, executee)
+# FR |
+# FR | POURQUOI UN BATTEMENT PLUTOT QUE DE VRAIES AUTOMATISATIONS. Creer une
+# FR | veritable automatisation Home Assistant passe par l'API authentifiee,
+# FR | et ce popup s'ouvre depuis le dashboard d'une piece sur une tablette
+# FR | murale. Personne ne devrait avoir a coller un jeton longue duree pour
+# FR | dire « eteins la lampe a vingt-deux heures ». Le webhook n'exige aucun
+# FR | jeton et `local_only: true` le maintient sur le reseau local.
+# FR |
+# FR | POURQUOI LE BATTEMENT EST AUSSI BETE. Chaque regle a ete reduite par le
+# FR | script Python a des moments absolus — une heure murale plus des jours
+# FR | de semaine, ou un horodatage date. Ce fichier ne fait donc aucun calcul
+# FR | de date : il se reveille une fois par minute et compare des chaines.
+# FR | Aucun objet minuterie a perdre au redemarrage, aucun script en cours
+# FR | tenant un delai, aucune seconde source de verite. Un redemarrage au
+# FR | milieu d'une pause est un non-evenement, parce que le moment de reprise
+# FR | a ete ecrit a l'enregistrement de la regle.
+# FR |
+# FR | UNE SEULE PAIRE D'ACTIONS POUR TOUS LES DOMAINES. homeassistant.turn_on
+# FR | / turn_off fonctionnent sur une lampe, un interrupteur, un ventilateur
+# FR | ET un volet, ou ils signifient ouvrir et fermer. C'est ce qui permet a
+# FR | une unique paire d'appels de service, tout en bas, de servir tout le
+# FR | tableau sans branche par domaine.
+#
+# EN | BEFORE DEPLOYING — check for duplicate keys, same as every other
+# EN | package here:
+# FR | AVANT DE DEPLOYER — verifier les cles en double, comme pour tout
+# FR | autre package ici :
+#
+#   grep -n "vssp_schedule" home-assistant/packages/*.yaml
+#
+# EN | The store lives under /config/www so the popup can read it back with
+# EN | no token. It holds entity ids and times — no secret — but /local is
+# EN | served without authentication, so treat it as readable by anything on
+# EN | the LAN, exactly like assign_data.json already is. See
+# EN | docs/platform/Security.md.
+# FR | Le magasin vit sous /config/www pour que le popup puisse le relire sans
+# FR | jeton. Il contient des identifiants d'entites et des heures — aucun
+# FR | secret — mais /local est servi sans authentification : le considerer
+# FR | comme lisible par tout ce qui est sur le LAN, exactement comme l'est
+# FR | deja assign_data.json. Voir docs/platform/Security.md.
+########################################################################
+
+# ═══════════════════════════════════════════════════════════════════════
+# EN | SHELL COMMAND — the only writer of the store
+# FR | SHELL COMMAND — le seul ecrivain du magasin
+# ═══════════════════════════════════════════════════════════════════════
+#
+# EN | Base64 for the payload: a rule carries a free-text nothing, but it
+# EN | crosses a shell_command template on its way here, and passing raw JSON
+# EN | with quotes and accents through a shell is precisely what breaks in
+# EN | silence. Same encoding, same reason, as vssp_assign_apply.py.
+# FR | Base64 pour le payload : une regle ne porte aucun texte libre, mais elle
+# FR | traverse un template de shell_command pour arriver ici, et passer du
+# FR | JSON brut avec guillemets et accents a travers un shell est precisement
+# FR | ce qui casse en silence. Meme encodage, meme raison, que
+# FR | vssp_assign_apply.py.
+#
+# EN | --locale follows the console selector so the sentence the popup shows
+# EN | under its form is in the language the dashboards were generated in. A
+# EN | missing flag here is how every message ends up English under French
+# EN | labels — the mistake vssp_admin.yaml documents at length.
+# FR | --locale suit le selecteur de la console pour que la phrase affichee par
+# FR | le popup sous son formulaire soit dans la langue de generation des
+# FR | dashboards. Un flag absent ici, c'est ainsi que tous les messages
+# FR | finissent en anglais sous des libelles francais — l'erreur que
+# FR | vssp_admin.yaml documente longuement.
+shell_command:
+  vssp_schedule_apply: >-
+    python3 /config/vssp/vssp_schedule_apply.py
+    --store /config/www/vssp/schedules.json
+    --status /config/www/vssp/schedule_status.json
+    --locale {{ states('input_select.vssp_language') }}
+    --json-b64 "{{ content_b64 }}"
+
+  # EN | Same script, no payload — which the script reads as "prune".
+  # FR | Meme script, sans payload — ce que le script lit comme « elaguer ».
+  vssp_schedule_prune: >-
+    python3 /config/vssp/vssp_schedule_apply.py
+    --store /config/www/vssp/schedules.json
+    --status /config/www/vssp/schedule_status.json
+    --locale {{ states('input_select.vssp_language') }}
+
+# ═══════════════════════════════════════════════════════════════════════
+# EN | SENSOR — the store, read back into Home Assistant
+# FR | CAPTEUR — le magasin, relu dans Home Assistant
+# ═══════════════════════════════════════════════════════════════════════
+#
+# EN | The rules ride as an ATTRIBUTE, not as the state: a sensor state is
+# EN | capped at 255 characters and a single rule already spends a third of
+# EN | that. The state is the count, which is what a person wants to see
+# EN | anyway.
+# EN | The `|| echo` fallback matters more than it looks. Before the first
+# EN | rule is ever saved the file does not exist, `cat` fails, and a
+# EN | command_line sensor with no output is `unknown` — which would make the
+# EN | tick automation's `state_attr` return None on a brand-new instance and
+# EN | log a template error every single minute, for ever, on a system where
+# EN | nothing is wrong.
+# FR | Les regles voyagent en ATTRIBUT, pas en etat : un etat de capteur est
+# FR | plafonne a 255 caracteres et une seule regle en depense deja un tiers.
+# FR | L'etat est le decompte, ce qu'une personne veut voir de toute facon.
+# FR | Le repli `|| echo` compte plus qu'il n'y parait. Avant le premier
+# FR | enregistrement le fichier n'existe pas, `cat` echoue, et un capteur
+# FR | command_line sans sortie vaut `unknown` — ce qui ferait renvoyer None a
+# FR | `state_attr` dans l'automatisation de battement sur une instance neuve,
+# FR | et journaliserait une erreur de template chaque minute, indefiniment,
+# FR | sur un systeme ou rien ne va mal.
+command_line:
+  - sensor:
+      name: "VSSP Schedules"
+      unique_id: vssp_schedules
+      command: >-
+        cat /config/www/vssp/schedules.json 2>/dev/null || echo '{"rules": [], "count": 0}'
+      value_template: "{{ (value_json.rules | default([])) | count }}"
+      json_attributes:
+        - rules
+        - updated
+      scan_interval: 60
+
+# ═══════════════════════════════════════════════════════════════════════
+# EN | AUTOMATIONS
+# FR | AUTOMATISATIONS
+# ═══════════════════════════════════════════════════════════════════════
+automation:
+  # EN | mode: queued (not single) — the same lesson vssp_assign.yaml and
+  # EN | vssp_rooms.yaml both record. A webhook automation in mode: single
+  # EN | silently DROPS a trigger that lands while a run is in progress
+  # EN | (script_execution: "failed_single" in the trace) yet the webhook
+  # EN | still answers 200, so the popup reports success for a rule that was
+  # EN | never written. Saving two rules in quick succession is exactly the
+  # EN | thing a person does here.
+  # FR | mode: queued (pas single) — la lecon que consignent a la fois
+  # FR | vssp_assign.yaml et vssp_rooms.yaml. Une automatisation webhook en
+  # FR | mode: single REJETTE en silence un declenchement arrivant pendant une
+  # FR | execution (« failed_single » dans la trace), pourtant le webhook
+  # FR | repond quand meme 200, donc le popup annonce le succes d'une regle
+  # FR | jamais ecrite. Enregistrer deux regles coup sur coup est precisement
+  # FR | ce que fait une personne ici.
+  - alias: "Visio Sapiens — Planification : recevoir une règle"
+    id: vssp_schedule_receive
+    mode: queued
+    max: 10
+    triggers:
+      - trigger: webhook
+        webhook_id: vssp_schedule
+        local_only: true
+        allowed_methods:
+          - POST
+    actions:
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.json.content_b64 is defined }}"
+            sequence:
+              - action: shell_command.vssp_schedule_apply
+                data:
+                  content_b64: "{{ trigger.json.content_b64 }}"
+              # EN | Force the sensor to re-read now. Its scan_interval is a
+              # EN | minute, and without this a rule saved at 21:59:30 for
+              # EN | 22:00 would still be invisible to the tick when 22:00
+              # EN | arrives — the one case where the delay is not merely
+              # EN | cosmetic.
+              # FR | Forcer le capteur a relire maintenant. Son scan_interval
+              # FR | est d'une minute, et sans ceci une regle enregistree a
+              # FR | 21h59min30 pour 22h00 serait encore invisible au
+              # FR | battement quand 22h00 arrive — le seul cas ou le delai
+              # FR | n'est pas seulement cosmetique.
+              - action: homeassistant.update_entity
+                target:
+                  entity_id: sensor.vssp_schedules
+        default:
+          - action: persistent_notification.create
+            data:
+              notification_id: vssp_schedule_bad_payload
+              title: "Planification"
+              message: >-
+                Le webhook vssp_schedule a reçu un appel sans content_b64.
+                Aucune règle n'a été écrite.
+
+  # EN | THE TICK. Once a minute, compare the clock to what was written down.
+  # EN |
+  # EN | Two lists are built, and an entity can legitimately land in both: a
+  # EN | pause resuming at 22:00 next to a rule switching the same device on
+  # EN | at 22:00. `off` is applied first and `on` second, so a collision
+  # EN | resolves in favour of on. That is a decision, not an accident —
+  # EN | write it down rather than discover it.
+  # EN |
+  # EN | A minute can be missed if Home Assistant is restarting exactly on the
+  # EN | tick. This engine does not catch up: a rule whose minute passed
+  # EN | during a reboot does not fire late. Catching up would mean deciding
+  # EN | how late is too late to still turn someone's lights on, and the
+  # EN | honest answer is that nobody wants a 03:00 rule firing at 07:00
+  # EN | because the pod bounced.
+  # FR | LE BATTEMENT. Une fois par minute, comparer l'horloge a ce qui est
+  # FR | ecrit.
+  # FR |
+  # FR | Deux listes sont construites, et une entite peut legitimement tomber
+  # FR | dans les deux : une pause qui reprend a 22h00 a cote d'une regle qui
+  # FR | allume le meme appareil a 22h00. `off` est applique en premier et
+  # FR | `on` en second, une collision se resout donc en faveur de
+  # FR | l'allumage. C'est une decision, pas un accident — autant l'ecrire
+  # FR | plutot que de la decouvrir.
+  # FR |
+  # FR | Une minute peut etre manquee si Home Assistant redemarre pile sur le
+  # FR | battement. Ce moteur ne rattrape pas : une regle dont la minute est
+  # FR | passee pendant un redemarrage ne se declenche pas en retard.
+  # FR | Rattraper imposerait de decider a partir de quand il est trop tard
+  # FR | pour allumer les lumieres de quelqu'un, et la reponse honnete est que
+  # FR | personne ne veut voir une regle de 03h00 partir a 07h00 parce que le
+  # FR | pod a redemarre.
+  - alias: "Visio Sapiens — Planification : battement"
+    id: vssp_schedule_tick
+    mode: single
+    triggers:
+      - trigger: time_pattern
+        minutes: "/1"
+    variables:
+      # EN | `or []` on every read: the sensor is `unknown` for the seconds
+      # EN | between a restart and its first scan, and a rule written by hand
+      # EN | into the file might be missing any key.
+      # FR | `or []` a chaque lecture : le capteur vaut `unknown` pendant les
+      # FR | secondes qui separent un redemarrage de son premier scan, et une
+      # FR | regle ecrite a la main dans le fichier peut manquer n'importe
+      # FR | quelle cle.
+      rules: "{{ state_attr('sensor.vssp_schedules', 'rules') or [] }}"
+      hm: "{{ now().strftime('%H:%M') }}"
+      wd: "{{ now().weekday() }}"
+      stamp: "{{ now().strftime('%Y-%m-%dT%H:%M') }}"
+      to_off: >-
+        {% set ns = namespace(ids=[]) %}
+        {% for r in rules if r.enabled | default(true) %}
+        {% set due = (r.fire_time | default('') == hm and wd in (r.fire_days | default([])))
+                  if r.kind | default('') == 'recurring'
+                  else (r.fire_at | default('') == stamp) %}
+        {% if due and (r.action | default('') in ['off', 'pause']) %}
+        {% set ns.ids = ns.ids + [r.entity_id] %}
+        {% endif %}
+        {% endfor %}
+        {{ ns.ids | unique | list }}
+      to_on: >-
+        {% set ns = namespace(ids=[]) %}
+        {% for r in rules if r.enabled | default(true) %}
+        {% set due = (r.fire_time | default('') == hm and wd in (r.fire_days | default([])))
+                  if r.kind | default('') == 'recurring'
+                  else (r.fire_at | default('') == stamp) %}
+        {% if due and r.action | default('') == 'on' %}
+        {% set ns.ids = ns.ids + [r.entity_id] %}
+        {% endif %}
+        {% if r.action | default('') == 'pause' %}
+        {% set back = (r.resume_time | default('') == hm and wd in (r.resume_days | default([])))
+                   if r.kind | default('') == 'recurring'
+                   else (r.resume_at | default('') == stamp) %}
+        {% if back %}
+        {% set ns.ids = ns.ids + [r.entity_id] %}
+        {% endif %}
+        {% endif %}
+        {% endfor %}
+        {{ ns.ids | unique | list }}
+    conditions:
+      - condition: template
+        value_template: "{{ (to_off | count) + (to_on | count) > 0 }}"
+    actions:
+      - if:
+          - condition: template
+            value_template: "{{ to_off | count > 0 }}"
+        then:
+          - action: homeassistant.turn_off
+            target:
+              entity_id: "{{ to_off }}"
+      - if:
+          - condition: template
+            value_template: "{{ to_on | count > 0 }}"
+        then:
+          - action: homeassistant.turn_on
+            target:
+              entity_id: "{{ to_on }}"
+
+  # EN | Housekeeping. A one-shot rule stays visible for a day after it fired
+  # EN | — the popup is where someone checks that it did — then this drops it.
+  # EN | Recurring rules are never pruned; they have no end.
+  # FR | Entretien. Une regle ponctuelle reste visible un jour apres son
+  # FR | declenchement — le popup est l'endroit ou l'on verifie qu'elle est
+  # FR | passee — puis ceci la jette. Les regles recurrentes ne sont jamais
+  # FR | elaguees ; elles n'ont pas de fin.
+  - alias: "Visio Sapiens — Planification : élaguer les règles expirées"
+    id: vssp_schedule_prune_daily
+    mode: single
+    triggers:
+      - trigger: time
+        at: "03:20:00"
+    actions:
+      - action: shell_command.vssp_schedule_prune
+      - action: homeassistant.update_entity
+        target:
+          entity_id: sensor.vssp_schedules

@@ -136,6 +136,33 @@ views:
           # EN | vssp_section_title is sized for a 6-panel HUD.
           # FR | Titre de section plus petit qu'en tablette — le
           # FR | vssp_section_title partage est calibre pour un HUD a 6 cases.
+{% import '_slot_schedule.j2' as sched %}
+{# EN | Devices this panel holds that the schedule engine will accept. Kept
+   EN | in step with ALLOWED_DOMAINS in vssp/vssp_schedule_apply.py: offering
+   EN | a device the engine refuses on save is worse than not offering it.
+   EN | An empty list means no clock — a panel with nothing schedulable in it
+   EN | gets a plain title, not an icon that opens an empty form.
+   FR | Les appareils de ce tableau que le moteur de planification acceptera.
+   FR | Tenu en phase avec ALLOWED_DOMAINS de vssp/vssp_schedule_apply.py :
+   FR | proposer un appareil que le moteur refusera a l'enregistrement vaut
+   FR | moins que de ne pas le proposer.
+   FR | Une liste vide signifie pas d'horloge — un tableau sans rien de
+   FR | planifiable recoit un titre simple, pas une icone qui ouvrirait un
+   FR | formulaire vide. #}
+{% set sched_domains = ['light', 'switch', 'cover', 'fan', 'media_player',
+                        'input_boolean', 'climate', 'humidifier', 'siren'] %}
+{% set sched_ids = [] %}
+{% if slot_id == 'switches' %}
+{% for e in slot.get('entities') or [] %}
+{% if e.split('.')[0] in sched_domains %}
+{% set _ = sched_ids.append(e) %}
+{% endif %}
+{% endfor %}
+{% endif %}
+{% if sched_ids %}
+{{ sched.title_with_clock(t('slot.' ~ slot_id), t('slot.schedule'), sched_ids,
+                          room.name, locale, build_stamp, mobile=true) }}
+{% else %}
           - type: custom:button-card
             template: vssp_section_title
             name: "{{ t('slot.' ~ slot_id) }}"
@@ -143,6 +170,7 @@ views:
               style: |
                 ha-card { padding: 0 0 6px 0 !important; }
                 #name { font-size: 12px !important; letter-spacing: 1px !important; }
+{% endif %}
 
 {% if slot_id in ['appliances', 'sensors'] %}
           # EN | Line by line with an internal scrollbar, capped shorter than
