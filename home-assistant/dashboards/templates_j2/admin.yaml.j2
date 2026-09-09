@@ -1149,43 +1149,203 @@ views:
           # FR | Chaque ligne appelle le meme script avec une cle differente ;
           # FR | le script controle la cle face a ce qu a publie la sonde avant
           # FR | d ouvrir quoi que ce soit.
-          - type: entities
-            title: "{{ t('admin.updates_infra') }}"
-            icon: mdi:server-network
-            entities:
-              - entity: script.vssp_infra_check
-                name: "{{ t('admin.updates_infra_check') }}"
-                icon: mdi:server-network-outline
-{% for key, icon in [('os_packages', 'mdi:ubuntu'),
-                     ('gitlab_runner', 'mdi:rocket-launch-outline'),
-                     ('gitlab', 'mdi:gitlab'),
-                     ('os_reboot', 'mdi:restart-alert')] %}
-              - type: button
-                name: "{{ t('admin.updates_infra_' ~ key) }}"
-                icon: {{ icon }}
-                # EN | The button says what pressing it DOES. It briefly
-                # EN | said "Waiting for you" - the tier label, which reads
-                # EN | as a state on a row and as nonsense on a button.
-                # FR | Le bouton dit ce que le presser FAIT. Il a brievement
-                # FR | dit « En attente de vous » - le libelle du palier, qui
-                # FR | se lit comme un etat sur une ligne et comme un
-                # FR | non-sens sur un bouton.
-                action_name: "{{ t('admin.updates_infra_install') }}"
-                tap_action:
-                  action: perform-action
-                  perform_action: script.vssp_infra_install_one
-                  data:
-                    component: {{ key }}
-{% endfor %}
-              - type: section
-                label: "{{ t('admin.updates_infra_locked_note') }}"
-            card_mod:
-              style: |
-                ha-card {
-                  background: var(--card-background-color, rgba(8,18,28,0.75)) !important;
-                  border: 1px solid rgba(0, 229, 255, 0.28) !important;
-                  border-radius: var(--ha-card-border-radius, 20px) !important;
-                }
+          # =================================================================
+          # EN | THE INFRASTRUCTURE TABLE — one row per component, and every
+          # EN | row says what its button would do
+          # FR | LE TABLEAU INFRASTRUCTURE — une ligne par composant, et
+          # FR | chaque ligne dit ce que ferait son bouton
+          # =================================================================
+          #
+          # EN | This was four `type: button` entity rows: an icon, a name and
+          # EN | an INSTALL button with nothing in between. The button showed
+          # EN | even when the component had nothing pending, so the screen
+          # EN | offered four ways to install and no way to tell what any of
+          # EN | them would install — you were being asked to press a button
+          # EN | whose consequence was written nowhere.
+          # EN | Now each line carries its own versions, and the button exists
+          # EN | ONLY when something is genuinely waiting. A component that is
+          # EN | up to date says so and offers nothing; a locked one says why
+          # EN | it will never be installed from here.
+          # FR | C etaient quatre lignes `type: button` : une icone, un nom et
+          # FR | un bouton INSTALLER avec rien entre les deux. Le bouton
+          # FR | s affichait meme quand le composant n avait rien en attente,
+          # FR | donc l ecran proposait quatre facons d installer et aucun
+          # FR | moyen de savoir ce que chacune installerait — on demandait
+          # FR | d appuyer sur un bouton dont la consequence n etait ecrite
+          # FR | nulle part.
+          # FR | Desormais chaque ligne porte ses propres versions, et le
+          # FR | bouton n existe QUE si quelque chose attend vraiment. Un
+          # FR | composant a jour le dit et ne propose rien ; un composant
+          # FR | verrouille dit pourquoi il ne sera jamais installe d ici.
+          - type: custom:button-card
+            show_icon: false
+            show_name: false
+            show_state: false
+            show_label: false
+            entity: sensor.vssp_updates_infra
+            tap_action:
+              action: none
+            custom_fields:
+              head: >
+                [[[
+                  return `<div style="display:flex;align-items:center;
+                      gap:8px;color:#FFFFFF;font-size:15px;font-weight:700;
+                      letter-spacing:.4px;padding:2px 0 8px;">
+                      <ha-icon icon="mdi:server-network"
+                        style="--mdc-icon-size:20px;color:#00E5FF;"></ha-icon>
+                      {{ t('admin.updates_infra') | js }}</div>`;
+                ]]]
+              rows: >
+                [[[
+                  const L = {
+                    packages:  '{{ t('admin.updates_infra_packages') | js }}',
+                    security:  '{{ t('admin.updates_infra_security') | js }}',
+                    uptodate:  '{{ t('admin.updates_infra_uptodate') | js }}',
+                    required:  '{{ t('admin.updates_infra_required') | js }}',
+                    notreq:    '{{ t('admin.updates_infra_not_required') | js }}',
+                    unprobed:  '{{ t('admin.updates_infra_notprobed') | js }}',
+                    images:    '{{ t('admin.updates_infra_images') | js }}',
+                    install:   '{{ t('admin.updates_infra_install') | js }}',
+                    restart:   '{{ t('admin.updates_infra_restart') | js }}',
+                    locked:    '{{ t('admin.updates_infra_locked_short') | js }}',
+                    confirm:   '{{ t('admin.updates_infra_confirm') | js }}',
+                    names: {
+                      os_packages:   '{{ t('admin.updates_infra_os_packages') | js }}',
+                      os_reboot:     '{{ t('admin.updates_infra_os_reboot') | js }}',
+                      k3s:           '{{ t('admin.updates_infra_k3s') | js }}',
+                      gitlab_runner: '{{ t('admin.updates_infra_gitlab_runner') | js }}',
+                      gitlab:        '{{ t('admin.updates_infra_gitlab') | js }}',
+                      vault:         '{{ t('admin.updates_infra_vault') | js }}',
+                      docker_images: '{{ t('admin.updates_infra_docker_images') | js }}'
+                    }
+                  };
+                  const rows = (entity && entity.attributes.components) || [];
+                  if (!rows.length) {
+                    return `<div style="color:#56707E;font-size:12px;
+                      padding:8px 0;">${L.unprobed}</div>`;
+                  }
+
+                  // EN | What the row is about, in one phrase. This is the
+                  // EN | column that was missing: a version pair for anything
+                  // EN | versioned, a count for the package list, a yes/no for
+                  // EN | the reboot flag.
+                  // FR | De quoi parle la ligne, en une phrase. C est la
+                  // FR | colonne qui manquait : un couple de versions pour ce
+                  // FR | qui est versionne, un decompte pour la liste de
+                  // FR | paquets, un oui/non pour l indicateur de redemarrage.
+                  const detail = r => {
+                    if (!r.probed) return [L.unprobed, '#56707E'];
+                    if (r.key === 'os_packages') {
+                      if (!r.count) return [L.uptodate, '#56707E'];
+                      const sec = r.security
+                        ? ` · ${r.security} ${L.security}` : '';
+                      return [`${r.count} ${L.packages}${sec}`,
+                              r.security ? '#FF9800' : '#8FB6C9'];
+                    }
+                    if (r.key === 'os_reboot') {
+                      return r.pending ? [L.required, '#FF9800']
+                                       : [L.notreq, '#56707E'];
+                    }
+                    if (r.key === 'docker_images') {
+                      return [`${r.installed} ${L.images}`, '#8FB6C9'];
+                    }
+                    if (r.pending && r.installed && r.latest) {
+                      return [`${r.installed} → ${r.latest}`, '#FF9800'];
+                    }
+                    if (r.installed) return [`${r.installed} · ${L.uptodate}`,
+                                             '#56707E'];
+                    return [L.uptodate, '#56707E'];
+                  };
+
+                  // EN | The button is the ONLY thing that changes anything,
+                  // EN | so it appears only when there is something to
+                  // EN | change. `locked` shows a muted chip instead — it is
+                  // EN | information, not an offer.
+                  // FR | Le bouton est la SEULE chose qui modifie quoi que ce
+                  // FR | soit, il n apparait donc que s il y a quelque chose a
+                  // FR | modifier. `locked` affiche une pastille eteinte a la
+                  // FR | place — c est une information, pas une proposition.
+                  const action = r => {
+                    if (r.tier === 'locked') {
+                      return `<span style="font-size:9px;color:#56707E;
+                        border:1px solid rgba(86,112,126,.45);border-radius:6px;
+                        padding:3px 8px;white-space:nowrap;">${L.locked}</span>`;
+                    }
+                    if (!r.probed || !r.pending) return '';
+                    const label = r.key === 'os_reboot' ? L.restart : L.install;
+                    const call = `document.querySelector('home-assistant')`
+                      + `.hass.callService('script','vssp_infra_install_one',`
+                      + `{component:'${r.key}'})`;
+                    // EN | Host restart and GitLab both interrupt service for
+                    // EN | minutes. They ask first; host packages and the
+                    // EN | runner do not.
+                    // FR | Le redemarrage de l hote et GitLab interrompent
+                    // FR | tous deux le service plusieurs minutes. Ils
+                    // FR | demandent confirmation ; les paquets de l hote et
+                    // FR | le runner, non.
+                    const heavy = (r.key === 'os_reboot' || r.key === 'gitlab');
+                    const onclick = heavy
+                      ? `if(confirm('${L.confirm}')){${call}}` : call;
+                    return `<span onclick="${onclick}" style="font-size:9px;
+                      font-weight:700;letter-spacing:.3px;cursor:pointer;
+                      color:#00E5FF;border:1px solid rgba(0,229,255,.5);
+                      background:rgba(0,229,255,.10);border-radius:6px;
+                      padding:3px 10px;white-space:nowrap;">${label}</span>`;
+                  };
+
+                  return rows.map(r => {
+                    const [text, colour] = detail(r);
+                    return `<div style="display:flex;align-items:center;
+                        gap:10px;padding:7px 0;
+                        border-top:1px solid rgba(0,229,255,.10);">
+                        <ha-icon icon="${r.icon}" style="--mdc-icon-size:18px;
+                          color:${r.pending ? '#00E5FF' : '#56707E'};
+                          flex:0 0 auto;"></ha-icon>
+                        <div style="flex:1 1 auto;min-width:0;
+                          color:#FFFFFF;font-size:12px;font-weight:600;
+                          white-space:nowrap;overflow:hidden;
+                          text-overflow:ellipsis;">${L.names[r.key] || r.key}</div>
+                        <div style="flex:0 1 auto;color:${colour};
+                          font-size:11px;text-align:right;white-space:nowrap;
+                          overflow:hidden;text-overflow:ellipsis;
+                          ">${text}</div>
+                        <div style="flex:0 0 auto;">${action(r)}</div>
+                      </div>`;
+                  }).join('');
+                ]]]
+              foot: >
+                [[[
+                  const call = `document.querySelector('home-assistant')`
+                    + `.hass.callService('script','vssp_infra_check')`;
+                  return `<div style="display:flex;align-items:center;
+                      justify-content:space-between;gap:10px;padding:10px 0 2px;
+                      border-top:1px solid rgba(0,229,255,.10);">
+                      <div style="color:#56707E;font-size:10px;line-height:1.35;
+                        ">{{ t('admin.updates_infra_locked_note') | js }}</div>
+                      <span onclick="${call}" style="font-size:9px;
+                        font-weight:700;letter-spacing:.3px;cursor:pointer;
+                        color:#00E5FF;border:1px solid rgba(0,229,255,.5);
+                        background:rgba(0,229,255,.10);border-radius:6px;
+                        padding:4px 10px;white-space:nowrap;flex:0 0 auto;"
+                        >{{ t('admin.updates_infra_check') | js }}</span>
+                    </div>`;
+                ]]]
+            styles:
+              grid:
+                - grid-template-areas: '"head" "rows" "foot"'
+                - grid-template-rows: min-content 1fr min-content
+              card:
+                - background: var(--card-background-color, rgba(8,18,28,0.75))
+                - border: 1px solid rgba(0, 229, 255, 0.28)
+                - border-radius: var(--ha-card-border-radius, 20px)
+                - padding: 14px 18px
+              custom_fields:
+                head:
+                  - width: 100%
+                rows:
+                  - width: 100%
+                foot:
+                  - width: 100%
 
           - type: entities
             title: "{{ t('admin.updates_auto') }}"

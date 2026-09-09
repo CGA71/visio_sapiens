@@ -302,6 +302,17 @@ admin:
   updates_infra_locked: Jamais installées d'ici
   updates_infra_check: SONDER LE SERVEUR
   updates_infra_install: INSTALLER
+  updates_infra_restart: REDÉMARRER
+  updates_infra_locked_short: VERROUILLÉ
+  updates_infra_packages: paquet(s)
+  updates_infra_images: image(s)
+  updates_infra_security: sécurité
+  updates_infra_uptodate: à jour
+  updates_infra_required: redémarrage requis
+  updates_infra_not_required: aucun redémarrage requis
+  updates_infra_notprobed: non sondé
+  updates_infra_confirm: >-
+    Cela interrompt le service plusieurs minutes. Continuer ?
   updates_infra_auto_enabled: Mettre à jour l'infrastructure automatiquement
   updates_infra_never_probed: >-
     Jamais sondé. Appuyez sur SONDER LE SERVEUR, et vérifiez que le
