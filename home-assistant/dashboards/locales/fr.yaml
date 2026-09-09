@@ -275,6 +275,12 @@ admin:
   updates_maintenance: MAINTENANCE
   updates_check: VÉRIFIER MAINTENANT
   updates_install_hacs: INSTALLER TOUTES LES INTÉGRATIONS & CARTES
+  updates_auto: MISES À JOUR AUTOMATIQUES
+  updates_auto_enabled: Installer automatiquement
+  updates_auto_time: Chaque nuit à
+  updates_auto_targets: Seront installées
+  updates_auto_now: LANCER LA PASSE MAINTENANT
+  updates_auto_protected: Home Assistant Core n'est jamais installé automatiquement
   discovery: SCAN DE DÉCOUVERTE
   upgrade: MISE À NIVEAU
   generate: GÉNÉRER LES DASHBOARDS

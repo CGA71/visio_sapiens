@@ -58,6 +58,28 @@
 #
 #   grep -n "vssp_updates" home-assistant/packages/*.yaml
 #
+# EN | THE AUTOMATIC PASS is an OPTION, and it is off. Nothing in this
+# EN | file installs anything on its own until someone turns on
+# EN | input_boolean.vssp_updates_auto from the ADMIN screen. With the
+# EN | switch off the automation stays loaded and does nothing: it is a
+# EN | condition, not a second trigger, so turning it back on later does
+# EN | not replay the nights it sat out.
+# EN | The pass installs every pending update EXCEPT Home Assistant Core,
+# EN | which is excluded in the sensor that feeds it rather than in the
+# EN | automation — see `VSSP Updates auto` below for why that placement is
+# EN | the point rather than a detail.
+# FR | LA PASSE AUTOMATIQUE est une OPTION, et elle est eteinte. Rien dans
+# FR | ce fichier n installe quoi que ce soit de lui-meme tant que
+# FR | quelqu un n a pas active input_boolean.vssp_updates_auto depuis
+# FR | l ecran ADMIN. Interrupteur ferme, l automatisation reste chargee et
+# FR | ne fait rien : c est une condition, pas un second declencheur, donc
+# FR | la rallumer plus tard ne rejoue pas les nuits qu elle a passees a
+# FR | l arret.
+# FR | La passe installe toutes les mises a jour en attente SAUF Home
+# FR | Assistant Core, exclu dans le capteur qui l alimente plutot que dans
+# FR | l automatisation — voir `VSSP Updates auto` plus bas pour pourquoi ce
+# FR | placement est l essentiel et non un detail.
+#
 # EN | NO PREREQUISITE. Nothing here needs a secret, a token or a network
 # EN | call. On an instance with no HACS, `integration_entities('hacs')`
 # EN | returns an empty list and the HACS family is simply always zero.
@@ -68,8 +90,8 @@
 ########################################################################
 
 # ═══════════════════════════════════════════════════════════════════════
-# EN | SENSORS — four counts, four entity lists
-# FR | CAPTEURS — quatre decomptes, quatre listes d entites
+# EN | SENSORS — five counts, five entity lists
+# FR | CAPTEURS — cinq decomptes, cinq listes d entites
 # ═══════════════════════════════════════════════════════════════════════
 #
 # EN | NO unit_of_measurement, on purpose. The vault sensors carry a French
@@ -201,6 +223,124 @@ template:
                | selectattr('attributes.device_class', 'eq', 'firmware')
                | sort(attribute='name') | map(attribute='entity_id') | list }}
 
+      # ---------------------------------------------------------------
+      # EN | AUTOMATIC — what the nightly run would install, and what it
+      # EN | will never touch.
+      # FR | AUTOMATIQUE — ce que la passe nocturne installerait, et ce a
+      # FR | quoi elle ne touchera jamais.
+      # ---------------------------------------------------------------
+      # EN | THE CORE OF HOME ASSISTANT IS NEVER INSTALLED AUTOMATICALLY.
+      # EN | It is the one update that can leave the house without a
+      # EN | dashboard: a broken Core takes down the interface you would
+      # EN | use to notice, the console you would use to roll back, and
+      # EN | every automation in the file. It wants the backup checkbox its
+      # EN | own dialog offers, and a person watching. So it is excluded
+      # EN | here, in the entity that FEEDS the automation, rather than in
+      # EN | the automation itself — the screen can then show the exclusion
+      # EN | as a fact it reads back, not as a promise made in a comment.
+      # EN | Recognised two ways because the two do not always coincide: by
+      # EN | entity_id, the identifier the Supervisor gives it, and by the
+      # EN | `title` attribute, which survives an entity someone renamed.
+      # EN | Neither exists on this k3s instance — Home Assistant runs as a
+      # EN | container with no Supervisor to update it — so `protected` is
+      # EN | empty here and the guard is dormant until the day the model
+      # EN | moves to HAOS, which is exactly when it has to already be
+      # EN | there.
+      # EN | Note what is NOT protected: the Supervisor, the OS and the
+      # EN | add-ons go with everything else, as asked. Leaving the switch
+      # EN | off is what stops those.
+      # FR | LE MOTEUR DE HOME ASSISTANT N EST JAMAIS INSTALLE
+      # FR | AUTOMATIQUEMENT. C est la seule mise a jour capable de laisser
+      # FR | la maison sans dashboard : un Core casse emporte l interface
+      # FR | qui servirait a s en apercevoir, la console qui servirait a
+      # FR | revenir en arriere, et toutes les automatisations du fichier.
+      # FR | Elle veut la case de sauvegarde que sa propre boite propose, et
+      # FR | quelqu un devant l ecran. Elle est donc exclue ici, dans
+      # FR | l entite qui ALIMENTE l automatisation, plutot que dans
+      # FR | l automatisation elle-meme — l ecran peut alors montrer
+      # FR | l exclusion comme un fait qu il relit, et non comme une
+      # FR | promesse faite dans un commentaire.
+      # FR | Reconnue de deux facons parce que les deux ne coincident pas
+      # FR | toujours : par entity_id, l identifiant que lui donne le
+      # FR | Supervisor, et par l attribut `title`, qui survit a une entite
+      # FR | qu on a renommee.
+      # FR | Aucun des deux n existe sur cette instance k3s — Home Assistant
+      # FR | y tourne en conteneur, sans Supervisor pour le mettre a jour —
+      # FR | donc `protected` y est vide et la garde reste dormante jusqu au
+      # FR | jour ou le modele passera sur HAOS, c est-a-dire precisement le
+      # FR | moment ou elle doit deja etre la.
+      # FR | A noter ce qui n est PAS protege : le Supervisor, l OS et les
+      # FR | add-ons partent avec le reste, comme demande. C est laisser
+      # FR | l interrupteur ferme qui les retient.
+      - name: VSSP Updates auto
+        unique_id: vssp_updates_auto
+        icon: mdi:autorenew
+        state: >-
+          {% set ns = namespace(n=0) %}
+          {% for u in states.update | selectattr('state', 'eq', 'on') %}
+          {% if not (u.entity_id == 'update.home_assistant_core_update'
+                     or (u.attributes.title | default('')) == 'Home Assistant Core') %}
+          {% set ns.n = ns.n + 1 %}
+          {% endif %}
+          {% endfor %}
+          {{ ns.n }}
+        attributes:
+          entity_ids: >-
+            {% set ns = namespace(ids=[]) %}
+            {% for u in states.update | selectattr('state', 'eq', 'on')
+                 | sort(attribute='name') %}
+            {% if not (u.entity_id == 'update.home_assistant_core_update'
+                       or (u.attributes.title | default('')) == 'Home Assistant Core') %}
+            {% set ns.ids = ns.ids + [u.entity_id] %}
+            {% endif %}
+            {% endfor %}
+            {{ ns.ids }}
+          protected: >-
+            {% set ns = namespace(ids=[]) %}
+            {% for u in states.update | selectattr('state', 'eq', 'on')
+                 | sort(attribute='name') %}
+            {% if u.entity_id == 'update.home_assistant_core_update'
+                  or (u.attributes.title | default('')) == 'Home Assistant Core' %}
+            {% set ns.ids = ns.ids + [u.entity_id] %}
+            {% endif %}
+            {% endfor %}
+            {{ ns.ids }}
+
+# ═══════════════════════════════════════════════════════════════════════
+# EN | HELPERS — the switch, and the hour it fires
+# FR | HELPERS — l interrupteur, et l heure a laquelle il part
+# ═══════════════════════════════════════════════════════════════════════
+#
+# EN | No `initial:` on the switch. `initial` forces a value at every
+# EN | restart, which would mean a reboot silently turning automatic
+# EN | installs back on — or back off — behind whoever set it. Without it
+# EN | Home Assistant restores the last state, and the switch means what it
+# EN | shows.
+# FR | Pas d `initial:` sur l interrupteur. `initial` force une valeur a
+# FR | chaque redemarrage, donc un reboot rallumerait — ou eteindrait — les
+# FR | installations automatiques dans le dos de qui les a reglees. Sans
+# FR | lui, Home Assistant restaure le dernier etat et l interrupteur veut
+# FR | dire ce qu il affiche.
+input_boolean:
+  vssp_updates_auto:
+    name: "Visio Sapiens — Mises à jour automatiques"
+    icon: mdi:autorenew
+
+# EN | An hour rather than an interval, and an early one by default. A
+# EN | firmware flash cuts the power to a plug for a moment and a HACS card
+# EN | swap changes the interface under whoever is looking at it; both are
+# EN | unremarkable at 04:00 and irritating at 19:00.
+# FR | Une heure plutot qu un intervalle, et tot par defaut. Un flash de
+# FR | micrologiciel coupe un instant une prise et un remplacement de carte
+# FR | HACS change l interface sous les yeux de qui la regarde ; les deux
+# FR | passent inapercus a 04h00 et agacent a 19h00.
+input_datetime:
+  vssp_updates_auto_time:
+    name: "Visio Sapiens — Heure des mises à jour automatiques"
+    icon: mdi:clock-outline
+    has_date: false
+    has_time: true
+
 # ═══════════════════════════════════════════════════════════════════════
 # EN | SCRIPTS — the two bulk actions, and only two
 # FR | SCRIPTS — les deux actions groupees, et deux seulement
@@ -300,3 +440,140 @@ script:
             {{ targets | count }} mise(s) à jour installée(s).
             Rechargez la page avec Ctrl+Maj+R : une carte Lovelace remplacée
             sur le disque reste l'ancien fichier dans le cache du navigateur.
+
+  # EN | THE AUTOMATIC PASS — also the button, deliberately. The nightly
+  # EN | automation and RUN NOW call this one script, so what the button
+  # EN | does at 15:00 is exactly what the house does at 04:00, and testing
+  # EN | it means testing the real thing rather than a second copy of it
+  # EN | that will drift.
+  # FR | LA PASSE AUTOMATIQUE — et le bouton aussi, a dessein.
+  # FR | L automatisation nocturne et LANCER MAINTENANT appellent ce meme
+  # FR | script, donc ce que fait le bouton a 15h00 est exactement ce que
+  # FR | fait la maison a 04h00, et le tester revient a tester la vraie
+  # FR | chose plutot qu une seconde copie qui divergera.
+  vssp_updates_install_auto:
+    alias: "Visio Sapiens — Mises à jour : passe automatique (hors HA Core)"
+    icon: mdi:autorenew
+    mode: single
+    sequence:
+      # EN | Ask first, install second. Integrations poll on their own
+      # EN | schedule, so without this the nightly pass acts on whatever was
+      # EN | true the last time something happened to check — which on a
+      # EN | quiet instance can be most of a day ago.
+      # FR | Demander d abord, installer ensuite. Les integrations
+      # FR | interrogent leur source a leur propre rythme, donc sans ceci la
+      # FR | passe nocturne agit sur ce qui etait vrai la derniere fois que
+      # FR | quelque chose s est trouve verifier — ce qui, sur une instance
+      # FR | calme, peut remonter a presque une journee.
+      - variables:
+          known: >-
+            {{ states.update | map(attribute='entity_id') | list }}
+      - if:
+          - condition: template
+            value_template: "{{ known | count > 0 }}"
+        then:
+          - action: homeassistant.update_entity
+            target:
+              entity_id: "{{ known }}"
+          # EN | The re-poll is a network round trip per integration and the
+          # EN | template sensor only recomputes once the states land.
+          # FR | La re-interrogation est un aller-retour reseau par
+          # FR | integration, et le capteur ne recalcule qu une fois les
+          # FR | etats arrives.
+          - delay:
+              seconds: 30
+
+      # EN | The list is read AFTER the refresh, from the sensor that
+      # EN | already knows what is excluded. One definition of "safe to
+      # EN | install unattended", in one place, and the screen shows the
+      # EN | same number this script is about to act on.
+      # FR | La liste est lue APRES le rafraichissement, depuis le capteur
+      # FR | qui sait deja ce qui est exclu. Une seule definition de
+      # FR | « installable sans surveillance », a un seul endroit, et
+      # FR | l ecran affiche le nombre meme sur lequel ce script va agir.
+      - variables:
+          targets: >-
+            {{ state_attr('sensor.vssp_updates_auto', 'entity_ids') or [] }}
+      - condition: template
+        value_template: "{{ targets | count > 0 }}"
+
+      # EN | ONE AT A TIME, and errors do not stop the queue.
+      # EN | A single `update.install` over the whole list is one service
+      # EN | call: the first entity that refuses — a device that went
+      # EN | offline between the refresh and now — raises, and everything
+      # EN | queued behind it is silently never attempted. Looping with
+      # EN | continue_on_error costs a few minutes at four in the morning
+      # EN | and buys a pass that finishes what it can.
+      # EN | The delay also keeps two firmware flashes from overlapping,
+      # EN | which on mains-powered devices means two plugs rebooting at
+      # EN | once.
+      # FR | UNE A LA FOIS, et une erreur n arrete pas la file.
+      # FR | Un seul `update.install` sur toute la liste est un unique appel
+      # FR | de service : la premiere entite qui refuse — un appareil parti
+      # FR | hors ligne entre le rafraichissement et maintenant — leve, et
+      # FR | tout ce qui attend derriere n est jamais tente, sans un mot.
+      # FR | Boucler avec continue_on_error coute quelques minutes a quatre
+      # FR | heures du matin et achete une passe qui termine ce qu elle
+      # FR | peut.
+      # FR | Le delai evite de surcroit que deux flashs de micrologiciel se
+      # FR | chevauchent, ce qui sur des appareils secteur signifie deux
+      # FR | prises qui redemarrent en meme temps.
+      - repeat:
+          for_each: "{{ targets }}"
+          sequence:
+            - action: update.install
+              continue_on_error: true
+              target:
+                entity_id: "{{ repeat.item }}"
+            - delay:
+                seconds: 20
+
+      # EN | The report names what was left behind as well as what was
+      # EN | done: an automatic pass that only ever says "3 installed" makes
+      # EN | a held-back Home Assistant Core invisible, and invisible is how
+      # EN | an update stays unapplied for a year.
+      # FR | Le compte rendu nomme ce qui est reste sur le carreau autant
+      # FR | que ce qui est fait : une passe automatique qui ne dit jamais
+      # FR | que « 3 installees » rend invisible un Home Assistant Core
+      # FR | retenu, et invisible est la maniere dont une mise a jour reste
+      # FR | non appliquee pendant un an.
+      - action: persistent_notification.create
+        data:
+          notification_id: vssp_updates_auto
+          title: "Mises à jour automatiques"
+          message: >-
+            {{ targets | count }} mise(s) à jour installée(s).
+            {% set held = state_attr('sensor.vssp_updates_auto', 'protected') or [] %}
+            {% if held %}Retenue(s) pour installation manuelle :
+            {{ held | join(', ') }}.{% endif %}
+            Si une carte Lovelace en faisait partie, rechargez la page avec
+            Ctrl+Maj+R.
+
+# ═══════════════════════════════════════════════════════════════════════
+# EN | AUTOMATION — the nightly pass
+# FR | AUTOMATISATION — la passe nocturne
+# ═══════════════════════════════════════════════════════════════════════
+#
+# EN | Triggered by the helper rather than by a hardcoded hour, so moving
+# EN | the time from the ADMIN screen moves the trigger with no reload.
+# EN | The switch is a CONDITION and not a second trigger: the automation
+# EN | stays loaded either way, and turning it back on does not queue up
+# EN | whatever it missed.
+# FR | Declenchee par le helper plutot que par une heure en dur : deplacer
+# FR | l heure depuis l ecran ADMIN deplace le declencheur sans rechargement.
+# FR | L interrupteur est une CONDITION et non un second declencheur :
+# FR | l automatisation reste chargee dans les deux cas, et la rallumer ne
+# FR | met pas en file ce qu elle a manque.
+automation:
+  - id: vssp_updates_auto_nightly
+    alias: "Visio Sapiens — Mises à jour : passe automatique nocturne"
+    mode: single
+    triggers:
+      - trigger: time
+        at: input_datetime.vssp_updates_auto_time
+    conditions:
+      - condition: state
+        entity_id: input_boolean.vssp_updates_auto
+        state: "on"
+    actions:
+      - action: script.vssp_updates_install_auto

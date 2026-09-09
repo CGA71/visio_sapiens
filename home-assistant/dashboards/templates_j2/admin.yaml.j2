@@ -923,6 +923,68 @@ views:
                       border-radius: var(--ha-card-border-radius, 20px) !important;
                     }
 {% endfor %}
+          # EN | AUTOMATIC UPDATES — an option, and it is off. The switch
+          # EN | is the whole feature: with it closed this card is an
+          # EN | announcement of what would happen, and nothing happens.
+          # EN | The count beside it is not decoration either. It is read
+          # EN | from the very sensor the nightly script reads, so the
+          # EN | number on this row is the number of things that will be
+          # EN | installed tonight — not a second calculation that agrees
+          # EN | with the first until one of them is edited.
+          # EN | HOME ASSISTANT CORE IS NEVER IN THAT NUMBER. The exclusion
+          # EN | lives in the sensor, so this screen states it as something
+          # EN | it reads back rather than as a promise. A broken Core takes
+          # EN | down the interface you would use to notice, the console you
+          # EN | would use to roll back, and every automation in the file;
+          # EN | it wants the backup checkbox its own dialog offers, and a
+          # EN | person watching.
+          # EN | RUN NOW calls the same script as the automation, so testing
+          # EN | the button tests the real nightly pass rather than a second
+          # EN | copy of it that will drift.
+          # FR | MISES A JOUR AUTOMATIQUES — une option, et elle est
+          # FR | eteinte. L interrupteur est toute la fonctionnalite :
+          # FR | ferme, cette carte est l annonce de ce qui se passerait, et
+          # FR | il ne se passe rien.
+          # FR | Le decompte a cote n est pas decoratif non plus. Il est lu
+          # FR | depuis le capteur meme que lit le script nocturne, donc le
+          # FR | nombre affiche sur cette ligne est le nombre de choses qui
+          # FR | seront installees cette nuit — pas un second calcul qui
+          # FR | s accorde avec le premier jusqu au jour ou l un des deux
+          # FR | est modifie.
+          # FR | HOME ASSISTANT CORE N EST JAMAIS DANS CE NOMBRE.
+          # FR | L exclusion vit dans le capteur, donc cet ecran l enonce
+          # FR | comme quelque chose qu il relit et non comme une promesse.
+          # FR | Un Core casse emporte l interface qui servirait a s en
+          # FR | apercevoir, la console qui servirait a revenir en arriere,
+          # FR | et toutes les automatisations du fichier ; il veut la case
+          # FR | de sauvegarde que sa propre boite propose, et quelqu un
+          # FR | devant l ecran.
+          # FR | LANCER MAINTENANT appelle le meme script que
+          # FR | l automatisation : tester le bouton teste la vraie passe
+          # FR | nocturne, pas une seconde copie qui divergera.
+          - type: entities
+            title: "{{ t('admin.updates_auto') }}"
+            entities:
+              - entity: input_boolean.vssp_updates_auto
+                name: "{{ t('admin.updates_auto_enabled') }}"
+              - entity: input_datetime.vssp_updates_auto_time
+                name: "{{ t('admin.updates_auto_time') }}"
+              - entity: sensor.vssp_updates_auto
+                name: "{{ t('admin.updates_auto_targets') }}"
+                icon: mdi:autorenew
+              - entity: script.vssp_updates_install_auto
+                name: "{{ t('admin.updates_auto_now') }}"
+                icon: mdi:play-circle-outline
+              - type: section
+                label: "{{ t('admin.updates_auto_protected') }}"
+            card_mod:
+              style: |
+                ha-card {
+                  background: var(--card-background-color, rgba(8,18,28,0.75)) !important;
+                  border: 1px solid rgba(0, 229, 255, 0.28) !important;
+                  border-radius: var(--ha-card-border-radius, 20px) !important;
+                }
+
           # EN | MAINTENANCE. CHECK NOW matters more than it looks:
           # EN | integrations poll on their own schedule, so an empty screen
           # EN | means "nothing found last time we asked", and only this

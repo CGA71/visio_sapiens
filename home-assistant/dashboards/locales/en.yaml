@@ -392,6 +392,12 @@ admin:
   updates_maintenance: MAINTENANCE
   updates_check: CHECK NOW
   updates_install_hacs: INSTALL EVERY INTEGRATION & CARD
+  updates_auto: AUTOMATIC UPDATES
+  updates_auto_enabled: Install automatically
+  updates_auto_time: Every night at
+  updates_auto_targets: Will be installed
+  updates_auto_now: RUN THE PASS NOW
+  updates_auto_protected: Home Assistant Core is never installed automatically
   discovery: DISCOVERY SCAN
   upgrade: UPGRADE
   generate: GENERATE DASHBOARDS

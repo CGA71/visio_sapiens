@@ -32,8 +32,9 @@ réfléchir ou si l'on lit d'abord les notes de version.
 entités update.* (Home Assistant, déjà là)
         │
         ▼
-packages/vssp_updates.yaml       4 capteurs — un décompte et une liste
-        │                        d'entités par famille + un total
+packages/vssp_updates.yaml       5 capteurs — un décompte et une liste
+        │                        d'entités par famille, un total, et un
+        │                        pour ce qui peut s'installer seul
         ▼
 templates_j2/admin.yaml.j2       l'écran MISES À JOUR affiche ces listes
 ```
@@ -58,8 +59,13 @@ production (où il attrapera Core et les add-ons), sans retouche.
 | `sensor.vssp_updates_system` | en attente, système | `entity_ids` |
 | `sensor.vssp_updates_hacs` | en attente, HACS | `entity_ids` |
 | `sensor.vssp_updates_firmware` | en attente, micrologiciel | `entity_ids` |
+| `sensor.vssp_updates_auto` | en attente, installable seule | `entity_ids`, `protected` |
 | `script.vssp_updates_check` | — | ré-interroge chaque entité update |
 | `script.vssp_updates_install_hacs` | — | installe toutes les mises à jour HACS |
+| `script.vssp_updates_install_auto` | — | la passe automatique, à la demande |
+| `input_boolean.vssp_updates_auto` | l'option | éteinte tant qu'on ne l'allume pas |
+| `input_datetime.vssp_updates_auto_time` | l'heure de passage | |
+| `automation.vssp_updates_auto_nightly` | le déclencheur nocturne | |
 
 Une mise à jour **ignorée** ne compte pas, et cela ne demande aucun
 filtre : Home Assistant rapporte une telle entité à `off` tant que la
@@ -114,6 +120,74 @@ disque reste l'ancien fichier dans le cache du navigateur, Home Assistant
 ne le dit pas, et le symptôme — une carte qui continue de se comporter
 comme la version qu'on vient de remplacer — se lit comme une mise à jour
 ratée plutôt que comme un onglet périmé.
+
+## Mises à jour automatiques — une option, et elle est éteinte
+
+Rien ne s'installe tout seul tant que `input_boolean.vssp_updates_auto`
+n'est pas activé depuis la carte MISES À JOUR AUTOMATIQUES. Interrupteur
+fermé, l'automatisation reste chargée et ne fait rien : l'interrupteur
+est une **condition**, pas un second déclencheur, donc le rallumer plus
+tard ne rejoue pas les nuits qu'il a passées à l'arrêt.
+
+Une fois allumé, chaque nuit à l'heure réglée juste à côté, la passe :
+
+1. demande à chaque entité update de ré-interroger sa source, et attend
+   les réponses ;
+2. lit `sensor.vssp_updates_auto` — la liste de ce qui peut s'installer
+   sans surveillance ;
+3. les installe **une à la fois**, `continue_on_error`, à vingt secondes
+   d'intervalle ;
+4. publie une notification qui nomme ce qui a été installé **et ce qui a
+   été retenu**.
+
+Le décompte affiché sur la carte est lu depuis ce même capteur : le
+nombre sur la ligne est donc le nombre de choses qui seront installées
+cette nuit — pas un second calcul qui s'accorde avec le premier jusqu'au
+jour où l'un des deux est modifié.
+
+**LANCER LA PASSE MAINTENANT** appelle le même script que
+l'automatisation. Tester le bouton teste la vraie passe nocturne, pas une
+seconde copie qui divergera.
+
+### Home Assistant Core n'est jamais installé automatiquement
+
+C'est la seule mise à jour capable de laisser la maison sans dashboard :
+un Core cassé emporte l'interface qui servirait à s'en apercevoir, la
+console qui servirait à revenir en arrière, et toutes les automatisations
+du fichier. Il veut la case de sauvegarde que sa propre boîte propose, et
+quelqu'un devant l'écran.
+
+L'exclusion vit dans **le capteur qui alimente l'automatisation**, pas
+dans l'automatisation — l'écran l'énonce donc comme un fait qu'il relit
+et non comme une promesse faite dans un commentaire, et l'entité retenue
+est nommée dans la notification au lieu d'être silencieusement absente.
+
+Core est reconnu de deux façons, parce que les deux ne coïncident pas
+toujours : par `entity_id` (`update.home_assistant_core_update`,
+l'identifiant que lui donne le Supervisor) et par l'attribut `title`
+(`Home Assistant Core`), qui survit à une entité qu'on a renommée.
+
+Aucun des deux n'existe sur l'instance k3s — Home Assistant y tourne en
+conteneur, sans Supervisor pour le mettre à jour — donc `protected` y est
+vide et la garde reste dormante jusqu'au passage du modèle sur HAOS,
+c'est-à-dire précisément le moment où elle doit déjà être là.
+
+**Ce qui n'est pas protégé :** le Supervisor, l'OS et les add-ons partent
+avec le reste, comme demandé. C'est laisser l'interrupteur fermé qui les
+retient.
+
+### Pourquoi une à la fois
+
+Un seul `update.install` sur toute la liste est un unique appel de
+service. La première entité qui refuse — un appareil parti hors ligne
+entre le rafraîchissement et l'installation — lève, et tout ce qui attend
+derrière n'est jamais tenté, sans un mot. Boucler avec
+`continue_on_error` coûte quelques minutes à quatre heures du matin et
+achète une passe qui termine ce qu'elle peut.
+
+Le délai entre chacune évite de surcroît que deux flashs de micrologiciel
+se chevauchent, ce qui sur des appareils secteur signifie deux prises qui
+redémarrent en même temps.
 
 ## Notes d'implémentation
 

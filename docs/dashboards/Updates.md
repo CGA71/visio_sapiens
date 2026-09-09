@@ -31,8 +31,9 @@ first.
 update.* entities (Home Assistant, already there)
         │
         ▼
-packages/vssp_updates.yaml       4 sensors — a count and an entity list
-        │                        per family + one grand total
+packages/vssp_updates.yaml       5 sensors — a count and an entity list
+        │                        per family, one grand total, and one
+        │                        for what may install unattended
         ▼
 templates_j2/admin.yaml.j2       the UPDATES screen renders those lists
 ```
@@ -57,8 +58,13 @@ instance (where it catches the NAS) and on a HAOS production instance
 | `sensor.vssp_updates_system` | pending, system | `entity_ids` |
 | `sensor.vssp_updates_hacs` | pending, HACS | `entity_ids` |
 | `sensor.vssp_updates_firmware` | pending, firmware | `entity_ids` |
+| `sensor.vssp_updates_auto` | pending, auto-installable | `entity_ids`, `protected` |
 | `script.vssp_updates_check` | — | re-poll every update entity |
 | `script.vssp_updates_install_hacs` | — | install every pending HACS update |
+| `script.vssp_updates_install_auto` | — | the automatic pass, on demand |
+| `input_boolean.vssp_updates_auto` | the option | off until you turn it on |
+| `input_datetime.vssp_updates_auto_time` | the hour it runs | |
+| `automation.vssp_updates_auto_nightly` | the nightly trigger | |
 
 An update that has been **skipped** does not count, and that needs no
 filter: Home Assistant reports such an entity as `off` for as long as the
@@ -107,6 +113,69 @@ After a bulk HACS install a notification asks for a hard refresh
 this browser's cache, Home Assistant does not say so, and the symptom — a
 card that keeps behaving like the version you just replaced — reads as a
 failed update rather than a stale tab.
+
+## Automatic updates — an option, and it is off
+
+Nothing installs itself until `input_boolean.vssp_updates_auto` is turned
+on from the AUTOMATIC UPDATES card. With the switch closed the automation
+stays loaded and does nothing: the switch is a **condition**, not a
+second trigger, so turning it back on later does not replay the nights it
+sat out.
+
+When it is on, once a night at the hour set beside it, the pass:
+
+1. asks every update entity to re-poll, and waits for the answers;
+2. reads `sensor.vssp_updates_auto` — the list of what may be installed
+   unattended;
+3. installs them **one at a time**, `continue_on_error`, twenty seconds
+   apart;
+4. posts a notification naming what was installed **and what was held
+   back**.
+
+The count on the card is read from that same sensor, so the number on the
+row is the number of things that will be installed tonight — not a second
+calculation that agrees with the first until one of them is edited.
+
+**RUN THE PASS NOW** calls the same script the automation calls. Testing
+the button tests the real nightly pass rather than a second copy of it
+that will drift.
+
+### Home Assistant Core is never installed automatically
+
+It is the one update that can leave the house without a dashboard: a
+broken Core takes down the interface you would use to notice, the console
+you would use to roll back, and every automation in the file. It wants
+the backup checkbox its own dialog offers, and a person watching.
+
+The exclusion lives in **the sensor that feeds the automation**, not in
+the automation — so the screen states it as a fact it reads back rather
+than as a promise made in a comment, and the held-back entity is named in
+the notification instead of silently missing.
+
+Core is recognised two ways, because the two do not always coincide: by
+`entity_id` (`update.home_assistant_core_update`, the identifier the
+Supervisor gives it) and by the `title` attribute (`Home Assistant
+Core`), which survives an entity someone renamed.
+
+Neither exists on the k3s instance — Home Assistant runs there as a
+container with no Supervisor to update it — so `protected` is empty and
+the guard is dormant until the model moves to HAOS, which is exactly when
+it has to already be there.
+
+**What is not protected:** the Supervisor, the OS and the add-ons go with
+everything else, as asked. Leaving the switch off is what holds those
+back.
+
+### Why one at a time
+
+A single `update.install` over the whole list is one service call. The
+first entity that refuses — a device that went offline between the
+refresh and the install — raises, and everything queued behind it is
+silently never attempted. Looping with `continue_on_error` costs a few
+minutes at four in the morning and buys a pass that finishes what it can.
+
+The delay between them also keeps two firmware flashes from overlapping,
+which on mains-powered devices means two plugs rebooting at once.
 
 ## Implementation notes
 
