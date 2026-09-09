@@ -977,12 +977,48 @@ views:
                 icon: mdi:play-circle-outline
               - type: section
                 label: "{{ t('admin.updates_auto_protected') }}"
+            # EN | --ha-color-form-background is the ONE token that darkens
+            # EN | the time field. It is a Web Awesome control four shadow
+            # EN | roots down (ha-time-input > ha-base-time-input > ha-input
+            # EN | > wa-input), and what paints it is `.text-field` inside
+            # EN | wa-input's own shadow root — unreachable by any selector
+            # EN | written here. Left alone it renders #f3f3f3, a white slab
+            # EN | on a dark console.
+            # EN | Setting it on the CARD is what makes it work. A custom
+            # EN | property is substituted where it is DECLARED, and Home
+            # EN | Assistant declares the Web Awesome chain from this one
+            # EN | above the card — so overriding the downstream
+            # EN | --wa-form-control-background-color here changes a value
+            # EN | that was already resolved and inherited as a literal.
+            # EN | And when checking it in a browser: the field carries a
+            # EN | background transition, so reading the computed style
+            # EN | immediately after setting the property returns the OLD
+            # EN | colour and the fix looks like it failed. Let it settle.
+            # FR | --ha-color-form-background est le SEUL token qui assombrit
+            # FR | le champ d heure. C est un controle Web Awesome quatre
+            # FR | shadow roots plus bas (ha-time-input > ha-base-time-input
+            # FR | > ha-input > wa-input), et ce qui le peint est
+            # FR | `.text-field` dans le shadow root de wa-input lui-meme —
+            # FR | hors d atteinte de tout selecteur ecrit ici. Laisse tel
+            # FR | quel, il se rend en #f3f3f3, une dalle blanche sur une
+            # FR | console sombre.
+            # FR | C est de le poser sur la CARTE qui le fait fonctionner.
+            # FR | Une propriete personnalisee est substituee la ou elle est
+            # FR | DECLAREE, et Home Assistant declare la chaine Web Awesome
+            # FR | a partir de celle-ci au-dessus de la carte — donc
+            # FR | surcharger ici le --wa-form-control-background-color en
+            # FR | aval modifie une valeur deja resolue et heritee en dur.
+            # FR | Et pour le verifier dans un navigateur : le champ porte
+            # FR | une transition de fond, donc lire le style calcule juste
+            # FR | apres avoir pose la propriete renvoie l ANCIENNE couleur
+            # FR | et la correction semble avoir echoue. Laisser reposer.
             card_mod:
               style: |
                 ha-card {
                   background: var(--card-background-color, rgba(8,18,28,0.75)) !important;
                   border: 1px solid rgba(0, 229, 255, 0.28) !important;
                   border-radius: var(--ha-card-border-radius, 20px) !important;
+                  --ha-color-form-background: rgba(0, 30, 45, 0.55);
                 }
 
           # EN | MAINTENANCE. CHECK NOW matters more than it looks:

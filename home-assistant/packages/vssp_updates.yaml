@@ -326,14 +326,24 @@ input_boolean:
     name: "Visio Sapiens — Mises à jour automatiques"
     icon: mdi:autorenew
 
-# EN | An hour rather than an interval, and an early one by default. A
-# EN | firmware flash cuts the power to a plug for a moment and a HACS card
-# EN | swap changes the interface under whoever is looking at it; both are
-# EN | unremarkable at 04:00 and irritating at 19:00.
-# FR | Une heure plutot qu un intervalle, et tot par defaut. Un flash de
-# FR | micrologiciel coupe un instant une prise et un remplacement de carte
-# FR | HACS change l interface sous les yeux de qui la regarde ; les deux
-# FR | passent inapercus a 04h00 et agacent a 19h00.
+# EN | An hour rather than an interval. A firmware flash cuts the power to
+# EN | a plug for a moment and a HACS card swap changes the interface under
+# EN | whoever is looking at it; both are unremarkable at 04:00 and
+# EN | irritating at 19:00.
+# EN | No `initial:` here either, for the same reason as the switch: it
+# EN | would force the value back at every restart and undo the hour
+# EN | someone chose. The field therefore starts at 00:00 — itself a quiet
+# EN | hour, so a house that never touches it is not badly served — and the
+# EN | ADMIN screen is where it moves.
+# FR | Une heure plutot qu un intervalle. Un flash de micrologiciel coupe
+# FR | un instant une prise et un remplacement de carte HACS change
+# FR | l interface sous les yeux de qui la regarde ; les deux passent
+# FR | inapercus a 04h00 et agacent a 19h00.
+# FR | Pas d `initial:` ici non plus, pour la meme raison que
+# FR | l interrupteur : il forcerait la valeur a chaque redemarrage et
+# FR | deferait l heure choisie. Le champ demarre donc a 00h00 — une heure
+# FR | calme elle aussi, donc une maison qui n y touche jamais n est pas
+# FR | mal servie — et c est l ecran ADMIN qui la deplace.
 input_datetime:
   vssp_updates_auto_time:
     name: "Visio Sapiens — Heure des mises à jour automatiques"
