@@ -379,7 +379,7 @@ Everything lives in [`docs/`](docs/README.md), in both languages (`X.md` /
 
 | | |
 |---|---|
-| [`docs/dashboards/`](docs/dashboards) | the interface and how it is generated — generator, design system, CORE, chatbot, calendar |
+| [`docs/dashboards/`](docs/dashboards) | the interface and how it is generated — generator, design system, CORE, chatbot, calendar, updates |
 | [`docs/platform/`](docs/platform) | the foundation — deployment, the Vault safe, security, backups, MQTT on k3s |
 | [`docs/ci-cd/`](docs/ci-cd) | the pipeline, and the field postmortems |
 | [`docs/project/`](docs/project) | vision, case study, YouTube series |

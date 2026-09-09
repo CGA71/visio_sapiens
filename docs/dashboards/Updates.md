@@ -202,6 +202,25 @@ empty.
 `state_not: "0"` alone is true for both, so on a half-started instance
 the card would appear, ask the sensor for a list, and get nothing.
 
+**The time field needs one CSS token, on the card.** The picker is a Web
+Awesome control four shadow roots down (`ha-time-input` >
+`ha-base-time-input` > `ha-input` > `wa-input`), and what paints it is
+`.text-field` inside `wa-input`'s own shadow root — unreachable by any
+selector written in the template. Left alone it renders `#f3f3f3`, a
+white slab on a dark console. `--ha-color-form-background` set on the
+`ha-card` is the one thing that changes it.
+
+It has to go on the **card**, not on the downstream
+`--wa-form-control-background-color`: a custom property is substituted
+where it is *declared*, and Home Assistant declares that chain from this
+token somewhere above the card, so by the time it reaches the field the
+downstream name is already a resolved literal.
+
+And when checking it in a browser, the field carries a background
+transition — reading the computed style immediately after setting the
+property returns the **old** colour, and a working fix looks like a
+failed one.
+
 **Two template engines on the markdown card.** The three family labels
 are translated by the *generator*; the loop under them is executed by
 *Home Assistant*. The boundary falls between them, so the set-tag is

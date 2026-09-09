@@ -216,6 +216,26 @@ qui l'on tend `undefined` lève au lieu de s'afficher vide.
 moitié démarrée la carte apparaîtrait, demanderait sa liste au capteur,
 et n'obtiendrait rien.
 
+**Le champ d'heure demande un token CSS, sur la carte.** Le sélecteur est
+un contrôle Web Awesome quatre shadow roots plus bas (`ha-time-input` >
+`ha-base-time-input` > `ha-input` > `wa-input`), et ce qui le peint est
+`.text-field` dans le shadow root de `wa-input` lui-même — hors
+d'atteinte de tout sélecteur écrit dans le template. Laissé tel quel, il
+se rend en `#f3f3f3`, une dalle blanche sur une console sombre.
+`--ha-color-form-background` posé sur le `ha-card` est la seule chose qui
+le change.
+
+Il doit aller sur la **carte**, pas sur le
+`--wa-form-control-background-color` en aval : une propriété
+personnalisée est substituée là où elle est *déclarée*, et Home Assistant
+déclare cette chaîne à partir de ce token au-dessus de la carte — donc
+quand elle atteint le champ, le nom en aval est déjà une valeur résolue.
+
+Et pour le vérifier dans un navigateur, le champ porte une transition de
+fond : lire le style calculé juste après avoir posé la propriété renvoie
+l'**ancienne** couleur, et une correction qui marche ressemble à une
+correction ratée.
+
 **Deux moteurs de template sur la carte markdown.** Les trois libellés de
 famille sont traduits par le *générateur* ; la boucle en dessous est
 exécutée par *Home Assistant*. La frontière tombe entre les deux, la
