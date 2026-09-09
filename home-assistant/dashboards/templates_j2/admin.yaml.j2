@@ -1192,7 +1192,8 @@ views:
                       gap:8px;color:#FFFFFF;font-size:15px;font-weight:700;
                       letter-spacing:.4px;padding:2px 0 8px;">
                       <ha-icon icon="mdi:server-network"
-                        style="--mdc-icon-size:20px;color:#00E5FF;"></ha-icon>
+                        style="--mdc-icon-size:20px;color:#00E5FF;margin:0;"
+                        ></ha-icon>
                       {{ t('admin.updates_infra') | js }}</div>`;
                 ]]]
               rows: >
@@ -1219,6 +1220,23 @@ views:
                       docker_images: '{{ t('admin.updates_infra_docker_images') | js }}'
                     }
                   };
+                  // EN | margin:0 ON EVERY ha-icon, and it is not
+                  // EN | cosmetic. button-card styles its OWN icon with
+                  // EN | `margin: auto` to centre it, and custom_fields HTML
+                  // EN | lives in the same shadow root, so that rule applies
+                  // EN | here too. On a flex row, auto margins absorb all the
+                  // EN | free space: the icon was pushed to the middle of a
+                  // EN | 1663px card and the label to the far right. It
+                  // EN | measured as margin-left: 768px.
+                  // FR | margin:0 SUR CHAQUE ha-icon, et ce n est pas
+                  // FR | cosmetique. button-card style SA PROPRE icone avec
+                  // FR | `margin: auto` pour la centrer, et le HTML des
+                  // FR | custom_fields vit dans le meme shadow root, donc
+                  // FR | cette regle s applique ici aussi. Sur une ligne
+                  // FR | flex, les marges auto absorbent tout l espace libre :
+                  // FR | l icone etait poussee au milieu d une carte de
+                  // FR | 1663px et le libelle a l extreme droite. Mesure :
+                  // FR | margin-left: 768px.
                   const rows = (entity && entity.attributes.components) || [];
                   if (!rows.length) {
                     return `<div style="color:#56707E;font-size:12px;
@@ -1300,7 +1318,7 @@ views:
                         border-top:1px solid rgba(0,229,255,.10);">
                         <ha-icon icon="${r.icon}" style="--mdc-icon-size:18px;
                           color:${r.pending ? '#00E5FF' : '#56707E'};
-                          flex:0 0 auto;"></ha-icon>
+                          flex:0 0 auto;margin:0;"></ha-icon>
                         <div style="flex:1 1 auto;min-width:0;
                           color:#FFFFFF;font-size:12px;font-weight:600;
                           white-space:nowrap;overflow:hidden;
