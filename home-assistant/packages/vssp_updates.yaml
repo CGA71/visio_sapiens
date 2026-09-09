@@ -351,6 +351,171 @@ template:
           {{ states('sensor.vssp_updates_pending') | int(0)
              + states('sensor.vssp_updates_infra') | int(0) }}
 
+      # ═══════════════════════════════════════════════════════════════
+      # EN | THE VERDICT — one sensor, read by two screens
+      # FR | LE VERDICT — un capteur, lu par deux ecrans
+      # ═══════════════════════════════════════════════════════════════
+      #
+      # EN | The HOME dashboard shows a green/orange/red light and tapping it
+      # EN | opens the UPDATES screen. The first version computed the colour
+      # EN | in the card's own JavaScript, which meant the light and the
+      # EN | screen it links to were two separate opinions about the same
+      # EN | question — and the first time they disagreed, the light said
+      # EN | orange and the screen showed nothing that explained it. A signal
+      # EN | you cannot click through and verify is worse than no signal: it
+      # EN | trains you to distrust it.
+      # EN | So the decision lives HERE, once, and both screens render it.
+      # EN | The card reads this state for its colour; the UPDATES screen
+      # EN | reads `items` and names exactly what drove it.
+      # EN |   green   nothing to apply
+      # EN |   orange  patches waiting — an HA integration, a HACS card, a
+      # EN |           host package
+      # EN |   red     a MAJOR version is waiting: the first number of the
+      # EN |           version moved, which is the upgrade that reads release
+      # EN |           notes rather than the one that runs tonight
+      # FR | Le dashboard HOME affiche un feu vert/orange/rouge et le toucher
+      # FR | ouvre l ecran MISES A JOUR. La premiere version calculait la
+      # FR | couleur dans le JavaScript de la carte, ce qui faisait du feu et
+      # FR | de l ecran vers lequel il pointe deux avis distincts sur la meme
+      # FR | question — et la premiere fois qu ils ont diverge, le feu disait
+      # FR | orange et l ecran n affichait rien qui l explique. Un signal
+      # FR | qu on ne peut pas verifier en cliquant est pire que pas de
+      # FR | signal : il apprend a s en mefier.
+      # FR | La decision vit donc ICI, une fois, et les deux ecrans
+      # FR | l affichent. La carte lit cet etat pour sa couleur ; l ecran
+      # FR | MISES A JOUR lit `items` et nomme exactement ce qui l a decide.
+      # FR |   green   rien a appliquer
+      # FR |   orange  des patchs attendent — integration HA, carte HACS,
+      # FR |           paquet de l hote
+      # FR |   red     une version MAJEURE attend : le premier nombre de la
+      # FR |           version a bouge, c est la mise a niveau qui lit les
+      # FR |           notes de version, pas celle qui tourne cette nuit
+      #
+      # EN | MAJOR IS THE FIRST NUMBER MOVING. 2025.12 -> 2026.1 is major,
+      # EN | 2026.1.1 -> 2026.1.2 is not. `regex_findall('\d+') | first` is
+      # EN | how that first number is reached without assuming a separator:
+      # EN | HA cores read 2026.1.0, apt reads 19.3.0-ce.0, docker tags read
+      # EN | 1.20. An entry missing either version is counted as an ordinary
+      # EN | patch rather than guessed at — an unknown upstream has never been
+      # EN | evidence of a major release.
+      # FR | MAJEUR, C EST LE PREMIER NOMBRE QUI BOUGE. 2025.12 -> 2026.1 en
+      # FR | est un, 2026.1.1 -> 2026.1.2 non. `regex_findall('\d+') | first`
+      # FR | est la facon d atteindre ce premier nombre sans presumer d un
+      # FR | separateur : les cores HA s ecrivent 2026.1.0, apt 19.3.0-ce.0,
+      # FR | les tags docker 1.20. Une entree a laquelle il manque une version
+      # FR | compte comme un patch ordinaire plutot que d etre devinee — un
+      # FR | amont inconnu n a jamais prouve une version majeure.
+      - name: VSSP Updates verdict
+        unique_id: vssp_updates_verdict
+        # EN | Static, for the same self-reference reason as the state above:
+        # EN | an icon template reading this sensor's own state would lag a
+        # EN | cycle. The two cards that render this verdict pick their own
+        # EN | icon from the state they are already reading.
+        # FR | Statique, pour la meme raison d auto-reference que l etat
+        # FR | ci-dessus : un template d icone lisant l etat de ce capteur
+        # FR | aurait un cycle de retard. Les deux cartes qui affichent ce
+        # FR | verdict choisissent leur icone depuis l etat qu elles lisent
+        # FR | deja.
+        icon: mdi:shield-check
+        # EN | The same walk as `items` below, deliberately repeated rather
+        # EN | than read back with state_attr('sensor.vssp_updates_verdict',
+        # EN | 'items'): a template entity renders its state BEFORE its
+        # EN | attributes, so reading its own attribute yields the PREVIOUS
+        # EN | cycle's value. The light would then be one refresh behind the
+        # EN | list it is supposed to summarise — green for a moment after a
+        # EN | major landed, which is exactly the moment it must not be.
+        # EN | Every other sensor in this file recomputes the same way.
+        # FR | Le meme parcours que `items` plus bas, repete deliberement
+        # FR | plutot que relu par state_attr('sensor.vssp_updates_verdict',
+        # FR | 'items') : une entite template rend son etat AVANT ses
+        # FR | attributs, donc lire son propre attribut donne la valeur du
+        # FR | cycle PRECEDENT. Le feu aurait alors un rafraichissement de
+        # FR | retard sur la liste qu il resume — vert un instant apres
+        # FR | l arrivee d une version majeure, precisement l instant ou il ne
+        # FR | doit pas l etre. Tous les autres capteurs de ce fichier
+        # FR | recalculent de la meme facon.
+        state: >-
+          {% set ns = namespace(major=0, patch=0) %}
+          {% for u in states.update | selectattr('state', 'eq', 'on') %}
+            {% set im = u.attributes.installed_version | default('', true)
+                        | string | regex_findall('\d+') %}
+            {% set lm = u.attributes.latest_version | default('', true)
+                        | string | regex_findall('\d+') %}
+            {% if im | count > 0 and lm | count > 0
+                  and (lm | first | int) > (im | first | int) %}
+              {% set ns.major = ns.major + 1 %}
+            {% else %}
+              {% set ns.patch = ns.patch + 1 %}
+            {% endif %}
+          {% endfor %}
+          {% for r in state_attr('sensor.vssp_updates_infra', 'components') or [] %}
+            {% set im = r.installed | default('', true)
+                        | string | regex_findall('\d+') %}
+            {% set lm = r.latest | default('', true)
+                        | string | regex_findall('\d+') %}
+            {% if im | count > 0 and lm | count > 0
+                  and (lm | first | int) > (im | first | int) %}
+              {% set ns.major = ns.major + 1 %}
+            {% elif r.pending %}
+              {% set ns.patch = ns.patch + 1 %}
+            {% endif %}
+          {% endfor %}
+          {% if ns.major > 0 %}red{% elif ns.patch > 0 %}orange{% else %}green{% endif %}
+        attributes:
+          # EN | Every pending thing, named, with what makes it major or not.
+          # EN | The UPDATES screen renders this list verbatim, so what the
+          # EN | light claims and what the screen shows are the same rows.
+          # FR | Chaque chose en attente, nommee, avec ce qui la rend majeure
+          # FR | ou non. L ecran MISES A JOUR affiche cette liste telle
+          # FR | quelle, donc ce que le feu affirme et ce que l ecran montre
+          # FR | sont les memes lignes.
+          items: >-
+            {% set ns = namespace(rows=[]) %}
+            {% for u in states.update | selectattr('state', 'eq', 'on')
+                 | sort(attribute='name') %}
+              {% set iv = u.attributes.installed_version | default('', true) | string %}
+              {% set lv = u.attributes.latest_version | default('', true) | string %}
+              {% set im = iv | regex_findall('\d+') %}
+              {% set lm = lv | regex_findall('\d+') %}
+              {% set major = im | count > 0 and lm | count > 0
+                             and (lm | first | int) > (im | first | int) %}
+              {% set ns.rows = ns.rows + [{
+                   'name': u.attributes.friendly_name | default(u.entity_id, true),
+                   'kind': 'major' if major else 'patch',
+                   'source': 'ha',
+                   'installed': iv,
+                   'latest': lv }] %}
+            {% endfor %}
+            {% for r in state_attr('sensor.vssp_updates_infra', 'components') or [] %}
+              {% set iv = r.installed | default('', true) | string %}
+              {% set lv = r.latest | default('', true) | string %}
+              {% set im = iv | regex_findall('\d+') %}
+              {% set lm = lv | regex_findall('\d+') %}
+              {% set major = im | count > 0 and lm | count > 0
+                             and (lm | first | int) > (im | first | int) %}
+              {% if major or r.pending %}
+                {% set ns.rows = ns.rows + [{
+                     'name': r.key,
+                     'kind': 'major' if major else 'patch',
+                     'source': 'infra',
+                     'installed': iv,
+                     'latest': lv }] %}
+              {% endif %}
+            {% endfor %}
+            {{ ns.rows }}
+          # EN | Whether the server half of the answer was actually looked at.
+          # EN | It does not change the colour — three colours, no fourth —
+          # EN | but the UPDATES screen says so, so a green light over an
+          # EN | unprobed host is at least legible as one.
+          # FR | Si la moitie serveur de la reponse a reellement ete regardee.
+          # FR | Cela ne change pas la couleur — trois couleurs, pas de
+          # FR | quatrieme — mais l ecran MISES A JOUR le dit, pour qu un feu
+          # FR | vert par-dessus un hote non sonde reste au moins lisible
+          # FR | comme tel.
+          infra_probed: >-
+            {{ states('sensor.vssp_updates_infra') not in
+               ['unavailable', 'unknown', 'none'] }}
+
       # EN | The infra family split by tier, so the screen can say "5 of
       # EN | these will install themselves tonight, 2 are waiting for you,
       # EN | 2 will never install from here" without recomputing it in three

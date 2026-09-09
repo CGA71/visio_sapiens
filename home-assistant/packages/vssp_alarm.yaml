@@ -1,0 +1,142 @@
+########################################################################
+# Visio Sapiens — ALARM package (the three positions and the panic button)
+#
+# EN | WHY THIS FILE EXISTS
+# EN | The SECURITY panel on HOME had pointed at `alarm_control_panel.maison`
+# EN | since the dashboard was written by hand, with a `# TODO: replace with
+# EN | your alarm entity` beside it. That entity has never existed on this
+# EN | instance: the panel rendered "Not configured" and there was nothing
+# EN | behind it to arm or disarm. Adding three position buttons and a panic
+# EN | button to a card wired to a missing entity would have produced four
+# EN | controls that do nothing, which is worse than the honest "not
+# EN | configured" it replaced.
+# EN | So the entity is created here, with Home Assistant's own `manual`
+# EN | alarm platform — core, no integration to install, no cloud, no
+# EN | dependency.
+# FR | POURQUOI CE FICHIER EXISTE
+# FR | Le panneau SECURITE de HOME pointait vers `alarm_control_panel.maison`
+# FR | depuis que le dashboard etait ecrit a la main, avec un « # TODO :
+# FR | remplacer par votre entite alarme » a cote. Cette entite n a jamais
+# FR | existe sur cette instance : le panneau affichait « Non configure » et
+# FR | il n y avait rien derriere a armer ou desarmer. Ajouter trois boutons
+# FR | de position et un bouton panique a une carte reliee a une entite
+# FR | absente aurait donne quatre commandes qui ne font rien, ce qui est
+# FR | pire que le « non configure » honnete qu elles remplacent.
+# FR | L entite est donc creee ici, avec la plateforme d alarme `manual` de
+# FR | Home Assistant — native, aucune integration a installer, aucun cloud,
+# FR | aucune dependance.
+#
+# ----------------------------------------------------------------------
+# EN | THE THREE POSITIONS map onto the states HA already defines, so every
+# EN | automation, the mobile app and Settings all understand them:
+# EN |   armed_away   ARMED          — nobody in the house, every zone live
+# EN |   armed_home   ARMED AT HOME  — people inside; perimeter live, the
+# EN |                                 movement inside is expected
+# EN |   disarmed     DISARMED
+# EN | plus `triggered`, which the panic button reaches directly.
+# FR | LES TROIS POSITIONS correspondent aux etats que HA definit deja, donc
+# FR | les automatisations, l application mobile et les Reglages les
+# FR | comprennent tous :
+# FR |   armed_away   ARMEE           — personne dans la maison, toutes zones
+# FR |   armed_home   ARMEE PRESENCE  — des gens a l interieur ; le perimetre
+# FR |                                  est actif, le mouvement interieur est
+# FR |                                  attendu
+# FR |   disarmed     DESARMEE
+# FR | plus `triggered`, que le bouton panique atteint directement.
+#
+# ----------------------------------------------------------------------
+# EN | NO CODE, deliberately, and worth stating plainly rather than leaving
+# EN | to be discovered: this panel arms and disarms from a tap on the wall
+# EN | tablet, with no PIN. That is the right trade for a HUD whose whole
+# EN | point is one-touch control, and it is NOT a substitute for a
+# EN | monitored alarm system. Anyone who can reach the tablet can disarm
+# EN | it. To require a PIN, add `code:` and `code_arm_required: true`
+# EN | below — the card will then get Home Assistant's own keypad dialog.
+# FR | PAS DE CODE, deliberement, et cela merite d etre dit franchement
+# FR | plutot que laisse a decouvrir : ce panneau s arme et se desarme d une
+# FR | pression sur la tablette murale, sans code PIN. C est le bon compromis
+# FR | pour un HUD dont tout l interet est la commande en un geste, et ce
+# FR | n est PAS un substitut a un systeme d alarme telesurveille. Quiconque
+# FR | atteint la tablette peut le desarmer. Pour exiger un PIN, ajouter
+# FR | `code:` et `code_arm_required: true` ci-dessous — la carte recevra
+# FR | alors le clavier natif de Home Assistant.
+#
+# EN | REPLACING IT WITH A REAL ALARM. When a monitored system is integrated
+# EN | (Verisure, Somfy, Ajax...), it brings its own alarm_control_panel
+# EN | entity. Point the dashboards at it by changing ONE line — the
+# EN | `alarm_entity` of model/house.yaml — and delete this file. The
+# EN | templates read that value; no card names an entity directly.
+# FR | LE REMPLACER PAR UNE VRAIE ALARME. Quand un systeme telesurveille est
+# FR | integre (Verisure, Somfy, Ajax...), il apporte sa propre entite
+# FR | alarm_control_panel. Pointer les dashboards dessus en changeant UNE
+# FR | ligne — le `alarm_entity` de model/house.yaml — et supprimer ce
+# FR | fichier. Les templates lisent cette valeur ; aucune carte ne nomme
+# FR | une entite en dur.
+#
+# EN | BEFORE DEPLOYING — check for duplicate keys, as with every package:
+# FR | AVANT DE DEPLOYER — verifier les cles en double, comme pour tout
+# FR | package :
+#
+#   grep -n "vssp_alarme" home-assistant/packages/*.yaml
+########################################################################
+
+alarm_control_panel:
+  - platform: manual
+    name: VSSP Alarme
+    unique_id: vssp_alarme
+
+    # EN | THE DELAYS, and why they are not zero.
+    # EN | `arming_time` is the walk-out delay: the seconds between pressing
+    # EN | ARMED and the system actually watching, so leaving through the
+    # EN | front door does not set it off.
+    # EN | `delay_time` is the walk-in delay: the seconds after a trigger
+    # EN | before it fires, so coming home and disarming is possible.
+    # EN | `trigger_time` is how long it stays triggered before returning to
+    # EN | its previous state. Four minutes is long enough to be unmissable
+    # EN | and short enough not to run all night on a false alarm.
+    # FR | LES DELAIS, et pourquoi ils ne sont pas nuls.
+    # FR | `arming_time` est le delai de sortie : les secondes entre l appui
+    # FR | sur ARMEE et la surveillance effective, pour que sortir par la
+    # FR | porte d entree ne la declenche pas.
+    # FR | `delay_time` est le delai d entree : les secondes apres un
+    # FR | declenchement avant qu il ne sonne, pour pouvoir rentrer et
+    # FR | desarmer.
+    # FR | `trigger_time` est la duree pendant laquelle elle reste declenchee
+    # FR | avant de revenir a son etat precedent. Quatre minutes, assez long
+    # FR | pour etre impossible a manquer, assez court pour ne pas sonner
+    # FR | toute la nuit sur une fausse alerte.
+    arming_time: 30
+    delay_time: 20
+    trigger_time: 240
+
+    # EN | ARMED AT HOME arms instantly and triggers instantly: nobody is
+    # EN | walking out, and nobody needs a grace period to come back in
+    # EN | through a perimeter they are already inside of. Overriding the
+    # EN | delays per state is exactly what the manual platform offers this
+    # EN | block for.
+    # FR | ARMEE PRESENCE s arme instantanement et declenche
+    # FR | instantanement : personne ne sort, et personne n a besoin d un
+    # FR | delai de grace pour rentrer par un perimetre dans lequel il se
+    # FR | trouve deja. Surcharger les delais par etat est precisement ce que
+    # FR | la plateforme manual propose ce bloc pour faire.
+    armed_home:
+      arming_time: 0
+      delay_time: 0
+
+    # EN | The panic button calls alarm_trigger, which lands here. It is
+    # EN | immediate whatever the state above says — a panic button that
+    # EN | waits twenty seconds is not a panic button.
+    # FR | Le bouton panique appelle alarm_trigger, qui atterrit ici. Il est
+    # FR | immediat quoi que disent les etats ci-dessus — un bouton panique
+    # FR | qui attend vingt secondes n est pas un bouton panique.
+    triggered:
+      delay_time: 0
+
+    # EN | Stay triggered rather than disarming itself when the siren time
+    # EN | is up: returning silently to `disarmed` would erase the fact that
+    # EN | anything happened, for anyone who was not in the house to hear it.
+    # FR | Rester declenchee plutot que se desarmer seule a la fin du temps
+    # FR | de sirene : revenir en silence a `disarmed` effacerait le fait
+    # FR | qu il s est passe quelque chose, pour qui n etait pas la pour
+    # FR | l entendre.
+    disarm_after_trigger: false

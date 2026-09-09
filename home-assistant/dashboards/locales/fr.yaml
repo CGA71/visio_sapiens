@@ -285,6 +285,16 @@ admin:
 
   # EN | INFRASTRUCTURE — the layer underneath Home Assistant.
   # FR | INFRASTRUCTURE — la couche sous Home Assistant.
+  # EN | The banner that explains the HOME light — see the note in en.yaml.
+  # FR | Le bandeau qui explique le feu de HOME — voir la note dans en.yaml.
+  updates_verdict: POURQUOI CETTE COULEUR
+  updates_verdict_major: Versions majeures
+  updates_verdict_patch: Patchs
+  updates_verdict_none: Rien en attente — Home Assistant et le serveur sont à jour
+  updates_verdict_unprobed: >-
+    Le serveur n'a pas été sondé, ceci ne couvre donc que Home Assistant.
+    Lancez SONDER LE SERVEUR ci-dessous.
+
   updates_infra: Infrastructure
   updates_infra_state: INFRASTRUCTURE
   updates_infra_auto: Installées automatiquement
@@ -423,15 +433,28 @@ home:
   # FR | Le feu UPGRADE de HOME — voir la note dans en.yaml.
   upgrade:
     clear: À JOUR
-    clear_hint: Aucun correctif de sécurité en attente
-    security: CORRECTIFS DUS
-    security_hint: correctif(s) de sécurité à appliquer
+    clear_hint: Rien à appliquer
+    clear_unprobed: Rien dans Home Assistant — serveur non sondé
+    patches: PATCHS EN ATTENTE
+    patch_hint: à appliquer
     major: VERSION MAJEURE
-    major_hint: Une version majeure demande votre attention
-    unknown: NON SONDÉ
-    unknown_hint: Le serveur n'a jamais été sondé
+    major_hint: Une version majeure attend
 
+  # EN | The SECURITY panel on HOME — see the note in en.yaml.
+  # FR | Le panneau SÉCURITÉ de HOME — voir la note dans en.yaml.
   alarm:
+    mode_away: ARMÉE
+    mode_home: PRÉSENCE
+    mode_off: DÉSARMÉE
+    state_away: Armée
+    state_home: Armée · présence
+    state_off: Désarmée
+    state_triggered: ALARME
+    state_arming: Armement…
+    state_pending: Délai d'entrée…
+    panic: PANIQUE
+    panic_stop: ARRÊTER L'ALARME
+    panic_confirm: Déclencher l'alarme maintenant ?
     ok: Parfait
     alert: ALERTE
     armed: Armée

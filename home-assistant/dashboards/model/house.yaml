@@ -52,6 +52,27 @@ house:
   # FR | lancement en ligne de commande simple.
   calendar_entity: calendar.calebar
 
+  # EN | alarm_control_panel.* entity behind the SECURITY panel on HOME —
+  # EN | its three positions and its panic button. The default is the native
+  # EN | panel created by packages/vssp_alarm.yaml, which exists so those
+  # EN | controls act on something rather than on a name that was never
+  # EN | defined (the hand-written dashboard pointed at
+  # EN | `alarm_control_panel.maison`, an entity this instance has never had).
+  # EN | Integrating a real alarm system means changing THIS line to the
+  # EN | entity it brings, and nothing else: no card names an alarm entity
+  # EN | directly.
+  # FR | Entite alarm_control_panel.* derriere le panneau SECURITE de HOME —
+  # FR | ses trois positions et son bouton panique. Le defaut est le panneau
+  # FR | natif cree par packages/vssp_alarm.yaml, qui existe pour que ces
+  # FR | commandes agissent sur quelque chose plutot que sur un nom jamais
+  # FR | defini (le dashboard ecrit a la main pointait vers
+  # FR | `alarm_control_panel.maison`, entite que cette instance n a jamais
+  # FR | eue).
+  # FR | Integrer un vrai systeme d alarme consiste a changer CETTE ligne
+  # FR | pour l entite qu il apporte, et rien d autre : aucune carte ne nomme
+  # FR | une entite d alarme en dur.
+  alarm_entity: alarm_control_panel.vssp_alarme
+
   # EN | Interface language. English is the reference: any key missing from
   # EN | another catalogue falls back to it, so a partial translation is safe.
   # EN | `generate_dashboards.py --locale <code>` overrides this value, which

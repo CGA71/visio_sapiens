@@ -406,6 +406,18 @@ admin:
   # FR | INFRASTRUCTURE — la couche sous Home Assistant. Ces libelles nomment
   # FR | des composants, pas des entites : aucun `update.*` derriere eux,
   # FR | ce qui est toute la raison d etre de la famille.
+  # EN | The banner that explains the HOME light. It is the first card on the
+  # EN | screen because it answers the question that brought you here.
+  # FR | Le bandeau qui explique le feu de HOME. Premiere carte de l ecran,
+  # FR | parce qu il repond a la question qui vous y a amene.
+  updates_verdict: WHY THIS COLOUR
+  updates_verdict_major: Major versions
+  updates_verdict_patch: Patches
+  updates_verdict_none: Nothing pending — Home Assistant and the server are up to date
+  updates_verdict_unprobed: >-
+    The server has not been probed, so this covers Home Assistant only. Run
+    PROBE THE SERVER below.
+
   updates_infra: Infrastructure
   updates_infra_state: INFRASTRUCTURE
   updates_infra_auto: Installed automatically
@@ -558,16 +570,37 @@ home:
   # FR | ordinaires peuvent parfaitement attendre, et c est l ecran MISES A
   # FR | JOUR qui les donne a lire.
   upgrade:
-    clear: PATCHED
-    clear_hint: No security patch pending
-    security: PATCHES DUE
-    security_hint: security patch(es) to apply
+    clear: UP TO DATE
+    clear_hint: Nothing to apply
+    clear_unprobed: Nothing in Home Assistant — server not probed
+    patches: PATCHES DUE
+    patch_hint: to apply
     major: MAJOR VERSION
-    major_hint: A major version needs your attention
-    unknown: NOT PROBED
-    unknown_hint: The server has never been probed
+    major_hint: A major version is waiting
 
+  # EN | THE SECURITY PANEL on HOME: three positions and a panic button.
+  # EN | `mode_*` are the buttons, `state_*` the position they put the panel
+  # EN | in. They are worded differently on purpose — a button says what it
+  # EN | will do, a state says what is true — and kept short because three of
+  # EN | them share one KPI slot.
+  # FR | LE PANNEAU SECURITE de HOME : trois positions et un bouton panique.
+  # FR | `mode_*` sont les boutons, `state_*` la position dans laquelle ils
+  # FR | mettent le panneau. Ils sont formules differemment a dessein — un
+  # FR | bouton dit ce qu il va faire, un etat dit ce qui est vrai — et
+  # FR | restent courts parce que trois d entre eux partagent une case KPI.
   alarm:
+    mode_away: ARMED
+    mode_home: AT HOME
+    mode_off: OFF
+    state_away: Armed
+    state_home: Armed · people in
+    state_off: Disarmed
+    state_triggered: ALARM
+    state_arming: Arming…
+    state_pending: Entry delay…
+    panic: PANIC
+    panic_stop: STOP THE ALARM
+    panic_confirm: Set the alarm off now?
     ok: All clear
     alert: ALERT
     armed: Armed

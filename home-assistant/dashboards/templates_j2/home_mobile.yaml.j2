@@ -227,30 +227,158 @@ views:
               # sensor.vssp_total_appareils qui rend le ratio possible pour
               # les appareils.
               - type: custom:button-card
-                template: vssp_kpi_card
-                icon: mdi:shield-lock
+                show_icon: false
+                show_state: false
+                show_label: false
                 name: "{{ t('common.security') }}"
-                entity: alarm_control_panel.maison  # TODO: remplacer par votre entité alarme
-                state_display: >
-                  [[[
-                    if (!entity) return '{{ t("home.alarm.not_configured") | js }}';
-                    switch (entity.state) {
-                      case "disarmed": return '{{ t("home.alarm.ok") | js }}';
-                      case "triggered": return '{{ t("home.alarm.alert") | js }}';
-                      case "armed_home": return '{{ t("home.alarm.armed") | js }}';
-                      case "armed_away": return '{{ t("home.alarm.armed") | js }}';
-                      default: return entity.state;
-                    }
-                  ]]]
-                label: >
-                  [[[
-                    if (!entity) return '{{ t("home.alarm.no_entity") | js }}';
-                    return entity.state === "triggered" ? '{{ t("home.alarm.intrusion") | js }}' : '{{ t("home.alarm.no_alert") | js }}';
-                  ]]]
-                variables:
-                  icon_color: "#00FFC3"
-                  value_color: "#00FFC3"
+                entity: {{ house.alarm_entity | default('alarm_control_panel.vssp_alarme', true) }}
+                # EN | The card itself is not a button - every tap target inside
+                # EN | it is one, and a tap that lands between them should do
+                # EN | nothing rather than open a more-info dialog over the
+                # EN | controls someone was aiming at.
+                # FR | La carte elle-meme n est pas un bouton - chaque cible de
+                # FR | pression a l interieur en est une, et une pression qui
+                # FR | tombe entre deux ne doit rien faire plutot qu ouvrir une
+                # FR | fiche par-dessus les commandes qu on visait.
+                tap_action:
+                  action: none
+                custom_fields:
+                  # EN | THE CURRENT POSITION, in words. `arming` and `pending`
+                  # EN | are the two transient states the manual platform passes
+                  # EN | through - the walk-out and walk-in delays - and naming
+                  # EN | them is the difference between "it is counting down" and
+                  # EN | a panel that looks stuck between positions.
+                  # FR | LA POSITION COURANTE, en toutes lettres. `arming` et
+                  # FR | `pending` sont les deux etats transitoires que traverse
+                  # FR | la plateforme manual - les delais de sortie et
+                  # FR | d entree - et les nommer fait la difference entre « elle
+                  # FR | decompte » et un panneau qui semble coince entre deux
+                  # FR | positions.
+                  now: >
+                    [[[
+                      const st = entity ? entity.state : 'unavailable';
+                      const map = {
+                        armed_away: ['{{ t('home.alarm.state_away') | js }}', '#00FFC3'],
+                        armed_home: ['{{ t('home.alarm.state_home') | js }}', '#00FFC3'],
+                        disarmed:   ['{{ t('home.alarm.state_off') | js }}', '#8FB6C9'],
+                        triggered:  ['{{ t('home.alarm.state_triggered') | js }}', '#FF3D71'],
+                        arming:     ['{{ t('home.alarm.state_arming') | js }}', '#FF9800'],
+                        pending:    ['{{ t('home.alarm.state_pending') | js }}', '#FF9800']
+                      };
+                      const m = map[st] || ['{{ t('home.alarm.not_configured') | js }}', '#56707E'];
+                      return `<div style="font-size:15px;font-weight:700;color:${m[1]};">${m[0]}</div>`;
+                    ]]]
 
+                  # EN | THE THREE POSITIONS. The active one is filled rather than
+                  # EN | outlined, because on a wall tablet read at two metres the
+                  # EN | fill is the only thing that reads at a glance.
+                  # EN | `hass` is reached through document.querySelector(
+                  # EN | 'home-assistant') - the app's root element sits directly
+                  # EN | under <body>, never inside a shadow root, so a plain
+                  # EN | document query finds it however deep in shadow DOM this
+                  # EN | card is. Same pattern as the thermostat card.
+                  # FR | LES TROIS POSITIONS. L active est pleine plutot que
+                  # FR | cerclee, parce que sur une tablette murale lue a deux
+                  # FR | metres, le remplissage est la seule chose qui se lise
+                  # FR | d un coup d oeil.
+                  # FR | `hass` s atteint via document.querySelector(
+                  # FR | 'home-assistant') - l element racine de l application est
+                  # FR | directement sous <body>, jamais dans un shadow root, donc
+                  # FR | une simple requete document le trouve quelle que soit la
+                  # FR | profondeur de shadow DOM de cette carte. Meme motif que
+                  # FR | la carte thermostat.
+                  modes: >
+                    [[[
+                      const eid = '{{ house.alarm_entity | default('alarm_control_panel.vssp_alarme', true) }}';
+                      const st = entity ? entity.state : 'unavailable';
+                      const call = svc => `document.querySelector('home-assistant')`
+                        + `.hass.callService('alarm_control_panel','${svc}',`
+                        + `{entity_id:'${eid}'})`;
+                      const modes = [
+                        ['armed_away', 'alarm_arm_away', '{{ t('home.alarm.mode_away') | js }}'],
+                        ['armed_home', 'alarm_arm_home', '{{ t('home.alarm.mode_home') | js }}'],
+                        ['disarmed',   'alarm_disarm',   '{{ t('home.alarm.mode_off') | js }}']
+                      ];
+                      const cells = modes.map(m => {
+                        const on = st === m[0];
+                        return `<div onclick="${call(m[1])}" title="${m[2]}" style="
+                            flex:1;text-align:center;padding:5px 2px;border-radius:7px;
+                            cursor:pointer;font-size:8px;font-weight:700;
+                            letter-spacing:.2px;line-height:1.15;
+                            background:${on ? 'rgba(0,255,195,0.16)' : 'rgba(255,255,255,0.04)'};
+                            border:1px solid ${on ? 'rgba(0,255,195,0.55)' : 'rgba(0,229,255,0.18)'};
+                            color:${on ? '#00FFC3' : '#8FB6C9'};
+                          ">${m[2]}</div>`;
+                      }).join('');
+                      return `<div style="display:flex;gap:4px;width:100%;">${cells}</div>`;
+                    ]]]
+
+                  # EN | PANIC. Fires alarm_trigger, which the package routes to
+                  # EN | an immediate `triggered` whatever position the panel is
+                  # EN | in - a panic button that honours a twenty-second entry
+                  # EN | delay is not a panic button.
+                  # EN | It asks first. On a tablet on a wall, an accidental brush
+                  # EN | is far likelier than a real emergency, and a siren that
+                  # EN | starts at three in the morning because someone leaned on
+                  # EN | the hallway screen teaches the household to ignore it.
+                  # EN | One extra tap is the cost; say the word and it goes.
+                  # FR | PANIQUE. Declenche alarm_trigger, que le package route
+                  # FR | vers un `triggered` immediat quelle que soit la position
+                  # FR | du panneau - un bouton panique qui respecte un delai
+                  # FR | d entree de vingt secondes n est pas un bouton panique.
+                  # FR | Il demande confirmation. Sur une tablette murale, un
+                  # FR | frolement accidentel est bien plus probable qu une vraie
+                  # FR | urgence, et une sirene qui part a trois heures du matin
+                  # FR | parce que quelqu un s est appuye sur l ecran du couloir
+                  # FR | apprend a la maisonnee a l ignorer. Une pression de plus
+                  # FR | est le prix ; un mot et elle disparait.
+                  panic: >
+                    [[[
+                      const eid = '{{ house.alarm_entity | default('alarm_control_panel.vssp_alarme', true) }}';
+                      const st = entity ? entity.state : 'unavailable';
+                      const live = st === 'triggered';
+                      const act = `document.querySelector('home-assistant')`
+                        + `.hass.callService('alarm_control_panel','`
+                        + (live ? 'alarm_disarm' : 'alarm_trigger') + `',`
+                        + `{entity_id:'${eid}'})`;
+                      const guard = live ? act
+                        : `if(confirm('{{ t('home.alarm.panic_confirm') | js }}')){${act}}`;
+                      return `<div onclick="${guard}" style="
+                          width:100%;text-align:center;padding:6px 2px;border-radius:7px;
+                          cursor:pointer;font-size:9px;font-weight:800;letter-spacing:.6px;
+                          background:${live ? 'rgba(255,61,113,0.30)' : 'rgba(255,61,113,0.10)'};
+                          border:1px solid rgba(255,61,113,${live ? '0.9' : '0.45'});
+                          color:#FF3D71;
+                        ">${live ? '{{ t('home.alarm.panic_stop') | js }}'
+                                 : '{{ t('home.alarm.panic') | js }}'}</div>`;
+                    ]]]
+                styles:
+                  grid:
+                    - grid-template-areas: '"n" "now" "modes" "panic"'
+                    - grid-template-rows: min-content min-content min-content min-content
+                    - row-gap: 5px
+                    - justify-items: start
+                  card:
+                    - background: var(--card-background-color, rgba(8,18,28,0.72))
+                    - border-radius: var(--ha-card-border-radius, 18px)
+                    - border: 1px solid rgba(0, 229, 255, 0.2)
+                    - padding: 12px 14px
+                    - height: 100%
+                  name:
+                    - color: "var(--text-primary-color, #FFFFFF)"
+                    - font-size: 13px
+                    - font-weight: 700
+                    - letter-spacing: 0.5px
+                    - justify-self: start
+                    - text-align: left
+                  custom_fields:
+                    now:
+                      - width: 100%
+                      - text-align: left
+                    modes:
+                      - width: 100%
+                    panic:
+                      - width: 100%
               # Case 4 — Température : moyenne des thermostats, +/- ajuste
               # chaque climate.* de 0.5°C. Meme carte que home.yaml.j2's
               # Case 4 — voir le commentaire la-bas.
@@ -365,134 +493,74 @@ views:
           - type: custom:button-card
             template: vssp_kpi_card
             name: "{{ t('home.kpi.upgrade') }}"
-            entity: sensor.vssp_updates_infra
+            entity: sensor.vssp_updates_verdict
             tap_action:
               action: navigate
               navigation_path: /visio-sapiens-admin/updates
+            # EN | Everything below RENDERS a decision; it does not make one.
+            # EN | The verdict, and the list of what drove it, are computed in
+            # EN | packages/vssp_updates.yaml so that this light and the
+            # EN | UPDATES screen it opens are the same answer rather than two
+            # EN | that agree until they do not. The first version computed the
+            # EN | colour here, went orange, and sent whoever tapped it to a
+            # EN | screen showing nothing that explained why.
+            # FR | Tout ce qui suit AFFICHE une decision ; il n en prend pas.
+            # FR | Le verdict, et la liste de ce qui l a decide, sont calcules
+            # FR | dans packages/vssp_updates.yaml pour que ce feu et l ecran
+            # FR | MISES A JOUR qu il ouvre soient la meme reponse plutot que
+            # FR | deux reponses qui concordent jusqu au jour ou non. La
+            # FR | premiere version calculait la couleur ici, passait a
+            # FR | l orange, et envoyait qui la touchait vers un ecran qui
+            # FR | n expliquait rien.
             icon: >
               [[[
-                const v = variables.verdict;
+                const v = entity ? entity.state : 'green';
                 if (v === 'red') return 'mdi:shield-alert';
-                if (variables.unverified) return 'mdi:shield-off-outline';
                 if (v === 'orange') return 'mdi:shield-sync';
                 return 'mdi:shield-check';
               ]]]
             state_display: >
               [[[
-                const v = variables.verdict;
+                const v = entity ? entity.state : 'green';
                 if (v === 'red') return '{{ t("home.upgrade.major") | js }}';
-                if (variables.unverified) return '{{ t("home.upgrade.unknown") | js }}';
-                if (v === 'orange') return '{{ t("home.upgrade.security") | js }}';
+                if (v === 'orange') return '{{ t("home.upgrade.patches") | js }}';
                 return '{{ t("home.upgrade.clear") | js }}';
               ]]]
             label: >
               [[[
-                const v = variables.verdict;
-                if (v === 'red') return variables.major_name || '{{ t("home.upgrade.major_hint") | js }}';
-                if (variables.unverified) return '{{ t("home.upgrade.unknown_hint") | js }}';
-                if (v === 'orange') return variables.security_count + ' {{ t("home.upgrade.security_hint") | js }}';
+                const items = (entity && entity.attributes.items) || [];
+                const majors = items.filter(i => i.kind === 'major');
+                if (majors.length) {
+                  return majors.slice(0, 2).map(i => i.name).join(', ');
+                }
+                if (items.length) {
+                  return items.length + ' {{ t("home.upgrade.patch_hint") | js }}';
+                }
+                // EN | Green with the server unprobed is still green - three
+                // EN | colours, no fourth - but the label says so, so it is
+                // EN | legible as "nothing in Home Assistant" rather than as
+                // EN | a claim about the whole estate.
+                // FR | Vert avec le serveur non sonde reste vert - trois
+                // FR | couleurs, pas de quatrieme - mais le libelle le dit,
+                // FR | pour que cela se lise « rien dans Home Assistant »
+                // FR | plutot que comme une affirmation sur tout le parc.
+                if (entity && entity.attributes.infra_probed === false) {
+                  return '{{ t("home.upgrade.clear_unprobed") | js }}';
+                }
                 return '{{ t("home.upgrade.clear_hint") | js }}';
               ]]]
             variables:
-              # EN | The whole decision, computed once. button-card evaluates
-              # EN | `variables` before the fields that read them, so icon,
-              # EN | state and label all see the same verdict rather than
-              # EN | each recomputing it and disagreeing on a slow frame.
-              # FR | Toute la decision, calculee une fois. button-card evalue
-              # FR | `variables` avant les champs qui les lisent, donc icone,
-              # FR | etat et libelle voient tous le meme verdict au lieu de le
-              # FR | recalculer chacun et de diverger sur une frame lente.
-              security_count: >
-                [[[
-                  const infra = states['sensor.vssp_updates_infra'];
-                  if (!infra) return 0;
-                  const rows = infra.attributes.components || [];
-                  const os = rows.find(r => r.key === 'os_packages');
-                  return os && os.security ? os.security : 0;
-                ]]]
-              major_name: >
-                [[[
-                  // EN | A major gap is the FIRST number moving: 1.20 -> 2.1
-                  // EN | is one, 1.36.2 -> 1.36.4 is not. Anything without
-                  // EN | both versions known is skipped rather than guessed —
-                  // EN | an empty upstream is not evidence of anything.
-                  // FR | Un ecart majeur, c est le PREMIER nombre qui bouge :
-                  // FR | 1.20 -> 2.1 en est un, 1.36.2 -> 1.36.4 non. Tout ce
-                  // FR | dont les deux versions ne sont pas connues est ignore
-                  // FR | plutot que devine — un amont vide ne prouve rien.
-                  const major = s => {
-                    const m = String(s || '').match(/\d+/);
-                    return m ? parseInt(m[0], 10) : null;
-                  };
-                  const hits = [];
-                  const infra = states['sensor.vssp_updates_infra'];
-                  if (infra) {
-                    for (const r of (infra.attributes.components || [])) {
-                      const a = major(r.installed), b = major(r.latest);
-                      if (a !== null && b !== null && b > a) hits.push(r.key);
-                    }
-                  }
-                  for (const eid of Object.keys(states)) {
-                    if (!eid.startsWith('update.')) continue;
-                    const e = states[eid];
-                    if (!e || e.state !== 'on') continue;
-                    const a = major(e.attributes.installed_version);
-                    const b = major(e.attributes.latest_version);
-                    if (a !== null && b !== null && b > a) {
-                      hits.push(e.attributes.friendly_name || eid);
-                    }
-                  }
-                  return hits.length ? hits.slice(0, 2).join(', ') : '';
-                ]]]
-              # EN | THREE COLOURS, never a fourth. An earlier revision
-              # EN | had a grey "not probed" state; the light is a traffic
-              # EN | light and it now always shows one of the three.
-              # EN | Which leaves the honest question: what colour is an
-              # EN | estate we could not inspect? Not green. Green is a
-              # EN | claim - "nothing here is exposed" - and making that
-              # EN | claim without having looked is the one failure mode a
-              # EN | security light cannot afford, because it is indis-
-              # EN | tinguishable from the real thing precisely when it
-              # EN | matters. So an unverified estate wears the orange:
-              # EN | attention needed. The label says why, and the icon
-              # EN | differs from a genuine patch backlog.
-              # FR | TROIS COULEURS, jamais une quatrieme. Une revision
-              # FR | precedente avait un etat gris « non sonde » ; c est un
-              # FR | feu tricolore et il affiche desormais toujours l une
-              # FR | des trois.
-              # FR | Reste la question honnete : de quelle couleur est un
-              # FR | parc qu on n a pas pu inspecter ? Pas vert. Le vert est
-              # FR | une affirmation — « rien ici n est expose » — et la
-              # FR | porter sans avoir regarde est la seule defaillance
-              # FR | qu un feu de securite ne peut pas se permettre, car
-              # FR | elle est indiscernable du vrai precisement quand cela
-              # FR | compte. Un parc non verifie porte donc l orange :
-              # FR | attention requise. Le libelle dit pourquoi, et l icone
-              # FR | differe d un vrai retard de correctifs.
-              unverified: >
-                [[[
-                  const infra = states['sensor.vssp_updates_infra'];
-                  return !(infra && infra.state !== 'unavailable'
-                                 && infra.state !== 'unknown');
-                ]]]
-              verdict: >
-                [[[
-                  if (variables.major_name) return 'red';
-                  if (variables.security_count > 0) return 'orange';
-                  if (variables.unverified) return 'orange';
-                  return 'green';
-                ]]]
               icon_color: >
                 [[[
                   const c = { red: '#FF3D71', orange: '#FF9800',
                               green: '#00FFC3' };
-                  return c[variables.verdict] || c.green;
+                  return c[entity ? entity.state : 'green'] || c.green;
                 ]]]
               value_color: >
                 [[[
                   const c = { red: '#FF3D71', orange: '#FF9800',
                               green: '#00FFC3' };
-                  return c[variables.verdict] || c.green;
+                  return c[entity ? entity.state : 'green'] || c.green;
                 ]]]
             styles:
               # EN | The card border carries the verdict too. At the distance a
@@ -507,17 +575,17 @@ views:
                       const c = { red: 'rgba(255,61,113,0.75)',
                                   orange: 'rgba(255,152,0,0.75)',
                                   green: 'rgba(0,255,195,0.45)' };
-                      return '1px solid ' + (c[variables.verdict] || c.green);
+                      return '1px solid ' +
+                        (c[entity ? entity.state : 'green'] || c.green);
                     ]]]
                 - box-shadow: >
                     [[[
                       const c = { red: '0 0 18px rgba(255,61,113,0.35)',
                                   orange: '0 0 18px rgba(255,152,0,0.28)',
                                   green: 'none' };
-                      return c[variables.verdict] || 'none';
+                      return c[entity ? entity.state : 'green'] || 'none';
                     ]]]
                 - cursor: pointer
-
       - type: custom:button-card
         view_layout:
           grid-area: video

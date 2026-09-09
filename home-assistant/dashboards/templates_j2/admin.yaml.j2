@@ -736,6 +736,92 @@ views:
                 iframe { width: 100%; height: 100% !important; border: none; }
 
 {% elif screen == 'updates' %}
+          # =================================================================
+          # EN | WHY THE LIGHT IS THAT COLOUR — the first thing on the screen
+          # FR | POURQUOI LE FEU EST DE CETTE COULEUR — en tete d ecran
+          # =================================================================
+          #
+          # EN | The HOME dashboard's UPGRADE light links here, so this is
+          # EN | where someone arrives asking "what made it orange?". It used
+          # EN | to be possible to arrive and find nothing that answered
+          # EN | that — the light computed its own verdict and this screen
+          # EN | listed Home Assistant's update entities, which is a different
+          # EN | question. A signal you cannot verify by clicking through
+          # EN | teaches you to ignore it.
+          # EN | This card renders `sensor.vssp_updates_verdict`, the same
+          # EN | entity the light reads, and names every row that drove it.
+          # EN | The two cannot disagree because there is only one of them.
+          # FR | Le feu UPGRADE du dashboard HOME pointe ici, c est donc ici
+          # FR | qu on arrive en demandant « qu est-ce qui l a mis a
+          # FR | l orange ? ». Il etait possible d arriver et de ne rien
+          # FR | trouver qui y reponde — le feu calculait son propre verdict
+          # FR | et cet ecran listait les entites de mise a jour de Home
+          # FR | Assistant, ce qui est une autre question. Un signal qu on ne
+          # FR | peut pas verifier en cliquant apprend a etre ignore.
+          # FR | Cette carte affiche `sensor.vssp_updates_verdict`, l entite
+          # FR | meme que lit le feu, et nomme chaque ligne qui l a decide.
+          # FR | Les deux ne peuvent pas diverger puisqu il n y en a qu une.
+          - type: markdown
+            title: "{{ t('admin.updates_verdict') }}"
+            content: |
+              {# EN | `| js` ON EVERY LABEL, not decoration. These become
+                 EN | single-quoted string literals inside a Jinja dict that
+                 EN | Home Assistant parses later, and French is full of
+                 EN | apostrophes: "Le serveur n'a pas ete sonde" closes the
+                 EN | literal at "n'" and the whole card dies with a template
+                 EN | error. The filter escapes them, and it exists precisely
+                 EN | because the generated JS hit this first (see the note
+                 EN | beside env.filters["js"] in generate_dashboards.py).
+                 FR | `| js` SUR CHAQUE LIBELLE, pas par decoration. Ils
+                 FR | deviennent des litteraux entre quotes simples dans un
+                 FR | dict Jinja que Home Assistant analysera plus tard, et le
+                 FR | francais est plein d apostrophes : « Le serveur n'a pas
+                 FR | ete sonde » ferme le litteral sur « n' » et toute la
+                 FR | carte meurt sur une erreur de template. Le filtre les
+                 FR | echappe, et il existe precisement parce que le JS genere
+                 FR | a rencontre le piege en premier (voir la note pres de
+                 FR | env.filters["js"] dans generate_dashboards.py). #}
+              {{ '{%' }} set labels = {
+                'green':  '{{ t('home.upgrade.clear') | js }}',
+                'orange': '{{ t('home.upgrade.patches') | js }}',
+                'red':    '{{ t('home.upgrade.major') | js }}',
+                'major':  '{{ t('admin.updates_verdict_major') | js }}',
+                'patch':  '{{ t('admin.updates_verdict_patch') | js }}',
+                'none':   '{{ t('admin.updates_verdict_none') | js }}',
+                'unprobed': '{{ t('admin.updates_verdict_unprobed') | js }}' } {{ '%}' }}
+              {%+ raw %}{% set v = states('sensor.vssp_updates_verdict') %}
+              {% set items = state_attr('sensor.vssp_updates_verdict', 'items') or [] %}
+              {% set dot = '🔴' if v == 'red' else ('🟠' if v == 'orange' else '🟢') %}
+              ## {{ dot }} {{ labels.get(v, v) }}
+              {% set majors = items | selectattr('kind', 'eq', 'major') | list %}
+              {% set patches = items | selectattr('kind', 'eq', 'patch') | list %}
+              {% if majors %}
+              **{{ labels['major'] }}**
+              {% for i in majors %}
+              - {{ i.name }} · `{{ i.installed or '?' }}` → `{{ i.latest or '?' }}`
+              {% endfor %}
+              {% endif %}
+              {% if patches %}
+              **{{ labels['patch'] }}**
+              {% for i in patches %}
+              - {{ i.name }}{% if i.installed %} · `{{ i.installed }}`{% endif %}{% if i.latest and i.latest != i.installed %} → `{{ i.latest }}`{% endif %}
+              {% endfor %}
+              {% endif %}
+              {% if not items %}
+              _{{ labels['none'] }}_
+              {% endif %}
+              {% if not state_attr('sensor.vssp_updates_verdict', 'infra_probed') %}
+
+              ⚠ _{{ labels['unprobed'] }}_
+              {% endif %}{% endraw +%}
+            card_mod:
+              style: |
+                ha-card {
+                  background: var(--card-background-color, rgba(8,18,28,0.75)) !important;
+                  border: 1px solid rgba(0, 229, 255, 0.28) !important;
+                  border-radius: var(--ha-card-border-radius, 20px) !important;
+                }
+
           # EN | UPDATES — everything Home Assistant already knows, in one
           # EN | place and split three ways. Settings > Updates shows the
           # EN | same entities; what it does not do is separate a Lovelace
