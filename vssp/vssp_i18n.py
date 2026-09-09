@@ -217,6 +217,39 @@ def find_boolean_keys(node, prefix: str = "") -> list:
     return found
 
 
+def find_boolean_values(node, prefix: str = "") -> list:
+    """
+    EN | The same trap on the OTHER side of the colon, which the check above
+    EN | walked straight past for as long as it existed.
+    EN | `mode_off: OFF` is a perfectly reasonable line to write for a button
+    EN | labelled OFF, and YAML 1.1 turns that value into the boolean False.
+    EN | Nothing raises: the key exists, the render succeeds, and the button
+    EN | on the wall tablet is labelled "False". It shipped exactly once, on
+    EN | the HOME security panel, and was found by reading the rendered chip
+    EN | rather than by any check.
+    EN | Quote the value — `mode_off: "OFF"` — and it stays a string.
+    FR | Le meme piege de l AUTRE cote des deux-points, devant lequel le
+    FR | controle ci-dessus est passe sans le voir depuis qu il existe.
+    FR | `mode_off: OFF` est une ligne parfaitement raisonnable pour un bouton
+    FR | intitule OFF, et YAML 1.1 transforme cette valeur en booleen False.
+    FR | Rien ne leve : la cle existe, le rendu reussit, et le bouton de la
+    FR | tablette murale s intitule « False ». C est parti en production une
+    FR | fois exactement, sur le panneau securite de HOME, et cela a ete
+    FR | trouve en lisant la pastille rendue, par aucun controle.
+    FR | Quoter la valeur — `mode_off: "OFF"` — la garde en chaine.
+    """
+    found = []
+    if isinstance(node, dict):
+        for key, value in node.items():
+            found.extend(find_boolean_values(value, f"{prefix}{key}."))
+    elif isinstance(node, list):
+        for index, value in enumerate(node):
+            found.extend(find_boolean_values(value, f"{prefix[:-1]}[{index}]."))
+    elif isinstance(node, bool):
+        found.append(f"{prefix[:-1]} = {node}")
+    return found
+
+
 def check(locales_dir: Path = DEFAULT_LOCALES_DIR) -> int:
     locales_dir = Path(locales_dir)
     base = flatten(_read_yaml(locales_dir / f"{BASE_LOCALE}.yaml"))
@@ -238,6 +271,22 @@ def check(locales_dir: Path = DEFAULT_LOCALES_DIR) -> int:
                 print(f"         - {item}")
             print("       An unquoted on/off/yes/no key becomes true/false.")
             print("       Rename it (state_on, state_off) or quote it.")
+
+        # EN | And the same trap on the value side — see find_boolean_values.
+        # EN | This one does not raise anywhere: it renders the word "False"
+        # EN | onto a button and waits to be noticed.
+        # FR | Et le meme piege du cote des valeurs — voir
+        # FR | find_boolean_values. Celui-ci ne leve nulle part : il affiche le
+        # FR | mot « False » sur un bouton et attend d etre remarque.
+        values = find_boolean_values(_read_yaml(path))
+        if values:
+            status = 1
+            print(f"[ERR] {path.name}: {len(values)} value(s) parsed as YAML "
+                  f"booleans instead of strings:")
+            for item in values:
+                print(f"         - {item}")
+            print("       An unquoted ON/OFF/YES/NO value becomes True/False")
+            print("       and is displayed as such. Quote it: mode_off: \"OFF\".")
 
     for path in sorted(locales_dir.glob("*.yaml")):
         code = path.stem

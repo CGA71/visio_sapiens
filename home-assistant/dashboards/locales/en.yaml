@@ -591,7 +591,11 @@ home:
   alarm:
     mode_away: ARMED
     mode_home: AT HOME
-    mode_off: OFF
+    # EN | QUOTED, and it has to be: YAML 1.1 reads a bare OFF as the boolean
+    # EN | false, and the chip on the wall tablet then reads "False".
+    # FR | QUOTE, et il le faut : YAML 1.1 lit un OFF nu comme le booleen
+    # FR | false, et la pastille de la tablette murale affiche alors « False ».
+    mode_off: "OFF"
     state_away: Armed
     state_home: Armed · people in
     state_off: Disarmed
