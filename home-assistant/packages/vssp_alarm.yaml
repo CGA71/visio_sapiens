@@ -123,13 +123,45 @@ alarm_control_panel:
       arming_time: 0
       delay_time: 0
 
-    # EN | The panic button calls alarm_trigger, which lands here. It is
-    # EN | immediate whatever the state above says — a panic button that
-    # EN | waits twenty seconds is not a panic button.
-    # FR | Le bouton panique appelle alarm_trigger, qui atterrit ici. Il est
-    # FR | immediat quoi que disent les etats ci-dessus — un bouton panique
-    # FR | qui attend vingt secondes n est pas un bouton panique.
-    triggered:
+    # EN | DISARMED ARMS NOTHING, so it needs no entry delay — and that is
+    # EN | what makes the panic button instant in the state it is pressed
+    # EN | from in practice. `alarm_trigger` on the manual platform always
+    # EN | goes through the CURRENT state's `delay_time` before the siren, so
+    # EN | leaving this at the global 20 seconds would give a panic button
+    # EN | that waits twenty seconds, which is not a panic button.
+    # EN | Pressing panic while ARMED (away) still waits those 20 seconds:
+    # EN | the platform has one delay and it means both "give the owner time
+    # EN | to disarm" and "wait before the siren", so the entry delay cannot
+    # EN | be kept for an intruder and skipped for a panic press. The entry
+    # EN | delay wins there, because armed-away is precisely the state in
+    # EN | which nobody is home to press anything.
+    # EN | NOTE — there is no per-state override for `triggered`: the manual
+    # EN | platform excludes that one state from `delay_time`, and a
+    # EN | `triggered: delay_time: 0` block is rejected with
+    # EN | "'delay_time' is an invalid option", taking the WHOLE platform
+    # EN | down with it. `hass --script check_config` does not catch it; the
+    # EN | entity simply never appears.
+    # FR | DESARMEE N ARME RIEN, elle n a donc pas besoin de delai d entree —
+    # FR | et c est ce qui rend le bouton panique instantane dans l etat
+    # FR | depuis lequel on le presse en pratique. `alarm_trigger` sur la
+    # FR | plateforme manual passe toujours par le `delay_time` de l etat
+    # FR | COURANT avant la sirene, donc laisser ici les 20 secondes globales
+    # FR | donnerait un bouton panique qui attend vingt secondes, ce qui n en
+    # FR | est pas un.
+    # FR | Presser panique en position ARMEE (absence) attend toujours ces
+    # FR | 20 secondes : la plateforme n a qu un delai et il signifie a la
+    # FR | fois « laisser au proprietaire le temps de desarmer » et
+    # FR | « attendre avant la sirene », le delai d entree ne peut donc pas
+    # FR | etre conserve pour un intrus et saute pour une pression panique.
+    # FR | Le delai d entree l emporte la, parce qu absence est precisement
+    # FR | l etat ou personne n est chez soi pour presser quoi que ce soit.
+    # FR | NB — il n existe pas de surcharge par etat pour `triggered` : la
+    # FR | plateforme manual exclut cet etat de `delay_time`, et un bloc
+    # FR | `triggered: delay_time: 0` est rejete sur « 'delay_time' is an
+    # FR | invalid option », emportant TOUTE la plateforme avec lui.
+    # FR | `hass --script check_config` ne le detecte pas ; l entite
+    # FR | n apparait simplement jamais.
+    disarmed:
       delay_time: 0
 
     # EN | Stay triggered rather than disarming itself when the siren time
