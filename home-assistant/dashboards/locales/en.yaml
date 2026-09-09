@@ -546,8 +546,27 @@ home:
     connections: CONNECTIONS
     connections_hint: Connected devices
     rooms_devices: ROOMS & DEVICES
+    upgrade: UPGRADE
     thermostats: THERMOSTAT
     thermostats_hint: No thermostat
+  # EN | The HOME upgrade light. Four states, and the wording matters: the
+  # EN | green one says the estate is PATCHED, not that it is up to date —
+  # EN | there may well be ordinary updates waiting, and the UPDATES screen
+  # EN | is where they are read.
+  # FR | Le feu UPGRADE de HOME. Quatre etats, et les mots comptent : le vert
+  # FR | dit que le parc est CORRIGE, pas qu il est a jour — des mises a jour
+  # FR | ordinaires peuvent parfaitement attendre, et c est l ecran MISES A
+  # FR | JOUR qui les donne a lire.
+  upgrade:
+    clear: PATCHED
+    clear_hint: No security patch pending
+    security: PATCHES DUE
+    security_hint: security patch(es) to apply
+    major: MAJOR VERSION
+    major_hint: A major version needs your attention
+    unknown: NOT PROBED
+    unknown_hint: The server has never been probed
+
   alarm:
     ok: All clear
     alert: ALERT

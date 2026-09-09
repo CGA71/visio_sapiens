@@ -398,6 +398,42 @@ twice a day. A `cat` of a missing file exits non-zero and the sensor goes
 unavailable, which is correct and visibly different from "nothing is
 pending".
 
+## The light on HOME
+
+The fifth KPI panel of the HOME dashboard — desktop and mobile alike — is
+a single traffic light labelled **UPGRADE**, and tapping it opens this
+screen. It replaced the security/alarm panel, which moved into the third
+slot where ROOMS & DEVICES used to sit.
+
+| | Means | Shown when |
+|---|---|---|
+| 🟢 **PATCHED** | nothing is exposed to a known vulnerability | no security patch pending, no major version available |
+| 🟠 **PATCHES DUE** | security patches are waiting | the host has packages from a `-security` pocket |
+| 🔴 **MAJOR VERSION** | something needs a real migration | any component's *first* version number has moved |
+| ⚪ **NOT PROBED** | we have not looked | `sensor.vssp_updates_infra` is unavailable |
+
+**It is not a count of pending updates.** The screen already lists those.
+A light that turns orange because a Lovelace card has a new version
+teaches you to ignore it by the end of the week, so the question it
+answers is deliberately narrow: *is anything unpatched, and is anything
+about to need a migration?* An ordinary minor update leaves it green.
+
+**Green is never shown over missing data.** A security light that reads
+"all clear" when it has not looked is worse than no light at all, which
+is why the fourth state exists. Home Assistant's own updates are always
+known, so an unprobed host is the only thing that can grey it out.
+
+**Major means the first number moved** — `1.20 → 2.1.0` is major,
+`1.36.2 → 1.36.4` is not. Both worlds are read: the infrastructure
+components from the probe's attribute, and the `update.*` entities Home
+Assistant holds, whose `installed_version` and `latest_version` get the
+same comparison. Anything with an unknown upstream is skipped rather than
+guessed — an empty version is not evidence of being behind.
+
+The verdict is computed once, in `variables`, which button-card evaluates
+before the fields that read them; icon, colour, state and label therefore
+all agree instead of each recomputing it and diverging on a slow frame.
+
 ## Related
 
 - [Dashboard_Generator.md](Dashboard_Generator.md) — the generator, slots

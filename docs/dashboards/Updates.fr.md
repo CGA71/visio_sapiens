@@ -421,6 +421,45 @@ change deux fois par jour. Un `cat` sur un fichier absent sort en erreur
 et le capteur devient indisponible, ce qui est correct et visiblement
 différent de « rien n'attend ».
 
+## Le feu sur HOME
+
+Le cinquième panneau KPI du dashboard HOME — desktop comme mobile — est un
+feu unique intitulé **UPGRADE**, et le toucher ouvre cet écran. Il a
+remplacé le panneau sécurité/alarme, lequel a pris la troisième place, là
+où se trouvait PIÈCES & APPAREILS.
+
+| | Signifie | Affiché quand |
+|---|---|---|
+| 🟢 **À JOUR** | rien n'est exposé à une faille connue | aucun correctif de sécurité en attente, aucune version majeure disponible |
+| 🟠 **CORRECTIFS DUS** | des correctifs de sécurité attendent | l'hôte a des paquets issus d'une poche `-security` |
+| 🔴 **VERSION MAJEURE** | quelque chose réclame une vraie migration | le *premier* nombre de version d'un composant a bougé |
+| ⚪ **NON SONDÉ** | nous n'avons pas regardé | `sensor.vssp_updates_infra` est indisponible |
+
+**Ce n'est pas un décompte de mises à jour en attente.** L'écran les liste
+déjà. Un feu qui passe à l'orange parce qu'une carte Lovelace a une
+nouvelle version vous apprend à l'ignorer avant la fin de la semaine ; la
+question à laquelle il répond est donc délibérément étroite : *reste-t-il
+quelque chose d'exposé, et quelque chose réclame-t-il bientôt une
+migration ?* Une mise à jour mineure ordinaire le laisse vert.
+
+**Le vert n'est jamais affiché par-dessus des données absentes.** Un feu
+de sécurité qui annonce « tout va bien » sans avoir regardé est pire que
+pas de feu du tout — d'où le quatrième état. Les mises à jour propres à
+Home Assistant sont toujours connues, donc un hôte non sondé est la seule
+chose qui puisse le passer au gris.
+
+**Majeur veut dire que le premier nombre a bougé** — `1.20 → 2.1.0` est
+majeur, `1.36.2 → 1.36.4` non. Les deux mondes sont lus : les composants
+d'infrastructure depuis l'attribut de la sonde, et les entités `update.*`
+que détient Home Assistant, dont `installed_version` et `latest_version`
+reçoivent la même comparaison. Tout ce dont l'amont est inconnu est ignoré
+plutôt que deviné — une version vide ne prouve pas un retard.
+
+Le verdict est calculé une seule fois, dans `variables`, que button-card
+évalue avant les champs qui les lisent ; icône, couleur, état et libellé
+s'accordent donc au lieu de le recalculer chacun et de diverger sur une
+frame lente.
+
 ## Voir aussi
 
 - [Dashboard_Generator.fr.md](Dashboard_Generator.fr.md) — le générateur,

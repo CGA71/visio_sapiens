@@ -227,62 +227,29 @@ views:
               # sensor.vssp_total_appareils qui rend le ratio possible pour
               # les appareils.
               - type: custom:button-card
-                show_icon: false
-                show_state: false
-                show_label: false
-                name: "{{ t('home.kpi.rooms_devices') }}"
-                entity: sensor.vssp_total_appareils
-                tap_action:
-                  action: more-info
-                custom_fields:
-                  bars: >
-                    [[[
-                      const totalRooms = {{ rooms_rendered | length }};
-
-                      const dev = states['sensor.vssp_total_appareils'];
-                      const connected = dev ? (parseFloat(dev.state) || 0) : 0;
-                      const totalDevices = dev && dev.attributes.total_devices != null
-                        ? (parseFloat(dev.attributes.total_devices) || connected)
-                        : connected;
-                      const devRatio = totalDevices > 0 ? (connected / totalDevices * 100) : 0;
-
-                      return `
-                        <div style="margin-bottom:6px;">
-                          <div style="font-size:9px;color:#3AA7FF;margin-bottom:2px;">${totalRooms} {{ t('home.kpi.active_rooms') }}</div>
-                          <div style="position:relative;width:100%;height:9px;background:rgba(255,255,255,.08);border-radius:5px;overflow:hidden;">
-                            <div style="width:100%;height:100%;background:#3AA7FF;border-radius:5px;"></div>
-                          </div>
-                        </div>
-                        <div>
-                          <div style="font-size:9px;color:#B084FF;margin-bottom:2px;">${connected}/${totalDevices} {{ t('home.kpi.connections') }}</div>
-                          <div style="position:relative;width:100%;height:9px;background:rgba(255,255,255,.08);border-radius:5px;overflow:hidden;">
-                            <div style="width:${devRatio}%;height:100%;background:#B084FF;border-radius:5px;"></div>
-                          </div>
-                        </div>
-                      `;
-                    ]]]
-                styles:
-                  grid:
-                    - grid-template-areas: '"n" "bars"'
-                    - grid-template-rows: min-content 1fr
-                    - row-gap: 6px
-                    - justify-items: start
-                  card:
-                    - background: var(--card-background-color, rgba(8,18,28,0.72))
-                    - border-radius: var(--ha-card-border-radius, 18px)
-                    - border: 1px solid rgba(0, 229, 255, 0.2)
-                    - padding: 14px 18px
-                    - height: 100%
-                  name:
-                    - color: "var(--text-primary-color, #FFFFFF)"
-                    - font-size: 13px
-                    - font-weight: 700
-                    - letter-spacing: 0.5px
-                    - justify-self: start
-                    - text-align: left
-                  custom_fields:
-                    bars:
-                      - width: 100%
+                template: vssp_kpi_card
+                icon: mdi:shield-lock
+                name: "{{ t('common.security') }}"
+                entity: alarm_control_panel.maison  # TODO: remplacer par votre entité alarme
+                state_display: >
+                  [[[
+                    if (!entity) return '{{ t("home.alarm.not_configured") | js }}';
+                    switch (entity.state) {
+                      case "disarmed": return '{{ t("home.alarm.ok") | js }}';
+                      case "triggered": return '{{ t("home.alarm.alert") | js }}';
+                      case "armed_home": return '{{ t("home.alarm.armed") | js }}';
+                      case "armed_away": return '{{ t("home.alarm.armed") | js }}';
+                      default: return entity.state;
+                    }
+                  ]]]
+                label: >
+                  [[[
+                    if (!entity) return '{{ t("home.alarm.no_entity") | js }}';
+                    return entity.state === "triggered" ? '{{ t("home.alarm.intrusion") | js }}' : '{{ t("home.alarm.no_alert") | js }}';
+                  ]]]
+                variables:
+                  icon_color: "#00FFC3"
+                  value_color: "#00FFC3"
 
               # Case 4 — Température : moyenne des thermostats, +/- ajuste
               # chaque climate.* de 0.5°C. Meme carte que home.yaml.j2's
@@ -348,35 +315,191 @@ views:
                     temp:
                       - width: 100%
 
-          # Case 5 — Sécurité / Alarme (pleine largeur)
+          # Case 5 — UPGRADE : le feu vert / orange / rouge
+          #
+          # EN | ONE LIGHT FOR THE WHOLE ESTATE, and the question it answers
+          # EN | is narrow on purpose: "is anything unpatched against a known
+          # EN | vulnerability, and is anything about to need a real
+          # EN | migration?" It is NOT a count of pending updates — the
+          # EN | UPDATES screen already lists those, and a light that turns
+          # EN | orange because a Lovelace card has a new version teaches you
+          # EN | to ignore it by the end of the week.
+          # EN |   GREEN   no security patch waiting, anywhere.
+          # EN |   ORANGE  security patches waiting.
+          # EN |   RED     a MAJOR version is available — the upgrade that
+          # EN |           reads release notes, takes a backup and picks its
+          # EN |           moment, rather than one that runs tonight.
+          # EN |   GREY    never probed. A security light that shows green
+          # EN |           when it has not looked is worse than no light, so
+          # EN |           the one state the design refuses is a confident
+          # EN |           green over missing data.
+          # FR | UN SEUL FEU POUR TOUT LE PARC, et la question a laquelle il
+          # FR | repond est etroite a dessein : « reste-t-il quelque chose
+          # FR | d expose a une faille connue, et quelque chose reclame-t-il
+          # FR | bientot une vraie migration ? » Ce n est PAS un decompte de
+          # FR | mises a jour en attente — l ecran MISES A JOUR les liste
+          # FR | deja, et un feu qui passe a l orange parce qu une carte
+          # FR | Lovelace a une nouvelle version vous apprend a l ignorer
+          # FR | avant la fin de la semaine.
+          # FR |   VERT    aucun correctif de securite en attente, nulle part.
+          # FR |   ORANGE  des correctifs de securite attendent.
+          # FR |   ROUGE   une version MAJEURE est disponible — la mise a
+          # FR |           niveau qui lit les notes de version, prend une
+          # FR |           sauvegarde et choisit son moment, pas celle qui
+          # FR |           tourne cette nuit.
+          # FR |   GRIS    jamais sonde. Un feu de securite qui affiche vert
+          # FR |           sans avoir regarde est pire que pas de feu ; le
+          # FR |           seul etat que ce dessin refuse est donc un vert
+          # FR |           confiant par-dessus des donnees absentes.
+          #
+          # EN | Reads both worlds, because "whatever the component" was the
+          # EN | requirement: the update.* entities Home Assistant holds, and
+          # EN | the infrastructure components the probe publishes as an
+          # EN | attribute. Neither knows about the other, so the arbitration
+          # EN | happens here and nowhere else.
+          # FR | Lit les deux mondes, parce que « peu importe le composant »
+          # FR | etait la demande : les entites update.* que detient Home
+          # FR | Assistant, et les composants d infrastructure que la sonde
+          # FR | publie en attribut. Aucun des deux ne connait l autre,
+          # FR | l arbitrage a donc lieu ici et nulle part ailleurs.
           - type: custom:button-card
             template: vssp_kpi_card
-            icon: mdi:shield-lock
-            name: "{{ t('common.security') }}"
-            entity: alarm_control_panel.maison            # TODO
+            name: "{{ t('home.kpi.upgrade') }}"
+            entity: sensor.vssp_updates_infra
+            tap_action:
+              action: navigate
+              navigation_path: /visio-sapiens-admin/updates
+            icon: >
+              [[[
+                const v = variables.verdict;
+                if (v === 'red') return 'mdi:shield-alert';
+                if (v === 'orange') return 'mdi:shield-sync';
+                if (v === 'grey') return 'mdi:shield-off-outline';
+                return 'mdi:shield-check';
+              ]]]
             state_display: >
               [[[
-                if (!entity) return '{{ t("home.alarm.not_configured") | js }}';
-                switch (entity.state) {
-                  case "disarmed": return '{{ t("home.alarm.ok") | js }}';
-                  case "triggered": return '{{ t("home.alarm.alert") | js }}';
-                  case "armed_home": return '{{ t("home.alarm.armed") | js }}';
-                  case "armed_away": return '{{ t("home.alarm.armed") | js }}';
-                  default: return entity.state;
-                }
+                const v = variables.verdict;
+                if (v === 'red') return '{{ t("home.upgrade.major") | js }}';
+                if (v === 'orange') return '{{ t("home.upgrade.security") | js }}';
+                if (v === 'grey') return '{{ t("home.upgrade.unknown") | js }}';
+                return '{{ t("home.upgrade.clear") | js }}';
               ]]]
             label: >
               [[[
-                if (!entity) return '{{ t("home.alarm.no_entity") | js }}';
-                return entity.state === "triggered" ? '{{ t("home.alarm.intrusion") | js }}' : '{{ t("home.alarm.no_alert") | js }}';
+                const v = variables.verdict;
+                if (v === 'red') return variables.major_name || '{{ t("home.upgrade.major_hint") | js }}';
+                if (v === 'orange') return variables.security_count + ' {{ t("home.upgrade.security_hint") | js }}';
+                if (v === 'grey') return '{{ t("home.upgrade.unknown_hint") | js }}';
+                return '{{ t("home.upgrade.clear_hint") | js }}';
               ]]]
             variables:
-              icon_color: "#00FFC3"
-              value_color: "#00FFC3"
+              # EN | The whole decision, computed once. button-card evaluates
+              # EN | `variables` before the fields that read them, so icon,
+              # EN | state and label all see the same verdict rather than
+              # EN | each recomputing it and disagreeing on a slow frame.
+              # FR | Toute la decision, calculee une fois. button-card evalue
+              # FR | `variables` avant les champs qui les lisent, donc icone,
+              # FR | etat et libelle voient tous le meme verdict au lieu de le
+              # FR | recalculer chacun et de diverger sur une frame lente.
+              security_count: >
+                [[[
+                  const infra = states['sensor.vssp_updates_infra'];
+                  if (!infra) return 0;
+                  const rows = infra.attributes.components || [];
+                  const os = rows.find(r => r.key === 'os_packages');
+                  return os && os.security ? os.security : 0;
+                ]]]
+              major_name: >
+                [[[
+                  // EN | A major gap is the FIRST number moving: 1.20 -> 2.1
+                  // EN | is one, 1.36.2 -> 1.36.4 is not. Anything without
+                  // EN | both versions known is skipped rather than guessed —
+                  // EN | an empty upstream is not evidence of anything.
+                  // FR | Un ecart majeur, c est le PREMIER nombre qui bouge :
+                  // FR | 1.20 -> 2.1 en est un, 1.36.2 -> 1.36.4 non. Tout ce
+                  // FR | dont les deux versions ne sont pas connues est ignore
+                  // FR | plutot que devine — un amont vide ne prouve rien.
+                  const major = s => {
+                    const m = String(s || '').match(/\d+/);
+                    return m ? parseInt(m[0], 10) : null;
+                  };
+                  const hits = [];
+                  const infra = states['sensor.vssp_updates_infra'];
+                  if (infra) {
+                    for (const r of (infra.attributes.components || [])) {
+                      const a = major(r.installed), b = major(r.latest);
+                      if (a !== null && b !== null && b > a) hits.push(r.key);
+                    }
+                  }
+                  for (const eid of Object.keys(states)) {
+                    if (!eid.startsWith('update.')) continue;
+                    const e = states[eid];
+                    if (!e || e.state !== 'on') continue;
+                    const a = major(e.attributes.installed_version);
+                    const b = major(e.attributes.latest_version);
+                    if (a !== null && b !== null && b > a) {
+                      hits.push(e.attributes.friendly_name || eid);
+                    }
+                  }
+                  return hits.length ? hits.slice(0, 2).join(', ') : '';
+                ]]]
+              verdict: >
+                [[[
+                  const infra = states['sensor.vssp_updates_infra'];
+                  const probed = infra && infra.state !== 'unavailable'
+                                       && infra.state !== 'unknown';
+                  if (variables.major_name) return 'red';
+                  if (variables.security_count > 0) return 'orange';
+                  // EN | Green only once the infrastructure has actually been
+                  // EN | looked at. Home Assistant's own updates are always
+                  // EN | known, so an unprobed host is the only thing that can
+                  // EN | leave this grey.
+                  // FR | Vert seulement une fois l infrastructure reellement
+                  // FR | regardee. Les mises a jour propres a Home Assistant
+                  // FR | sont toujours connues, donc un hote non sonde est la
+                  // FR | seule chose qui puisse laisser ceci en gris.
+                  if (!probed) return 'grey';
+                  return 'green';
+                ]]]
+              icon_color: >
+                [[[
+                  const c = { red: '#FF3D71', orange: '#FF9800',
+                              grey: '#56707E', green: '#00FFC3' };
+                  return c[variables.verdict] || c.green;
+                ]]]
+              value_color: >
+                [[[
+                  const c = { red: '#FF3D71', orange: '#FF9800',
+                              grey: '#56707E', green: '#00FFC3' };
+                  return c[variables.verdict] || c.green;
+                ]]]
+            styles:
+              # EN | The card border carries the verdict too. At the distance a
+              # EN | wall tablet is actually read from, the icon is a smudge
+              # EN | and the outline is what registers.
+              # FR | La bordure de la carte porte aussi le verdict. A la
+              # FR | distance ou une tablette murale est reellement lue,
+              # FR | l icone est une tache et c est le contour qui se voit.
+              card:
+                - border: >
+                    [[[
+                      const c = { red: 'rgba(255,61,113,0.75)',
+                                  orange: 'rgba(255,152,0,0.75)',
+                                  grey: 'rgba(86,112,126,0.45)',
+                                  green: 'rgba(0,255,195,0.45)' };
+                      return '1px solid ' + (c[variables.verdict] || c.green);
+                    ]]]
+                - box-shadow: >
+                    [[[
+                      const c = { red: '0 0 18px rgba(255,61,113,0.35)',
+                                  orange: '0 0 18px rgba(255,152,0,0.28)',
+                                  grey: 'none',
+                                  green: 'none' };
+                      return c[variables.verdict] || 'none';
+                    ]]]
+                - cursor: pointer
 
-      # ═══════════════════════════════════════════════════════════════
-      # VIDÉO CENTRALE VISIO SAPIENS (16:9)
-      # ═══════════════════════════════════════════════════════════════
       - type: custom:button-card
         view_layout:
           grid-area: video

@@ -610,7 +610,23 @@ def probe_os_packages(host: Host, comp: dict) -> dict:
         return blank(comp, probed=False, detail=[err.strip()[:200]])
     lines = [ln.strip() for ln in out.splitlines()
              if ln.strip() and "/" in ln and not ln.startswith("Listing")]
-    security = [ln for ln in lines if "-security" in ln]
+    # EN | A security package is one whose POCKET ends in -security
+    # EN | (noble-security, bookworm-security...), which is a different field
+    # EN | from the package name. Testing the whole line for the substring
+    # EN | would count libapache2-mod-security as a security update on any
+    # EN | host that has it, and that number is the one the HOME upgrade
+    # EN | button turns orange on.
+    # FR | Un paquet de securite est celui dont la POCHE finit en -security
+    # FR | (noble-security, bookworm-security...), ce qui est un champ
+    # FR | different du nom du paquet. Tester la ligne entiere sur la
+    # FR | sous-chaine compterait libapache2-mod-security comme une mise a
+    # FR | jour de securite sur tout hote qui l a, et ce nombre est celui sur
+    # FR | lequel le bouton UPGRADE de HOME passe a l orange.
+    def _pocket(line: str) -> str:
+        after = line.split("/", 1)[1] if "/" in line else ""
+        return after.split(" ", 1)[0] if after else ""
+
+    security = [ln for ln in lines if _pocket(ln).endswith("-security")]
     names = [ln.split("/", 1)[0] for ln in lines]
     # EN | GitLab and the runner are apt packages too, and each already has a
     # EN | row of its own further down. Left in here they would be counted

@@ -415,8 +415,22 @@ home:
     connections: CONNEXIONS
     connections_hint: Appareils connectés
     rooms_devices: PIÈCES & APPAREILS
+    upgrade: UPGRADE
     thermostats: THERMOSTAT
     thermostats_hint: Aucun thermostat
+
+  # EN | The HOME upgrade light — see the note in en.yaml.
+  # FR | Le feu UPGRADE de HOME — voir la note dans en.yaml.
+  upgrade:
+    clear: À JOUR
+    clear_hint: Aucun correctif de sécurité en attente
+    security: CORRECTIFS DUS
+    security_hint: correctif(s) de sécurité à appliquer
+    major: VERSION MAJEURE
+    major_hint: Une version majeure demande votre attention
+    unknown: NON SONDÉ
+    unknown_hint: Le serveur n'a jamais été sondé
+
   alarm:
     ok: Parfait
     alert: ALERTE
