@@ -301,6 +301,7 @@ admin:
   updates_infra_manual: En attente de vous
   updates_infra_locked: Jamais installées d'ici
   updates_infra_check: SONDER LE SERVEUR
+  updates_infra_install: INSTALLER
   updates_infra_auto_enabled: Mettre à jour l'infrastructure automatiquement
   updates_infra_never_probed: >-
     Jamais sondé. Appuyez sur SONDER LE SERVEUR, et vérifiez que le

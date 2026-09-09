@@ -1163,7 +1163,14 @@ views:
               - type: button
                 name: "{{ t('admin.updates_infra_' ~ key) }}"
                 icon: {{ icon }}
-                action_name: "{{ t('admin.updates_infra_manual') }}"
+                # EN | The button says what pressing it DOES. It briefly
+                # EN | said "Waiting for you" - the tier label, which reads
+                # EN | as a state on a row and as nonsense on a button.
+                # FR | Le bouton dit ce que le presser FAIT. Il a brievement
+                # FR | dit « En attente de vous » - le libelle du palier, qui
+                # FR | se lit comme un etat sur une ligne et comme un
+                # FR | non-sens sur un bouton.
+                action_name: "{{ t('admin.updates_infra_install') }}"
                 tap_action:
                   action: perform-action
                   perform_action: script.vssp_infra_install_one

@@ -424,6 +424,7 @@ admin:
   updates_infra_manual: Waiting for you
   updates_infra_locked: Never installed from here
   updates_infra_check: PROBE THE SERVER
+  updates_infra_install: INSTALL
   updates_infra_auto_enabled: Update the infrastructure automatically
   updates_infra_never_probed: >-
     Never probed. Press PROBE THE SERVER, and check the safe holds
