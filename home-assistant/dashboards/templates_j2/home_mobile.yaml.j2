@@ -266,7 +266,9 @@ views:
                         pending:    ['{{ t('home.alarm.state_pending') | js }}', '#FF9800']
                       };
                       const m = map[st] || ['{{ t('home.alarm.not_configured') | js }}', '#56707E'];
-                      return `<div style="font-size:15px;font-weight:700;color:${m[1]};">${m[0]}</div>`;
+                      return `<div style="font-size:12px;font-weight:700;`
+                           + `color:${m[1]};text-align:right;line-height:1.2;">`
+                           + `${m[0]}</div>`;
                     ]]]
 
                   # EN | THE THREE POSITIONS. The active one is filled rather than
@@ -353,16 +355,32 @@ views:
                                  : '{{ t('home.alarm.panic') | js }}'}</div>`;
                     ]]]
                 styles:
+                  # EN | THE STATE SHARES THE TITLE ROW. Four stacked rows
+                  # EN | needed about 117px in a KPI slot that is 113px tall, and
+                  # EN | button-card does not shrink to fit - it overflows, and
+                  # EN | ha-card clips it, so PANIC was cut in half by the bottom
+                  # EN | edge. Putting the state beside the name buys a whole row
+                  # EN | and reads better: "Security   Disarmed" on one line.
+                  # FR | L ETAT PARTAGE LA LIGNE DU TITRE. Quatre lignes empilees
+                  # FR | reclamaient environ 117px dans une case KPI qui en fait
+                  # FR | 113, et button-card ne se comprime pas pour tenir - il
+                  # FR | deborde, et ha-card rogne, donc PANIC etait coupe en deux
+                  # FR | par le bord inferieur. Poser l etat a cote du nom gagne
+                  # FR | une ligne entiere et se lit mieux : « Sécurité  Désarmée »
+                  # FR | sur une seule ligne.
                   grid:
-                    - grid-template-areas: '"n" "now" "modes" "panic"'
-                    - grid-template-rows: min-content min-content min-content min-content
-                    - row-gap: 5px
+                    - grid-template-areas: '"n now" "modes modes" "panic panic"'
+                    - grid-template-columns: 1fr auto
+                    - grid-template-rows: min-content min-content min-content
+                    - row-gap: 4px
+                    - column-gap: 8px
+                    - align-items: center
                     - justify-items: start
                   card:
                     - background: var(--card-background-color, rgba(8,18,28,0.72))
                     - border-radius: var(--ha-card-border-radius, 18px)
                     - border: 1px solid rgba(0, 229, 255, 0.2)
-                    - padding: 12px 14px
+                    - padding: 10px 14px
                     - height: 100%
                   name:
                     - color: "var(--text-primary-color, #FFFFFF)"
@@ -373,8 +391,7 @@ views:
                     - text-align: left
                   custom_fields:
                     now:
-                      - width: 100%
-                      - text-align: left
+                      - justify-self: end
                     modes:
                       - width: 100%
                     panic:
