@@ -146,15 +146,26 @@ et des heures — aucun secret — mais le considérer comme lisible par tout
 ce qui est sur le réseau local, exactement comme l'est déjà
 `assign_data.json`. Voir [Security.fr.md](../platform/Security.fr.md).
 
-**`browser_mod` est requis** (HACS), comme pour tout popup de ce projet
-— et le navigateur doit y être **enregistré**, pas seulement avoir
-l'intégration installée. `browser_id: this` s'adresse à un navigateur
-enregistré ; sur un navigateur qui ne l'a jamais été, l'appel de service
-renvoie un succès et rien ne s'ouvre. Ce n'est pas une hypothèse : c'est
-ce qui s'est produit au premier test en direct ici, sur un navigateur où
-`browser_mod` était chargé et aucun navigateur enregistré. Si l'horloge
-semble inerte, regarder le panneau browser_mod avant de soupçonner la
-carte.
+**`browser_mod` est requis** (HACS), comme pour tout popup de ce projet.
+Enregistrer le navigateur n'est **pas** nécessaire — c'était la première
+hypothèse, et elle était fausse.
+
+**Le tap utilise `fire-dom-event`, jamais `perform-action`,** et c'est
+toute la différence entre un popup et rien du tout. `browser_id: this` ne
+peut être résolu que par le *frontend* : « ce navigateur-ci » est un fait
+que le backend ne peut pas connaître. Un tap `perform-action` envoie un
+simple appel de service par le WebSocket, le backend reçoit la chaîne
+littérale `"this"`, et rien ne se passe — pendant que l'appel signale un
+succès, ce qui explique précisément qu'une telle erreur passe inaperçue.
+`fire-dom-event` lève l'événement `ll-custom` qu'écoute le frontend de
+browser_mod lui-même ; il y substitue son propre identifiant et prend le
+relais, donc aucune clé `browser_id` n'est nécessaire.
+
+Trouvé en espionnant l'appel de service sortant : la charge utile
+quittait la carte parfaitement formée et aucune boîte de dialogue
+n'apparaissait jamais. La tuile « fournisseur personnalisé » du chatbot
+de l'ADMIN portait le même défaut depuis le jour de son écriture ; elle
+est corrigée en même temps.
 
 ## Voir aussi
 

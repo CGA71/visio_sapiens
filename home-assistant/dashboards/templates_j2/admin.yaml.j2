@@ -1145,16 +1145,37 @@ views:
               icon: mdi:tune-variant
               name: "{{ t('admin.chatbot_custom_label') }}"
               label: "{{ t('admin.chatbot_custom_popup_title') }}"
+              # EN | fire-dom-event, not perform-action — and this tile
+              # EN | carried the same defect since the day it was written, so
+              # EN | it has never opened anything.
+              # EN | `browser_id: this` can only be resolved by the FRONTEND:
+              # EN | "this browser" is a fact the backend cannot know. A
+              # EN | perform-action tap sends a plain service call, the
+              # EN | backend gets the literal string "this", and nothing
+              # EN | happens — while the call reports success, which is why
+              # EN | it went unnoticed. fire-dom-event raises the `ll-custom`
+              # EN | event browser_mod's own frontend listens for.
+              # FR | fire-dom-event, pas perform-action — et cette tuile
+              # FR | portait le meme defaut depuis le jour ou elle a ete
+              # FR | ecrite : elle n'a donc jamais rien ouvert.
+              # FR | `browser_id: this` ne peut etre resolu que par le
+              # FR | FRONTEND : « ce navigateur-ci » est un fait que le
+              # FR | backend ne peut pas connaitre. Un tap perform-action
+              # FR | envoie un simple appel de service, le backend recoit la
+              # FR | chaine litterale « this », et rien ne se passe — pendant
+              # FR | que l'appel signale un succes, ce qui explique que cela
+              # FR | soit passe inapercu. fire-dom-event leve l'evenement
+              # FR | `ll-custom` qu'ecoute le frontend de browser_mod.
               tap_action:
-                action: perform-action
-                perform_action: browser_mod.popup
-                data:
-                  browser_id: this
-                  title: "{{ t('admin.chatbot_custom_popup_title') }}"
-                  size: normal
-                  content:
-                    type: iframe
-                    url: /local/vssp/wizard/vssp_chatbot.html?mode=custom
+                action: fire-dom-event
+                browser_mod:
+                  service: browser_mod.popup
+                  data:
+                    title: "{{ t('admin.chatbot_custom_popup_title') }}"
+                    size: normal
+                    content:
+                      type: iframe
+                      url: /local/vssp/wizard/vssp_chatbot.html?mode=custom
           - type: entities
             entities:
               - entity: sensor.vssp_deployed_locale

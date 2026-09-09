@@ -140,14 +140,25 @@ secret — but treat it as readable by anything on the local network,
 exactly as `assign_data.json` already is. See
 [Security.md](../platform/Security.md).
 
-**`browser_mod` is required** (HACS), as for every popup in this project
-— and the browser must be **registered** with it, not merely have the
-integration installed. `browser_id: this` addresses a registered browser;
-on one that has never registered, the service call returns success and
-nothing opens. That is not a theory: it is what happened on the first
-live test here, on a browser where `browser_mod` was loaded and no
-browser was registered. If the clock looks inert, check the browser_mod
-panel before suspecting the card.
+**`browser_mod` is required** (HACS), as for every popup in this project.
+Registering the browser is **not** required — that was the first wrong
+guess when the popup would not open.
+
+**The tap uses `fire-dom-event`, never `perform-action`,** and that is the
+whole difference between a popup and nothing at all. `browser_id: this`
+can only be resolved by the *frontend*: "this browser" is a fact the
+backend cannot know. A `perform-action` tap sends a plain service call
+over the WebSocket, the backend receives the literal string `"this"`, and
+nothing happens — while the call reports success, which is exactly why
+such a mistake goes unnoticed. `fire-dom-event` raises the `ll-custom`
+event browser_mod's own frontend listens for; it substitutes its own
+browser id and takes it from there, so no `browser_id` key is needed at
+all.
+
+This was found by spying on the outgoing service call: the payload left
+the card perfectly formed and no dialog ever appeared. The ADMIN
+chatbot's "custom provider" tile carried the same defect from the day it
+was written and has been fixed alongside.
 
 ## Related
 

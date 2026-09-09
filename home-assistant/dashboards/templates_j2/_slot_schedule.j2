@@ -111,72 +111,109 @@
                   icon:
                     - color: "var(--primary-color, #00E5FF)"
                     - "--mdc-icon-size": 18px
-                # EN | `browser_id: this` opens the popup on the screen that
-                # EN | was tapped and nowhere else. Without it browser_mod
-                # EN | broadcasts, and a schedule form appears on every
-                # EN | registered tablet in the house at once.
-                # FR | `browser_id: this` ouvre le popup sur l'ecran touche et
-                # FR | nulle part ailleurs. Sans cela browser_mod diffuse, et
-                # FR | un formulaire de planification apparait d'un coup sur
-                # FR | chaque tablette enregistree de la maison.
+                # EN | fire-dom-event, NOT perform-action. This is the
+                # EN | difference between a popup and nothing at all, and it
+                # EN | took a live trace to see.
+                # EN | `browser_id: this` has to be resolved by the FRONTEND,
+                # EN | because "this browser" is a fact only the browser
+                # EN | knows. A perform-action tap sends a plain service call
+                # EN | over the WebSocket: the backend receives the literal
+                # EN | string "this", has no browser context to resolve it
+                # EN | against, and quietly does nothing — the call even
+                # EN | reports success. Verified by spying on the call: the
+                # EN | payload left the card perfectly formed and no dialog
+                # EN | ever appeared.
+                # EN | fire-dom-event raises an `ll-custom` event that
+                # EN | browser_mod's own frontend listens for; it substitutes
+                # EN | its browserID and then talks to the backend. No
+                # EN | browser_id key is needed at all, and registering the
+                # EN | browser is not needed either — that was a red herring
+                # EN | chased first.
+                # FR | fire-dom-event, PAS perform-action. C'est la
+                # FR | difference entre un popup et rien du tout, et il a
+                # FR | fallu tracer l'appel en direct pour le voir.
+                # FR | `browser_id: this` doit etre resolu par le FRONTEND,
+                # FR | parce que « ce navigateur-ci » est un fait que seul le
+                # FR | navigateur connait. Un tap perform-action envoie un
+                # FR | simple appel de service par le WebSocket : le backend
+                # FR | recoit la chaine litterale « this », n'a aucun
+                # FR | contexte de navigateur pour la resoudre, et ne fait
+                # FR | rien en silence — l'appel signale meme un succes.
+                # FR | Verifie en espionnant l'appel : la charge utile est
+                # FR | partie de la carte parfaitement formee et aucune boite
+                # FR | de dialogue n'est jamais apparue.
+                # FR | fire-dom-event leve un evenement `ll-custom` que le
+                # FR | frontend de browser_mod ecoute lui-meme ; il y
+                # FR | substitue son browserID puis parle au backend. Aucune
+                # FR | cle browser_id n'est necessaire, et enregistrer le
+                # FR | navigateur ne l'est pas davantage — c'etait la fausse
+                # FR | piste suivie en premier.
+                # EN | The popup lands on the screen that was tapped and
+                # EN | nowhere else, which is what the frontend resolution
+                # EN | buys: no schedule form appearing on every tablet in
+                # EN | the house at once.
+                # FR | Le popup atterrit sur l'ecran touche et nulle part
+                # FR | ailleurs, ce qu'achete la resolution cote frontend :
+                # FR | aucun formulaire de planification qui apparaitrait
+                # FR | d'un coup sur chaque tablette de la maison.
                 tap_action:
-                  action: perform-action
-                  perform_action: browser_mod.popup
-                  data:
-                    browser_id: this
-                    title: "{{ popup_title }}{{ ' — ' ~ room_name if room_name }}"
-                    size: normal
-                    content:
-                      # EN | The entity list travels in the URL because it is
-                      # EN | the ONE thing the popup cannot work out for
-                      # EN | itself: which devices belong to this panel is a
-                      # EN | Visio Sapiens decision recorded in house.yaml,
-                      # EN | not a Home Assistant fact the page could query.
-                      # EN | Everything else it looks up on its own.
-                      # EN | `v=` is the build stamp, and it is not
-                      # EN | decoration: an iframe URL cached once by a
-                      # EN | browser keeps its first content for ever, which
-                      # EN | is how a shipped fix stays invisible on the
-                      # EN | tablet that needed it.
-                      # FR | La liste d'entites voyage dans l'URL parce que
-                      # FR | c'est la SEULE chose que le popup ne peut pas
-                      # FR | deduire seul : quels appareils appartiennent a ce
-                      # FR | tableau est une decision Visio Sapiens consignee
-                      # FR | dans house.yaml, pas un fait Home Assistant que
-                      # FR | la page pourrait interroger. Tout le reste, elle
-                      # FR | le retrouve elle-meme.
-                      # FR | `v=` est l'empreinte de build, et ce n'est pas
-                      # FR | decoratif : une URL d'iframe mise en cache une
-                      # FR | fois par un navigateur garde son premier contenu
-                      # FR | pour toujours, et c'est ainsi qu'un correctif
-                      # FR | livre reste invisible sur la tablette qui en
-                      # FR | avait besoin.
-                      type: iframe
-                      url: /local/vssp/wizard/vssp_schedule.html?v={{ build_stamp }}&lang={{ locale }}&room={{ room_name | urlencode }}&entities={{ ids | join(',') | urlencode }}
-                      # EN | An iframe card defaults to aspect_ratio 50% —
-                      # EN | half its width in height, which for a popup this
-                      # EN | narrow is a letterbox with a form crushed inside
-                      # EN | it. A viewport-relative height, capped, gives the
-                      # EN | form room on a tablet without running off the
-                      # EN | bottom of a phone.
-                      # FR | Une carte iframe vaut par defaut aspect_ratio 50%
-                      # FR | — la moitie de sa largeur en hauteur, ce qui pour
-                      # FR | un popup aussi etroit donne une meurtriere avec un
-                      # FR | formulaire ecrase dedans. Une hauteur relative au
-                      # FR | viewport, plafonnee, donne de la place au
-                      # FR | formulaire sur tablette sans deborder du bas d'un
-                      # FR | telephone.
-                      card_mod:
-                        style: |
-                          ha-card {
-                            background: transparent !important;
-                            border: none !important;
-                            box-shadow: none !important;
-                            overflow: hidden;
-                          }
-                          iframe {
-                            width: 100%;
-                            height: min(76vh, 700px) !important;
-                            border: none;
-                          }
+                  action: fire-dom-event
+                  browser_mod:
+                    service: browser_mod.popup
+                    data:
+                      title: "{{ popup_title }}{{ ' — ' ~ room_name if room_name }}"
+                      size: normal
+                      content:
+                        # EN | The entity list travels in the URL because it is
+                        # EN | the ONE thing the popup cannot work out for
+                        # EN | itself: which devices belong to this panel is a
+                        # EN | Visio Sapiens decision recorded in house.yaml,
+                        # EN | not a Home Assistant fact the page could query.
+                        # EN | Everything else it looks up on its own.
+                        # EN | `v=` is the build stamp, and it is not
+                        # EN | decoration: an iframe URL cached once by a
+                        # EN | browser keeps its first content for ever, which
+                        # EN | is how a shipped fix stays invisible on the
+                        # EN | tablet that needed it.
+                        # FR | La liste d'entites voyage dans l'URL parce que
+                        # FR | c'est la SEULE chose que le popup ne peut pas
+                        # FR | deduire seul : quels appareils appartiennent a ce
+                        # FR | tableau est une decision Visio Sapiens consignee
+                        # FR | dans house.yaml, pas un fait Home Assistant que
+                        # FR | la page pourrait interroger. Tout le reste, elle
+                        # FR | le retrouve elle-meme.
+                        # FR | `v=` est l'empreinte de build, et ce n'est pas
+                        # FR | decoratif : une URL d'iframe mise en cache une
+                        # FR | fois par un navigateur garde son premier contenu
+                        # FR | pour toujours, et c'est ainsi qu'un correctif
+                        # FR | livre reste invisible sur la tablette qui en
+                        # FR | avait besoin.
+                        type: iframe
+                        url: /local/vssp/wizard/vssp_schedule.html?v={{ build_stamp }}&lang={{ locale }}&room={{ room_name | urlencode }}&entities={{ ids | join(',') | urlencode }}
+                        # EN | An iframe card defaults to aspect_ratio 50% —
+                        # EN | half its width in height, which for a popup this
+                        # EN | narrow is a letterbox with a form crushed inside
+                        # EN | it. A viewport-relative height, capped, gives the
+                        # EN | form room on a tablet without running off the
+                        # EN | bottom of a phone.
+                        # FR | Une carte iframe vaut par defaut aspect_ratio 50%
+                        # FR | — la moitie de sa largeur en hauteur, ce qui pour
+                        # FR | un popup aussi etroit donne une meurtriere avec un
+                        # FR | formulaire ecrase dedans. Une hauteur relative au
+                        # FR | viewport, plafonnee, donne de la place au
+                        # FR | formulaire sur tablette sans deborder du bas d'un
+                        # FR | telephone.
+                        card_mod:
+                          style: |
+                            ha-card {
+                              background: transparent !important;
+                              border: none !important;
+                              box-shadow: none !important;
+                              overflow: hidden;
+                            }
+                            iframe {
+                              width: 100%;
+                              height: min(76vh, 700px) !important;
+                              border: none;
+                            }
 {% endmacro %}
