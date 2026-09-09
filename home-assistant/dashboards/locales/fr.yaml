@@ -266,6 +266,15 @@ admin:
   vault_restore: Restaurer la version
   vault_destroy: DÉTRUIRE définitivement
   vault_refresh: Rafraîchir
+  updates_state: ÉTAT DES MISES À JOUR
+  updates_pending: À INSTALLER
+  updates_total: Mises à jour en attente
+  updates_system: Système
+  updates_hacs: Intégrations & cartes
+  updates_firmware: Micrologiciels
+  updates_maintenance: MAINTENANCE
+  updates_check: VÉRIFIER MAINTENANT
+  updates_install_hacs: INSTALLER TOUTES LES INTÉGRATIONS & CARTES
   discovery: SCAN DE DÉCOUVERTE
   upgrade: MISE À NIVEAU
   generate: GÉNÉRER LES DASHBOARDS
@@ -407,6 +416,8 @@ adminmenu:
     dashboards_hint: Lister, regénérer et supprimer les dashboards générés
     vault: COFFRE-FORT
     vault_hint: Secrets d'accès aux serveurs, comptes et mots de passe applicatifs
+    updates: MISES À JOUR
+    updates_hint: Toutes les mises à jour en attente au même endroit — système, HACS, micrologiciels
   scan: SCAN DE DÉCOUVERTE
   scan_hint: Lit toutes les entités Home Assistant, écrit report.json
   not_built: Pas encore construit

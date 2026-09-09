@@ -383,6 +383,15 @@ admin:
   vault_restore: Restore version
   vault_destroy: DESTROY permanently
   vault_refresh: Refresh
+  updates_state: UPDATE STATE
+  updates_pending: TO INSTALL
+  updates_total: Pending updates
+  updates_system: System
+  updates_hacs: Integrations & cards
+  updates_firmware: Device firmware
+  updates_maintenance: MAINTENANCE
+  updates_check: CHECK NOW
+  updates_install_hacs: INSTALL EVERY INTEGRATION & CARD
   discovery: DISCOVERY SCAN
   upgrade: UPGRADE
   generate: GENERATE DASHBOARDS
@@ -532,6 +541,8 @@ adminmenu:
     dashboards_hint: List, regenerate and delete the generated dashboards
     vault: SAFE
     vault_hint: Server access secrets, accounts and application passwords
+    updates: UPDATES
+    updates_hint: Every pending update in one place — system, HACS, device firmware
   scan: DISCOVERY SCAN
   scan_hint: Read every Home Assistant entity, writes report.json
   not_built: Not built yet

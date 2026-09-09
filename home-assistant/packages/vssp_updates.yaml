@@ -1,0 +1,302 @@
+########################################################################
+# Visio Sapiens — UPDATES package (pending updates, grouped)
+#
+# EN | Home Assistant already knows every pending update: each one is an
+# EN | `update.*` entity carrying installed_version, latest_version, its
+# EN | release notes and an install service. Settings > Updates shows them,
+# EN | but only there, and only mixed in with everything else that screen
+# EN | does.
+# EN | This package adds no data source whatsoever. It reads the entities
+# EN | that already exist and publishes ONE thing the ADMIN console cannot
+# EN | compute on its own: the SPLIT into three families, and the entity
+# EN | list of each. A Lovelace card cannot work out which update belongs
+# EN | to HACS — `integration_entities()` is a template function, it exists
+# EN | on the Python side only. So the classification happens here, in
+# EN | Jinja, and travels to the card as an `entity_ids` attribute the card
+# EN | merely renders.
+# EN | THE THREE FAMILIES, in the order they matter:
+# EN |   system    Home Assistant itself, the Supervisor, the OS, add-ons.
+# EN |             Anything that is neither HACS nor firmware. On this k3s
+# EN |             instance that is the NAS; on a HAOS production instance
+# EN |             it is Core and the add-ons, with no change to this file.
+# EN |   hacs      integrations and Lovelace cards installed through HACS.
+# EN |             Cheap, reversible, and the only family this package will
+# EN |             install in bulk.
+# EN |   firmware  device_class: firmware — the flash of a physical thing
+# EN |             that can brick it. One at a time, from its own row, and
+# EN |             deliberately never in bulk.
+# FR | Home Assistant connait deja chaque mise a jour en attente : chacune
+# FR | est une entite `update.*` qui porte installed_version,
+# FR | latest_version, ses notes de version et un service d installation.
+# FR | Reglages > Mises a jour les montre, mais la seulement, et melangees
+# FR | a tout le reste de ce que fait cet ecran.
+# FR | Ce package n ajoute aucune source de donnees. Il lit les entites qui
+# FR | existent deja et publie UNE chose que la console ADMIN ne peut pas
+# FR | calculer seule : la REPARTITION en trois familles, et la liste
+# FR | d entites de chacune. Une carte Lovelace ne peut pas deviner quelle
+# FR | mise a jour appartient a HACS — `integration_entities()` est une
+# FR | fonction de template, elle n existe que du cote Python. La
+# FR | classification se fait donc ici, en Jinja, et voyage vers la carte
+# FR | en attribut `entity_ids` que la carte se contente d afficher.
+# FR | LES TROIS FAMILLES, dans l ordre ou elles comptent :
+# FR |   system    Home Assistant lui-meme, le Supervisor, l OS, les
+# FR |             add-ons. Tout ce qui n est ni HACS ni micrologiciel. Sur
+# FR |             cette instance k3s c est le NAS ; sur une instance HAOS
+# FR |             de production ce sera Core et les add-ons, sans changer
+# FR |             une ligne de ce fichier.
+# FR |   hacs      integrations et cartes Lovelace installees via HACS. Peu
+# FR |             couteuses, reversibles, et la seule famille que ce
+# FR |             package installera en masse.
+# FR |   firmware  device_class: firmware — le flash d un objet physique,
+# FR |             qui peut le briquer. Une a la fois, depuis sa propre
+# FR |             ligne, et deliberement jamais en masse.
+#
+# EN | BEFORE DEPLOYING — check for duplicate keys, same as every other
+# EN | package here:
+# FR | AVANT DE DEPLOYER — verifier les cles en double, comme pour tout
+# FR | autre package ici :
+#
+#   grep -n "vssp_updates" home-assistant/packages/*.yaml
+#
+# EN | NO PREREQUISITE. Nothing here needs a secret, a token or a network
+# EN | call. On an instance with no HACS, `integration_entities('hacs')`
+# EN | returns an empty list and the HACS family is simply always zero.
+# FR | AUCUN PREREQUIS. Rien ici n a besoin d un secret, d un token ni d un
+# FR | appel reseau. Sur une instance sans HACS,
+# FR | `integration_entities('hacs')` renvoie une liste vide et la famille
+# FR | HACS reste simplement a zero.
+########################################################################
+
+# ═══════════════════════════════════════════════════════════════════════
+# EN | SENSORS — four counts, four entity lists
+# FR | CAPTEURS — quatre decomptes, quatre listes d entites
+# ═══════════════════════════════════════════════════════════════════════
+#
+# EN | NO unit_of_measurement, on purpose. The vault sensors carry a French
+# EN | one because they predate this rule; a unit lives inside the entity
+# EN | and would print "3 entrees" on an English dashboard, next to a row
+# EN | label the generator HAS translated. The number stays bare and the
+# EN | console names it in whatever language it was generated in.
+# FR | PAS d unit_of_measurement, a dessein. Les capteurs du coffre en
+# FR | portent une en francais parce qu ils precedent cette regle ; une
+# FR | unite vit dans l entite et afficherait « 3 entrees » sur un
+# FR | dashboard anglais, a cote d un libelle de ligne que le generateur,
+# FR | lui, A traduit. Le nombre reste nu et la console le nomme dans la
+# FR | langue ou elle a ete generee.
+#
+# EN | `sort(attribute='name')` so the rows come out alphabetically rather
+# EN | than in the arbitrary order the state machine holds them — this list
+# EN | is read by a human looking for one line in it.
+# FR | `sort(attribute='name')` pour que les lignes sortent par ordre
+# FR | alphabetique plutot que dans l ordre arbitraire de la machine
+# FR | d etats — cette liste est lue par un humain qui y cherche une ligne.
+#
+# EN | `selectattr('attributes.device_class', 'defined')` BEFORE testing its
+# EN | value: HACS entities carry no device_class at all, and filtering an
+# EN | undefined attribute by equality is the kind of thing that works
+# EN | until a Jinja version decides it should raise.
+# FR | `selectattr('attributes.device_class', 'defined')` AVANT d en tester
+# FR | la valeur : les entites HACS n ont pas de device_class du tout, et
+# FR | filtrer un attribut indefini par egalite est le genre de chose qui
+# FR | marche jusqu au jour ou une version de Jinja decide de lever.
+template:
+  - sensor:
+      # ---------------------------------------------------------------
+      # EN | TOTAL — every pending update, all families together.
+      # FR | TOTAL — toutes les mises a jour en attente, familles reunies.
+      # ---------------------------------------------------------------
+      # EN | An update that has been SKIPPED does not count, and that needs
+      # EN | no filter here: Home Assistant reports such an entity as `off`
+      # EN | for as long as the skipped version is the latest one. Skipping
+      # EN | from a row therefore empties this screen the way installing
+      # EN | does, which is the point of offering it.
+      # FR | Une mise a jour IGNOREE ne compte pas, et cela ne demande
+      # FR | aucun filtre ici : Home Assistant rapporte une telle entite a
+      # FR | `off` tant que la version ignoree reste la derniere. Ignorer
+      # FR | depuis une ligne vide donc cet ecran comme le fait
+      # FR | l installation, ce qui est tout l interet de le proposer.
+      - name: VSSP Updates pending
+        unique_id: vssp_updates_pending
+        icon: mdi:package-up
+        state: >-
+          {{ states.update | selectattr('state', 'eq', 'on') | list | count }}
+        attributes:
+          entity_ids: >-
+            {{ states.update | selectattr('state', 'eq', 'on')
+               | sort(attribute='name') | map(attribute='entity_id') | list }}
+
+      # ---------------------------------------------------------------
+      # EN | SYSTEM — Home Assistant, the Supervisor, the OS, add-ons.
+      # FR | SYSTEME — Home Assistant, le Supervisor, l OS, les add-ons.
+      # ---------------------------------------------------------------
+      # EN | Defined by SUBTRACTION rather than by a list of integrations,
+      # EN | so it stays right on an instance this repository has never
+      # EN | seen. Anything that is not a HACS package and not a firmware
+      # EN | flash is, by elimination, the platform itself.
+      # FR | Definie par SOUSTRACTION plutot que par une liste
+      # FR | d integrations, pour rester juste sur une instance que ce
+      # FR | depot n a jamais vue. Tout ce qui n est ni un paquet HACS ni un
+      # FR | flash de micrologiciel est, par elimination, la plateforme
+      # FR | elle-meme.
+      - name: VSSP Updates system
+        unique_id: vssp_updates_system
+        icon: mdi:home-assistant
+        state: >-
+          {% set hacs = integration_entities('hacs') %}
+          {% set pending = states.update | selectattr('state', 'eq', 'on')
+               | sort(attribute='name') | list %}
+          {% set firmware = pending
+               | selectattr('attributes.device_class', 'defined')
+               | selectattr('attributes.device_class', 'eq', 'firmware')
+               | map(attribute='entity_id') | list %}
+          {{ pending | map(attribute='entity_id')
+             | reject('in', hacs) | reject('in', firmware) | list | count }}
+        attributes:
+          entity_ids: >-
+            {% set hacs = integration_entities('hacs') %}
+            {% set pending = states.update | selectattr('state', 'eq', 'on')
+                 | sort(attribute='name') | list %}
+            {% set firmware = pending
+                 | selectattr('attributes.device_class', 'defined')
+                 | selectattr('attributes.device_class', 'eq', 'firmware')
+                 | map(attribute='entity_id') | list %}
+            {{ pending | map(attribute='entity_id')
+               | reject('in', hacs) | reject('in', firmware) | list }}
+
+      # ---------------------------------------------------------------
+      # EN | HACS — integrations and Lovelace cards.
+      # FR | HACS — integrations et cartes Lovelace.
+      # ---------------------------------------------------------------
+      - name: VSSP Updates hacs
+        unique_id: vssp_updates_hacs
+        icon: mdi:puzzle-outline
+        state: >-
+          {% set hacs = integration_entities('hacs') %}
+          {{ states.update | selectattr('state', 'eq', 'on')
+             | map(attribute='entity_id') | select('in', hacs)
+             | list | count }}
+        attributes:
+          entity_ids: >-
+            {% set hacs = integration_entities('hacs') %}
+            {{ states.update | selectattr('state', 'eq', 'on')
+               | sort(attribute='name') | map(attribute='entity_id')
+               | select('in', hacs) | list }}
+
+      # ---------------------------------------------------------------
+      # EN | FIRMWARE — the flash of a physical device.
+      # FR | MICROLOGICIEL — le flash d un appareil physique.
+      # ---------------------------------------------------------------
+      - name: VSSP Updates firmware
+        unique_id: vssp_updates_firmware
+        icon: mdi:chip
+        state: >-
+          {{ states.update | selectattr('state', 'eq', 'on')
+             | selectattr('attributes.device_class', 'defined')
+             | selectattr('attributes.device_class', 'eq', 'firmware')
+             | list | count }}
+        attributes:
+          entity_ids: >-
+            {{ states.update | selectattr('state', 'eq', 'on')
+               | selectattr('attributes.device_class', 'defined')
+               | selectattr('attributes.device_class', 'eq', 'firmware')
+               | sort(attribute='name') | map(attribute='entity_id') | list }}
+
+# ═══════════════════════════════════════════════════════════════════════
+# EN | SCRIPTS — the two bulk actions, and only two
+# FR | SCRIPTS — les deux actions groupees, et deux seulement
+# ═══════════════════════════════════════════════════════════════════════
+script:
+  # EN | CHECK — ask every update entity to re-poll now. Integrations check
+  # EN | on their own schedule (HACS roughly hourly), so without this the
+  # EN | screen answers "up to date" from a cached answer that may be hours
+  # EN | old, and there is nothing on it saying so.
+  # EN | The condition is not decoration: `homeassistant.update_entity`
+  # EN | with an empty entity_id list is a call with no target, which Home
+  # EN | Assistant logs as an error rather than ignoring.
+  # FR | VERIFIER — demander a chaque entite update de re-interroger sa
+  # FR | source maintenant. Les integrations verifient a leur propre rythme
+  # FR | (HACS environ toutes les heures), donc sans ceci l ecran repond
+  # FR | « a jour » depuis une reponse en cache qui peut dater de plusieurs
+  # FR | heures, et rien dessus ne le dit.
+  # FR | La condition n est pas decorative : `homeassistant.update_entity`
+  # FR | avec une liste entity_id vide est un appel sans cible, que Home
+  # FR | Assistant journalise en erreur plutot que d ignorer.
+  vssp_updates_check:
+    alias: "Visio Sapiens — Mises à jour : vérifier maintenant"
+    icon: mdi:cloud-search-outline
+    mode: single
+    sequence:
+      - variables:
+          targets: >-
+            {{ states.update | map(attribute='entity_id') | list }}
+      - condition: template
+        value_template: "{{ targets | count > 0 }}"
+      - action: homeassistant.update_entity
+        target:
+          entity_id: "{{ targets }}"
+
+  # EN | INSTALL EVERY HACS UPDATE — the one bulk install this package
+  # EN | offers, and the boundary is a safety decision rather than a
+  # EN | limitation.
+  # EN | A HACS update downloads files and is undone by reinstalling the
+  # EN | previous version from HACS. A Core or add-on update is not, and
+  # EN | wants the backup checkbox its own dialog offers — which a bulk
+  # EN | call cannot tick, since `update.install` refuses `backup: true` on
+  # EN | any entity that does not advertise BACKUP support and would fail
+  # EN | the whole call for a mixed list. A firmware flash is undone by
+  # EN | nothing at all.
+  # EN | So: HACS in bulk, everything else from its own row, where the
+  # EN | native dialog shows the release notes and the backup box before
+  # EN | anything happens.
+  # EN | The list comes from the sensor rather than from a filter repeated
+  # EN | here: one definition of "a HACS update", in one place.
+  # FR | INSTALLER TOUTES LES MISES A JOUR HACS — la seule installation
+  # FR | groupee de ce package, et cette frontiere est une decision de
+  # FR | securite plutot qu une limitation.
+  # FR | Une mise a jour HACS telecharge des fichiers et se defait en
+  # FR | reinstallant la version precedente depuis HACS. Une mise a jour de
+  # FR | Core ou d un add-on, non, et elle veut la case sauvegarde que sa
+  # FR | propre boite de dialogue propose — case qu un appel groupe ne peut
+  # FR | pas cocher, `update.install` refusant `backup: true` sur toute
+  # FR | entite qui n annonce pas le support BACKUP et faisant echouer
+  # FR | l appel entier pour une liste mixte. Un flash de micrologiciel,
+  # FR | lui, ne se defait par rien du tout.
+  # FR | Donc : HACS en masse, tout le reste depuis sa propre ligne, ou la
+  # FR | boite native montre les notes de version et la case de sauvegarde
+  # FR | avant que quoi que ce soit ne se produise.
+  # FR | La liste vient du capteur plutot que d un filtre repete ici : une
+  # FR | seule definition de « une mise a jour HACS », a un seul endroit.
+  vssp_updates_install_hacs:
+    alias: "Visio Sapiens — Mises à jour : installer tout HACS"
+    icon: mdi:puzzle-plus-outline
+    mode: single
+    sequence:
+      - variables:
+          targets: >-
+            {{ state_attr('sensor.vssp_updates_hacs', 'entity_ids') or [] }}
+      - condition: template
+        value_template: "{{ targets | count > 0 }}"
+      - action: update.install
+        target:
+          entity_id: "{{ targets }}"
+      # EN | A Lovelace card that has just been replaced on disk is still
+      # EN | the old file in this browser's cache. Home Assistant does not
+      # EN | say so, and the symptom — a card that keeps behaving like the
+      # EN | version you just replaced — reads as a failed update rather
+      # EN | than a stale tab. The notification is the only place that can
+      # EN | say it, since by then the screen has nothing left to show.
+      # FR | Une carte Lovelace qui vient d etre remplacee sur le disque
+      # FR | reste l ancien fichier dans le cache de ce navigateur. Home
+      # FR | Assistant ne le dit pas, et le symptome — une carte qui
+      # FR | continue de se comporter comme la version qu on vient de
+      # FR | remplacer — se lit comme une mise a jour ratee plutot que
+      # FR | comme un onglet perime. La notification est le seul endroit
+      # FR | qui puisse le dire, l ecran n ayant alors plus rien a montrer.
+      - action: persistent_notification.create
+        data:
+          notification_id: vssp_updates_hacs
+          title: "Mises à jour HACS installées"
+          message: >-
+            {{ targets | count }} mise(s) à jour installée(s).
+            Rechargez la page avec Ctrl+Maj+R : une carte Lovelace remplacée
+            sur le disque reste l'ancien fichier dans le cache du navigateur.

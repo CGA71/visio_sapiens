@@ -72,6 +72,7 @@
   ('calendar',   'mdi:calendar-account',  'calendar'),
   ('theme',      'mdi:palette',           'theme'),
   ('dashboards', 'mdi:view-dashboard-variant', 'dashboards'),
+  ('updates',    'mdi:package-up',         'updates'),
   ('vault',      'mdi:safe',              'vault'),
 ] %}
 
@@ -691,13 +692,24 @@ views:
               - entity: script.vssp_vault_refresh
                 name: "{{ t('admin.vault_refresh') }}"
                 icon: mdi:refresh
-                card_mod:
-                  style: |
-                    ha-card {
-                      background: var(--card-background-color, rgba(8,18,28,0.75)) !important;
-                      border: 1px solid rgba(0, 229, 255, 0.28) !important;
-                      border-radius: var(--ha-card-border-radius, 20px) !important;
-                    }
+            # EN | card_mod belongs to the CARD, not to the last row above
+            # EN | it. Indented one level deeper it was a row-level style,
+            # EN | and its `ha-card` selector matched nothing — which is why
+            # EN | this card alone sat on the safe screen with no cyan frame
+            # EN | while the two beside it had one.
+            # FR | card_mod appartient a la CARTE, pas a la derniere ligne
+            # FR | au-dessus. Indente un niveau plus profond, c etait un
+            # FR | style de ligne, et son selecteur `ha-card` ne
+            # FR | correspondait a rien — d ou cette carte seule sur l ecran
+            # FR | du coffre sans cadre cyan quand les deux d a cote en
+            # FR | avaient un.
+            card_mod:
+              style: |
+                ha-card {
+                  background: var(--card-background-color, rgba(8,18,28,0.75)) !important;
+                  border: 1px solid rgba(0, 229, 255, 0.28) !important;
+                  border-radius: var(--ha-card-border-radius, 20px) !important;
+                }
           # EN | `lang` carries the GENERATED locale into the iframe: this
           # EN | page has no Home Assistant token, so unlike the other
           # EN | wizards it cannot read input_select.vssp_language itself.
@@ -722,6 +734,230 @@ views:
                   border-radius: var(--ha-card-border-radius, 16px);
                 }
                 iframe { width: 100%; height: 100% !important; border: none; }
+
+{% elif screen == 'updates' %}
+          # EN | UPDATES — everything Home Assistant already knows, in one
+          # EN | place and split three ways. Settings > Updates shows the
+          # EN | same entities; what it does not do is separate a Lovelace
+          # EN | card download from the flash of a wall plug, which is the
+          # EN | one distinction that decides whether you click without
+          # EN | thinking or read the release notes first.
+          # EN | No iframe and no token: an update is an `update.*` entity,
+          # EN | so native cards reach all of it — and tapping a row opens
+          # EN | Home Assistant's own dialog, with the release notes, the
+          # EN | backup checkbox where the entity supports one, and Skip.
+          # EN | That dialog is better than anything this console could
+          # EN | rebuild, so the console does not rebuild it.
+          # EN | The grouping itself comes from packages/vssp_updates.yaml,
+          # EN | not from here: working out that browser_mod belongs to
+          # EN | HACS needs `integration_entities()`, a template function
+          # EN | that exists on the Python side only. The sensors publish
+          # EN | each family as an `entity_ids` attribute and these cards
+          # EN | render the list they are handed.
+          # FR | MISES A JOUR — tout ce que Home Assistant sait deja, en un
+          # FR | seul endroit et reparti en trois. Reglages > Mises a jour
+          # FR | montre les memes entites ; ce qu il ne fait pas, c est
+          # FR | separer le telechargement d une carte Lovelace du flash
+          # FR | d une prise murale, seule distinction qui decide si l on
+          # FR | clique sans reflechir ou si l on lit d abord les notes de
+          # FR | version.
+          # FR | Ni iframe ni token : une mise a jour est une entite
+          # FR | `update.*`, les cartes natives atteignent donc tout — et
+          # FR | toucher une ligne ouvre la boite de dialogue de Home
+          # FR | Assistant lui-meme, avec les notes de version, la case de
+          # FR | sauvegarde la ou l entite en supporte une, et Ignorer.
+          # FR | Cette boite vaut mieux que tout ce que cette console
+          # FR | pourrait reconstruire, donc la console ne la reconstruit
+          # FR | pas.
+          # FR | Le regroupement, lui, vient de packages/vssp_updates.yaml
+          # FR | et non d ici : deviner que browser_mod appartient a HACS
+          # FR | demande `integration_entities()`, fonction de template qui
+          # FR | n existe que du cote Python. Les capteurs publient chaque
+          # FR | famille en attribut `entity_ids` et ces cartes affichent la
+          # FR | liste qu on leur tend.
+          - type: horizontal-stack
+            cards:
+              - type: entities
+                title: "{{ t('admin.updates_state') }}"
+                entities:
+                  - entity: sensor.vssp_updates_pending
+                    name: "{{ t('admin.updates_total') }}"
+                  - entity: sensor.vssp_updates_system
+                    name: "{{ t('admin.updates_system') }}"
+                  - entity: sensor.vssp_updates_hacs
+                    name: "{{ t('admin.updates_hacs') }}"
+                  - entity: sensor.vssp_updates_firmware
+                    name: "{{ t('admin.updates_firmware') }}"
+                card_mod:
+                  style: |
+                    ha-card {
+                      background: var(--card-background-color, rgba(8,18,28,0.75)) !important;
+                      border: 1px solid rgba(0, 229, 255, 0.28) !important;
+                      border-radius: var(--ha-card-border-radius, 20px) !important;
+                    }
+              # EN | The inventory: what is waiting, and between which two
+              # EN | versions. The rows below install; this card is what you
+              # EN | read before deciding to.
+              # EN | THE FIRST LINE IS NOT A RAW BLOCK, and that is the
+              # EN | point. The three family labels are translated by the
+              # EN | GENERATOR, the loop under them is executed by HOME
+              # EN | ASSISTANT — two template engines on the same card, and
+              # EN | the boundary has to fall between them. So the set-tag
+              # EN | is emitted as text: `{{ '{%' }}` is an expression, the
+              # EN | generator evaluates it and writes two characters that
+              # EN | Home Assistant will later read as the start of a tag.
+              # EN | An expression is also immune to lstrip_blocks, which
+              # EN | strips the indentation in front of a BLOCK tag — the
+              # EN | trap that a raw block on this line would have walked
+              # EN | straight into, landing the template at column zero and
+              # EN | breaking the YAML.
+              # FR | L inventaire : ce qui attend, et entre quelles deux
+              # FR | versions. Les lignes du dessous installent ; cette
+              # FR | carte est ce qu on lit avant de le decider.
+              # FR | LA PREMIERE LIGNE N EST PAS UN BLOC RAW, et c est tout
+              # FR | l interet. Les trois libelles de famille sont traduits
+              # FR | par le GENERATEUR, la boucle en dessous est executee
+              # FR | par HOME ASSISTANT — deux moteurs de template sur la
+              # FR | meme carte, et la frontiere doit tomber entre les deux.
+              # FR | La balise set est donc emise en tant que texte :
+              # FR | `{{ '{%' }}` est une expression, le generateur
+              # FR | l evalue et ecrit deux caracteres que Home Assistant
+              # FR | lira plus tard comme le debut d une balise.
+              # FR | Une expression est de surcroit insensible a
+              # FR | lstrip_blocks, qui retire l indentation devant une
+              # FR | balise de BLOC — le piege dans lequel un bloc raw pose
+              # FR | sur cette ligne serait tombe tout droit, ramenant le
+              # FR | template en colonne zero et cassant le YAML.
+              - type: markdown
+                title: "{{ t('admin.updates_pending') }}"
+                content: |
+                  {{ '{%' }} set groups = [
+                       ('sensor.vssp_updates_system', '{{ t('admin.updates_system') }}'),
+                       ('sensor.vssp_updates_hacs', '{{ t('admin.updates_hacs') }}'),
+                       ('sensor.vssp_updates_firmware', '{{ t('admin.updates_firmware') }}')] {{ '%}' }}
+                  {%+ raw %}{% for eid, label in groups %}
+                  **{{ label }}**
+                  {% set ids = state_attr(eid, 'entity_ids') or [] %}
+                  {% if ids %}{% for i in ids %}
+                  - {{ state_attr(i, 'friendly_name') or i }} · `{{ state_attr(i, 'installed_version') or '?' }}` → `{{ state_attr(i, 'latest_version') or '?' }}`
+                  {% endfor %}{% else %}
+                  _—_
+                  {% endif %}
+                  {% endfor %}{% endraw +%}
+                card_mod:
+                  style: |
+                    ha-card {
+                      background: var(--card-background-color, rgba(8,18,28,0.75)) !important;
+                      border: 1px solid rgba(0, 229, 255, 0.28) !important;
+                      border-radius: var(--ha-card-border-radius, 20px) !important;
+                    }
+          # EN | THE ACTIONABLE ROWS, one card per family, each one absent
+          # EN | when its family is empty — a screen that says nothing when
+          # EN | there is nothing to do.
+          # EN | An `entities` card cannot filter: its list is fixed in YAML
+          # EN | written months before the update existed. config-template-
+          # EN | card evaluates a value that starts with the dollar-brace
+          # EN | and assigns whatever comes back, an array included, so the
+          # EN | list is read from the sensor at render time. It re-renders
+          # EN | when an entity in its own `entities:` changes — hence the
+          # EN | family sensor listed there, whose count moves the moment an
+          # EN | install finishes.
+          # EN | `states`, not `hass`: config-template-card exposes the
+          # EN | state map under that name and nothing else. The guard is
+          # EN | not superstition either — the sensor does not exist for the
+          # EN | few seconds between a restart and the first template pass,
+          # EN | and an entities card handed `undefined` throws rather than
+          # EN | rendering empty.
+          # EN | The conditions spell out unavailable and unknown one by
+          # EN | one. `state_not: "0"` alone is true for both of those, so
+          # EN | on a half-started instance the card would appear, ask the
+          # EN | sensor for a list, and get nothing.
+          # FR | LES LIGNES ACTIONNABLES, une carte par famille, chacune
+          # FR | absente quand sa famille est vide — un ecran qui ne dit
+          # FR | rien quand il n y a rien a faire.
+          # FR | Une carte `entities` ne sait pas filtrer : sa liste est
+          # FR | figee dans du YAML ecrit des mois avant que la mise a jour
+          # FR | n existe. config-template-card evalue une valeur qui
+          # FR | commence par le dollar-accolade et affecte ce qui revient,
+          # FR | tableau compris, donc la liste est lue depuis le capteur au
+          # FR | moment du rendu. Elle se re-rend quand une entite de son
+          # FR | propre `entities:` change — d ou le capteur de famille
+          # FR | liste la, dont le decompte bouge des qu une installation
+          # FR | se termine.
+          # FR | `states`, pas `hass` : config-template-card expose la carte
+          # FR | des etats sous ce nom et sous aucun autre. La garde n est
+          # FR | pas non plus de la superstition — le capteur n existe pas
+          # FR | pendant les quelques secondes qui separent un redemarrage
+          # FR | de la premiere passe de templates, et une carte entities a
+          # FR | qui l on tend `undefined` leve au lieu de s afficher vide.
+          # FR | Les conditions enumerent unavailable et unknown une par
+          # FR | une. `state_not: "0"` seul est vrai pour les deux, donc sur
+          # FR | une instance a moitie demarree la carte apparaitrait,
+          # FR | demanderait sa liste au capteur, et n obtiendrait rien.
+{% for fam, fam_icon in [('system', 'mdi:home-assistant'),
+                         ('hacs', 'mdi:puzzle-outline'),
+                         ('firmware', 'mdi:chip')] %}
+          - type: conditional
+            conditions:
+              - entity: sensor.vssp_updates_{{ fam }}
+                state_not: "0"
+              - entity: sensor.vssp_updates_{{ fam }}
+                state_not: "unavailable"
+              - entity: sensor.vssp_updates_{{ fam }}
+                state_not: "unknown"
+            card:
+              type: custom:config-template-card
+              entities:
+                - sensor.vssp_updates_{{ fam }}
+              card:
+                type: entities
+                title: "{{ t('admin.updates_' ~ fam) }}"
+                icon: {{ fam_icon }}
+                entities: >-
+                  ${ (states['sensor.vssp_updates_{{ fam }}'] && states['sensor.vssp_updates_{{ fam }}'].attributes.entity_ids) || [] }
+                card_mod:
+                  style: |
+                    ha-card {
+                      background: var(--card-background-color, rgba(8,18,28,0.75)) !important;
+                      border: 1px solid rgba(0, 229, 255, 0.28) !important;
+                      border-radius: var(--ha-card-border-radius, 20px) !important;
+                    }
+{% endfor %}
+          # EN | MAINTENANCE. CHECK NOW matters more than it looks:
+          # EN | integrations poll on their own schedule, so an empty screen
+          # EN | means "nothing found last time we asked", and only this
+          # EN | button turns that into "nothing found just now".
+          # EN | The bulk install stops at HACS on purpose — see the
+          # EN | reasoning in packages/vssp_updates.yaml. System updates and
+          # EN | firmware are installed from their own row, where the native
+          # EN | dialog offers the backup checkbox and the release notes
+          # EN | first.
+          # FR | MAINTENANCE. VERIFIER MAINTENANT compte plus qu il n y
+          # FR | parait : les integrations interrogent leur source a leur
+          # FR | propre rythme, donc un ecran vide signifie « rien trouve la
+          # FR | derniere fois qu on a demande », et seul ce bouton
+          # FR | transforme cela en « rien trouve a l instant ».
+          # FR | L installation groupee s arrete a HACS a dessein — le
+          # FR | raisonnement est dans packages/vssp_updates.yaml. Les mises
+          # FR | a jour systeme et les micrologiciels s installent depuis
+          # FR | leur propre ligne, ou la boite native propose d abord la
+          # FR | case de sauvegarde et les notes de version.
+          - type: entities
+            title: "{{ t('admin.updates_maintenance') }}"
+            entities:
+              - entity: script.vssp_updates_check
+                name: "{{ t('admin.updates_check') }}"
+                icon: mdi:cloud-search-outline
+              - entity: script.vssp_updates_install_hacs
+                name: "{{ t('admin.updates_install_hacs') }}"
+                icon: mdi:puzzle-plus-outline
+            card_mod:
+              style: |
+                ha-card {
+                  background: var(--card-background-color, rgba(8,18,28,0.75)) !important;
+                  border: 1px solid rgba(0, 229, 255, 0.28) !important;
+                  border-radius: var(--ha-card-border-radius, 20px) !important;
+                }
 
 {% elif screen == 'dashboards' %}
           # EN | Generation controls, moved here from the old HOME view.

@@ -22,6 +22,7 @@ What a user sees, and the machinery that produces it.
 | [Core_Dashboard](dashboards/Core_Dashboard.md) | `core.html`, the system dashboard |
 | [Chatbot_Integration](dashboards/Chatbot_Integration.md) | the HOME chat card and the ADMIN provider selector |
 | [Google_Calendar](dashboards/Google_Calendar.md) | the Google Calendar screen and the header band |
+| [Updates](dashboards/Updates.md) | the ADMIN UPDATES screen: system, HACS and firmware, split apart |
 | [AI_Assistant](dashboards/AI_Assistant.md) | **specification, not yet built** — voice diagnostics, guided repair |
 
 ## `platform/` — the foundation
