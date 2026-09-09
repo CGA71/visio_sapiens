@@ -140,9 +140,14 @@ secret — but treat it as readable by anything on the local network,
 exactly as `assign_data.json` already is. See
 [Security.md](../platform/Security.md).
 
-**`browser_mod` is required** (HACS), as for every popup in this project.
-Without it the icon is inert: it draws, it takes the tap, and nothing
-opens.
+**`browser_mod` is required** (HACS), as for every popup in this project
+— and the browser must be **registered** with it, not merely have the
+integration installed. `browser_id: this` addresses a registered browser;
+on one that has never registered, the service call returns success and
+nothing opens. That is not a theory: it is what happened on the first
+live test here, on a browser where `browser_mod` was loaded and no
+browser was registered. If the clock looks inert, check the browser_mod
+panel before suspecting the card.
 
 ## Related
 

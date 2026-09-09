@@ -78,6 +78,22 @@
     --dim: #56707E;
   }
   * { box-sizing: border-box; }
+  /* EN | The browser's own [hidden] rule is `display: none` at USER-AGENT
+     EN | origin, which any author rule beats — and `.field { display: flex }`
+     EN | is an author rule. So `el.hidden = true` set the attribute, the
+     EN | element stayed flex, and the pause-duration field showed under an
+     EN | action of Off. Seen on the deployed page, not reasoned about.
+     EN | One rule here rather than a `.field[hidden]` selector: every future
+     EN | class that sets a display would reopen the same hole.
+     FR | La regle [hidden] du navigateur vaut `display: none` a l'origine
+     FR | USER-AGENT, que toute regle d'auteur emporte — et
+     FR | `.field { display: flex }` est une regle d'auteur. Donc
+     FR | `el.hidden = true` posait bien l'attribut, l'element restait flex,
+     FR | et le champ de duree de pause s'affichait sous une action Arret.
+     FR | Constate sur la page deployee, pas deduit.
+     FR | Une regle ici plutot qu'un selecteur `.field[hidden]` : toute
+     FR | future classe posant un display rouvrirait le meme trou. */
+  [hidden] { display: none !important; }
   html, body {
     margin: 0; padding: 0; height: 100%;
     background: var(--bg); color: var(--text);
@@ -312,6 +328,12 @@ const STR = {
     disabled: 'suspendue',
     del: 'Suppr.', enable: 'Activer', disable: 'Suspendre',
     no_devices: 'Aucun appareil planifiable dans ce tableau.',
+    m_saved: 'Règle enregistrée.', m_deleted: 'Règle supprimée.',
+    m_toggled: 'Règle mise à jour.', m_pruned: '{n} règle(s) expirée(s) supprimée(s).',
+    m_bad_payload: "Le contenu envoyé n'a pas pu être lu.",
+    m_bad_op: 'Opération inconnue : {op}.',
+    m_not_found: 'Aucune règle avec cet identifiant.',
+    m_invalid: 'Règle refusée : {why}', m_too_many: 'Refusé : déjà {n} règles.',
     send_fail: "Envoi impossible ({e}).\nVérifiez que l'automatisation webhook est chargée et que ce navigateur est sur le réseau local.",
     timeout: "Enregistré, mais aucune confirmation reçue. Rouvrez le popup pour vérifier.",
     confirm_del: 'Supprimer cette règle ?',
@@ -335,6 +357,12 @@ const STR = {
     disabled: 'suspended',
     del: 'Delete', enable: 'Enable', disable: 'Suspend',
     no_devices: 'No schedulable device in this panel.',
+    m_saved: 'Rule saved.', m_deleted: 'Rule deleted.',
+    m_toggled: 'Rule updated.', m_pruned: '{n} expired rule(s) removed.',
+    m_bad_payload: 'The payload could not be read.',
+    m_bad_op: 'Unknown operation: {op}.',
+    m_not_found: 'No rule with that id.',
+    m_invalid: 'Rule refused: {why}', m_too_many: 'Refused: already {n} rules.',
     send_fail: 'Send failed ({e}).\nCheck that the webhook automation is loaded and that this browser is on the local network.',
     timeout: 'Saved, but no confirmation came back. Reopen the popup to check.',
     confirm_del: 'Delete this rule?',
@@ -593,7 +621,7 @@ async function send(payload) {
     if (!res.ok) throw new Error('HTTP ' + res.status);
     const status = await pollStatus(before);
     if (!status) show('ok', t('timeout'));
-    else show(status.ok ? 'ok' : 'err', status.message || '');
+    else show(status.ok ? 'ok' : 'err', sentence(status));
     await loadRules();
     renderRules();
   } catch (e) {
@@ -602,6 +630,30 @@ async function send(payload) {
     state.busy = false;
     el('save').disabled = false;
   }
+}
+
+// EN | Prefer the KEY over the sentence. The script renders `message` in the
+// EN | INSTANCE's locale (input_select.vssp_language); this page runs in the
+// EN | locale the template handed it. They agree in normal use and part
+// EN | company the moment the page is opened by hand — which is how "Rule
+// EN | saved." turned up under French labels during the live test. The
+// EN | script publishes message_key + message_vars next to the sentence
+// EN | precisely so a page can translate for itself; `message` stays as the
+// EN | fallback for a key this page does not know, because a sentence in the
+// EN | wrong language still beats no sentence at all.
+// FR | Preferer la CLE a la phrase. Le script rend `message` dans la langue
+// FR | de l'INSTANCE (input_select.vssp_language) ; cette page tourne dans la
+// FR | langue que lui a donnee le template. Les deux concordent en usage
+// FR | normal et se separent des qu'on ouvre la page a la main — c'est ainsi
+// FR | que « Rule saved. » est apparu sous des libelles francais pendant le
+// FR | test en direct. Le script publie message_key + message_vars a cote de
+// FR | la phrase precisement pour qu'une page puisse traduire elle-meme ;
+// FR | `message` reste le repli pour une cle que cette page ignore, une
+// FR | phrase dans la mauvaise langue valant mieux que pas de phrase.
+function sentence(status) {
+  const key = 'm_' + String(status.message_key || '');
+  if (T[key]) return t(key, status.message_vars || {});
+  return status.message || '';
 }
 
 async function statusStamp() {

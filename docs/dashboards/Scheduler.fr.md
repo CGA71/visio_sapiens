@@ -146,9 +146,15 @@ et des heures — aucun secret — mais le considérer comme lisible par tout
 ce qui est sur le réseau local, exactement comme l'est déjà
 `assign_data.json`. Voir [Security.fr.md](../platform/Security.fr.md).
 
-**`browser_mod` est requis** (HACS), comme pour tout popup de ce projet.
-Sans lui l'icône est inerte : elle s'affiche, elle prend le toucher, et
-rien ne s'ouvre.
+**`browser_mod` est requis** (HACS), comme pour tout popup de ce projet
+— et le navigateur doit y être **enregistré**, pas seulement avoir
+l'intégration installée. `browser_id: this` s'adresse à un navigateur
+enregistré ; sur un navigateur qui ne l'a jamais été, l'appel de service
+renvoie un succès et rien ne s'ouvre. Ce n'est pas une hypothèse : c'est
+ce qui s'est produit au premier test en direct ici, sur un navigateur où
+`browser_mod` était chargé et aucun navigateur enregistré. Si l'horloge
+semble inerte, regarder le panneau browser_mod avant de soupçonner la
+carte.
 
 ## Voir aussi
 

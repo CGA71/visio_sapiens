@@ -120,6 +120,47 @@
                         card:
                           type: vertical-stack
                           cards:
+{% if not rows %}
+                            # EN | A vertical-stack with an EMPTY cards list is
+                            # EN | a configuration error in Home Assistant, not
+                            # EN | an empty box — the entrance hall's "Lights"
+                            # EN | frame has been showing a red "Configuration
+                            # EN | error" ever since this slot started drawing
+                            # EN | both frames whether or not they hold
+                            # EN | anything. A frame that says "nothing here"
+                            # EN | is the whole point of drawing it empty; a
+                            # EN | frame that says "error" is worse than no
+                            # EN | frame.
+                            # FR | Un vertical-stack a la liste de cartes VIDE
+                            # FR | est une erreur de configuration pour Home
+                            # FR | Assistant, pas une boite vide — le cadre
+                            # FR | « Lumieres » de l'entree affiche une
+                            # FR | « Erreur de configuration » rouge depuis que
+                            # FR | ce tableau dessine les deux cadres qu'ils
+                            # FR | contiennent quelque chose ou non. Un cadre
+                            # FR | qui dit « rien ici » est toute la raison de
+                            # FR | le dessiner vide ; un cadre qui dit
+                            # FR | « erreur » vaut moins que pas de cadre.
+                            - type: custom:button-card
+                              show_icon: false
+                              show_name: false
+                              show_state: false
+                              show_label: true
+                              label: "—"
+                              tap_action:
+                                action: none
+                              styles:
+                                card:
+                                  - background: transparent
+                                  - box-shadow: none
+                                  - border: none
+                                  - padding: 10px 0
+                                  - cursor: default
+                                  - pointer-events: none
+                                label:
+                                  - color: rgba(143, 182, 201, 0.45)
+                                  - font-size: 13px
+{% endif %}
 {% for r in rows %}
                             - type: custom:button-card
                               template: vssp_circuit_row
