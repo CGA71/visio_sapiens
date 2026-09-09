@@ -23,6 +23,7 @@ What a user sees, and the machinery that produces it.
 | [Chatbot_Integration](dashboards/Chatbot_Integration.md) | the HOME chat card and the ADMIN provider selector |
 | [Google_Calendar](dashboards/Google_Calendar.md) | the Google Calendar screen and the header band |
 | [Updates](dashboards/Updates.md) | the ADMIN UPDATES screen: system, HACS and firmware, split apart |
+| [Scheduler](dashboards/Scheduler.md) | the clock on a room's SWITCHES panel: recurring, one-off and countdown rules |
 | [AI_Assistant](dashboards/AI_Assistant.md) | **specification, not yet built** — voice diagnostics, guided repair |
 
 ## `platform/` — the foundation

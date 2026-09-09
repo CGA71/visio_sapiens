@@ -393,7 +393,7 @@ différentes :
 
 | | |
 |---|---|
-| [`docs/dashboards/`](docs/dashboards) | l'interface et sa génération — générateur, charte graphique, CORE, chatbot, calendrier, mises à jour |
+| [`docs/dashboards/`](docs/dashboards) | l'interface et sa génération — générateur, charte graphique, CORE, chatbot, calendrier, mises à jour, planification |
 | [`docs/platform/`](docs/platform) | le socle — déploiement, coffre-fort Vault, sécurité, sauvegardes, MQTT sur k3s |
 | [`docs/ci-cd/`](docs/ci-cd) | le pipeline, et les postmortems de terrain |
 | [`docs/project/`](docs/project) | vision, étude de cas, série YouTube |
