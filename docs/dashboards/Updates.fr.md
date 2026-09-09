@@ -10,15 +10,19 @@ ses notes de version et un service d'installation. Réglages → Mises à
 jour les liste — mais là seulement, et mélangées à tout le reste de ce
 que fait cet écran.
 
-L'écran MISES À JOUR n'ajoute **aucune source de données**. Il lit les
-entités qui existent déjà et apporte la seule chose qu'un dashboard ne
-peut pas deviner seul : la **répartition en trois familles**.
+Pour ses trois premières familles, l'écran MISES À JOUR n'ajoute **aucune
+source de données** : il lit les entités qui existent déjà et apporte la
+seule chose qu'un dashboard ne peut pas deviner seul, la **répartition
+par famille**. La quatrième est différente — l'infrastructure n'a pas
+d'entités, elle a donc sa propre sonde. Cette moitié est décrite dans
+[La quatrième famille](#la-quatrième-famille--infrastructure).
 
 | Famille | Ce que c'est | Comment ça s'installe |
 |---|---|---|
 | **Système** | Home Assistant lui-même, le Supervisor, l'OS, les add-ons | une ligne à la fois |
 | **Intégrations & cartes** | tout ce qui est installé via HACS | une ligne à la fois, **ou tout d'un coup** |
 | **Micrologiciels** | `device_class: firmware` — un appareil physique | une ligne à la fois, jamais en masse |
+| **Infrastructure** | l'hôte, k3s, GitLab, le runner, Vault | par palier — voir [la quatrième famille](#la-quatrième-famille--infrastructure) |
 
 Cette répartition est tout l'intérêt de l'écran. Réglages → Mises à jour
 affiche le téléchargement d'une carte Lovelace et le flash d'une prise
@@ -74,7 +78,8 @@ version ignorée reste la dernière. Ignorer depuis une ligne vide donc cet
 
 ## L'écran
 
-**ÉTAT DES MISES À JOUR** — les quatre décomptes, d'un coup d'œil.
+**ÉTAT DES MISES À JOUR** — les décomptes, d'un coup d'œil, une ligne par
+famille.
 
 **À INSTALLER** — l'inventaire : chaque mise à jour en attente, groupée
 par famille, avec les deux versions entre lesquelles elle se trouve
@@ -247,6 +252,174 @@ de *bloc* — le piège dans lequel un bloc raw posé sur cette ligne serait
 tombé tout droit, ramenant le template en colonne zéro et cassant le
 YAML. Voir [Troubleshooting.fr.md](../ci-cd/Troubleshooting.fr.md) pour
 la version de cette erreur qui est déjà partie en production une fois.
+
+## La quatrième famille — INFRASTRUCTURE
+
+Tout ce qui précède cette section lit des entités que Home Assistant
+détient déjà. Celle-ci ne le peut pas, et c'est toute sa raison d'être.
+
+Home Assistant sait qu'une mise à jour de Core l'attend. Il ignore que
+l'hôte Ubuntu sur lequel il tourne a cinq paquets en attente et réclame
+un redémarrage, que k3s a deux correctifs de retard, ou que le GitLab qui
+le déploie a publié un correctif. Ces faits vivent de l'autre côté de la
+frontière du conteneur et aucune entité `update.*` ne les porte — donc
+l'écran qui prétendait réunir *toutes* les mises à jour en attente était,
+jusqu'ici, aveugle à la machine sous lui.
+
+| Composant | Palier | D'où vient la version |
+|---|---|---|
+| Paquets de l'hôte | `auto` | `apt list --upgradable` sur l'hôte |
+| Redémarrage de l'hôte | `manual` | `/var/run/reboot-required` |
+| Runner GitLab | `auto` | `apt-cache policy gitlab-runner` |
+| GitLab | `manual` | `apt-cache policy gitlab-ce`, ou l'API de l'instance |
+| Cluster k3s | `locked` | `k3s --version` face aux releases k3s-io/k3s |
+| Coffre-fort Vault | `locked` | le tag de l'image en marche face à Docker Hub |
+| Images Docker | `locked` | `docker ps`, remonté et non comparé |
+
+### Les trois paliers
+
+Les autres familles se répartissent déjà par risque — HACS en lot, jamais
+le micrologiciel. Celle-ci applique la même idée à des choses capables de
+mettre la maison à l'arrêt :
+
+- **`auto`** — la passe nocturne peut l'installer sans surveillance.
+  Réversible, ou assez peu coûteux pour qu'un échec soit une gêne plutôt
+  qu'une panne.
+- **`manual`** — une ligne, un bouton, jamais la passe, quoi que dise
+  l'interrupteur. GitLab redémarre tous ses services et réclame une
+  sauvegarde préalable ; un redémarrage d'hôte est un redémarrage d'hôte.
+- **`locked`** — remonté et jamais installé depuis la console. Mettre k3s
+  à jour redémarre le cluster depuis lequel cet écran est servi, et il en
+  va de même de Vault pour le coffre.
+
+**Le palier est déclaré dans `vssp_infra_updates.py`, pas dans le
+dashboard.** Une carte ne peut pas promouvoir un composant en l'affichant
+autrement, et la passe nocturne filtre sur ce champ plutôt que sur quoi
+que ce soit envoyé par l'interface.
+
+### D'où viennent les privilèges
+
+Lire `apt list` demande un compte sur l'hôte. Installer demande sudo.
+Home Assistant ne doit détenir ni l'un ni l'autre : tout ce qu'il lit
+devient un état d'entité, écrit en clair dans `home-assistant_v2.db` par
+le recorder et visible dans les Outils de développement par n'importe
+quel administrateur. C'est le raisonnement qui a donné sa forme au coffre
+(voir [Vault.fr.md](../platform/Vault.fr.md)), appliqué à la maintenance.
+
+Les identifiants vivent donc dans le coffre, sous `vssp/infra/`, et
+**c'est le processus Python qui les lit — pas Home Assistant** :
+
+```
+Écran ADMIN  ──▶ shell_command ──▶ vssp_infra_updates.py
+                                       │
+                                       ├── lit secret/data/vssp/infra/*
+                                       │   avec le jeton vssp-maint
+                                       │   (/config/vssp/.vault_maint_token)
+                                       ├── ssh vers l'hôte, apt / k3s / docker
+                                       └── écrit www/vssp/infra_updates.json
+                                               │
+                    sensor.vssp_updates_infra ◀┘   (command_line, cat)
+```
+
+Les valeurs existent dans la mémoire d'une exécution brève, vont vers
+`ssh` ou vers un appel HTTPS, et ne sont jamais rendues à l'appelant. Le
+`shell_command` qui a lancé l'exécution récupère un décompte et un
+message de statut. Rien n'atteint une entité, donc rien n'atteint la
+base — la séparation survit, et elle survit comme le reste du coffre
+l'impose : par ce que Vault refuse, pas par ce qu'un script promet.
+
+`vssp-maint` accorde `read` sur `secret/data/vssp/infra/*` et rien
+d'autre. Elle ne peut pas lister le coffre, ne voit ni `accounts/` ni
+`apps/`, et n'écrit pas.
+
+### Quoi mettre dans le coffre
+
+Depuis l'écran COFFRE-FORT, catégorie `infra` :
+
+| Entrée | Champs |
+|---|---|
+| `vssp/infra/host_ssh` | `host`, `user`, `port`, `private_key` |
+| `vssp/infra/host_sudo` | `password` |
+| `vssp/infra/gitlab` | `url`, `token` — seulement pour un GitLab qui n'est pas un paquet apt |
+
+Lui donner **sa propre clé SSH**, créée pour cela et rien d'autre, pour
+que révoquer l'accès de maintenance soit supprimer une ligne du
+`authorized_keys` de l'hôte plutôt que faire tourner une clé dont
+quelqu'un se sert aussi pour se connecter.
+
+Puis créer le jeton et le poser dans la variable CI :
+
+```bash
+vault policy write vssp-maint vault/policies/vssp-maint.hcl
+vault token create -policy=vssp-maint -period=768h -field=token
+# → Settings > CI/CD > Variables, masquée + protégée, VAULT_MAINT_TOKEN
+```
+
+Sans cette variable rien ne casse : le déploiement avertit, et la famille
+se déclare jamais sondée.
+
+### auto, manuel, planifié
+
+Les trois façons dont cette famille bouge, et ce sont les trois que le
+reste de l'écran offrait déjà :
+
+| | Ce qui tourne | Piloté par |
+|---|---|---|
+| **planifié** | la sonde, toutes les 6 h et 2 minutes après chaque redémarrage | rien — elle ne fait que lire |
+| **auto** | le palier `auto`, à l'heure posée à côté de l'interrupteur | `input_boolean.vssp_updates_infra_auto` |
+| **manuel** | un composant, depuis son propre bouton | vous |
+
+**L'interrupteur infrastructure est un second interrupteur,
+délibérément.** Celui du dessus installe des cartes Lovelace : une
+mauvaise nuit coûte un Ctrl+Maj+R. Celui-ci lance `apt-get` sur le
+serveur qui porte le cluster où vit Home Assistant. Les réunir en une
+seule commande signifierait que quelqu'un ayant activé les mises à jour
+HACS automatiques il y a des mois se met à mettre à jour son serveur ce
+soir, sans avoir consenti à cela.
+
+### Deux détails faciles à rater
+
+**La ligne des paquets de l'hôte exclut GitLab et le runner.** Les deux
+sont aussi des paquets apt et ont chacun leur ligne ; laissés dans le
+décompte ils apparaîtraient deux fois, et le total de la famille
+exagérerait le travail en attente. Ils sont retirés de la ligne *et* de
+la commande de mise à jour — `install --only-upgrade <paquets nommés>`
+plutôt qu'un `apt-get upgrade` nu, qui installerait sinon `gitlab-ce`,
+composant de palier manuel, au milieu d'une passe sans surveillance. Le
+palier aurait été respecté partout sauf dans la seule commande qui
+installe.
+
+**La version amont est le candidat apt, pas un flux de releases.** L'hôte
+est déjà abonné au dépôt de l'éditeur, le candidat est donc par
+définition la version que cette machine obtiendrait réellement — et il
+reste juste sur un paquet épinglé ou gelé, ce qu'une API amont ne peut
+pas savoir. `apt-cache policy` est aussi **traduit** : il affiche
+`Installed:` sur un hôte anglais et `Installé :` sur un hôte français, la
+sonde fige donc `LC_ALL=C` avant d'analyser. Sans cela elle marche sur la
+machine où elle a été écrite et remonte partout ailleurs un paquet
+inconnu.
+
+### Entités ajoutées
+
+| Entité | État |
+|---|---|
+| `sensor.vssp_updates_infra` | en attente sur l'infrastructure ; attributs `components`, `counts`, `generated` |
+| `sensor.vssp_updates_all` | toutes les mises à jour en attente, les deux mondes réunis |
+| `sensor.vssp_infra_auto` / `_manual` / `_locked` | le décompte par palier |
+| `script.vssp_infra_check` | sonder maintenant |
+| `script.vssp_infra_install_one` | installer un composant, par clé |
+| `script.vssp_infra_install_auto` | la passe du palier `auto` |
+| `input_boolean.vssp_updates_infra_auto` | l'option, éteinte tant qu'on ne l'allume pas |
+| `automation.vssp_infra_probe_scheduled` | toutes les 6 heures |
+| `automation.vssp_infra_auto_nightly` | la passe, 10 minutes après celle de Home Assistant |
+
+`sensor.vssp_updates_infra` est un capteur `command_line` qui **lit un
+fichier** — il ne lance pas la sonde. La sonde ouvre une session SSH et
+appelle trois API amont ; la lancer à l'intervalle de scan d'un capteur
+voudrait dire une connexion à l'hôte chaque minute pour un nombre qui
+change deux fois par jour. Un `cat` sur un fichier absent sort en erreur
+et le capteur devient indisponible, ce qui est correct et visiblement
+différent de « rien n'attend ».
 
 ## Voir aussi
 

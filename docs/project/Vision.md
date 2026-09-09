@@ -337,7 +337,7 @@ to.
 | **Scheduler** | `packages/vssp_schedule.yaml`, `vssp_schedule_apply.py`, `wizard/vssp_schedule.html` | the clock on a room's SWITCHES panel. The popup writes recurring, one-off and countdown rules into `schedules.json`; the package executes them. |
 | **Chatbot** | `packages/vssp_chatbot.yaml`, `vssp_chatbot_send.py`, `wizard/vssp_chatbot.html` | the HOME chat card. Four providers (Gemini, Claude, ChatGPT, custom); the provider is read from the selector's own state, never from client text. |
 | **Google Calendar** | `packages/vssp_google.yaml`, `vssp_google_setup.py` | does from the console what HA normally asks you to do by hand in Settings → Devices & services: application credentials, then the integration. |
-| **Updates** | `packages/vssp_updates.yaml` | groups every pending `update.*` entity by family — system, HACS, device firmware — with the auto-update policy in one place. |
+| **Updates** | `packages/vssp_updates.yaml`, `vssp_infra_updates.py` | groups every pending `update.*` entity by family — system, HACS, device firmware — with the auto-update policy in one place. A fourth family, **infrastructure**, has no entities behind it: a probe reads the Ubuntu host, k3s, GitLab, the runner and Vault over SSH, with its credentials taken from the safe by the Python process rather than by Home Assistant. |
 | **Vault** | `packages/vssp_vault.yaml`, `vault/`, `addons/vssp-vault/` | the safe. Docker Compose on the k3s host, a Supervisor add-on on HAOS. **Home Assistant's token grants `secret/metadata/*` and nothing on `secret/data/*`**: HA can list and describe every entry and is refused, by Vault itself, if it ever asks for a value — because anything HA reads lands in the recorder database in clear text. The browser reads values directly. |
 | **Technical room / LAN** | `packages/vssp_technical_room.yaml`, `vssp_lan_probe.py` | probes the Livebox and the switch, printed as JSON on stdout and consumed by `command_line` sensors. The box password is a masked CI variable written to `/config/vssp/.livebox.env` at deploy time, never committed. |
 | **CORE** | `www/vssp/core.html` | a standalone page, not a Lovelace view: it calls the HA REST API with its own token and reads the k3s stats JSON. The CORE dashboard is just an iframe onto it. |
@@ -456,6 +456,7 @@ or by the pipeline. Home Assistant itself never parses this directory.
 |---|---|
 | `vssp_discovery.py` | read-only scan of every entity by Area → `report.json` |
 | `vssp_lan_probe.py` | Livebox + switch probe → JSON on stdout |
+| `vssp_infra_updates.py` | host, k3s, GitLab, runner and Vault versions → the INFRASTRUCTURE family |
 | `vssp_module_images.py` | product photo of a newly discovered module |
 | `vssp_prune_backups.py` | rotates the timestamped backups every apply writes |
 

@@ -399,6 +399,44 @@ admin:
   updates_auto_targets: Will be installed
   updates_auto_now: RUN THE PASS NOW
   updates_auto_protected: Home Assistant Core is never installed automatically
+
+  # EN | INFRASTRUCTURE — the layer underneath Home Assistant. These labels
+  # EN | name components, not entities: there is no `update.*` behind any of
+  # EN | them, which is the whole reason the family exists.
+  # FR | INFRASTRUCTURE — la couche sous Home Assistant. Ces libelles nomment
+  # FR | des composants, pas des entites : aucun `update.*` derriere eux,
+  # FR | ce qui est toute la raison d etre de la famille.
+  updates_infra: Infrastructure
+  updates_infra_state: INFRASTRUCTURE
+  updates_infra_auto: Installed automatically
+  updates_infra_manual: Waiting for you
+  updates_infra_locked: Never installed from here
+  updates_infra_check: PROBE THE SERVER
+  updates_infra_auto_enabled: Update the infrastructure automatically
+  updates_infra_never_probed: >-
+    Never probed. Press PROBE THE SERVER, and check the safe holds
+    vssp/infra/host_ssh if nothing comes back.
+  updates_infra_locked_note: >-
+    k3s, Vault and the Docker images are reported but never installed from
+    the console: each one restarts the cluster or the safe that this screen
+    is served from.
+  updates_infra_reboot_note: The host is waiting for a restart
+
+  # EN | One label per component, keyed exactly as vssp_infra_updates.py's
+  # EN | COMPONENTS table declares them. The key is the contract between the
+  # EN | probe and this catalogue: renaming one here without renaming it
+  # EN | there leaves a row labelled with its own identifier.
+  # FR | Un libelle par composant, avec la cle exacte que declare la table
+  # FR | COMPONENTS de vssp_infra_updates.py. La cle est le contrat entre la
+  # FR | sonde et ce catalogue : en renommer une ici sans la renommer la-bas
+  # FR | laisse une ligne etiquetee de son propre identifiant.
+  updates_infra_os_packages: Host packages
+  updates_infra_os_reboot: Host restart
+  updates_infra_k3s: k3s cluster
+  updates_infra_gitlab_runner: GitLab runner
+  updates_infra_gitlab: GitLab
+  updates_infra_vault: Vault safe
+  updates_infra_docker_images: Docker images
   discovery: DISCOVERY SCAN
   upgrade: UPGRADE
   generate: GENERATE DASHBOARDS
@@ -549,7 +587,7 @@ adminmenu:
     vault: SAFE
     vault_hint: Server access secrets, accounts and application passwords
     updates: UPDATES
-    updates_hint: Every pending update in one place — system, HACS, device firmware
+    updates_hint: Every pending update in one place — system, HACS, device firmware, and the server underneath
   scan: DISCOVERY SCAN
   scan_hint: Read every Home Assistant entity, writes report.json
   not_built: Not built yet

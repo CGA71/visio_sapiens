@@ -282,6 +282,34 @@ admin:
   updates_auto_targets: Seront installées
   updates_auto_now: LANCER LA PASSE MAINTENANT
   updates_auto_protected: Home Assistant Core n'est jamais installé automatiquement
+
+  # EN | INFRASTRUCTURE — the layer underneath Home Assistant.
+  # FR | INFRASTRUCTURE — la couche sous Home Assistant.
+  updates_infra: Infrastructure
+  updates_infra_state: INFRASTRUCTURE
+  updates_infra_auto: Installées automatiquement
+  updates_infra_manual: En attente de vous
+  updates_infra_locked: Jamais installées d'ici
+  updates_infra_check: SONDER LE SERVEUR
+  updates_infra_auto_enabled: Mettre à jour l'infrastructure automatiquement
+  updates_infra_never_probed: >-
+    Jamais sondé. Appuyez sur SONDER LE SERVEUR, et vérifiez que le
+    coffre-fort contient vssp/infra/host_ssh si rien ne revient.
+  updates_infra_locked_note: >-
+    k3s, Vault et les images Docker sont remontés mais jamais installés
+    depuis la console : chacun redémarre le cluster ou le coffre-fort
+    depuis lequel cet écran est servi.
+  updates_infra_reboot_note: L'hôte attend un redémarrage
+
+  # EN | One label per component, keyed as the COMPONENTS table declares them.
+  # FR | Un libellé par composant, avec la clé que déclare la table COMPONENTS.
+  updates_infra_os_packages: Paquets de l'hôte
+  updates_infra_os_reboot: Redémarrage de l'hôte
+  updates_infra_k3s: Cluster k3s
+  updates_infra_gitlab_runner: Runner GitLab
+  updates_infra_gitlab: GitLab
+  updates_infra_vault: Coffre-fort Vault
+  updates_infra_docker_images: Images Docker
   discovery: SCAN DE DÉCOUVERTE
   upgrade: MISE À NIVEAU
   generate: GÉNÉRER LES DASHBOARDS
@@ -424,7 +452,7 @@ adminmenu:
     vault: COFFRE-FORT
     vault_hint: Secrets d'accès aux serveurs, comptes et mots de passe applicatifs
     updates: MISES À JOUR
-    updates_hint: Toutes les mises à jour en attente au même endroit — système, HACS, micrologiciels
+    updates_hint: Toutes les mises à jour en attente au même endroit — système, HACS, micrologiciels, et le serveur en dessous
   scan: SCAN DE DÉCOUVERTE
   scan_hint: Lit toutes les entités Home Assistant, écrit report.json
   not_built: Pas encore construit

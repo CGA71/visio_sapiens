@@ -22,7 +22,7 @@ Ce que voit l'utilisateur, et la mécanique qui le produit.
 | [Core_Dashboard](dashboards/Core_Dashboard.fr.md) | `core.html`, le dashboard système |
 | [Chatbot_Integration](dashboards/Chatbot_Integration.fr.md) | la carte de discussion HOME et le sélecteur de fournisseur |
 | [Google_Calendar](dashboards/Google_Calendar.fr.md) | l'écran Google Calendar et le bandeau d'en-tête |
-| [Updates](dashboards/Updates.fr.md) | l'écran MISES À JOUR de l'ADMIN : système, HACS et micrologiciels, séparés |
+| [Updates](dashboards/Updates.fr.md) | l'écran MISES À JOUR de l'ADMIN : système, HACS, micrologiciels et le serveur en dessous, séparés |
 | [Scheduler](dashboards/Scheduler.fr.md) | l'horloge du tableau INTERRUPTEURS d'une pièce : règles récurrentes, ponctuelles et minuteries |
 | [AI_Assistant](dashboards/AI_Assistant.fr.md) | **spécification, pas encore construit** — diagnostic vocal, réparation guidée |
 

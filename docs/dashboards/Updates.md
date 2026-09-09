@@ -9,15 +9,18 @@ Home Assistant already knows about every pending update. Each one is an
 release notes, and an install service. Settings → Updates lists them —
 but only there, and mixed in with everything else that screen does.
 
-The UPDATES screen adds **no data source at all**. It reads the entities
-that already exist and adds the one thing a dashboard cannot work out on
-its own: the **split into three families**.
+For its first three families the UPDATES screen adds **no data source at
+all**: it reads the entities that already exist and adds the one thing a
+dashboard cannot work out on its own, the **split by family**. The fourth
+is different — the infrastructure has no entities, so it has a probe of
+its own. That half is described in [The fourth family](#the-fourth-family--infrastructure).
 
 | Family | What it is | How it is installed |
 |---|---|---|
 | **System** | Home Assistant itself, the Supervisor, the OS, add-ons | one row at a time |
 | **Integrations & cards** | everything installed through HACS | one row at a time, **or all at once** |
 | **Device firmware** | `device_class: firmware` — a physical device | one row at a time, never in bulk |
+| **Infrastructure** | the host, k3s, GitLab, the runner, Vault | by tier — see [the fourth family](#the-fourth-family--infrastructure) |
 
 That split is the whole point of the screen. Settings → Updates shows a
 Lovelace card download and the flash of a wall plug as the same kind of
@@ -73,7 +76,7 @@ this screen exactly the way installing does.
 
 ## The screen
 
-**UPDATE STATE** — the four counts, at a glance.
+**UPDATE STATE** — the counts, at a glance, one row per family.
 
 **TO INSTALL** — the inventory: every pending update, grouped by family,
 with the two versions it sits between (`v3.2.2 → v3.2.3`). This is what
@@ -231,6 +234,169 @@ indentation in front of a *block* tag — the trap a raw block on that line
 would have walked straight into, landing the template at column zero and
 breaking the YAML. See [Troubleshooting.md](../ci-cd/Troubleshooting.md)
 for the version of that mistake that shipped once already.
+
+## The fourth family — INFRASTRUCTURE
+
+Everything above this section reads entities Home Assistant already
+holds. This one cannot, and that is the whole reason it exists.
+
+Home Assistant knows a Core update is pending. It does not know the
+Ubuntu host it runs on has five packages waiting and is asking for a
+reboot, that k3s is two patch releases behind, or that the GitLab which
+deploys it has shipped a fix. Those facts live on the other side of the
+container boundary and no `update.*` entity carries them — so the screen
+that claimed to hold *every* pending update was, until now, blind to the
+machine underneath it.
+
+| Component | Tier | Where the version comes from |
+|---|---|---|
+| Host packages | `auto` | `apt list --upgradable` on the host |
+| Host restart | `manual` | `/var/run/reboot-required` |
+| GitLab runner | `auto` | `apt-cache policy gitlab-runner` |
+| GitLab | `manual` | `apt-cache policy gitlab-ce`, or the instance's own API |
+| k3s cluster | `locked` | `k3s --version` against the k3s-io/k3s releases |
+| Vault safe | `locked` | the running image tag against Docker Hub |
+| Docker images | `locked` | `docker ps`, reported and not compared |
+
+### The three tiers
+
+The other families already split by risk — HACS in bulk, firmware never.
+This one applies the same idea to things that can take the house offline:
+
+- **`auto`** — the nightly pass may install it unattended. Reversible, or
+  cheap enough that a bad one is a nuisance rather than an outage.
+- **`manual`** — one row, one button, never the pass, whatever the switch
+  says. GitLab restarts every one of its services and wants a backup
+  first; a host reboot is a host reboot.
+- **`locked`** — reported and never installed from the console at all.
+  Upgrading k3s restarts the cluster this very screen is served from, and
+  the same is true of Vault for the safe.
+
+**The tier is declared in `vssp_infra_updates.py`, not in the dashboard.**
+A card cannot promote a component by rendering it differently, and the
+nightly pass filters on that field rather than on anything the interface
+sent it.
+
+### Where the privileges come from
+
+Reading `apt list` needs an account on the host. Installing needs sudo.
+Home Assistant must hold neither: everything it reads becomes an entity
+state, written in clear text to `home-assistant_v2.db` by the recorder
+and visible in Developer Tools to any administrator. That is the same
+reasoning that shaped the safe (see [Vault.md](../platform/Vault.md)),
+now applied to maintenance.
+
+So the credentials live in the safe, under `vssp/infra/`, and **the
+Python process reads them — not Home Assistant**:
+
+```
+ADMIN screen  ──▶ shell_command ──▶ vssp_infra_updates.py
+                                        │
+                                        ├── reads secret/data/vssp/infra/*
+                                        │   with the vssp-maint token
+                                        │   (/config/vssp/.vault_maint_token)
+                                        ├── ssh to the host, apt / k3s / docker
+                                        └── writes www/vssp/infra_updates.json
+                                                │
+                     sensor.vssp_updates_infra ◀┘   (command_line, cat)
+```
+
+The values exist in the memory of one short run, travel to `ssh` or to an
+HTTPS call, and are never returned to the caller. The `shell_command`
+that started the run gets back a count and a status message. Nothing
+reaches an entity, so nothing reaches the database — the separation
+survives, and it survives the way the rest of the safe enforces it: by
+what Vault refuses, not by what a script promises.
+
+`vssp-maint` grants `read` on `secret/data/vssp/infra/*` and nothing
+else. It cannot list the safe, cannot see `accounts/` or `apps/`, and
+cannot write.
+
+### What to put in the safe
+
+From the SAFE screen, category `infra`:
+
+| Entry | Fields |
+|---|---|
+| `vssp/infra/host_ssh` | `host`, `user`, `port`, `private_key` |
+| `vssp/infra/host_sudo` | `password` |
+| `vssp/infra/gitlab` | `url`, `token` — only for a GitLab that is not an apt package |
+
+Give it **its own SSH key**, created for this and nothing else, so
+revoking maintenance access is deleting one line from the host's
+`authorized_keys` rather than rotating a key someone also logs in with.
+
+Then create the token and put it in the CI variable:
+
+```bash
+vault policy write vssp-maint vault/policies/vssp-maint.hcl
+vault token create -policy=vssp-maint -period=768h -field=token
+# → Settings > CI/CD > Variables, masked + protected, VAULT_MAINT_TOKEN
+```
+
+Without that variable nothing breaks: the deploy warns, and the family
+reports itself as never probed.
+
+### auto, manual, planned
+
+The three ways this family moves, and they are the same three the rest of
+the screen already offered:
+
+| | What runs | Controlled by |
+|---|---|---|
+| **planned** | the probe, every 6 hours and 2 minutes after every restart | nothing — it only reads |
+| **auto** | the `auto` tier, at the hour beside the switch | `input_boolean.vssp_updates_infra_auto` |
+| **manual** | one component, from its own button | you |
+
+**The infrastructure switch is a second switch, deliberately.** The one
+above it installs Lovelace cards: a bad night costs a Ctrl+Shift+R. This
+one runs `apt-get` on the server carrying the cluster Home Assistant
+lives in. Folding them into one control would mean someone who enabled
+automatic HACS updates months ago quietly starts upgrading their server
+tonight, having agreed to no such thing.
+
+### Two details that are easy to get wrong
+
+**The host-packages row excludes GitLab and the runner.** Both are apt
+packages with a row of their own; left in the count they would appear
+twice, and the family total would overstate the work waiting. They are
+removed from the row *and* from the upgrade command — `install
+--only-upgrade <named packages>` rather than a bare `apt-get upgrade`,
+which would otherwise install `gitlab-ce`, a manual-tier component, in
+the middle of an unattended pass. The tier would have been enforced
+everywhere except in the one command that installs.
+
+**The upstream version is the apt candidate, not a release feed.** The
+host is already subscribed to the vendor's repository, so the candidate
+is by definition the version this machine would actually get — and it
+stays right on a pinned or held package, which an upstream API cannot
+know about. `apt-cache policy` is also **localised**: it prints
+`Installed:` on an English host and `Installé :` on a French one, so the
+probe pins `LC_ALL=C` before parsing. Without that it works on the
+machine it was written on and reports every package as unknown everywhere
+else.
+
+### Entities added
+
+| Entity | State |
+|---|---|
+| `sensor.vssp_updates_infra` | pending on the infrastructure; attributes `components`, `counts`, `generated` |
+| `sensor.vssp_updates_all` | every pending update, both worlds together |
+| `sensor.vssp_infra_auto` / `_manual` / `_locked` | the count per tier |
+| `script.vssp_infra_check` | probe now |
+| `script.vssp_infra_install_one` | install one component, by key |
+| `script.vssp_infra_install_auto` | the `auto` tier pass |
+| `input_boolean.vssp_updates_infra_auto` | the option, off until you turn it on |
+| `automation.vssp_infra_probe_scheduled` | every 6 hours |
+| `automation.vssp_infra_auto_nightly` | the pass, 10 minutes after the Home Assistant one |
+
+`sensor.vssp_updates_infra` is a `command_line` sensor that **reads a
+file** — it does not run the probe. The probe opens an SSH session and
+calls three upstream APIs; running that on a sensor scan interval would
+mean a connection to the host every minute for a number that changes
+twice a day. A `cat` of a missing file exits non-zero and the sensor goes
+unavailable, which is correct and visibly different from "nothing is
+pending".
 
 ## Related
 

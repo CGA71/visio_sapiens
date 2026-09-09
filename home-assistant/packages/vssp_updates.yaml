@@ -321,10 +321,92 @@ template:
 # FR | installations automatiques dans le dos de qui les a reglees. Sans
 # FR | lui, Home Assistant restaure le dernier etat et l interrupteur veut
 # FR | dire ce qu il affiche.
+      # ═══════════════════════════════════════════════════════════════
+      # EN | THE GRAND TOTAL — Home Assistant's world plus the one under it
+      # FR | LE TOTAL GENERAL — le monde de Home Assistant plus celui d en
+      # FR | dessous
+      # ═══════════════════════════════════════════════════════════════
+      #
+      # EN | `vssp_updates_pending` counts update entities and keeps that
+      # EN | meaning; it would be wrong to inflate it with things that have
+      # EN | no entity. This one is the number the ADMIN menu badge wants:
+      # EN | everything waiting, wherever it waits.
+      # EN | The infra half comes from a command_line sensor that reads a
+      # EN | file, so it is `0` on an instance where the probe has never run
+      # EN | rather than `unknown` — `int(0)` makes that explicit instead of
+      # EN | leaving the sum to fail on a string.
+      # FR | `vssp_updates_pending` compte des entites de mise a jour et
+      # FR | garde ce sens ; l enfler de choses qui n ont pas d entite
+      # FR | serait faux. Celui-ci est le nombre que veut la pastille du
+      # FR | menu ADMIN : tout ce qui attend, ou qu il attende.
+      # FR | La moitie infra vient d un capteur command_line qui lit un
+      # FR | fichier, elle vaut donc `0` sur une instance ou la sonde n a
+      # FR | jamais tourne plutot que `unknown` — `int(0)` le dit
+      # FR | explicitement au lieu de laisser la somme echouer sur une
+      # FR | chaine.
+      - name: VSSP Updates all
+        unique_id: vssp_updates_all
+        icon: mdi:update
+        state: >-
+          {{ states('sensor.vssp_updates_pending') | int(0)
+             + states('sensor.vssp_updates_infra') | int(0) }}
+
+      # EN | The infra family split by tier, so the screen can say "5 of
+      # EN | these will install themselves tonight, 2 are waiting for you,
+      # EN | 2 will never install from here" without recomputing it in three
+      # EN | cards. The attribute is a list of dicts and the card renders it;
+      # EN | same contract as the other four families.
+      # FR | La famille infra repartie par palier, pour que l ecran puisse
+      # FR | dire « 5 s installeront cette nuit, 2 vous attendent, 2 ne
+      # FR | s installeront jamais d ici » sans le recalculer dans trois
+      # FR | cartes. L attribut est une liste de dictionnaires que la carte
+      # FR | affiche ; meme contrat que les quatre autres familles.
+      - name: VSSP Infra auto
+        unique_id: vssp_infra_auto
+        icon: mdi:autorenew
+        state: >-
+          {{ (state_attr('sensor.vssp_updates_infra', 'counts')
+              or {}).get('auto', 0) }}
+      - name: VSSP Infra manual
+        unique_id: vssp_infra_manual
+        icon: mdi:gesture-tap-button
+        state: >-
+          {{ (state_attr('sensor.vssp_updates_infra', 'counts')
+              or {}).get('manual', 0) }}
+      - name: VSSP Infra locked
+        unique_id: vssp_infra_locked
+        icon: mdi:lock-outline
+        state: >-
+          {{ (state_attr('sensor.vssp_updates_infra', 'counts')
+              or {}).get('locked', 0) }}
+
 input_boolean:
   vssp_updates_auto:
     name: "Visio Sapiens — Mises à jour automatiques"
     icon: mdi:autorenew
+
+  # EN | A SECOND SWITCH, deliberately not the one above.
+  # EN | The switch above installs Lovelace cards and add-ons: a bad night
+  # EN | costs a Ctrl+Shift+R. This one runs apt-get on the Ubuntu host that
+  # EN | carries the cluster Home Assistant lives in. Folding the two into
+  # EN | one control would mean someone who turned on automatic HACS updates
+  # EN | months ago silently starts upgrading their server tonight, having
+  # EN | agreed to no such thing.
+  # EN | It is off, it stays off until someone says otherwise, and even on
+  # EN | it only ever reaches the `auto` tier — see vssp_infra_updates.py.
+  # FR | UN SECOND INTERRUPTEUR, deliberement pas celui du dessus.
+  # FR | Celui du dessus installe des cartes Lovelace et des add-ons : une
+  # FR | mauvaise nuit coute un Ctrl+Maj+R. Celui-ci lance apt-get sur
+  # FR | l hote Ubuntu qui porte le cluster ou vit Home Assistant. Les
+  # FR | reunir en une seule commande signifierait que quelqu un ayant
+  # FR | active les mises a jour HACS automatiques il y a des mois se met a
+  # FR | mettre a jour son serveur ce soir, sans avoir consenti a cela.
+  # FR | Il est eteint, il le reste tant que personne ne dit le contraire,
+  # FR | et meme allume il n atteint que le palier `auto` — voir
+  # FR | vssp_infra_updates.py.
+  vssp_updates_infra_auto:
+    name: "Visio Sapiens — Mises à jour infrastructure automatiques"
+    icon: mdi:server-network
 
 # EN | An hour rather than an interval. A firmware flash cuts the power to
 # EN | a plug for a moment and a HACS card swap changes the interface under
@@ -559,6 +641,103 @@ script:
             Si une carte Lovelace en faisait partie, rechargez la page avec
             Ctrl+Maj+R.
 
+  # ═══════════════════════════════════════════════════════════════════
+  # EN | INFRASTRUCTURE SCRIPTS
+  # FR | SCRIPTS INFRASTRUCTURE
+  # ═══════════════════════════════════════════════════════════════════
+
+  # EN | PROBE — ask the host and the upstreams where they stand. Read-only
+  # EN | from end to end: it opens an ssh session, runs `apt list`,
+  # EN | `apt-cache policy`, `k3s --version` and `docker ps`, and installs
+  # EN | nothing whatever the switches say.
+  # FR | SONDE — demander a l hote et aux amonts ou ils en sont. En lecture
+  # FR | seule de bout en bout : elle ouvre une session ssh, lance
+  # FR | `apt list`, `apt-cache policy`, `k3s --version` et `docker ps`, et
+  # FR | n installe rien quoi que disent les interrupteurs.
+  vssp_infra_check:
+    alias: "Visio Sapiens — Infrastructure : vérifier maintenant"
+    icon: mdi:server-network-outline
+    mode: single
+    sequence:
+      - action: shell_command.vssp_infra_probe
+      # EN | The command_line sensor polls every 5 minutes, which is right
+      # EN | for a background number and much too slow for someone standing
+      # EN | in front of the screen who just pressed CHECK. Forcing the read
+      # EN | makes the button feel like it did something, because it did.
+      # FR | Le capteur command_line interroge toutes les 5 minutes, ce qui
+      # FR | convient a un nombre de fond et bien trop lent pour qui se tient
+      # FR | devant l ecran et vient d appuyer sur VERIFIER. Forcer la
+      # FR | lecture fait que le bouton a l air d avoir agi, parce qu il a
+      # FR | agi.
+      - action: homeassistant.update_entity
+        target:
+          entity_id: sensor.vssp_updates_infra
+
+  # EN | INSTALL ONE — the manual tier's only door. `component` is a key of
+  # EN | the report, not free text: the script refuses anything the probe
+  # EN | did not itself publish, so a malformed call stops here rather than
+  # EN | in a shell on the host.
+  # FR | INSTALLER UN — la seule porte du palier manuel. `component` est une
+  # FR | cle du rapport, pas du texte libre : le script refuse tout ce que la
+  # FR | sonde n a pas publie elle-meme, donc un appel malforme s arrete ici
+  # FR | plutot que dans un shell sur l hote.
+  vssp_infra_install_one:
+    alias: "Visio Sapiens — Infrastructure : installer un composant"
+    icon: mdi:download-network-outline
+    mode: single
+    fields:
+      component:
+        description: "EN | component key / FR | clé du composant"
+        example: os_packages
+        required: true
+        selector:
+          text:
+    sequence:
+      - variables:
+          known: >-
+            {{ (state_attr('sensor.vssp_updates_infra', 'components') or [])
+               | map(attribute='key') | list }}
+      - condition: template
+        value_template: "{{ component in known }}"
+      - action: shell_command.vssp_infra_install
+        data:
+          component: "{{ component }}"
+      - action: homeassistant.update_entity
+        target:
+          entity_id: sensor.vssp_updates_infra
+
+  # EN | AUTO PASS — the `auto` tier only. The script re-probes first, so it
+  # EN | acts on what is true at 04:00 rather than on what was true when
+  # EN | someone last looked at the screen.
+  # FR | PASSE AUTO — le palier `auto` seulement. Le script resonde d abord,
+  # FR | pour agir sur ce qui est vrai a 04h00 plutot que sur ce qui l etait
+  # FR | quand quelqu un a regarde l ecran pour la derniere fois.
+  vssp_infra_install_auto:
+    alias: "Visio Sapiens — Infrastructure : passe automatique"
+    icon: mdi:autorenew
+    mode: single
+    sequence:
+      - action: shell_command.vssp_infra_install_auto
+      - action: homeassistant.update_entity
+        target:
+          entity_id: sensor.vssp_updates_infra
+      - action: persistent_notification.create
+        data:
+          notification_id: vssp_infra_auto
+          title: "Mises à jour infrastructure"
+          message: >-
+            {% set st = state_attr('sensor.vssp_updates_infra', 'counts') or {} %}
+            Passe automatique terminée.
+            Reste {{ st.get('manual', 0) }} mise(s) à jour à installer à la
+            main et {{ st.get('locked', 0) }} hors de portée de la console
+            (k3s, Vault, images Docker).
+            {% if state_attr('sensor.vssp_updates_infra', 'components')
+                  | selectattr('key', 'eq', 'os_reboot')
+                  | selectattr('pending') | list | count > 0 %}
+            L'hôte demande un redémarrage : il reste à déclencher depuis
+            l'écran MISES À JOUR.
+            {% endif %}
+
 # ═══════════════════════════════════════════════════════════════════════
 # EN | AUTOMATION — the nightly pass
 # FR | AUTOMATISATION — la passe nocturne
@@ -587,3 +766,144 @@ automation:
         state: "on"
     actions:
       - action: script.vssp_updates_install_auto
+
+  # EN | THE SCHEDULED PROBE — the "planned" half of auto/manual/planned,
+  # EN | and the half that costs nothing. It only ever reads, so it runs
+  # EN | whatever the switches say: a screen that reports yesterday's host
+  # EN | is worse than no screen, because it is believed.
+  # EN | Every six hours rather than every hour: apt metadata refreshes on
+  # EN | the host's own timer and GitHub rate-limits anonymous callers.
+  # EN | Also on startup, delayed — Home Assistant restarts before the
+  # EN | network is necessarily up, and a probe that fires into a dead
+  # EN | resolver writes "could not be probed" over a perfectly good report.
+  # FR | LA SONDE PLANIFIEE — la moitie « planifie » de auto/manuel/planifie,
+  # FR | et celle qui ne coute rien. Elle ne fait que lire, donc elle tourne
+  # FR | quoi que disent les interrupteurs : un ecran qui remonte l hote
+  # FR | d hier est pire que pas d ecran, parce qu on le croit.
+  # FR | Toutes les six heures plutot que toutes les heures : les metadonnees
+  # FR | apt se rafraichissent sur le minuteur de l hote et GitHub limite les
+  # FR | appelants anonymes.
+  # FR | Au demarrage aussi, avec un delai — Home Assistant redemarre avant
+  # FR | que le reseau soit necessairement la, et une sonde lancee dans un
+  # FR | resolveur mort ecrit « non sondable » par-dessus un rapport
+  # FR | parfaitement valide.
+  - id: vssp_infra_probe_scheduled
+    alias: "Visio Sapiens — Infrastructure : sonde planifiée"
+    mode: single
+    triggers:
+      - trigger: time_pattern
+        hours: "/6"
+      - trigger: homeassistant
+        event: start
+    actions:
+      - delay:
+          minutes: 2
+      - action: script.vssp_infra_check
+
+  # EN | THE INFRASTRUCTURE NIGHTLY PASS. Same hour as the pass above and a
+  # EN | different switch, so the two can be run apart — and a delay between
+  # EN | them, because both end in a service restart and neither wants the
+  # EN | other's dpkg lock.
+  # FR | LA PASSE NOCTURNE INFRASTRUCTURE. Meme heure que la passe du dessus
+  # FR | et un interrupteur different, pour que les deux se pilotent
+  # FR | separement — et un delai entre elles, parce que toutes deux
+  # FR | finissent par un redemarrage de service et qu aucune ne veut le
+  # FR | verrou dpkg de l autre.
+  - id: vssp_infra_auto_nightly
+    alias: "Visio Sapiens — Infrastructure : passe automatique nocturne"
+    mode: single
+    triggers:
+      - trigger: time
+        at: input_datetime.vssp_updates_auto_time
+    conditions:
+      - condition: state
+        entity_id: input_boolean.vssp_updates_infra_auto
+        state: "on"
+    actions:
+      - delay:
+          minutes: 10
+      - action: script.vssp_infra_install_auto
+
+# ═══════════════════════════════════════════════════════════════════════
+# EN | INFRASTRUCTURE — the layer underneath Home Assistant
+# FR | INFRASTRUCTURE — la couche sous Home Assistant
+# ═══════════════════════════════════════════════════════════════════════
+#
+# EN | Everything above this line reads entities Home Assistant already
+# EN | holds. Nothing below it can: the Ubuntu host, k3s, GitLab and the
+# EN | runner have no `update.*` entity and never will, because they live on
+# EN | the other side of the container boundary.
+# EN | So this half has a data source — one script, vssp_infra_updates.py —
+# EN | and the whole of its privilege problem is solved in the safe rather
+# EN | than here. Read the header of that file before changing any of this;
+# EN | in particular, the tier of a component is declared THERE, and nothing
+# EN | in this package may promote one.
+# FR | Tout ce qui precede cette ligne lit des entites que Home Assistant
+# FR | detient deja. Rien de ce qui suit ne le peut : l hote Ubuntu, k3s,
+# FR | GitLab et le runner n ont pas d entite `update.*` et n en auront
+# FR | jamais, parce qu ils vivent de l autre cote de la frontiere du
+# FR | conteneur.
+# FR | Cette moitie a donc une source de donnees — un script,
+# FR | vssp_infra_updates.py — et tout son probleme de privileges se resout
+# FR | dans le coffre plutot qu ici. Lire l en-tete de ce fichier avant de
+# FR | modifier ceci ; en particulier, le palier d un composant est declare
+# FR | LA-BAS, et rien dans ce package ne peut en promouvoir un.
+
+command_line:
+  # EN | READS A FILE, does not run the probe. The probe opens an ssh
+  # EN | session and talks to three upstream APIs; running that on a sensor
+  # EN | scan interval would mean a connection to the host every minute for
+  # EN | a number that changes twice a day. The probe is scheduled below;
+  # EN | this only picks up what it left.
+  # EN | `cat` of a missing file exits non-zero and the sensor goes
+  # EN | unavailable — correct, and visibly different from "nothing is
+  # EN | pending". The `|| echo` fallback would have hidden a probe that has
+  # EN | never run behind a confident zero.
+  # FR | LIT UN FICHIER, ne lance pas la sonde. La sonde ouvre une session
+  # FR | ssh et interroge trois API amont ; la lancer a l intervalle de scan
+  # FR | d un capteur voudrait dire une connexion a l hote chaque minute
+  # FR | pour un nombre qui change deux fois par jour. La sonde est planifiee
+  # FR | plus bas ; ceci ne fait que ramasser ce qu elle a laisse.
+  # FR | Un `cat` sur un fichier absent sort en erreur et le capteur devient
+  # FR | indisponible — c est correct, et visiblement different de « rien
+  # FR | n attend ». Un repli `|| echo` aurait cache une sonde qui n a
+  # FR | jamais tourne derriere un zero plein d assurance.
+  - sensor:
+      name: "VSSP Updates infra"
+      unique_id: vssp_updates_infra
+      command: "cat /config/www/vssp/infra_updates.json"
+      command_timeout: 15
+      scan_interval: 300
+      value_template: "{{ value_json.counts.total }}"
+      json_attributes:
+        - components
+        - counts
+        - generated
+
+shell_command:
+  # EN | THREE COMMANDS, and none of them takes anything a user typed.
+  # EN | `--install` receives `component`, and the only caller that sets it
+  # EN | is the script below, which passes a key out of the report the probe
+  # EN | itself wrote. The script rejects an unknown key before ssh is ever
+  # EN | opened, so a crafted value reaches a lookup in a dict of seven
+  # EN | constants and stops there.
+  # FR | TROIS COMMANDES, et aucune ne prend quoi que ce soit de saisi par
+  # FR | un utilisateur. `--install` recoit `component`, et le seul appelant
+  # FR | qui le renseigne est le script ci-dessous, qui passe une cle issue
+  # FR | du rapport ecrit par la sonde elle-meme. Le script rejette une cle
+  # FR | inconnue avant meme d ouvrir ssh, donc une valeur forgee atteint une
+  # FR | recherche dans un dictionnaire de sept constantes et s arrete la.
+  vssp_infra_probe: >-
+    python3 /config/vssp/vssp_infra_updates.py --probe
+    --out /config/www/vssp/infra_updates.json
+    --status /config/www/vssp/infra_updates_status.json
+
+  vssp_infra_install: >-
+    python3 /config/vssp/vssp_infra_updates.py --install {{ component }}
+    --out /config/www/vssp/infra_updates.json
+    --status /config/www/vssp/infra_updates_status.json
+
+  vssp_infra_install_auto: >-
+    python3 /config/vssp/vssp_infra_updates.py --install-auto
+    --out /config/www/vssp/infra_updates.json
+    --status /config/www/vssp/infra_updates_status.json

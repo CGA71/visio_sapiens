@@ -788,6 +788,15 @@ views:
                     name: "{{ t('admin.updates_hacs') }}"
                   - entity: sensor.vssp_updates_firmware
                     name: "{{ t('admin.updates_firmware') }}"
+                  # EN | The fourth family sits with the other three because
+                  # EN | that is how it is read — "what is waiting?" — even
+                  # EN | though it is the only one with no entity behind it.
+                  # FR | La quatrieme famille siege avec les trois autres
+                  # FR | parce que c est ainsi qu on la lit — « qu est-ce qui
+                  # FR | attend ? » — meme si elle est la seule sans entite
+                  # FR | derriere elle.
+                  - entity: sensor.vssp_updates_infra
+                    name: "{{ t('admin.updates_infra') }}"
                 card_mod:
                   style: |
                     ha-card {
@@ -962,6 +971,129 @@ views:
           # FR | LANCER MAINTENANT appelle le meme script que
           # FR | l automatisation : tester le bouton teste la vraie passe
           # FR | nocturne, pas une seconde copie qui divergera.
+          # =================================================================
+          # EN | INFRASTRUCTURE — the layer underneath Home Assistant
+          # FR | INFRASTRUCTURE — la couche sous Home Assistant
+          # =================================================================
+          #
+          # EN | The other three families each render an `entities:` card fed
+          # EN | by a list of entity_ids, because each of their rows IS an
+          # EN | entity. This one cannot: an Ubuntu package and a k3s release
+          # EN | have no entity, so the whole family arrives as one attribute
+          # EN | on one sensor and is rendered as markdown.
+          # EN | The name map below is built HERE, at generation, because the
+          # EN | markdown card's Jinja runs inside Home Assistant where `t()`
+          # EN | does not exist. Same technique as the pending list above:
+          # EN | the generator emits a `set` block whose values are already
+          # EN | translated, and the raw block that follows only reads it.
+          # EN | Do not write a raw tag inside a comment here — the generator
+          # EN | processes comments too, and consumes it.
+          # FR | Les trois autres familles affichent chacune une carte
+          # FR | `entities:` alimentee par une liste d entity_ids, parce que
+          # FR | chacune de leurs lignes EST une entite. Celle-ci ne le peut
+          # FR | pas : un paquet Ubuntu et une version de k3s n ont pas
+          # FR | d entite, la famille entiere arrive donc en un attribut sur
+          # FR | un capteur et s affiche en markdown.
+          # FR | La table de noms ci-dessous est construite ICI, a la
+          # FR | generation, parce que le Jinja de la carte markdown tourne
+          # FR | dans Home Assistant, ou `t()` n existe pas. Meme technique que
+          # FR | la liste des mises a jour en attente plus haut : le generateur
+          # FR | emet un bloc `set` dont les valeurs sont deja traduites, et le
+          # FR | bloc raw qui suit se contente de le lire.
+          # FR | Ne pas ecrire de balise raw dans un commentaire ici — le
+          # FR | generateur traite aussi les commentaires, et la consomme.
+          - type: conditional
+            conditions:
+              - entity: sensor.vssp_updates_infra
+                state_not: "unavailable"
+              - entity: sensor.vssp_updates_infra
+                state_not: "unknown"
+            card:
+              type: markdown
+              title: "{{ t('admin.updates_infra_state') }}"
+              content: |
+                {{ '{%' }} set names = {
+                  'os_packages':   '{{ t('admin.updates_infra_os_packages') }}',
+                  'os_reboot':     '{{ t('admin.updates_infra_os_reboot') }}',
+                  'k3s':           '{{ t('admin.updates_infra_k3s') }}',
+                  'gitlab_runner': '{{ t('admin.updates_infra_gitlab_runner') }}',
+                  'gitlab':        '{{ t('admin.updates_infra_gitlab') }}',
+                  'vault':         '{{ t('admin.updates_infra_vault') }}',
+                  'docker_images': '{{ t('admin.updates_infra_docker_images') }}' } {{ '%}' }}
+                {{ '{%' }} set tiers = {
+                  'auto':   '{{ t('admin.updates_infra_auto') }}',
+                  'manual': '{{ t('admin.updates_infra_manual') }}',
+                  'locked': '{{ t('admin.updates_infra_locked') }}' } {{ '%}' }}
+                {%+ raw %}{% set rows = state_attr('sensor.vssp_updates_infra', 'components') or [] %}
+                {% if not rows %}
+                _{% endraw +%}{{ t('admin.updates_infra_never_probed') }}{%+ raw %}_
+                {% else %}
+                {% for tier in ['auto', 'manual', 'locked'] %}
+                {% set group = rows | selectattr('tier', 'eq', tier) | list %}
+                {% if group %}
+                **{{ tiers.get(tier, tier) }}**
+                {% for r in group %}
+                - {% if r.pending %}⬤{% else %}○{% endif %} {{ names.get(r.key, r.key) }}
+                  {%- if r.installed %} · `{{ r.installed }}`{% endif %}
+                  {%- if r.latest and r.latest != r.installed %} → `{{ r.latest }}`{% endif %}
+                  {%- if not r.probed %} · ⚠{% endif %}
+                {% endfor %}
+                {% endif %}
+                {% endfor %}
+                {% endif %}{% endraw +%}
+              card_mod:
+                style: |
+                  ha-card {
+                    background: var(--card-background-color, rgba(8,18,28,0.75)) !important;
+                    border: 1px solid rgba(0, 229, 255, 0.28) !important;
+                    border-radius: var(--ha-card-border-radius, 20px) !important;
+                  }
+
+          # EN | The install buttons, one row per component the console is
+          # EN | allowed to touch. `locked` components have no row here at
+          # EN | all — the markdown above reports them, and that is the whole
+          # EN | of what the console does with them.
+          # EN | Each row calls the same script with a different key; the
+          # EN | script checks the key against what the probe published before
+          # EN | it opens anything.
+          # FR | Les boutons d installation, une ligne par composant que la
+          # FR | console a le droit de toucher. Les composants `locked` n ont
+          # FR | aucune ligne ici — le markdown ci-dessus les remonte, et c est
+          # FR | tout ce que la console en fait.
+          # FR | Chaque ligne appelle le meme script avec une cle differente ;
+          # FR | le script controle la cle face a ce qu a publie la sonde avant
+          # FR | d ouvrir quoi que ce soit.
+          - type: entities
+            title: "{{ t('admin.updates_infra') }}"
+            icon: mdi:server-network
+            entities:
+              - entity: script.vssp_infra_check
+                name: "{{ t('admin.updates_infra_check') }}"
+                icon: mdi:server-network-outline
+{% for key, icon in [('os_packages', 'mdi:ubuntu'),
+                     ('gitlab_runner', 'mdi:rocket-launch-outline'),
+                     ('gitlab', 'mdi:gitlab'),
+                     ('os_reboot', 'mdi:restart-alert')] %}
+              - type: button
+                name: "{{ t('admin.updates_infra_' ~ key) }}"
+                icon: {{ icon }}
+                action_name: "{{ t('admin.updates_infra_manual') }}"
+                tap_action:
+                  action: perform-action
+                  perform_action: script.vssp_infra_install_one
+                  data:
+                    component: {{ key }}
+{% endfor %}
+              - type: section
+                label: "{{ t('admin.updates_infra_locked_note') }}"
+            card_mod:
+              style: |
+                ha-card {
+                  background: var(--card-background-color, rgba(8,18,28,0.75)) !important;
+                  border: 1px solid rgba(0, 229, 255, 0.28) !important;
+                  border-radius: var(--ha-card-border-radius, 20px) !important;
+                }
+
           - type: entities
             title: "{{ t('admin.updates_auto') }}"
             entities:
@@ -975,6 +1107,21 @@ views:
               - entity: script.vssp_updates_install_auto
                 name: "{{ t('admin.updates_auto_now') }}"
                 icon: mdi:play-circle-outline
+              # EN | The infrastructure switch is a SECOND control on the same
+              # EN | schedule, not a second schedule. It sits next to the first
+              # EN | so the difference is visible: one installs cards, the
+              # EN | other runs apt-get on the server. See vssp_updates.yaml.
+              # FR | L interrupteur infrastructure est une SECONDE commande sur
+              # FR | le meme horaire, pas un second horaire. Il siege a cote du
+              # FR | premier pour que la difference se voie : l un installe des
+              # FR | cartes, l autre lance apt-get sur le serveur. Voir
+              # FR | vssp_updates.yaml.
+              - entity: input_boolean.vssp_updates_infra_auto
+                name: "{{ t('admin.updates_infra_auto_enabled') }}"
+                icon: mdi:server-network
+              - entity: sensor.vssp_infra_auto
+                name: "{{ t('admin.updates_infra_auto') }}"
+                icon: mdi:autorenew
               - type: section
                 label: "{{ t('admin.updates_auto_protected') }}"
             # EN | --ha-color-form-background is the ONE token that darkens

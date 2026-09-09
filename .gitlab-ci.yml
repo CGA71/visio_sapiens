@@ -35,6 +35,16 @@
 #                                              to /config/vssp/.livebox.env by
 #                                              the deploy jobs. Absent = router
 #                                              probes inactive, pipeline still OK.
+#   VAULT_MAINT_TOKEN  masked + protected    - Vault token carrying the
+#                                              vssp-maint policy, written to
+#                                              /config/vssp/.vault_maint_token
+#                                              by the deploy jobs. It is what
+#                                              lets the UPDATES screen see the
+#                                              host, k3s, GitLab and the
+#                                              runner. Absent = the
+#                                              INFRASTRUCTURE family reports
+#                                              "never probed", pipeline still
+#                                              OK. See docs/platform/Vault.md.
 # ============================================================================
 
 stages:
@@ -239,6 +249,29 @@ validate:
     - test -f addons/vssp-vault/run.sh      || { echo "[ERR] addons/vssp-vault/run.sh missing"; exit 1; }
     - test -f vssp/vssp_sanitize_resources.py || { echo "[ERR] vssp/vssp_sanitize_resources.py missing"; exit 1; }
     - test -f vssp/vssp_lan_probe.py || { echo "[ERR] vssp/vssp_lan_probe.py missing"; exit 1; }
+    # EN | The INFRASTRUCTURE family of the UPDATES screen. The package
+    # EN | declares shell_commands that call this script by absolute path, so
+    # EN | a package that ships without it gives three buttons that fail
+    # EN | silently on a live instance.
+    # FR | La famille INFRASTRUCTURE de l ecran MISES A JOUR. Le package
+    # FR | declare des shell_command qui appellent ce script par chemin absolu,
+    # FR | donc un package livre sans lui donne trois boutons qui echouent en
+    # FR | silence sur une instance en service.
+    - test -f vssp/vssp_infra_updates.py || { echo "[ERR] vssp/vssp_infra_updates.py missing"; exit 1; }
+    - test -f vault/policies/vssp-maint.hcl || { echo "[ERR] vault/policies/vssp-maint.hcl missing"; exit 1; }
+    # EN | The script has to at least import and parse its own flags: it is
+    # EN | called by shell_command, whose only failure signal on a live
+    # EN | instance is a button that appears to do nothing.
+    # FR | Le script doit au moins s importer et analyser ses propres options :
+    # FR | il est appele par shell_command, dont le seul signal d echec sur une
+    # FR | instance en service est un bouton qui a l air de ne rien faire.
+    - |
+      if ! python3 vssp/vssp_infra_updates.py --help >/dev/null 2>&1; then
+        echo "[ERR] vssp/vssp_infra_updates.py cannot run:"
+        python3 vssp/vssp_infra_updates.py --help || true
+        exit 1
+      fi
+      echo "[OK] vssp_infra_updates.py runs"
     - test -f vssp/livebox.env || { echo "[ERR] vssp/livebox.env missing"; exit 1; }
     # EN | i18n engine: catalogues + engine must ship with the package
     # FR | Moteur i18n : catalogues + moteur doivent partir avec le paquet
@@ -1220,6 +1253,65 @@ deploy:staging:
           sh "$LIVEBOX_PASSWORD"
         echo "[OK] Router secret deployed"
       fi
+    # --- EN | MAINTENANCE TOKEN — the safe key the INFRASTRUCTURE family uses
+    # --- FR | JETON DE MAINTENANCE — la cle du coffre qu utilise la famille
+    # --- FR | INFRASTRUCTURE
+    # EN | Same shape as the router secret above, and for the same reason:
+    # EN | a value that must reach the instance without ever passing through
+    # EN | the repository or through a Home Assistant entity. This one carries
+    # EN | the vssp-maint policy, which can read secret/data/vssp/infra/* and
+    # EN | nothing else — see vault/policies/vssp-maint.hcl.
+    # EN | Its absence is not an error. The UPDATES screen keeps its four
+    # EN | Home Assistant families and reports the infrastructure one as never
+    # EN | probed, which is exactly what has happened.
+    # FR | Meme forme que le secret du routeur ci-dessus, et pour la meme
+    # FR | raison : une valeur qui doit atteindre l instance sans jamais passer
+    # FR | par le depot ni par une entite Home Assistant. Celui-ci porte la
+    # FR | policy vssp-maint, qui peut lire secret/data/vssp/infra/* et rien
+    # FR | d autre — voir vault/policies/vssp-maint.hcl.
+    # FR | Son absence n est pas une erreur. L ecran MISES A JOUR garde ses
+    # FR | quatre familles Home Assistant et remonte celle de l infrastructure
+    # FR | comme jamais sondee, ce qui est exactement ce qui s est passe.
+    - |
+      if [ -z "$VAULT_MAINT_TOKEN" ]; then
+        echo "[warn] VAULT_MAINT_TOKEN missing - INFRASTRUCTURE updates inactive."
+        echo "       The UPDATES screen will report the server as never probed."
+        echo "       Settings > CI/CD > Variables, and see docs/platform/Vault.md."
+      else
+        kubectl exec -n $K3S_NAMESPACE $HA_POD -c $K3S_CONTAINER -- sh -c \
+          'umask 077; printf "%s" "$1" > /config/vssp/.vault_maint_token' \
+          sh "$VAULT_MAINT_TOKEN"
+        echo "[OK] Maintenance token deployed"
+      fi
+    # --- EN | paramiko — the pod-side ssh client the probe falls back to ----
+    # --- FR | paramiko — le client ssh cote pod sur lequel se rabat la sonde -
+    # EN | Only installed when there is a token to use it with, and never
+    # EN | fatal: the probe tries the ssh binary first, and an instance that
+    # EN | has one needs none of this. Same treatment ruamel.yaml already
+    # EN | gets above, minus the hard failure — a missing ssh client costs one
+    # EN | family on one screen, not the deployment.
+    # FR | Installe seulement quand il y a un jeton pour s en servir, et jamais
+    # FR | fatal : la sonde essaie d abord le binaire ssh, et une instance qui
+    # FR | en a un n a besoin de rien de tout ceci. Meme traitement que
+    # FR | ruamel.yaml plus haut, sans l echec bloquant — un client ssh absent
+    # FR | coute une famille sur un ecran, pas le deploiement.
+    - |
+      if [ -n "$VAULT_MAINT_TOKEN" ]; then
+        kubectl exec -n $K3S_NAMESPACE $HA_POD -c $K3S_CONTAINER -- sh -c '
+          if command -v ssh >/dev/null 2>&1; then
+            echo "[OK] ssh binary present - paramiko not needed"
+          elif python3 -c "import paramiko" 2>/dev/null; then
+            echo "[OK] paramiko already present"
+          else
+            echo "[i] no ssh client - installing paramiko for the infra probe"
+            pip install paramiko --quiet --break-system-packages 2>/dev/null \
+              || pip install paramiko --quiet 2>/dev/null || true
+            python3 -c "import paramiko" 2>/dev/null \
+              && echo "[OK] paramiko installed" \
+              || echo "[warn] no ssh transport on this pod - INFRASTRUCTURE stays unprobed"
+          fi
+        ' || true
+      fi
     # --- EN | configuration.yaml patch (idempotent, with .bak backup) -------
     # --- FR | PATCH configuration.yaml (idempotent, avec backup .bak) -------
     - |
@@ -1567,6 +1659,25 @@ deploy:production:
         printf 'LIVEBOX_PASSWORD=%s\n' "$LIVEBOX_PASSWORD" \
           | ssh ha "umask 077; cat > $HA_CFG/vssp/.livebox.env"
         echo "[OK] Router secret deployed"
+      fi
+    # --- EN | MAINTENANCE TOKEN — see the staging job for the reasoning -----
+    # --- FR | JETON DE MAINTENANCE — voir le job staging pour le raisonnement
+    # EN | `printf %s` without a newline, deliberately: the script strips
+    # EN | whitespace when it reads the file, but a token that arrives with a
+    # EN | trailing newline in one place and without it in another is the kind
+    # EN | of difference that makes staging work and production return 403.
+    # FR | `printf %s` sans saut de ligne, deliberement : le script elague les
+    # FR | blancs a la lecture, mais un jeton qui arrive avec un saut de ligne
+    # FR | ici et sans la est le genre d ecart qui fait marcher le staging et
+    # FR | renvoyer 403 en production.
+    - |
+      if [ -z "$VAULT_MAINT_TOKEN" ]; then
+        echo "[warn] VAULT_MAINT_TOKEN missing - INFRASTRUCTURE updates inactive."
+        echo "       The UPDATES screen will report the server as never probed."
+      else
+        printf '%s' "$VAULT_MAINT_TOKEN" \
+          | ssh ha "umask 077; cat > $HA_CFG/vssp/.vault_maint_token"
+        echo "[OK] Maintenance token deployed"
       fi
     # --- EN | VAULT ADD-ON (HAOS only) --------------------------------------
     # --- FR | ADD-ON VAULT (HAOS uniquement) --------------------------------

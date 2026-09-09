@@ -348,7 +348,7 @@ peut revenir.
 | **Planification** | `packages/vssp_schedule.yaml`, `vssp_schedule_apply.py`, `wizard/vssp_schedule.html` | l'horloge du panneau INTERRUPTEURS d'une pièce. Le popup écrit des règles récurrentes, ponctuelles et à minuterie dans `schedules.json` ; le package les exécute. |
 | **Chatbot** | `packages/vssp_chatbot.yaml`, `vssp_chatbot_send.py`, `wizard/vssp_chatbot.html` | la carte de chat de HOME. Quatre fournisseurs (Gemini, Claude, ChatGPT, personnalisé) ; le fournisseur est lu depuis l'état propre du sélecteur, jamais depuis du texte client. |
 | **Google Calendar** | `packages/vssp_google.yaml`, `vssp_google_setup.py` | fait depuis la console ce que HA demande normalement de faire à la main dans Paramètres → Appareils et services : identifiants d'application, puis l'intégration. |
-| **Mises à jour** | `packages/vssp_updates.yaml` | regroupe chaque entité `update.*` en attente par famille — système, HACS, firmware — avec la politique de mise à jour automatique au même endroit. |
+| **Mises à jour** | `packages/vssp_updates.yaml`, `vssp_infra_updates.py` | regroupe chaque entité `update.*` en attente par famille — système, HACS, firmware — avec la politique de mise à jour automatique au même endroit. Une quatrième famille, **infrastructure**, n'a aucune entité derrière elle : une sonde lit l'hôte Ubuntu, k3s, GitLab, le runner et Vault en SSH, ses identifiants étant pris dans le coffre par le processus Python et non par Home Assistant. |
 | **Coffre-fort** | `packages/vssp_vault.yaml`, `vault/`, `addons/vssp-vault/` | le coffre. Docker Compose sur l'hôte k3s, add-on Superviseur sur HAOS. **Le jeton de Home Assistant accorde `secret/metadata/*` et rien sur `secret/data/*`** : HA peut lister et décrire chaque entrée, et se voit refuser par Vault lui-même toute demande de valeur — car tout ce que HA lit finit en clair dans la base du recorder. Le navigateur, lui, lit les valeurs directement. |
 | **Local technique / LAN** | `packages/vssp_technical_room.yaml`, `vssp_lan_probe.py` | sonde la Livebox et le switch, imprime du JSON sur stdout consommé par des capteurs `command_line`. Le mot de passe de la box est une variable CI masquée, écrite dans `/config/vssp/.livebox.env` au déploiement, jamais versionnée. |
 | **CORE** | `www/vssp/core.html` | une page autonome, pas une vue Lovelace : elle appelle l'API REST de HA avec son propre jeton et lit le JSON de stats k3s. Le dashboard CORE n'est qu'une iframe vers elle. |
@@ -476,6 +476,7 @@ répertoire.
 |---|---|
 | `vssp_discovery.py` | scan en lecture seule de chaque entité par Zone → `report.json` |
 | `vssp_lan_probe.py` | sonde Livebox + switch → JSON sur stdout |
+| `vssp_infra_updates.py` | versions de l'hôte, k3s, GitLab, runner et Vault → la famille INFRASTRUCTURE |
 | `vssp_module_images.py` | photo produit d'un module nouvellement découvert |
 | `vssp_prune_backups.py` | rotation des sauvegardes horodatées écrites par chaque application |
 
