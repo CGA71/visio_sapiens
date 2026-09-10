@@ -1,199 +1,233 @@
-# ÉPISODE 1 — Vision & Architecture
-## "Visio Sapiens : pourquoi j'ai jeté les cartes Lovelace natives"
+# EPISODE 1 — Vision & Architecture
+## "Visio Sapiens: why I threw out the native Lovelace cards"
 
-**Doc source :** `Vision.md`
-**Question centrale de l'épisode :** Pourquoi remplacer les cartes natives de Lovelace par un moteur maison ?
-**Ancrage visuel :** diagramme d'architecture + visite en direct du dashboard HOME
-**Durée estimée :** 11-13 min
-**Format de tournage :** aucun plan visage. La chaîne repose sur **voix off + captures d'écran + plans mains** (clavier, souris, éventuellement un stylet sur tablette pour annoter le diagramme). Chaque indication "face caméra" des versions précédentes est remplacée ci-dessous.
+**Source doc:** `Vision.md`
+**Central question of the episode:** Why replace Home Assistant's native Lovelace cards with an in-house engine?
+**Visual anchor:** architecture diagram + live tour of the HOME dashboard
+**Estimated length:** 11-13 min
+**Shooting format:** no face on camera at any point. The channel runs on **voice-over + screen capture + hands-only shots** (keyboard, mouse, optionally a stylus on a tablet to annotate the diagram). Every "to camera" direction from earlier drafts is replaced below.
 
-**Objectif :** donner aux spectateurs le modèle mental avant tout code. Ce qu'est Visio Sapiens — une interface façon centre de contrôle posée sur Home Assistant, **pas** un simple dashboard habillé — et pourquoi le projet refuse les cartes Lovelace natives, sauf exceptions documentées (`weather-forecast`, `logbook`, `apexcharts-card`).
+**Goal:** give viewers the mental model before any code. What Visio Sapiens is — a control-center-style interface sitting on top of Home Assistant, **not** a dashboard with a nice skin — and why the project refuses native Lovelace cards, save for documented exceptions (`weather-forecast`, `logbook`, `apexcharts-card`).
 
-**⚠️ À ne pas filmer tout de suite :** tout ce qui dépend de secrets en direct (mot de passe Livebox, jetons longue durée) — garder la gestion des secrets pour l'épisode 4 ou 6.
-
----
-
-## 0. COLD OPEN — LE DOUBLE PROBLÈME (0:00 - 1:00)
-
-**Visuel :** montage de captures Reddit/HACS — dashboards communautaires magnifiques, animations, gauges custom. Aucune caméra, uniquement des écrans.
-
-**Voix off :**
-> "Ces dashboards, je les trouve magnifiques. La communauté Home Assistant produit des cartes bluffantes visuellement."
-
-**Visuel (cut) :** capture réelle du forum communautaire — le fil "Bar-Card Repo Removed in 2025.6.2" — puis la même carte affichée en rouge dans un dashboard avec "Custom element doesn't exist".
-
-**Voix off :**
-> "Bar Card, une des cartes les plus utilisées pour les barres d'énergie animées, s'est retrouvée sans dépôt disponible dans HACS en 2025 — plus de mainteneur officiel. Résultat : des milliers de dashboards avec une carte rouge, cassée, du jour au lendemain, sans prévenir personne. 'Beau' et 'maintenu', ce sont deux choses différentes."
-
-**Visuel (cut) :** icône de cadenas en motion design, puis schéma simple — une maison, une flèche "Internet", un point d'interrogation rouge sur la flèche.
-
-**Voix off :**
-> "Et il y a un deuxième problème, plus grave encore : ce tableau de bord, si vous voulez y accéder depuis votre téléphone en dehors de chez vous, il doit être exposé sur Internet. Et ce n'est pas juste des cartes qu'on expose — ce sont vos données personnelles. Vos habitudes de présence, vos caméras, parfois vos serrures. Un dashboard mal sécurisé sur une plateforme accessible depuis l'extérieur, c'est une porte ouverte sur votre maison."
-
-**Titre animé :** VISIO SAPIENS — Épisode 1 : Vision & Architecture
+**⚠️ Do not film yet:** anything involving live secrets (Livebox password, long-lived tokens) — keep secret handling for episode 4 or 6.
 
 ---
 
-## 1. MON APPROCHE : SIMPLE, EFFICACE, SÉCURISÉ (1:00 - 2:30)
+## 0. COLD OPEN — THE DOUBLE PROBLEM (0:00 - 1:00)
 
-**Visuel :** plan mains sur clavier/souris, fenêtre de terminal ou éditeur de code en fond flouté à l'écran. Pas de visage à aucun moment.
+**Visual:** montage of Reddit/HACS screenshots — gorgeous community dashboards, animations, custom gauges. No camera, screens only.
 
-**Voix off :**
-> "Face à ces deux problèmes — la maintenance qui lâche, et la sécurité qu'on néglige — j'ai fait un choix de départ, et c'est celui qui définit tout le projet : construire un produit **simple et efficace**, qui embarque un maximum de sécurité **par défaut**, pas en option qu'on ajoute après coup si on y pense.
->
-> Ça veut dire : le moins de dépendances externes possible sur lesquelles je n'ai aucun contrôle, une architecture pensée dès le départ pour être exposée sur Internet sans que ce soit un pari, et un environnement qui permet de revenir en arrière proprement si quelque chose casse — parce que ça arrivera, tôt ou tard, sur n'importe quel projet.
->
-> Concrètement, ça se traduit par un environnement CI/CD qui permet à **une personne autodidacte** — pas une équipe DevOps, juste quelqu'un de motivé — de faire évoluer le produit progressivement, ou tout simplement de **restaurer une version précédente directement dans HAOS** si une mise à jour se passe mal. On détaillera ce pipeline en profondeur dans l'épisode 6, mais je voulais que vous sachiez, dès cet épisode 1, que ce filet de sécurité existe et qu'il fait partie du socle du projet, pas d'une fonctionnalité annexe."
+**Voice-over:**
+> "I think these dashboards are beautiful. The Home Assistant community turns out cards that are genuinely stunning to look at."
 
-**Texte à l'écran (encadré) :**
-> 🔧 Peu de dépendances externes non maîtrisées
-> 🔒 Sécurité pensée dès le départ, pas ajoutée après
-> ↩️ Restauration de version dans HAOS, accessible même en autodidacte
+**Visual (cut):** real capture of the community forum — the "Bar-Card Repo Removed in 2025.6.2" thread — then that same card showing red in a dashboard with "Custom element doesn't exist".
 
----
+**Voice-over:**
+> "Bar Card, one of the most widely used cards for animated energy bars, lost its repository on HACS in 2025 — no official maintainer left. The result: thousands of dashboards with a broken red card, overnight, with no warning to anyone. 'Beautiful' and 'maintained' are two different things."
 
-## 2. L'AUTRE PROBLÈME QU'ON NE VOIT PAS : LA COMPLEXITÉ DE HA (2:30 - 3:30)
+**Visual (cut):** padlock icon in motion design, then a simple diagram — a house, an "Internet" arrow, a red question mark on the arrow.
 
-**Visuel :** capture écran de l'interface Home Assistant standard — menus, panneaux de configuration, YAML — souris qui navigue pour illustrer la complexité, aucune caméra.
+**Voice-over:**
+> "And there's a second problem, and this one is more serious: if you want to reach that dashboard from your phone when you're away from home, it has to be exposed to the internet. And it isn't just cards you're exposing — it's your personal data. Your presence patterns, your cameras, sometimes your locks. A poorly secured dashboard on a platform reachable from outside is an open door into your house."
 
-**Voix off :**
-> "Il y a une troisième raison à tout ça, plus simple à formuler mais tout aussi centrale : l'interface native de Home Assistant est **très complexe**. Puissante, oui — mais complexe. Entre les menus de configuration, les entités, les zones, les dashboards imbriqués, on peut vite se perdre, surtout quand on débute.
->
-> L'objectif de Visio Sapiens, c'est de **simplifier ce fonctionnement** — pas de cacher la puissance de Home Assistant, mais de la rendre accessible à travers une interface cohérente, pensée pour l'usage quotidien plutôt que pour la configuration technique."
-
-**Texte à l'écran (encadré) :**
-> 🎯 Objectif du projet : simplifier l'usage, sans sacrifier la puissance de HA
+**Animated title:** VISIO SAPIENS — Episode 1: Vision & Architecture
 
 ---
 
-## 3. CE QU'EST VRAIMENT VISIO SAPIENS (3:30 - 5:00)
+## 1. MY APPROACH: SIMPLE, EFFECTIVE, SECURE (1:00 - 2:30)
 
-**Visuel :** dashboard HOME de Visio Sapiens en plein écran, souris qui se déplace lentement sur les zones évoquées. Aucun visage.
+**Visual:** hands on keyboard/mouse, terminal or code editor blurred in the background. No face at any point.
 
-**Voix off :**
-> "Alors concrètement, qu'est-ce que c'est ? Visio Sapiens n'est pas un dashboard. C'est une **interface façon centre de contrôle**, posée sur Home Assistant.
+**Voice-over:**
+> "Faced with those two problems — maintenance that gives out, and security that gets neglected — I made one decision up front, and it's the one that defines the whole project: build something **simple and effective**, that ships with as much security as possible **by default**, not as an option you bolt on later if you happen to think of it.
 >
-> La nuance est importante. Un dashboard, c'est une collection de cartes qu'on assemble. Un centre de contrôle, c'est un système cohérent, avec son propre moteur de rendu, sa propre logique visuelle, sa propre identité — et qui se contente d'aller chercher les données chez Home Assistant.
+> In practice that means: as few external dependencies I have no control over as possible, an architecture designed from day one to be exposed to the internet without that being a gamble, and an environment that lets me roll back cleanly when something breaks — because it will break, sooner or later, on any project.
 >
-> Et ça mène à la règle unique qui pilote absolument toutes les décisions techniques de ce projet, celle que vous allez retrouver dans chaque épisode :
->
-> **Home Assistant n'est plus qu'un moteur de données. L'interface est entièrement pilotée par VSSP.**"
+> Concretely, that translates into a CI/CD setup that lets **one self-taught person** — not a DevOps team, just someone motivated — grow the product step by step, or simply **restore a previous version straight into HAOS** when an update goes wrong. We'll go deep on that pipeline in episode 6, but I wanted you to know, right here in episode 1, that this safety net exists and that it's part of the foundation, not a side feature."
 
-**Texte à l'écran (encadré) :**
-> 🧠 HA = moteur de données
-> 🎛️ VSSP = l'interface, entièrement
+**On-screen text (boxed):**
+> 🔧 Few external dependencies outside my control
+> 🔒 Security designed in, not added later
+> ↩️ Version rollback inside HAOS, reachable even self-taught
 
 ---
 
-## 4. POURQUOI PAS LES CARTES LOVELACE NATIVES ? (5:00 - 7:30)
+## 2. THE OTHER PROBLEM NOBODY SEES: HA'S COMPLEXITY (2:30 - 3:30)
 
-**Visuel :** écran partagé — à gauche l'éditeur Lovelace natif avec ses cartes standards, à droite le dashboard HOME de Visio Sapiens. Toujours aucune caméra.
+**Visual:** screen capture of the standard Home Assistant interface — menus, config panels, YAML — mouse navigating to illustrate the complexity, no camera.
 
-**Voix off :**
-> "Alors la question qui vient tout de suite : pourquoi ne pas juste utiliser les cartes natives de Lovelace ? Elles existent, elles sont maintenues par le cœur de Home Assistant, elles marchent très bien.
+**Voice-over:**
+> "There's a third reason behind all this, simpler to state but just as central: Home Assistant's native interface is **very complex**. Powerful, yes — but complex. Between the configuration menus, the entities, the areas, the nested dashboards, it's easy to get lost, especially when you're starting out.
 >
-> Justement — elles marchent **très bien pour ce qu'elles sont** : un système de cartes empilées. Mais dès qu'on veut une identité visuelle cohérente, des animations qui répondent en temps réel, un HUD qui se comporte comme une vraie interface système et pas comme une grille de widgets, on se heurte au plafond de verre de Lovelace.
->
-> Alors le projet a fait un choix radical : **refuser les cartes Lovelace natives**, et construire son propre moteur de rendu par-dessus. Avec trois exceptions, assumées et documentées, parce que ce serait stupide de réinventer ce qui fonctionne déjà très bien : `weather-forecast`, `logbook`, et `apexcharts-card`.
->
-> Tout le reste — la sidebar, le HUD, les jauges, les rangées énergie, les pièces — c'est du moteur maison, que **je** maintiens, avec le même pipeline CI/CD dont je vous parlais tout à l'heure. Pas de dépendance à un mainteneur communautaire qui peut disparaître du jour au lendemain."
+> What Visio Sapiens sets out to do is **simplify that experience** — not hide Home Assistant's power, but make it reachable through a coherent interface, designed for daily use rather than for technical configuration."
 
-**Texte à l'écran (encadré) :**
-> ✅ Exceptions documentées : `weather-forecast` · `logbook` · `apexcharts-card`
-> 🔧 Tout le reste : moteur VSSP, maintenu en interne
+**On-screen text (boxed):**
+> 🎯 Project goal: simplify the experience, without giving up HA's power
 
 ---
 
-## 5. LE DIAGRAMME D'ARCHITECTURE (7:30 - 9:30)
+## 3. WHAT VISIO SAPIENS ACTUALLY IS (3:30 - 5:00)
 
-**Visuel :** plein écran sur le diagramme d'architecture de `Vision.md`. Plan mains avec stylet/tablette graphique pour surligner chaque bloc au fur et à mesure — c'est le seul moment de "présence physique" de l'épisode, limité aux mains.
+**Visual:** Visio Sapiens HOME dashboard full screen, mouse moving slowly across the areas being described. No face.
 
-**Voix off :**
-> "Voilà à quoi ressemble l'architecture complète. Je vous la montre une fois, en entier, parce que c'est la carte mentale dont vous aurez besoin pour comprendre tous les épisodes qui suivent."
-
-**Parcours du diagramme, bloc par bloc (surlignage successif au stylet) :**
-
-> "**CORE** : le socle système — c'est lui qui expose les métriques, l'état de la machine, ce sur quoi tout le reste s'appuie. On y reviendra en détail dans l'épisode 2.
+**Voice-over:**
+> "So what is it, concretely? Visio Sapiens is not a dashboard. It's a **control-center-style interface**, sitting on top of Home Assistant.
 >
-> **Room Engine** : la logique qui transforme une définition de pièce en interface — c'est le cœur du générateur de dashboards, épisode 3.
+> The distinction matters. A dashboard is a collection of cards you assemble. A control center is a coherent system, with its own rendering engine, its own visual logic, its own identity — and it simply goes to Home Assistant to fetch the data.
 >
-> **IA Layer** : la couche qui branche de l'intelligence dans l'interface — le chatbot, les automatisations. Épisode 9.
+> And that distinction has a very concrete consequence, one you'll see at work in every episode: the interface isn't assembled by hand, it's **generated**. You describe your home once — the language, the format, the rooms — and every screen is produced from that description, then kept in step as the home changes. Adding a room isn't drawing a new dashboard: it's declaring a room, and letting the generator do the rest. A dashboard you assemble by hand ages. A dashboard that's generated keeps up.
 >
-> **Animation Engine, CSS Engine, JS Engine, Theme Engine** : les quatre couches qui donnent à Visio Sapiens son identité visuelle et son comportement — c'est ce qui fait qu'une pièce ne ressemble pas à une carte Lovelace avec un joli thème, mais à une vraie interface vivante."
+> And that leads to the single rule that drives absolutely every technical decision in this project, the one you'll meet again in every episode:
+>
+> **Home Assistant is nothing more than a data engine. The interface is driven entirely by VSSP.**"
 
-**Voix off (conclusion du parcours) :**
-> "Retenez juste une chose de ce schéma : chaque couche a une responsabilité précise, et aucune ne fait le travail d'une autre. C'est ce qui permet au projet de tenir dans la durée sans devenir un plat de spaghettis YAML — et c'est aussi ce qui rend le pipeline CI/CD possible : on ne peut versionner et restaurer proprement que ce qui est structuré."
+**On-screen text (boxed):**
+> 🧠 HA = data engine
+> 🎛️ VSSP = the interface, all of it
 
 ---
 
-## 6. VISITE EN DIRECT DU DASHBOARD HOME (9:30 - 11:30)
+## 4. WHY NOT THE NATIVE LOVELACE CARDS? (5:00 - 7:30)
 
-**Visuel :** écran en direct, souris qui pointe chaque élément au fur et à mesure du texte. Aucun visage.
+**Visual:** split screen — native Lovelace editor with its standard cards on the left, the Visio Sapiens HOME dashboard on the right. Still no camera.
 
-**Voix off :**
-> "Assez de théorie, on regarde le résultat. Voici HOME, l'écran d'accueil de Visio Sapiens."
-
-**Pointage successif (curseur souris) :**
-> "La **sidebar** — navigation entre les écrans du centre de contrôle.
+**Voice-over:**
+> "So here's the question that comes up straight away: why not just use the native Lovelace cards? They exist, they're maintained by the Home Assistant core, they work perfectly well.
 >
-> La **rangée HUD** dans le header : météo, horloge, statut d'alarme, avatar — tout ce qu'on veut voir d'un coup d'œil en entrant dans la maison.
+> Exactly — they work perfectly well **for what they are**: a system of stacked cards. But the moment you want a coherent visual identity, animations that respond in real time, a HUD that behaves like a real system interface rather than a grid of widgets, you hit Lovelace's glass ceiling.
 >
-> La **rangée énergie** — production, consommation, ce que la maison fait en ce moment, pas un historique qu'on doit aller chercher."
+> So the project made a radical call: **refuse the native Lovelace cards**, and build its own rendering engine on top. With three exceptions, deliberate and documented, because it would be stupid to reinvent what already works well: `weather-forecast`, `logbook`, and `apexcharts-card`.
+>
+> Everything else — the sidebar, the HUD, the gauges, the energy rows, the rooms — is the in-house engine, which **I** maintain, through the same CI/CD pipeline I mentioned a moment ago. No dependency on a community maintainer who can vanish overnight.
+>
+> Now let's be honest about the price of that choice, because there is one: by refusing the community cards, **I become the maintainer**. If a gauge breaks, nobody else is coming to fix it. That's a real cost, and I take it on for a precise reason: that cost is one I **control**. When a community card disappears, I control nothing — not the timing, not the decision, not the migration. A bug in my own engine, I can fix that same evening and ship it straight out.
+>
+> And there's a side effect I hadn't seen coming. Once you write your own engine, you stop piling up patches. The famous `card-mod`, with its CSS selectors reaching into the shadow DOM of a card you don't control — it works, sure, right up until the update that renames a class. At that point there's no patch left to write: there's CSS I wrote, sitting on HTML I produced."
 
-**Transition vers le repo :**
-> "Et maintenant, la partie que je préfère montrer, parce qu'elle rend tout ça concret : l'arborescence du dépôt, en direct, à côté de ce qui s'affiche à l'écran."
-
-**Visuel :** split screen — arborescence du repo à gauche (dans un éditeur de code type VS Code), dashboard HOME à droite.
-
-**Voix off :**
-> "Ce fichier — `www/vssp/css/vssp.css` — c'est **littéralement** ce qui peint cet écran. Pas une métaphore : chaque couleur, chaque espacement que vous voyez à droite vient de ce fichier à gauche. C'est ça, avoir un moteur maison plutôt qu'un thème posé sur des cartes génériques : le code et l'interface parlent la même langue — et donc, sont versionnables comme un vrai projet logiciel."
+**On-screen text (boxed):**
+> ✅ Documented exceptions: `weather-forecast` · `logbook` · `apexcharts-card`
+> 🔧 Everything else: VSSP engine, maintained in-house
 
 ---
 
-## 7. UNE NOTE SUR LES NOMS (11:30 - 12:00)
+## 5. THE ARCHITECTURE DIAGRAM (7:30 - 9:30)
 
-**Visuel :** capture de l'historique Git / anciens noms de fichiers à l'écran (`osvision_v2/...`), voix off seule, pas de plan mains nécessaire ici.
+**Visual:** full screen on the architecture diagram from `Vision.md`. Hands-only shot with stylus/graphics tablet highlighting each block in turn — this is the episode's only moment of "physical presence", limited to hands.
 
-**Voix off :**
-> "Petite parenthèse avant de conclure, parce que vous allez tomber dessus dans les épisodes suivants : le projet s'appelait au départ **OSVision**, et a été renommé en **VSSP**. Vous allez croiser d'anciens noms de fichiers, d'anciens chemins, qui datent de cette époque.
+**Voice-over:**
+> "Here's what the full architecture looks like. I'm showing it to you once, in full, because it's the mental map you'll need to follow every episode that comes after."
+
+**Diagram walkthrough, block by block (highlighted in turn with the stylus):**
+
+> "**CORE**: the system foundation — this is what exposes the metrics, the machine state, the thing everything else leans on. We'll come back to it in detail in episode 2.
 >
-> Je le mentionne maintenant pour une raison simple : l'histoire d'un projet laisse des traces. Un bon projet ne cache pas ces traces, il les documente. Vous verrez cette cicatrice de renommage plus tard, notamment dans le bug K3s de l'épisode 2 — et maintenant vous saurez pourquoi elle existe."
+> **Room Engine**: the logic that turns a room definition into an interface — the heart of the dashboard generator, episode 3.
+>
+> **AI Layer**: the layer that wires intelligence into the interface — the chatbot, the automations. Episode 9.
+>
+> **Animation Engine, CSS Engine, JS Engine, Theme Engine**: the four layers that give Visio Sapiens its visual identity and its behaviour — this is what makes a room feel like a living interface rather than a Lovelace card wearing a nice theme."
+
+**Voice-over (walkthrough close):**
+> "Take just one thing away from this diagram: every layer has one precise responsibility, and none of them does another one's job. That's what lets the project hold up over time instead of turning into a plate of YAML spaghetti — and it's also what makes the CI/CD pipeline possible: you can only version and restore cleanly what is structured in the first place."
 
 ---
 
-## 8. MONTAGE RAPIDE — CHANGELOG (12:00 - 12:30)
+## 6. LIVE TOUR OF THE HOME DASHBOARD (9:30 - 11:30)
 
-**Visuel :** montage rythmé, défilement du changelog de `Vision.md`, captures d'écran qui s'enchaînent en rythme avec la musique. Aucune caméra, uniquement écran + musique.
+**Visual:** live screen, mouse pointing at each element as the narration reaches it. No face.
 
-**Voix off (courte, punchy) :**
-> "Tout ce que vous venez de voir n'existait pas il y a quelques mois. [liste rapide de 3-4 jalons du changelog, à choisir dans `Vision.md`]. Ce n'est pas un projet figé — c'est un système qui a une histoire, et qui continue d'en écrire une."
+**Voice-over:**
+> "Enough theory, let's look at the result. This is HOME, the landing screen of Visio Sapiens."
 
-*(Note prod : ce bloc peut aussi servir d'ouverture alternative si le montage final préfère un cold open plus dynamique.)*
+**Pointing in turn (mouse cursor):**
+> "The **sidebar** — navigation between the screens of the control center.
+>
+> The **HUD row** in the header: weather, clock, alarm status, avatar — everything you want to take in at a glance as you walk into the house.
+>
+> The **energy row** — production, consumption, what the house is doing right now, not a history you have to go digging for.
+>
+> The **room modules** — one screen per declared room, all produced by the same generator, from the same template. These aren't ten dashboards written ten times: it's one template, and ten rooms.
+>
+> And the **navigation rail**, here, which rebuilds itself when a room appears or disappears — because it's generated too, not maintained by hand in some corner of YAML that you always end up forgetting."
+
+**Transition to the repo:**
+> "And now the part I most enjoy showing, because it makes all of this concrete: the repository tree, live, side by side with what's on screen."
+
+**Visual:** split screen — repo tree on the left (in a code editor such as VS Code), HOME dashboard on the right.
+
+**Voice-over:**
+> "This file — `www/vssp/css/vssp.css` — is **literally** what paints that screen. Not a metaphor: every colour, every bit of spacing you see on the right comes from that file on the left. That's what having an in-house engine means, rather than a theme laid over generic cards: the code and the interface speak the same language — and so they're versionable like a real software project.
+>
+> And if I change a colour here, on the left, it changes on the right at the next deployment. On every screen at once, because there's only one source. Not ten cards to touch up one by one, hoping you didn't miss any."
 
 ---
 
-## 9. TRANSITION VERS L'ÉPISODE 2 (12:30 - 13:15)
+## 7. A NOTE ON NAMES (11:30 - 12:00)
 
-**Visuel :** retour sur le dashboard HOME en plein écran, ou logo de la chaîne animé. Voix off seule.
+**Visual:** capture of the Git history / old file names on screen (`osvision_v2/...`), voice-over alone, no hands shot needed here.
 
-**Voix off :**
-> "Ce qu'il faut retenir de cet épisode : Visio Sapiens n'est pas un dashboard, c'est un centre de contrôle, pensé pour être simple, efficace et sécurisé par défaut. Home Assistant fournit la donnée, VSSP fournit tout le reste — sans dépendre de cartes communautaires qui peuvent lâcher sans prévenir, et avec un pipeline qui permet de revenir en arrière si besoin, même en autodidacte.
+**Voice-over:**
+> "A quick aside before we wrap up, because you're going to run into this in later episodes: the project was originally called **OSVision**, and was renamed to **VSSP**. You'll come across old file names and old paths dating from that era.
 >
-> Dans le prochain épisode, on descend d'un niveau : on suit une seule donnée, depuis `psutil` sur la machine hôte jusqu'à une jauge SVG dans votre navigateur, avec les DevTools ouverts pour tout voir passer en direct.
->
-> Abonnez-vous, activez la cloche, et dites-moi en commentaire : votre install Home Assistant, elle ressemble encore à un empilement de cartes Lovelace, ou vous avez déjà commencé à en sortir ?
->
-> À très vite."
+> I'm mentioning it now for a simple reason: a project's history leaves marks. A good project doesn't hide those marks, it documents them. You'll see this renaming scar again later, notably in the K3s bug in episode 2 — and now you'll know why it's there."
 
 ---
 
-## NOTES DE PRODUCTION
+## 8. QUICK MONTAGE — CHANGELOG (12:00 - 12:30)
 
-- **Format sans visage :** aucun plan caméra face ne doit être filmé. La voix off porte tout le récit. Les seuls plans "présence humaine" autorisés sont des plans mains (clavier, souris, stylet sur tablette pour annoter le diagramme d'architecture, section 5). Le reste est 100% captures d'écran, motion design, et texte à l'écran.
-- **Enregistrement voix :** prévoir une prise de voix off propre, séparée du tournage écran, pour pouvoir resynchroniser facilement en montage.
-- **Ton général :** pédagogue, affirmatif sur le choix "moteur maison vs Lovelace natif" et sur la sécurité — c'est la thèse de l'épisode, elle doit être défendue clairement, pas juste énoncée.
-- **Fil rouge de l'intro :** double problème (maintenance communautaire qui lâche + exposition Internet non sécurisée) → réponse du projet (produit simple/efficace/sécurisé + CI/CD restaurable en HAOS) → complexité native de HA → simplification.
-- **Diagramme d'architecture :** à refaire à la résolution d'enregistrement avant tournage.
-- **B-roll :** dashboards communautaires (avant/après cassure — capture du fil forum "Bar-Card Repo Removed in 2025.6.2"), schéma exposition Internet, interface HA native (complexité), dashboard HOME en direct, arborescence du repo, changelog `Vision.md`.
-- **Ne pas filmer :** tout secret en direct (mot de passe Livebox, jetons longue durée) → épisodes 4/6.
-- **Renvois croisés :** pipeline CI/CD détaillé en épisode 6 ; bug K3s et cicatrice OSVision → VSSP en épisode 2 ; sécurité approfondie en épisode 12.
+**Visual:** fast-cut montage, `Vision.md` changelog scrolling, screenshots cutting in time with the music. No camera, screens and music only.
+
+**Voice-over (short, punchy):**
+> "None of what you've just seen existed a few months ago. [quick list of 3-4 changelog milestones, to be picked from `Vision.md`]. This isn't a frozen project — it's a system with a history, and it's still writing one."
+
+*(Prod note: this block can double as an alternative opener if the final edit wants a more energetic cold open.)*
+
+---
+
+## 9. TRANSITION TO EPISODE 2 (12:30 - 13:15)
+
+**Visual:** back to the HOME dashboard full screen, or animated channel logo. Voice-over alone.
+
+**Voice-over:**
+> "What to take away from this episode: Visio Sapiens isn't a dashboard, it's a control center, built to be simple, effective and secure by default. Home Assistant supplies the data, VSSP supplies everything else — without depending on community cards that can give out without warning, and with a pipeline that lets you roll back when you need to, even self-taught.
+>
+> In the next episode we go down a level: we follow a single piece of data, from `psutil` on the host machine all the way to an SVG gauge in your browser, with DevTools open so you can watch every step go past.
+>
+> Subscribe, hit the bell, and tell me in the comments: does your Home Assistant install still look like a stack of Lovelace cards, or have you already started climbing out?
+>
+> See you very soon."
+
+---
+
+## PRODUCTION NOTES
+
+- **Faceless format:** no shot to camera is to be filmed. The voice-over carries the whole narrative. The only "human presence" shots allowed are hands-only (keyboard, mouse, stylus on tablet to annotate the architecture diagram, section 5). Everything else is 100% screen capture, motion design, and on-screen text.
+- **Voice recording:** plan a clean voice-over take, recorded separately from the screen capture, so it can be resynced easily in the edit.
+- **Overall tone:** explanatory, and assertive on the "in-house engine vs native Lovelace" call and on security — that's the thesis of the episode, it should be argued clearly, not merely stated.
+- **Through-line of the intro:** double problem (community maintenance giving out + unsecured internet exposure) → the project's answer (simple/effective/secure product + CI/CD restorable in HAOS) → HA's native complexity → simplification.
+- **Architecture diagram:** to be redrawn at recording resolution before shooting.
+- **B-roll:** community dashboards (before/after the break — capture of the "Bar-Card Repo Removed in 2025.6.2" forum thread), internet exposure diagram, native HA interface (complexity), live HOME dashboard, repo tree, `Vision.md` changelog.
+- **Do not film:** any live secret (Livebox password, long-lived tokens) → episodes 4/6.
+- **Cross-references:** CI/CD pipeline in detail in episode 6; K3s bug and the OSVision → VSSP scar in episode 2; security in depth in episode 12.
+
+---
+
+## NARRATION TIMING
+
+Measured against the slots above, at 140 words per minute. The narration-only text, split by section, lives in `episode-01-narration.en.txt`.
+
+| # | Section | Slot | Narration | Delta |
+|---|---|---|---|---|
+| 0 | Cold open | 60 s | 61 s | +1 s |
+| 1 | My approach | 90 s | 86 s | −4 s |
+| 2 | HA's complexity | 60 s | 39 s | −21 s |
+| 3 | What Visio Sapiens is | 90 s | 87 s | −3 s |
+| 4 | Why not native cards | 150 s | 153 s | +3 s |
+| 5 | Architecture diagram | 120 s | 92 s | −28 s |
+| 6 | Live dashboard tour | 120 s | 121 s | +1 s |
+| 7 | A note on names | 30 s | 39 s | +9 s |
+| 8 | Changelog montage | 30 s | 19 s | −11 s |
+| 9 | Transition to episode 2 | 45 s | 58 s | +13 s |
+| | **Total** | **13:15** | **12:36** | **−39 s** |
+
+Section 5 runs deliberately short: the stylus walkthrough of the diagram carries the time visually. Section 8 is a music-led montage. Everywhere else the narration fills its slot.

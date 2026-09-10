@@ -53,6 +53,7 @@ moment de monter l'instance, ou quand quelque chose cloche sous l'interface.
 | [Vision](project/Vision.fr.md) | à quoi tout cela sert, et l'architecture complète du système |
 | [Integration_Case_Study](project/Integration_Case_Study.fr.md) | intégrer TECHNICAL ROOM dans le dépôt |
 | [YouTube_Series](project/YouTube_Series.fr.md) | le plan de la série |
+| [episode-01](project/episode-01-vision-architecture.fr.md) | script de tournage de l'épisode 1 — plus `episode-01-narration.fr.txt` (narration seule, pour la synthèse vocale) et `episode-01.fr.srt` (sous-titres) |
 
 ---
 
