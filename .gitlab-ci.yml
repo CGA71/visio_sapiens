@@ -807,7 +807,13 @@ package:hacs:
     - echo "HACS package $CI_COMMIT_TAG"
     - mkdir -p dist
     - cp -r themes dist/
-    - cp hacs.json repository.yaml README.md dist/
+    # EN | LICENSE ships with the package: the GPL requires a copy of the
+    # EN | licence to accompany every copy of the program that is handed on,
+    # EN | and this tarball is the public one.
+    # FR | LICENSE part avec le paquet : la GPL exige qu'une copie de la
+    # FR | licence accompagne chaque copie du programme transmise, et ce
+    # FR | tarball est celui qui est public.
+    - cp hacs.json repository.yaml README.md LICENSE dist/
     # EN | Localized READMEs ship alongside the English one. Absence is not an
     # EN | error: a language can be dropped without breaking the release.
     # FR | Les README localises partent a cote de l'anglais. Leur absence n'est
