@@ -390,3 +390,22 @@ Start at [`docs/README.md`](docs/README.md) for the annotated index.
 
 🚧 Under active development — see `docs/project/Vision.md` and `docs/ci-cd/Troubleshooting.md` for the
 iteration details.
+
+## License
+
+Visio Sapiens is free software, released under the **GNU General Public
+License, version 2 or (at your option) any later version**. The full text
+is in [`LICENSE`](LICENSE); every source file carries the notice.
+
+Copyright (C) 2026 Expanse IT <expanse-it@outlook.fr>
+
+In practice this means you may run, study, modify and redistribute the
+project freely — and that anything you distribute built on it must ship
+under the same terms, with its source. The dashboards the generator
+produces on your own instance are your own configuration, not a
+distribution of the project.
+
+This program is distributed in the hope that it will be useful, but
+WITHOUT ANY WARRANTY; without even the implied warranty of
+MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General
+Public License for more details.
