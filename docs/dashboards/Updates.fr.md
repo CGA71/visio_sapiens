@@ -402,6 +402,17 @@ bouton INSTALLER — une installation réclame le même accès à l'hôte qui
 manquait à la sonde. La bannière ambrée au pied de la carte dit pourquoi et
 imprime la commande qui y met fin.
 
+**Une ligne ne se reporte pas : le redémarrage.** Toutes les autres portent
+un fait qui reste vrai pendant que personne ne regarde — une version sur le
+disque, un nombre de paquets. `os_reboot` porte « l'hôte attend un
+redémarrage », et le redémarrage est précisément l'événement qui la rend
+fausse. Pire : ce redémarrage rescelle Vault, ce qui est justement ce qui
+empêche la sonde suivante de la mesurer. L'instant où cette ligne devient
+fausse est donc exactement celui où elle n'est plus vérifiable — elle
+resterait là à réclamer un redémarrage qui vient d'avoir lieu. Elle porte
+`carry: False` dans `COMPONENTS` et affiche « non sondée », ce qui est vrai,
+plutôt que « redémarrage requis », ce qui peut ne pas l'être.
+
 **`measured` n'avance pas.** Une ligne déjà reportée garde l'horodatage de
 l'exécution qui a vraiment vu la machine : une semaine de redémarrages
 scellés continue de pointer sur elle, au lieu de faire glisser la date d'une

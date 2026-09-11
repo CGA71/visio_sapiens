@@ -383,6 +383,16 @@ INSTALL button — an install needs the same host access the probe lacked. The
 amber banner at the foot of the card says why, and prints the command that
 ends it.
 
+**One row is never carried: the restart.** Every other holds a fact that
+stays true while nobody is looking — a version on disk, a count of packages.
+`os_reboot` holds "the host is waiting for a restart", and the restart is
+exactly the event that makes it false. Worse, that restart reseals Vault,
+which is what stops the next probe from measuring it. The moment this row
+becomes wrong is precisely the moment it can no longer be checked — it would
+sit there insisting on a restart that had just happened. It carries
+`carry: False` in `COMPONENTS` and shows "not probed", which is true, rather
+than "restart required", which may not be.
+
 **`measured` does not creep.** A row already carried keeps the timestamp of
 the run that actually saw the machine, so a week of sealed reboots keeps
 pointing at it instead of walking the date forward one probe at a time until

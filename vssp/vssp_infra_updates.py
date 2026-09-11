@@ -1004,9 +1004,41 @@ COMPONENTS = [
     {"key": "os_packages",   "name_key": "admin.updates_infra_os_packages",
      "tier": "auto",   "icon": "mdi:ubuntu", "where": "host",
      "policy": POLICY_DIRECT},
+    # EN | `carry: False` - THE ONE MEASUREMENT THAT MUST NEVER BE REMEMBERED.
+    # EN | Every other row holds a fact that stays true while nobody is
+    # EN | looking: a version on disk, a count of pending packages. This row
+    # EN | holds "the host is waiting for a restart", and the restart is
+    # EN | exactly the event that makes it false. Worse, the restart reseals
+    # EN | Vault, which is what stops the next probe from measuring it - so the
+    # EN | moment this row becomes wrong is precisely the moment it can no
+    # EN | longer be checked, and it would sit there insisting on a restart
+    # EN | that had just happened.
+    # EN | Reported, verbatim: "dans update apres un redemarrage du host jai
+    # EN | toujours os_reboot !!!". The host said otherwise -
+    # EN | /var/run/reboot-required was gone - and the screen was showing a
+    # EN | measurement from eleven minutes before the reboot.
+    # EN | So it is not carried. An unmeasured reboot row says "not probed",
+    # EN | which is true, instead of "restart required", which may not be.
+    # FR | `carry: False` - LA SEULE MESURE QUI NE DOIT JAMAIS ETRE RETENUE.
+    # FR | Toutes les autres lignes portent un fait qui reste vrai pendant que
+    # FR | personne ne regarde : une version sur le disque, un nombre de
+    # FR | paquets en attente. Celle-ci porte « l hote attend un redemarrage »,
+    # FR | et le redemarrage est precisement l evenement qui la rend fausse.
+    # FR | Pire : le redemarrage rescelle Vault, ce qui est justement ce qui
+    # FR | empeche la sonde suivante de la mesurer - l instant ou cette ligne
+    # FR | devient fausse est donc exactement celui ou elle n est plus
+    # FR | verifiable, et elle resterait la a reclamer un redemarrage qui vient
+    # FR | d avoir lieu.
+    # FR | Signale, mot pour mot : « dans update apres un redemarrage du host
+    # FR | jai toujours os_reboot !!! ». L hote disait le contraire -
+    # FR | /var/run/reboot-required avait disparu - et l ecran affichait une
+    # FR | mesure d onze minutes avant le redemarrage.
+    # FR | Elle n est donc pas reportee. Une ligne de redemarrage non mesuree
+    # FR | dit « non sondee », ce qui est vrai, plutot que « redemarrage
+    # FR | requis », ce qui peut ne pas l etre.
     {"key": "os_reboot",     "name_key": "admin.updates_infra_os_reboot",
      "tier": "manual", "icon": "mdi:restart-alert", "where": "host",
-     "policy": POLICY_DIRECT,
+     "policy": POLICY_DIRECT, "carry": False,
      "confirm_key": "admin.updates_infra_confirm_reboot"},
     {"key": "gitlab",        "name_key": "admin.updates_infra_gitlab",
      "tier": "manual", "icon": "mdi:gitlab", "where": "host",
@@ -2190,11 +2222,21 @@ def carry_forward(rows: list[dict], previous: dict) -> list[dict]:
     FR | faire avancer la date d une sonde a l autre."""
     was = {r.get("key"): r for r in (previous.get("components") or [])
            if isinstance(r, dict)}
+    # EN | Which components allow it at all. Declared in COMPONENTS, read here,
+    # EN | defaulting to yes - a new component is carried unless it says
+    # EN | otherwise, because "stale but shown" beats "vanished" for nearly
+    # EN | everything. The exception is documented where it is declared.
+    # FR | Quels composants l autorisent. Declare dans COMPONENTS, lu ici, oui
+    # FR | par defaut - un nouveau composant est reporte sauf s il dit le
+    # FR | contraire, parce que « perime mais affiche » vaut mieux que
+    # FR | « disparu » pour presque tout. L exception est documentee la ou elle
+    # FR | est declaree.
+    allowed = {c["key"]: c.get("carry", True) for c in COMPONENTS}
     stamp = previous.get("generated", "")
     kept = []
     for row in rows:
         old = was.get(row["key"])
-        if row.get("probed") or not old:
+        if row.get("probed") or not old or not allowed.get(row["key"], True):
             kept.append(row)
             continue
         # EN | Nothing to remember: the previous run could not see it either.
