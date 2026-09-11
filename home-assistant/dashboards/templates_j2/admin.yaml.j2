@@ -1763,9 +1763,25 @@ views:
                   // FR | dans un dashboard genere serait un fait local livre a
                   // FR | toutes les autres instances. La phrase a cote dit
                   // FR | « sur l hote », c est la que cela s execute.
+                  // EN | A LOOP, not a single call, because a single call is
+                  // EN | a third of the job. The threshold is 3 of 5, so the
+                  // EN | command has to be run three times with a different key
+                  // EN | each time, and printing it once invited exactly the
+                  // EN | question of why the safe was still shut after running
+                  // EN | what the screen said to run. The loop prompts three
+                  // EN | times in one paste and stores nothing.
+                  // FR | UNE BOUCLE, pas un appel unique, parce qu un appel
+                  // FR | unique fait le tiers du travail. Le seuil est de 3 sur
+                  // FR | 5 : la commande doit tourner trois fois avec une cle
+                  // FR | differente a chaque fois, et l imprimer une seule fois
+                  // FR | appelait exactement la question de savoir pourquoi le
+                  // FR | coffre restait ferme apres avoir lance ce que l ecran
+                  // FR | disait de lancer. La boucle demande trois fois en un
+                  // FR | seul collage et ne stocke rien.
                   const CMD = {
                     'error.vault_sealed':
-                      'docker exec -it vssp-vault vault operator unseal'
+                      'for i in 1 2 3; do docker exec -it vssp-vault '
+                      + 'vault operator unseal; done'
                   };
                   const st = states['sensor.vssp_updates_infra_status'];
                   const bad = (st && st.state === 'error')
