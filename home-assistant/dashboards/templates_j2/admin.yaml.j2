@@ -1488,6 +1488,28 @@ views:
                   // FR | le rapport sur disque peut etre plus ancien que la carte
                   // FR | qui le lit, le temps qui separe un deploiement de la
                   // FR | sonde suivante.
+                  // EN | text-align:left ON THE NAME CELL, and it is the
+                  // EN | same shadow-DOM trap as the margin:0 above, one rule
+                  // EN | further down. button-card centres its own label, and
+                  // EN | custom_fields HTML lives in that same shadow root, so
+                  // EN | `text-align: center` is inherited by anything here
+                  // EN | that is not itself a flex container. The layer
+                  // EN | headings and the row wrappers are flex and were never
+                  // EN | affected; the name div is not, so every component name
+                  // EN | floated in the middle of a row half a screen wide with
+                  // EN | its version stranded at the far right. Nothing reads
+                  // EN | as a list that way.
+                  // FR | text-align:left SUR LA CELLULE DU NOM, et c est le
+                  // FR | meme piege de shadow DOM que le margin:0 ci-dessus,
+                  // FR | une regle plus bas. button-card centre son propre
+                  // FR | libelle, et le HTML des custom_fields vit dans ce meme
+                  // FR | shadow root : `text-align: center` est donc herite par
+                  // FR | tout ce qui n est pas lui-meme un conteneur flex. Les
+                  // FR | titres de couche et les enveloppes de ligne sont flex
+                  // FR | et n ont jamais ete touches ; le div du nom, non, donc
+                  // FR | chaque nom de composant flottait au milieu d une ligne
+                  // FR | large d un demi-ecran, sa version echouee a l extreme
+                  // FR | droite. Rien ne se lit comme une liste ainsi.
                   const layers = ['host', 'docker', 'k3s'];
                   const layerOf = r => layers.indexOf(r.where) >= 0
                     ? r.where : 'host';
@@ -1499,7 +1521,7 @@ views:
                         <ha-icon icon="${r.icon}" style="--mdc-icon-size:18px;
                           color:${r.pending ? '#00E5FF' : '#56707E'};
                           flex:0 0 auto;margin:0;"></ha-icon>
-                        <div style="flex:1 1 auto;min-width:0;
+                        <div style="flex:1 1 auto;min-width:0;text-align:left;
                           color:#FFFFFF;font-size:12px;font-weight:600;
                           white-space:nowrap;overflow:hidden;
                           text-overflow:ellipsis;">${L.names[r.key] || r.key}</div>
