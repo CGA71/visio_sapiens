@@ -427,6 +427,8 @@ admin:
   updates_infra_install: INSTALL
   updates_infra_restart: RESTART
   updates_infra_locked_short: LOCKED
+  updates_infra_confirm_word: CONFIRM?
+  updates_infra_sending: sending…
   updates_infra_packages: package(s)
   updates_infra_images: image(s)
   updates_infra_security: security

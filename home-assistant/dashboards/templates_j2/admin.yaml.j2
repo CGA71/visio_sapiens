@@ -1302,6 +1302,8 @@ views:
                     install:   '{{ t('admin.updates_infra_install') | js }}',
                     restart:   '{{ t('admin.updates_infra_restart') | js }}',
                     locked:    '{{ t('admin.updates_infra_locked_short') | js }}',
+                    confirm:   '{{ t('admin.updates_infra_confirm_word') | js }}',
+                    sending:   '{{ t('admin.updates_infra_sending') | js }}',
                     steps:     '{{ t('admin.updates_infra_steps') | js }}',
                     then:      '{{ t('admin.updates_infra_then') | js }}',
                     names: {
@@ -1478,44 +1480,75 @@ views:
                     // FR | l arret. Un composant sans confirm_key s installe a
                     // FR | la pression, comme l ont toujours fait les paquets de
                     // FR | l hote et le runner.
-                    // EN | PERCENT-ENCODED, and this is load-bearing.
-                    // EN | A sentence on its way into an onclick attribute
-                    // EN | crosses two parsers: HTML reads the attribute, then
-                    // EN | JS reads the code inside it. "il faudra ressaisir 3
-                    // EN | des 5 cles" is fine; "pour que l'ecran" is not — the
-                    // EN | apostrophe closes the JS string literal and the
-                    // EN | button dies silently on click, which is the worst way
-                    // EN | for a confirmation dialog to fail. The `| js` filter
-                    // EN | did escape the sentence, but it escaped it for the
-                    // EN | GENERATED SOURCE; by the time the same sentence is a
-                    // EN | runtime value being interpolated into markup, that
-                    // EN | escaping has already been consumed. Percent-encoding
-                    // EN | is the one form that survives both parsers intact.
-                    // EN | encodeURIComponent leaves the apostrophe alone — it
-                    // EN | is an unreserved character — so it is replaced by
-                    // EN | hand, and that single replace is the whole fix.
-                    // FR | ENCODE EN POURCENTS, et ce n est pas cosmetique.
-                    // FR | Une phrase en route vers un attribut onclick traverse
-                    // FR | deux analyseurs : HTML lit l attribut, puis JS lit le
-                    // FR | code dedans. « il faudra ressaisir 3 des 5 cles » va
-                    // FR | bien ; « pour que l'ecran » non — l apostrophe ferme
-                    // FR | le litteral JS et le bouton meurt en silence au clic,
-                    // FR | la pire facon pour une demande de confirmation
-                    // FR | d echouer. Le filtre `| js` a bien echappe la phrase,
-                    // FR | mais pour la SOURCE GENEREE ; quand cette meme phrase
-                    // FR | est une valeur d execution interpolee dans du
-                    // FR | balisage, cet echappement a deja ete consomme.
-                    // FR | L encodage en pourcents est la seule forme qui
-                    // FR | survive intacte aux deux analyseurs.
-                    // FR | encodeURIComponent laisse l apostrophe telle quelle —
-                    // FR | c est un caractere non reserve — elle est donc
-                    // FR | remplacee a la main, et ce seul replace est tout le
-                    // FR | correctif.
+                    // EN | NOT window.confirm(), and that is the bug this
+                    // EN | replaces. The dialog fired correctly on a desktop
+                    // EN | browser and was SWALLOWED elsewhere — the Home
+                    // EN | Assistant companion app and several webviews
+                    // EN | suppress confirm() outright, and a suppressed
+                    // EN | confirm() returns false. So the handler ran, the
+                    // EN | guard said no, and the press did nothing at all with
+                    // EN | nothing on screen to say why. A confirmation that can
+                    // EN | be silently answered "no" by the browser is worse
+                    // EN | than no confirmation: it turns a deliberate press
+                    // EN | into a dead button.
+                    // EN | The row confirms itself instead. First press arms it
+                    // EN | — the chip turns amber, says CONFIRM?, and the
+                    // EN | warning appears on the row's own second line, where
+                    // EN | there is room for the whole sentence rather than a
+                    // EN | dialog's worth of it. Second press sends. Nothing
+                    // EN | depends on the browser granting a dialog.
+                    // EN | Every literal crosses two parsers on its way into the
+                    // EN | onclick attribute, so each one travels
+                    // EN | percent-encoded — encodeURIComponent leaves the
+                    // EN | apostrophe alone, hence the replace.
+                    // FR | PAS window.confirm(), et c est le bug que ceci
+                    // FR | remplace. Le dialogue s ouvrait correctement dans un
+                    // FR | navigateur de bureau et etait AVALE ailleurs — l app
+                    // FR | compagnon Home Assistant et plusieurs webviews
+                    // FR | suppriment confirm() purement et simplement, et un
+                    // FR | confirm() supprime renvoie false. Le gestionnaire
+                    // FR | tournait donc, le garde disait non, et la pression ne
+                    // FR | faisait rien du tout sans rien a l ecran pour dire
+                    // FR | pourquoi. Une confirmation a laquelle le navigateur
+                    // FR | peut repondre « non » en silence est pire que pas de
+                    // FR | confirmation : elle transforme une pression
+                    // FR | deliberee en bouton mort.
+                    // FR | C est la rangee qui se confirme elle-meme. Premiere
+                    // FR | pression : la pastille s arme, passe a l ambre,
+                    // FR | affiche CONFIRMER ?, et l avertissement apparait sur
+                    // FR | la seconde ligne de la rangee, ou il y a la place
+                    // FR | pour toute la phrase plutot que pour ce qu en laisse
+                    // FR | un dialogue. Seconde pression : envoi. Plus rien ne
+                    // FR | depend du navigateur pour accorder un dialogue.
+                    // FR | Chaque litteral traverse deux analyseurs en route
+                    // FR | vers l attribut onclick, chacun voyage donc encode en
+                    // FR | pourcents — encodeURIComponent laisse l apostrophe
+                    // FR | telle quelle, d ou le replace.
+                    const enc = s => `decodeURIComponent('`
+                      + encodeURIComponent(s).replace(/'/g, '%27') + `')`;
                     const warn = L.txt[r.confirm_key] || '';
-                    const safe = encodeURIComponent(warn).replace(/'/g, '%27');
+                    // EN | Every press answers, warned or not: an unanswered
+                    // EN | press is what brought us here. The probe that follows
+                    // EN | an install rewrites this card a few seconds later.
+                    // FR | Toute pression repond, avertie ou non : une pression
+                    // FR | sans reponse est ce qui nous a amenes ici. La sonde
+                    // FR | qui suit une installation reecrit cette carte
+                    // FR | quelques secondes plus tard.
+                    const sent = `b.textContent=${enc(L.sending)};`
+                      + `b.style.opacity='.55';b.style.cursor='default';`
+                      + `b.dataset.armed='2';`;
                     const onclick = warn
-                      ? `if(confirm(decodeURIComponent('${safe}'))){${call}}`
-                      : call;
+                      ? `var b=this,s=b.closest('[data-row]')`
+                        + `.querySelector('[data-sub]');`
+                        + `if(b.dataset.armed==='1'){${call};${sent}}`
+                        + `else if(!b.dataset.armed){b.dataset.armed='1';`
+                        + `b.textContent=${enc(L.confirm)};`
+                        + `b.style.color='#FF9800';`
+                        + `b.style.borderColor='rgba(255,152,0,.6)';`
+                        + `b.style.background='rgba(255,152,0,.12)';`
+                        + `s.style.display='';s.style.color='#FF9800';`
+                        + `s.textContent=${enc(warn)};}`
+                      : `var b=this;if(!b.dataset.armed){${call};${sent}}`;
                     return `<span onclick="${onclick}" style="font-size:9px;
                       font-weight:700;letter-spacing:.3px;cursor:pointer;
                       color:#00E5FF;border:1px solid rgba(0,229,255,.5);
@@ -1572,9 +1605,29 @@ views:
                   const layers = ['host', 'docker', 'k3s'];
                   const layerOf = r => layers.indexOf(r.where) >= 0
                     ? r.where : 'host';
+                  // EN | data-row and data-sub are ADDRESSES, not styling.
+                  // EN | The confirmation below has to reach this row's second
+                  // EN | line from the chip that was clicked, and this HTML
+                  // EN | lives in button-card's shadow root: document.getElement
+                  // EN | ById cannot see it. `this` plus closest() can, which is
+                  // EN | the rule this project already learned the hard way.
+                  // EN | The sub-line is always rendered, hidden when empty, so
+                  // EN | that the address exists before there is anything to put
+                  // EN | at it.
+                  // FR | data-row et data-sub sont des ADRESSES, pas du style.
+                  // FR | La confirmation ci-dessous doit atteindre la seconde
+                  // FR | ligne de cette rangee depuis la pastille cliquee, et ce
+                  // FR | HTML vit dans le shadow root de button-card :
+                  // FR | document.getElementById ne le voit pas. `this` plus
+                  // FR | closest(), si — la regle que ce projet a deja apprise a
+                  // FR | ses depens.
+                  // FR | La sous-ligne est toujours rendue, masquee quand elle
+                  // FR | est vide, pour que l adresse existe avant qu il y ait
+                  // FR | quelque chose a y mettre.
                   const line = r => {
                     const [text, colour, sub] = detail(r);
-                    return `<div style="display:flex;align-items:center;
+                    return `<div data-row="${r.key}"
+                        style="display:flex;align-items:center;
                         gap:10px;padding:7px 0;
                         border-top:1px solid rgba(0,229,255,.10);">
                         <ha-icon icon="${r.icon}" style="--mdc-icon-size:18px;
@@ -1589,9 +1642,9 @@ views:
                           <div style="color:${colour};font-size:11px;
                             white-space:nowrap;overflow:hidden;
                             text-overflow:ellipsis;">${text}</div>
-                          ${sub ? `<div style="color:#56707E;font-size:9px;
-                            line-height:1.35;padding-top:2px;
-                            ">${sub}</div>` : ''}
+                          <div data-sub style="color:#56707E;font-size:9px;
+                            line-height:1.35;padding-top:2px;${sub ? ''
+                            : 'display:none;'}">${sub}</div>
                         </div>
                         <div style="flex:0 0 auto;">${action(r)}</div>
                       </div>`;

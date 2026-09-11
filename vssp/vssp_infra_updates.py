@@ -1932,11 +1932,21 @@ def run_probe(safe: Safe | None, out_path: Path) -> dict:
 
 
 def install_one(safe: Safe, key: str, unattended: bool) -> dict:
+    # EN | A REFUSAL IS NOT A SUCCESS. These three returns used to leave `ok`
+    # EN | unset, main() defaulted it to True, and the status sensor stayed
+    # EN | green — so a press the script deliberately refused looked exactly
+    # EN | like a press that worked, which is the same silence the browser
+    # EN | dialog used to produce.
+    # FR | UN REFUS N EST PAS UNE REUSSITE. Ces trois retours laissaient `ok`
+    # FR | non defini, main() le mettait a True par defaut, et le capteur de
+    # FR | statut restait vert — une pression que le script refusait
+    # FR | deliberement ressemblait donc exactement a une pression qui avait
+    # FR | marche, le meme silence que produisait le dialogue du navigateur.
     comp = BY_KEY.get(key)
     if comp is None:
-        return status("error.unknown", name=key)
+        return dict(status("error.unknown", name=key), ok=False)
     if comp["tier"] == "locked" or key not in INSTALLERS:
-        return status("error.tier", name=key, tier="locked")
+        return dict(status("error.tier", name=key, tier="locked"), ok=False)
     # EN | The unattended gate is here and only here. A manual component is
     # EN | installable by a human pressing its button and never by the pass,
     # EN | whatever the switch says.
@@ -1944,7 +1954,7 @@ def install_one(safe: Safe, key: str, unattended: bool) -> dict:
     # FR | composant manuel est installable par un humain qui presse son
     # FR | bouton, jamais par la passe, quoi que dise l interrupteur.
     if unattended and comp["tier"] != "auto":
-        return status("error.tier", name=key, tier=comp["tier"])
+        return dict(status("error.tier", name=key, tier=comp["tier"]), ok=False)
     host = open_host(safe)
     with host:
         # EN | PROBE FIRST, then install what that probe found.

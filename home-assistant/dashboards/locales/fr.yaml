@@ -304,6 +304,8 @@ admin:
   updates_infra_install: INSTALLER
   updates_infra_restart: REDÉMARRER
   updates_infra_locked_short: VERROUILLÉ
+  updates_infra_confirm_word: CONFIRMER ?
+  updates_infra_sending: envoi…
   updates_infra_packages: paquet(s)
   updates_infra_images: image(s)
   updates_infra_security: sécurité
