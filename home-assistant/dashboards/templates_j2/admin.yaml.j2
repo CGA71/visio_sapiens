@@ -1549,8 +1549,43 @@ views:
                         + `s.style.display='';s.style.color='#FF9800';`
                         + `s.textContent=${enc(warn)};}`
                       : `var b=this;if(!b.dataset.armed){${call};${sent}}`;
+                    // EN | pointer-events:auto, and WITHOUT IT THIS BUTTON IS
+                    // EN | DECORATION. button-card puts `pointer-events: none`
+                    // EN | on its own ha-card when tap_action is none — so the
+                    // EN | card does not swallow clicks meant for the page — and
+                    // EN | every custom_field inside inherits it. The chip then
+                    // EN | renders, styles, and carries a working handler, but
+                    // EN | no mouse can ever reach it: hit-testing passes
+                    // EN | straight through, and the cursor never even becomes a
+                    // EN | hand. THAT is the tell, and it is the only visible
+                    // EN | one. A child may re-enable it even under a disabled
+                    // EN | ancestor, which is what this does.
+                    // EN | Third rule of button-card's shadow root to bite this
+                    // EN | card, after `margin: auto` moving the icons and
+                    // EN | `text-align: center` moving the names. They all have
+                    // EN | the same shape: a rule button-card writes for ITSELF,
+                    // EN | inherited by HTML it never expected to host.
+                    // FR | pointer-events:auto, et SANS LUI CE BOUTON EST UNE
+                    // FR | DECORATION. button-card pose `pointer-events: none`
+                    // FR | sur sa propre ha-card quand tap_action vaut none —
+                    // FR | pour que la carte n avale pas les clics destines a la
+                    // FR | page — et chaque custom_field a l interieur en herite.
+                    // FR | La pastille s affiche, se style et porte un
+                    // FR | gestionnaire qui marche, mais aucune souris ne peut
+                    // FR | l atteindre : le test de collision la traverse, et le
+                    // FR | curseur ne devient meme pas une main. C EST le signe,
+                    // FR | et c est le seul visible. Un enfant peut reactiver la
+                    // FR | propriete sous un ancetre qui l a coupee, et c est ce
+                    // FR | que fait ceci.
+                    // FR | Troisieme regle du shadow root de button-card a
+                    // FR | mordre cette carte, apres `margin: auto` qui deplacait
+                    // FR | les icones et `text-align: center` les noms. Toutes
+                    // FR | ont la meme forme : une regle que button-card ecrit
+                    // FR | pour LUI-MEME, heritee par du HTML qu il n avait pas
+                    // FR | prevu d heberger.
                     return `<span onclick="${onclick}" style="font-size:9px;
                       font-weight:700;letter-spacing:.3px;cursor:pointer;
+                      pointer-events:auto;
                       color:#00E5FF;border:1px solid rgba(0,229,255,.5);
                       background:rgba(0,229,255,.10);border-radius:6px;
                       padding:3px 10px;white-space:nowrap;">${label}</span>`;
@@ -1761,6 +1796,7 @@ views:
                         ${cmd ? `<div style="margin:6px 0 0 21px;padding:4px 8px;
                           border-radius:5px;background:rgba(0,0,0,.35);
                           color:#FFD180;font-size:10px;user-select:all;
+                          pointer-events:auto;cursor:text;
                           overflow-x:auto;white-space:nowrap;font-family:
                           ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
                           ">${cmd}</div>` : ''}
@@ -1773,6 +1809,7 @@ views:
                         ">{{ t('admin.updates_infra_locked_note') | js }}</div>
                       <span onclick="${call}" style="font-size:9px;
                         font-weight:700;letter-spacing:.3px;cursor:pointer;
+                        pointer-events:auto;
                         color:#00E5FF;border:1px solid rgba(0,229,255,.5);
                         background:rgba(0,229,255,.10);border-radius:6px;
                         padding:4px 10px;white-space:nowrap;flex:0 0 auto;"
