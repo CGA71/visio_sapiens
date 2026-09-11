@@ -273,6 +273,7 @@ MESSAGES = {
     "install.auto_none": "Automatic pass: nothing to install.",
     "error.secret_missing": "Safe entry vssp/infra/{name} is missing or unreadable.",
     "error.vault": "The safe answered {code} — check the vssp-maint token.",
+    "error.vault_sealed": "The safe is sealed: enter three of the five unseal keys, then probe again.",
     "error.no_token": "No maintenance token: /config/vssp/.vault_maint_token is missing.",
     "error.ssh": "The host refused the connection: {detail}",
     "error.no_transport": "No SSH transport available in this container (neither the ssh binary nor paramiko).",
@@ -363,6 +364,28 @@ class Safe:
             # FR | dire laquelle.
             if exc.code == 404:
                 raise VaultError(status("error.secret_missing", name=name)) from exc
+            # EN | 503 is a SEALED safe, and it is far and away the most likely
+            # EN | failure here: Vault reseals on every restart by design and no
+            # EN | auto-unseal is configured (vault/config/vault.hcl says why).
+            # EN | Answering it with "check the vssp-maint token" sends the
+            # EN | operator to the one file that is certainly not the problem,
+            # EN | and it sends them there on the ordinary morning after a host
+            # EN | reboot. The whole INFRASTRUCTURE half goes unprobed when the
+            # EN | safe is shut — the host SSH credentials are the first thing
+            # EN | read — so this message is the only clue on screen.
+            # FR | 503 est un coffre SCELLE, et c est de loin l echec le plus
+            # FR | probable ici : Vault se rescelle a chaque redemarrage par
+            # FR | conception et aucun descellement automatique n est configure
+            # FR | (vault/config/vault.hcl dit pourquoi). Y repondre par
+            # FR | « verifier le jeton vssp-maint » envoie l operateur vers le
+            # FR | seul fichier qui n est certainement pas en cause, et l y
+            # FR | envoie le matin ordinaire qui suit un redemarrage d hote.
+            # FR | Toute la moitie INFRASTRUCTURE reste non sondee quand le
+            # FR | coffre est ferme — les identifiants SSH de l hote sont la
+            # FR | premiere chose lue — donc ce message est le seul indice a
+            # FR | l ecran.
+            if exc.code == 503:
+                raise VaultError(status("error.vault_sealed")) from exc
             raise VaultError(status("error.vault", code=exc.code)) from exc
         except (urllib.error.URLError, OSError, ValueError) as exc:
             raise VaultError(status("error.vault", code=str(exc))) from exc
