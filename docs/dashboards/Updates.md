@@ -346,6 +346,65 @@ on `1.21.4` into a jump to `2.1.0`. On the apt side that means
 `apt-get install gitlab-ce=18.3.2-ce.0` and not `--only-upgrade`, which
 would aim at the candidate, i.e. the top.
 
+### A sealed safe does not empty the screen
+
+Vault reseals on **every restart**, by design: no auto-unseal is configured,
+and that is a choice rather than an oversight. The host's SSH access lives in
+that safe. A sealed safe therefore makes seven of the eight rows
+unmeasurable — everything on the server, plus what runs under Docker and
+inside k3s.
+
+For a long time the report written in that state said, for every one of those
+rows, `installed: ""`, `pending: false`, `count: 0`. The screen rendered it
+faithfully: **the host, GitLab and k3s updates listed an hour earlier simply
+vanished**, and the counts went to zero. This was not a corner case — it was
+every reboot.
+
+"I could not measure this" and "there is nothing here" are different facts,
+and the report was publishing the second one for the first.
+
+`carry_forward()` now inherits, for every unmeasured row, the last real
+measurement. Three separate fields carry the distinction:
+
+| Field | The question it answers |
+|---|---|
+| `probed` | did **this** run measure the row? |
+| `stale` | do the values come from an **earlier** run that did? |
+| `measured` | **when** was that measurement taken? |
+
+Only the **measurement** fields travel (`CARRIED` in
+`vssp_infra_updates.py`): the name, the tier, the icon, the layer, the policy
+and the warning keep coming from `COMPONENTS`, so that editing the table
+still changes every row on the next run.
+
+On screen, a remembered row keeps its numbers, loses its colour, and carries
+its date on the second line: *"last measured 2026-09-11 14:00"*. It has no
+INSTALL button — an install needs the same host access the probe lacked. The
+amber banner at the foot of the card says why, and prints the command that
+ends it.
+
+**`measured` does not creep.** A row already carried keeps the timestamp of
+the run that actually saw the machine, so a week of sealed reboots keeps
+pointing at it instead of walking the date forward one probe at a time until
+it looks fresh.
+
+**The alternative was worse.** Writing nothing at all — what this file used to
+do — leaves the previous report untouched on disk, and the screen renders
+what is on disk: old versions shown as current, with nothing anywhere saying
+they are old. The difference between the two is not the data, it is the label
+on it.
+
+**And to stop resealing?** There is no free path, and that is the point of a
+seal: every automation amounts to handing the key to something else.
+`seal "transit"` hands it to a second Vault, which only helps if that Vault
+runs on a machine that does not reboot with this one. `seal "awskms"` /
+`gcpckms` / `azurekeyvault` hand it to a remote KMS — the only option that
+truly unseals by itself without a second server, at the price of a boot-time
+dependency on the internet and an IAM credential sitting on the host. Putting
+the keys in a file cancels the safe. PKCS#11/HSM is Vault Enterprise only.
+Until one of those is chosen, what this section describes is the answer: a
+seal costs three key entries, not a blank screen.
+
 ### The three tiers
 
 The other families already split by risk — HACS in bulk, firmware never.

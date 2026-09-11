@@ -1119,6 +1119,18 @@ def blank(component: dict, **over) -> dict:
         "count": 0,
         "detail": [],
         "probed": True,
+        # EN | `probed` says whether THIS RUN measured the row. `stale` says
+        # EN | the values above came from an EARLIER run that did, and
+        # EN | `measured` says when. The three are separate because a screen
+        # EN | needs all three answers: what is installed, whether anyone has
+        # EN | checked lately, and how lately.
+        # FR | `probed` dit si CETTE EXECUTION a mesure la ligne. `stale` dit
+        # FR | que les valeurs ci-dessus viennent d une execution ANTERIEURE
+        # FR | qui l a fait, et `measured` dit quand. Les trois sont distincts
+        # FR | parce qu un ecran a besoin des trois reponses : ce qui est
+        # FR | installe, si quelqu un a verifie recemment, et a quel point.
+        "stale": False,
+        "measured": "",
     }
     row.update(over)
     return row
@@ -1880,6 +1892,108 @@ def open_host(safe: Safe) -> Host:
     return Host(creds, sudo)
 
 
+# EN | The fields that are a MEASUREMENT of the machine rather than a
+# EN | DESCRIPTION of the component. Everything not in this list - the name,
+# EN | the tier, the icon, the layer, the policy, the warning text - comes from
+# EN | COMPONENTS in this file and must keep coming from there, so that editing
+# EN | the table still changes every row on the next run. Only these travel
+# EN | forward from an older report.
+# FR | Les champs qui sont une MESURE de la machine plutot qu une DESCRIPTION
+# FR | du composant. Tout ce qui n est pas dans cette liste - le nom, le
+# FR | palier, l icone, la couche, la politique, le texte d avertissement -
+# FR | vient de COMPONENTS dans ce fichier et doit continuer d en venir, pour
+# FR | qu editer la table change encore chaque ligne a l execution suivante.
+# FR | Seuls ceux-ci voyagent depuis un rapport plus ancien.
+CARRIED = ("installed", "latest", "next", "path", "steps", "pending",
+           "count", "detail", "security")
+
+
+def read_report(path: Path) -> dict:
+    """EN | The report as it currently stands on disk, or {} when there is
+    EN | none, when it is unreadable, or when it is not what we left there.
+    EN | Never raises: this runs to make a failing probe less bad, and it has
+    EN | no business making it worse.
+    FR | Le rapport tel qu il est sur disque, ou {} quand il n y en a pas,
+    FR | qu il est illisible, ou que ce n est pas ce qu on y a laisse. Ne leve
+    FR | jamais : ceci s execute pour rendre une sonde en echec moins mauvaise,
+    FR | et n a aucune raison de la rendre pire."""
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, ValueError):
+        return {}
+    return data if isinstance(data, dict) else {}
+
+
+def carry_forward(rows: list[dict], previous: dict) -> list[dict]:
+    """EN | WHAT WE SAW LAST TIME, for the rows we could not see this time.
+    EN | A sealed safe takes the host SSH credentials down with it, so seven of
+    EN | the eight rows cannot be measured - and the report written in that
+    EN | state used to say installed "", pending false, count 0 for every one
+    EN | of them. The screen rendered that faithfully: the host, GitLab and k3s
+    EN | updates that had been listed an hour earlier simply vanished, and the
+    EN | counts went to zero. Vault reseals on every restart by design, so this
+    EN | was not a corner case; it was every reboot.
+    EN | "I could not measure this" and "there is nothing here" are different
+    EN | facts, and the report was publishing the second one for the first. Now
+    EN | an unmeasured row keeps the last real measurement, `stale` marks it as
+    EN | remembered rather than seen, and `measured` carries the timestamp of
+    EN | the run that actually looked, so the screen can dim it and date it.
+    EN | The alternative - leaving the previous report untouched on disk - is
+    EN | what this file used to do and is strictly worse: old versions are then
+    EN | shown as current with nothing anywhere to say they are old. The
+    EN | difference between the two is not the data, it is the label on it.
+    EN | `measured` is taken from the OLD row when the old row was itself
+    EN | carried, so a week of sealed reboots keeps pointing at the last run
+    EN | that saw the machine instead of walking the date forward one probe at
+    EN | a time.
+    FR | CE QU ON A VU LA DERNIERE FOIS, pour les lignes qu on n a pas pu voir
+    FR | cette fois. Un coffre scelle emporte avec lui l acces SSH a l hote :
+    FR | sept des huit lignes sont donc immesurables - et le rapport ecrit dans
+    FR | cet etat disait installed "", pending false, count 0 pour chacune.
+    FR | L ecran l affichait fidelement : les mises a jour hote, GitLab et k3s
+    FR | listees une heure plus tot disparaissaient purement et simplement, et
+    FR | les compteurs tombaient a zero. Vault se rescelle a chaque
+    FR | redemarrage par conception : ce n etait donc pas un cas limite,
+    FR | c etait chaque redemarrage.
+    FR | « Je n ai pas pu mesurer ceci » et « il n y a rien ici » sont deux
+    FR | faits differents, et le rapport publiait le second a la place du
+    FR | premier. Desormais une ligne non mesuree garde la derniere mesure
+    FR | reelle, `stale` la marque comme souvenue plutot que vue, et `measured`
+    FR | porte l horodatage de l execution qui a reellement regarde, pour que
+    FR | l ecran puisse l attenuer et la dater.
+    FR | L alternative - laisser le rapport precedent intact sur disque - est
+    FR | ce que ce fichier faisait avant, et est strictement pire : de vieilles
+    FR | versions sont alors montrees comme actuelles sans que rien nulle part
+    FR | ne dise qu elles sont vieilles. La difference entre les deux n est pas
+    FR | la donnee, c est l etiquette dessus.
+    FR | `measured` est repris de l ANCIENNE ligne quand celle-ci etait
+    FR | elle-meme reportee : une semaine de redemarrages scelles continue donc
+    FR | de pointer sur la derniere execution qui a vu la machine, au lieu de
+    FR | faire avancer la date d une sonde a l autre."""
+    was = {r.get("key"): r for r in (previous.get("components") or [])
+           if isinstance(r, dict)}
+    stamp = previous.get("generated", "")
+    kept = []
+    for row in rows:
+        old = was.get(row["key"])
+        if row.get("probed") or not old:
+            kept.append(row)
+            continue
+        # EN | Nothing to remember: the previous run could not see it either.
+        # FR | Rien a retenir : l execution precedente ne la voyait pas non plus.
+        if not (old.get("probed") or old.get("stale")):
+            kept.append(row)
+            continue
+        merged = dict(row)
+        for field in CARRIED:
+            if field in old:
+                merged[field] = old[field]
+        merged["stale"] = True
+        merged["measured"] = old.get("measured") or stamp
+        kept.append(merged)
+    return kept
+
+
 def run_probe(safe: Safe | None, out_path: Path) -> dict:
     rows: list[dict] = []
     host: Host | None = None
@@ -1945,6 +2059,17 @@ def run_probe(safe: Safe | None, out_path: Path) -> dict:
         if host is not None:
             host.close()
 
+    # EN | Read the report we are about to replace, and inherit from it every
+    # EN | row this run could not measure. Reading AFTER the loop rather than
+    # EN | before is deliberate: the probes take real time, and the file on
+    # EN | disk is the freshest thing available at the moment we overwrite it.
+    # FR | Lire le rapport qu on s apprete a remplacer, et en heriter chaque
+    # FR | ligne que cette execution n a pas pu mesurer. Lire APRES la boucle
+    # FR | plutot qu avant est delibere : les sondes prennent du temps reel, et
+    # FR | le fichier sur disque est ce qu il y a de plus frais au moment ou on
+    # FR | l ecrase.
+    rows = carry_forward(rows, read_report(out_path))
+
     total = sum(r["count"] for r in rows)
     payload = {
         "ok": True,
@@ -1955,6 +2080,16 @@ def run_probe(safe: Safe | None, out_path: Path) -> dict:
             "manual": sum(r["count"] for r in rows if r["tier"] == "manual"),
             "locked": sum(r["count"] for r in rows if r["tier"] == "locked"),
             "failed": sum(1 for r in rows if not r["probed"]),
+            # EN | Of the failed rows, how many still have something to show
+            # EN | from an earlier run. `failed` alone cannot answer "is the
+            # EN | screen empty, or merely out of date", and those two call for
+            # EN | different reactions from whoever is looking at it.
+            # FR | Parmi les lignes en echec, combien ont encore quelque chose
+            # FR | a montrer d une execution anterieure. `failed` seul ne peut
+            # FR | pas repondre a « l ecran est-il vide ou seulement perime »,
+            # FR | et ces deux cas appellent deux reactions differentes de qui
+            # FR | le regarde.
+            "stale": sum(1 for r in rows if r.get("stale")),
             # EN | Per layer, so the screen can say which of the three has
             # EN | something waiting without walking the rows in three cards.
             # FR | Par couche, pour que l ecran puisse dire laquelle des trois a
@@ -2117,6 +2252,33 @@ def main() -> int:
             # FR | Publier, puis s arreter. Un ecran qui dit « pas de jeton de
             # FR | maintenance » envoie quelqu un vers le bon fichier ; un
             # FR | ecran muet l envoie dans les journaux.
+            # EN | AND REPUBLISH THE REPORT, which this path used to skip.
+            # EN | Returning here left the previous report untouched on disk,
+            # EN | and the screen renders what is on disk: every row appeared
+            # EN | current, dated now, measured never. A probe with no safe at
+            # EN | all is exactly the case carry_forward() exists for - it
+            # EN | writes the same rows back with `stale` on them, so the
+            # EN | numbers survive and the screen says they are remembered.
+            # EN | Guarded, because this is the error path: a second failure
+            # EN | while reporting the first must not replace the message the
+            # EN | operator needs with a traceback about the report.
+            # FR | ET REPUBLIER LE RAPPORT, ce que ce chemin sautait. Revenir
+            # FR | ici laissait le rapport precedent intact sur disque, et
+            # FR | l ecran affiche ce qui est sur disque : chaque ligne
+            # FR | paraissait actuelle, datee de maintenant, mesuree jamais.
+            # FR | Une sonde sans coffre du tout est precisement le cas pour
+            # FR | lequel carry_forward() existe - elle reecrit les memes
+            # FR | lignes avec `stale` dessus, les nombres survivent donc et
+            # FR | l ecran dit qu ils sont souvenus.
+            # FR | Sous garde, parce que c est le chemin d erreur : un second
+            # FR | echec pendant qu on rapporte le premier ne doit pas
+            # FR | remplacer le message dont l operateur a besoin par une
+            # FR | trace d appels a propos du rapport.
+            try:
+                run_probe(None, out_path)
+            except Exception as report_exc:  # noqa: BLE001
+                print(f"[warn] report not refreshed: {report_exc}",
+                      file=sys.stderr)
             payload = dict(exc.payload)
             payload["ok"] = False
             write_json(status_path, payload)

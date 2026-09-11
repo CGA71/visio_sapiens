@@ -332,9 +332,15 @@ admin:
   # FR | sur l'anglais rendu par le script.
   updates_infra_msg_sealed: >-
     Le coffre-fort est scellé : la sonde ne peut pas y lire l'accès SSH à
-    l'hôte, donc rien de ce qui vit sur le serveur n'est sondé et aucune
-    installation ne peut partir. Sur l'hôte, trois fois, une clé différente à
-    chaque appel — puis SONDER LE SERVEUR.
+    l'hôte. Les lignes grisées ci-dessous sont la dernière mesure connue, pas
+    l'état actuel, et aucune installation ne peut partir. Sur l'hôte, trois
+    fois, une clé différente à chaque appel — puis SONDER LE SERVEUR.
+
+  # EN | Prefixes a date. "measured 11/09/2026 14:00" — the row holds a real
+  # EN | measurement from an earlier run, and this says which run.
+  # FR | Précède une date. « mesuré le 11/09/2026 14:00 » — la ligne porte une
+  # FR | vraie mesure d'une exécution antérieure, et ceci dit laquelle.
+  updates_infra_stale: mesuré le
   updates_infra_msg_no_token: >-
     Pas de jeton de maintenance : /config/vssp/.vault_maint_token est absent.
     Le déploiement l'écrit depuis la variable VAULT_MAINT_TOKEN.

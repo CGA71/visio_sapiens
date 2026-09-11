@@ -365,6 +365,65 @@ transformer une pression sur `1.21.4` en un saut vers `2.1.0`. Côté apt
 cela veut dire `apt-get install gitlab-ce=18.3.2-ce.0` et non
 `--only-upgrade`, qui viserait le candidat, c'est-à-dire le sommet.
 
+### Un coffre scellé ne vide pas l'écran
+
+Vault se rescelle à **chaque redémarrage**, par conception : aucun
+descellement automatique n'est configuré, et c'est un choix, pas un oubli.
+L'accès SSH à l'hôte vit dans ce coffre. Un coffre scellé rend donc sept des
+huit lignes immesurables — tout ce qui est sur le serveur, plus ce qui est
+sous Docker et dans k3s.
+
+Pendant longtemps le rapport écrit dans cet état disait, pour chacune de ces
+lignes, `installed: ""`, `pending: false`, `count: 0`. L'écran l'affichait
+fidèlement : **les mises à jour hôte, GitLab et k3s listées une heure plus tôt
+disparaissaient purement et simplement**, et les compteurs tombaient à zéro.
+Ce n'était pas un cas limite — c'était chaque redémarrage.
+
+« Je n'ai pas pu mesurer ceci » et « il n'y a rien ici » sont deux faits
+différents, et le rapport publiait le second à la place du premier.
+
+`carry_forward()` hérite désormais, pour chaque ligne non mesurée, de la
+dernière mesure réelle. Trois champs distincts portent la nuance :
+
+| Champ | Question à laquelle il répond |
+|---|---|
+| `probed` | **cette** exécution a-t-elle mesuré la ligne ? |
+| `stale` | les valeurs viennent-elles d'une exécution **antérieure** qui l'a fait ? |
+| `measured` | de **quand** date cette mesure ? |
+
+Seuls les champs de **mesure** voyagent (`CARRIED` dans
+`vssp_infra_updates.py`) : le nom, le palier, l'icône, la couche, la
+politique et l'avertissement continuent de venir de `COMPONENTS`, pour
+qu'éditer la table change encore chaque ligne à l'exécution suivante.
+
+À l'écran, une ligne souvenue garde ses chiffres, perd sa couleur, et porte
+sa date en seconde ligne : *« mesuré le 11/09/2026 14:00 »*. Elle n'a pas de
+bouton INSTALLER — une installation réclame le même accès à l'hôte qui
+manquait à la sonde. La bannière ambrée au pied de la carte dit pourquoi et
+imprime la commande qui y met fin.
+
+**`measured` n'avance pas.** Une ligne déjà reportée garde l'horodatage de
+l'exécution qui a vraiment vu la machine : une semaine de redémarrages
+scellés continue de pointer sur elle, au lieu de faire glisser la date d'une
+sonde à l'autre jusqu'à paraître fraîche.
+
+**L'alternative était pire.** Ne rien écrire du tout — ce que ce fichier
+faisait avant — laisse le rapport précédent intact sur disque, et l'écran
+affiche ce qui est sur disque : de vieilles versions montrées comme
+actuelles, sans que rien nulle part ne dise qu'elles sont vieilles. La
+différence entre les deux n'est pas la donnée, c'est l'étiquette dessus.
+
+**Et pour ne plus resceller ?** Il n'y a pas de voie gratuite, et c'est le
+propos du scellement : toute automatisation revient à confier la clé à autre
+chose. `seal "transit"` la confie à un second Vault, qui ne sert que s'il
+tourne sur une machine ne redémarrant pas avec celle-ci. `seal "awskms"` /
+`gcpckms` / `azurekeyvault` la confient à un KMS distant — la seule option
+qui descelle vraiment seule sans second serveur, au prix d'une dépendance à
+Internet au démarrage et d'un identifiant IAM posé sur l'hôte. Poser les clés
+dans un fichier annule le coffre. PKCS#11/HSM est réservé à Vault
+Enterprise. Tant qu'aucune n'est choisie, ce que cette section décrit est la
+réponse : le scellement coûte trois saisies, pas un écran vide.
+
 ### Les trois paliers
 
 Les autres familles se répartissent déjà par risque — HACS en lot, jamais

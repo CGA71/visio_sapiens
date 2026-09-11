@@ -453,9 +453,16 @@ admin:
   # FR | lesquels un operateur peut reellement agir. Tout le reste retombe sur
   # FR | l anglais rendu par le script.
   updates_infra_msg_sealed: >-
-    The safe is sealed: the probe cannot read the host's SSH access out of it,
-    so nothing living on the server is probed and no install can start. On the
-    host, three times, a different key each call — then PROBE THE SERVER.
+    The safe is sealed: the probe cannot read the host's SSH access out of it.
+    The greyed rows below are the last known measurement, not the current
+    state, and no install can start. On the host, three times, a different key
+    each call — then PROBE THE SERVER.
+
+  # EN | Prefixes a date. "last measured 2026-09-11 14:00" — the row holds a
+  # EN | real measurement from an earlier run, and this says which run.
+  # FR | Precede une date. « last measured 2026-09-11 14:00 » — la ligne porte
+  # FR | une vraie mesure d une execution anterieure, et ceci dit laquelle.
+  updates_infra_stale: last measured
   updates_infra_msg_no_token: >-
     No maintenance token: /config/vssp/.vault_maint_token is missing. The
     deployment writes it from the VAULT_MAINT_TOKEN variable.

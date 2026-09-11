@@ -989,6 +989,7 @@ views:
                   {{ '{%' }} set infra_label = '{{ t('admin.updates_infra') | js }}' {{ '%}' }}
                   {{ '{%' }} set stepword = '{{ t('admin.updates_infra_steps') | js }}' {{ '%}' }}
                   {{ '{%' }} set unprobed = '{{ t('admin.updates_infra_notprobed') | js }}' {{ '%}' }}
+                  {{ '{%' }} set staleword = '{{ t('admin.updates_infra_stale') | js }}' {{ '%}' }}
                   {{ '{%' }} set names = {
                     'os_packages':   '{{ t('admin.updates_infra_os_packages') | js }}',
                     'os_reboot':     '{{ t('admin.updates_infra_os_reboot') | js }}',
@@ -1015,6 +1016,7 @@ views:
                     {%- if r.installed %} · `{{ r.installed }}`{% endif %}
                     {%- if r.next %} → `{{ r.next }}`{% endif %}
                     {%- if (r.steps | default(1) | int) > 1 %} ({{ r.steps }} {{ stepword }} → `{{ r.latest }}`){% endif %}
+                    {%- if r.stale %} _({{ staleword }} {{ r.measured[:16] | replace('T', ' ') }})_{% endif %}
                   {% endfor %}{% elif rows | rejectattr('probed') | list %}
                   _{{ unprobed }}_
                   {% else %}
@@ -1197,6 +1199,7 @@ views:
                   'docker': '{{ t('admin.updates_infra_where_docker') | js }}',
                   'k3s':    '{{ t('admin.updates_infra_where_k3s') | js }}' } {{ '%}' }}
                 {{ '{%' }} set stepword = '{{ t('admin.updates_infra_steps') | js }}' {{ '%}' }}
+                {{ '{%' }} set staleword = '{{ t('admin.updates_infra_stale') | js }}' {{ '%}' }}
                 {%+ raw %}{% set rows = state_attr('sensor.vssp_updates_infra', 'components') or [] %}
                 {% if not rows %}
                 _{% endraw +%}{{ t('admin.updates_infra_never_probed') }}{%+ raw %}_
@@ -1214,7 +1217,8 @@ views:
                   {%- if r.installed %} · `{{ r.installed }}`{% endif %}
                   {%- if r.next %} → `{{ r.next }}`{% endif %}
                   {%- if (r.steps | default(0) | int) > 1 %} ({{ r.steps }} {{ stepword }} → `{{ r.latest }}`){% endif %}
-                  {%- if not r.probed %} · ⚠{% endif %}
+                  {%- if r.stale %} · _{{ staleword }} {{ r.measured[:16] | replace('T', ' ') }}_
+                  {%- elif not r.probed %} · ⚠{% endif %}
                 {% endfor %}
                 {% endif %}
                 {% endfor %}
@@ -1297,6 +1301,7 @@ views:
                     required:  '{{ t('admin.updates_infra_required') | js }}',
                     notreq:    '{{ t('admin.updates_infra_not_required') | js }}',
                     unprobed:  '{{ t('admin.updates_infra_notprobed') | js }}',
+                    stale:     '{{ t('admin.updates_infra_stale') | js }}',
                     images:    '{{ t('admin.updates_infra_images') | js }}',
                     workloads: '{{ t('admin.updates_infra_workloads') | js }}',
                     install:   '{{ t('admin.updates_infra_install') | js }}',
@@ -1393,8 +1398,18 @@ views:
                   // FR | bouton » plutot que « que fait ce bouton » — et tout
                   // FR | tasser dans une cellule rendait l ensemble illisible.
                   const why = r => L.txt[r.reason_key] || '';
-                  const detail = r => {
-                    if (!r.probed) return [L.unprobed, '#56707E', ''];
+                  const measure = r => {
+                    // EN | Unprobed AND nothing remembered: there is genuinely
+                    // EN | nothing to say. A row with `stale` on it falls
+                    // EN | through to the normal cases below and is labelled
+                    // EN | afterwards, because what it holds IS a real
+                    // EN | measurement - just not this run's.
+                    // FR | Non sondee ET rien en memoire : il n y a vraiment
+                    // FR | rien a dire. Une ligne portant `stale` tombe dans
+                    // FR | les cas normaux ci-dessous et est etiquetee ensuite,
+                    // FR | parce que ce qu elle contient EST une vraie
+                    // FR | mesure - simplement pas celle de cette execution.
+                    if (!r.probed && !r.stale) return [L.unprobed, '#56707E', ''];
                     if (r.key === 'os_packages') {
                       if (!r.count) return [L.uptodate, '#56707E', ''];
                       const sec = r.security
@@ -1440,6 +1455,56 @@ views:
                     if (r.installed) return [`${r.installed} · ${L.uptodate}`,
                                              '#56707E', ''];
                     return [L.uptodate, '#56707E', ''];
+                  };
+
+                  // EN | REMEMBERED, NOT SEEN - and the row has to say which.
+                  // EN | These values are real: they were measured by a run
+                  // EN | that could reach the host. They are simply not from
+                  // EN | this run, because the safe was sealed and the host
+                  // EN | credentials live inside it. Showing them as if they
+                  // EN | were current is the failure this whole change exists
+                  // EN | to avoid; hiding them is the failure it replaces.
+                  // EN | So: keep the numbers, drop the colour, and put the
+                  // EN | date on the second line. Amber on a stale row would
+                  // EN | be a claim that something is waiting RIGHT NOW, which
+                  // EN | nobody has verified since that date - grey says the
+                  // EN | same fact without the claim. The INSTALL button is
+                  // EN | already absent: action() returns nothing for a row
+                  // EN | that is not probed, and it is right to, since an
+                  // EN | install needs the same host access the probe lacked.
+                  // EN | toLocaleString() over the raw ISO stamp: this line is
+                  // EN | read by a person deciding whether "yesterday" is
+                  // EN | recent enough to act on.
+                  // FR | SOUVENUE, PAS VUE - et la ligne doit dire laquelle.
+                  // FR | Ces valeurs sont reelles : elles ont ete mesurees par
+                  // FR | une execution qui pouvait joindre l hote. Elles ne
+                  // FR | sont simplement pas de cette execution-ci, parce que
+                  // FR | le coffre etait scelle et que l acces a l hote vit
+                  // FR | dedans. Les montrer comme actuelles est l echec que
+                  // FR | tout ce changement existe pour eviter ; les cacher est
+                  // FR | l echec qu il remplace.
+                  // FR | Donc : garder les nombres, retirer la couleur, et
+                  // FR | mettre la date sur la seconde ligne. De l ambre sur
+                  // FR | une ligne perimee affirmerait que quelque chose attend
+                  // FR | MAINTENANT, ce que personne n a verifie depuis cette
+                  // FR | date - le gris dit le meme fait sans l affirmation.
+                  // FR | Le bouton INSTALLER est deja absent : action() ne
+                  // FR | renvoie rien pour une ligne non sondee, et c est juste,
+                  // FR | puisqu une installation demande le meme acces a l hote
+                  // FR | qui manquait a la sonde.
+                  // FR | toLocaleString() plutot que l ISO brut : cette ligne
+                  // FR | est lue par quelqu un qui decide si « hier » est assez
+                  // FR | recent pour agir dessus.
+                  const when = s => {
+                    const d = new Date(s);
+                    return isNaN(d) ? s : d.toLocaleString(undefined,
+                      {dateStyle: 'short', timeStyle: 'short'});
+                  };
+                  const detail = r => {
+                    const [text, colour, sub] = measure(r);
+                    if (!r.stale) return [text, colour, sub];
+                    const age = `${L.stale} ${when(r.measured)}`;
+                    return [text, '#7E8E96', sub ? `${sub} · ${age}` : age];
                   };
 
                   // EN | The button is the ONLY thing that changes anything,
