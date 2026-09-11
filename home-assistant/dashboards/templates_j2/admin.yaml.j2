@@ -945,13 +945,59 @@ views:
               # FR | balise de BLOC — le piege dans lequel un bloc raw pose
               # FR | sur cette ligne serait tombe tout droit, ramenant le
               # FR | template en colonne zero et cassant le YAML.
+              #
+              # EN | THE FOURTH FAMILY, and it was missing from the one card
+              # EN | whose whole job is naming what is waiting. The card beside
+              # EN | this one counts four families; this one enumerated three.
+              # EN | So an instance whose only pending update was
+              # EN | infrastructure — a safe three series behind, say — read
+              # EN | "Infrastructure 1" on the left and three em-dashes on the
+              # EN | right. The panel looked broken because it was incomplete.
+              # EN | It could not be a fourth entry in `groups` either. The
+              # EN | other three read an `entity_ids` attribute and follow it to
+              # EN | `update.*` entities; infrastructure HAS no entities, which
+              # EN | is the entire reason it needed a probe of its own. So it
+              # EN | reads the components list — the same source the light and
+              # EN | the button card read — and shows `next` rather than
+              # EN | `latest`: what is waiting is the step you can actually
+              # EN | take, with the rest of the road in brackets after it.
+              # FR | LA QUATRIEME FAMILLE, et elle manquait a la seule carte
+              # FR | dont le travail est precisement de nommer ce qui attend.
+              # FR | La carte d a cote compte quatre familles ; celle-ci en
+              # FR | enumerait trois. Une instance dont la seule mise a jour en
+              # FR | attente etait l infrastructure — un coffre avec trois
+              # FR | series de retard, par exemple — lisait donc
+              # FR | « Infrastructure 1 » a gauche et trois tirets cadratins a
+              # FR | droite. Le volet avait l air casse parce qu il etait
+              # FR | incomplet.
+              # FR | Ce ne pouvait pas non plus etre une quatrieme entree dans
+              # FR | `groups`. Les trois autres lisent un attribut `entity_ids`
+              # FR | et le suivent jusqu a des entites `update.*` ;
+              # FR | l infrastructure N A pas d entites, ce qui est toute la
+              # FR | raison pour laquelle il lui fallait sa propre sonde. Elle
+              # FR | lit donc la liste des composants — la meme source que le
+              # FR | feu et la carte a boutons — et affiche `next` plutot que
+              # FR | `latest` : ce qui attend, c est l etape que vous pouvez
+              # FR | reellement faire, le reste de la route entre parentheses.
               - type: markdown
                 title: "{{ t('admin.updates_pending') }}"
                 content: |
                   {{ '{%' }} set groups = [
-                       ('sensor.vssp_updates_system', '{{ t('admin.updates_system') }}'),
-                       ('sensor.vssp_updates_hacs', '{{ t('admin.updates_hacs') }}'),
-                       ('sensor.vssp_updates_firmware', '{{ t('admin.updates_firmware') }}')] {{ '%}' }}
+                       ('sensor.vssp_updates_system', '{{ t('admin.updates_system') | js }}'),
+                       ('sensor.vssp_updates_hacs', '{{ t('admin.updates_hacs') | js }}'),
+                       ('sensor.vssp_updates_firmware', '{{ t('admin.updates_firmware') | js }}')] {{ '%}' }}
+                  {{ '{%' }} set infra_label = '{{ t('admin.updates_infra') | js }}' {{ '%}' }}
+                  {{ '{%' }} set stepword = '{{ t('admin.updates_infra_steps') | js }}' {{ '%}' }}
+                  {{ '{%' }} set unprobed = '{{ t('admin.updates_infra_notprobed') | js }}' {{ '%}' }}
+                  {{ '{%' }} set names = {
+                    'os_packages':   '{{ t('admin.updates_infra_os_packages') | js }}',
+                    'os_reboot':     '{{ t('admin.updates_infra_os_reboot') | js }}',
+                    'k3s':           '{{ t('admin.updates_infra_k3s') | js }}',
+                    'gitlab_runner': '{{ t('admin.updates_infra_gitlab_runner') | js }}',
+                    'gitlab':        '{{ t('admin.updates_infra_gitlab') | js }}',
+                    'vault':         '{{ t('admin.updates_infra_vault') | js }}',
+                    'docker_images': '{{ t('admin.updates_infra_docker_images') | js }}',
+                    'k3s_workloads': '{{ t('admin.updates_infra_k3s_workloads') | js }}' } {{ '%}' }}
                   {%+ raw %}{% for eid, label in groups %}
                   **{{ label }}**
                   {% set ids = state_attr(eid, 'entity_ids') or [] %}
@@ -960,7 +1006,20 @@ views:
                   {% endfor %}{% else %}
                   _—_
                   {% endif %}
-                  {% endfor %}{% endraw +%}
+                  {% endfor %}
+                  **{{ infra_label }}**
+                  {% set rows = state_attr('sensor.vssp_updates_infra', 'components') or [] %}
+                  {% set waiting = rows | selectattr('pending') | list %}
+                  {% if waiting %}{% for r in waiting %}
+                  - {{ names.get(r.key, r.key) }}
+                    {%- if r.installed %} · `{{ r.installed }}`{% endif %}
+                    {%- if r.next %} → `{{ r.next }}`{% endif %}
+                    {%- if (r.steps | default(1) | int) > 1 %} ({{ r.steps }} {{ stepword }} → `{{ r.latest }}`){% endif %}
+                  {% endfor %}{% elif rows | rejectattr('probed') | list %}
+                  _{{ unprobed }}_
+                  {% else %}
+                  _—_
+                  {% endif %}{% endraw +%}
                 card_mod:
                   style: |
                     ha-card {
@@ -1121,23 +1180,23 @@ views:
               title: "{{ t('admin.updates_infra_state') }}"
               content: |
                 {{ '{%' }} set names = {
-                  'os_packages':   '{{ t('admin.updates_infra_os_packages') }}',
-                  'os_reboot':     '{{ t('admin.updates_infra_os_reboot') }}',
-                  'k3s':           '{{ t('admin.updates_infra_k3s') }}',
-                  'gitlab_runner': '{{ t('admin.updates_infra_gitlab_runner') }}',
-                  'gitlab':        '{{ t('admin.updates_infra_gitlab') }}',
-                  'vault':         '{{ t('admin.updates_infra_vault') }}',
-                  'docker_images': '{{ t('admin.updates_infra_docker_images') }}',
-                  'k3s_workloads': '{{ t('admin.updates_infra_k3s_workloads') }}' } {{ '%}' }}
+                  'os_packages':   '{{ t('admin.updates_infra_os_packages') | js }}',
+                  'os_reboot':     '{{ t('admin.updates_infra_os_reboot') | js }}',
+                  'k3s':           '{{ t('admin.updates_infra_k3s') | js }}',
+                  'gitlab_runner': '{{ t('admin.updates_infra_gitlab_runner') | js }}',
+                  'gitlab':        '{{ t('admin.updates_infra_gitlab') | js }}',
+                  'vault':         '{{ t('admin.updates_infra_vault') | js }}',
+                  'docker_images': '{{ t('admin.updates_infra_docker_images') | js }}',
+                  'k3s_workloads': '{{ t('admin.updates_infra_k3s_workloads') | js }}' } {{ '%}' }}
                 {{ '{%' }} set tiers = {
-                  'auto':   '{{ t('admin.updates_infra_auto') }}',
-                  'manual': '{{ t('admin.updates_infra_manual') }}',
-                  'locked': '{{ t('admin.updates_infra_locked') }}' } {{ '%}' }}
+                  'auto':   '{{ t('admin.updates_infra_auto') | js }}',
+                  'manual': '{{ t('admin.updates_infra_manual') | js }}',
+                  'locked': '{{ t('admin.updates_infra_locked') | js }}' } {{ '%}' }}
                 {{ '{%' }} set wheres = {
-                  'host':   '{{ t('admin.updates_infra_where_host') }}',
-                  'docker': '{{ t('admin.updates_infra_where_docker') }}',
-                  'k3s':    '{{ t('admin.updates_infra_where_k3s') }}' } {{ '%}' }}
-                {{ '{%' }} set stepword = '{{ t('admin.updates_infra_steps') }}' {{ '%}' }}
+                  'host':   '{{ t('admin.updates_infra_where_host') | js }}',
+                  'docker': '{{ t('admin.updates_infra_where_docker') | js }}',
+                  'k3s':    '{{ t('admin.updates_infra_where_k3s') | js }}' } {{ '%}' }}
+                {{ '{%' }} set stepword = '{{ t('admin.updates_infra_steps') | js }}' {{ '%}' }}
                 {%+ raw %}{% set rows = state_attr('sensor.vssp_updates_infra', 'components') or [] %}
                 {% if not rows %}
                 _{% endraw +%}{{ t('admin.updates_infra_never_probed') }}{%+ raw %}_
