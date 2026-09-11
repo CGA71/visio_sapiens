@@ -311,17 +311,60 @@ admin:
   updates_infra_required: redémarrage requis
   updates_infra_not_required: aucun redémarrage requis
   updates_infra_notprobed: non sondé
-  updates_infra_confirm: >-
-    Cela interrompt le service plusieurs minutes. Continuer ?
   updates_infra_auto_enabled: Mettre à jour l'infrastructure automatiquement
   updates_infra_never_probed: >-
     Jamais sondé. Appuyez sur SONDER LE SERVEUR, et vérifiez que le
     coffre-fort contient vssp/infra/host_ssh si rien ne revient.
   updates_infra_locked_note: >-
-    k3s, Vault et les images Docker sont remontés mais jamais installés
-    depuis la console : chacun redémarre le cluster ou le coffre-fort
-    depuis lequel cet écran est servi.
+    Une seule étape par pression : chaque composant n'avance que jusqu'à la
+    version où son éditeur supporte d'arriver, jamais directement jusqu'à la
+    plus récente. Les lignes verrouillées disent chacune pourquoi elles le
+    sont.
   updates_infra_reboot_note: L'hôte attend un redémarrage
+
+  # EN | The layer a component lives in — the heading the rows are grouped
+  # EN | under. Three different blast radiuses, named.
+  # FR | La couche où vit un composant — le titre sous lequel les lignes sont
+  # FR | regroupées. Trois rayons d'explosion différents, nommés.
+  updates_infra_where_host: Sur le serveur — Ubuntu
+  updates_infra_where_docker: Sous Docker — à côté du cluster
+  updates_infra_where_k3s: Dans le cluster k3s
+
+  # EN | The stepped upgrade path, in the words the rows use.
+  # FR | Le chemin de mise à niveau par étapes, dans les mots des lignes.
+  updates_infra_steps: étapes
+  updates_infra_then: puis
+  updates_infra_workloads: charge(s)
+
+  # EN | Why a locked component is locked, one sentence per component.
+  # FR | Pourquoi un composant verrouillé l'est, une phrase par composant.
+  updates_infra_why_docker_images: >-
+    Chaque image est épinglée par le fichier qui a lancé son conteneur ; la
+    changer d'ici choisirait à la place de son propriétaire.
+  updates_infra_why_k3s_workloads: >-
+    Changer une image du cluster veut dire modifier un manifeste, et les
+    manifestes ne vivent pas dans ce dépôt.
+
+  # EN | What a heavy button costs, said before it is pressed rather than
+  # EN | discovered after. One per component, because "this interrupts service"
+  # EN | described none of them well.
+  # FR | Ce que coûte un bouton lourd, dit avant la pression plutôt que
+  # FR | découvert après. Un par composant, parce que « cela interrompt le
+  # FR | service » n'en décrivait aucun correctement.
+  updates_infra_confirm_reboot: >-
+    L'hôte redémarre dans une minute. Home Assistant et le cluster tombent
+    avec lui. Continuer ?
+  updates_infra_confirm_gitlab: >-
+    GitLab s'arrête le temps de ses migrations de base, plusieurs minutes.
+    Faites une sauvegarde avant. Continuer ?
+  updates_infra_confirm_vault: >-
+    Le coffre-fort redémarre et SE RESCELLE : il faudra ressaisir 3 des 5
+    clés de descellement pour que l'écran COFFRE-FORT refonctionne.
+    Continuer ?
+  updates_infra_confirm_k3s: >-
+    Le cluster redémarre, et Home Assistant avec lui : cet écran va se
+    déconnecter plusieurs minutes. La mise à niveau se termine seule sur le
+    serveur. Continuer ?
 
   # EN | One label per component, keyed as the COMPONENTS table declares them.
   # FR | Un libellé par composant, avec la clé que déclare la table COMPONENTS.
@@ -331,7 +374,8 @@ admin:
   updates_infra_gitlab_runner: Runner GitLab
   updates_infra_gitlab: GitLab
   updates_infra_vault: Coffre-fort Vault
-  updates_infra_docker_images: Images Docker
+  updates_infra_docker_images: Autres conteneurs Docker
+  updates_infra_k3s_workloads: Charges du cluster
   discovery: SCAN DE DÉCOUVERTE
   upgrade: MISE À NIVEAU
   generate: GÉNÉRER LES DASHBOARDS

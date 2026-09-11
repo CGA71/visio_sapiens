@@ -15,6 +15,32 @@
 ########################################################################
 services:
   vault:
+    # EN | THIS LINE IS REWRITTEN ON THE HOST by the UPDATES screen. Pressing
+    # EN | INSTALL on the Coffre-fort row runs install_vault() in
+    # EN | vssp/vssp_infra_updates.py, which seds this image tag to the next
+    # EN | supported version and runs `docker compose up -d` in
+    # EN | /opt/vssp-vault. So the tag here is the version a FRESH install
+    # EN | starts on, not necessarily the one running: ask the screen, or
+    # EN | `docker exec vssp-vault vault version`.
+    # EN | Re-copying this file over a host that has been upgraded therefore
+    # EN | pins it BACK. That shows up on the screen as an update pending
+    # EN | again rather than silently, but bump this line when you bump the
+    # EN | host, and never skip a minor series in it — see the upgrade
+    # EN | policies in vssp_infra_updates.py for why.
+    # FR | CETTE LIGNE EST REECRITE SUR L HOTE par l ecran MISES A JOUR.
+    # FR | Appuyer sur INSTALLER sur la ligne Coffre-fort execute
+    # FR | install_vault() dans vssp/vssp_infra_updates.py, qui sede ce tag
+    # FR | d image vers la prochaine version supportee et lance
+    # FR | `docker compose up -d` dans /opt/vssp-vault. Le tag ici est donc la
+    # FR | version sur laquelle demarre une installation NEUVE, pas forcement
+    # FR | celle qui tourne : demander a l ecran, ou
+    # FR | `docker exec vssp-vault vault version`.
+    # FR | Recopier ce fichier par-dessus un hote deja mis a niveau le rabat
+    # FR | donc EN ARRIERE. Cela apparait a l ecran comme une mise a jour de
+    # FR | nouveau en attente plutot qu en silence, mais mettre cette ligne a
+    # FR | jour quand on met l hote a jour, et ne jamais y sauter une serie
+    # FR | mineure — voir les politiques de mise a niveau dans
+    # FR | vssp_infra_updates.py pour pourquoi.
     image: hashicorp/vault:1.20
     container_name: vssp-vault
     restart: unless-stopped

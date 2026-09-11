@@ -479,12 +479,25 @@ template:
               {% set lm = lv | regex_findall('\d+') %}
               {% set major = im | count > 0 and lm | count > 0
                              and (lm | first | int) > (im | first | int) %}
+              {# EN | `next` and `steps` exist on every item so the card
+                 EN | never has to know which half of the list it is reading.
+                 EN | A Home Assistant update is always one press to the latest
+                 EN | version, so next IS latest here and steps is 1. The infra
+                 EN | half below is where the two come apart.
+                 FR | `next` et `steps` existent sur chaque element pour que la
+                 FR | carte n ait jamais a savoir quelle moitie de la liste elle
+                 FR | lit. Une mise a jour Home Assistant est toujours une
+                 FR | pression vers la derniere version, donc next EST latest
+                 FR | ici et steps vaut 1. C est dans la moitie infra ci-dessous
+                 FR | que les deux se separent. #}
               {% set ns.rows = ns.rows + [{
                    'name': u.attributes.friendly_name | default(u.entity_id, true),
                    'kind': 'major' if major else 'patch',
                    'source': 'ha',
                    'installed': iv,
-                   'latest': lv }] %}
+                   'latest': lv,
+                   'next': lv,
+                   'steps': 1 }] %}
             {% endfor %}
             {% for r in state_attr('sensor.vssp_updates_infra', 'components') or [] %}
               {% set iv = r.installed | default('', true) | string %}
@@ -494,12 +507,29 @@ template:
               {% set major = im | count > 0 and lm | count > 0
                              and (lm | first | int) > (im | first | int) %}
               {% if major or r.pending %}
+                {# EN | `latest` still decides the COLOUR: being three series
+                   EN | behind is a major-version fact whatever the first step
+                   EN | happens to be, and the light is about how far behind the
+                   EN | house is. `next` decides what the list SHOWS beside the
+                   EN | arrow, because that is the version a press installs. The
+                   EN | two used to be one field, which is why the light and the
+                   EN | button could describe different upgrades.
+                   FR | `latest` decide toujours de la COULEUR : avoir trois
+                   FR | series de retard est un fait de version majeure quelle
+                   FR | que soit la premiere etape, et le feu parle du retard de
+                   FR | la maison. `next` decide de ce que la liste AFFICHE a
+                   FR | cote de la fleche, parce que c est la version
+                   FR | qu installe une pression. Les deux ne faisaient qu un
+                   FR | champ, d ou un feu et un bouton capables de decrire deux
+                   FR | mises a niveau differentes. #}
                 {% set ns.rows = ns.rows + [{
                      'name': r.key,
                      'kind': 'major' if major else 'patch',
                      'source': 'infra',
                      'installed': iv,
-                     'latest': lv }] %}
+                     'latest': lv,
+                     'next': r.next | default(lv, true) | string,
+                     'steps': r.steps | default(1) | int }] %}
               {% endif %}
             {% endfor %}
             {{ ns.rows }}

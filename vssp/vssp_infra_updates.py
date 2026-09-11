@@ -90,6 +90,45 @@
 # FR | n ecrit pas.
 #
 # ---------------------------------------------------------------------------
+# EN | THE TWO THINGS A ROW HAS TO SAY, AND DID NOT
+# EN | A row used to carry a name, a version pair and a button. Two questions
+# EN | anyone actually asks of an infrastructure update had no answer on it.
+# EN | WHERE DOES THIS LIVE. The Ubuntu host, a Docker container beside the
+# EN | cluster, and a workload inside the cluster are three different blast
+# EN | radiuses, and they sat in one flat list of seven rows that never named
+# EN | the difference. Restarting Vault costs a reseal; restarting k3s takes
+# EN | Home Assistant with it. Every component now declares its layer and the
+# EN | screen groups on it — and the cluster, which used to appear only as a
+# EN | version number, now lists what is running inside it.
+# EN | HOW FAR IS ONE PRESS. "Latest upstream" is an instruction on an apt
+# EN | package and a trap on a component that may not skip a minor version.
+# EN | See the UPGRADE POLICIES section for the whole argument; the short form
+# EN | is that a row now publishes the NEXT supported version, the path after
+# EN | it, and how many steps that is — so a safe on 1.20.4 is offered 1.21.4
+# EN | and told there are two more stops, instead of being offered 2.1.0 and a
+# EN | button that would skip two storage migrations.
+# FR | LES DEUX CHOSES QU UNE LIGNE DOIT DIRE, ET NE DISAIT PAS
+# FR | Une ligne portait un nom, un couple de versions et un bouton. Deux
+# FR | questions que l on se pose reellement devant une mise a jour
+# FR | d infrastructure n y trouvaient aucune reponse.
+# FR | OU CECI VIT-IL. L hote Ubuntu, un conteneur Docker a cote du cluster et
+# FR | une charge dans le cluster sont trois rayons d explosion differents, et
+# FR | ils tenaient dans une seule liste plate de sept lignes qui ne nommait
+# FR | jamais la difference. Redemarrer Vault coute un rescellement ;
+# FR | redemarrer k3s emporte Home Assistant. Chaque composant declare
+# FR | desormais sa couche et l ecran regroupe dessus — et le cluster, qui
+# FR | n apparaissait que comme un numero de version, liste maintenant ce qui
+# FR | tourne dedans.
+# FR | JUSQU OU VA UNE PRESSION. « Le dernier amont » est une consigne sur un
+# FR | paquet apt et un piege sur un composant qui ne peut pas sauter une
+# FR | version mineure. Voir la section POLITIQUES DE MISE A NIVEAU pour tout
+# FR | l argument ; en bref, une ligne publie desormais la PROCHAINE version
+# FR | supportee, le chemin qui la suit, et combien d etapes cela represente —
+# FR | pour qu un coffre en 1.20.4 se voie proposer 1.21.4 avec deux escales
+# FR | annoncees, au lieu de se voir proposer 2.1.0 et un bouton qui sauterait
+# FR | deux migrations de stockage.
+#
+# ---------------------------------------------------------------------------
 # EN | THE THREE TIERS — the same philosophy the other families already
 # EN | follow, applied to things that can take the house offline.
 # EN |   auto     may be installed unattended by the nightly pass. Reversible,
@@ -98,11 +137,36 @@
 # EN |   manual   never installed unattended, whatever the switch says. One
 # EN |            row, one button, one confirmation: GitLab, k3s, Vault,
 # EN |            the host reboot.
-# EN |   locked   reported and never installable from here at all.
+# EN |   locked   reported and never installable from here at all, and each
+# EN |            locked component now says WHY in its own words — a generic
+# EN |            note under a chip explained nothing about the row it sat on.
 # EN | The tier is a property of the COMPONENT, declared in the table below,
 # EN | not a decision the dashboard makes. A card cannot promote a component
 # EN | to auto by rendering it differently, and the nightly pass filters on
 # EN | this field rather than on anything the UI sent it.
+# EN | k3s and Vault were `locked` and both were wrongly so, for different
+# EN | reasons. Vault is a plain Docker container beside the cluster, not in
+# EN | it, so recreating it costs a reseal and nothing else. k3s really does
+# EN | take Home Assistant down with it — but so does the host reboot, which
+# EN | has been a button all along, and the fix for "this kills the session
+# EN | that pressed it" is to detach the command, not to refuse the operation.
+# EN | What was actually dangerous about both was aiming them at the newest
+# EN | release, and that is what the upgrade policies below fix.
+# FR |   manual   jamais installe sans surveillance, quoi que dise
+# FR |            l interrupteur. Une ligne, un bouton, une confirmation.
+# FR |   locked   remonte, jamais installable d ici, et chaque composant
+# FR |            verrouille dit desormais POURQUOI avec ses propres mots — une
+# FR |            note generique sous une pastille n expliquait rien sur la
+# FR |            ligne ou elle se trouvait.
+# FR | k3s et Vault etaient `locked` et tous deux a tort, pour des raisons
+# FR | differentes. Vault est un simple conteneur Docker a cote du cluster, pas
+# FR | dedans : le recreer coute un rescellement et rien d autre. k3s emporte
+# FR | reellement Home Assistant avec lui — mais le redemarrage de l hote aussi,
+# FR | et il est un bouton depuis toujours ; la reponse a « ceci tue la session
+# FR | qui l a presse » est de detacher la commande, pas de refuser
+# FR | l operation. Ce qui etait reellement dangereux sur les deux, c etait de
+# FR | les viser sur la release la plus recente, et c est ce que corrigent les
+# FR | politiques de mise a niveau plus bas.
 # FR | LES TROIS PALIERS — la philosophie que suivent deja les autres
 # FR | familles, appliquee a des choses capables de mettre la maison a
 # FR | l arret.
@@ -171,6 +235,19 @@ SECRET_GITLAB = "gitlab"       # url, token
 
 HTTP_TIMEOUT = 15
 SSH_TIMEOUT = 120
+
+# EN | Where the upstream ladder of each versioned component is published.
+# EN | Named here rather than inline in the probes so a component that moves
+# EN | registry is one edit, and so the installers can ask the same source the
+# EN | probes did — the version a button installs must be a version the screen
+# EN | actually offered.
+# FR | Ou est publiee l echelle amont de chaque composant versionne. Nommees
+# FR | ici plutot qu en dur dans les sondes pour qu un composant qui change de
+# FR | registre soit une seule modification, et pour que les installateurs
+# FR | interrogent la meme source que les sondes — la version qu installe un
+# FR | bouton doit etre une version que l ecran a reellement proposee.
+K3S_REPO = "k3s-io/k3s"
+VAULT_IMAGE_REPO = "hashicorp/vault"
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -367,6 +444,75 @@ class Host:
             return self._run_binary(command, sudo)
         return self._run_paramiko(command, sudo)
 
+    def put_script(self, script: str, path: str) -> tuple[int, str, str]:
+        """EN | Write a shell script to the host and make it executable.
+        EN | Sending a multi-line script as a FILE is the only sane way to run
+        EN | anything with quotes in it over ssh: a command string here travels
+        EN | through the local argv, the remote login shell and sometimes sudo
+        EN | as well, and a sed expression with a brace or a pipe in it does not
+        EN | survive all three intact. The heredoc is quoted, so the remote
+        EN | shell expands nothing at all while writing the file.
+        FR | Ecrire un script shell sur l hote et le rendre executable.
+        FR | Envoyer un script multi-lignes comme FICHIER est la seule facon
+        FR | saine d executer quoi que ce soit contenant des guillemets par
+        FR | ssh : une chaine de commande traverse ici l argv local, le shell de
+        FR | connexion distant et parfois sudo en plus, et une expression sed
+        FR | avec une accolade ou un tube n y survit pas intacte. Le heredoc est
+        FR | quote, donc le shell distant n expanse rien du tout en ecrivant le
+        FR | fichier."""
+        body = script if script.endswith("\n") else script + "\n"
+        return self.run(
+            f"cat > {path} <<'VSSP_EOF'\n{body}VSSP_EOF\nchmod 700 {path}")
+
+    def run_detached(self, path: str) -> tuple[int, str, str]:
+        """EN | Start a script and return without waiting for it, stdin closed
+        EN | and the session left behind.
+        EN | For an operation that takes down the thing running this process.
+        EN | install_os_reboot gets away with staying attached because
+        EN | `shutdown -r +1` schedules the work and returns; a k3s upgrade has
+        EN | no such courtesy, and without setsid it dies with the ssh session
+        EN | the restarting cluster kills. Attached, that is indistinguishable
+        EN | from a failed upgrade — the same trap the reboot installer already
+        EN | documents.
+        EN | The log stays on the host: there is no process left on this side to
+        EN | read it into.
+        FR | Lancer un script et rendre la main sans l attendre, entree standard
+        FR | fermee et session laissee derriere.
+        FR | Pour une operation qui emporte ce qui execute ce processus.
+        FR | install_os_reboot peut rester attache parce que `shutdown -r +1`
+        FR | programme le travail et rend la main ; une mise a niveau k3s n a pas
+        FR | cette courtoisie, et sans setsid elle meurt avec la session ssh que
+        FR | tue le cluster qui redemarre. Attachee, c est indiscernable d une
+        FR | mise a niveau en echec — le meme piege que documente deja
+        FR | l installateur de redemarrage.
+        FR | Le journal reste sur l hote : il n y a plus de processus de ce cote
+        FR | pour le lire."""
+        return self.run(
+            f"sh -c 'setsid {path} >{path}.log 2>&1 </dev/null &'", sudo=True)
+
+    def run_maybe_sudo(self, command: str) -> tuple[int, str, str]:
+        """EN | Run a command that MAY need root, without demanding it.
+        EN | Whether `docker ps` or `k3s kubectl` answers unprivileged depends
+        EN | on how the host was set up — whether the account is in the docker
+        EN | group, whether k3s was started with --write-kubeconfig-mode — and
+        EN | both answers are normal. Trying plain first means a
+        EN | correctly-configured host never needs the sudo password out of the
+        EN | safe to be PROBED, and a locked-down one still gets probed rather
+        EN | than reporting its whole Docker and cluster layer as unknown.
+        FR | Executer une commande qui PEUT avoir besoin de root, sans
+        FR | l exiger. Que `docker ps` ou `k3s kubectl` reponde sans privilege
+        FR | depend de la facon dont l hote a ete installe — compte dans le
+        FR | groupe docker ou non, k3s demarre avec --write-kubeconfig-mode ou
+        FR | non — et les deux reponses sont normales. Essayer d abord sans
+        FR | privilege fait qu un hote correctement configure n a jamais besoin
+        FR | du mot de passe sudo du coffre pour etre SONDE, et qu un hote
+        FR | verrouille est sonde quand meme au lieu de remonter toute sa couche
+        FR | Docker et cluster comme inconnue."""
+        code, out, err = self.run(command)
+        if code == 0:
+            return code, out, err
+        return self.run(command, sudo=True)
+
     def _ensure_key_file(self) -> Path:
         if self._key_path is not None:
             return self._key_path
@@ -461,22 +607,68 @@ class Host:
 # FR | d echouer : une instance sans reseau sortant garde une colonne INSTALLE
 # FR | complete, et le composant remonte un amont « inconnu » plutot que de
 # FR | disparaitre de l ecran.
+# EN | Answers are cached for the length of one run, failures included. The
+# EN | k3s probe reads the release list and install_k3s reads it again to
+# EN | recover the exact +k3s tag; a second round trip for an answer already
+# EN | in memory is one more thing that can fail BETWEEN the version the
+# EN | screen offered and the version that gets installed. Caching the
+# EN | failures too bounds a run on an instance with no outbound network to
+# EN | one timeout per URL instead of one per caller.
+# FR | Les reponses sont mises en cache le temps d une execution, echecs
+# FR | compris. La sonde k3s lit la liste des releases et install_k3s la relit
+# FR | pour retrouver le tag +k3s exact ; un second aller-retour pour une
+# FR | reponse deja en memoire, c est une chose de plus qui peut echouer ENTRE
+# FR | la version proposee par l ecran et celle qui s installe. Mettre aussi
+# FR | les echecs en cache borne une execution sans reseau sortant a un
+# FR | timeout par URL au lieu d un par appelant.
+_HTTP_CACHE: dict = {}
+
+
 def http_json(url: str, headers: dict | None = None) -> dict | list | None:
+    if url in _HTTP_CACHE:
+        return _HTTP_CACHE[url]
     req = urllib.request.Request(url, headers=headers or {})
     try:
         with urllib.request.urlopen(req, timeout=HTTP_TIMEOUT) as resp:
-            return json.loads(resp.read().decode("utf-8"))
+            data = json.loads(resp.read().decode("utf-8"))
     except Exception:
-        return None
+        data = None
+    _HTTP_CACHE[url] = data
+    return data
 
 
-def github_latest(repo: str) -> str:
-    data = http_json(f"https://api.github.com/repos/{repo}/releases/latest",
-                     {"Accept": "application/vnd.github+json",
-                      "User-Agent": "visio-sapiens"})
-    if isinstance(data, dict):
-        return (data.get("tag_name") or "").lstrip("v")
-    return ""
+def github_releases(repo: str, pages: int = 3) -> list[str]:
+    """EN | EVERY published release tag, not just the newest one.
+    EN | `releases/latest` answers a single version, which is all the old probe
+    EN | asked for — enough to say "you are behind", never enough to say what
+    EN | the next hop is. A component that may not skip a minor version needs
+    EN | the whole ladder, not its top rung. Pre-releases are dropped: an rc is
+    EN | not a stop on anybody's upgrade path.
+    FR | TOUS les tags de release publies, pas seulement le plus recent.
+    FR | `releases/latest` repond une seule version, tout ce que demandait
+    FR | l ancienne sonde — assez pour dire « vous etes en retard », jamais
+    FR | assez pour dire quelle est l etape suivante. Un composant qui ne peut
+    FR | pas sauter une version mineure a besoin de toute l echelle, pas de son
+    FR | dernier barreau. Les pre-versions sont ecartees : une rc n est une
+    FR | escale sur le chemin de personne."""
+    out: list[str] = []
+    for page in range(1, pages + 1):
+        data = http_json(
+            f"https://api.github.com/repos/{repo}/releases"
+            f"?per_page=100&page={page}",
+            {"Accept": "application/vnd.github+json",
+             "User-Agent": "visio-sapiens"})
+        if not isinstance(data, list) or not data:
+            break
+        for item in data:
+            if not isinstance(item, dict):
+                continue
+            if item.get("draft") or item.get("prerelease"):
+                continue
+            tag = (item.get("tag_name") or "").lstrip("v")
+            if tag and not re.search(r"(?i)(rc|alpha|beta|dev)\d*(\+|$)", tag):
+                out.append(tag)
+    return out
 
 
 def apt_policy(host: "Host", package: str) -> tuple[str, str]:
@@ -513,49 +705,198 @@ def apt_policy(host: "Host", package: str) -> tuple[str, str]:
     return installed, ("" if candidate == "(none)" else candidate)
 
 
-def dockerhub_latest(repo: str, pattern: str = r"^\d+\.\d+\.\d+$") -> str:
-    """EN | Highest semver tag on Docker Hub. Tags are strings and sort like
-    EN | strings, so 1.20.0 would beat 1.9.0 — compare as tuples of ints.
-    FR | Plus haut tag semver sur Docker Hub. Les tags sont des chaines et se
-    FR | trient comme telles, donc 1.20.0 battrait 1.9.0 — comparer en
-    FR | tuples d entiers."""
-    data = http_json(
-        f"https://hub.docker.com/v2/repositories/{repo}/tags"
-        "?page_size=100&ordering=last_updated")
-    if not isinstance(data, dict):
-        return ""
+def apt_versions(host: "Host", package: str) -> list[str]:
+    """EN | Every version of a package the host's repositories offer.
+    EN | apt-cache policy names the CANDIDATE and nothing else, which is enough
+    EN | to say "behind" and not enough to say "one minor at a time": the rungs
+    EN | between here and there are what madison lists. LC_ALL=C for the same
+    EN | reason as in apt_policy — this parses apt's own output.
+    FR | Toutes les versions d un paquet que proposent les depots de l hote.
+    FR | apt-cache policy nomme le CANDIDAT et rien d autre, ce qui suffit pour
+    FR | dire « en retard » et pas pour dire « une mineure a la fois » : les
+    FR | barreaux entre ici et la-bas, c est madison qui les liste. LC_ALL=C
+    FR | pour la meme raison que dans apt_policy — on analyse la sortie
+    FR | d apt."""
+    code, out, _ = host.run(f"LC_ALL=C apt-cache madison {package} 2>/dev/null")
+    if code != 0:
+        return []
+    versions: list[str] = []
+    for line in out.splitlines():
+        parts = [p.strip() for p in line.split("|")]
+        # EN | madison prints "pkg | version | source". A Sources line has the
+        # EN | same shape and is not an installable binary version.
+        # FR | madison affiche « paquet | version | source ». Une ligne Sources
+        # FR | a la meme forme et n est pas une version binaire installable.
+        if len(parts) >= 3 and parts[0] == package and "Sources" not in parts[2]:
+            versions.append(parts[1])
+    return versions
+
+
+def dockerhub_versions(repo: str, pattern: str = r"^\d+\.\d+\.\d+$",
+                       pages: int = 3) -> list[str]:
+    """EN | Every semver tag Docker Hub still publishes for an image, in
+    EN | whatever order it returns them — the caller sorts, because tags are
+    EN | strings and sort like strings: 1.9.0 would beat 1.20.0 unless they are
+    EN | compared as tuples of ints, which version_tuple does.
+    EN | The pattern deliberately rejects a two-part tag like `1.20`: that is a
+    EN | floating alias for whatever patch is newest in the series, so it is
+    EN | not a rung on a ladder.
+    FR | Tous les tags semver que Docker Hub publie encore pour une image, dans
+    FR | l ordre ou il les rend — c est l appelant qui trie, parce que les tags
+    FR | sont des chaines et se trient comme telles : 1.9.0 battrait 1.20.0 a
+    FR | moins de les comparer en tuples d entiers, ce que fait version_tuple.
+    FR | Le motif rejette volontairement un tag en deux parties comme `1.20` :
+    FR | c est un alias flottant vers le correctif le plus recent de la serie,
+    FR | donc pas un barreau d echelle."""
+    out: list[str] = []
     rx = re.compile(pattern)
-    best: tuple = ()
-    best_name = ""
-    for item in data.get("results") or []:
-        name = str(item.get("name") or "")
-        if not rx.match(name):
-            continue
-        try:
-            parts = tuple(int(p) for p in name.split("."))
-        except ValueError:
-            continue
-        if parts > best:
-            best, best_name = parts, name
-    return best_name
+    for page in range(1, pages + 1):
+        data = http_json(f"https://hub.docker.com/v2/repositories/{repo}/tags"
+                         f"?page_size=100&page={page}")
+        if not isinstance(data, dict):
+            break
+        results = data.get("results") or []
+        if not results:
+            break
+        for item in results:
+            name = str(item.get("name") or "")
+            if rx.match(name):
+                out.append(name)
+        if not data.get("next"):
+            break
+    return out
+
+
+def image_tag(image: str) -> str:
+    """EN | The tag of an image reference, or '' when it carries none. The last
+    EN | slash comes first: a registry with a port (`host:5000/img`) puts a
+    EN | colon before it and that colon is not a tag. A digest pin has no tag
+    EN | at all, by design — it is frozen on purpose.
+    FR | Le tag d une reference d image, ou '' quand elle n en porte pas. Le
+    FR | dernier slash d abord : un registre avec un port (`hote:5000/img`)
+    FR | place un deux-points avant lui, et ce deux-points n est pas un tag.
+    FR | Une image epinglee sur une empreinte n a pas de tag du tout, et c est
+    FR | voulu — elle est figee a dessein."""
+    last = (image or "").rsplit("/", 1)[-1]
+    if "@" in last:
+        return ""
+    return last.split(":", 1)[1] if ":" in last else ""
 
 
 def version_tuple(value: str) -> tuple:
     return tuple(int(p) for p in re.findall(r"\d+", value or "")) or (0,)
 
 
-def is_behind(installed: str, latest: str) -> bool:
-    """EN | Only ever answers True on a confident comparison. An empty or
-    EN | unparsable upstream is not evidence of being up to date, but it is
-    EN | not evidence of being behind either — and a false "update pending"
-    EN | on a k3s row is how someone reboots a cluster for nothing.
-    FR | Ne repond True que sur une comparaison sure. Un amont vide ou
-    FR | illisible ne prouve pas qu on est a jour, mais ne prouve pas non plus
-    FR | qu on est en retard — et un faux « mise a jour en attente » sur une
-    FR | ligne k3s, c est quelqu un qui redemarre un cluster pour rien."""
-    if not installed or not latest:
-        return False
-    return version_tuple(latest) > version_tuple(installed)
+# ═══════════════════════════════════════════════════════════════════════════
+# EN | UPGRADE POLICIES — "the latest version" is not always "the next one"
+# FR | POLITIQUES DE MISE A NIVEAU — « la derniere version » n est pas
+# FR | toujours « la suivante »
+# ═══════════════════════════════════════════════════════════════════════════
+#
+# EN | WHY THIS EXISTS
+# EN | The probe used to publish one pair per row: what is installed, and the
+# EN | highest version upstream. On an apt package that pair is also the
+# EN | instruction — apt goes from one to the other in a single step. On Vault
+# EN | it is a LIE. HashiCorp supports one minor series at a time, so a host on
+# EN | 1.20.4 reaches 2.1.0 through 1.21.x, then 2.0.x, then 2.1.0: three
+# EN | upgrades, each with its own storage and seal migration. A row that
+# EN | printed "1.20.4 → 2.1.0" beside a button was offering to skip two of
+# EN | them. The same holds for k3s, where Kubernetes forbids skipping a minor
+# EN | outright, and for GitLab, whose database migrations run per minor.
+# EN | So the ladder is a property of the COMPONENT, declared beside its tier,
+# EN | and the probe publishes the WHOLE path instead of its endpoint:
+# EN |   next    the one version a press installs — always a version the
+# EN |           vendor supports arriving at from where this host stands.
+# EN |   latest  the top of the ladder. It stays on the row because how far
+# EN |           behind you are is worth knowing; it is no longer a target.
+# EN |   path    every stop from next to latest, so the screen can say "three
+# EN |           steps" and mean it.
+# FR | POURQUOI CECI EXISTE
+# FR | La sonde publiait un couple par ligne : ce qui est installe, et la plus
+# FR | haute version amont. Sur un paquet apt, ce couple est aussi la consigne
+# FR | — apt passe de l un a l autre en une seule etape. Sur Vault c est un
+# FR | MENSONGE. HashiCorp ne supporte qu une serie mineure a la fois : un hote
+# FR | en 1.20.4 atteint 2.1.0 en passant par 1.21.x, puis 2.0.x, puis 2.1.0 —
+# FR | trois mises a niveau, chacune avec sa migration de stockage et de
+# FR | scellement. Une ligne qui affichait « 1.20.4 → 2.1.0 » a cote d un
+# FR | bouton proposait d en sauter deux. Idem pour k3s, ou Kubernetes interdit
+# FR | purement et simplement de sauter une mineure, et pour GitLab, dont les
+# FR | migrations de base tournent par mineure.
+# FR | L echelle est donc une propriete du COMPOSANT, declaree a cote de son
+# FR | palier, et la sonde publie tout le CHEMIN au lieu de son extremite :
+# FR |   next    la seule version qu installe une pression — toujours une
+# FR |           version ou l editeur supporte d arriver depuis ici.
+# FR |   latest  le sommet de l echelle. Il reste sur la ligne parce que savoir
+# FR |           de combien on est en retard a de la valeur ; ce n est plus une
+# FR |           cible.
+# FR |   path    chaque escale de next jusqu a latest, pour que l ecran puisse
+# FR |           dire « trois etapes » et le vouloir dire.
+
+# EN | Any version to any version in one move: apt resolves its own
+# EN | dependencies and the vendor supports the jump.
+# FR | N importe quelle version vers n importe quelle autre en un mouvement :
+# FR | apt resout ses dependances et l editeur supporte le saut.
+POLICY_DIRECT = "direct"
+
+# EN | One major.minor series at a time, landing on the highest patch that
+# EN | series ever published.
+# FR | Une serie majeure.mineure a la fois, en atterrissant sur le plus haut
+# FR | correctif que cette serie ait publie.
+POLICY_SERIES = "series"
+
+
+def series_of(value: str) -> tuple:
+    """EN | (major, minor) — the pair that names an upgrade series.
+    FR | (majeure, mineure) — le couple qui nomme une serie de mise a
+    FR | niveau."""
+    return (version_tuple(value) + (0, 0))[:2]
+
+
+def plan_upgrade(installed: str, available: list[str], policy: str) -> dict:
+    """EN | The road from `installed` to the top of `available`, as the vendor
+    EN | allows it to be travelled.
+    EN | Every field comes back empty when nothing waits ahead, and an empty or
+    EN | unreadable upstream is one of those cases: it is not evidence of being
+    EN | up to date, but it is not evidence of being behind either. Only a
+    EN | confident comparison ever produces a `next`, because a false "update
+    EN | pending" on the k3s row is somebody rebooting a cluster for nothing.
+    FR | La route de `installed` jusqu au sommet de `available`, telle que
+    FR | l editeur autorise a la parcourir.
+    FR | Tous les champs reviennent vides quand rien n attend, et un amont vide
+    FR | ou illisible est l un de ces cas : cela ne prouve pas qu on est a jour,
+    FR | mais ne prouve pas non plus qu on est en retard. Seule une comparaison
+    FR | sure produit un `next`, parce qu un faux « mise a jour en attente » sur
+    FR | la ligne k3s, c est quelqu un qui redemarre un cluster pour rien."""
+    empty = {"next": "", "path": [], "steps": 0, "latest": ""}
+    if not installed:
+        return empty
+    known = sorted({v for v in available if version_tuple(v) != (0,)},
+                   key=version_tuple)
+    here = version_tuple(installed)
+    ahead = [v for v in known if version_tuple(v) > here]
+    if not ahead:
+        return empty
+    latest = ahead[-1]
+    if policy != POLICY_SERIES:
+        return {"next": latest, "path": [latest], "steps": 1, "latest": latest}
+    # EN | One stop per series waiting ahead, each the highest patch known in
+    # EN | that series. A host behind within its OWN series gets that patch as
+    # EN | its first stop: both the smallest possible move and the one every
+    # EN | vendor asks for before crossing into the next minor.
+    # FR | Une escale par serie en attente, chacune au plus haut correctif
+    # FR | connu de cette serie. Un hote en retard au sein de SA serie recoit ce
+    # FR | correctif comme premiere escale : a la fois le plus petit mouvement
+    # FR | possible et celui que tout editeur reclame avant de franchir la
+    # FR | mineure suivante.
+    stops: list[str] = []
+    for one in sorted({series_of(v) for v in ahead}):
+        top = max((v for v in known if series_of(v) == one), key=version_tuple)
+        if version_tuple(top) > here:
+            stops.append(top)
+    if not stops:
+        return empty
+    return {"next": stops[0], "path": stops, "steps": len(stops),
+            "latest": latest}
 
 
 # ═══════════════════════════════════════════════════════════════════════════
@@ -563,30 +904,93 @@ def is_behind(installed: str, latest: str) -> bool:
 # FR | LES COMPOSANTS
 # ═══════════════════════════════════════════════════════════════════════════
 #
-# EN | One entry per thing the screen reports. `tier` decides what the nightly
-# EN | pass is allowed to touch; `name_key` is a locale key, never a label —
-# EN | this file ships no user-facing English.
-# FR | Une entree par chose que l ecran remonte. `tier` decide de ce que la
-# FR | passe nocturne a le droit de toucher ; `name_key` est une cle de
-# FR | langue, jamais un libelle — ce fichier ne livre aucun anglais destine a
-# FR | l utilisateur.
+# EN | One entry per thing the screen reports.
+# EN |   tier         what the nightly pass may touch: auto / manual / locked.
+# EN |   where        WHICH LAYER it lives in. `host` is the Ubuntu install
+# EN |                itself — apt packages and systemd units. `docker` is a
+# EN |                container the host's own Docker daemon runs. `k3s` is
+# EN |                inside the cluster. Three layers sat in one flat list
+# EN |                before, which left the screen unable to answer the first
+# EN |                question anyone asks of an upgrade: what does restarting
+# EN |                this take down with it. The screen groups on this field.
+# EN |   policy       how far one press may move it — see the policies above.
+# EN |   reason_key   why a locked component is locked, IN ITS OWN WORDS. One
+# EN |                sentence used to cover all of them, which meant the chip
+# EN |                on a row explained nothing about that row.
+# EN |   confirm_key  an extra warning for a button whose cost is not obvious
+# EN |                from its label. Absent means the plain confirmation.
+# EN | `name_key` is a locale key, never a label — this file ships no
+# EN | user-facing English.
+# FR | Une entree par chose que l ecran remonte.
+# FR |   tier         ce que la passe nocturne peut toucher : auto / manual /
+# FR |                locked.
+# FR |   where        QUELLE COUCHE l heberge. `host` est l installation Ubuntu
+# FR |                elle-meme — paquets apt et unites systemd. `docker` est
+# FR |                un conteneur que fait tourner le demon Docker de l hote.
+# FR |                `k3s` est dans le cluster. Trois couches tenaient dans
+# FR |                une seule liste plate, ce qui laissait l ecran incapable
+# FR |                de repondre a la premiere question que pose toute mise a
+# FR |                niveau : qu est-ce que son redemarrage emporte avec lui.
+# FR |                L ecran regroupe sur ce champ.
+# FR |   policy       jusqu ou une pression peut la deplacer — voir les
+# FR |                politiques ci-dessus.
+# FR |   reason_key   pourquoi un composant verrouille l est, AVEC SES PROPRES
+# FR |                MOTS. Une seule phrase les couvrait tous, donc la
+# FR |                pastille d une ligne n expliquait rien sur cette ligne.
+# FR |   confirm_key  un avertissement supplementaire pour un bouton dont le
+# FR |                cout ne saute pas aux yeux depuis son libelle. Absent
+# FR |                veut dire la confirmation ordinaire.
+# FR | `name_key` est une cle de langue, jamais un libelle — ce fichier ne
+# FR | livre aucun anglais destine a l utilisateur.
 COMPONENTS = [
+    # ── EN | The Ubuntu host itself / FR | L hote Ubuntu lui-meme ──────
     {"key": "os_packages",   "name_key": "admin.updates_infra_os_packages",
-     "tier": "auto",   "icon": "mdi:ubuntu"},
+     "tier": "auto",   "icon": "mdi:ubuntu", "where": "host",
+     "policy": POLICY_DIRECT},
     {"key": "os_reboot",     "name_key": "admin.updates_infra_os_reboot",
-     "tier": "manual", "icon": "mdi:restart-alert"},
-    {"key": "k3s",           "name_key": "admin.updates_infra_k3s",
-     "tier": "locked", "icon": "mdi:kubernetes"},
-    {"key": "gitlab_runner", "name_key": "admin.updates_infra_gitlab_runner",
-     "tier": "auto",   "icon": "mdi:rocket-launch-outline"},
+     "tier": "manual", "icon": "mdi:restart-alert", "where": "host",
+     "policy": POLICY_DIRECT,
+     "confirm_key": "admin.updates_infra_confirm_reboot"},
     {"key": "gitlab",        "name_key": "admin.updates_infra_gitlab",
-     "tier": "manual", "icon": "mdi:gitlab"},
+     "tier": "manual", "icon": "mdi:gitlab", "where": "host",
+     "policy": POLICY_SERIES,
+     "confirm_key": "admin.updates_infra_confirm_gitlab"},
+    {"key": "gitlab_runner", "name_key": "admin.updates_infra_gitlab_runner",
+     "tier": "auto",   "icon": "mdi:rocket-launch-outline", "where": "host",
+     "policy": POLICY_DIRECT},
+    {"key": "k3s",           "name_key": "admin.updates_infra_k3s",
+     "tier": "manual", "icon": "mdi:kubernetes", "where": "host",
+     "policy": POLICY_SERIES,
+     "confirm_key": "admin.updates_infra_confirm_k3s"},
+
+    # ── EN | Containers the host's own Docker daemon runs
+    # ── FR | Conteneurs que fait tourner le demon Docker de l hote ─────
     {"key": "vault",         "name_key": "admin.updates_infra_vault",
-     "tier": "locked", "icon": "mdi:safe"},
+     "tier": "manual", "icon": "mdi:safe", "where": "docker",
+     "policy": POLICY_SERIES,
+     "confirm_key": "admin.updates_infra_confirm_vault"},
     {"key": "docker_images", "name_key": "admin.updates_infra_docker_images",
-     "tier": "locked", "icon": "mdi:docker"},
+     "tier": "locked", "icon": "mdi:docker", "where": "docker",
+     "policy": POLICY_DIRECT,
+     "reason_key": "admin.updates_infra_why_docker_images"},
+
+    # ── EN | Inside the cluster / FR | Dans le cluster ────────────
+    {"key": "k3s_workloads", "name_key": "admin.updates_infra_k3s_workloads",
+     "tier": "locked", "icon": "mdi:layers-triple-outline", "where": "k3s",
+     "policy": POLICY_DIRECT,
+     "reason_key": "admin.updates_infra_why_k3s_workloads"},
 ]
 BY_KEY = {c["key"]: c for c in COMPONENTS}
+
+# EN | The order the layers are shown in, declared here rather than in the
+# EN | card so the markdown summary and the button card cannot disagree about
+# EN | it. Every row carries its layer, so a consumer that ignores this still
+# EN | renders correctly — just ungrouped.
+# FR | L ordre d affichage des couches, declare ici plutot que dans la carte
+# FR | pour que le resume markdown et la carte a boutons ne puissent pas s y
+# FR | contredire. Chaque ligne porte sa couche, donc un consommateur qui
+# FR | ignore ceci s affiche quand meme — simplement sans regroupement.
+WHERE_ORDER = ["host", "docker", "k3s"]
 
 # EN | apt packages that have a component row of their own. They are excluded
 # EN | from the host-packages row so nothing is counted twice, and from the
@@ -598,6 +1002,14 @@ BY_KEY = {c["key"]: c for c in COMPONENTS}
 # FR | jamais installe par le palier auto en passant par la porte de service.
 OWNED_PACKAGES = {"gitlab-ce", "gitlab-ee", "gitlab-runner"}
 
+# EN | The same rule for containers: a container with a component row of its
+# EN | own is not counted again in the generic Docker row, so the safe is not
+# EN | listed twice under two different verdicts.
+# FR | La meme regle pour les conteneurs : un conteneur qui a sa propre ligne
+# FR | de composant n est pas recompte dans la ligne Docker generique, pour que
+# FR | le coffre ne soit pas liste deux fois sous deux verdicts differents.
+OWNED_CONTAINERS = {"vssp-vault"}
+
 
 def blank(component: dict, **over) -> dict:
     row = {
@@ -605,8 +1017,23 @@ def blank(component: dict, **over) -> dict:
         "name_key": component["name_key"],
         "tier": component["tier"],
         "icon": component["icon"],
+        "where": component["where"],
+        "policy": component["policy"],
+        "reason_key": component.get("reason_key", ""),
+        "confirm_key": component.get("confirm_key", ""),
         "installed": "",
+        # EN | `latest` is how far behind the row is; `next` is what a press
+        # EN | installs. They are the same string only where the policy allows
+        # EN | the whole jump at once, and telling them apart is the entire
+        # EN | point of the plan.
+        # FR | `latest` dit de combien la ligne est en retard ; `next` dit ce
+        # FR | qu installe une pression. Ce sont la meme chaine seulement la ou
+        # FR | la politique autorise tout le saut d un coup, et les distinguer
+        # FR | est tout l interet du plan.
         "latest": "",
+        "next": "",
+        "path": [],
+        "steps": 0,
         "pending": False,
         "count": 0,
         "detail": [],
@@ -616,8 +1043,24 @@ def blank(component: dict, **over) -> dict:
     return row
 
 
+def planned(component: dict, installed: str, available: list[str],
+            **over) -> dict:
+    """EN | A row whose pending state IS its upgrade plan, so the two can never
+    EN | disagree: nothing reachable means nothing pending, and a row that says
+    EN | it is waiting always has a version to name.
+    FR | Une ligne dont l etat « en attente » EST son plan de mise a niveau,
+    FR | pour que les deux ne puissent jamais se contredire : rien
+    FR | d atteignable veut dire rien en attente, et une ligne qui se dit en
+    FR | attente a toujours une version a nommer."""
+    plan = plan_upgrade(installed, available, component["policy"])
+    return blank(component, installed=installed, latest=plan["latest"],
+                 next=plan["next"], path=plan["path"], steps=plan["steps"],
+                 pending=bool(plan["next"]),
+                 count=1 if plan["next"] else 0, **over)
+
+
 # ── EN | Probes, one per component / FR | Sondes, une par composant ──────
-def probe_os_packages(host: Host, comp: dict) -> dict:
+def probe_os_packages(host: Host, safe: "Safe | None", comp: dict) -> dict:
     # EN | `apt list --upgradable` writes its "Listing..." header to stderr
     # EN | and the packages to stdout, which is why stdout alone is parsed.
     # EN | -qq keeps even that header away on most releases; both are handled.
@@ -683,7 +1126,7 @@ def probe_os_packages(host: Host, comp: dict) -> dict:
     )
 
 
-def probe_os_reboot(host: Host, comp: dict) -> dict:
+def probe_os_reboot(host: Host, safe: "Safe | None", comp: dict) -> dict:
     code, out, _ = host.run(
         "test -f /var/run/reboot-required && echo yes || echo no")
     if code != 0:
@@ -697,22 +1140,101 @@ def probe_os_reboot(host: Host, comp: dict) -> dict:
                  count=1 if needed else 0, detail=pkgs[:40])
 
 
-def probe_k3s(host: Host, comp: dict) -> dict:
+def k3s_release_tag(version: str) -> str:
+    """EN | The exact release tag for a plain Kubernetes version — `1.37.1`
+    EN | becomes `v1.37.1+k3s1`. The suffix counts the k3s build of that same
+    EN | Kubernetes version, so the highest one is the right one, and the k3s
+    EN | installer accepts nothing else.
+    EN | It is resolved HERE rather than carried on the row so the row stays a
+    EN | list of versions: the +k3s suffix is k3s trivia, and it belongs next to
+    EN | the only code that needs it.
+    FR | Le tag de release exact pour une version Kubernetes nue — `1.37.1`
+    FR | devient `v1.37.1+k3s1`. Le suffixe numerote la compilation k3s de cette
+    FR | meme version de Kubernetes, donc la plus haute est la bonne, et
+    FR | l installateur k3s n accepte rien d autre.
+    FR | Resolu ICI plutot que porte par la ligne, pour que la ligne reste une
+    FR | liste de versions : le suffixe +k3s est une particularite de k3s, sa
+    FR | place est a cote du seul code qui en a besoin."""
+    if not version:
+        return ""
+    builds = [t for t in github_releases(K3S_REPO)
+              if t.split("+")[0] == version and "+" in t]
+    if not builds:
+        return ""
+    return "v" + max(builds, key=lambda t: version_tuple(t.split("+", 1)[1]))
+
+
+def probe_k3s(host: Host, safe: "Safe | None", comp: dict) -> dict:
     code, out, _ = host.run("k3s --version 2>/dev/null | head -1")
     if code != 0 or not out.strip():
         return blank(comp, probed=False)
     m = re.search(r"v?(\d+\.\d+\.\d+)", out)
     installed = m.group(1) if m else ""
-    latest = github_latest("k3s-io/k3s")
     # EN | k3s tags read v1.36.2+k3s1 — the +k3s suffix is a build of the same
-    # EN | Kubernetes version and must not be compared as a fourth number.
+    # EN | Kubernetes version and must not be compared as a fourth number, so
+    # EN | the ladder is built from the part before the plus. Kubernetes itself
+    # EN | forbids skipping a minor version, which is why this row carries
+    # EN | POLICY_SERIES: a cluster on 1.36 goes to 1.37 and not to 1.39,
+    # EN | whatever the newest release happens to be.
     # FR | Les tags k3s se lisent v1.36.2+k3s1 — le suffixe +k3s est une
     # FR | compilation de la meme version de Kubernetes et ne doit pas etre
-    # FR | compare comme un quatrieme nombre.
-    latest = latest.split("+")[0]
-    return blank(comp, installed=installed, latest=latest,
-                 pending=is_behind(installed, latest),
-                 count=1 if is_behind(installed, latest) else 0)
+    # FR | compare comme un quatrieme nombre, l echelle est donc construite sur
+    # FR | la partie avant le plus. Kubernetes lui-meme interdit de sauter une
+    # FR | version mineure, d ou POLICY_SERIES sur cette ligne : un cluster en
+    # FR | 1.36 passe en 1.37 et pas en 1.39, quelle que soit la release la plus
+    # FR | recente.
+    versions = [t.split("+")[0] for t in github_releases(K3S_REPO)]
+    return planned(comp, installed, versions)
+
+
+def probe_k3s_workloads(host: Host, safe: "Safe | None", comp: dict) -> dict:
+    """EN | What is actually running INSIDE the cluster, workload by workload.
+    EN | The k3s row above reports the cluster's own version and says nothing
+    EN | whatever about its contents — which is how Home Assistant, the thing
+    EN | serving this very screen, never appeared on the screen at all. This row
+    EN | lists every deployment, statefulset and daemonset with the image it
+    EN | pulls, at the level where that image is actually declared: pods come
+    EN | and go, their controllers are what an upgrade edits.
+    EN | Reported, never installed — see the reason on its row. Changing an
+    EN | image here means editing a manifest, and the manifests are not in this
+    EN | repository.
+    FR | Ce qui tourne reellement DANS le cluster, charge par charge.
+    FR | La ligne k3s ci-dessus remonte la version du cluster lui-meme et ne dit
+    FR | absolument rien de son contenu — c est ainsi que Home Assistant, ce
+    FR | qui sert cet ecran meme, n apparaissait pas du tout a l ecran. Cette
+    FR | ligne liste chaque deployment, statefulset et daemonset avec l image
+    FR | qu il tire, au niveau ou cette image est reellement declaree : les pods
+    FR | vont et viennent, ce sont leurs controleurs qu une mise a niveau
+    FR | modifie.
+    FR | Remontee, jamais installee — voir la raison sur sa ligne. Changer une
+    FR | image ici veut dire modifier un manifeste, et les manifestes ne sont
+    FR | pas dans ce depot."""
+    code, out, _ = host.run_maybe_sudo(
+        "k3s kubectl get deploy,sts,ds -A --no-headers -o "
+        "custom-columns=NS:.metadata.namespace,NAME:.metadata.name,"
+        "IMG:.spec.template.spec.containers[*].image 2>/dev/null")
+    if code != 0 or not out.strip():
+        return blank(comp, probed=False)
+    rows: list[str] = []
+    floating = 0
+    for line in out.splitlines():
+        parts = line.split()
+        if len(parts) < 3:
+            continue
+        namespace, name = parts[0], parts[1]
+        # EN | custom-columns joins a multi-container template with commas, and
+        # EN | each image is its own version to know about.
+        # FR | custom-columns joint un modele multi-conteneurs par des virgules,
+        # FR | et chaque image est sa propre version a connaitre.
+        for image in ",".join(parts[2:]).split(","):
+            image = image.strip()
+            if not image:
+                continue
+            rows.append(f"{namespace}/{name} {image}")
+            if image_tag(image) in ("", "latest"):
+                floating += 1
+    return blank(comp, installed=str(len(rows)), latest="", pending=False,
+                 count=0, detail=rows[:40], floating=floating)
 
 
 def probe_apt_package(host: Host, comp: dict, packages: tuple[str, ...],
@@ -731,10 +1253,21 @@ def probe_apt_package(host: Host, comp: dict, packages: tuple[str, ...],
     for package in packages:
         installed, candidate = apt_policy(host, package)
         if installed:
-            behind = is_behind(installed, candidate)
-            return blank(comp, installed=installed, latest=candidate,
-                         pending=behind, count=1 if behind else 0,
-                         detail=[package], package=package)
+            # EN | madison lists the whole ladder; the candidate is the highest
+            # EN | rung this machine may actually climb to. A version madison
+            # EN | knows but apt would not offer — held, pinned, from a
+            # EN | repository that outranks it — is not a stop on the path.
+            # FR | madison liste toute l echelle ; le candidat est le plus haut
+            # FR | barreau que cette machine puisse reellement atteindre. Une
+            # FR | version connue de madison mais que apt ne proposerait pas —
+            # FR | gelee, epinglee, issue d un depot moins prioritaire — n est
+            # FR | pas une escale du chemin.
+            ladder = apt_versions(host, package) or [candidate]
+            if candidate:
+                ceiling = version_tuple(candidate)
+                ladder = [v for v in ladder if version_tuple(v) <= ceiling]
+            return planned(comp, installed, ladder,
+                           detail=[package], package=package)
     # EN | Not an apt package here — a containerised or hand-installed
     # EN | instance. Fall back to asking the binary, which at least fills the
     # EN | INSTALLED column instead of dropping the row.
@@ -751,14 +1284,14 @@ def probe_apt_package(host: Host, comp: dict, packages: tuple[str, ...],
     return blank(comp, probed=False)
 
 
-def probe_gitlab_runner(host: Host, comp: dict) -> dict:
+def probe_gitlab_runner(host: Host, safe: "Safe | None", comp: dict) -> dict:
     return probe_apt_package(
         host, comp, ("gitlab-runner",),
         fallback_cmd="gitlab-runner --version 2>/dev/null",
         fallback_rx=r"Version:\s*([0-9][^\s]*)")
 
 
-def probe_gitlab(host: Host, safe: Safe | None, comp: dict) -> dict:
+def probe_gitlab(host: Host, safe: "Safe | None", comp: dict) -> dict:
     # EN | Community edition first, then enterprise — an instance runs one or
     # EN | the other, never both.
     # FR | Edition communautaire d abord, puis entreprise — une instance fait
@@ -795,26 +1328,59 @@ def probe_gitlab(host: Host, safe: Safe | None, comp: dict) -> dict:
                  pending=False, count=0)
 
 
-def probe_vault(host: Host, comp: dict) -> dict:
-    # EN | Vault runs as a docker container here, so its version is the image
-    # EN | tag rather than anything a package manager knows.
-    # FR | Vault tourne en conteneur docker ici, sa version est donc le tag de
-    # FR | l image plutot que quelque chose que connaitrait un gestionnaire de
-    # FR | paquets.
-    code, out, _ = host.run(
-        "docker ps --filter name=vault --format '{{.Image}}' 2>/dev/null | head -1")
+def vault_container(host: Host) -> tuple[str, str]:
+    """EN | (name, image) of the running safe, or ('','') when none runs here.
+    FR | (nom, image) du coffre en marche, ou ('','') si aucun ne tourne
+    FR | ici."""
+    code, out, _ = host.run_maybe_sudo(
+        "docker ps --filter name=vault --format '{{.Names}} {{.Image}}' "
+        "2>/dev/null | head -1")
     if code != 0 or not out.strip():
+        return "", ""
+    parts = out.strip().split()
+    return (parts[0], parts[1]) if len(parts) >= 2 else (parts[0], "")
+
+
+def probe_vault(host: Host, safe: "Safe | None", comp: dict) -> dict:
+    """EN | Vault runs as a docker container here, so no package manager knows
+    EN | its version. The IMAGE TAG is the obvious place to read it and it is
+    EN | the wrong one: this deployment pins `hashicorp/vault:1.20`, a floating
+    EN | alias for the newest patch in that series, so the tag says 1.20 while
+    EN | the binary is 1.20.4 — and a plan built on 1.20 offers 1.20.4 as its
+    EN | first step, an upgrade to the version already running. So the version
+    EN | comes from the binary, which cannot be wrong about itself, and the tag
+    EN | is only the fallback for an image that refuses to answer.
+    FR | Vault tourne en conteneur docker ici, aucun gestionnaire de paquets ne
+    FR | connait donc sa version. Le TAG DE L IMAGE est l endroit evident pour
+    FR | la lire et c est le mauvais : ce deploiement epingle
+    FR | `hashicorp/vault:1.20`, un alias flottant vers le correctif le plus
+    FR | recent de la serie, donc le tag dit 1.20 quand le binaire est en
+    FR | 1.20.4 — et un plan construit sur 1.20 propose 1.20.4 en premiere
+    FR | etape, une mise a niveau vers la version deja en marche. La version
+    FR | vient donc du binaire, qui ne peut pas se tromper sur lui-meme, et le
+    FR | tag n est que le repli pour une image qui refuse de repondre."""
+    name, image = vault_container(host)
+    if not name:
         return blank(comp, probed=False)
-    image = out.strip()
-    installed = image.split(":", 1)[1] if ":" in image else ""
-    latest = dockerhub_latest("hashicorp/vault")
-    return blank(comp, installed=installed, latest=latest,
-                 pending=is_behind(installed, latest),
-                 count=1 if is_behind(installed, latest) else 0,
-                 detail=[image])
+    installed = ""
+    code, out, _ = host.run_maybe_sudo(
+        f"docker exec {name} vault version 2>/dev/null")
+    if code == 0:
+        m = re.search(r"v?(\d+\.\d+\.\d+)", out)
+        installed = m.group(1) if m else ""
+    if not installed:
+        installed = image_tag(image)
+    # EN | POLICY_SERIES, and this is the component the policy was written for:
+    # EN | HashiCorp supports one minor series at a time because each carries a
+    # EN | storage and seal migration.
+    # FR | POLICY_SERIES, et c est le composant pour lequel la politique a ete
+    # FR | ecrite : HashiCorp ne supporte qu une serie mineure a la fois parce
+    # FR | que chacune porte une migration de stockage et de scellement.
+    return planned(comp, installed, dockerhub_versions(VAULT_IMAGE_REPO),
+                   detail=[f"{name} {image}"] if image else [name])
 
 
-def probe_docker_images(host: Host, comp: dict) -> dict:
+def probe_docker_images(host: Host, safe: "Safe | None", comp: dict) -> dict:
     """EN | Every other running container, reported as a list rather than as a
     EN | comparison: an image pinned to `latest` has no version to be behind,
     EN | and one pinned to a digest is deliberately frozen. The row says what
@@ -824,15 +1390,22 @@ def probe_docker_images(host: Host, comp: dict) -> dict:
     FR | version a avoir en retard, et une image epinglee sur une empreinte est
     FR | figee volontairement. La ligne dit ce qui tourne ; decider revient a
     FR | l operateur."""
-    code, out, _ = host.run(
+    code, out, _ = host.run_maybe_sudo(
         "docker ps --format '{{.Names}} {{.Image}}' 2>/dev/null")
     if code != 0:
         return blank(comp, probed=False)
-    rows = [ln.strip() for ln in out.splitlines() if ln.strip()]
-    floating = [r for r in rows if r.endswith(":latest") or ":" not in r.split(" ", 1)[-1]]
+    rows: list[str] = []
+    floating = 0
+    for line in out.splitlines():
+        parts = line.split()
+        if not parts or parts[0] in OWNED_CONTAINERS:
+            continue
+        rows.append(line.strip())
+        if image_tag(parts[1] if len(parts) > 1 else "") in ("", "latest"):
+            floating += 1
     return blank(comp, installed=str(len(rows)), latest="",
                  pending=False, count=0, detail=rows[:40],
-                 floating=len(floating))
+                 floating=floating)
 
 
 # ── EN | Installers / FR | Installateurs ────────────────────────────────
@@ -843,7 +1416,7 @@ def probe_docker_images(host: Host, comp: dict) -> dict:
 # FR | Chacun renvoie (ok, detail). Aucun n est joignable pour un composant
 # FR | dont le palier l interdit — ce controle a lieu dans install_one, une
 # FR | fois, plutot que d etre repete puis oublie dans l un d eux.
-def install_os_packages(host: Host) -> tuple[bool, str]:
+def install_os_packages(host: Host, row: dict) -> tuple[bool, str]:
     """EN | Upgrade the host packages — NAMING EACH ONE, rather than running a
     EN | bare `apt-get upgrade`.
     EN | The bare form is the obvious version and it is wrong here: it would
@@ -883,14 +1456,45 @@ def install_os_packages(host: Host) -> tuple[bool, str]:
     return code == 0, (err or out).strip()[-400:]
 
 
-def install_gitlab_runner(host: Host) -> tuple[bool, str]:
+def install_apt_pinned(host: Host, row: dict) -> tuple[bool, str]:
+    """EN | Install ONE NAMED VERSION of an apt package — the version the row
+    EN | published as its next step — rather than `--only-upgrade`.
+    EN | `--only-upgrade` installs the candidate, which is the TOP of the
+    EN | ladder. On a component whose policy allows the whole jump those are the
+    EN | same version and nothing changes. On GitLab they are not: the candidate
+    EN | can be several minors up, and every minor in between carries database
+    EN | migrations that GitLab runs on the way past. `--only-upgrade` is
+    EN | precisely the skipped-migration upgrade the plan exists to prevent.
+    EN | Naming the version also makes the button install what the screen
+    EN | offered, which is the only circumstance under which a confirmation
+    EN | dialog means anything.
+    FR | Installer UNE VERSION NOMMEE d un paquet apt — celle que la ligne a
+    FR | publiee comme etape suivante — plutot que `--only-upgrade`.
+    FR | `--only-upgrade` installe le candidat, c est-a-dire le SOMMET de
+    FR | l echelle. Sur un composant dont la politique autorise tout le saut,
+    FR | c est la meme version et rien ne change. Sur GitLab, non : le candidat
+    FR | peut etre plusieurs mineures plus haut, et chaque mineure intermediaire
+    FR | porte des migrations de base que GitLab execute au passage.
+    FR | `--only-upgrade` est exactement la mise a niveau a migrations sautees
+    FR | que le plan existe pour empecher.
+    FR | Nommer la version fait aussi que le bouton installe ce que l ecran a
+    FR | propose, seule circonstance ou une demande de confirmation veut dire
+    FR | quelque chose."""
+    package = row.get("package") or ""
+    target = row.get("next") or ""
+    if not package:
+        return False, f"{row.get('key')} is not an apt package on this host"
+    if not target:
+        return True, "nothing to upgrade"
     cmd = ("DEBIAN_FRONTEND=noninteractive apt-get -y "
-           "install --only-upgrade gitlab-runner")
+           "-o Dpkg::Options::=--force-confdef "
+           "-o Dpkg::Options::=--force-confold "
+           f"install {package}={target}")
     code, out, err = host.run(cmd, sudo=True)
     return code == 0, (err or out).strip()[-400:]
 
 
-def install_os_reboot(host: Host) -> tuple[bool, str]:
+def install_os_reboot(host: Host, row: dict) -> tuple[bool, str]:
     # EN | Fire and forget, on purpose. `shutdown -r +1` returns immediately
     # EN | and the host goes down a minute later, which is the only way this
     # EN | can report success: a reboot that took the ssh session with it looks
@@ -904,24 +1508,147 @@ def install_os_reboot(host: Host) -> tuple[bool, str]:
     return code == 0, (err or out).strip()[-400:]
 
 
-def install_gitlab(host: Host) -> tuple[bool, str]:
-    # EN | GitLab upgrades itself through its own package: apt runs the
-    # EN | reconfigure and the migrations. It is a manual-tier component
-    # EN | because that takes minutes, restarts every GitLab service, and
-    # EN | wants a backup taken first — not because apt cannot do it.
-    # FR | GitLab se met a jour par son propre paquet : apt enchaine la
-    # FR | reconfiguration et les migrations. C est un composant de palier
-    # FR | manuel parce que cela prend des minutes, redemarre tous les
-    # FR | services GitLab et reclame une sauvegarde prealable — pas parce
-    # FR | qu apt ne saurait pas le faire.
-    for package in ("gitlab-ce", "gitlab-ee"):
-        installed, _cand = apt_policy(host, package)
-        if installed:
-            cmd = ("DEBIAN_FRONTEND=noninteractive apt-get -y "
-                   f"install --only-upgrade {package}")
-            code, out, err = host.run(cmd, sudo=True)
-            return code == 0, (err or out).strip()[-400:]
-    return False, "gitlab-ce/gitlab-ee is not an apt package on this host"
+def install_vault(host: Host, row: dict) -> tuple[bool, str]:
+    """EN | Move the safe ONE SERIES forward: rewrite the image tag its compose
+    EN | file pins, recreate the container, then check what actually came back.
+    EN | Vault was a `locked` component and the lock was doing two jobs at once.
+    EN | One was real — nothing should skip two storage-format migrations — and
+    EN | the plan now handles that properly. The other was a mistake: the safe
+    EN | is a plain Docker container on the host, NOT in k3s (see
+    EN | vault/config/vault.hcl for why), so recreating it does not touch Home
+    EN | Assistant or the cluster. It is an ordinary manual-tier upgrade.
+    EN | The compose project directory comes from the container's own labels
+    EN | rather than being assumed to be /opt/vssp-vault: that path is a
+    EN | convention from the install doc, and docker knows the truth.
+    EN | The check at the end is not belt and braces. `docker compose up -d`
+    EN | succeeds when it has nothing to do, so a sed that matched nothing would
+    EN | report a triumphant upgrade to the version already running. Reading the
+    EN | version back out of the container that came up is the only claim worth
+    EN | making.
+    EN | THE SAFE RESEALS. It answers 503 until three of the five unseal keys
+    EN | are entered by hand, because no auto-unseal is configured, on purpose.
+    EN | That is what this component's confirm_key warns about before the press,
+    EN | and what the returned detail repeats after it.
+    FR | Avancer le coffre D UNE SERIE : reecrire le tag d image que son fichier
+    FR | compose epingle, recreer le conteneur, puis verifier ce qui est
+    FR | reellement revenu.
+    FR | Vault etait un composant `locked` et ce verrou faisait deux choses a la
+    FR | fois. L une etait reelle — rien ne doit sauter deux migrations de
+    FR | format de stockage — et le plan s en charge desormais correctement.
+    FR | L autre etait une erreur : le coffre est un simple conteneur Docker sur
+    FR | l hote, PAS dans k3s (voir vault/config/vault.hcl pour pourquoi), donc
+    FR | le recreer ne touche ni Home Assistant ni le cluster. C est une mise a
+    FR | niveau de palier manuel ordinaire.
+    FR | Le repertoire de projet compose vient des labels du conteneur lui-meme
+    FR | plutot que d etre suppose etre /opt/vssp-vault : ce chemin est une
+    FR | convention de la doc d installation, et docker connait la verite.
+    FR | La verification finale n est pas une ceinture avec des bretelles.
+    FR | `docker compose up -d` reussit quand il n a rien a faire, donc un sed
+    FR | qui n a rien trouve annoncerait triomphalement une mise a niveau vers
+    FR | la version deja en marche. Relire la version dans le conteneur qui
+    FR | s est leve est la seule affirmation qui vaille.
+    FR | LE COFFRE SE RESCELLE. Il repond 503 tant que trois des cinq cles de
+    FR | descellement ne sont pas saisies a la main, parce qu aucun descellement
+    FR | automatique n est configure, volontairement. C est ce dont le
+    FR | confirm_key de ce composant avertit avant la pression, et ce que le
+    FR | detail renvoye repete apres."""
+    target = row.get("next") or ""
+    if not target:
+        return True, "nothing to upgrade"
+    name, image = vault_container(host)
+    if not name:
+        return False, "no vault container is running on this host"
+    label = '{{index .Config.Labels "com.docker.compose.project.working_dir"}}'
+    code, out, _ = host.run_maybe_sudo(
+        f"docker inspect --format '{label}' {name} 2>/dev/null")
+    project = out.strip()
+    if code != 0 or not project or project == "<no value>":
+        return False, (f"{name} was not started by docker compose on this "
+                       "host: its image tag is not ours to rewrite")
+    tag = image_tag(image)
+    repo = image[:-(len(tag) + 1)] if tag else image
+    if not repo:
+        return False, f"cannot read the image reference of {name}"
+    path = "/tmp/vssp_vault_upgrade.sh"
+    script = (
+        "set -e\n"
+        f"cd {project}\n"
+        "f=docker-compose.yml\n"
+        '[ -f "$f" ] || f=docker-compose.yaml\n'
+        f'sed -i "s|{repo}:[A-Za-z0-9._-]*|{repo}:{target}|g" "$f"\n'
+        "docker compose pull\n"
+        "docker compose up -d\n"
+        # EN | The container needs a moment before `docker exec` will answer;
+        # EN | without it the check below reads a container still starting and
+        # EN | calls a good upgrade a failure.
+        # FR | Le conteneur a besoin d un instant avant que `docker exec` ne
+        # FR | reponde ; sans cela la verification ci-dessous lit un conteneur
+        # FR | encore en demarrage et declare en echec une mise a niveau
+        # FR | reussie.
+        "sleep 5\n")
+    code, out, err = host.put_script(script, path)
+    if code != 0:
+        return False, (err or out).strip()[-400:]
+    code, out, err = host.run_maybe_sudo(f"sh {path}")
+    ran = (err or out).strip()[-200:]
+    running = ""
+    vcode, vout, _ = host.run_maybe_sudo(
+        f"docker exec {name} vault version 2>/dev/null")
+    if vcode == 0:
+        m = re.search(r"v?(\d+\.\d+\.\d+)", vout)
+        running = m.group(1) if m else ""
+    if running != target:
+        return False, (f"compose ran but {name} reports "
+                       f"{running or 'no version'}, not {target}. {ran}")
+    return True, (f"Vault {target} is running and SEALED: it needs three of "
+                  f"the five unseal keys before the SAFE screen works again.")
+
+
+def install_k3s(host: Host, row: dict) -> tuple[bool, str]:
+    """EN | One Kubernetes minor version forward, and this installer could not
+    EN | have existed before the plan did. The newest k3s release is routinely
+    EN | several minors ahead, Kubernetes forbids skipping any of them, so a
+    EN | button aimed at `latest` would have been a button that breaks the
+    EN | cluster. Aimed at `next` it is an ordinary upgrade, and that is the
+    EN | whole reason this row stopped being `locked`.
+    EN | Detached, for the reason install_os_reboot is fire-and-forget: k3s
+    EN | restarts, every pod on this node restarts with it, and Home Assistant
+    EN | — which is running this very script — is one of them. The ssh session
+    EN | dies mid-command, which attached is indistinguishable from a failed
+    EN | upgrade. Detached, the upgrade finishes on its own and the next probe
+    EN | reports the result.
+    FR | Une version mineure de Kubernetes en avant, et cet installateur
+    FR | n aurait pas pu exister avant le plan. La release k3s la plus recente
+    FR | est couramment plusieurs mineures en avance, Kubernetes interdit d en
+    FR | sauter une seule, donc un bouton visant `latest` aurait ete un bouton
+    FR | qui casse le cluster. Visant `next`, c est une mise a niveau ordinaire,
+    FR | et c est toute la raison pour laquelle cette ligne a cesse d etre
+    FR | `locked`.
+    FR | Detachee, pour la raison qui fait install_os_reboot « on lance et on
+    FR | oublie » : k3s redemarre, chaque pod de ce noeud redemarre avec lui, et
+    FR | Home Assistant — qui execute ce script meme — en fait partie. La
+    FR | session ssh meurt en pleine commande, ce qui, attache, est indiscernable
+    FR | d une mise a niveau en echec. Detachee, la mise a niveau se termine
+    FR | seule et la sonde suivante en rapporte le resultat."""
+    target = row.get("next") or ""
+    if not target:
+        return True, "nothing to upgrade"
+    tag = k3s_release_tag(target)
+    if not tag:
+        return False, f"no k3s release tag was published for {target}"
+    path = "/tmp/vssp_k3s_upgrade.sh"
+    script = ("set -e\n"
+              "curl -sfL https://get.k3s.io | "
+              f"INSTALL_K3S_VERSION={tag} sh -\n")
+    code, out, err = host.put_script(script, path)
+    if code != 0:
+        return False, (err or out).strip()[-400:]
+    code, out, err = host.run_detached(path)
+    if code != 0:
+        return False, (err or out).strip()[-400:]
+    return True, (f"k3s {tag} is installing in the background. The cluster and "
+                  f"Home Assistant restart with it; the log is {path}.log on "
+                  "the host.")
 
 
 # EN | Which key does what, in one table. A component with no entry here is
@@ -934,9 +1661,38 @@ def install_gitlab(host: Host) -> tuple[bool, str]:
 # FR | finirait par diverger.
 INSTALLERS = {
     "os_packages": install_os_packages,
-    "gitlab_runner": install_gitlab_runner,
-    "gitlab": install_gitlab,
     "os_reboot": install_os_reboot,
+    "gitlab": install_apt_pinned,
+    "gitlab_runner": install_apt_pinned,
+    "k3s": install_k3s,
+    "vault": install_vault,
+}
+
+# EN | Which key is probed by what, in the same shape. run_probe used to name
+# EN | its seven probes by hand in a fixed order, which meant adding a component
+# EN | to the table above published a row that nothing ever looked at — the
+# EN | quietest possible bug. Now the table is the list.
+# EN | Every probe takes (host, safe, comp) whether or not it needs the safe.
+# EN | Only GitLab does, and only for a containerised instance; a uniform
+# EN | signature is what lets this be a table at all.
+# FR | Quelle cle est sondee par quoi, dans la meme forme. run_probe nommait ses
+# FR | sept sondes a la main dans un ordre fixe, ce qui faisait qu ajouter un
+# FR | composant a la table ci-dessus publiait une ligne que rien ne regardait
+# FR | jamais — le bug le plus silencieux possible. Desormais la table EST la
+# FR | liste.
+# FR | Chaque sonde prend (host, safe, comp) qu elle ait besoin du coffre ou
+# FR | non. Seul GitLab en a besoin, et seulement pour une instance
+# FR | conteneurisee ; c est une signature uniforme qui permet d en faire une
+# FR | table.
+PROBES = {
+    "os_packages": probe_os_packages,
+    "os_reboot": probe_os_reboot,
+    "gitlab": probe_gitlab,
+    "gitlab_runner": probe_gitlab_runner,
+    "k3s": probe_k3s,
+    "vault": probe_vault,
+    "docker_images": probe_docker_images,
+    "k3s_workloads": probe_k3s_workloads,
 }
 
 
@@ -967,27 +1723,26 @@ def run_probe(safe: Safe | None, out_path: Path) -> dict:
             host = open_host(safe)
         if host is not None:
             with host:
-                rows.append(probe_os_packages(host, BY_KEY["os_packages"]))
-                rows.append(probe_os_reboot(host, BY_KEY["os_reboot"]))
-                rows.append(probe_k3s(host, BY_KEY["k3s"]))
-                rows.append(probe_gitlab_runner(host, BY_KEY["gitlab_runner"]))
-                rows.append(probe_gitlab(host, safe, BY_KEY["gitlab"]))
-                rows.append(probe_vault(host, BY_KEY["vault"]))
-                rows.append(probe_docker_images(host, BY_KEY["docker_images"]))
+                # EN | Declaration order IS display order, and the table
+                # EN | declares the layers in the order the screen groups them.
+                # EN | One loop instead of a hand-written call list: a component
+                # EN | added above is probed here without anyone remembering to
+                # EN | come and say so.
+                # FR | L ordre de declaration EST l ordre d affichage, et la
+                # FR | table declare les couches dans l ordre ou l ecran les
+                # FR | regroupe. Une boucle au lieu d une liste d appels ecrite
+                # FR | a la main : un composant ajoute plus haut est sonde ici
+                # FR | sans que personne ait a penser a venir le dire.
+                for comp in COMPONENTS:
+                    probe = PROBES.get(comp["key"])
+                    rows.append(probe(host, safe, comp) if probe
+                                else blank(comp, probed=False))
         else:
             for comp in COMPONENTS:
                 rows.append(blank(comp, probed=False))
     finally:
         if host is not None:
             host.close()
-
-    # EN | Order the rows the way the table declares them rather than the way
-    # EN | they finished, so the screen does not reshuffle between runs.
-    # FR | Ordonner les lignes comme la table les declare plutot que comme
-    # FR | elles se sont terminees, pour que l ecran ne se reordonne pas d une
-    # FR | execution a l autre.
-    order = {c["key"]: i for i, c in enumerate(COMPONENTS)}
-    rows.sort(key=lambda r: order.get(r["key"], 99))
 
     total = sum(r["count"] for r in rows)
     payload = {
@@ -999,6 +1754,23 @@ def run_probe(safe: Safe | None, out_path: Path) -> dict:
             "manual": sum(r["count"] for r in rows if r["tier"] == "manual"),
             "locked": sum(r["count"] for r in rows if r["tier"] == "locked"),
             "failed": sum(1 for r in rows if not r["probed"]),
+            # EN | Per layer, so the screen can say which of the three has
+            # EN | something waiting without walking the rows in three cards.
+            # FR | Par couche, pour que l ecran puisse dire laquelle des trois a
+            # FR | quelque chose en attente sans parcourir les lignes dans trois
+            # FR | cartes.
+            "layers": {w: sum(r["count"] for r in rows if r["where"] == w)
+                       for w in WHERE_ORDER},
+            # EN | Every hop still to take, across every component. "4 updates
+            # EN | pending" and "7 upgrades to perform" are different numbers
+            # EN | once a component may not skip a version, and the second one
+            # EN | is the one that describes an evening.
+            # FR | Chaque saut restant, tous composants confondus. « 4 mises a
+            # FR | jour en attente » et « 7 mises a niveau a faire » sont deux
+            # FR | nombres differents des lors qu un composant ne peut pas
+            # FR | sauter une version, et le second est celui qui decrit une
+            # FR | soiree.
+            "steps": sum(r["steps"] for r in rows),
         },
     }
     write_json(out_path, payload)
@@ -1021,7 +1793,33 @@ def install_one(safe: Safe, key: str, unattended: bool) -> dict:
         return status("error.tier", name=key, tier=comp["tier"])
     host = open_host(safe)
     with host:
-        ok, detail = INSTALLERS[key](host)
+        # EN | PROBE FIRST, then install what that probe found.
+        # EN | The installer is handed a row it did not choose, and installs the
+        # EN | single version that row names as its next step. That is what
+        # EN | keeps a stepped upgrade honest: the button on screen said
+        # EN | 1.20.4 → 1.21.4, and no path through this code can turn the press
+        # EN | into a jump to 2.1.0 — not a stale sensor, not a card rendered
+        # EN | before the last probe, not a second operator pressing a different
+        # EN | row. It also means an already-installed update is a no-op with a
+        # EN | message rather than a command run for nothing.
+        # FR | SONDER D ABORD, puis installer ce que cette sonde a trouve.
+        # FR | L installateur recoit une ligne qu il n a pas choisie, et installe
+        # FR | la seule version que cette ligne nomme comme etape suivante. C est
+        # FR | ce qui garde honnete une mise a niveau par etapes : le bouton a
+        # FR | l ecran disait 1.20.4 → 1.21.4, et aucun chemin dans ce code ne
+        # FR | peut transformer la pression en un saut vers 2.1.0 — ni un
+        # FR | capteur perime, ni une carte rendue avant la derniere sonde, ni un
+        # FR | second operateur qui presse une autre ligne. Cela fait aussi
+        # FR | qu une mise a jour deja installee est une non-operation avec un
+        # FR | message plutot qu une commande lancee pour rien.
+        probe = PROBES.get(key)
+        row = probe(host, safe, comp) if probe else blank(comp, probed=False)
+        if not row["pending"]:
+            payload = status("install.none", name=key)
+            payload["ok"] = True
+            payload["detail"] = ""
+            return payload
+        ok, detail = INSTALLERS[key](host, row)
     payload = status("install.ok" if ok else "error.ssh",
                      name=key, detail=detail)
     payload["ok"] = ok

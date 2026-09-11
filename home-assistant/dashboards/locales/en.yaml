@@ -434,17 +434,58 @@ admin:
   updates_infra_required: restart required
   updates_infra_not_required: no restart needed
   updates_infra_notprobed: not probed
-  updates_infra_confirm: >-
-    This interrupts the service for several minutes. Continue?
   updates_infra_auto_enabled: Update the infrastructure automatically
   updates_infra_never_probed: >-
     Never probed. Press PROBE THE SERVER, and check the safe holds
     vssp/infra/host_ssh if nothing comes back.
   updates_infra_locked_note: >-
-    k3s, Vault and the Docker images are reported but never installed from
-    the console: each one restarts the cluster or the safe that this screen
-    is served from.
+    One step per press: a component only ever moves to the version its vendor
+    supports arriving at from here, never straight to the newest one. Each
+    locked row says why it is locked.
   updates_infra_reboot_note: The host is waiting for a restart
+
+  # EN | The layer a component lives in — the heading the rows are grouped
+  # EN | under. Three different blast radiuses, named.
+  # FR | La couche ou vit un composant — le titre sous lequel les lignes sont
+  # FR | regroupees. Trois rayons d explosion differents, nommes.
+  updates_infra_where_host: On the server — Ubuntu
+  updates_infra_where_docker: Under Docker — beside the cluster
+  updates_infra_where_k3s: Inside the k3s cluster
+
+  # EN | The stepped upgrade path, in the words the rows use.
+  # FR | Le chemin de mise a niveau par etapes, dans les mots des lignes.
+  updates_infra_steps: steps
+  updates_infra_then: then
+  updates_infra_workloads: workload(s)
+
+  # EN | Why a locked component is locked, one sentence per component.
+  # FR | Pourquoi un composant verrouille l est, une phrase par composant.
+  updates_infra_why_docker_images: >-
+    Every image is pinned by the file that started its container; changing it
+    from here would decide on that file's behalf.
+  updates_infra_why_k3s_workloads: >-
+    Changing a cluster image means editing a manifest, and the manifests do
+    not live in this repository.
+
+  # EN | What a heavy button costs, said before it is pressed rather than
+  # EN | discovered after. One per component, because "this interrupts service"
+  # EN | described none of them well.
+  # FR | Ce que coute un bouton lourd, dit avant la pression plutot que
+  # FR | decouvert apres. Un par composant, parce que « cela interrompt le
+  # FR | service » n en decrivait aucun correctement.
+  updates_infra_confirm_reboot: >-
+    The host restarts in one minute. Home Assistant and the cluster go down
+    with it. Continue?
+  updates_infra_confirm_gitlab: >-
+    GitLab stops for the length of its database migrations, several minutes.
+    Take a backup first. Continue?
+  updates_infra_confirm_vault: >-
+    The safe restarts and RESEALS: three of the five unseal keys have to be
+    entered again before the SAFE screen works. Continue?
+  updates_infra_confirm_k3s: >-
+    The cluster restarts, and Home Assistant with it: this screen will
+    disconnect for several minutes. The upgrade finishes on its own on the
+    server. Continue?
 
   # EN | One label per component, keyed exactly as vssp_infra_updates.py's
   # EN | COMPONENTS table declares them. The key is the contract between the
@@ -460,7 +501,8 @@ admin:
   updates_infra_gitlab_runner: GitLab runner
   updates_infra_gitlab: GitLab
   updates_infra_vault: Vault safe
-  updates_infra_docker_images: Docker images
+  updates_infra_docker_images: Other Docker containers
+  updates_infra_k3s_workloads: Cluster workloads
   discovery: DISCOVERY SCAN
   upgrade: UPGRADE
   generate: GENERATE DASHBOARDS

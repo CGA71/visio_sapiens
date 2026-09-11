@@ -248,15 +248,103 @@ container boundary and no `update.*` entity carries them — so the screen
 that claimed to hold *every* pending update was, until now, blind to the
 machine underneath it.
 
-| Component | Tier | Where the version comes from |
+### Three layers, not one flat list
+
+The first question anyone asks of an infrastructure update is not "which
+version" but **"what does restarting this take down with it"**. Recreating
+the safe costs a reseal; restarting k3s takes Home Assistant with it, and
+therefore the screen the button was pressed on. Those are two different
+blast radiuses and they sat in the same list of seven rows, which never
+named the difference.
+
+So every component declares its **layer**, and the screen groups on it:
+
+| Layer | What it is | What a restart takes with it |
 |---|---|---|
-| Host packages | `auto` | `apt list --upgradable` on the host |
-| Host restart | `manual` | `/var/run/reboot-required` |
-| GitLab runner | `auto` | `apt-cache policy gitlab-runner` |
-| GitLab | `manual` | `apt-cache policy gitlab-ce`, or the instance's own API |
-| k3s cluster | `locked` | `k3s --version` against the k3s-io/k3s releases |
-| Vault safe | `locked` | the running image tag against Docker Hub |
-| Docker images | `locked` | `docker ps`, reported and not compared |
+| `host` | the Ubuntu install itself — apt packages, systemd units | everything, for the host reboot; nothing, for a package |
+| `docker` | a container of the host's own Docker daemon, **beside** the cluster | that container alone |
+| `k3s` | what runs **inside** the cluster | the pod, and Home Assistant if it is one of them |
+
+| Component | Layer | Tier | Where the version comes from |
+|---|---|---|---|
+| Host packages | `host` | `auto` | `apt list --upgradable` on the host |
+| Host restart | `host` | `manual` | `/var/run/reboot-required` |
+| GitLab | `host` | `manual` | `apt-cache madison gitlab-ce`, or the instance's own API |
+| GitLab runner | `host` | `auto` | `apt-cache madison gitlab-runner` |
+| k3s cluster | `host` | `manual` | `k3s --version` against the k3s-io/k3s releases |
+| Vault safe | `docker` | `manual` | `vault version` **inside** the container, against Docker Hub |
+| Other Docker containers | `docker` | `locked` | `docker ps`, reported and not compared |
+| Cluster workloads | `k3s` | `locked` | `k3s kubectl get deploy,sts,ds -A`, reported and not compared |
+
+Two rows are new or moved, for precise reasons:
+
+- **Cluster workloads.** The cluster appeared only as a version number and
+  nothing of its contents appeared at all — Home Assistant, which serves
+  this screen, was not on the screen. This row lists every deployment,
+  statefulset and daemonset with the image it pulls, at the level where
+  that image is declared: pods come and go, their controllers are what an
+  upgrade edits.
+- **The safe reads `vault version`, not its image tag.** The deployment
+  pins `hashicorp/vault:1.20`, a floating alias for the newest patch in the
+  series: the tag says `1.20` while the binary is `1.20.4`. A plan built on
+  the tag therefore offered `1.20.4` as its first step — an upgrade to the
+  version already running.
+
+### One step per press — the path, not the horizon
+
+**The problem.** A row published one pair: installed, and the highest
+version upstream. On an apt package that pair is also the instruction —
+apt goes from one to the other in a single step. On the safe it was a lie.
+HashiCorp supports one minor series at a time, so a host on `1.20.4`
+reaches `2.1.0` like this:
+
+```
+1.20.4  ──▶  1.21.4  ──▶  2.0.4  ──▶  2.1.0
+```
+
+Three upgrades, each with its own storage and seal migration. The row
+printed `1.20.4 → 2.1.0` beside an INSTALL button: it was offering to skip
+two of them. Kubernetes forbids skipping a minor in the same way, and
+GitLab's database migrations run per minor.
+
+**The fix.** The constraint belongs to each component, so it is declared
+beside its tier, in `vssp_infra_updates.py`:
+
+| Policy | What it allows | Who carries it |
+|---|---|---|
+| `POLICY_DIRECT` | any version to any version, in one move | host packages, GitLab runner |
+| `POLICY_SERIES` | one `major.minor` series at a time, landing on its highest patch | Vault, k3s, GitLab |
+
+The probe then publishes the whole path instead of its endpoint:
+
+| Field | What it is |
+|---|---|
+| `next` | the **one** version a press installs |
+| `path` | every stop, from `next` to the top |
+| `steps` | how many upgrades that is |
+| `latest` | the top. It stays on the row — how far behind you are is worth knowing — but is **no longer a target** |
+
+What the screen now shows on the safe's row:
+
+```
+Vault safe             1.20.4 → 1.21.4          [INSTALL]
+                       then 2.0.4 → 2.1.0 · 3 steps
+```
+
+The light on HOME still goes red on `latest`: being three series behind is
+a major-version fact whatever the first step happens to be, and the light
+is about how far behind the house is. But its list shows `next` beside the
+arrow, because that is the version a press installs. The two used to be
+one field, which is why the light and the button could describe different
+upgrades.
+
+**Nothing can skip a step, not even by accident.** `install_one` probes the
+component *before* installing and hands the fresh row to the installer,
+which installs the version that row names. Neither a stale sensor, nor a
+card rendered before the last probe, nor a second operator can turn a press
+on `1.21.4` into a jump to `2.1.0`. On the apt side that means
+`apt-get install gitlab-ce=18.3.2-ce.0` and not `--only-upgrade`, which
+would aim at the candidate, i.e. the top.
 
 ### The three tiers
 
@@ -268,9 +356,33 @@ This one applies the same idea to things that can take the house offline:
 - **`manual`** — one row, one button, never the pass, whatever the switch
   says. GitLab restarts every one of its services and wants a backup
   first; a host reboot is a host reboot.
-- **`locked`** — reported and never installed from the console at all.
-  Upgrading k3s restarts the cluster this very screen is served from, and
-  the same is true of Vault for the safe.
+- **`locked`** — reported and never installed from the console at all,
+  **and each locked row says why in its own words**. One sentence used to
+  cover all of them, so the LOCKED chip explained nothing about the row it
+  sat on.
+
+**k3s and Vault were `locked` and both were wrongly so**, for different
+reasons.
+
+- The safe is a plain Docker container **beside** the cluster, not in it
+  (see [Vault.md](../platform/Vault.md) for why): recreating it touches
+  neither Home Assistant nor k3s. It costs a reseal — three of the five
+  keys to enter again — and that is exactly what its confirmation warns
+  about before the press.
+- k3s really does take Home Assistant with it. But so does the host
+  reboot, which has been a button all along: the answer to "this kills the
+  session that pressed it" is to **detach** the command, not to refuse the
+  operation. `install_k3s` writes a script to the host and starts it under
+  `setsid`, the way `install_os_reboot` leans on `shutdown -r +1`; the
+  upgrade finishes on its own and the next probe reports the result.
+
+What was actually dangerous about both was aiming them at the newest
+release — and that is what the previous section fixes.
+
+**Every heavy button now carries its own warning**, declared beside its
+tier. A single sentence had the safe and the host reboot asking the same
+question about two entirely different consequences: one reseals a
+container, the other takes the house offline.
 
 **The tier is declared in `vssp_infra_updates.py`, not in the dashboard.**
 A card cannot promote a component by rendering it differently, and the

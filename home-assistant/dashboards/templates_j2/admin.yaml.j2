@@ -809,6 +809,7 @@ views:
                 'major':  '{{ t('admin.updates_verdict_major') | js }}',
                 'patch':  '{{ t('admin.updates_verdict_patch') | js }}',
                 'none':   '{{ t('admin.updates_verdict_none') | js }}',
+                'steps':  '{{ t('admin.updates_infra_steps') | js }}',
                 'unprobed': '{{ t('admin.updates_verdict_unprobed') | js }}' } {{ '%}' }}
               {%+ raw %}{% set v = states('sensor.vssp_updates_verdict') %}
               {% set items = state_attr('sensor.vssp_updates_verdict', 'items') or [] %}
@@ -819,13 +820,13 @@ views:
               {% if majors %}
               **{{ labels['major'] }}**
               {% for i in majors %}
-              - {{ i.name }} · `{{ i.installed or '?' }}` → `{{ i.latest or '?' }}`
+              - {{ i.name }} · `{{ i.installed or '?' }}` → `{{ i.next or i.latest or '?' }}`{% if (i.steps | default(1) | int) > 1 %} ({{ i.steps }} {{ labels['steps'] }} → `{{ i.latest }}`){% endif %}
               {% endfor %}
               {% endif %}
               {% if patches %}
               **{{ labels['patch'] }}**
               {% for i in patches %}
-              - {{ i.name }}{% if i.installed %} · `{{ i.installed }}`{% endif %}{% if i.latest and i.latest != i.installed %} → `{{ i.latest }}`{% endif %}
+              - {{ i.name }}{% if i.installed %} · `{{ i.installed }}`{% endif %}{% if i.next and i.next != i.installed %} → `{{ i.next }}`{% endif %}{% if (i.steps | default(1) | int) > 1 %} ({{ i.steps }} {{ labels['steps'] }} → `{{ i.latest }}`){% endif %}
               {% endfor %}
               {% endif %}
               {% if not items %}
@@ -1126,23 +1127,34 @@ views:
                   'gitlab_runner': '{{ t('admin.updates_infra_gitlab_runner') }}',
                   'gitlab':        '{{ t('admin.updates_infra_gitlab') }}',
                   'vault':         '{{ t('admin.updates_infra_vault') }}',
-                  'docker_images': '{{ t('admin.updates_infra_docker_images') }}' } {{ '%}' }}
+                  'docker_images': '{{ t('admin.updates_infra_docker_images') }}',
+                  'k3s_workloads': '{{ t('admin.updates_infra_k3s_workloads') }}' } {{ '%}' }}
                 {{ '{%' }} set tiers = {
                   'auto':   '{{ t('admin.updates_infra_auto') }}',
                   'manual': '{{ t('admin.updates_infra_manual') }}',
                   'locked': '{{ t('admin.updates_infra_locked') }}' } {{ '%}' }}
+                {{ '{%' }} set wheres = {
+                  'host':   '{{ t('admin.updates_infra_where_host') }}',
+                  'docker': '{{ t('admin.updates_infra_where_docker') }}',
+                  'k3s':    '{{ t('admin.updates_infra_where_k3s') }}' } {{ '%}' }}
+                {{ '{%' }} set stepword = '{{ t('admin.updates_infra_steps') }}' {{ '%}' }}
                 {%+ raw %}{% set rows = state_attr('sensor.vssp_updates_infra', 'components') or [] %}
                 {% if not rows %}
                 _{% endraw +%}{{ t('admin.updates_infra_never_probed') }}{%+ raw %}_
                 {% else %}
-                {% for tier in ['auto', 'manual', 'locked'] %}
-                {% set group = rows | selectattr('tier', 'eq', tier) | list %}
+                {% for layer in ['host', 'docker', 'k3s'] %}
+                {% set group = rows | selectattr('where', 'defined')
+                                    | selectattr('where', 'eq', layer) | list %}
+                {% if layer == 'host' %}
+                {% set group = group + (rows | rejectattr('where', 'defined') | list) %}
+                {% endif %}
                 {% if group %}
-                **{{ tiers.get(tier, tier) }}**
+                **{{ wheres.get(layer, layer) }}**
                 {% for r in group %}
-                - {% if r.pending %}⬤{% else %}○{% endif %} {{ names.get(r.key, r.key) }}
+                - {% if r.pending %}⬤{% else %}○{% endif %} {{ names.get(r.key, r.key) }} · _{{ tiers.get(r.tier, r.tier) }}_
                   {%- if r.installed %} · `{{ r.installed }}`{% endif %}
-                  {%- if r.latest and r.latest != r.installed %} → `{{ r.latest }}`{% endif %}
+                  {%- if r.next %} → `{{ r.next }}`{% endif %}
+                  {%- if (r.steps | default(0) | int) > 1 %} ({{ r.steps }} {{ stepword }} → `{{ r.latest }}`){% endif %}
                   {%- if not r.probed %} · ⚠{% endif %}
                 {% endfor %}
                 {% endif %}
@@ -1227,10 +1239,12 @@ views:
                     notreq:    '{{ t('admin.updates_infra_not_required') | js }}',
                     unprobed:  '{{ t('admin.updates_infra_notprobed') | js }}',
                     images:    '{{ t('admin.updates_infra_images') | js }}',
+                    workloads: '{{ t('admin.updates_infra_workloads') | js }}',
                     install:   '{{ t('admin.updates_infra_install') | js }}',
                     restart:   '{{ t('admin.updates_infra_restart') | js }}',
                     locked:    '{{ t('admin.updates_infra_locked_short') | js }}',
-                    confirm:   '{{ t('admin.updates_infra_confirm') | js }}',
+                    steps:     '{{ t('admin.updates_infra_steps') | js }}',
+                    then:      '{{ t('admin.updates_infra_then') | js }}',
                     names: {
                       os_packages:   '{{ t('admin.updates_infra_os_packages') | js }}',
                       os_reboot:     '{{ t('admin.updates_infra_os_reboot') | js }}',
@@ -1238,7 +1252,44 @@ views:
                       gitlab_runner: '{{ t('admin.updates_infra_gitlab_runner') | js }}',
                       gitlab:        '{{ t('admin.updates_infra_gitlab') | js }}',
                       vault:         '{{ t('admin.updates_infra_vault') | js }}',
-                      docker_images: '{{ t('admin.updates_infra_docker_images') | js }}'
+                      docker_images: '{{ t('admin.updates_infra_docker_images') | js }}',
+                      k3s_workloads: '{{ t('admin.updates_infra_k3s_workloads') | js }}'
+                    },
+                    // EN | The layer headings the rows are grouped under.
+                    // FR | Les titres de couche sous lesquels les lignes sont
+                    // FR | regroupees.
+                    where: {
+                      host:   '{{ t('admin.updates_infra_where_host') | js }}',
+                      docker: '{{ t('admin.updates_infra_where_docker') | js }}',
+                      k3s:    '{{ t('admin.updates_infra_where_k3s') | js }}'
+                    },
+                    // EN | Keyed by the LOCALE KEY the row carries, not by the
+                    // EN | component. A row says which sentence it wants in its
+                    // EN | reason_key and confirm_key fields, exactly as it
+                    // EN | already did for its name, and this table answers.
+                    // EN | Adding a component is then one entry here rather
+                    // EN | than a new branch in the rendering code.
+                    // FR | Indexe par la CLE DE LANGUE que porte la ligne, pas
+                    // FR | par le composant. Une ligne dit quelle phrase elle
+                    // FR | veut dans ses champs reason_key et confirm_key,
+                    // FR | exactement comme elle le faisait deja pour son nom,
+                    // FR | et cette table repond. Ajouter un composant est alors
+                    // FR | une entree ici plutot qu une nouvelle branche dans le
+                    // FR | code de rendu.
+                    txt: {
+                      '': '',
+                      'admin.updates_infra_why_docker_images':
+                        '{{ t('admin.updates_infra_why_docker_images') | js }}',
+                      'admin.updates_infra_why_k3s_workloads':
+                        '{{ t('admin.updates_infra_why_k3s_workloads') | js }}',
+                      'admin.updates_infra_confirm_reboot':
+                        '{{ t('admin.updates_infra_confirm_reboot') | js }}',
+                      'admin.updates_infra_confirm_gitlab':
+                        '{{ t('admin.updates_infra_confirm_gitlab') | js }}',
+                      'admin.updates_infra_confirm_vault':
+                        '{{ t('admin.updates_infra_confirm_vault') | js }}',
+                      'admin.updates_infra_confirm_k3s':
+                        '{{ t('admin.updates_infra_confirm_k3s') | js }}'
                     }
                   };
                   // EN | margin:0 ON EVERY ha-icon, and it is not
@@ -1264,36 +1315,70 @@ views:
                       padding:8px 0;">${L.unprobed}</div>`;
                   }
 
-                  // EN | What the row is about, in one phrase. This is the
-                  // EN | column that was missing: a version pair for anything
-                  // EN | versioned, a count for the package list, a yes/no for
-                  // EN | the reboot flag.
-                  // FR | De quoi parle la ligne, en une phrase. C est la
-                  // FR | colonne qui manquait : un couple de versions pour ce
-                  // FR | qui est versionne, un decompte pour la liste de
-                  // FR | paquets, un oui/non pour l indicateur de redemarrage.
+                  // EN | What the row is about, as [text, colour, sub-line].
+                  // EN | The third element is the one that is new, and it earns
+                  // EN | its line: the stops AFTER the next one, or why a locked
+                  // EN | row is locked. Those answer a different question from
+                  // EN | the first line — "how long is this road" and "why is
+                  // EN | there no button" rather than "what does this button do"
+                  // EN | — and folding them into one cell made all of it
+                  // EN | unreadable.
+                  // FR | De quoi parle la ligne, en [texte, couleur, sous-ligne].
+                  // FR | Le troisieme element est le nouveau, et il merite sa
+                  // FR | ligne : les escales APRES la prochaine, ou pourquoi une
+                  // FR | ligne verrouillee l est. Cela repond a une autre
+                  // FR | question que la premiere ligne — « quelle est la
+                  // FR | longueur de la route » et « pourquoi n y a-t-il pas de
+                  // FR | bouton » plutot que « que fait ce bouton » — et tout
+                  // FR | tasser dans une cellule rendait l ensemble illisible.
+                  const why = r => L.txt[r.reason_key] || '';
                   const detail = r => {
-                    if (!r.probed) return [L.unprobed, '#56707E'];
+                    if (!r.probed) return [L.unprobed, '#56707E', ''];
                     if (r.key === 'os_packages') {
-                      if (!r.count) return [L.uptodate, '#56707E'];
+                      if (!r.count) return [L.uptodate, '#56707E', ''];
                       const sec = r.security
                         ? ` · ${r.security} ${L.security}` : '';
                       return [`${r.count} ${L.packages}${sec}`,
-                              r.security ? '#FF9800' : '#8FB6C9'];
+                              r.security ? '#FF9800' : '#8FB6C9', ''];
                     }
                     if (r.key === 'os_reboot') {
-                      return r.pending ? [L.required, '#FF9800']
-                                       : [L.notreq, '#56707E'];
+                      return r.pending ? [L.required, '#FF9800', '']
+                                       : [L.notreq, '#56707E', ''];
                     }
                     if (r.key === 'docker_images') {
-                      return [`${r.installed} ${L.images}`, '#8FB6C9'];
+                      return [`${r.installed} ${L.images}`, '#8FB6C9', why(r)];
                     }
-                    if (r.pending && r.installed && r.latest) {
-                      return [`${r.installed} → ${r.latest}`, '#FF9800'];
+                    if (r.key === 'k3s_workloads') {
+                      return [`${r.installed} ${L.workloads}`, '#8FB6C9',
+                              why(r)];
+                    }
+                    // EN | THE HOP, not the horizon. `next` is the single
+                    // EN | version this press installs; it used to be `latest`,
+                    // EN | and on the safe that read "1.20.4 → 2.1.0" beside an
+                    // EN | INSTALL button — an offer to skip 1.21 and 2.0, and
+                    // EN | with them two storage migrations HashiCorp does not
+                    // EN | support skipping. The remaining stops are named on
+                    // EN | the second line with a count, so the first line is
+                    // EN | never mistaken for the whole journey.
+                    // FR | LE SAUT, pas l horizon. `next` est la seule version
+                    // FR | qu installe cette pression ; c etait `latest`, et sur
+                    // FR | le coffre cela affichait « 1.20.4 → 2.1.0 » a cote
+                    // FR | d un bouton INSTALLER — une proposition de sauter
+                    // FR | 1.21 et 2.0, et avec elles deux migrations de
+                    // FR | stockage que HashiCorp ne supporte pas de sauter. Les
+                    // FR | escales restantes sont nommees sur la seconde ligne
+                    // FR | avec un decompte, pour que la premiere ne soit jamais
+                    // FR | prise pour tout le voyage.
+                    if (r.pending && r.installed && r.next) {
+                      const rest = (r.path || []).slice(1);
+                      const sub = rest.length
+                        ? `${L.then} ${rest.join(' → ')} · ${r.steps} ${L.steps}`
+                        : '';
+                      return [`${r.installed} → ${r.next}`, '#FF9800', sub];
                     }
                     if (r.installed) return [`${r.installed} · ${L.uptodate}`,
-                                             '#56707E'];
-                    return [L.uptodate, '#56707E'];
+                                             '#56707E', ''];
+                    return [L.uptodate, '#56707E', ''];
                   };
 
                   // EN | The button is the ONLY thing that changes anything,
@@ -1315,16 +1400,63 @@ views:
                     const call = `document.querySelector('home-assistant')`
                       + `.hass.callService('script','vssp_infra_install_one',`
                       + `{component:'${r.key}'})`;
-                    // EN | Host restart and GitLab both interrupt service for
-                    // EN | minutes. They ask first; host packages and the
-                    // EN | runner do not.
-                    // FR | Le redemarrage de l hote et GitLab interrompent
-                    // FR | tous deux le service plusieurs minutes. Ils
-                    // FR | demandent confirmation ; les paquets de l hote et
-                    // FR | le runner, non.
-                    const heavy = (r.key === 'os_reboot' || r.key === 'gitlab');
-                    const onclick = heavy
-                      ? `if(confirm('${L.confirm}')){${call}}` : call;
+                    // EN | The warning belongs to the COMPONENT, declared beside
+                    // EN | its tier in vssp_infra_updates.py and looked up here
+                    // EN | by key. One sentence used to cover every heavy
+                    // EN | button, which had the safe and the host reboot asking
+                    // EN | the same question about two entirely different
+                    // EN | consequences: one reseals a container, the other
+                    // EN | takes the house offline. A component with no
+                    // EN | confirm_key installs on the press, as the host
+                    // EN | packages and the runner always did.
+                    // FR | L avertissement appartient au COMPOSANT, declare a
+                    // FR | cote de son palier dans vssp_infra_updates.py et
+                    // FR | retrouve ici par sa cle. Une seule phrase couvrait
+                    // FR | tous les boutons lourds, ce qui faisait poser la meme
+                    // FR | question au coffre et au redemarrage de l hote pour
+                    // FR | deux consequences entierement differentes : l un
+                    // FR | rescelle un conteneur, l autre met la maison a
+                    // FR | l arret. Un composant sans confirm_key s installe a
+                    // FR | la pression, comme l ont toujours fait les paquets de
+                    // FR | l hote et le runner.
+                    // EN | PERCENT-ENCODED, and this is load-bearing.
+                    // EN | A sentence on its way into an onclick attribute
+                    // EN | crosses two parsers: HTML reads the attribute, then
+                    // EN | JS reads the code inside it. "il faudra ressaisir 3
+                    // EN | des 5 cles" is fine; "pour que l'ecran" is not — the
+                    // EN | apostrophe closes the JS string literal and the
+                    // EN | button dies silently on click, which is the worst way
+                    // EN | for a confirmation dialog to fail. The `| js` filter
+                    // EN | did escape the sentence, but it escaped it for the
+                    // EN | GENERATED SOURCE; by the time the same sentence is a
+                    // EN | runtime value being interpolated into markup, that
+                    // EN | escaping has already been consumed. Percent-encoding
+                    // EN | is the one form that survives both parsers intact.
+                    // EN | encodeURIComponent leaves the apostrophe alone — it
+                    // EN | is an unreserved character — so it is replaced by
+                    // EN | hand, and that single replace is the whole fix.
+                    // FR | ENCODE EN POURCENTS, et ce n est pas cosmetique.
+                    // FR | Une phrase en route vers un attribut onclick traverse
+                    // FR | deux analyseurs : HTML lit l attribut, puis JS lit le
+                    // FR | code dedans. « il faudra ressaisir 3 des 5 cles » va
+                    // FR | bien ; « pour que l'ecran » non — l apostrophe ferme
+                    // FR | le litteral JS et le bouton meurt en silence au clic,
+                    // FR | la pire facon pour une demande de confirmation
+                    // FR | d echouer. Le filtre `| js` a bien echappe la phrase,
+                    // FR | mais pour la SOURCE GENEREE ; quand cette meme phrase
+                    // FR | est une valeur d execution interpolee dans du
+                    // FR | balisage, cet echappement a deja ete consomme.
+                    // FR | L encodage en pourcents est la seule forme qui
+                    // FR | survive intacte aux deux analyseurs.
+                    // FR | encodeURIComponent laisse l apostrophe telle quelle —
+                    // FR | c est un caractere non reserve — elle est donc
+                    // FR | remplacee a la main, et ce seul replace est tout le
+                    // FR | correctif.
+                    const warn = L.txt[r.confirm_key] || '';
+                    const safe = encodeURIComponent(warn).replace(/'/g, '%27');
+                    const onclick = warn
+                      ? `if(confirm(decodeURIComponent('${safe}'))){${call}}`
+                      : call;
                     return `<span onclick="${onclick}" style="font-size:9px;
                       font-weight:700;letter-spacing:.3px;cursor:pointer;
                       color:#00E5FF;border:1px solid rgba(0,229,255,.5);
@@ -1332,8 +1464,35 @@ views:
                       padding:3px 10px;white-space:nowrap;">${label}</span>`;
                   };
 
-                  return rows.map(r => {
-                    const [text, colour] = detail(r);
+                  // EN | GROUPED BY LAYER, in the order the component table
+                  // EN | declares. Seven rows in one flat list could not say
+                  // EN | that recreating Vault costs a reseal while restarting
+                  // EN | k3s takes this very screen down with it — and the
+                  // EN | cluster, which appeared only as a version number, now
+                  // EN | has a heading of its own with its contents under it.
+                  // EN | A heading says it once for everything below it.
+                  // EN | A row whose layer this card does not recognise falls
+                  // EN | under the server heading rather than vanishing: the
+                  // EN | report on disk can be older than the card reading it,
+                  // EN | for the minutes between a deploy and the next probe.
+                  // FR | REGROUPEES PAR COUCHE, dans l ordre que declare la
+                  // FR | table des composants. Sept lignes en liste plate ne
+                  // FR | pouvaient pas dire que recreer Vault coute un
+                  // FR | rescellement quand redemarrer k3s emporte cet ecran
+                  // FR | meme — et le cluster, qui n apparaissait que comme un
+                  // FR | numero de version, a desormais son propre titre avec
+                  // FR | son contenu dessous. Un titre le dit une fois pour tout
+                  // FR | ce qui est en dessous.
+                  // FR | Une ligne dont cette carte ne reconnait pas la couche
+                  // FR | tombe sous le titre serveur plutot que de disparaitre :
+                  // FR | le rapport sur disque peut etre plus ancien que la carte
+                  // FR | qui le lit, le temps qui separe un deploiement de la
+                  // FR | sonde suivante.
+                  const layers = ['host', 'docker', 'k3s'];
+                  const layerOf = r => layers.indexOf(r.where) >= 0
+                    ? r.where : 'host';
+                  const line = r => {
+                    const [text, colour, sub] = detail(r);
                     return `<div style="display:flex;align-items:center;
                         gap:10px;padding:7px 0;
                         border-top:1px solid rgba(0,229,255,.10);">
@@ -1344,12 +1503,26 @@ views:
                           color:#FFFFFF;font-size:12px;font-weight:600;
                           white-space:nowrap;overflow:hidden;
                           text-overflow:ellipsis;">${L.names[r.key] || r.key}</div>
-                        <div style="flex:0 1 auto;color:${colour};
-                          font-size:11px;text-align:right;white-space:nowrap;
-                          overflow:hidden;text-overflow:ellipsis;
-                          ">${text}</div>
+                        <div style="flex:0 1 auto;min-width:0;max-width:52%;
+                          text-align:right;">
+                          <div style="color:${colour};font-size:11px;
+                            white-space:nowrap;overflow:hidden;
+                            text-overflow:ellipsis;">${text}</div>
+                          ${sub ? `<div style="color:#56707E;font-size:9px;
+                            line-height:1.35;padding-top:2px;
+                            ">${sub}</div>` : ''}
+                        </div>
                         <div style="flex:0 0 auto;">${action(r)}</div>
                       </div>`;
+                  };
+                  return layers.map(w => {
+                    const group = rows.filter(r => layerOf(r) === w);
+                    if (!group.length) return '';
+                    return `<div style="display:flex;align-items:center;gap:6px;
+                        padding:12px 0 2px;color:#00E5FF;font-size:9px;
+                        font-weight:700;letter-spacing:.6px;
+                        text-transform:uppercase;">${L.where[w] || w}</div>`
+                      + group.map(line).join('');
                   }).join('');
                 ]]]
               foot: >

@@ -266,15 +266,104 @@ frontière du conteneur et aucune entité `update.*` ne les porte — donc
 l'écran qui prétendait réunir *toutes* les mises à jour en attente était,
 jusqu'ici, aveugle à la machine sous lui.
 
-| Composant | Palier | D'où vient la version |
+### Trois couches, pas une liste plate
+
+La première question devant une mise à jour d'infrastructure n'est pas
+« quelle version » mais **« qu'est-ce que son redémarrage emporte avec
+lui »**. Recréer le coffre-fort coûte un rescellement ; redémarrer k3s
+emporte Home Assistant, donc l'écran depuis lequel on a appuyé. Ce sont
+deux rayons d'explosion différents et ils tenaient dans la même liste de
+sept lignes, qui ne nommait jamais la différence.
+
+Chaque composant déclare donc sa **couche**, et l'écran regroupe dessus :
+
+| Couche | Ce que c'est | Ce qu'un redémarrage emporte |
 |---|---|---|
-| Paquets de l'hôte | `auto` | `apt list --upgradable` sur l'hôte |
-| Redémarrage de l'hôte | `manual` | `/var/run/reboot-required` |
-| Runner GitLab | `auto` | `apt-cache policy gitlab-runner` |
-| GitLab | `manual` | `apt-cache policy gitlab-ce`, ou l'API de l'instance |
-| Cluster k3s | `locked` | `k3s --version` face aux releases k3s-io/k3s |
-| Coffre-fort Vault | `locked` | le tag de l'image en marche face à Docker Hub |
-| Images Docker | `locked` | `docker ps`, remonté et non comparé |
+| `host` | l'installation Ubuntu elle-même — paquets apt, unités systemd | tout, pour le redémarrage de l'hôte ; rien, pour un paquet |
+| `docker` | un conteneur du démon Docker de l'hôte, **à côté** du cluster | ce conteneur seul |
+| `k3s` | ce qui tourne **dans** le cluster | le pod, et Home Assistant s'il en fait partie |
+
+| Composant | Couche | Palier | D'où vient la version |
+|---|---|---|---|
+| Paquets de l'hôte | `host` | `auto` | `apt list --upgradable` sur l'hôte |
+| Redémarrage de l'hôte | `host` | `manual` | `/var/run/reboot-required` |
+| GitLab | `host` | `manual` | `apt-cache madison gitlab-ce`, ou l'API de l'instance |
+| Runner GitLab | `host` | `auto` | `apt-cache madison gitlab-runner` |
+| Cluster k3s | `host` | `manual` | `k3s --version` face aux releases k3s-io/k3s |
+| Coffre-fort Vault | `docker` | `manual` | `vault version` **dans** le conteneur, face à Docker Hub |
+| Autres conteneurs Docker | `docker` | `locked` | `docker ps`, remonté et non comparé |
+| Charges du cluster | `k3s` | `locked` | `k3s kubectl get deploy,sts,ds -A`, remonté et non comparé |
+
+Deux lignes sont nouvelles ou déplacées, et pour des raisons précises :
+
+- **Charges du cluster.** Le cluster n'apparaissait que comme un numéro de
+  version, et rien de son contenu n'apparaissait du tout — Home Assistant,
+  qui sert cet écran, n'était pas sur l'écran. Cette ligne liste chaque
+  deployment, statefulset et daemonset avec l'image qu'il tire, au niveau
+  où cette image est déclarée : les pods vont et viennent, ce sont leurs
+  contrôleurs qu'une mise à niveau modifie.
+- **Le coffre-fort lit `vault version`, plus son tag d'image.** Le
+  déploiement épingle `hashicorp/vault:1.20`, un alias flottant vers le
+  correctif le plus récent de la série : le tag dit `1.20` quand le binaire
+  est en `1.20.4`. Un plan construit sur le tag proposait donc `1.20.4` en
+  première étape — une mise à niveau vers la version déjà en marche.
+
+### Une étape par pression — le chemin, pas l'horizon
+
+**Le problème.** Une ligne publiait un couple : installé, et la version la
+plus haute en amont. Sur un paquet apt ce couple est aussi la consigne —
+apt passe de l'un à l'autre en une étape. Sur le coffre-fort c'était un
+mensonge. HashiCorp ne supporte qu'une série mineure à la fois, donc un
+hôte en `1.20.4` atteint `2.1.0` ainsi :
+
+```
+1.20.4  ──▶  1.21.4  ──▶  2.0.4  ──▶  2.1.0
+```
+
+Trois mises à niveau, chacune avec sa migration de stockage et de
+scellement. La ligne affichait `1.20.4 → 2.1.0` à côté d'un bouton
+INSTALLER : elle proposait d'en sauter deux. Kubernetes interdit de la même
+façon de sauter une mineure, et les migrations de base de GitLab tournent
+par mineure.
+
+**La correction.** La contrainte est propre à chaque composant, elle est
+donc déclarée à côté de son palier, dans `vssp_infra_updates.py` :
+
+| Politique | Ce qu'elle autorise | Qui la porte |
+|---|---|---|
+| `POLICY_DIRECT` | n'importe quelle version vers n'importe quelle autre, en un mouvement | paquets de l'hôte, runner GitLab |
+| `POLICY_SERIES` | une série `majeure.mineure` à la fois, en atterrissant sur son plus haut correctif | Vault, k3s, GitLab |
+
+La sonde publie alors tout le chemin au lieu de son extrémité :
+
+| Champ | Ce que c'est |
+|---|---|
+| `next` | la **seule** version qu'installe une pression |
+| `path` | chaque escale, de `next` jusqu'au sommet |
+| `steps` | combien de mises à niveau cela représente |
+| `latest` | le sommet. Reste sur la ligne — savoir de combien on est en retard a de la valeur — mais **n'est plus une cible** |
+
+Ce que l'écran affiche désormais sur la ligne du coffre-fort :
+
+```
+Coffre-fort Vault      1.20.4 → 1.21.4          [INSTALLER]
+                       puis 2.0.4 → 2.1.0 · 3 étapes
+```
+
+Le feu de HOME continue de rougir sur `latest` : avoir trois séries de
+retard est un fait de version majeure quelle que soit la première étape,
+et le feu parle du retard de la maison. Mais sa liste affiche `next` à côté
+de la flèche, parce que c'est la version qu'une pression installe. Les deux
+ne faisaient qu'un champ, d'où un feu et un bouton capables de décrire deux
+mises à niveau différentes.
+
+**Rien ne peut sauter une étape, même par accident.** `install_one` sonde le
+composant *avant* d'installer et tend la ligne fraîche à l'installateur, qui
+installe la version que cette ligne nomme. Ni un capteur périmé, ni une
+carte rendue avant la dernière sonde, ni un second opérateur ne peut
+transformer une pression sur `1.21.4` en un saut vers `2.1.0`. Côté apt
+cela veut dire `apt-get install gitlab-ce=18.3.2-ce.0` et non
+`--only-upgrade`, qui viserait le candidat, c'est-à-dire le sommet.
 
 ### Les trois paliers
 
@@ -288,9 +377,34 @@ mettre la maison à l'arrêt :
 - **`manual`** — une ligne, un bouton, jamais la passe, quoi que dise
   l'interrupteur. GitLab redémarre tous ses services et réclame une
   sauvegarde préalable ; un redémarrage d'hôte est un redémarrage d'hôte.
-- **`locked`** — remonté et jamais installé depuis la console. Mettre k3s
-  à jour redémarre le cluster depuis lequel cet écran est servi, et il en
-  va de même de Vault pour le coffre.
+- **`locked`** — remonté et jamais installé depuis la console, **et chaque
+  ligne verrouillée dit pourquoi avec ses propres mots**. Une seule phrase
+  les couvrait tous, donc la pastille VERROUILLÉ n'expliquait rien sur la
+  ligne où elle se trouvait.
+
+**k3s et Vault étaient `locked` et tous deux à tort**, pour des raisons
+différentes.
+
+- Le coffre-fort est un simple conteneur Docker **à côté** du cluster, pas
+  dedans (voir [Vault.fr.md](../platform/Vault.fr.md) pour pourquoi) : le
+  recréer ne touche ni Home Assistant ni k3s. Cela coûte un rescellement —
+  3 des 5 clés à ressaisir — et c'est exactement ce dont sa demande de
+  confirmation avertit avant la pression.
+- k3s emporte réellement Home Assistant avec lui. Mais le redémarrage de
+  l'hôte aussi, et il est un bouton depuis toujours : la réponse à « ceci
+  tue la session qui l'a pressé » est de **détacher** la commande, pas de
+  refuser l'opération. `install_k3s` écrit un script sur l'hôte et le lance
+  sous `setsid`, comme `install_os_reboot` s'en remet à `shutdown -r +1` ;
+  la mise à niveau se termine seule et la sonde suivante en rapporte le
+  résultat.
+
+Ce qui était réellement dangereux sur les deux, c'était de les viser sur la
+release la plus récente — et c'est ce que corrige la section précédente.
+
+**Chaque bouton lourd a désormais son propre avertissement**, déclaré à
+côté de son palier. Une phrase unique faisait poser la même question au
+coffre et au redémarrage de l'hôte pour deux conséquences entièrement
+différentes : l'un rescelle un conteneur, l'autre met la maison à l'arrêt.
 
 **Le palier est déclaré dans `vssp_infra_updates.py`, pas dans le
 dashboard.** Une carte ne peut pas promouvoir un composant en l'affichant
