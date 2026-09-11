@@ -1131,6 +1131,24 @@ def blank(component: dict, **over) -> dict:
         # FR | installe, si quelqu un a verifie recemment, et a quel point.
         "stale": False,
         "measured": "",
+        # EN | NOT the version: whether the thing is actually RUNNING. Empty
+        # EN | means healthy. A version number answers "is this current" and
+        # EN | says nothing about "is this working", and the two came apart
+        # EN | badly once: k3s upgraded to the right binary, could not bind its
+        # EN | supervisor port because a process from the previous version had
+        # EN | survived the restart, and crash-looped fifty-five times - while
+        # EN | the probe read `k3s --version` off disk and the screen said
+        # EN | "1.36.4 - up to date".
+        # FR | PAS la version : si la chose TOURNE reellement. Vide veut dire
+        # FR | en bonne sante. Un numero de version repond a « est-ce a jour »
+        # FR | et ne dit rien de « est-ce que ca marche », et les deux se sont
+        # FR | separes durement une fois : k3s est passe au bon binaire, n a pas
+        # FR | pu se lier a son port de supervision parce qu un processus de la
+        # FR | version precedente avait survecu au redemarrage, et a boucle
+        # FR | cinquante-cinq fois - pendant que la sonde lisait
+        # FR | `k3s --version` sur le disque et que l ecran affichait
+        # FR | « 1.36.4 - a jour ».
+        "health": "",
     }
     row.update(over)
     return row
@@ -1277,7 +1295,35 @@ def probe_k3s(host: Host, safe: "Safe | None", comp: dict) -> dict:
     # FR | 1.36 passe en 1.37 et pas en 1.39, quelle que soit la release la plus
     # FR | recente.
     versions = [t.split("+")[0] for t in github_releases(K3S_REPO)]
-    return planned(comp, installed, versions)
+    # EN | AND ASK WHETHER IT IS RUNNING. `k3s --version` reads the binary on
+    # EN | disk: it answers the same whether the cluster is serving or has been
+    # EN | restarting every nine seconds for a quarter of an hour. An upgrade
+    # EN | here left a process from the old version holding 127.0.0.1:6444, the
+    # EN | new server could not bind it and died on every start, and this row
+    # EN | reported "up to date" throughout - the version WAS right. systemd
+    # EN | knows the difference, and it costs one command to ask.
+    # EN | `activating` counts as bad on purpose. It is the state a Type=notify
+    # EN | unit sits in when it starts and never signals ready, which is
+    # EN | exactly what a crash loop looks like from outside; a healthy k3s
+    # EN | passes through it in seconds, and this probe runs every five
+    # EN | minutes.
+    # FR | ET DEMANDER SI ELLE TOURNE. `k3s --version` lit le binaire sur le
+    # FR | disque : il repond pareil que le cluster serve ou qu il redemarre
+    # FR | toutes les neuf secondes depuis un quart d heure. Une mise a niveau
+    # FR | ici a laisse un processus de l ancienne version tenir
+    # FR | 127.0.0.1:6444, le nouveau serveur ne pouvait pas s y lier et
+    # FR | mourait a chaque demarrage, et cette ligne annoncait « a jour » tout
+    # FR | du long - la version ETAIT la bonne. systemd connait la difference,
+    # FR | et la lui demander coute une commande.
+    # FR | `activating` compte comme mauvais volontairement. C est l etat ou
+    # FR | reste une unite Type=notify qui demarre sans jamais signaler qu elle
+    # FR | est prete, ce qui est exactement l apparence d une boucle de
+    # FR | plantage vue de l exterieur ; un k3s en bonne sante le traverse en
+    # FR | quelques secondes, et cette sonde passe toutes les cinq minutes.
+    _code, state, _err = host.run("systemctl is-active k3s 2>/dev/null")
+    state = state.strip()
+    health = "" if state == "active" else (state or "unknown")
+    return planned(comp, installed, versions, health=health)
 
 
 def probe_k3s_workloads(host: Host, safe: "Safe | None", comp: dict) -> dict:
@@ -1808,18 +1854,128 @@ def install_k3s(host: Host, row: dict) -> tuple[bool, str]:
     if not tag:
         return False, f"no k3s release tag was published for {target}"
     path = "/tmp/vssp_k3s_upgrade.sh"
-    script = ("set -e\n"
-              "curl -sfL https://get.k3s.io | "
-              f"INSTALL_K3S_VERSION={tag} sh -\n")
+    # EN | STOP FIRST, AND CHECK THE PORT IS ACTUALLY FREE. Piping get.k3s.io
+    # EN | straight into sh is what the k3s docs show, and it is what this did.
+    # EN | It restarts the unit at the end, and that restart is where this bit.
+    # EN | A `k3s agent` process from the previous version survived systemd's
+    # EN | stop - the journal says so plainly, "Found left-over process in
+    # EN | control group while starting unit" - and kept 127.0.0.1:6444, the
+    # EN | port the supervisor binds. The new server started, could not bind,
+    # EN | exited, and systemd restarted it. Fifty-five times. The control
+    # EN | plane was gone while the workloads carried on under an orphaned
+    # EN | containerd, so nothing looked wrong from a browser.
+    # EN | So: stop the unit, WAIT for the port to be released, and kill what
+    # EN | is still holding it after five seconds. Then install. Then wait for
+    # EN | systemd to say `active`, and if it does not, free the port once more
+    # EN | and restart - because that single step is the whole of the recovery
+    # EN | and there is no reason to make a human do it at midnight.
+    # EN | The final state goes to a file next to the log. The installer cannot
+    # EN | report it itself: this runs detached, the cluster and Home Assistant
+    # EN | go down with it, and the call that started it is long gone by then.
+    # EN | The k3s row reports the same fact independently at the next probe.
+    # FR | ARRETER D ABORD, ET VERIFIER QUE LE PORT EST VRAIMENT LIBRE. Tuber
+    # FR | get.k3s.io directement dans sh est ce que montre la doc k3s, et
+    # FR | c est ce que faisait ce code. Il redemarre l unite a la fin, et
+    # FR | c est ce redemarrage qui a mordu. Un processus `k3s agent` de la
+    # FR | version precedente a survecu a l arret de systemd - le journal le
+    # FR | dit clairement, « Found left-over process in control group while
+    # FR | starting unit » - et gardait 127.0.0.1:6444, le port auquel se lie
+    # FR | le superviseur. Le nouveau serveur demarrait, n arrivait pas a s y
+    # FR | lier, sortait, et systemd le relancait. Cinquante-cinq fois. Le plan
+    # FR | de controle avait disparu pendant que les charges continuaient sous
+    # FR | un containerd orphelin : rien ne paraissait anormal depuis un
+    # FR | navigateur.
+    # FR | Donc : arreter l unite, ATTENDRE que le port soit relache, et tuer
+    # FR | ce qui le tient encore apres cinq secondes. Puis installer. Puis
+    # FR | attendre que systemd dise `active`, et sinon liberer le port une
+    # FR | fois de plus et redemarrer - parce que cette seule etape est tout le
+    # FR | depannage, et qu il n y a aucune raison de la faire faire a un
+    # FR | humain a minuit.
+    # FR | L etat final va dans un fichier a cote du journal. L installateur ne
+    # FR | peut pas le rapporter lui-meme : il tourne detache, le cluster et
+    # FR | Home Assistant tombent avec lui, et l appel qui l a lance a disparu
+    # FR | depuis longtemps. La ligne k3s rapporte le meme fait de son cote a
+    # FR | la sonde suivante.
+    script = f"""set -e
+say() {{ echo "[vssp] $(date +%H:%M:%S) $*"; }}
+
+held() {{
+  if command -v ss >/dev/null 2>&1; then
+    ss -ltn 2>/dev/null | grep -q '127\\.0\\.0\\.1:6444'
+  else
+    grep -qi ':192C 00000000:0000 0A' /proc/net/tcp 2>/dev/null
+  fi
+}}
+
+free_port() {{
+  n=0
+  while held; do
+    n=$((n + 1))
+    if [ "$n" -eq 5 ]; then
+      say "6444 still held, killing leftover k3s processes"
+      pkill -f '/usr/local/bin/k3s agent' 2>/dev/null || true
+      pkill -f '/usr/local/bin/k3s server' 2>/dev/null || true
+    fi
+    if [ "$n" -gt 30 ]; then say "6444 STILL held after 30s"; return 1; fi
+    sleep 1
+  done
+  return 0
+}}
+
+wait_active() {{
+  n=0
+  while [ "$n" -lt "$1" ]; do
+    [ "$(systemctl is-active k3s 2>/dev/null)" = active ] && return 0
+    n=$((n + 1))
+    sleep 3
+  done
+  return 1
+}}
+
+say "stopping k3s before installing {tag}"
+systemctl stop k3s 2>/dev/null || true
+free_port || say "proceeding with 6444 still held"
+
+say "installing {tag}"
+curl -sfL https://get.k3s.io | INSTALL_K3S_VERSION={tag} sh -
+
+say "waiting for the service to report ready"
+if ! wait_active 40; then
+  say "not ready after 120s: freeing 6444 and restarting once"
+  systemctl stop k3s 2>/dev/null || true
+  free_port || true
+  systemctl restart k3s 2>/dev/null || true
+  wait_active 20 || true
+fi
+
+state=$(systemctl is-active k3s 2>/dev/null || echo unknown)
+say "final state: $state"
+echo "$state" > {path}.state
+[ "$state" = active ]
+"""
     code, out, err = host.put_script(script, path)
     if code != 0:
         return False, (err or out).strip()[-400:]
     code, out, err = host.run_detached(path)
     if code != 0:
         return False, (err or out).strip()[-400:]
-    return True, (f"k3s {tag} is installing in the background. The cluster and "
-                  f"Home Assistant restart with it; the log is {path}.log on "
-                  "the host.")
+    # EN | "Started", not "worked". This call returns while the upgrade is
+    # EN | still running, so it cannot honestly claim more than that - and the
+    # EN | previous wording ("is installing in the background", ok: true) read
+    # EN | as success on a screen that then showed a green row for a cluster
+    # EN | that was down. The sentence now says where the answer will appear.
+    # FR | « Lancee », pas « reussie ». Cet appel revient pendant que la mise a
+    # FR | niveau tourne encore : il ne peut honnetement pas pretendre a plus -
+    # FR | et la formulation precedente (« is installing in the background »,
+    # FR | ok: true) se lisait comme une reussite sur un ecran qui affichait
+    # FR | ensuite une ligne verte pour un cluster a terre. La phrase dit
+    # FR | maintenant ou la reponse apparaitra.
+    return True, (f"k3s {tag} upgrade STARTED, not yet finished. The service "
+                  f"is stopped, installed and waited for; if it does not come "
+                  f"back the script frees port 6444 and restarts it once. The "
+                  f"cluster and Home Assistant go down with it. Verdict: "
+                  f"{path}.state, detail: {path}.log, and the k3s row reports "
+                  f"the service state at the next probe.")
 
 
 # EN | Which key does what, in one table. A component with no entry here is

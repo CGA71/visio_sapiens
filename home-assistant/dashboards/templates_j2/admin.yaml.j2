@@ -1302,6 +1302,7 @@ views:
                     notreq:    '{{ t('admin.updates_infra_not_required') | js }}',
                     unprobed:  '{{ t('admin.updates_infra_notprobed') | js }}',
                     stale:     '{{ t('admin.updates_infra_stale') | js }}',
+                    down:      '{{ t('admin.updates_infra_service_down') | js }}',
                     images:    '{{ t('admin.updates_infra_images') | js }}',
                     workloads: '{{ t('admin.updates_infra_workloads') | js }}',
                     install:   '{{ t('admin.updates_infra_install') | js }}',
@@ -1502,6 +1503,31 @@ views:
                   };
                   const detail = r => {
                     const [text, colour, sub] = measure(r);
+                    // EN | RUNNING beats CURRENT. A component can be on exactly
+                    // EN | the right version and be dead, and the version is
+                    // EN | the half this screen was built to show — so a row
+                    // EN | that reported "1.36.4 · up to date" stayed calmly
+                    // EN | green through fifty-five restarts of a cluster whose
+                    // EN | control plane was gone. When the probe says the
+                    // EN | service is not running, that outranks everything
+                    // EN | else the row could say: red, with the systemd state
+                    // EN | spelled out, because `activating` and `failed` send
+                    // EN | you to different places.
+                    // FR | TOURNER PASSE AVANT ETRE A JOUR. Un composant peut
+                    // FR | etre exactement sur la bonne version et etre mort,
+                    // FR | et la version est la moitie que cet ecran a ete fait
+                    // FR | pour montrer — une ligne affichant « 1.36.4 · a
+                    // FR | jour » est donc restee tranquillement verte pendant
+                    // FR | cinquante-cinq redemarrages d un cluster dont le
+                    // FR | plan de controle avait disparu. Quand la sonde dit
+                    // FR | que le service ne tourne pas, cela prime sur tout le
+                    // FR | reste : rouge, avec l etat systemd ecrit en toutes
+                    // FR | lettres, parce qu `activating` et `failed`
+                    // FR | n envoient pas au meme endroit.
+                    if (r.health) {
+                      const bad = `${L.down} ${r.health}`;
+                      return [text, '#FF5252', sub ? `${bad} · ${sub}` : bad];
+                    }
                     if (!r.stale) return [text, colour, sub];
                     const age = `${L.stale} ${when(r.measured)}`;
                     return [text, '#7E8E96', sub ? `${sub} · ${age}` : age];

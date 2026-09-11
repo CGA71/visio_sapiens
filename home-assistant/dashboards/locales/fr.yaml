@@ -341,6 +341,10 @@ admin:
   # FR | Précède une date. « mesuré le 11/09/2026 14:00 » — la ligne porte une
   # FR | vraie mesure d'une exécution antérieure, et ceci dit laquelle.
   updates_infra_stale: mesuré le
+
+  # EN | Followed by the raw systemd state (a machine token, never translated).
+  # FR | Suivi de l'état systemd brut (un jeton machine, jamais traduit).
+  updates_infra_service_down: le service ne tourne pas —
   updates_infra_msg_no_token: >-
     Pas de jeton de maintenance : /config/vssp/.vault_maint_token est absent.
     Le déploiement l'écrit depuis la variable VAULT_MAINT_TOKEN.

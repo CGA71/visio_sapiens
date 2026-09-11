@@ -424,6 +424,50 @@ dans un fichier annule le coffre. PKCS#11/HSM est réservé à Vault
 Enterprise. Tant qu'aucune n'est choisie, ce que cette section décrit est la
 réponse : le scellement coûte trois saisies, pas un écran vide.
 
+### À jour n'est pas en marche
+
+La première mise à niveau k3s réelle a installé le bon binaire et laissé le
+cluster à terre pendant un quart d'heure sans que rien ne le dise.
+
+Le déroulé, parce qu'il se répétera ailleurs :
+
+1. `get.k3s.io` installe `v1.36.4+k3s1` et redémarre l'unité. Journal propre.
+2. Un processus **`k3s agent` de la version précédente survit à l'arrêt** —
+   systemd le signale, « Found left-over process in control group while
+   starting unit » — et garde `127.0.0.1:6444`, le port du superviseur.
+3. Le nouveau serveur démarre, ne peut pas s'y lier, sort.
+   `Failed with result 'protocol'`. systemd relance. **55 fois.**
+4. Les charges continuent de tourner sous un `containerd` orphelin : Home
+   Assistant répond 200, le navigateur ne montre rien d'anormal.
+5. Et la ligne k3s affiche **« 1.36.4 · à jour »**, parce que la sonde lisait
+   `k3s --version`, c'est-à-dire **le binaire sur le disque**.
+
+Trois défauts, trois corrections :
+
+| Défaut | Correction |
+|---|---|
+| L'installateur créait la condition | il **arrête** l'unité, **attend** que 6444 soit libéré, et tue ce qui le tient encore après 5 s |
+| Il ne vérifiait pas | il attend `active` ; sinon il libère le port et redémarre **une** fois, puis écrit son verdict dans `.state` |
+| La sonde lisait la version, pas l'état | elle demande aussi `systemctl is-active k3s` ; tout ce qui n'est pas `active` remplit `health` |
+
+Le champ `health` prime sur tout le reste à l'écran : la ligne passe en rouge
+et nomme l'état systemd, parce qu'`activating` et `failed` n'envoient pas au
+même endroit. `activating` compte comme mauvais **volontairement** — c'est
+l'état d'une unité `Type=notify` qui démarre sans jamais se déclarer prête,
+donc l'apparence exacte d'une boucle de plantage vue de l'extérieur.
+
+**La leçon vaut au-delà de k3s.** Une version est une réponse à « est-ce à
+jour », jamais à « est-ce que ça marche », et cet écran a été construit pour
+montrer la première. Tout composant dont le service peut mourir en gardant le
+bon numéro mérite son `health`.
+
+Dépannage manuel, si jamais le redémarrage automatique ne suffit pas :
+
+```bash
+sudo /usr/local/bin/k3s-killall.sh   # arrête les rescapés, ne désinstalle rien
+sudo systemctl restart k3s
+```
+
 ### Les trois paliers
 
 Les autres familles se répartissent déjà par risque — HACS en lot, jamais

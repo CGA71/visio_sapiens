@@ -405,6 +405,49 @@ the keys in a file cancels the safe. PKCS#11/HSM is Vault Enterprise only.
 Until one of those is chosen, what this section describes is the answer: a
 seal costs three key entries, not a blank screen.
 
+### Current is not running
+
+The first real k3s upgrade installed the right binary and left the cluster
+down for a quarter of an hour with nothing saying so.
+
+What happened, because it will happen elsewhere:
+
+1. `get.k3s.io` installs `v1.36.4+k3s1` and restarts the unit. Clean log.
+2. A **`k3s agent` process from the previous version survives the stop** —
+   systemd says so, "Found left-over process in control group while starting
+   unit" — and keeps `127.0.0.1:6444`, the supervisor's port.
+3. The new server starts, cannot bind, exits.
+   `Failed with result 'protocol'`. systemd restarts it. **55 times.**
+4. The workloads keep running under an orphaned `containerd`: Home Assistant
+   answers 200 and a browser shows nothing wrong.
+5. And the k3s row reads **"1.36.4 · up to date"**, because the probe read
+   `k3s --version` — that is, **the binary on disk**.
+
+Three faults, three fixes:
+
+| Fault | Fix |
+|---|---|
+| The installer created the condition | it **stops** the unit, **waits** for 6444 to be released, and kills whatever still holds it after 5 s |
+| It did not verify | it waits for `active`; failing that it frees the port and restarts **once**, then writes its verdict to `.state` |
+| The probe read the version, not the state | it also asks `systemctl is-active k3s`; anything but `active` fills `health` |
+
+The `health` field outranks everything else on screen: the row turns red and
+names the systemd state, because `activating` and `failed` send you to
+different places. `activating` counts as bad **on purpose** — it is the state
+of a `Type=notify` unit that starts and never signals ready, which is exactly
+what a crash loop looks like from outside.
+
+**The lesson is not about k3s.** A version answers "is this current", never
+"is this working", and this screen was built to show the first. Any component
+whose service can die while keeping the right number deserves its `health`.
+
+Manual recovery, should the automatic restart ever not be enough:
+
+```bash
+sudo /usr/local/bin/k3s-killall.sh   # stops leftovers, uninstalls nothing
+sudo systemctl restart k3s
+```
+
 ### The three tiers
 
 The other families already split by risk — HACS in bulk, firmware never.
