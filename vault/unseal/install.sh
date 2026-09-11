@@ -54,6 +54,28 @@ install -d -m 0700 -o "$USER_NAME" -g "$USER_NAME" "$ETC"
 install -d -m 0700 -o "$USER_NAME" -g "$USER_NAME" "$VAR"
 install -d -m 0700 -o "$USER_NAME" -g "$USER_NAME" "$VAR/devices"
 
+# EN | Where is the safe, really? The container publishes its port on one
+# EN | address, and on this host that address is the LAN one, not the loopback
+# EN | — a client aiming at 127.0.0.1 is refused and misreads it as an outage.
+# EN | Ask docker rather than assume; 0.0.0.0 means "every address", and the
+# EN | loopback is the right one to pick out of it.
+# FR | Ou est le coffre, vraiment ? Le conteneur publie son port sur une
+# FR | adresse, et sur cet hote c est l adresse LAN, pas la boucle locale — un
+# FR | client qui vise 127.0.0.1 est refuse et le prend pour une panne.
+# FR | Demander a docker plutot que supposer ; 0.0.0.0 veut dire "toutes les
+# FR | adresses", et la boucle locale est celle a retenir dedans.
+VAULT_ADDR=${VSSP_VAULT_ADDR:-}
+if [ -z "$VAULT_ADDR" ] && command -v docker >/dev/null 2>&1; then
+  published=$(docker port vssp-vault 8200/tcp 2>/dev/null | head -n 1 | tr -d '')
+  case "$published" in
+    0.0.0.0:*)  VAULT_ADDR="http://127.0.0.1:${published##*:}" ;;
+    "[::]":*)   VAULT_ADDR="http://127.0.0.1:${published##*:}" ;;
+    ?*:*)       VAULT_ADDR="http://$published" ;;
+  esac
+fi
+[ -n "$VAULT_ADDR" ] || VAULT_ADDR=http://192.168.1.11:8200
+echo "[OK] vault at $VAULT_ADDR"
+
 # EN | The hardening below is not decoration. This process holds, for the
 # EN | length of one request, the three shares that open the safe. Everything
 # EN | here narrows what a flaw in it could reach: no privilege escalation, no
@@ -78,6 +100,7 @@ Wants=network-online.target
 Type=simple
 User=$USER_NAME
 Group=$USER_NAME
+Environment=VSSP_VAULT_ADDR=$VAULT_ADDR
 ExecStart=/usr/bin/python3 $LIB/vssp_unseal.py serve
 Restart=on-failure
 RestartSec=5

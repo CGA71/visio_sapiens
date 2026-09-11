@@ -180,7 +180,30 @@ file is intact.
 | `403 denied` | wrong passphrase — or a tampered file; the service does not say which |
 | `429 locked` | five failures; wait, or `sudo rm /etc/vssp-unseal/state.json` |
 | `503 not enrolled` | step 2 was never done |
-| `502 vault unreachable` | the Vault container is stopped — that is not a seal problem |
+| `502 vault unreachable`, or `Connection refused` during enrolment | the safe is not where the tool is looking — see below. A stopped container looks the same; check both |
+
+### `Connection refused` when the container is running
+
+Docker publishes a port **on one address**, and on this host it chose
+the LAN address:
+
+```
+vssp-vault | Up 2 hours (healthy) | 192.168.1.11:8200->8200/tcp
+```
+
+A binding written like that answers there **and nowhere else** — a
+client aiming at `127.0.0.1` is refused, which reads like an outage
+while the safe is healthy. Ask docker instead of guessing:
+
+```bash
+docker port vssp-vault 8200/tcp
+curl -s http://192.168.1.11:8200/v1/sys/seal-status
+```
+
+`install.sh` reads that binding and writes it into the unit as
+`Environment=VSSP_VAULT_ADDR=`; `systemctl cat vssp-unseal` shows the
+address in use. For a one-off command, prefix it:
+`sudo -u vssp-unseal env VSSP_VAULT_ADDR=http://192.168.1.11:8200 vssp-unseal enroll-keys`.
 
 Logs are in `journalctl -u vssp-unseal`. They carry the timestamp, the
 certificate name, the IP, the MAC seen and the outcome — **never** the

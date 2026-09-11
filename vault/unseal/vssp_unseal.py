@@ -115,7 +115,24 @@ SRV_CRT = ETC / "server.crt"
 SRV_KEY = ETC / "server.key"
 STATE = ETC / "state.json"
 
-VAULT_ADDR = os.environ.get("VSSP_VAULT_ADDR", "http://127.0.0.1:8200")
+# EN | The safe is a docker container, and docker published its port on the
+# EN | host's LAN address rather than on the loopback: "192.168.1.11:8200->8200".
+# EN | A binding like that answers on that address AND NOWHERE ELSE, so a
+# EN | client aiming at 127.0.0.1 gets ECONNREFUSED and reads it as "the safe
+# EN | is down" when the safe is perfectly healthy. This default matches what
+# EN | the rest of the project already uses (home-assistant/packages/
+# EN | vssp_vault.yaml, vault/bootstrap-api.sh); VSSP_VAULT_ADDR overrides it,
+# EN | and install.sh reads the real binding from docker when it writes the unit.
+# FR | Le coffre est un conteneur docker, et docker a publie son port sur
+# FR | l adresse LAN de l hote et non sur la boucle locale :
+# FR | "192.168.1.11:8200->8200". Une liaison pareille repond sur cette adresse
+# FR | ET NULLE PART AILLEURS ; un client qui vise 127.0.0.1 recolte
+# FR | ECONNREFUSED et le lit comme "le coffre est tombe" alors que le coffre
+# FR | va tres bien. Ce defaut est celui qu emploie deja le reste du projet
+# FR | (home-assistant/packages/vssp_vault.yaml, vault/bootstrap-api.sh) ;
+# FR | VSSP_VAULT_ADDR le remplace, et install.sh lit la liaison reelle aupres
+# FR | de docker au moment d ecrire l unite.
+VAULT_ADDR = os.environ.get("VSSP_VAULT_ADDR", "http://192.168.1.11:8200")
 BIND_PORT = int(os.environ.get("VSSP_UNSEAL_PORT", "8443"))
 HTTP_TIMEOUT = 10
 

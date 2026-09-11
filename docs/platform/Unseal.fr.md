@@ -185,7 +185,31 @@ fichier.
 | `403 denied` | phrase fausse — ou fichier altéré, le service ne dit pas lequel |
 | `429 locked` | cinq échecs ; attendez, ou `sudo rm /etc/vssp-unseal/state.json` |
 | `503 not enrolled` | l'étape 2 n'a pas été faite |
-| `502 vault unreachable` | le conteneur Vault est arrêté — ce n'est pas un problème de scellement |
+| `502 vault unreachable`, ou `Connection refused` à l'enrôlement | le coffre n'est pas là où l'outil le cherche — voir ci-dessous. Un conteneur arrêté donne la même chose ; vérifiez les deux |
+
+### `Connection refused` alors que le conteneur tourne
+
+Docker publie un port **sur une adresse**, et sur cet hôte il a choisi
+l'adresse LAN :
+
+```
+vssp-vault | Up 2 hours (healthy) | 192.168.1.11:8200->8200/tcp
+```
+
+Une liaison écrite ainsi répond là **et nulle part ailleurs** : un
+client qui vise `127.0.0.1` est refusé, ce qui ressemble à une panne
+alors que le coffre se porte bien. Demandez à docker plutôt que de
+supposer :
+
+```bash
+docker port vssp-vault 8200/tcp
+curl -s http://192.168.1.11:8200/v1/sys/seal-status
+```
+
+`install.sh` lit cette liaison et l'écrit dans l'unité sous
+`Environment=VSSP_VAULT_ADDR=` ; `systemctl cat vssp-unseal` montre
+l'adresse employée. Pour une commande ponctuelle, préfixez-la :
+`sudo -u vssp-unseal env VSSP_VAULT_ADDR=http://192.168.1.11:8200 vssp-unseal enroll-keys`.
 
 Les journaux sont dans `journalctl -u vssp-unseal`. Ils portent l'horodatage,
 le nom du certificat, l'IP, la MAC vue et le résultat — **jamais** la phrase ni
