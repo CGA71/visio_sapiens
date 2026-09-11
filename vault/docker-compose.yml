@@ -59,6 +59,30 @@ services:
     cap_add:
       - IPC_LOCK
 
+    # EN | IPC_LOCK grants the CAPABILITY to lock memory. RLIMIT_MEMLOCK caps
+    # EN | HOW MUCH may be locked, and it is a separate knob that the
+    # EN | capability does not touch. The host default is 8 MB. Vault 1.x fit
+    # EN | inside it, so this was a latent bug for the whole life of this file;
+    # EN | 2.x does not, and the container dies on startup with
+    # EN | "Failed to lock memory: cannot allocate memory" — a message that
+    # EN | names mlock and says nothing about the limit that actually refused.
+    # EN | Unlimited is what HashiCorp's own docs ask for. The alternative,
+    # EN | disable_mlock, would give up the protection the capability above
+    # EN | exists to provide: secrets reaching swap in clear.
+    # FR | IPC_LOCK accorde la CAPACITE de verrouiller la memoire.
+    # FR | RLIMIT_MEMLOCK plafonne COMBIEN peut l etre, et c est un reglage
+    # FR | distinct que la capacite ne touche pas. Le defaut de l hote est de
+    # FR | 8 Mo. Vault 1.x tenait dedans — ce bug est donc reste latent toute
+    # FR | la vie de ce fichier ; 2.x n y tient pas, et le conteneur meurt au
+    # FR | demarrage sur « Failed to lock memory: cannot allocate memory », un
+    # FR | message qui nomme mlock et ne dit rien de la limite qui a refuse.
+    # FR | Illimite est ce que demande la documentation de HashiCorp.
+    # FR | L alternative, disable_mlock, abandonnerait la protection meme que la
+    # FR | capacite ci-dessus existe pour fournir : des secrets qui atteignent
+    # FR | le swap en clair.
+    ulimits:
+      memlock: -1
+
     # EN | Bound to the LAN address, not 0.0.0.0: the safe has no business
     # EN | listening on every interface of a machine that also faces the
     # EN | router.

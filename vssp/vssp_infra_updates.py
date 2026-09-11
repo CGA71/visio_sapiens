@@ -1612,50 +1612,118 @@ def install_os_reboot(host: Host, row: dict) -> tuple[bool, str]:
     return code == 0, (err or out).strip()[-400:]
 
 
+def vault_retag(host: Host, project: str, repo: str, tag: str) -> tuple[int, str]:
+    """EN | Point the compose file at one image tag and bring the container up
+    EN | on it. Returns (code, output) — saying whether the RIGHT Vault came up
+    EN | is the caller's job, because `docker compose up -d` succeeds when it
+    EN | has nothing to do and succeeds again when what it started immediately
+    EN | died.
+    FR | Pointer le fichier compose sur un tag d image et lever le conteneur
+    FR | dessus. Renvoie (code, sortie) — dire si le BON Vault s est leve est
+    FR | le travail de l appelant, parce que `docker compose up -d` reussit
+    FR | quand il n a rien a faire et reussit encore quand ce qu il a demarre
+    FR | est mort dans la seconde."""
+    path = "/tmp/vssp_vault_retag.sh"
+    script = (
+        "set -e\n"
+        f"cd {project}\n"
+        "f=docker-compose.yml\n"
+        '[ -f "$f" ] || f=docker-compose.yaml\n'
+        f'sed -i "s|{repo}:[A-Za-z0-9._-]*|{repo}:{tag}|g" "$f"\n'
+        "docker compose pull\n"
+        "docker compose up -d\n"
+        # EN | The container needs a moment before `docker exec` will answer,
+        # EN | and a container that is going to crash needs a moment to crash.
+        # EN | Asking too early reads a starting container as a broken one and a
+        # EN | broken one as a starting one.
+        # FR | Le conteneur a besoin d un instant avant que `docker exec` ne
+        # FR | reponde, et un conteneur qui va planter a besoin d un instant
+        # FR | pour planter. Demander trop tot lit un conteneur qui demarre
+        # FR | comme casse, et un conteneur casse comme en train de demarrer.
+        "sleep 8\n")
+    code, out, err = host.put_script(script, path)
+    if code != 0:
+        return code, (err or out).strip()[-300:]
+    code, out, err = host.run_maybe_sudo(f"sh {path}")
+    return code, (err or out).strip()[-300:]
+
+
+def vault_running_version(host: Host, name: str) -> str:
+    """EN | The version the container actually answers with, or '' when it is
+    EN | not answering at all — which is the same thing as far as an upgrade is
+    EN | concerned.
+    FR | La version que le conteneur repond reellement, ou '' quand il ne
+    FR | repond pas du tout — ce qui revient au meme du point de vue d une mise
+    FR | a niveau."""
+    code, out, _ = host.run_maybe_sudo(
+        f"docker exec {name} vault version 2>/dev/null")
+    if code != 0:
+        return ""
+    m = re.search(r"v?(\d+\.\d+\.\d+)", out)
+    return m.group(1) if m else ""
+
+
 def install_vault(host: Host, row: dict) -> tuple[bool, str]:
-    """EN | Move the safe ONE SERIES forward: rewrite the image tag its compose
-    EN | file pins, recreate the container, then check what actually came back.
-    EN | Vault was a `locked` component and the lock was doing two jobs at once.
-    EN | One was real — nothing should skip two storage-format migrations — and
-    EN | the plan now handles that properly. The other was a mistake: the safe
-    EN | is a plain Docker container on the host, NOT in k3s (see
-    EN | vault/config/vault.hcl for why), so recreating it does not touch Home
-    EN | Assistant or the cluster. It is an ordinary manual-tier upgrade.
+    """EN | Move the safe ONE SERIES forward, and PUT IT BACK if the new one
+    EN | will not start.
+    EN | Vault was a `locked` component and the lock was doing two jobs. One was
+    EN | real — nothing should skip two storage migrations — and the upgrade
+    EN | plan handles that now. The other was a mistake: the safe is a plain
+    EN | Docker container on the host, NOT in k3s (vault/config/vault.hcl says
+    EN | why), so recreating it touches neither Home Assistant nor the cluster.
     EN | The compose project directory comes from the container's own labels
     EN | rather than being assumed to be /opt/vssp-vault: that path is a
     EN | convention from the install doc, and docker knows the truth.
-    EN | The check at the end is not belt and braces. `docker compose up -d`
-    EN | succeeds when it has nothing to do, so a sed that matched nothing would
-    EN | report a triumphant upgrade to the version already running. Reading the
-    EN | version back out of the container that came up is the only claim worth
-    EN | making.
-    EN | THE SAFE RESEALS. It answers 503 until three of the five unseal keys
-    EN | are entered by hand, because no auto-unseal is configured, on purpose.
-    EN | That is what this component's confirm_key warns about before the press,
-    EN | and what the returned detail repeats after it.
-    FR | Avancer le coffre D UNE SERIE : reecrire le tag d image que son fichier
-    FR | compose epingle, recreer le conteneur, puis verifier ce qui est
-    FR | reellement revenu.
-    FR | Vault etait un composant `locked` et ce verrou faisait deux choses a la
-    FR | fois. L une etait reelle — rien ne doit sauter deux migrations de
-    FR | format de stockage — et le plan s en charge desormais correctement.
-    FR | L autre etait une erreur : le coffre est un simple conteneur Docker sur
-    FR | l hote, PAS dans k3s (voir vault/config/vault.hcl pour pourquoi), donc
-    FR | le recreer ne touche ni Home Assistant ni le cluster. C est une mise a
-    FR | niveau de palier manuel ordinaire.
+    EN |
+    EN | THE ROLLBACK IS THE POINT, and it was learned the hard way. An upgrade
+    EN | to 2.0.4 pulled, recreated and started cleanly — `docker compose up -d`
+    EN | reported nothing but success — and the container then crash-looped on
+    EN | an mlock limit. The check below caught it and reported honestly, which
+    EN | is worth something, but "honestly reported" still left the safe DOWN:
+    EN | no SAFE screen, no infrastructure probe, no installs, until a human
+    EN | noticed and edited a compose file by hand.
+    EN | So a failed upgrade now undoes itself. The previous tag is read before
+    EN | anything changes, and if the new version does not answer, the compose
+    EN | file goes back to it and the container comes up on the version that was
+    EN | working ten seconds earlier. The operator is told what happened either
+    EN | way, and told separately if the rollback ALSO failed, because that is
+    EN | the one case that needs hands.
+    EN | THE SAFE RESEALS on any of these paths. It answers 503 until three of
+    EN | the five unseal keys are entered by hand, because no auto-unseal is
+    EN | configured, on purpose. That is what this component's confirm_key warns
+    EN | about before the press.
+    FR | Avancer le coffre D UNE SERIE, et LE REMETTRE EN PLACE si la nouvelle
+    FR | ne demarre pas.
+    FR | Vault etait un composant `locked` et ce verrou faisait deux choses.
+    FR | L une etait reelle — rien ne doit sauter deux migrations de stockage —
+    FR | et le plan de mise a niveau s en charge desormais. L autre etait une
+    FR | erreur : le coffre est un simple conteneur Docker sur l hote, PAS dans
+    FR | k3s (vault/config/vault.hcl dit pourquoi), le recreer ne touche donc ni
+    FR | Home Assistant ni le cluster.
     FR | Le repertoire de projet compose vient des labels du conteneur lui-meme
     FR | plutot que d etre suppose etre /opt/vssp-vault : ce chemin est une
     FR | convention de la doc d installation, et docker connait la verite.
-    FR | La verification finale n est pas une ceinture avec des bretelles.
-    FR | `docker compose up -d` reussit quand il n a rien a faire, donc un sed
-    FR | qui n a rien trouve annoncerait triomphalement une mise a niveau vers
-    FR | la version deja en marche. Relire la version dans le conteneur qui
-    FR | s est leve est la seule affirmation qui vaille.
-    FR | LE COFFRE SE RESCELLE. Il repond 503 tant que trois des cinq cles de
-    FR | descellement ne sont pas saisies a la main, parce qu aucun descellement
-    FR | automatique n est configure, volontairement. C est ce dont le
-    FR | confirm_key de ce composant avertit avant la pression, et ce que le
-    FR | detail renvoye repete apres."""
+    FR |
+    FR | LE RETOUR ARRIERE EST L ESSENTIEL, et il a ete appris a la dure. Une
+    FR | mise a niveau vers 2.0.4 a tire, recree et demarre proprement —
+    FR | `docker compose up -d` n a rapporte que des succes — puis le conteneur
+    FR | est entre en boucle de plantage sur une limite mlock. La verification
+    FR | ci-dessous l a attrape et l a dit honnetement, ce qui vaut quelque
+    FR | chose, mais « dit honnetement » laissait quand meme le coffre A TERRE :
+    FR | plus d ecran COFFRE-FORT, plus de sonde infrastructure, plus
+    FR | d installation, jusqu a ce qu un humain le remarque et modifie un
+    FR | fichier compose a la main.
+    FR | Une mise a niveau en echec se defait donc elle-meme. Le tag precedent
+    FR | est lu avant toute modification, et si la nouvelle version ne repond
+    FR | pas, le fichier compose y retourne et le conteneur se leve sur la
+    FR | version qui marchait dix secondes plus tot. L operateur est informe
+    FR | dans les deux cas, et separement si le retour arriere a AUSSI echoue,
+    FR | parce que c est le seul cas qui reclame des mains.
+    FR | LE COFFRE SE RESCELLE sur tous ces chemins. Il repond 503 tant que
+    FR | trois des cinq cles de descellement ne sont pas saisies a la main,
+    FR | parce qu aucun descellement automatique n est configure,
+    FR | volontairement. C est ce dont le confirm_key de ce composant avertit
+    FR | avant la pression."""
     target = row.get("next") or ""
     if not target:
         return True, "nothing to upgrade"
@@ -1669,43 +1737,30 @@ def install_vault(host: Host, row: dict) -> tuple[bool, str]:
     if code != 0 or not project or project == "<no value>":
         return False, (f"{name} was not started by docker compose on this "
                        "host: its image tag is not ours to rewrite")
-    tag = image_tag(image)
-    repo = image[:-(len(tag) + 1)] if tag else image
+    previous = image_tag(image)
+    repo = image[:-(len(previous) + 1)] if previous else image
     if not repo:
         return False, f"cannot read the image reference of {name}"
-    path = "/tmp/vssp_vault_upgrade.sh"
-    script = (
-        "set -e\n"
-        f"cd {project}\n"
-        "f=docker-compose.yml\n"
-        '[ -f "$f" ] || f=docker-compose.yaml\n'
-        f'sed -i "s|{repo}:[A-Za-z0-9._-]*|{repo}:{target}|g" "$f"\n'
-        "docker compose pull\n"
-        "docker compose up -d\n"
-        # EN | The container needs a moment before `docker exec` will answer;
-        # EN | without it the check below reads a container still starting and
-        # EN | calls a good upgrade a failure.
-        # FR | Le conteneur a besoin d un instant avant que `docker exec` ne
-        # FR | reponde ; sans cela la verification ci-dessous lit un conteneur
-        # FR | encore en demarrage et declare en echec une mise a niveau
-        # FR | reussie.
-        "sleep 5\n")
-    code, out, err = host.put_script(script, path)
-    if code != 0:
-        return False, (err or out).strip()[-400:]
-    code, out, err = host.run_maybe_sudo(f"sh {path}")
-    ran = (err or out).strip()[-200:]
-    running = ""
-    vcode, vout, _ = host.run_maybe_sudo(
-        f"docker exec {name} vault version 2>/dev/null")
-    if vcode == 0:
-        m = re.search(r"v?(\d+\.\d+\.\d+)", vout)
-        running = m.group(1) if m else ""
-    if running != target:
-        return False, (f"compose ran but {name} reports "
-                       f"{running or 'no version'}, not {target}. {ran}")
-    return True, (f"Vault {target} is running and SEALED: it needs three of "
-                  f"the five unseal keys before the SAFE screen works again.")
+
+    _code, ran = vault_retag(host, project, repo, target)
+    if vault_running_version(host, name) == target:
+        return True, (f"Vault {target} is running and SEALED: it needs three "
+                      "of the five unseal keys before the SAFE screen works "
+                      "again.")
+
+    # EN | It did not come up. Put back what was there.
+    # FR | Elle ne s est pas levee. Remettre ce qui etait la.
+    if not previous or previous == target:
+        return False, (f"{target} did not come up and there is no previous "
+                       f"tag to return to. {ran}")
+    vault_retag(host, project, repo, previous)
+    if vault_running_version(host, name) == previous:
+        return False, (f"{target} would not start, so the safe was rolled back "
+                       f"to {previous} and is running again, SEALED. Check "
+                       f"`docker logs {name}` before retrying. {ran}")
+    return False, (f"{target} would not start AND the rollback to {previous} "
+                   f"did not come up either — the safe is down and needs "
+                   f"hands: `docker logs {name}` on the host. {ran}")
 
 
 def install_k3s(host: Host, row: dict) -> tuple[bool, str]:
