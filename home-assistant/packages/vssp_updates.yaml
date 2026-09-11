@@ -1073,6 +1073,42 @@ command_line:
       json_attributes:
         - components
         - counts
+
+  # EN | THE STATUS FILE, beside the report. The report says what each row is;
+  # EN | this says whether the last run was able to look at all. They are two
+  # EN | files on purpose — see the header of vssp_infra_updates.py — and only
+  # EN | the first had a sensor, so a probe that failed left the screen holding
+  # EN | rows with no explanation for them. A sealed safe is the everyday case:
+  # EN | Vault reseals on every restart by design, the probe cannot read the
+  # EN | host credentials out of it, and without this sensor the screen said
+  # EN | nothing about why half its rows had gone quiet.
+  # EN | `cat` again, not a run: this is 60 seconds apart because reading a
+  # EN | small file is free, and because it is the file that tells you a press
+  # EN | you just made could not do anything.
+  # FR | LE FICHIER DE STATUT, a cote du rapport. Le rapport dit ce qu est
+  # FR | chaque ligne ; celui-ci dit si la derniere execution a pu regarder
+  # FR | quoi que ce soit. Ce sont deux fichiers a dessein — voir l en-tete de
+  # FR | vssp_infra_updates.py — et seul le premier avait un capteur : une
+  # FR | sonde en echec laissait donc l ecran avec des lignes et aucune
+  # FR | explication pour elles. Un coffre scelle est le cas de tous les jours :
+  # FR | Vault se rescelle a chaque redemarrage par conception, la sonde ne peut
+  # FR | pas y lire les identifiants de l hote, et sans ce capteur l ecran ne
+  # FR | disait rien de la raison pour laquelle la moitie de ses lignes
+  # FR | s etaient taues.
+  # FR | Un `cat` encore, pas une execution : toutes les 60 secondes parce que
+  # FR | lire un petit fichier est gratuit, et parce que c est le fichier qui
+  # FR | vous dit qu une pression que vous venez de faire n a rien pu faire.
+  - sensor:
+      name: "VSSP Updates infra status"
+      unique_id: vssp_updates_infra_status
+      command: "cat /config/www/vssp/infra_updates_status.json"
+      command_timeout: 15
+      scan_interval: 60
+      value_template: "{{ 'ok' if value_json.ok else 'error' }}"
+      json_attributes:
+        - message
+        - message_key
+        - generated
         - generated
 
 shell_command:

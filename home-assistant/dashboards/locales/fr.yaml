@@ -322,6 +322,20 @@ admin:
     sont.
   updates_infra_reboot_note: L'hôte attend un redémarrage
 
+  # EN | The probe's own failures, for the two that need no variables and that
+  # EN | an operator can actually act on. Everything else falls back to the
+  # EN | English the script rendered.
+  # FR | Les échecs de la sonde, pour les deux qui n'ont pas de variables et
+  # FR | sur lesquels un opérateur peut réellement agir. Tout le reste retombe
+  # FR | sur l'anglais rendu par le script.
+  updates_infra_msg_sealed: >-
+    Le coffre-fort est scellé : la sonde ne peut pas y lire l'accès SSH à
+    l'hôte, donc tout ce qui vit sur le serveur reste non sondé. Saisissez 3
+    des 5 clés de descellement, puis SONDER LE SERVEUR.
+  updates_infra_msg_no_token: >-
+    Pas de jeton de maintenance : /config/vssp/.vault_maint_token est absent.
+    Le déploiement l'écrit depuis la variable VAULT_MAINT_TOKEN.
+
   # EN | The layer a component lives in — the heading the rows are grouped
   # EN | under. Three different blast radiuses, named.
   # FR | La couche où vit un composant — le titre sous lequel les lignes sont

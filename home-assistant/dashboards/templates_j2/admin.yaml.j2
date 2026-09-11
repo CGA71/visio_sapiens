@@ -1527,9 +1527,63 @@ views:
                 ]]]
               foot: >
                 [[[
+                  // EN | WHY THE ROWS LOOK LIKE THAT, when they look wrong.
+                  // EN | Until now this card rendered the report and said
+                  // EN | nothing about whether the run that produced it had
+                  // EN | succeeded. On a sealed safe — the normal state after a
+                  // EN | host reboot, since no auto-unseal is configured — the
+                  // EN | probe cannot read the host credentials, so every row
+                  // EN | that needs ssh goes "not probed" and the INSTALL button
+                  // EN | on the rows that remain cannot do its work either.
+                  // EN | Both of those are correct behaviour and both are
+                  // EN | baffling without a sentence, so here is the sentence.
+                  // EN | The message_key is translated where this card has a
+                  // EN | translation for it and the script's own rendered
+                  // EN | English is the fallback — the same contract every other
+                  // EN | status file in the project uses. A key carrying
+                  // EN | variables is left to its rendered form rather than
+                  // EN | re-implementing the interpolation here.
+                  // FR | POURQUOI LES LIGNES RESSEMBLENT A CELA, quand elles
+                  // FR | ont l air fausses. Jusqu ici cette carte affichait le
+                  // FR | rapport et ne disait rien de la reussite de
+                  // FR | l execution qui l avait produit. Sur un coffre scelle —
+                  // FR | etat normal apres un redemarrage d hote, puisqu aucun
+                  // FR | descellement automatique n est configure — la sonde ne
+                  // FR | peut pas lire les identifiants de l hote : chaque ligne
+                  // FR | qui a besoin de ssh passe en « non sondee », et le
+                  // FR | bouton INSTALLER des lignes restantes ne peut pas
+                  // FR | travailler non plus. Les deux comportements sont
+                  // FR | corrects et les deux sont deroutants sans une phrase,
+                  // FR | alors voici la phrase.
+                  // FR | Le message_key est traduit la ou cette carte a une
+                  // FR | traduction pour lui, et l anglais rendu par le script
+                  // FR | sert de repli — le meme contrat que tout autre fichier
+                  // FR | de statut du projet. Une cle porteuse de variables est
+                  // FR | laissee a sa forme rendue plutot que de reimplementer
+                  // FR | l interpolation ici.
+                  const MSG = {
+                    'error.vault_sealed':
+                      '{{ t('admin.updates_infra_msg_sealed') | js }}',
+                    'error.no_token':
+                      '{{ t('admin.updates_infra_msg_no_token') | js }}'
+                  };
+                  const st = states['sensor.vssp_updates_infra_status'];
+                  const bad = (st && st.state === 'error')
+                    ? (MSG[st.attributes.message_key]
+                       || st.attributes.message || '') : '';
                   const call = `document.querySelector('home-assistant')`
                     + `.hass.callService('script','vssp_infra_check')`;
-                  return `<div style="display:flex;align-items:center;
+                  const warn = bad
+                    ? `<div style="display:flex;align-items:flex-start;gap:7px;
+                        padding:8px 10px;margin:8px 0 2px;border-radius:8px;
+                        background:rgba(255,152,0,.10);
+                        border:1px solid rgba(255,152,0,.45);color:#FF9800;
+                        font-size:10px;line-height:1.4;">
+                        <ha-icon icon="mdi:alert-outline"
+                          style="--mdc-icon-size:14px;margin:0;flex:0 0 auto;"
+                          ></ha-icon><span>${bad}</span></div>`
+                    : '';
+                  return warn + `<div style="display:flex;align-items:center;
                       justify-content:space-between;gap:10px;padding:10px 0 2px;
                       border-top:1px solid rgba(0,229,255,.10);">
                       <div style="color:#56707E;font-size:10px;line-height:1.35;

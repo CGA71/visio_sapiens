@@ -444,6 +444,20 @@ admin:
     locked row says why it is locked.
   updates_infra_reboot_note: The host is waiting for a restart
 
+  # EN | The probe's own failures, for the two that need no variables and that
+  # EN | an operator can actually act on. Everything else falls back to the
+  # EN | English the script rendered.
+  # FR | Les echecs de la sonde, pour les deux qui n ont pas de variables et sur
+  # FR | lesquels un operateur peut reellement agir. Tout le reste retombe sur
+  # FR | l anglais rendu par le script.
+  updates_infra_msg_sealed: >-
+    The safe is sealed: the probe cannot read the host's SSH access out of it,
+    so everything living on the server stays unprobed. Enter three of the five
+    unseal keys, then PROBE THE SERVER.
+  updates_infra_msg_no_token: >-
+    No maintenance token: /config/vssp/.vault_maint_token is missing. The
+    deployment writes it from the VAULT_MAINT_TOKEN variable.
+
   # EN | The layer a component lives in — the heading the rows are grouped
   # EN | under. Three different blast radiuses, named.
   # FR | La couche ou vit un composant — le titre sous lequel les lignes sont

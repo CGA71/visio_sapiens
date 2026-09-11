@@ -790,6 +790,40 @@ def dockerhub_versions(repo: str, pattern: str = r"^\d+\.\d+\.\d+$",
     return out
 
 
+def vault_api_version(addr: str) -> str:
+    """EN | The safe's own version, from the one endpoint that answers without
+    EN | a token AND without a shell on the host.
+    EN | This matters far more than it sounds. Reading the version over ssh
+    EN | means reading host_ssh out of the safe first — so a SEALED Vault could
+    EN | not report its own version, and a sealed Vault is the NORMAL state
+    EN | after any host reboot, because no auto-unseal is configured on purpose.
+    EN | The row that tells you a Vault upgrade is waiting went blank precisely
+    EN | when you came to look at it.
+    EN | sys/seal-status is unauthenticated, answers 200 even when sealed — the
+    EN | healthcheck in vault/docker-compose.yml leans on exactly that — and
+    EN | carries a `version` field. Home Assistant already polls this endpoint
+    EN | for the seal state on the SAFE screen, so this adds no new exposure,
+    EN | no new secret and no new dependency.
+    FR | La version du coffre lui-meme, par le seul point d entree qui repond
+    FR | sans jeton ET sans shell sur l hote.
+    FR | Cela compte bien plus qu il n y parait. Lire la version par ssh veut
+    FR | dire lire d abord host_ssh dans le coffre — donc un Vault SCELLE ne
+    FR | pouvait pas rapporter sa propre version, et un Vault scelle est l etat
+    FR | NORMAL apres tout redemarrage d hote, puisqu aucun descellement
+    FR | automatique n est configure, volontairement. La ligne qui vous dit
+    FR | qu une mise a niveau de Vault attend se vidait precisement au moment ou
+    FR | vous veniez la regarder.
+    FR | sys/seal-status est non authentifie, repond 200 meme scelle — le
+    FR | healthcheck de vault/docker-compose.yml s appuie exactement sur cela —
+    FR | et porte un champ `version`. Home Assistant interroge deja ce point
+    FR | d entree pour l etat de scellement sur l ecran COFFRE-FORT : ceci
+    FR | n ajoute donc aucune exposition, aucun secret et aucune dependance."""
+    data = http_json(f"{addr.rstrip('/')}/v1/sys/seal-status")
+    if isinstance(data, dict):
+        return str(data.get("version") or "")
+    return ""
+
+
 def image_tag(image: str) -> str:
     """EN | The tag of an image reference, or '' when it carries none. The last
     EN | slash comes first: a registry with a port (`host:5000/img`) puts a
@@ -1032,6 +1066,30 @@ OWNED_PACKAGES = {"gitlab-ce", "gitlab-ee", "gitlab-runner"}
 # FR | de composant n est pas recompte dans la ligne Docker generique, pour que
 # FR | le coffre ne soit pas liste deux fois sous deux verdicts differents.
 OWNED_CONTAINERS = {"vssp-vault"}
+
+
+def needs_host(probe):
+    """EN | Wrap a probe that cannot say anything without a shell on the host,
+    EN | so `host is None` becomes an unprobed row rather than an AttributeError.
+    EN | Wrapping beats an `if host is None` line inside each probe: it is one
+    EN | rule, applied where the table is declared, and a probe written later
+    EN | cannot forget it. And `host is None` is no longer the rare case — a
+    EN | sealed safe means no ssh at all, and the report still has to be
+    EN | written.
+    FR | Envelopper une sonde incapable de dire quoi que ce soit sans shell sur
+    FR | l hote, pour que `host is None` devienne une ligne non sondee plutot
+    FR | qu une AttributeError.
+    FR | L enveloppe vaut mieux qu une ligne `if host is None` dans chaque
+    FR | sonde : c est une seule regle, appliquee la ou la table est declaree, et
+    FR | une sonde ecrite plus tard ne peut pas l oublier. Et `host is None`
+    FR | n est plus le cas rare — un coffre scelle veut dire aucun ssh, et le
+    FR | rapport doit quand meme etre ecrit."""
+    def wrapped(host, safe, comp):
+        if host is None:
+            return blank(comp, probed=False)
+        return probe(host, safe, comp)
+    wrapped.__name__ = getattr(probe, "__name__", "probe")
+    return wrapped
 
 
 def blank(component: dict, **over) -> dict:
@@ -1364,35 +1422,58 @@ def vault_container(host: Host) -> tuple[str, str]:
     return (parts[0], parts[1]) if len(parts) >= 2 else (parts[0], "")
 
 
-def probe_vault(host: Host, safe: "Safe | None", comp: dict) -> dict:
+def probe_vault(host: "Host | None", safe: "Safe | None", comp: dict) -> dict:
     """EN | Vault runs as a docker container here, so no package manager knows
-    EN | its version. The IMAGE TAG is the obvious place to read it and it is
-    EN | the wrong one: this deployment pins `hashicorp/vault:1.20`, a floating
-    EN | alias for the newest patch in that series, so the tag says 1.20 while
-    EN | the binary is 1.20.4 — and a plan built on 1.20 offers 1.20.4 as its
-    EN | first step, an upgrade to the version already running. So the version
-    EN | comes from the binary, which cannot be wrong about itself, and the tag
-    EN | is only the fallback for an image that refuses to answer.
+    EN | its version. Three ways to ask, in this order, and the order is the
+    EN | whole design of this probe.
+    EN | 1. THE SAFE'S OWN API. Needs neither a token nor a shell, so it is the
+    EN |    only one that still answers when the safe is sealed — which is the
+    EN |    normal state after a host reboot, and exactly when you want to see
+    EN |    this row. This probe is therefore NOT wrapped in needs_host().
+    EN | 2. THE BINARY, over ssh. Cannot be wrong about itself, and stands in if
+    EN |    the API is unreachable while the host is.
+    EN | 3. THE IMAGE TAG, last and reluctantly. It is the obvious place to read
+    EN |    a version and the wrong one: this deployment pins
+    EN |    `hashicorp/vault:1.20`, a floating alias for the newest patch in the
+    EN |    series, so the tag says 1.20 while the binary is 1.20.4 — and a plan
+    EN |    built on 1.20 offers 1.20.4 as its first step, an upgrade to the
+    EN |    version already running.
     FR | Vault tourne en conteneur docker ici, aucun gestionnaire de paquets ne
-    FR | connait donc sa version. Le TAG DE L IMAGE est l endroit evident pour
-    FR | la lire et c est le mauvais : ce deploiement epingle
-    FR | `hashicorp/vault:1.20`, un alias flottant vers le correctif le plus
-    FR | recent de la serie, donc le tag dit 1.20 quand le binaire est en
-    FR | 1.20.4 — et un plan construit sur 1.20 propose 1.20.4 en premiere
-    FR | etape, une mise a niveau vers la version deja en marche. La version
-    FR | vient donc du binaire, qui ne peut pas se tromper sur lui-meme, et le
-    FR | tag n est que le repli pour une image qui refuse de repondre."""
-    name, image = vault_container(host)
-    if not name:
-        return blank(comp, probed=False)
+    FR | connait donc sa version. Trois facons de demander, dans cet ordre, et
+    FR | l ordre est toute la conception de cette sonde.
+    FR | 1. L API DU COFFRE LUI-MEME. Ne demande ni jeton ni shell, c est donc
+    FR |    la seule qui reponde encore quand le coffre est scelle — etat normal
+    FR |    apres un redemarrage d hote, et precisement le moment ou l on veut
+    FR |    voir cette ligne. Cette sonde n est donc PAS enveloppee dans
+    FR |    needs_host().
+    FR | 2. LE BINAIRE, par ssh. Ne peut pas se tromper sur lui-meme, et prend
+    FR |    le relais si l API est injoignable alors que l hote l est.
+    FR | 3. LE TAG DE L IMAGE, en dernier et a contrecoeur. C est l endroit
+    FR |    evident pour lire une version et le mauvais : ce deploiement epingle
+    FR |    `hashicorp/vault:1.20`, un alias flottant vers le correctif le plus
+    FR |    recent de la serie, donc le tag dit 1.20 quand le binaire est en
+    FR |    1.20.4 — et un plan construit sur 1.20 propose 1.20.4 en premiere
+    FR |    etape, une mise a niveau vers la version deja en marche."""
     installed = ""
-    code, out, _ = host.run_maybe_sudo(
-        f"docker exec {name} vault version 2>/dev/null")
-    if code == 0:
-        m = re.search(r"v?(\d+\.\d+\.\d+)", out)
-        installed = m.group(1) if m else ""
+    detail: list[str] = []
+    if safe is not None:
+        installed = vault_api_version(safe.addr)
+        if installed:
+            detail.append(safe.addr)
+    if host is not None:
+        name, image = vault_container(host)
+        if name:
+            detail.append(f"{name} {image}".strip())
+            if not installed:
+                code, out, _ = host.run_maybe_sudo(
+                    f"docker exec {name} vault version 2>/dev/null")
+                if code == 0:
+                    m = re.search(r"v?(\d+\.\d+\.\d+)", out)
+                    installed = m.group(1) if m else ""
+            if not installed:
+                installed = image_tag(image)
     if not installed:
-        installed = image_tag(image)
+        return blank(comp, probed=False)
     # EN | POLICY_SERIES, and this is the component the policy was written for:
     # EN | HashiCorp supports one minor series at a time because each carries a
     # EN | storage and seal migration.
@@ -1400,7 +1481,7 @@ def probe_vault(host: Host, safe: "Safe | None", comp: dict) -> dict:
     # FR | ecrite : HashiCorp ne supporte qu une serie mineure a la fois parce
     # FR | que chacune porte une migration de stockage et de scellement.
     return planned(comp, installed, dockerhub_versions(VAULT_IMAGE_REPO),
-                   detail=[f"{name} {image}"] if image else [name])
+                   detail=detail)
 
 
 def probe_docker_images(host: Host, safe: "Safe | None", comp: dict) -> dict:
@@ -1708,14 +1789,20 @@ INSTALLERS = {
 # FR | conteneurisee ; c est une signature uniforme qui permet d en faire une
 # FR | table.
 PROBES = {
-    "os_packages": probe_os_packages,
-    "os_reboot": probe_os_reboot,
-    "gitlab": probe_gitlab,
-    "gitlab_runner": probe_gitlab_runner,
-    "k3s": probe_k3s,
+    "os_packages": needs_host(probe_os_packages),
+    "os_reboot": needs_host(probe_os_reboot),
+    "gitlab": needs_host(probe_gitlab),
+    "gitlab_runner": needs_host(probe_gitlab_runner),
+    "k3s": needs_host(probe_k3s),
+    # EN | The ONE probe not wrapped: the safe answers its own version over an
+    # EN | unauthenticated endpoint, so this row survives a sealed safe and a
+    # EN | host that cannot be reached at all. See probe_vault.
+    # FR | La SEULE sonde non enveloppee : le coffre repond sa propre version
+    # FR | sur un point d entree non authentifie, cette ligne survit donc a un
+    # FR | coffre scelle et a un hote totalement injoignable. Voir probe_vault.
     "vault": probe_vault,
-    "docker_images": probe_docker_images,
-    "k3s_workloads": probe_k3s_workloads,
+    "docker_images": needs_host(probe_docker_images),
+    "k3s_workloads": needs_host(probe_k3s_workloads),
 }
 
 
@@ -1741,28 +1828,64 @@ def open_host(safe: Safe) -> Host:
 def run_probe(safe: Safe | None, out_path: Path) -> dict:
     rows: list[dict] = []
     host: Host | None = None
+    failure: VaultError | None = None
     try:
         if safe is not None:
-            host = open_host(safe)
-        if host is not None:
-            with host:
-                # EN | Declaration order IS display order, and the table
-                # EN | declares the layers in the order the screen groups them.
-                # EN | One loop instead of a hand-written call list: a component
-                # EN | added above is probed here without anyone remembering to
-                # EN | come and say so.
-                # FR | L ordre de declaration EST l ordre d affichage, et la
-                # FR | table declare les couches dans l ordre ou l ecran les
-                # FR | regroupe. Une boucle au lieu d une liste d appels ecrite
-                # FR | a la main : un composant ajoute plus haut est sonde ici
-                # FR | sans que personne ait a penser a venir le dire.
-                for comp in COMPONENTS:
-                    probe = PROBES.get(comp["key"])
-                    rows.append(probe(host, safe, comp) if probe
-                                else blank(comp, probed=False))
-        else:
-            for comp in COMPONENTS:
-                rows.append(blank(comp, probed=False))
+            # EN | A SHUT SAFE STILL PUBLISHES A REPORT, and catching this here
+            # EN | rather than letting it fly to main() is the whole point.
+            # EN | open_host() reads host_ssh out of the safe, so a sealed Vault
+            # EN | fails before a single component has been looked at. The old
+            # EN | code let the exception leave without writing anything — which
+            # EN | LEFT THE PREVIOUS REPORT ON DISK, and the screen renders
+            # EN | whatever is on disk. Versions from days ago were shown as
+            # EN | current with no mark anywhere to say otherwise: the worst
+            # EN | possible failure for a screen whose one job is telling you
+            # EN | what is installed, and the reason a whole redesign of these
+            # EN | rows could ship and stay invisible.
+            # EN | Now every row that needs the host says "not probed", the rows
+            # EN | that do not need it still report, and the exception is
+            # EN | re-raised at the end so the status file still names the cause.
+            # FR | UN COFFRE FERME PUBLIE QUAND MEME UN RAPPORT, et attraper ceci
+            # FR | ici plutot que de le laisser voler jusqu a main() est tout
+            # FR | l interet. open_host() lit host_ssh dans le coffre, donc un
+            # FR | Vault scelle echoue avant qu un seul composant ait ete
+            # FR | regarde. L ancien code laissait l exception partir sans rien
+            # FR | ecrire — ce qui LAISSAIT LE RAPPORT PRECEDENT SUR DISQUE, et
+            # FR | l ecran affiche ce qui est sur disque. Des versions vieilles
+            # FR | de plusieurs jours etaient montrees comme actuelles, sans
+            # FR | aucune marque nulle part pour le dire : le pire echec possible
+            # FR | pour un ecran dont le seul travail est de dire ce qui est
+            # FR | installe, et la raison pour laquelle toute une refonte de ces
+            # FR | lignes a pu etre livree et rester invisible.
+            # FR | Desormais chaque ligne qui a besoin de l hote dit « non
+            # FR | sondee », celles qui n en ont pas besoin remontent quand meme,
+            # FR | et l exception est relancee a la fin pour que le fichier de
+            # FR | statut en nomme la cause.
+            try:
+                host = open_host(safe)
+            except VaultError as exc:
+                failure = exc
+        # EN | ONE loop over the table, host or no host. Declaration order IS
+        # EN | display order, and the table declares the layers in the order the
+        # EN | screen groups them, so a component added above is probed here
+        # EN | without anyone remembering to come and say so.
+        # EN | A probe that cannot work without a shell is wrapped in
+        # EN | needs_host() where PROBES is declared, so `host is None` is an
+        # EN | unprobed row rather than a special case here — which is what
+        # EN | lets a report be written at all when the safe is shut.
+        # FR | UNE boucle sur la table, avec hote ou sans. L ordre de
+        # FR | declaration EST l ordre d affichage, et la table declare les
+        # FR | couches dans l ordre ou l ecran les regroupe : un composant ajoute
+        # FR | plus haut est donc sonde ici sans que personne ait a penser a
+        # FR | venir le dire.
+        # FR | Une sonde incapable de travailler sans shell est enveloppee dans
+        # FR | needs_host() la ou PROBES est declaree, donc `host is None` est
+        # FR | une ligne non sondee plutot qu un cas particulier ici — c est ce
+        # FR | qui permet d ecrire un rapport du tout quand le coffre est ferme.
+        for comp in COMPONENTS:
+            probe = PROBES.get(comp["key"])
+            rows.append(probe(host, safe, comp) if probe
+                        else blank(comp, probed=False))
     finally:
         if host is not None:
             host.close()
@@ -1797,6 +1920,14 @@ def run_probe(safe: Safe | None, out_path: Path) -> dict:
         },
     }
     write_json(out_path, payload)
+    # EN | Report first, then fail. main() turns this into the status file, so
+    # EN | the screen gets both halves: rows that say "not probed", and a message
+    # EN | that says why they do.
+    # FR | Le rapport d abord, l echec ensuite. main() en fait le fichier de
+    # FR | statut, l ecran recoit donc les deux moities : des lignes qui disent
+    # FR | « non sondee », et un message qui dit pourquoi elles le disent.
+    if failure is not None:
+        raise failure
     return payload
 
 
