@@ -36,7 +36,7 @@
 #     cards:
 #       ...
 #       - !include admin/system_dashboards.yaml
-#       - type: custom:osv-footer-card
+#       - type: custom:vssp-footer-card
 #
 # Le chemin est relatif au dossier de home.yaml
 # (home-assistant/dashboards/), comme vos autres !include.

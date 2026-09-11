@@ -23,7 +23,7 @@ validate:
   image: alpine:latest
 
   script:
-    - echo "🔍 OSVision V2 - Validation started"
+    - echo "🔍 Visio Sapiens - Validation started"
 
     # vérifie structure du repo
     - test -f scripts/package.sh || (echo "❌ package.sh missing" && exit 1)
@@ -32,7 +32,7 @@ validate:
 
     - test -d home-assistant || (echo "❌ home-assistant folder missing" && exit 1)
 
-    # vérifie fichiers critiques OSVision
+    # vérifie fichiers critiques Visio Sapiens
     - test -d home-assistant/dashboards || echo "⚠️ dashboards folder missing"
     - test -d home-assistant/themes || echo "⚠️ themes folder missing"
 
@@ -46,4 +46,4 @@ validate:
         cat "$f" > /dev/null || exit 1
       done
 
-    echo "✅ Validation OK - OSVision structure valid"
+    echo "✅ Validation OK - Visio Sapiens structure valid"

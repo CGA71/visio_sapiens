@@ -1,7 +1,24 @@
+# EN | RENAMED from osvision-deployer. The LIVE CLUSTER still carries the old
+# EN | names until this is applied and the old pair is deleted:
+# EN |   kubectl apply -f kubernetes/rbac/
+# EN |   kubectl delete role osvision-deployer -n <ns>
+# EN |   kubectl delete rolebinding osvision-deployer-binding -n <ns>
+# EN | Until then the repo and the cluster disagree, and the runner keeps
+# EN | working through the OLD binding. Applying needs cluster admin, which
+# EN | the CI service account does not have.
+# FR | RENOMME depuis osvision-deployer. LE CLUSTER VIVANT porte encore les
+# FR | anciens noms tant que ceci n'est pas applique et l'ancienne paire
+# FR | supprimee :
+# FR |   kubectl apply -f kubernetes/rbac/
+# FR |   kubectl delete role osvision-deployer -n <ns>
+# FR |   kubectl delete rolebinding osvision-deployer-binding -n <ns>
+# FR | D'ici la le depot et le cluster divergent, et le runner continue de
+# FR | fonctionner par l'ANCIEN binding. Appliquer demande les droits admin du
+# FR | cluster, que le compte de service du CI n'a pas.
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
-  name: osvision-deployer
+  name: vssp-deployer
   namespace: home-assistant
 rules:
   # accès aux pods (Home Assistant)

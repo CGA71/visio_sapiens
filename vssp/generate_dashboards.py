@@ -845,14 +845,14 @@ def write_rooms_fragment(path, rooms: list, formats: list, out_dir: Path,
     #
     EN | Three deliberate choices:
     EN |   - the key is prefixed `visio-sapiens-`, because vssp_apply_config.py
-    EN |     only merges keys matching OSV_PREFIX and silently skips the rest;
+    EN |     only merges keys matching VSSP_PREFIX and silently skips the rest;
     EN |   - `filename` is relative to /config, like every other entry;
     EN |   - the title is written already translated. This fragment is
     EN |     generated in a known locale, so it carries no __T: marker and
     EN |     needs no rendering step.
     FR | Trois choix volontaires :
     FR |   - la cle est prefixee `visio-sapiens-`, car vssp_apply_config.py ne
-    FR |     fusionne que les cles correspondant a OSV_PREFIX et ignore le
+    FR |     fusionne que les cles correspondant a VSSP_PREFIX et ignore le
     FR |     reste en silence ;
     FR |   - `filename` est relatif a /config, comme toutes les autres entrees ;
     FR |   - le titre est ecrit deja traduit. Ce fragment est genere dans une

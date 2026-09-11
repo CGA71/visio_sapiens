@@ -12,7 +12,7 @@
 #
 # EN | Merge rules applied by the script (see vssp_apply_config.py):
 # EN |   - lovelace.dashboards : merged per sub-key — only the keys listed
-# EN |     here (OSV_PREFIX prefix) are written; the user's other dashboards
+# EN |     here (VSSP_PREFIX prefix) are written; the user's other dashboards
 # EN |     are preserved.
 # EN |   - lovelace.resources  : merged by 'url' — deduplicated; resources not
 # EN |     listed here are preserved.
@@ -23,7 +23,7 @@
 # EN |     domain; otherwise set this line directly in configuration.yaml.
 # FR | Regles de fusion appliquees par le script (voir vssp_apply_config.py) :
 # FR |   - lovelace.dashboards : merge par sous-cle — seules les cles listees
-# FR |     ici (prefixe OSV_PREFIX) sont ecrites ; les autres dashboards de
+# FR |     ici (prefixe VSSP_PREFIX) sont ecrites ; les autres dashboards de
 # FR |     l'utilisateur sont preserves.
 # FR |   - lovelace.resources  : merge par 'url' — dedoublonne ; les ressources
 # FR |     non listees ici sont preservees.
@@ -199,9 +199,9 @@ lovelace:
       type: css
     - url: /local/vssp/js/vssp.js?v=__VTOKEN__
       type: module
-    - url: /local/vssp/components/osv-core.js?v=__VTOKEN__
+    - url: /local/vssp/components/vssp-core.js?v=__VTOKEN__
       type: module
-    - url: /local/vssp/components/osv-card.js?v=__VTOKEN__
+    - url: /local/vssp/components/vssp-card.js?v=__VTOKEN__
       type: module
-    - url: /local/vssp/components/osv-datetime-card.js?v=__VTOKEN__
+    - url: /local/vssp/components/vssp-datetime-card.js?v=__VTOKEN__
       type: module

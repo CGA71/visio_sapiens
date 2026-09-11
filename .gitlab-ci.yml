@@ -407,8 +407,8 @@ validate:
             else f"[ERR] {len(bad)} unresolved placeholder(s)")
       sys.exit(1 if bad else 0)
       PY
-    # EN | OSV_PREFIX <-> fragment dashboard keys consistency (non-blocking)
-    # FR | Coherence OSV_PREFIX <-> cles de dashboards du fragment (non bloquant)
+    # EN | VSSP_PREFIX <-> fragment dashboard keys consistency (non-blocking)
+    # FR | Coherence VSSP_PREFIX <-> cles de dashboards du fragment (non bloquant)
     - |
       python3 - <<'PY'
       import re, yaml
@@ -418,18 +418,18 @@ validate:
       dboards = ((frag.get('lovelace') or {}).get('dashboards') or {})
       with open('vssp/vssp_apply_config.py', encoding='utf-8') as fh:
           src = fh.read()
-      m = re.search(r'^OSV_PREFIX\s*=\s*["\']([^"\']+)', src, re.M)
+      m = re.search(r'^VSSP_PREFIX\s*=\s*["\']([^"\']+)', src, re.M)
       prefix = m.group(1) if m else ''
       ignored = [k for k in dboards if not str(k).startswith(prefix)]
       if ignored:
-          print("[WARN] OSV_PREFIX = %r in vssp_apply_config.py" % prefix)
+          print("[WARN] VSSP_PREFIX = %r in vssp_apply_config.py" % prefix)
           print("       These fragment dashboards will NOT be written to")
           print("       configuration.yaml (the patcher skips them):")
           for k in ignored:
               print("          - %s" % k)
-          print("       Fix OSV_PREFIX, or rename the fragment keys.")
+          print("       Fix VSSP_PREFIX, or rename the fragment keys.")
       else:
-          print("[OK] %d fragment dashboard(s) covered by OSV_PREFIX=%r"
+          print("[OK] %d fragment dashboard(s) covered by VSSP_PREFIX=%r"
                 % (len(dboards), prefix))
       PY
     # EN | A .yaml file holding a Visio Sapiens Jinja TEMPLATE is a template
@@ -543,8 +543,8 @@ build:
   image: alpine:latest
   script:
     - apk add --no-cache python3 py3-yaml py3-jinja2 >/dev/null
-    - export OSV_VERSION="${CI_COMMIT_TAG:-dev-${CI_COMMIT_SHORT_SHA}}"
-    - echo "Build $OSV_VERSION - locale ${VSSP_LOCALE}"
+    - export VSSP_BUILD="${CI_COMMIT_TAG:-dev-${CI_COMMIT_SHORT_SHA}}"
+    - echo "Build $VSSP_BUILD - locale ${VSSP_LOCALE}"
     - mkdir -p dist/dashboards/templates dist/themes dist/www
     - cp -r home-assistant/dashboards/.  dist/dashboards/
     - cp -r home-assistant/templates/.   dist/dashboards/templates/
@@ -725,12 +725,12 @@ build:
     # FR | Cache-busting automatique des ressources Lovelace.
     # FR | NB : on EXCLUT config-fragment.yaml — il utilise le placeholder
     # FR | __VTOKEN__ remplace au moment du apply via --vtoken (et non ?v=X).
-    - export VTOKEN=$(echo "$OSV_VERSION" | tr -c 'a-zA-Z0-9._-' '-')
+    - export VTOKEN=$(echo "$VSSP_BUILD" | tr -c 'a-zA-Z0-9._-' '-')
     - find dist -name '*.yaml' ! -name 'config-fragment.yaml' -exec sed -i "s|\(/local/vssp/[^ \"']*\)?v=[0-9A-Za-z._-]*|\1?v=${VTOKEN}|g" {} +
     - echo "Resources tagged ?v=${VTOKEN}"
     - |
       cat > dist/VSSP_VERSION <<EOF
-      version=$OSV_VERSION
+      version=$VSSP_BUILD
       commit=$CI_COMMIT_SHA
       ref=$CI_COMMIT_REF_NAME
       locale=$VSSP_LOCALE
@@ -786,14 +786,14 @@ build:
       PY
     - cd "$CI_PROJECT_DIR"
     - tar -czf $PACKAGE_NAME.tar.gz -C dist .
-    - echo "$OSV_VERSION" > .osv_version
+    - echo "$VSSP_BUILD" > .vssp_version
     - ls -lh $PACKAGE_NAME.tar.gz
   artifacts:
     name: "$PACKAGE_NAME-$CI_COMMIT_REF_SLUG"
     expire_in: 30 days
     paths:
       - $PACKAGE_NAME.tar.gz
-      - .osv_version
+      - .vssp_version
 
 # ============================================================================
 # EN | 2b. HACS PACKAGE — public distribution, tags only
@@ -846,8 +846,8 @@ deploy:staging:
     name: staging
     url: $STAGING_URL
   script:
-    - export OSV_VERSION=$(cat .osv_version)
-    - echo "STAGING deployment (k3s) - $OSV_VERSION"
+    - export VSSP_BUILD=$(cat .vssp_version)
+    - echo "STAGING deployment (k3s) - $VSSP_BUILD"
     - export HA_POD=$(kubectl get pod -n $K3S_NAMESPACE -l app=homeassistant -o jsonpath='{.items[0].metadata.name}' 2>/dev/null)
     - '[ -z "$HA_POD" ] && export HA_POD=$(kubectl get pods -n $K3S_NAMESPACE -o jsonpath="{.items[0].metadata.name}")'
     - echo "Target pod ->" "$HA_POD"
@@ -894,7 +894,7 @@ deploy:staging:
         exit 1
       fi
       echo "[OK] /config is mounted and writable"
-    - kubectl cp $PACKAGE_NAME.tar.gz $K3S_NAMESPACE/$HA_POD:/config/.osv.tar.gz -c $K3S_CONTAINER
+    - kubectl cp $PACKAGE_NAME.tar.gz $K3S_NAMESPACE/$HA_POD:/config/.vssp.tar.gz -c $K3S_CONTAINER
     # EN | APOSTROPHES ARE FORBIDDEN in the remote shell block below.
     # EN | The whole script is passed as `sh -c '...'`, a single-quoted string
     # EN | in the runner's shell. One apostrophe inside — including in a
@@ -917,8 +917,8 @@ deploy:staging:
     - |
       kubectl exec -n $K3S_NAMESPACE $HA_POD -c $K3S_CONTAINER -- sh -c '
         set -e
-        rm -rf /config/.osv_stage && mkdir -p /config/.osv_stage
-        tar xzf /config/.osv.tar.gz -C /config/.osv_stage
+        rm -rf /config/.vssp_stage && mkdir -p /config/.vssp_stage
+        tar xzf /config/.vssp.tar.gz -C /config/.vssp_stage
         # EN | LAST-GOOD ROOMS, set aside before the swap below rotates
         # EN | dashboards.old. That rotation is only safe if the deploy
         # EN | reaches the preservation step further down; a job that dies in
@@ -952,7 +952,7 @@ deploy:staging:
         for d in dashboards themes; do
           rm -rf /config/$d.old
           [ -d /config/$d ] && mv /config/$d /config/$d.old
-          mv /config/.osv_stage/$d /config/$d
+          mv /config/.vssp_stage/$d /config/$d
         done
         # EN | POD-SIDE STATE — preserved across deployments.
         # EN | `dashboards/` is REPLACED wholesale (mv), unlike vssp/ and
@@ -1075,32 +1075,32 @@ deploy:staging:
         # FR | La restauration est conditionnelle : un fichier livre par le
         # FR | paquet gagne, donc les photos produit versionnees se mettent
         # FR | a jour normalement et seuls les extras du pod survivent.
-        rm -rf /config/.osv_www_keep
-        mkdir -p /config/.osv_www_keep
+        rm -rf /config/.vssp_www_keep
+        mkdir -p /config/.vssp_www_keep
         for pth in /config/www/vssp/*.json /config/www/vssp/images/floorplan.svg /config/www/vssp/modules; do
           [ -e "$pth" ] || continue
           rel=${pth#/config/www/}
-          mkdir -p "/config/.osv_www_keep/$(dirname "$rel")"
-          cp -r "$pth" "/config/.osv_www_keep/$rel"
+          mkdir -p "/config/.vssp_www_keep/$(dirname "$rel")"
+          cp -r "$pth" "/config/.vssp_www_keep/$rel"
         done
-        for e in /config/.osv_stage/www/* /config/.osv_stage/www/.[!.]*; do
+        for e in /config/.vssp_stage/www/* /config/.vssp_stage/www/.[!.]*; do
           [ -e "$e" ] || continue
           n=$(basename "$e")
           rm -rf /config/www/$n
           mv "$e" /config/www/$n
         done
-        find /config/.osv_www_keep -type f | while read -r kept; do
-          rel=${kept#/config/.osv_www_keep/}
+        find /config/.vssp_www_keep -type f | while read -r kept; do
+          rel=${kept#/config/.vssp_www_keep/}
           if [ ! -e "/config/www/$rel" ]; then
             mkdir -p "/config/www/$(dirname "$rel")"
             cp "$kept" "/config/www/$rel"
             echo "[i] preserved pod-side state: www/$rel"
           fi
         done
-        rm -rf /config/.osv_www_keep
-        rmdir /config/.osv_stage/www 2>/dev/null || true
-        mv /config/.osv_stage/VSSP_VERSION /config/VSSP_VERSION
-        mv /config/.osv_stage/VSSP_LOCALE  /config/VSSP_LOCALE
+        rm -rf /config/.vssp_www_keep
+        rmdir /config/.vssp_stage/www 2>/dev/null || true
+        mv /config/.vssp_stage/VSSP_VERSION /config/VSSP_VERSION
+        mv /config/.vssp_stage/VSSP_LOCALE  /config/VSSP_LOCALE
         # EN | Deploy ALL vssp/ tooling + the fragment to their /config location.
         # EN | The copy is additive: /config/vssp/.livebox.env (secret) and
         # EN | /config/vssp/backups/ are left untouched.
@@ -1108,16 +1108,16 @@ deploy:staging:
         # FR | /config. La copie est additive : /config/vssp/.livebox.env (secret)
         # FR | et /config/vssp/backups/ ne sont pas touches.
         mkdir -p /config/vssp
-        cp -r /config/.osv_stage/vssp/. /config/vssp/
-        rm -rf /config/.osv_stage/vssp
+        cp -r /config/.vssp_stage/vssp/. /config/vssp/
+        rm -rf /config/.vssp_stage/vssp
         chmod +x /config/vssp/*.py
-        mv /config/.osv_stage/config-fragment.yaml /config/config-fragment.yaml
-        mv /config/.osv_stage/config-fragment-rooms.yaml /config/config-fragment-rooms.yaml
+        mv /config/.vssp_stage/config-fragment.yaml /config/config-fragment.yaml
+        mv /config/.vssp_stage/config-fragment-rooms.yaml /config/config-fragment-rooms.yaml
         # EN | Packages (additive: does not overwrite non-vssp packages)
         # FR | Packages (additif : n ecrase pas d eventuels packages non-vssp)
         mkdir -p /config/packages
-        cp -r /config/.osv_stage/packages/. /config/packages/
-        rm -rf /config/.osv_stage/packages
+        cp -r /config/.vssp_stage/packages/. /config/packages/
+        rm -rf /config/.vssp_stage/packages
         # --- EN | WHITELIST GUARD #2 / FR | GARDE-FOU liste blanche n2 ---
         # EN | Each step above removes from staging what it handled. Whatever
         # EN | remains was packaged but has no destination: exactly the bug seen
@@ -1126,7 +1126,7 @@ deploy:staging:
         # FR | qui reste a ete package mais na aucune destination : cest
         # FR | exactement le bug constate sur vssp/. On echoue au lieu de
         # FR | leffacer en silence.
-        LEFT=$(find /config/.osv_stage -type f 2>/dev/null)
+        LEFT=$(find /config/.vssp_stage -type f 2>/dev/null)
         if [ -n "$LEFT" ]; then
           echo "[ERR] Files packaged but never deployed:"
           echo "$LEFT"
@@ -1395,7 +1395,8 @@ deploy:staging:
           --config   /config/configuration.yaml \
           --fragment /config/config-fragment.yaml /config/config-fragment-rooms.yaml \
           --prune-dashboards \
-          --vtoken   "'"$OSV_VERSION"'"
+          --prune-resources \
+          --vtoken   "'"$VSSP_BUILD"'"
         # EN | The patcher does not handle the homeassistant domain: this
         # EN | script sets (idempotently) the packages key loading /config/packages/
         # FR | Le patcher ne gere pas le domaine homeassistant : ce script pose
@@ -1445,7 +1446,7 @@ deploy:staging:
           [ -n "$LAST_BAK" ] && cp "$LAST_BAK" /config/configuration.yaml && echo "[rollback] configuration.yaml restored from $LAST_BAK"'
         exit 1
       fi
-    - kubectl exec -n $K3S_NAMESPACE $HA_POD -c $K3S_CONTAINER -- sh -c 'rm -rf /config/dashboards.old /config/themes.old /config/.osv_stage /config/.osv.tar.gz'
+    - kubectl exec -n $K3S_NAMESPACE $HA_POD -c $K3S_CONTAINER -- sh -c 'rm -rf /config/dashboards.old /config/themes.old /config/.vssp_stage /config/.vssp.tar.gz'
     # --- EN | HOME ASSISTANT RESTART - MANDATORY STEP -----------------------
     # --- FR | REDEMARRAGE DE HOME ASSISTANT - ETAPE INDISPENSABLE -----------
     # EN | configuration.yaml is only re-read at startup: dashboards
@@ -1572,7 +1573,7 @@ deploy:production:
     - export HA_CFG=$(ssh ha '[ -d /homeassistant ] && echo /homeassistant || echo /config')
     - echo "HAOS config ->" "$HA_CFG"
     - ssh ha "ha backups new --name 'pre-$CI_COMMIT_TAG' --no-progress" || echo "[warn] backup not created"
-    - cat $PACKAGE_NAME.tar.gz | ssh ha "rm -rf $HA_CFG/.osv_stage && mkdir -p $HA_CFG/.osv_stage && tar xzf - -C $HA_CFG/.osv_stage"
+    - cat $PACKAGE_NAME.tar.gz | ssh ha "rm -rf $HA_CFG/.vssp_stage && mkdir -p $HA_CFG/.vssp_stage && tar xzf - -C $HA_CFG/.vssp_stage"
     - |
       ssh ha "set -e
         # EN | Last-good rooms set aside before the rotation, same rule and
@@ -1587,7 +1588,7 @@ deploy:production:
         for d in dashboards themes; do
           rm -rf $HA_CFG/\$d.old
           [ -d $HA_CFG/\$d ] && mv $HA_CFG/\$d $HA_CFG/\$d.old
-          mv $HA_CFG/.osv_stage/\$d $HA_CFG/\$d
+          mv $HA_CFG/.vssp_stage/\$d $HA_CFG/\$d
         done
         # EN | Pod-side state, same rule as staging: energy_devices.yaml,
         # EN | house_rooms.yaml, design_system.yaml (THEME screen) and the
@@ -1615,32 +1616,32 @@ deploy:production:
         # FR | fichiers de statut des assistants, le plan dessine et les
         # FR | photos produit recuperees sont ecrits sur l instance, jamais
         # FR | livres — voir l explication complete sur le job staging.
-        rm -rf $HA_CFG/.osv_www_keep
-        mkdir -p $HA_CFG/.osv_www_keep
+        rm -rf $HA_CFG/.vssp_www_keep
+        mkdir -p $HA_CFG/.vssp_www_keep
         for pth in $HA_CFG/www/vssp/*.json $HA_CFG/www/vssp/images/floorplan.svg $HA_CFG/www/vssp/modules; do
           [ -e \"\$pth\" ] || continue
           rel=\${pth#$HA_CFG/www/}
-          mkdir -p \"$HA_CFG/.osv_www_keep/\$(dirname \"\$rel\")\"
-          cp -r \"\$pth\" \"$HA_CFG/.osv_www_keep/\$rel\"
+          mkdir -p \"$HA_CFG/.vssp_www_keep/\$(dirname \"\$rel\")\"
+          cp -r \"\$pth\" \"$HA_CFG/.vssp_www_keep/\$rel\"
         done
-        for e in $HA_CFG/.osv_stage/www/* $HA_CFG/.osv_stage/www/.[!.]*; do
+        for e in $HA_CFG/.vssp_stage/www/* $HA_CFG/.vssp_stage/www/.[!.]*; do
           [ -e \"\$e\" ] || continue
           n=\$(basename \"\$e\")
           rm -rf $HA_CFG/www/\$n
           mv \"\$e\" $HA_CFG/www/\$n
         done
-        find $HA_CFG/.osv_www_keep -type f | while read -r kept; do
-          rel=\${kept#$HA_CFG/.osv_www_keep/}
+        find $HA_CFG/.vssp_www_keep -type f | while read -r kept; do
+          rel=\${kept#$HA_CFG/.vssp_www_keep/}
           if [ ! -e \"$HA_CFG/www/\$rel\" ]; then
             mkdir -p \"$HA_CFG/www/\$(dirname \"\$rel\")\"
             cp \"\$kept\" \"$HA_CFG/www/\$rel\"
             echo \"[i] preserved pod-side state: www/\$rel\"
           fi
         done
-        rm -rf $HA_CFG/.osv_www_keep
-        rmdir $HA_CFG/.osv_stage/www 2>/dev/null || true
-        mv $HA_CFG/.osv_stage/VSSP_VERSION $HA_CFG/VSSP_VERSION
-        mv $HA_CFG/.osv_stage/VSSP_LOCALE  $HA_CFG/VSSP_LOCALE
+        rm -rf $HA_CFG/.vssp_www_keep
+        rmdir $HA_CFG/.vssp_stage/www 2>/dev/null || true
+        mv $HA_CFG/.vssp_stage/VSSP_VERSION $HA_CFG/VSSP_VERSION
+        mv $HA_CFG/.vssp_stage/VSSP_LOCALE  $HA_CFG/VSSP_LOCALE
         # EN | Deploy ALL vssp/ tooling (patchers, probes, generators).
         # EN | The scripts HA itself runs through command_line sensors
         # EN | (vssp_lan_probe.py...) MUST exist on the HAOS side: without them
@@ -1652,26 +1653,26 @@ deploy:production:
         # FR | sans eux les capteurs restent unavailable. Copie additive :
         # FR | .livebox.env et backups/ deja presents cote HAOS sont preserves.
         mkdir -p $HA_CFG/vssp
-        cp -r $HA_CFG/.osv_stage/vssp/. $HA_CFG/vssp/
-        rm -rf $HA_CFG/.osv_stage/vssp
+        cp -r $HA_CFG/.vssp_stage/vssp/. $HA_CFG/vssp/
+        rm -rf $HA_CFG/.vssp_stage/vssp
         chmod +x $HA_CFG/vssp/*.py
-        mv $HA_CFG/.osv_stage/config-fragment.yaml $HA_CFG/config-fragment.yaml
-        mv $HA_CFG/.osv_stage/config-fragment-rooms.yaml $HA_CFG/config-fragment-rooms.yaml
+        mv $HA_CFG/.vssp_stage/config-fragment.yaml $HA_CFG/config-fragment.yaml
+        mv $HA_CFG/.vssp_stage/config-fragment-rooms.yaml $HA_CFG/config-fragment-rooms.yaml
         # EN | Packages (additive: does not overwrite non-vssp packages)
         # FR | Packages (additif : n ecrase pas d eventuels packages non-vssp)
         mkdir -p $HA_CFG/packages
-        cp -r $HA_CFG/.osv_stage/packages/. $HA_CFG/packages/
-        rm -rf $HA_CFG/.osv_stage/packages
+        cp -r $HA_CFG/.vssp_stage/packages/. $HA_CFG/packages/
+        rm -rf $HA_CFG/.vssp_stage/packages
         # EN | WHITELIST GUARD #2 (identical to staging)
         # FR | GARDE-FOU liste blanche n2 (identique au staging)
-        LEFT=\$(find $HA_CFG/.osv_stage -type f 2>/dev/null)
+        LEFT=\$(find $HA_CFG/.vssp_stage -type f 2>/dev/null)
         if [ -n \"\$LEFT\" ]; then
           echo '[ERR] Files packaged but never deployed:'
           echo \"\$LEFT\"
           echo '      Add their deployment to deploy:staging AND deploy:production.'
           exit 1
         fi
-        rm -rf $HA_CFG/.osv_stage
+        rm -rf $HA_CFG/.vssp_stage
         echo '[i] Actual content of vssp/:'
         ls -1 $HA_CFG/vssp"
     # --- EN | Router secret: passed over STDIN, never on the remote command
@@ -1764,7 +1765,7 @@ deploy:production:
     - pip install ruamel.yaml --quiet --break-system-packages 2>/dev/null || pip install ruamel.yaml --quiet
     # EN | The build only exposes the .tar.gz: extract patcher + fragment in the runner
     # FR | Le build n'expose que le .tar.gz : on extrait patcher + fragment dans le runner
-    - rm -rf /tmp/osv_pkg && mkdir -p /tmp/osv_pkg && tar xzf $PACKAGE_NAME.tar.gz -C /tmp/osv_pkg
+    - rm -rf /tmp/vssp_pkg && mkdir -p /tmp/vssp_pkg && tar xzf $PACKAGE_NAME.tar.gz -C /tmp/vssp_pkg
     # --- EN | Preserve live rooms — same reasoning as deploy:staging --------
     # --- FR | Preserver les pieces en direct — meme raisonnement que deploy:staging
     # EN | The dashboards/ swap above just replaced house.yaml with the
@@ -1792,7 +1793,7 @@ deploy:production:
       scp ha:$HA_CFG/dashboards/model/house.yaml /tmp/prod_house.yaml
       scp ha:$HA_CFG/dashboards.old/model/house.yaml /tmp/prod_house.yaml.old 2>/dev/null || true
       scp ha:$HA_CFG/vssp/house.yaml.live /tmp/prod_house.yaml.live 2>/dev/null || true
-      python3 /tmp/osv_pkg/vssp/vssp_preserve_rooms.py \
+      python3 /tmp/vssp_pkg/vssp/vssp_preserve_rooms.py \
         --old /tmp/prod_house.yaml.old \
         --fallback /tmp/prod_house.yaml.live \
         --new /tmp/prod_house.yaml
@@ -1805,7 +1806,7 @@ deploy:production:
     # FR | Meme garde-fou qu en staging : refuser de patcher la production
     # FR | depuis un fragment contenant encore des marqueurs __T: bruts.
     - |
-      if grep -En '__T:[A-Za-z0-9_.]+__' /tmp/osv_pkg/config-fragment.yaml /tmp/osv_pkg/config-fragment-rooms.yaml; then
+      if grep -En '__T:[A-Za-z0-9_.]+__' /tmp/vssp_pkg/config-fragment.yaml /tmp/vssp_pkg/config-fragment-rooms.yaml; then
         echo "[ERR] The packaged fragment still holds translation placeholders."
         echo "      Rebuild: the locale rendering step did not run."
         exit 1
@@ -1815,15 +1816,16 @@ deploy:production:
     # FR | Le fragment contenu dans le paquet est DEJA rendu dans la langue
     # FR | cible par le job build - rien de linguistique ne se passe ici.
     - |
-      python3 /tmp/osv_pkg/vssp/vssp_apply_config.py \
+      python3 /tmp/vssp_pkg/vssp/vssp_apply_config.py \
         --config   /tmp/prod_configuration.yaml \
-        --fragment /tmp/osv_pkg/config-fragment.yaml /tmp/osv_pkg/config-fragment-rooms.yaml \
+        --fragment /tmp/vssp_pkg/config-fragment.yaml /tmp/vssp_pkg/config-fragment-rooms.yaml \
         --prune-dashboards \
+        --prune-resources \
         --vtoken   "$CI_COMMIT_TAG" || { echo "[ERR] configuration.yaml patch failed"; exit 1; }
     # EN | The patcher does not handle the homeassistant domain: set packages key
     # FR | Le patcher ne gere pas le domaine homeassistant : poser la cle packages
     - |
-      python3 /tmp/osv_pkg/vssp/vssp_ensure_packages.py \
+      python3 /tmp/vssp_pkg/vssp/vssp_ensure_packages.py \
         --config /tmp/prod_configuration.yaml || { echo "[ERR] ensure packages failed"; exit 1; }
     # EN | Same seeding as staging, but run ON the instance: secrets.yaml is
     # EN | never copied to the runner. A file full of credentials has no
@@ -1841,7 +1843,7 @@ deploy:production:
     # EN | Dedupe Lovelace resources (the patcher accumulates successive ?v=)
     # FR | Dedup des ressources Lovelace (le patcher accumule les ?v= successifs)
     - |
-      python3 /tmp/osv_pkg/vssp/vssp_sanitize_resources.py \
+      python3 /tmp/vssp_pkg/vssp/vssp_sanitize_resources.py \
         --config /tmp/prod_configuration.yaml || { echo "[ERR] sanitize resources failed"; exit 1; }
     - scp /tmp/prod_configuration.yaml ha:$HA_CFG/configuration.yaml
     - |

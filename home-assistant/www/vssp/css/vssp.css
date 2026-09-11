@@ -30,42 +30,42 @@
    1. DESIGN TOKENS
    -------------------------------------------------------------------------- */
 :root{
-  --osv-bg:            #02050B;
-  --osv-bg-radial:      radial-gradient(circle at 50% 20%, #0A1826 0%, #02050B 75%);
+  --vssp-bg:            #02050B;
+  --vssp-bg-radial:      radial-gradient(circle at 50% 20%, #0A1826 0%, #02050B 75%);
 
-  --osv-panel:          rgba(8,18,28,0.72);
-  --osv-panel-strong:   rgba(8,18,28,0.90);
-  --osv-card:           rgba(14,24,36,0.65);
+  --vssp-panel:          rgba(8,18,28,0.72);
+  --vssp-panel-strong:   rgba(8,18,28,0.90);
+  --vssp-card:           rgba(14,24,36,0.65);
 
-  --osv-cyan:           #00E5FF;
-  --osv-cyan-dim:       rgba(0,229,255,0.35);
-  --osv-green:          #00FFC3;
-  --osv-blue:           #3AA7FF;
-  --osv-red:            #FF3D71;
-  --osv-orange:         #FF9800;
-  --osv-purple:         #B084FF;
+  --vssp-cyan:           #00E5FF;
+  --vssp-cyan-dim:       rgba(0,229,255,0.35);
+  --vssp-green:          #00FFC3;
+  --vssp-blue:           #3AA7FF;
+  --vssp-red:            #FF3D71;
+  --vssp-orange:         #FF9800;
+  --vssp-purple:         #B084FF;
 
-  --osv-text:           #FFFFFF;
-  --osv-text-dim:       #8FB6C9;
-  --osv-text-mute:      #56707E;
+  --vssp-text:           #FFFFFF;
+  --vssp-text-dim:       #8FB6C9;
+  --vssp-text-mute:      #56707E;
 
-  --osv-radius-lg:      22px;
-  --osv-radius-md:      18px;
-  --osv-radius-sm:      12px;
+  --vssp-radius-lg:      22px;
+  --vssp-radius-md:      18px;
+  --vssp-radius-sm:      12px;
 
-  --osv-border:         1px solid rgba(0,229,255,0.22);
-  --osv-glow-cyan:      0 0 18px rgba(0,229,255,0.18);
-  --osv-glow-cyan-hi:   0 0 34px rgba(0,229,255,0.40);
+  --vssp-border:         1px solid rgba(0,229,255,0.22);
+  --vssp-glow-cyan:      0 0 18px rgba(0,229,255,0.18);
+  --vssp-glow-cyan-hi:   0 0 34px rgba(0,229,255,0.40);
 
-  --osv-font:           'Rajdhani', 'Segoe UI', system-ui, sans-serif;
-  --osv-font-mono:      'Orbitron', 'Segoe UI', system-ui, sans-serif;
+  --vssp-font:           'Rajdhani', 'Segoe UI', system-ui, sans-serif;
+  --vssp-font-mono:      'Orbitron', 'Segoe UI', system-ui, sans-serif;
 }
 
 /* --------------------------------------------------------------------------
    2. GLOBAL SURFACE
    -------------------------------------------------------------------------- */
 body{
-  background: var(--osv-bg-radial) !important;
+  background: var(--vssp-bg-radial) !important;
   background-attachment: fixed !important;
 }
 
@@ -79,37 +79,37 @@ hui-view{
    3. GLASS SYSTEM (ha-card baseline — kept for native fallback cards only)
    -------------------------------------------------------------------------- */
 ha-card{
-  background: var(--osv-panel) !important;
-  border-radius: var(--osv-radius-lg) !important;
+  background: var(--vssp-panel) !important;
+  border-radius: var(--vssp-radius-lg) !important;
   backdrop-filter: blur(14px);
   -webkit-backdrop-filter: blur(14px);
-  border: var(--osv-border);
-  box-shadow: var(--osv-glow-cyan);
+  border: var(--vssp-border);
+  box-shadow: var(--vssp-glow-cyan);
   transition: box-shadow .35s ease, transform .35s ease;
 }
 ha-card:hover{
-  box-shadow: var(--osv-glow-cyan-hi);
+  box-shadow: var(--vssp-glow-cyan-hi);
 }
 
 /* --------------------------------------------------------------------------
    4. HUD / HEADER
    -------------------------------------------------------------------------- */
-.osv-hud{
+.vssp-hud{
   display:flex;
   align-items:center;
   justify-content:space-between;
   padding: 14px 26px;
-  font-family: var(--osv-font-mono);
+  font-family: var(--vssp-font-mono);
 }
-.osv-hud .osv-logo{
-  color: var(--osv-cyan);
+.vssp-hud .vssp-logo{
+  color: var(--vssp-cyan);
   font-size: 22px;
   font-weight: 700;
   letter-spacing: 4px;
-  text-shadow: 0 0 12px var(--osv-cyan-dim);
+  text-shadow: 0 0 12px var(--vssp-cyan-dim);
 }
-.osv-hud .osv-subtitle{
-  color: var(--osv-text-dim);
+.vssp-hud .vssp-subtitle{
+  color: var(--vssp-text-dim);
   font-size: 11px;
   letter-spacing: 3px;
   margin-top: 2px;
@@ -123,35 +123,35 @@ ha-card:hover{
    la classe custom appliquee par button-card ne se propageait pas de facon
    fiable au DOM reel. Seul le style de base (police/espacement) reste ici.
    -------------------------------------------------------------------------- */
-.osv-nav-button{
-  font-family: var(--osv-font-mono) !important;
+.vssp-nav-button{
+  font-family: var(--vssp-font-mono) !important;
   letter-spacing: 2px !important;
   cursor: pointer;
 }
 
 /* --------------------------------------------------------------------------
-   6. RADAR / IA CORE (used by <osv-radar-card>)
+   6. RADAR / IA CORE (used by <vssp-radar-card>)
    -------------------------------------------------------------------------- */
-.osv-radar-wrap{
+.vssp-radar-wrap{
   position: relative;
   width: 220px;
   height: 220px;
   margin: 0 auto;
   border-radius: 50%;
-  border: 1px solid var(--osv-cyan-dim);
+  border: 1px solid var(--vssp-cyan-dim);
   box-shadow: inset 0 0 30px rgba(0,229,255,.15), 0 0 30px rgba(0,229,255,.10);
 }
-.osv-radar-wrap::before,
-.osv-radar-wrap::after{
+.vssp-radar-wrap::before,
+.vssp-radar-wrap::after{
   content:"";
   position:absolute;
   border-radius:50%;
   border:1px solid rgba(0,229,255,.15);
 }
-.osv-radar-wrap::before{ inset: 18%; }
-.osv-radar-wrap::after{ inset: 38%; }
+.vssp-radar-wrap::before{ inset: 18%; }
+.vssp-radar-wrap::after{ inset: 38%; }
 
-.osv-radar-sweep{
+.vssp-radar-sweep{
   position:absolute;
   inset:0;
   border-radius:50%;
@@ -159,156 +159,156 @@ ha-card:hover{
     rgba(0,229,255,.55) 0deg,
     rgba(0,229,255,0) 60deg,
     rgba(0,229,255,0) 360deg);
-  animation: osv-radar-spin 4s linear infinite;
+  animation: vssp-radar-spin 4s linear infinite;
   mix-blend-mode: screen;
 }
-@keyframes osv-radar-spin{
+@keyframes vssp-radar-spin{
   from{ transform: rotate(0deg); }
   to{ transform: rotate(360deg); }
 }
 
-.osv-radar-dot{
+.vssp-radar-dot{
   position:absolute;
   width:8px; height:8px;
   border-radius:50%;
-  background: var(--osv-green);
-  box-shadow: 0 0 10px var(--osv-green), 0 0 20px var(--osv-green);
+  background: var(--vssp-green);
+  box-shadow: 0 0 10px var(--vssp-green), 0 0 20px var(--vssp-green);
   top:50%; left:50%;
   transform: translate(-50%,-50%);
-  animation: osv-pulse 2.4s ease-in-out infinite;
+  animation: vssp-pulse 2.4s ease-in-out infinite;
 }
-@keyframes osv-pulse{
+@keyframes vssp-pulse{
   0%,100%{ opacity:.55; transform: translate(-50%,-50%) scale(1); }
   50%{ opacity:1; transform: translate(-50%,-50%) scale(1.35); }
 }
 
-.osv-ia-status{
+.vssp-ia-status{
   text-align:center;
   margin-top: 14px;
-  font-family: var(--osv-font-mono);
+  font-family: var(--vssp-font-mono);
   font-size: 13px;
   letter-spacing: 2px;
-  color: var(--osv-green);
+  color: var(--vssp-green);
   text-shadow: 0 0 8px rgba(0,255,195,.5);
 }
-.osv-ia-status.alert{
-  color: var(--osv-red);
+.vssp-ia-status.alert{
+  color: var(--vssp-red);
   text-shadow: 0 0 8px rgba(255,61,113,.6);
 }
 
 /* --------------------------------------------------------------------------
    7. METRICS / GAUGES
    -------------------------------------------------------------------------- */
-.osv-metric-label{
-  font-family: var(--osv-font-mono);
+.vssp-metric-label{
+  font-family: var(--vssp-font-mono);
   font-size: 11px;
   letter-spacing: 2px;
-  color: var(--osv-text-dim);
+  color: var(--vssp-text-dim);
   text-align:center;
 }
 
-.osv-gauge-neon{
+.vssp-gauge-neon{
   filter: drop-shadow(0 0 8px rgba(0,229,255,.35));
 }
 
 /* --------------------------------------------------------------------------
    8. QUICK ACTIONS
    -------------------------------------------------------------------------- */
-.osv-quick-action{
+.vssp-quick-action{
   transition: transform .2s ease, box-shadow .2s ease;
 }
-.osv-quick-action:active{
+.vssp-quick-action:active{
   transform: scale(0.94);
 }
 
 /* --------------------------------------------------------------------------
    9. ALERTS
    -------------------------------------------------------------------------- */
-.osv-alert{
-  border-left: 3px solid var(--osv-red);
+.vssp-alert{
+  border-left: 3px solid var(--vssp-red);
   background: rgba(255,61,113,0.08);
-  border-radius: var(--osv-radius-sm);
+  border-radius: var(--vssp-radius-sm);
   padding: 10px 14px;
-  font-family: var(--osv-font);
-  color: var(--osv-text);
+  font-family: var(--vssp-font);
+  color: var(--vssp-text);
   font-size: 14px;
-  animation: osv-alert-glow 2.2s ease-in-out infinite;
+  animation: vssp-alert-glow 2.2s ease-in-out infinite;
 }
-@keyframes osv-alert-glow{
+@keyframes vssp-alert-glow{
   0%,100%{ box-shadow: 0 0 6px rgba(255,61,113,.15); }
   50%{ box-shadow: 0 0 18px rgba(255,61,113,.40); }
 }
-.osv-alert.info{
-  border-left-color: var(--osv-blue);
+.vssp-alert.info{
+  border-left-color: var(--vssp-blue);
   background: rgba(58,167,255,0.08);
 }
-.osv-alert.ok{
-  border-left-color: var(--osv-green);
+.vssp-alert.ok{
+  border-left-color: var(--vssp-green);
   background: rgba(0,255,195,0.06);
 }
 
 /* --------------------------------------------------------------------------
-   10. FOOTER (used by <osv-footer-card>)
+   10. FOOTER (used by <vssp-footer-card>)
    -------------------------------------------------------------------------- */
-.osv-footer{
+.vssp-footer{
   display:flex;
   align-items:center;
   justify-content:space-between;
   padding: 10px 22px;
-  font-family: var(--osv-font-mono);
+  font-family: var(--vssp-font-mono);
   font-size: 12px;
   letter-spacing: 2px;
-  color: var(--osv-text-dim);
+  color: var(--vssp-text-dim);
 }
-.osv-footer .osv-footer-clock{
-  color: var(--osv-cyan);
+.vssp-footer .vssp-footer-clock{
+  color: var(--vssp-cyan);
   font-size: 15px;
 }
-.osv-footer .osv-footer-status{
+.vssp-footer .vssp-footer-status{
   display:flex;
   align-items:center;
   gap:6px;
 }
-.osv-footer .osv-dot{
+.vssp-footer .vssp-dot{
   width:7px; height:7px;
   border-radius:50%;
-  background: var(--osv-green);
-  box-shadow: 0 0 8px var(--osv-green);
+  background: var(--vssp-green);
+  box-shadow: 0 0 8px var(--vssp-green);
 }
-.osv-footer .osv-dot.offline{
-  background: var(--osv-red);
-  box-shadow: 0 0 8px var(--osv-red);
+.vssp-footer .vssp-dot.offline{
+  background: var(--vssp-red);
+  box-shadow: 0 0 8px var(--vssp-red);
 }
 
 /* --------------------------------------------------------------------------
    11. GENERIC ANIMATIONS
    -------------------------------------------------------------------------- */
-.osv-fade-in{
-  animation: osv-fade .5s ease both;
+.vssp-fade-in{
+  animation: vssp-fade .5s ease both;
 }
-@keyframes osv-fade{
+@keyframes vssp-fade{
   from{ opacity:0; transform: translateY(6px); }
   to{ opacity:1; transform: translateY(0); }
 }
 .glow{
-  animation: osv-glow 3s infinite;
+  animation: vssp-glow 3s infinite;
 }
-@keyframes osv-glow{
-  0%,100%{ box-shadow:0 0 10px var(--osv-cyan); }
-  50%{ box-shadow:0 0 25px var(--osv-cyan); }
+@keyframes vssp-glow{
+  0%,100%{ box-shadow:0 0 10px var(--vssp-cyan); }
+  50%{ box-shadow:0 0 25px var(--vssp-cyan); }
 }
 
 /* --------------------------------------------------------------------------
    12. SIDEBAR BOTTOM BRAND (used by osvision_sidebar_brand_footer)
    -------------------------------------------------------------------------- */
-.osv-sidebar-brand{
-  animation: osv-glow 3s infinite;
+.vssp-sidebar-brand{
+  animation: vssp-glow 3s infinite;
 }
 
 /* --------------------------------------------------------------------------
-   13. HUD HEADER — DATETIME WIDGET (used by <osv-datetime-card>)
+   13. HUD HEADER — DATETIME WIDGET (used by <vssp-datetime-card>)
    -------------------------------------------------------------------------- */
-.osv-datetime{
+.vssp-datetime{
   display:flex;
   align-items:flex-start;
   justify-content:flex-end;
@@ -316,43 +316,43 @@ ha-card:hover{
   height:100%;
   padding: 10px 14px;
 }
-.osv-datetime .osv-datetime-icon{
-  color: var(--osv-cyan);
+.vssp-datetime .vssp-datetime-icon{
+  color: var(--vssp-cyan);
   --mdc-icon-size: 26px;
   filter: drop-shadow(0 0 6px rgba(0,229,255,.4));
 }
-.osv-datetime .osv-datetime-time{
+.vssp-datetime .vssp-datetime-time{
   color: #FFFFFF;
-  font-family: var(--osv-font-mono);
+  font-family: var(--vssp-font-mono);
   font-size: 20px;
   font-weight: 700;
   line-height: 1.1;
   text-align: right;
 }
-.osv-datetime .osv-datetime-date{
-  color: var(--osv-text-dim);
+.vssp-datetime .vssp-datetime-date{
+  color: var(--vssp-text-dim);
   font-size: 11px;
   letter-spacing: .5px;
   text-transform: capitalize;
   text-align: right;
 }
 /* --------------------------------------------------------------------------
-   AD BANNER — bandeau publicitaire défilant (used by <osv-ad-banner-card>)
+   AD BANNER — bandeau publicitaire défilant (used by <vssp-ad-banner-card>)
    -------------------------------------------------------------------------- */
-.osv-ad-banner{
+.vssp-ad-banner{
   overflow: hidden;
   height: 100%;
   display: flex;
   align-items: center;
-  background: var(--osv-panel) !important;
-  border: var(--osv-border);
-  border-radius: var(--osv-radius-md) !important;
-  box-shadow: var(--osv-glow-cyan);
+  background: var(--vssp-panel) !important;
+  border: var(--vssp-border);
+  border-radius: var(--vssp-radius-md) !important;
+  box-shadow: var(--vssp-glow-cyan);
   position: relative;
 }
 /* Fondu sur les bords pour un effet de défilement propre */
-.osv-ad-banner::before,
-.osv-ad-banner::after{
+.vssp-ad-banner::before,
+.vssp-ad-banner::after{
   content: "";
   position: absolute;
   top: 0; bottom: 0;
@@ -360,36 +360,36 @@ ha-card:hover{
   z-index: 2;
   pointer-events: none;
 }
-.osv-ad-banner::before{
+.vssp-ad-banner::before{
   left: 0;
-  background: linear-gradient(90deg, var(--osv-bg) 0%, transparent 100%);
+  background: linear-gradient(90deg, var(--vssp-bg) 0%, transparent 100%);
 }
-.osv-ad-banner::after{
+.vssp-ad-banner::after{
   right: 0;
-  background: linear-gradient(270deg, var(--osv-bg) 0%, transparent 100%);
+  background: linear-gradient(270deg, var(--vssp-bg) 0%, transparent 100%);
 }
 
-.osv-ad-track{
+.vssp-ad-track{
   display: flex;
   align-items: center;
   gap: 48px;
   white-space: nowrap;
   padding: 0 24px;
-  animation-name: osv-ad-scroll;
+  animation-name: vssp-ad-scroll;
   animation-timing-function: linear;
   animation-iteration-count: infinite;
   will-change: transform;
 }
-.osv-ad-banner:hover .osv-ad-track{
+.vssp-ad-banner:hover .vssp-ad-track{
   animation-play-state: paused;
 }
 
-@keyframes osv-ad-scroll{
+@keyframes vssp-ad-scroll{
   from{ transform: translateX(0); }
   to{ transform: translateX(-50%); }
 }
 
-.osv-ad-item{
+.vssp-ad-item{
   display: flex;
   align-items: center;
   justify-content: center;
@@ -400,11 +400,11 @@ ha-card:hover{
   cursor: pointer;
   transition: transform .2s ease, filter .2s ease;
 }
-.osv-ad-item:hover{
+.vssp-ad-item:hover{
   transform: scale(1.08);
 }
 
-.osv-ad-item img{
+.vssp-ad-item img{
   height: 100%;
   width: auto;
   max-width: 140px;
@@ -412,20 +412,20 @@ ha-card:hover{
   filter: grayscale(0.25) brightness(1.15) drop-shadow(0 0 6px rgba(0,229,255,.15));
   transition: filter .2s ease;
 }
-.osv-ad-item:hover img{
+.vssp-ad-item:hover img{
   filter: grayscale(0) brightness(1.3) drop-shadow(0 0 10px rgba(0,229,255,.35));
 }
 
-.osv-ad-fallback{
+.vssp-ad-fallback{
   align-items: center;
   justify-content: center;
   height: 100%;
   padding: 0 16px;
   border: 1px solid rgba(0,229,255,0.35);
-  border-radius: var(--osv-radius-sm);
+  border-radius: var(--vssp-radius-sm);
   background: rgba(0,229,255,0.08);
-  color: var(--osv-cyan);
-  font-family: var(--osv-font-mono);
+  color: var(--vssp-cyan);
+  font-family: var(--vssp-font-mono);
   font-size: 11px;
   letter-spacing: 1.5px;
   font-weight: 700;

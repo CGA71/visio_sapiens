@@ -1,7 +1,7 @@
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
 metadata:
-  name: osvision-deployer-binding
+  name: vssp-deployer-binding
   namespace: home-assistant
 subjects:
   - kind: ServiceAccount
@@ -9,5 +9,5 @@ subjects:
     namespace: home-assistant
 roleRef:
   kind: Role
-  name: osvision-deployer
+  name: vssp-deployer
   apiGroup: rbac.authorization.k8s.io

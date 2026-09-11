@@ -25,9 +25,9 @@ set -e
 NAMESPACE="home-assistant"
 POD="home-assistant-0"
 CONTAINER="home-assistant"
-PACKAGE="osvision-v2.tar.gz"
+PACKAGE="vssp.tar.gz"
 
-echo "🚀 Deploying OSVision V2 to Home Assistant..."
+echo "🚀 Deploying Visio Sapiens to Home Assistant..."
 
 if [ ! -f "$PACKAGE" ]; then
   echo "❌ Package not found: $PACKAGE"

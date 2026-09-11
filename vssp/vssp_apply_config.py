@@ -49,7 +49,7 @@
 # EN | USAGE / FR | UTILISATION
 #   python3 vssp_apply_config.py \
 #       --config   /config/configuration.yaml \
-#       --fragment /config/.osv_stage/config-fragment.yaml \
+#       --fragment /config/.vssp_stage/config-fragment.yaml \
 #       [--vtoken  v1.2.3]      # replaces __VTOKEN__ in the resource urls
 #       [--dry-run]             # print the merge result, write nothing
 #       [--prune-resources]     # drop old Visio Sapiens resources absent from the fragment
@@ -80,11 +80,11 @@ except ImportError:
 # EN | Prefix identifying entries "owned by Visio Sapiens" (dashboards, helpers).
 # FR | Prefixe identifiant les entrees « propriete de Visio Sapiens »
 # FR | (dashboards, helpers).
-OSV_PREFIX = "visio-sapiens"
+VSSP_PREFIX = "visio-sapiens"
 # EN | Marker for Visio Sapiens resources: any url containing this segment is ours.
 # FR | Marqueur des ressources Visio Sapiens : toute url contenant ce segment
 # FR | est « a nous ».
-OSV_RESOURCE_MARK = "/local/vssp/"
+VSSP_RESOURCE_MARK = "/local/vssp/"
 
 # EN | Top-level keys the fragment is allowed to merge. Any other fragment key
 # EN | is ignored (safety rail: the patcher only ever touches this perimeter).
@@ -236,7 +236,7 @@ def report_skipped_keys(src_map, only_prefix, label):
               f"start with '{only_prefix}':")
         for key in skipped:
             print(f"         - {key}")
-        print(f"       Rename them, or adjust OSV_PREFIX in this script.")
+        print(f"       Rename them, or adjust VSSP_PREFIX in this script.")
 
 
 def _merge_resources(dst_lovelace, src_resources, prune=False):
@@ -245,13 +245,13 @@ def _merge_resources(dst_lovelace, src_resources, prune=False):
     EN |   - updates/adds the entries present in the fragment,
     EN |   - preserves the user's non-Visio-Sapiens resources,
     EN |   - with prune=True, drops Visio Sapiens resources (marked
-    EN |     OSV_RESOURCE_MARK) that are NO LONGER in the fragment.
+    EN |     VSSP_RESOURCE_MARK) that are NO LONGER in the fragment.
     EN | Returns True on change.
     FR | Fusionne la liste des resources par 'url' (dedoublonne).
     FR |   - met a jour/ajoute les entrees presentes dans le fragment,
     FR |   - preserve les resources non-Visio Sapiens de l'utilisateur,
     FR |   - si prune=True, retire les resources Visio Sapiens (marquees
-    FR |     OSV_RESOURCE_MARK) qui ne sont PLUS dans le fragment.
+    FR |     VSSP_RESOURCE_MARK) qui ne sont PLUS dans le fragment.
     FR | Renvoie True si changement.
     """
     changed = False
@@ -284,8 +284,8 @@ def _merge_resources(dst_lovelace, src_resources, prune=False):
         keep = CommentedSeq()
         for it in existing:
             u = url_of(it)
-            is_osv = u and OSV_RESOURCE_MARK in u
-            if is_osv and u not in src_urls:
+            is_vssp = u and VSSP_RESOURCE_MARK in u
+            if is_vssp and u not in src_urls:
                 # EN | drop this stale Visio Sapiens resource
                 # FR | on retire cette ancienne resource Visio Sapiens
                 changed = True
@@ -318,10 +318,10 @@ def merge(config, fragment, prune_resources=False):
             # EN | dashboards: merge per sub-key, only the visio-sapiens-* ones
             # FR | dashboards : merge par sous-cle, uniquement les visio-sapiens-*
             if "dashboards" in src:
-                report_skipped_keys(src["dashboards"], OSV_PREFIX,
+                report_skipped_keys(src["dashboards"], VSSP_PREFIX,
                                     "lovelace.dashboards")
                 dboards = dst.setdefault("dashboards", CommentedMap())
-                if _merge_named(dboards, src["dashboards"], only_prefix=OSV_PREFIX):
+                if _merge_named(dboards, src["dashboards"], only_prefix=VSSP_PREFIX):
                     changed = True
 
             # EN | resources: merge by url / FR | resources : merge par url
@@ -351,11 +351,11 @@ def merge(config, fragment, prune_resources=False):
                 # FR | laisse tel quel pour ne pas casser la structure de
                 # FR | l'utilisateur.
                 if isinstance(dst, CommentedMap) and isinstance(src, CommentedMap):
-                    if _merge_named(dst, src, only_prefix=OSV_PREFIX):
+                    if _merge_named(dst, src, only_prefix=VSSP_PREFIX):
                         changed = True
             else:
                 if isinstance(dst, CommentedMap) and isinstance(src, CommentedMap):
-                    if _merge_named(dst, src, only_prefix=OSV_PREFIX):
+                    if _merge_named(dst, src, only_prefix=VSSP_PREFIX):
                         changed = True
 
     return changed
@@ -364,10 +364,10 @@ def merge(config, fragment, prune_resources=False):
 def prune_dashboards(config, declared):
     """
     EN | Removes the Visio Sapiens dashboards that no fragment declares any
-    EN | more. Only keys matching OSV_PREFIX are ever considered — the user's
+    EN | more. Only keys matching VSSP_PREFIX are ever considered — the user's
     EN | own dashboards are never touched.
     FR | Retire les dashboards Visio Sapiens qu'aucun fragment ne declare
-    FR | plus. Seules les cles correspondant a OSV_PREFIX sont considerees —
+    FR | plus. Seules les cles correspondant a VSSP_PREFIX sont considerees —
     FR | les dashboards propres a l'utilisateur ne sont jamais touches.
     """
     lova = config.get("lovelace")
@@ -377,7 +377,7 @@ def prune_dashboards(config, declared):
     if not isinstance(dboards, CommentedMap):
         return False
     stale = [k for k in dboards
-             if str(k).startswith(OSV_PREFIX) and k not in declared]
+             if str(k).startswith(VSSP_PREFIX) and k not in declared]
     for key in stale:
         del dboards[key]
         print(f"[OK] pruned stale dashboard: {key}")

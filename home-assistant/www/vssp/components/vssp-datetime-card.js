@@ -21,16 +21,16 @@
  */
 
 /**
- * Visio Sapiens — <osv-datetime-card>
+ * Visio Sapiens — <vssp-datetime-card>
  * HUD header widget: live clock + full date (jour, mois, année).
  * Self-contained: does NOT depend on window.vssp engine, to avoid
  * breaking if that global object isn't loaded/available for any reason.
  *
  * Usage in a dashboard:
- *   - type: custom:osv-datetime-card
+ *   - type: custom:vssp-datetime-card
  *     icon: mdi:calendar-clock
  */
-class OSVDateTimeCard extends HTMLElement {
+class VSSPDateTimeCard extends HTMLElement {
   setConfig(config) {
     this._config = {
       icon: "mdi:calendar-clock",
@@ -76,11 +76,11 @@ class OSVDateTimeCard extends HTMLElement {
   _build() {
     this.innerHTML = `
       <ha-card style="height:100%;">
-        <div class="osv-datetime">
-          <ha-icon icon="${this._config.icon}" class="osv-datetime-icon"></ha-icon>
-          <div class="osv-datetime-text">
-            <div class="osv-datetime-time" id="osv-dt-time">--:--</div>
-            <div class="osv-datetime-date" id="osv-dt-date">--</div>
+        <div class="vssp-datetime">
+          <ha-icon icon="${this._config.icon}" class="vssp-datetime-icon"></ha-icon>
+          <div class="vssp-datetime-text">
+            <div class="vssp-datetime-time" id="vssp-dt-time">--:--</div>
+            <div class="vssp-datetime-date" id="vssp-dt-date">--</div>
           </div>
         </div>
       </ha-card>
@@ -90,8 +90,8 @@ class OSVDateTimeCard extends HTMLElement {
   _startClock() {
     if (this._interval) return;
     const tick = () => {
-      const timeEl = this.querySelector("#osv-dt-time");
-      const dateEl = this.querySelector("#osv-dt-date");
+      const timeEl = this.querySelector("#vssp-dt-time");
+      const dateEl = this.querySelector("#vssp-dt-date");
       if (!timeEl || !dateEl) return;
       const now = new Date();
       timeEl.textContent = this._formatTime(now);
@@ -110,11 +110,11 @@ class OSVDateTimeCard extends HTMLElement {
   }
 }
 
-customElements.define("osv-datetime-card", OSVDateTimeCard);
+customElements.define("vssp-datetime-card", VSSPDateTimeCard);
 
 window.customCards = window.customCards || [];
 window.customCards.push({
-  type: "osv-datetime-card",
+  type: "vssp-datetime-card",
   name: "Visio Sapiens DateTime Widget",
   description: "Horloge + date en direct — cellule du bandeau HUD Visio Sapiens",
 });

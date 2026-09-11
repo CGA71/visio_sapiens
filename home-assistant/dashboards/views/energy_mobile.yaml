@@ -88,7 +88,7 @@ views:
         show_label: true
         tap_action:
           action: navigate
-          navigation_path: /osvision-v2/home
+          navigation_path: /visio-sapiens-m/home
         label: |
           [[[
             const d = new Date();

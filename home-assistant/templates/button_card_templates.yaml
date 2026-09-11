@@ -393,7 +393,7 @@ vssp_sidebar_brand_footer:
       - justify-items: center
       - row-gap: 4px
     card:
-      - class: osv-sidebar-brand glow
+      - class: vssp-sidebar-brand glow
       - background: transparent
       - box-shadow: none
       - border: none
@@ -786,7 +786,7 @@ vssp_quick_action:
   show_state: false
   styles:
     card:
-      - class: osv-quick-action
+      - class: vssp-quick-action
       - background: var(--card-background-color, rgba(8,18,28,0.72))
       - border-radius: var(--ha-card-border-radius, 16px)
       - border: 1px solid rgba(0,229,255,0.22)
@@ -809,9 +809,9 @@ vssp_alert:
     card:
       - class: >
           [[[
-            if (variables.level === 'critical') return 'osv-alert';
-            if (variables.level === 'info') return 'osv-alert info';
-            return 'osv-alert ok';
+            if (variables.level === 'critical') return 'vssp-alert';
+            if (variables.level === 'info') return 'vssp-alert info';
+            return 'vssp-alert ok';
           ]]]
       - text-align: left
       - justify-items: start

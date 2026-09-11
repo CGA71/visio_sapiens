@@ -47,7 +47,7 @@
 # EN |      (title + weather + clock), instead of six one-cell areas of which
 # EN |      four were unused.
 # EN |   3. The scrolling ad banner is gone, along with its grid area and its
-# EN |      osv-ad-banner-card.js resource. It only ever existed on the tablet
+# EN |      vssp-ad-banner-card.js resource. It only ever existed on the tablet
 # EN |      view.
 # FR | DEUX CORRECTIONS APPLIQUEES A LA TEMPLATISATION — a lire avant de
 # FR | comparer avec l'ancien fichier ecrit a la main :
@@ -61,7 +61,7 @@
 # FR |      toute la largeur (titre + meteo + heure), au lieu de six zones
 # FR |      d'une cellule dont quatre inutilisees.
 # FR |   3. Le bandeau publicitaire defilant est supprime, avec sa zone de
-# FR |      grille et sa ressource osv-ad-banner-card.js. Il n'a jamais
+# FR |      grille et sa ressource vssp-ad-banner-card.js. Il n'a jamais
 # FR |      existe que sur la vue tablette.
 #
 # EN | Lovelace dependencies (HACS + declared in resources):
@@ -921,7 +921,7 @@ views:
               overflow: hidden;
             }
             ha-card {
-              background: var(--osv-panel) !important;
+              background: var(--vssp-panel) !important;
               height: 100% !important;
               min-height: 400px;
               display: flex;
@@ -931,7 +931,7 @@ views:
               --secondary-text-color: #8FB6C9 !important;
               --primary-color: #00E5FF !important;
               --text-primary-color: #FFFFFF !important;
-              --card-background-color: var(--osv-panel) !important;
+              --card-background-color: var(--vssp-panel) !important;
             }
             ha-card .card-header {
               color: #FFFFFF !important;
@@ -986,7 +986,7 @@ views:
               overflow: hidden;
             }
             ha-card {
-              background: var(--osv-panel) !important;
+              background: var(--vssp-panel) !important;
               height: 100% !important;
               min-height: 0;
               display: flex;

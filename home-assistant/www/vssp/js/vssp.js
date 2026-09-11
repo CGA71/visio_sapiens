@@ -22,14 +22,14 @@
 
 /**
  * Visio Sapiens — JS ENGINE
- * Shared utilities used by OSVision custom cards (osv-radar-card, osv-footer-card, ...).
+ * Shared utilities used by OSVision custom cards (vssp-radar-card, vssp-footer-card, ...).
  * Loaded once as a global lovelace resource (type: module).
  *
  * This engine does NOT manipulate the dashboard DOM directly: each custom card
  * owns its own rendering. It only exposes small, dependency-free helpers so
  * every future OSVision component (rooms, widgets, alerts...) behaves consistently.
  *
- * NOTE: osv-card.js and osv-datetime-card.js no longer depend on this engine
+ * NOTE: vssp-card.js and vssp-datetime-card.js no longer depend on this engine
  * for time/date formatting (they compute it natively) after the bug where
  * window.osvision.formatTime was found to be unavailable in some deployments.
  * This engine is kept for the pub/sub bus and color/threshold helpers, which
@@ -83,7 +83,7 @@ class OSVisionEngine {
 
   /* ---------------------------------------------------------------------
    * Tiny pub/sub — lets independent OSVision cards react to shared events
-   * (e.g. an alert card raising "osv-alert" so the radar/footer can react)
+   * (e.g. an alert card raising "vssp-alert" so the radar/footer can react)
    * ------------------------------------------------------------------- */
   on(event, callback) {
     (this._listeners[event] ||= []).push(callback);
