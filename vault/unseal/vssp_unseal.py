@@ -721,6 +721,39 @@ def enroll_device(name: str, days: int, out_dir: Path) -> int:
     return 0
 
 
+def issue_cert(cn: str, hosts: list[str], days: int, out: Path) -> int:
+    """EN | A server certificate for SOMETHING ELSE on this network, signed by
+    EN | the same authority. Home Assistant behind Traefik is the reason this
+    EN | exists: the alternative is a second private CA, and a second CA means
+    EN | a second thing to install and trust on every phone. One authority for
+    EN | the house, several certificates under it, is both less work and
+    EN | easier to reason about — trusting it is one decision, made once.
+    EN | The CA's private key never leaves /etc/vssp-unseal. This writes only
+    EN | the leaf certificate and its key, and the key is written 0600 before a
+    EN | byte of it exists on disk.
+    FR | Un certificat serveur pour AUTRE CHOSE sur ce reseau, signe par la
+    FR | meme autorite. Home Assistant derriere Traefik est la raison d etre de
+    FR | cette commande : l alternative est une seconde autorite privee, et une
+    FR | seconde autorite veut dire une chose de plus a installer et approuver
+    FR | sur chaque telephone. Une autorite pour la maison, plusieurs
+    FR | certificats dessous, c est moins de travail et plus simple a tenir —
+    FR | lui faire confiance est une decision unique, prise une fois.
+    FR | La cle privee de l autorite ne quitte jamais /etc/vssp-unseal. Ceci
+    FR | n ecrit que le certificat feuille et sa cle, et la cle est ecrite en
+    FR | 0600 avant qu un seul de ses octets existe sur le disque."""
+    crt, key = issue(cn, days, server=True, hosts=hosts)
+    out.mkdir(parents=True, exist_ok=True)
+    safe = re.sub(r"[^A-Za-z0-9._-]", "_", cn)
+    crt_path, key_path = out / f"{safe}.crt", out / f"{safe}.key"
+    write_private(crt_path, crt)
+    write_private(key_path, key)
+    os.chmod(crt_path, 0o644)
+    print(f"[OK] {crt_path}")
+    print(f"[OK] {key_path}  (0600)")
+    print(f"     for {', '.join(hosts)}, {days} days, signed by {CA_CRT}")
+    return 0
+
+
 def enroll_server(hosts: list[str], days: int) -> int:
     crt, key = issue(hosts[0], days, server=True, hosts=hosts)
     write_private(SRV_CRT, crt)
@@ -759,6 +792,14 @@ def main() -> int:
     s.add_argument("hosts", nargs="+", help="IPs and names clients will use")
     s.add_argument("--days", type=int, default=3650)
 
+    c = sub.add_parser("issue-cert",
+                       help="server certificate for another service, same CA")
+    c.add_argument("cn", help="common name, e.g. homeassistant")
+    c.add_argument("--host", action="append", required=True, dest="hosts",
+                   help="IP or DNS name clients will use (repeatable)")
+    c.add_argument("--days", type=int, default=825)
+    c.add_argument("--out", default="/var/lib/vssp-unseal/certs")
+
     sub.add_parser("serve", help="run the service")
     sub.add_parser("status", help="print the safe's seal status")
 
@@ -767,6 +808,8 @@ def main() -> int:
         return enroll_keys(verify=not args.no_verify)
     if args.cmd == "enroll-device":
         return enroll_device(args.name, args.days, Path(args.out))
+    if args.cmd == "issue-cert":
+        return issue_cert(args.cn, args.hosts, args.days, Path(args.out))
     if args.cmd == "enroll-server":
         return enroll_server(args.hosts, args.days)
     if args.cmd == "status":
