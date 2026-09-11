@@ -448,6 +448,36 @@ sudo /usr/local/bin/k3s-killall.sh   # stops leftovers, uninstalls nothing
 sudo systemctl restart k3s
 ```
 
+**And the second time was worse.** The same error came back at the next OS
+reboot for a different reason — and this one would never have cleared itself:
+
+```
+/etc/systemd/system/k3s-agent.service       2026-07-01   <- enabled since July
+multi-user.target.wants/k3s.service         2026-09-11   <- enabled by this upgrade
+```
+
+Two k3s units on one host. `k3s server` binds `127.0.0.1:6444` as its
+supervisor port, `k3s agent` binds it as the client-side load balancer to an
+apiserver: **one host cannot run both.** The agent unit had been dormant for
+months because the server unit was not enabled at boot — installing k3s from
+this screen enabled it. The next reboot started the two together, the agent
+won the race, and the pods never came back: no Home Assistant.
+
+So the installer stops the rival unit, and **disables** it. Killing the
+process would not do: a `pkill` against a process systemd owns simply gets it
+restarted, which turns one race into an endless one. As for disabling, it
+changes what the host does at boot and that is more than an upgrade is asked
+to do — the justification is that the two units are **mutually exclusive**: if
+this screen is upgrading the server on this host, an agent unit beside it is
+not a preference to respect, it is a configuration that cannot work. Left
+enabled it breaks the cluster at every boot, silently, with the workloads
+simply absent. So it is disabled and said plainly in the log, rather than left
+as a trap.
+
+The existence test is `systemctl cat`, not `list-unit-files`: the latter can
+succeed with an empty result, and `is-active` can answer `unknown` instead of
+`inactive` — enough to warn about a conflict nobody has.
+
 ### The three tiers
 
 The other families already split by risk — HACS in bulk, firmware never.

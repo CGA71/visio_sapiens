@@ -1932,6 +1932,68 @@ wait_active() {{
   return 1
 }}
 
+# EN | THE RIVAL UNIT. k3s-agent.service and k3s.service both want
+# EN | 127.0.0.1:6444 - the server binds it as its supervisor port, the agent
+# EN | binds it as the client-side load balancer to an apiserver. One host
+# EN | cannot run both, and this host had both: an agent unit enabled since
+# EN | July sat harmless for months because the server unit was not enabled at
+# EN | boot, and installing k3s from here enabled it. The next reboot started
+# EN | the two together, the agent won the race, and the server crash-looped
+# EN | with "address already in use" - fifty-one times in eight minutes, with
+# EN | Home Assistant gone because its pods never came back.
+# EN | Stopping the unit is not optional and killing the process is not enough:
+# EN | pkill against a process systemd owns just gets it restarted, which turns
+# EN | one race into an endless one.
+# EN | DISABLING it is the part that needs justifying, because it changes what
+# EN | the host does at boot and that is more than an upgrade was asked to do.
+# EN | The justification is that the two units are mutually exclusive on this
+# EN | port: if this installer is upgrading the SERVER on this host, an agent
+# EN | unit beside it is not a preference to respect, it is a configuration
+# EN | that cannot work - and left enabled it breaks the cluster at every
+# EN | single boot, silently, with the workloads simply absent. So it is
+# EN | disabled and said loudly in the log, rather than left as a trap.
+# FR | L UNITE RIVALE. k3s-agent.service et k3s.service veulent tous deux
+# FR | 127.0.0.1:6444 - le serveur s y lie comme port de supervision, l agent
+# FR | comme repartiteur cote client vers un apiserver. Un hote ne peut pas
+# FR | faire tourner les deux, et celui-ci avait les deux : une unite agent
+# FR | activee depuis juillet est restee inoffensive des mois parce que
+# FR | l unite serveur n etait pas activee au demarrage, et installer k3s
+# FR | d ici l a activee. Le redemarrage suivant a lance les deux ensemble,
+# FR | l agent a gagne la course, et le serveur a boucle sur « address already
+# FR | in use » - cinquante et une fois en huit minutes, Home Assistant
+# FR | disparu parce que ses pods ne sont jamais revenus.
+# FR | Arreter l unite n est pas optionnel et tuer le processus ne suffit pas :
+# FR | un pkill contre un processus que systemd possede ne fait que le
+# FR | relancer, ce qui transforme une course en course sans fin.
+# FR | LA DESACTIVER est la part qui demande une justification, parce que cela
+# FR | change ce que fait l hote au demarrage, et c est plus que ce qu on a
+# FR | demande a une mise a niveau. La justification : les deux unites sont
+# FR | mutuellement exclusives sur ce port. Si cet installateur met a niveau le
+# FR | SERVEUR sur cet hote, une unite agent a cote n est pas une preference a
+# FR | respecter, c est une configuration qui ne peut pas fonctionner - et
+# FR | laissee active elle casse le cluster a chaque demarrage, en silence,
+# FR | avec les charges simplement absentes. Elle est donc desactivee et dite
+# FR | haut et fort dans le journal, plutot que laissee comme un piege.
+# EN | `systemctl cat` is the reliable existence test: it fails when no
+# EN | such unit file exists, whereas list-unit-files can succeed with an
+# EN | empty result and is-active can answer `unknown` rather than
+# EN | `inactive` - which would take this branch for a unit that is not
+# EN | there and print a warning about a conflict nobody has.
+# FR | `systemctl cat` est le test d existence fiable : il echoue quand
+# FR | aucun fichier d unite n existe, alors que list-unit-files peut
+# FR | reussir avec un resultat vide et is-active repondre `unknown`
+# FR | plutot que `inactive` - ce qui prendrait cette branche pour une
+# FR | unite absente et afficherait un avertissement sur un conflit que
+# FR | personne n a.
+if systemctl cat k3s-agent.service >/dev/null 2>&1; then
+  if [ "$(systemctl is-enabled k3s-agent 2>/dev/null)" = enabled ] \
+     || [ "$(systemctl is-active k3s-agent 2>/dev/null)" != inactive ]; then
+    say "k3s-agent.service is present on a host running the k3s SERVER."
+    say "Both bind 127.0.0.1:6444 and cannot coexist: disabling the agent."
+    systemctl disable --now k3s-agent 2>/dev/null || true
+  fi
+fi
+
 say "stopping k3s before installing {tag}"
 systemctl stop k3s 2>/dev/null || true
 free_port || say "proceeding with 6444 still held"

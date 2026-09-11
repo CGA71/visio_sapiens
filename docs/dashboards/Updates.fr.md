@@ -468,6 +468,39 @@ sudo /usr/local/bin/k3s-killall.sh   # arrête les rescapés, ne désinstalle ri
 sudo systemctl restart k3s
 ```
 
+**Et la deuxième fois, c'était pire.** Le même message d'erreur est revenu au
+redémarrage suivant de l'OS, mais pour une autre raison — et cette fois rien
+ne se serait débloqué tout seul :
+
+```
+/etc/systemd/system/k3s-agent.service       2026-07-01   ← activée depuis juillet
+multi-user.target.wants/k3s.service         2026-09-11   ← activée par cette mise à niveau
+```
+
+Deux unités k3s sur le même hôte. `k3s server` se lie à `127.0.0.1:6444`
+comme port de supervision, `k3s agent` s'y lie comme répartiteur côté client
+vers un apiserver : **un hôte ne peut pas faire tourner les deux.** L'unité
+agent dormait depuis des mois parce que l'unité serveur n'était pas activée au
+démarrage — installer k3s depuis cet écran l'a activée. Le redémarrage suivant
+a lancé les deux ensemble, l'agent a gagné la course, et les pods ne sont
+jamais revenus : plus de Home Assistant.
+
+L'installateur arrête donc l'unité rivale, et la **désactive**. Tuer le
+processus ne suffirait pas : un `pkill` contre un processus que systemd
+possède ne fait que le relancer, ce qui transforme une course en course sans
+fin. Quant à la désactivation, elle change ce que fait l'hôte au démarrage et
+c'est plus que ce qu'on demande à une mise à niveau — la justification est que
+les deux unités sont **mutuellement exclusives** : si cet écran met à niveau
+le serveur sur cet hôte, une unité agent à côté n'est pas une préférence à
+respecter, c'est une configuration qui ne peut pas fonctionner. Laissée
+active, elle casse le cluster à chaque démarrage, en silence, les charges
+simplement absentes. Elle est donc désactivée et dite en clair dans le
+journal, plutôt que laissée comme un piège.
+
+Le test d'existence est `systemctl cat`, pas `list-unit-files` : ce dernier
+peut réussir avec un résultat vide, et `is-active` répondre `unknown` au lieu
+d'`inactive` — de quoi avertir d'un conflit que personne n'a.
+
 ### Les trois paliers
 
 Les autres familles se répartissent déjà par risque — HACS en lot, jamais
