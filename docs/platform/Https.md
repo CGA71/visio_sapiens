@@ -66,7 +66,7 @@ lines do not affect them. That is what makes the move safe.
 ### Finding the right value
 
 `10.42.0.0/16` is the k3s default pod network, not a guarantee.
-`k8s/apply-https.sh` reads it from the cluster and prints it for you:
+`kubernetes/deploy/apply-https.sh` reads it from the cluster and prints it for you:
 
 ```bash
 kubectl get nodes -o jsonpath='{.items[0].spec.podCIDR}'
@@ -119,11 +119,19 @@ Worth remembering for any page added later.
 sudo -u vssp-unseal vssp-unseal issue-cert homeassistant --host 192.168.1.11
 
 # 2. the TLS secret and the ingress (inspect first)
-sudo sh k8s/apply-https.sh --dry-run
-sudo sh k8s/apply-https.sh
+sudo sh kubernetes/deploy/apply-https.sh --dry-run
+sudo sh kubernetes/deploy/apply-https.sh
 
 # 3. the http: block above in configuration.yaml, then restart HA
 ```
+
+### Why this is manual
+
+The pipeline cannot do it for you, and that is not a choice. The runner's Role
+(`kubernetes/rbac/role.yaml`) covers `pods`, `pods/exec` and `pods/log` only:
+it may create neither `secrets` nor `ingresses`. Widening that Role would give
+CI the power to read every secret in the namespace — a steep price for saving
+one command run once.
 
 The script discovers the Home Assistant service instead of assuming it: a
 manifest with a hard-coded backend that does not exist produces an ingress
@@ -164,7 +172,7 @@ in `tls.secretName`. It is the certificate that carries the IP as a
 
 | Path | Contents |
 |---|---|
-| `k8s/apply-https.sh` | TLS secret, ingress, and `trusted_proxies` detection |
+| `kubernetes/deploy/apply-https.sh` | TLS secret, ingress, and `trusted_proxies` detection |
 | `/var/lib/vssp-unseal/certs/homeassistant.{crt,key}` | the certificate Traefik serves |
 | `/etc/vssp-unseal/ca.crt` | the authority to trust on the devices |
 
