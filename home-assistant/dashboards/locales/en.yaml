@@ -452,8 +452,8 @@ admin:
   # FR | l anglais rendu par le script.
   updates_infra_msg_sealed: >-
     The safe is sealed: the probe cannot read the host's SSH access out of it,
-    so everything living on the server stays unprobed. Enter three of the five
-    unseal keys, then PROBE THE SERVER.
+    so nothing living on the server is probed and no install can start. On the
+    host, three times, a different key each call — then PROBE THE SERVER.
   updates_infra_msg_no_token: >-
     No maintenance token: /config/vssp/.vault_maint_token is missing. The
     deployment writes it from the VAULT_MAINT_TOKEN variable.

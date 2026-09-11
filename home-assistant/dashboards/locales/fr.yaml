@@ -330,8 +330,9 @@ admin:
   # FR | sur l'anglais rendu par le script.
   updates_infra_msg_sealed: >-
     Le coffre-fort est scellé : la sonde ne peut pas y lire l'accès SSH à
-    l'hôte, donc tout ce qui vit sur le serveur reste non sondé. Saisissez 3
-    des 5 clés de descellement, puis SONDER LE SERVEUR.
+    l'hôte, donc rien de ce qui vit sur le serveur n'est sondé et aucune
+    installation ne peut partir. Sur l'hôte, trois fois, une clé différente à
+    chaque appel — puis SONDER LE SERVEUR.
   updates_infra_msg_no_token: >-
     Pas de jeton de maintenance : /config/vssp/.vault_maint_token est absent.
     Le déploiement l'écrit depuis la variable VAULT_MAINT_TOKEN.

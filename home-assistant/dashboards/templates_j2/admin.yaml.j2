@@ -1648,21 +1648,70 @@ views:
                     'error.no_token':
                       '{{ t('admin.updates_infra_msg_no_token') | js }}'
                   };
+                  // EN | THE REMEDY, not just the diagnosis. Knowing the safe
+                  // EN | is sealed and knowing what to type are two different
+                  // EN | pieces of information, and the second one is the one
+                  // EN | that ends the outage. The SAFE screen already prints
+                  // EN | this exact line (sealed_how in vssp_vault.html) and
+                  // EN | this is the other screen the seal takes down, so it
+                  // EN | prints it too rather than sending anyone hunting.
+                  // EN | NOT TRANSLATED, and no host in it. A shell command is
+                  // EN | a machine token — the same rule every status file in
+                  // EN | this project follows — and hard-coding 192.168.1.11
+                  // EN | into a generated dashboard would be a local fact
+                  // EN | shipped to every other instance. The prose beside it
+                  // EN | says "on the host", which is where it runs.
+                  // FR | LE REMEDE, pas seulement le diagnostic. Savoir que le
+                  // FR | coffre est scelle et savoir quoi taper sont deux
+                  // FR | informations differentes, et c est la seconde qui met
+                  // FR | fin a la panne. L ecran COFFRE-FORT imprime deja cette
+                  // FR | ligne exacte (sealed_how dans vssp_vault.html), et cet
+                  // FR | ecran-ci est l autre que le scellement met a terre :
+                  // FR | il l imprime donc aussi plutot que d envoyer qui que
+                  // FR | ce soit la chercher.
+                  // FR | PAS TRADUITE, et sans hote dedans. Une commande shell
+                  // FR | est un jeton machine — la regle que suit tout fichier
+                  // FR | de statut de ce projet — et coder 192.168.1.11 en dur
+                  // FR | dans un dashboard genere serait un fait local livre a
+                  // FR | toutes les autres instances. La phrase a cote dit
+                  // FR | « sur l hote », c est la que cela s execute.
+                  const CMD = {
+                    'error.vault_sealed':
+                      'docker exec -it vssp-vault vault operator unseal'
+                  };
                   const st = states['sensor.vssp_updates_infra_status'];
                   const bad = (st && st.state === 'error')
                     ? (MSG[st.attributes.message_key]
                        || st.attributes.message || '') : '';
+                  const cmd = (st && st.state === 'error')
+                    ? (CMD[st.attributes.message_key] || '') : '';
                   const call = `document.querySelector('home-assistant')`
                     + `.hass.callService('script','vssp_infra_check')`;
+                  // EN | user-select:all so one click selects the whole
+                  // EN | command: it is going to be retyped into a terminal,
+                  // EN | and a half-selected docker invocation is worse than
+                  // EN | none.
+                  // FR | user-select:all pour qu un clic selectionne toute la
+                  // FR | commande : elle va etre retapee dans un terminal, et
+                  // FR | une invocation docker a moitie selectionnee est pire
+                  // FR | que pas de selection du tout.
                   const warn = bad
-                    ? `<div style="display:flex;align-items:flex-start;gap:7px;
-                        padding:8px 10px;margin:8px 0 2px;border-radius:8px;
-                        background:rgba(255,152,0,.10);
+                    ? `<div style="padding:8px 10px;margin:8px 0 2px;
+                        border-radius:8px;background:rgba(255,152,0,.10);
                         border:1px solid rgba(255,152,0,.45);color:#FF9800;
                         font-size:10px;line-height:1.4;">
-                        <ha-icon icon="mdi:alert-outline"
-                          style="--mdc-icon-size:14px;margin:0;flex:0 0 auto;"
-                          ></ha-icon><span>${bad}</span></div>`
+                        <div style="display:flex;align-items:flex-start;
+                          gap:7px;">
+                          <ha-icon icon="mdi:alert-outline"
+                            style="--mdc-icon-size:14px;margin:0;flex:0 0 auto;"
+                            ></ha-icon><span>${bad}</span></div>
+                        ${cmd ? `<div style="margin:6px 0 0 21px;padding:4px 8px;
+                          border-radius:5px;background:rgba(0,0,0,.35);
+                          color:#FFD180;font-size:10px;user-select:all;
+                          overflow-x:auto;white-space:nowrap;font-family:
+                          ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
+                          ">${cmd}</div>` : ''}
+                      </div>`
                     : '';
                   return warn + `<div style="display:flex;align-items:center;
                       justify-content:space-between;gap:10px;padding:10px 0 2px;
