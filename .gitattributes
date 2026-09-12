@@ -1,0 +1,9 @@
+# EN | A shell script with CRLF line endings dies on its own first commands:
+# EN | dash reads "set -e" and answers "Illegal option -", naming neither the
+# EN | character nor the line endings. This repository is edited from Windows and
+# EN | run on Linux, so the endings cannot be left to the checkout.
+# FR | Un script shell en CRLF meurt sur ses premieres commandes : dash lit
+# FR | "set -e" et repond "Illegal option -", sans nommer ni le caractere ni
+# FR | les fins de ligne. Ce depot est edite sous Windows et execute sous Linux,
+# FR | les fins de ligne ne peuvent donc pas dependre du checkout.
+*.sh text eol=lf
