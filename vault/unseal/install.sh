@@ -66,7 +66,8 @@ install -d -m 0700 -o "$USER_NAME" -g "$USER_NAME" "$VAR/devices"
 # FR | adresses", et la boucle locale est celle a retenir dedans.
 VAULT_ADDR=${VSSP_VAULT_ADDR:-}
 if [ -z "$VAULT_ADDR" ] && command -v docker >/dev/null 2>&1; then
-  published=$(docker port vssp-vault 8200/tcp 2>/dev/null | head -n 1 | tr -d '')
+  published=$(docker port vssp-vault 8200/tcp 2>/dev/null | head -n 1 | tr -d '
+')
   case "$published" in
     0.0.0.0:*)  VAULT_ADDR="http://127.0.0.1:${published##*:}" ;;
     "[::]":*)   VAULT_ADDR="http://127.0.0.1:${published##*:}" ;;
