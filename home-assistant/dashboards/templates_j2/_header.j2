@@ -189,8 +189,34 @@
               text: "#ffffff"
               bg: true
               fade: false
+            {# EN | The condition label ("Sunny") is NOT the card's: it
+               EN | renders hass.localize, which follows the HA profile /
+               EN | browser language, so an English build still said
+               EN | "Ensoleillé" on a French browser — one header, two
+               EN | languages. The card has no language option, so its
+               EN | span is hidden and an ::after prints the label from
+               EN | this catalogue instead. The lookup runs in Home
+               EN | Assistant (card-mod renders Jinja, `config.entity` is
+               EN | this card's entity) because the condition is live; only
+               EN | the dict is baked here, `| js` on every label for the
+               EN | apostrophes. The icon and backdrop still read the real
+               EN | entity, untouched.
+               FR | Le libelle de condition (« Ensoleillé ») n'est PAS celui
+               FR | de la carte : elle rend hass.localize, qui suit la langue
+               FR | du profil HA / navigateur, donc une build anglaise
+               FR | affichait quand meme « Ensoleillé » sur un navigateur
+               FR | francais — un bandeau, deux langues. La carte n'a pas
+               FR | d'option de langue : son span est masque et un ::after
+               FR | affiche le libelle de ce catalogue a la place. La
+               FR | recherche tourne dans Home Assistant (card-mod rend le
+               FR | Jinja, `config.entity` est l'entite de cette carte) car
+               FR | la condition est vivante ; seul le dict est fige ici,
+               FR | `| js` sur chaque libelle pour les apostrophes. L'icone et
+               FR | le fond lisent toujours l'entite reelle, intacts. #}
             card_mod:
               style: |
+                {{ '{%' }} set labels = { {% for cond, label in tr.header.weather_condition.items() %}'{{ cond }}': '{{ label | js }}'{{ ', ' if not loop.last }}{% endfor %} } {{ '%}' }}
+                {%+ raw %}{% set cond = states(config.entity) %}{% endraw +%}
                 :host { flex: 1 1 0; }
                 ha-card {
                   background: var(--card-background-color, rgba(16,27,39,0.85)) !important;
@@ -198,6 +224,21 @@
                   border-radius: var(--ha-card-border-radius, 20px) !important;
                   box-shadow: 0 0 18px rgba(0, 229, 255, 0.12) !important;
                   height: 100%
+                }
+                .weather__info__state {
+                  position: relative;
+                  visibility: hidden;
+                }
+                .weather__info__state::after {
+                  content: "{%+ raw %}{{ labels.get(cond, cond) }}{% endraw +%}";
+                  visibility: visible;
+                  position: absolute;
+                  left: 0;
+                  right: 0;
+                  top: 0;
+                  white-space: nowrap;
+                  overflow: hidden;
+                  text-overflow: ellipsis;
                 }
 
           {# EN | Cell 3: the agenda alone, day by day (days_to_show: 7) —
@@ -216,6 +257,13 @@
             days_to_show: 7
             show_location: false
             show_month: false
+            {# EN | Without it the card falls back to hass.locale — the HA
+               EN | profile / browser language — and printed "Sam" and
+               EN | "Aucun événement à venir" on an English build.
+               FR | Sans lui la carte retombe sur hass.locale — la langue du
+               FR | profil HA / navigateur — et affichait « Sam » et « Aucun
+               FR | événement à venir » sur une build anglaise. #}
+            language: "{{ locale }}"
             card_mod:
               style: |
                 :host { flex: 1 1 0; }

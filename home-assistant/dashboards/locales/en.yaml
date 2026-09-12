@@ -141,6 +141,35 @@ slot:
 # ----------------------------------------------------------------------
 header:
   weather_unavailable: Weather unavailable
+  # EN | One label per Home Assistant weather condition, keyed by the raw
+  # EN | state (hyphens included). The weather cell of the header shows
+  # EN | these instead of hass.localize, which follows the HA profile /
+  # EN | browser language and not this catalogue — see _header.j2. Keep
+  # EN | ASCII double quotes out of the values: they land inside a CSS
+  # EN | string.
+  # FR | Un libelle par condition meteo Home Assistant, indexe par l'etat
+  # FR | brut (tirets compris). La case meteo du bandeau les affiche a la
+  # FR | place de hass.localize, qui suit la langue du profil HA /
+  # FR | navigateur et non ce catalogue — voir _header.j2. Pas de guillemet
+  # FR | droit ASCII dans les valeurs : elles finissent dans une chaine CSS.
+  weather_condition:
+    clear-night: Clear, night
+    cloudy: Cloudy
+    exceptional: Exceptional
+    fog: Fog
+    hail: Hail
+    lightning: Lightning
+    lightning-rainy: Lightning, rainy
+    partlycloudy: Partly cloudy
+    pouring: Pouring
+    rainy: Rainy
+    snowy: Snowy
+    snowy-rainy: Snowy, rainy
+    sunny: Sunny
+    windy: Windy
+    windy-variant: Windy, cloudy
+    unavailable: Unavailable
+    unknown: Unknown
 
 # ----------------------------------------------------------------------
 # EN | SYSTEM DASHBOARDS — the four mandatory ones, always generated,

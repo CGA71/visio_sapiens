@@ -95,6 +95,24 @@ slot:
 
 header:
   weather_unavailable: Météo indisponible
+  weather_condition:
+    clear-night: Nuit dégagée
+    cloudy: Nuageux
+    exceptional: Exceptionnel
+    fog: Brouillard
+    hail: Grêle
+    lightning: Orages
+    lightning-rainy: Orageux, pluvieux
+    partlycloudy: Partiellement nuageux
+    pouring: Averses
+    rainy: Pluvieux
+    snowy: Neigeux
+    snowy-rainy: Neigeux, pluvieux
+    sunny: Ensoleillé
+    windy: Venteux
+    windy-variant: Venteux et nuageux
+    unavailable: Indisponible
+    unknown: Inconnu
 
 system:
   home: Accueil
