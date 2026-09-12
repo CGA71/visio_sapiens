@@ -268,6 +268,46 @@ Une fois importé, supprimez le `.p12` du système de fichiers de l'appareil : l
 magasin de certificats le détient désormais, et le fichier est un second
 exemplaire d'une identité.
 
+## Le bouton sur l'écran COFFRE-FORT
+
+Quand le coffre est scellé, l'écran COFFRE-FORT affiche désormais un champ
+pour la phrase secrète et un bouton **DESCELLER** sous l'avertissement, au
+lieu de la seule ligne `docker exec` — qui reste imprimée en dessous, parce
+qu'un navigateur n'est pas toujours disponible et que la voie manuelle ne doit
+jamais disparaître de la documentation à l'écran.
+
+La page envoie la phrase secrète à `https://<hôte>:8443/unseal` et nulle part
+ailleurs. Elle ne passe ni par Vault ni par Home Assistant : Home Assistant
+sert la page, la page parle directement au service de descellement sur sa
+propre connexion mutuellement authentifiée.
+
+À la première utilisation, le navigateur demande **quel certificat
+présenter**. Cette invite est le TLS mutuel qui fonctionne. Chrome et Edge
+retiennent la réponse pour la session ; Firefox redemande sauf indication
+contraire.
+
+### Pourquoi le service renvoie l'origine au lieu de répondre `*`
+
+Un navigateur ne présente pas de certificat client sur une requête
+cross-origine si la page ne demande pas `credentials: "include"` — et une
+requête faite ainsi **refuse net une origine joker dans
+`Access-Control-Allow-Origin`**. Le joker et le certificat ne peuvent pas
+coexister : un service qui répond `*` ne pourrait jamais être appelé depuis
+une page.
+
+Il renvoie donc l'origine de l'appelant, et seulement pour les origines qu'il
+accepte. Le défaut accepte les pages servies par **le même hôte**, comparées à
+l'en-tête `Host` de la requête, ce qui ne demande aucune configuration et
+reste juste si la machine est renommée ou jointe par une seconde adresse.
+`VSSP_UNSEAL_ORIGINS` prend une liste d'origines exactes, séparées par des
+virgules, pour un déploiement séparé.
+
+Cette liste n'authentifie rien — le certificat et la phrase secrète s'en
+chargent, et aucun en-tête CORS ne peut accorder l'un ou l'autre. Ce qu'elle
+empêche, c'est qu'un site quelconque visité par l'opérateur tire des requêtes
+sur le service avec un certificat que le navigateur détient déjà : cinq
+d'entre elles bloqueraient le vrai utilisateur quinze minutes.
+
 ## Au quotidien
 
 `GET /status` et `POST /unseal` sur `https://<hôte>:8443`, certificat client

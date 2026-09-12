@@ -257,6 +257,42 @@ service is not running. `systemctl is-active vssp-unseal` on the host, and
 Once imported, delete the `.p12` from the device's filesystem — the certificate
 store holds it now, and the file is a second copy of an identity.
 
+## The button on the SAFE screen
+
+When the safe is sealed, the SAFE screen now shows a passphrase field and an
+**UNSEAL** button under the warning, instead of only the `docker exec` line —
+which is still printed underneath, because a browser is not always available
+and the manual route must never disappear from the documentation on screen.
+
+The page sends the passphrase to `https://<host>:8443/unseal` and nowhere
+else. It does not reach Vault, and it does not reach Home Assistant: Home
+Assistant serves the page, the page talks straight to the unseal service over
+its own mutually-authenticated connection.
+
+The first time you use it, the browser asks **which certificate to present**.
+That prompt is the mutual TLS working. Chrome and Edge remember the answer
+for the session; Firefox asks unless told otherwise.
+
+### Why the service echoes the origin instead of answering `*`
+
+A browser will not present a client certificate on a cross-origin request
+unless the page sets `credentials: "include"` — and a request made that way
+**refuses a wildcard `Access-Control-Allow-Origin` outright**. The wildcard
+and the certificate cannot coexist, so a service answering `*` could never be
+called from a page at all.
+
+It therefore echoes the caller's origin, and only for origins it accepts. The
+default accepts pages served by **the same host**, compared against the `Host`
+header of the request, which needs no configuration and stays correct if the
+machine is renamed or reached by a second address. `VSSP_UNSEAL_ORIGINS`
+takes a comma-separated list of exact origins for a split deployment.
+
+This list authenticates nothing — the certificate and the passphrase do that,
+and no CORS header can grant either. What it prevents is a random site the
+operator happens to be visiting firing requests at the service using a
+certificate the browser already holds: five of those would lock the real user
+out for fifteen minutes.
+
 ## Day to day
 
 `GET /status` and `POST /unseal` on `https://<host>:8443`, client certificate

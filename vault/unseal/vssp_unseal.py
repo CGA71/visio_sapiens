@@ -95,6 +95,7 @@ import subprocess
 import sys
 import threading
 import urllib.error
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
@@ -135,6 +136,57 @@ STATE = ETC / "state.json"
 VAULT_ADDR = os.environ.get("VSSP_VAULT_ADDR", "http://192.168.1.11:8200")
 BIND_PORT = int(os.environ.get("VSSP_UNSEAL_PORT", "8443"))
 HTTP_TIMEOUT = 10
+
+# EN | Which web pages may call this service from a browser. A page that is
+# EN | allowed here still proves nothing on its own: the TLS client
+# EN | certificate and the passphrase are what authenticate, and this list
+# EN | cannot grant either. What it does is keep a random site the operator
+# EN | happens to visit from firing requests at the service using a
+# EN | certificate their browser already holds — which would burn the five
+# EN | attempts and lock the real user out for fifteen minutes.
+# EN | The default accepts only pages served by THIS host, whatever port or
+# EN | scheme they use, because the SAFE screen is served by Home Assistant
+# EN | on the same machine. VSSP_UNSEAL_ORIGINS adds exact origins for a
+# EN | split deployment.
+# FR | Quelles pages web peuvent appeler ce service depuis un navigateur.
+# FR | Une page autorisee ici ne prouve rien par elle-meme : ce sont le
+# FR | certificat client TLS et la phrase secrete qui authentifient, et
+# FR | cette liste n en accorde aucun. Ce qu elle fait, c est empecher un
+# FR | site quelconque visite par l operateur de tirer des requetes sur le
+# FR | service avec un certificat que son navigateur detient deja — ce qui
+# FR | consommerait les cinq tentatives et bloquerait le vrai utilisateur
+# FR | quinze minutes.
+# FR | Le defaut n accepte que les pages servies par CET hote, quels que
+# FR | soient le port et le schema, parce que l ecran COFFRE-FORT est servi
+# FR | par Home Assistant sur la meme machine. VSSP_UNSEAL_ORIGINS ajoute
+# FR | des origines exactes pour un deploiement separe.
+EXTRA_ORIGINS = tuple(
+    o.strip().rstrip("/")
+    for o in os.environ.get("VSSP_UNSEAL_ORIGINS", "").split(",")
+    if o.strip())
+
+
+def origin_allowed(origin: str, host_header: str) -> bool:
+    if origin.rstrip("/") in EXTRA_ORIGINS:
+        return True
+    try:
+        parsed = urllib.parse.urlparse(origin)
+    except ValueError:
+        return False
+    if parsed.scheme not in ("http", "https") or not parsed.hostname:
+        return False
+    # EN | The Host header is the address the client used to reach us, so
+    # EN | comparing against it needs no configuration and stays true if the
+    # EN | host is renamed or reached by a second address.
+    # FR | L en-tete Host est l adresse par laquelle le client nous a
+    # FR | joints : la comparer ne demande aucune configuration et reste
+    # FR | vraie si l hote est renomme ou joint par une seconde adresse.
+    me = host_header.strip()
+    if me.startswith("["):                       # [::1]:8443
+        me = me[1:].split("]")[0]
+    elif me.count(":") == 1:                     # host:port
+        me = me.split(":")[0]
+    return bool(me) and parsed.hostname == me
 
 # EN | scrypt, from the standard library. N=2^17 with r=8 asks for about
 # EN | 128 MB and a noticeable fraction of a second per attempt on this host —
@@ -476,20 +528,41 @@ class Handler(http.server.BaseHTTPRequestHandler):
                     return value
         return "unknown"
 
+    def cors(self) -> None:
+        """EN | Echo the caller's origin rather than answering "*". A browser
+        EN | will not present a client certificate on a cross-origin request
+        EN | unless the page asks for credentials mode "include", and it then
+        EN | REFUSES a wildcard origin outright. So the wildcard and the
+        EN | certificate cannot both exist: answering "*" would mean no
+        EN | button on the SAFE screen could ever reach this service.
+        FR | Renvoyer l origine de l appelant plutot que repondre "*". Un
+        FR | navigateur ne presente pas de certificat client sur une requete
+        FR | cross-origine si la page ne demande pas le mode credentials
+        FR | "include", et il REFUSE alors net une origine joker. Le joker et
+        FR | le certificat ne peuvent donc pas coexister : repondre "*"
+        FR | signifierait qu aucun bouton de l ecran COFFRE-FORT ne pourra
+        FR | jamais joindre ce service."""
+        origin = self.headers.get("Origin")
+        if not origin or not origin_allowed(origin, self.headers.get("Host", "")):
+            return
+        self.send_header("Access-Control-Allow-Origin", origin)
+        self.send_header("Access-Control-Allow-Credentials", "true")
+        self.send_header("Vary", "Origin")
+
     def reply(self, code: int, payload: dict) -> None:
         body = json.dumps(payload).encode()
         self.send_response(code)
         self.send_header("Content-Type", "application/json")
         self.send_header("Content-Length", str(len(body)))
         self.send_header("Cache-Control", "no-store")
-        self.send_header("Access-Control-Allow-Origin", "*")
+        self.cors()
         self.end_headers()
         self.wfile.write(body)
 
     # -- routes -------------------------------------------------------------
     def do_OPTIONS(self):  # noqa: N802
         self.send_response(204)
-        self.send_header("Access-Control-Allow-Origin", "*")
+        self.cors()
         self.send_header("Access-Control-Allow-Headers", "Content-Type")
         self.send_header("Access-Control-Allow-Methods", "POST, GET")
         self.end_headers()

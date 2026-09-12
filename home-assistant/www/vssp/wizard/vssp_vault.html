@@ -176,6 +176,18 @@ const QS = new URLSearchParams(location.search);
 const VAULT = (QS.get("vault") || (location.protocol + "//" + location.hostname + ":8200"))
                 .replace(/\/+$/, "");
 
+// EN | The unseal service, always https and always 8443: it is TLS-only
+// EN | by construction, mutual TLS being the point of it. Derived from
+// EN | the page's hostname for the same reason as VAULT above — an
+// EN | address typed twice is an address that will disagree with itself.
+// FR | Le service de descellement, toujours https et toujours 8443 : il
+// FR | est TLS seul par construction, le TLS mutuel etant sa raison
+// FR | d etre. Derive du nom d hote de la page pour la meme raison que
+// FR | VAULT ci-dessus — une adresse ecrite deux fois est une adresse
+// FR | qui finira par se contredire.
+const UNSEAL = (QS.get("unseal") || ("https://" + location.hostname + ":8443"))
+                .replace(/\/+$/, "");
+
 // EN | sessionStorage, never localStorage: the Vault token is a live
 // EN | credential to every secret in the safe. sessionStorage dies with the
 // EN | tab, so closing the console ends the session; localStorage would
@@ -214,6 +226,18 @@ const I18N = {
     sealed_title: "COFFRE SCELLÉ",
     sealed_msg: "Vault s'est rescellé — c'est ce qu'il fait à chaque redémarrage. Il ne peut rien lire ni écrire tant que {t} des {n} clés de descellement n'ont pas été saisies ({progress} fournie(s)).",
     sealed_how: "Sur l'hôte : docker exec -it vssp-vault vault operator unseal — trois fois, une clé différente à chaque appel.",
+    unseal_title: "DESCELLER DEPUIS CET APPAREIL",
+    unseal_sub: "Le service de descellement détient les trois clés, chiffrées. Votre certificat prouve l'appareil, la phrase secrète déchiffre les clés. Le navigateur peut demander quel certificat présenter : c'est normal, c'est la première fois qu'il parle à ce service.",
+    unseal_field: "Phrase secrète de descellement",
+    unseal_btn: "DESCELLER",
+    unseal_busy: "Descellement…",
+    unseal_ok: "Coffre ouvert.",
+    unseal_partial: "Clé acceptée — {progress} sur {t}.",
+    unseal_denied: "Phrase refusée. Cinq échecs ferment la porte quinze minutes.",
+    unseal_locked: "Trop d'échecs — la porte reste fermée encore {min} min, y compris à la bonne phrase.",
+    unseal_not_enrolled: "Le service n'a pas encore reçu les clés : lancez enroll-keys sur l'hôte.",
+    unseal_vault: "Le service n'a pas pu joindre Vault : {msg}",
+    unseal_unreachable: "Service de descellement injoignable sur {url} — certificat de cet appareil non installé, ou service arrêté.",
     unreachable_title: "COFFRE INJOIGNABLE",
     unreachable_msg: "Aucune réponse de {url}. Le conteneur ne tourne pas, ou l'origine de cette page n'est pas autorisée dans le CORS de Vault. Voir docs/platform/Vault.fr.md.",
     login_title: "OUVRIR LE COFFRE",
@@ -270,6 +294,18 @@ const I18N = {
     sealed_title: "SAFE SEALED",
     sealed_msg: "Vault resealed itself — it does that on every restart. It can neither read nor write until {t} of the {n} unseal keys are entered ({progress} so far).",
     sealed_how: "On the host: docker exec -it vssp-vault vault operator unseal — three times, a different key each call.",
+    unseal_title: "UNSEAL FROM THIS DEVICE",
+    unseal_sub: "The unseal service holds the three keys, encrypted. Your certificate proves the device, the passphrase decrypts the keys. The browser may ask which certificate to present — that is normal, it is the first time it talks to this service.",
+    unseal_field: "Unseal passphrase",
+    unseal_btn: "UNSEAL",
+    unseal_busy: "Unsealing…",
+    unseal_ok: "Safe open.",
+    unseal_partial: "Key accepted — {progress} of {t}.",
+    unseal_denied: "Passphrase refused. Five failures shut the door for fifteen minutes.",
+    unseal_locked: "Too many failures — the door stays shut for another {min} min, including to the right passphrase.",
+    unseal_not_enrolled: "The service has not been given the keys yet: run enroll-keys on the host.",
+    unseal_vault: "The service could not reach Vault: {msg}",
+    unseal_unreachable: "Unseal service unreachable at {url} — this device's certificate is not installed, or the service is stopped.",
     unreachable_title: "SAFE UNREACHABLE",
     unreachable_msg: "No answer from {url}. Either the container is not running, or this page's origin is not allowed in Vault's CORS config. See docs/platform/Vault.md.",
     login_title: "OPEN THE SAFE",
@@ -675,6 +711,74 @@ function setBusy(on, label){
 }
 
 // ═══════════════════════════════════════════════════════════════════════════
+// EN | UNSEAL
+// EN | The passphrase goes to the unseal service on 8443, never to Vault and
+// EN | never to Home Assistant: this page only carries it across one
+// EN | mutually-authenticated TLS connection. credentials:"include" is what
+// EN | makes the browser present the device certificate on a cross-origin
+// EN | request — without it the connection is anonymous and the service
+// EN | closes it during the handshake, which surfaces here as an opaque
+// EN | TypeError indistinguishable from the service being down. That is why
+// EN | the unreachable message names both causes.
+// FR | UNSEAL
+// FR | La phrase secrete part vers le service de descellement sur 8443,
+// FR | jamais vers Vault et jamais vers Home Assistant : cette page ne fait
+// FR | que la porter sur une connexion TLS mutuellement authentifiee.
+// FR | credentials:"include" est ce qui fait presenter le certificat de
+// FR | l appareil sur une requete cross-origine — sans lui la connexion est
+// FR | anonyme et le service la ferme pendant la poignee de main, ce qui
+// FR | arrive ici en TypeError opaque impossible a distinguer d un service
+// FR | arrete. D ou le message d injoignabilite qui nomme les deux causes.
+// ═══════════════════════════════════════════════════════════════════════════
+async function doUnseal(){
+  const el = document.getElementById("u-pass");
+  const pass = el ? el.value : "";
+  if (!pass) return;
+  setBusy(true, t("unseal_busy"));
+  let res;
+  try{
+    res = await fetch(UNSEAL + "/unseal", {
+      method: "POST",
+      credentials: "include",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({passphrase: pass})
+    });
+  }catch(e){
+    setBusy(false);
+    state.error = t("unseal_unreachable", {url: UNSEAL});
+    return render();
+  }
+  let data = null;
+  try{ data = await res.json(); }catch(e){ data = null; }
+  setBusy(false);
+  if (res.ok){
+    // EN | Ask Vault itself rather than trusting the reply: the screen's
+    // EN | whole job is to show the safe's real state, and one more
+    // EN | round trip costs nothing next to a door that just opened.
+    // FR | Interroger Vault lui-meme plutot que croire la reponse :
+    // FR | l ecran a pour seul role de montrer l etat reel du coffre, et
+    // FR | un aller-retour de plus ne coute rien face a une porte qui
+    // FR | vient de s ouvrir.
+    await checkSeal();
+    const open = state.seal && !state.seal.sealed;
+    state.notice = open
+      ? t("unseal_ok")
+      : t("unseal_partial", {progress: (data && data.progress) || 0,
+                             t: (data && data.threshold) || 0});
+    if (open) await loadAll();
+    return render();
+  }
+  const detail = (data && data.error) || ("HTTP " + res.status);
+  if (res.status === 403)      state.error = t("unseal_denied");
+  else if (res.status === 429) state.error = t("unseal_locked",
+      {min: Math.max(1, Math.ceil(((data && data.retry_after) || 0) / 60))});
+  else if (res.status === 503) state.error = t("unseal_not_enrolled");
+  else if (res.status === 502) state.error = t("unseal_vault", {msg: detail});
+  else                         state.error = t("err_failed", {msg: detail});
+  render();
+}
+
+// ═══════════════════════════════════════════════════════════════════════════
 // EN | RENDER
 // FR | RENDU
 // ═══════════════════════════════════════════════════════════════════════════
@@ -698,8 +802,19 @@ function renderSeal(){
   if (state.seal && state.seal.sealed){
     return `<div class="msg warn"><b>${esc(t("sealed_title"))}</b>
       ${esc(t("sealed_msg", {t: state.seal.t, n: state.seal.n,
-                             progress: state.seal.progress}))}
-      ${esc(t("sealed_how"))}</div>`;
+                             progress: state.seal.progress}))}</div>
+    <div class="card">
+      <div class="card-title">${esc(t("unseal_title"))}</div>
+      <div class="card-sub">${esc(t("unseal_sub"))}</div>
+      <div style="height:14px"></div>
+      <div class="field"><label>${esc(t("unseal_field"))}</label>
+        <input type="password" id="u-pass" autocomplete="off"
+               onkeydown="if(event.key==='Enter')doUnseal()"/></div>
+      <div style="height:12px"></div>
+      <button class="btn" onclick="doUnseal()" ${state.loading ? "disabled" : ""}>`
+      + `${esc(state.loading ? state.busyLabel : t("unseal_btn"))}</button>
+      <div class="card-sub" style="margin-top:14px">${esc(t("sealed_how"))}</div>
+    </div>`;
   }
   return "";
 }
