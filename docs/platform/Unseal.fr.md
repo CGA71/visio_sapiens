@@ -171,7 +171,8 @@ L'empreinte imprimée par la troisième commande devient l'adresse du certificat
 client :
 
 ```powershell
-curl.exe --cert "CurrentUser\MY\<EMPREINTE>" https://192.168.1.11:8443/status
+curl.exe --ssl-no-revoke --cert "CurrentUser\MY\<EMPREINTE>" `
+         https://192.168.1.11:8443/status
 ```
 
 Chrome et Edge lisent ce magasin. Firefox garde le sien : Paramètres → Vie
@@ -195,6 +196,34 @@ lui-même un `:`. Le passage par le magasin n'a ni l'un ni l'autre défaut. (Le
 lettre de lecteur.) Et si schannel répond `--cacert is not supported`, retirez
 l'option — l'autorité est déjà dans le magasin racine depuis la première
 commande.
+
+
+#### `CRYPT_E_NO_REVOCATION_CHECK`
+
+```
+curl: (35) schannel: next InitializeSecurityContext failed:
+CRYPT_E_NO_REVOCATION_CHECK - La fonction de révocation n'a pas pu vérifier
+la révocation du certificat.
+```
+
+Celle-ci arrive **après** l'acceptation du certificat client : c'est votre
+propre machine qui refuse le serveur. Windows cherche à savoir si le
+certificat du serveur a été révoqué, et une autorité privée ne publie ni CRL
+ni répondeur OCSP — il n'y a donc personne à interroger, et schannel échoue
+plutôt que de passer outre.
+
+```powershell
+curl.exe --ssl-no-revoke --cert "CurrentUser\MY\<EMPREINTE>" `
+         https://192.168.1.11:8443/status
+```
+
+Cette option n'est pas un raccourci de sécurité ici. Il n'existe aucun service
+de révocation à joindre pour cette autorité, et c'est délibéré : **l'autorité,
+c'est vous**, et révoquer un appareil consiste à supprimer son certificat sur
+l'hôte — `rm /var/lib/vssp-unseal/devices/<nom>.p12` puis réémission, sachant
+qu'après cela l'ancien certificat reste valide et que la seule protection
+réelle est la phrase secrète. Les navigateurs tolèrent d'eux-mêmes cette
+vérification impossible ; le `curl` de Windows est le seul strict.
 
 ### Android
 
@@ -256,7 +285,8 @@ curl --cert-type P12 --cert 'telephone.p12:<mot de passe d export>' \
 ```powershell
 # Windows — depuis le magasin de certificats, voir « Pourquoi pas --cert
 # <fichier>.p12 » ci-dessus
-curl.exe --cert "CurrentUser\MY\<EMPREINTE>" https://192.168.1.11:8443/status
+curl.exe --ssl-no-revoke --cert "CurrentUser\MY\<EMPREINTE>" `
+         https://192.168.1.11:8443/status
 ```
 
 Cinq phrases fausses et la porte reste fermée **quinze minutes**, y compris à
@@ -311,6 +341,7 @@ fichier.
 | `schannel: ... password is bad` | le curl de Windows a reçu le `.p12` comme fichier ; schannel ne demande jamais son mot de passe — passez par le magasin de certificats |
 | `scp: Permission denied` sur le `.p12` | il est en 0600 dans un répertoire 0700 du compte de service ; sortez-le d'abord avec `sudo install -o <vous>` |
 | TLS `certificate required`, ou la poignée de main se ferme | le `.p12` n'est pas dans le magasin personnel, ou le client n'a pas reçu l'ordre de le présenter |
+| `CRYPT_E_NO_REVOCATION_CHECK` | Windows ne peut pas vérifier la révocation auprès d'une autorité privée, qui n'en publie aucune — ajoutez `--ssl-no-revoke` |
 | `unknown CA`, `self-signed certificate in chain` | le `ca.crt` n'est pas dans le magasin des racines — c'est l'autre moitié du travail |
 | Un certificat installé sur iOS ne change rien | les Réglages de confiance des certificats n'ont jamais été activés pour l'autorité |
 

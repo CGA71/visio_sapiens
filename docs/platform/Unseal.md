@@ -165,7 +165,8 @@ thumbprint printed by the third command is the client certificate's address
 from then on:
 
 ```powershell
-curl.exe --cert "CurrentUser\MY\<THUMBPRINT>" https://192.168.1.11:8443/status
+curl.exe --ssl-no-revoke --cert "CurrentUser\MY\<THUMBPRINT>" `
+         https://192.168.1.11:8443/status
 ```
 
 Chrome and Edge read this store. Firefox keeps its own: Settings → Privacy →
@@ -188,6 +189,32 @@ The store route has neither problem. (The `C:` of a Windows path is not
 mistaken for that separator: curl recognises a drive letter.) And if schannel
 answers `--cacert is not supported`, drop the flag — the authority is already
 in the root store from the first command.
+
+
+#### `CRYPT_E_NO_REVOCATION_CHECK`
+
+```
+curl: (35) schannel: next InitializeSecurityContext failed:
+CRYPT_E_NO_REVOCATION_CHECK - the revocation function was unable to check
+revocation for the certificate
+```
+
+This one arrives **after** the client certificate was accepted: it is your own
+machine refusing the server. Windows tries to check whether the server's
+certificate has been revoked, and a private authority publishes neither a CRL
+nor an OCSP responder, so there is nothing to ask and schannel fails closed.
+
+```powershell
+curl.exe --ssl-no-revoke --cert "CurrentUser\MY\<THUMBPRINT>" `
+         https://192.168.1.11:8443/status
+```
+
+That flag is not a security shortcut here. There is no revocation service to
+reach for this CA, deliberately: **you** are the authority, and revoking a
+device means deleting its certificate on the host — `rm
+/var/lib/vssp-unseal/devices/<name>.p12` and reissuing, after which the old
+certificate still validates and the only real protection is the passphrase.
+Browsers soft-fail this check on their own; Windows `curl` is the strict one.
 
 ### Android
 
@@ -245,7 +272,8 @@ curl --cert-type P12 --cert 'phone.p12:<export password>' --cacert ca.crt \
 
 ```powershell
 # Windows — from the certificate store, see "Why not --cert <file>.p12" above
-curl.exe --cert "CurrentUser\MY\<THUMBPRINT>" https://192.168.1.11:8443/status
+curl.exe --ssl-no-revoke --cert "CurrentUser\MY\<THUMBPRINT>" `
+         https://192.168.1.11:8443/status
 ```
 
 Five wrong passphrases and the door stays shut for **fifteen minutes**,
@@ -299,6 +327,7 @@ file is intact.
 | `schannel: ... password is bad` | Windows curl was handed the `.p12` as a file; schannel never asks for its password — use the certificate store |
 | `scp: Permission denied` on the `.p12` | it is 0600 inside a 0700 directory owned by the service account; copy it out with `sudo install -o <you>` first |
 | TLS `certificate required`, or the handshake closes | the `.p12` is not in the personal store, or the client was not told to present it |
+| `CRYPT_E_NO_REVOCATION_CHECK` | Windows cannot check revocation against a private CA, which publishes none — add `--ssl-no-revoke` |
 | `unknown CA`, `self-signed certificate in chain` | the `ca.crt` is not in the trusted-root store — that is the other half of the job |
 | A certificate installed on iOS changes nothing | Certificate Trust Settings was never switched on for the CA |
 
