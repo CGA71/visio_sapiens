@@ -110,21 +110,134 @@ fin. Une faute de frappe est trouvée là, pas à deux heures du matin. Coffre
 ouvert, la vérification est impossible et l'outil le dit au lieu de le
 laisser croire.
 
-### Sur les appareils
+### Sortir les deux fichiers de l'hôte
 
-Copiez `/var/lib/vssp-unseal/devices/<nom>.p12` et `/etc/vssp-unseal/ca.crt`
-sur l'appareil, puis importez-les :
+`/var/lib/vssp-unseal/devices` et `/etc/vssp-unseal` sont en **0700 et
+appartiennent au compte de service** : `scp` sous votre propre compte échoue en
+`Permission denied` avant d'avoir lu un seul octet. Copiez-les en changeant le
+propriétaire dans le même geste :
 
-- **iOS** — ouvrir le fichier, Réglages → Profil téléchargé, puis Réglages →
-  Général → Informations → Certificats de confiance pour approuver le `ca.crt`.
-- **Android** — Paramètres → Sécurité → Chiffrement → Installer un certificat.
-- **Firefox** — Paramètres → Vie privée → Certificats → Afficher les
-  certificats → Vos certificats → Importer.
-- **Chrome / Edge / Safari** — importer dans le magasin du système.
+```bash
+sudo ls /var/lib/vssp-unseal/devices/        # le nom exact du fichier
 
-Le `.p12` est protégé par un mot de passe d'export qui lui est propre, demandé
-à l'étape 3 : le fichier doit voyager jusqu'à l'appareil, et il ne doit pas
-être une identité utilisable pendant le trajet. Supprimez-le une fois importé.
+sudo install -o neo -g neo -m 600 \
+     /var/lib/vssp-unseal/devices/<nom>.p12 /home/neo/
+sudo install -o neo -g neo -m 644 /etc/vssp-unseal/ca.crt /home/neo/
+```
+
+Depuis le poste de travail :
+
+```bash
+scp neo@192.168.1.11:/home/neo/<nom>.p12 .
+scp neo@192.168.1.11:/home/neo/ca.crt .
+```
+
+Puis détruisez les copies intermédiaires — une identité lisible n'a rien à
+faire dans un répertoire personnel :
+
+```bash
+shred -u /home/neo/<nom>.p12 && rm -f /home/neo/ca.crt
+```
+
+### Deux fichiers, deux magasins
+
+C'est là que ça se passe mal le plus souvent. Le `.p12` et le `ca.crt` ne vont
+**pas** au même endroit, et n'en installer qu'un ne fait pas la moitié du
+travail :
+
+| Fichier | Ce que c'est | Où il va |
+|---|---|---|
+| `<nom>.p12` | **votre identité** — certificat *et* clé privée | le magasin personnel / utilisateur |
+| `ca.crt` | **l'autorité** qui a signé le serveur | le magasin des racines de confiance |
+
+Sans le `.p12`, le service coupe la connexion pendant la poignée de main. Sans
+le `ca.crt`, c'est votre propre client qui refuse le serveur. Les deux échecs
+ne se ressemblent pas du tout ; le tableau de dépannage nomme les deux.
+
+### Windows
+
+Dans **PowerShell**, depuis le dossier qui contient les deux fichiers :
+
+```powershell
+certutil -user -addstore Root ca.crt
+certutil -user -importpfx My <nom>.p12
+Get-ChildItem Cert:\CurrentUser\My |
+  Where-Object { $_.Subject -like "*<nom>*" } |
+  Select-Object Thumbprint, Subject, NotAfter
+```
+
+`certutil -importpfx` demande le mot de passe d'export sans l'afficher.
+L'empreinte imprimée par la troisième commande devient l'adresse du certificat
+client :
+
+```powershell
+curl.exe --cert "CurrentUser\MY\<EMPREINTE>" https://192.168.1.11:8443/status
+```
+
+Chrome et Edge lisent ce magasin. Firefox garde le sien : Paramètres → Vie
+privée → Certificats → Afficher les certificats → Vos certificats → Importer.
+
+#### Pourquoi pas `--cert <fichier>.p12` sous Windows
+
+Parce que le `curl` de Windows est compilé contre **schannel**, et que schannel
+**ne demande jamais le mot de passe d'un .p12**. Recevant le fichier seul, curl
+tente un mot de passe vide et signale ce qui ressemble à un mot de passe faux :
+
+```
+curl: (58) schannel: Failed to import cert file EXPANSE-IT.p12, password is bad
+```
+
+La forme par fichier exige donc le mot de passe collé au chemin —
+`--cert-type P12 --cert "C:\chemin\nom.p12:motdepasse"` — ce qui laisse un
+secret dans l'historique du shell et casse net si le mot de passe contient
+lui-même un `:`. Le passage par le magasin n'a ni l'un ni l'autre défaut. (Le
+`C:` d'un chemin Windows n'est pas pris pour ce séparateur : curl reconnaît une
+lettre de lecteur.) Et si schannel répond `--cacert is not supported`, retirez
+l'option — l'autorité est déjà dans le magasin racine depuis la première
+commande.
+
+### Android
+
+Paramètres → Sécurité → **Chiffrement et identifiants** → *Installer un
+certificat*, **deux fois**, parce qu'Android trie lui-même les deux :
+
+- *Certificat CA* pour `ca.crt`. Il vous avertira de ce qu'implique une
+  autorité privée ; l'avertissement est exact, et la réponse est que l'autorité,
+  c'est vous.
+- *Certificat utilisateur VPN et application* pour le `.p12`, qui demande le
+  mot de passe d'export.
+
+### iOS / iPadOS
+
+Ouvrez chaque fichier, puis Réglages → Général → **VPN et gestion de
+l'appareil** → Installer. Puis l'étape que tout le monde rate : Réglages →
+Général → Informations → **Réglages de confiance des certificats**, et activez
+la confiance complète pour `VSSP Unseal CA`. Une autorité installée mais non
+approuvée là ne fait absolument rien, silencieusement.
+
+### Vérifier que ça marche
+
+Sous Linux ou macOS, où curl est compilé contre OpenSSL et où la forme par
+fichier convient :
+
+```bash
+curl --cert-type P12 --cert '<nom>.p12:<mot de passe d export>' \
+     --cacert ca.crt https://192.168.1.11:8443/status
+```
+
+Attendu, pour un coffre actuellement ouvert :
+
+```json
+{"sealed": false, "t": 3, "n": 5, "progress": 0}
+```
+
+`Failed to connect to 192.168.1.11 port 8443` dit autre chose : le service ne
+tourne pas. `systemctl is-active vssp-unseal` sur l'hôte, et
+`ss -ltn | grep 8443` pour le voir écouter.
+
+Une fois importé, supprimez le `.p12` du système de fichiers de l'appareil : le
+magasin de certificats le détient désormais, et le fichier est un second
+exemplaire d'une identité.
 
 ## Au quotidien
 
@@ -132,9 +245,18 @@ Le `.p12` est protégé par un mot de passe d'export qui lui est propre, demand�
 obligatoire.
 
 ```bash
-curl --cert telephone.pem --cacert ca.crt https://192.168.1.11:8443/status
-curl --cert telephone.pem --cacert ca.crt -X POST \
-     -d '{"passphrase":"..."}' https://192.168.1.11:8443/unseal
+# Linux / macOS — le curl OpenSSL prend le .p12 directement depuis le fichier
+curl --cert-type P12 --cert 'telephone.p12:<mot de passe d export>' \
+     --cacert ca.crt https://192.168.1.11:8443/status
+curl --cert-type P12 --cert 'telephone.p12:<mot de passe d export>' \
+     --cacert ca.crt -X POST -d '{"passphrase":"..."}' \
+     https://192.168.1.11:8443/unseal
+```
+
+```powershell
+# Windows — depuis le magasin de certificats, voir « Pourquoi pas --cert
+# <fichier>.p12 » ci-dessus
+curl.exe --cert "CurrentUser\MY\<EMPREINTE>" https://192.168.1.11:8443/status
 ```
 
 Cinq phrases fausses et la porte reste fermée **quinze minutes**, y compris à
@@ -186,6 +308,11 @@ fichier.
 | `429 locked` | cinq échecs ; attendez, ou `sudo rm /etc/vssp-unseal/state.json` |
 | `503 not enrolled` | l'étape 2 n'a pas été faite |
 | `502 vault unreachable`, ou `Connection refused` à l'enrôlement | le coffre n'est pas là où l'outil le cherche — voir ci-dessous. Un conteneur arrêté donne la même chose ; vérifiez les deux |
+| `schannel: ... password is bad` | le curl de Windows a reçu le `.p12` comme fichier ; schannel ne demande jamais son mot de passe — passez par le magasin de certificats |
+| `scp: Permission denied` sur le `.p12` | il est en 0600 dans un répertoire 0700 du compte de service ; sortez-le d'abord avec `sudo install -o <vous>` |
+| TLS `certificate required`, ou la poignée de main se ferme | le `.p12` n'est pas dans le magasin personnel, ou le client n'a pas reçu l'ordre de le présenter |
+| `unknown CA`, `self-signed certificate in chain` | le `ca.crt` n'est pas dans le magasin des racines — c'est l'autre moitié du travail |
+| Un certificat installé sur iOS ne change rien | les Réglages de confiance des certificats n'ont jamais été activés pour l'autorité |
 
 ### `Connection refused` alors que le conteneur tourne
 

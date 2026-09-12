@@ -106,21 +106,129 @@ checks that Vault's counter advanced, and resets the counter at the end. A
 typo is found there, not at two in the morning. With the safe open,
 verification is impossible and the tool says so instead of implying otherwise.
 
-### On the devices
+### Getting the two files off the host
 
-Copy `/var/lib/vssp-unseal/devices/<name>.p12` and `/etc/vssp-unseal/ca.crt`
-to the device, then import them:
+`/var/lib/vssp-unseal/devices` and `/etc/vssp-unseal` are **0700, owned by the
+service account**, so `scp` as your own user fails with `Permission denied`
+before it reads a byte. Copy them out and change ownership in the same breath:
 
-- **iOS** — open the file, Settings → Profile Downloaded, then Settings →
-  General → About → Certificate Trust Settings to trust the `ca.crt`.
-- **Android** — Settings → Security → Encryption → Install a certificate.
-- **Firefox** — Settings → Privacy → Certificates → View Certificates → Your
-  Certificates → Import.
-- **Chrome / Edge / Safari** — import into the system store.
+```bash
+sudo ls /var/lib/vssp-unseal/devices/        # the exact file name
 
-The `.p12` is protected by an export password of its own, asked for in step 3:
-the file has to travel to the device, and it should not be a usable identity
-while in transit. Delete it once imported.
+sudo install -o neo -g neo -m 600 \
+     /var/lib/vssp-unseal/devices/<name>.p12 /home/neo/
+sudo install -o neo -g neo -m 644 /etc/vssp-unseal/ca.crt /home/neo/
+```
+
+From the workstation:
+
+```bash
+scp neo@192.168.1.11:/home/neo/<name>.p12 .
+scp neo@192.168.1.11:/home/neo/ca.crt .
+```
+
+Then destroy the intermediate copies — a readable identity has no business
+lingering in a home directory:
+
+```bash
+shred -u /home/neo/<name>.p12 && rm -f /home/neo/ca.crt
+```
+
+### Two files, two stores
+
+This is where it goes wrong most often. The `.p12` and the `ca.crt` do **not**
+go to the same place, and installing one of them is not half the job:
+
+| File | What it is | Where it goes |
+|---|---|---|
+| `<name>.p12` | **your identity** — certificate *and* private key | the personal / user store |
+| `ca.crt` | **the authority** that signed the server | the trusted-root store |
+
+Without the `.p12`, the service drops the connection during the handshake.
+Without the `ca.crt`, your own client rejects the server. The two failures
+look nothing alike; the troubleshooting table names both.
+
+### Windows
+
+In **PowerShell**, from the folder holding the two files:
+
+```powershell
+certutil -user -addstore Root ca.crt
+certutil -user -importpfx My <name>.p12
+Get-ChildItem Cert:\CurrentUser\My |
+  Where-Object { $_.Subject -like "*<name>*" } |
+  Select-Object Thumbprint, Subject, NotAfter
+```
+
+`certutil -importpfx` asks for the export password and does not echo it. The
+thumbprint printed by the third command is the client certificate's address
+from then on:
+
+```powershell
+curl.exe --cert "CurrentUser\MY\<THUMBPRINT>" https://192.168.1.11:8443/status
+```
+
+Chrome and Edge read this store. Firefox keeps its own: Settings → Privacy →
+Certificates → View Certificates → Your Certificates → Import.
+
+#### Why not `--cert <file>.p12` on Windows
+
+Because Windows `curl` is built against **schannel**, and schannel **never
+prompts for a .p12 password**. Handed the file alone, curl tries an empty
+password and reports something that reads like a wrong one:
+
+```
+curl: (58) schannel: Failed to import cert file EXPANSE-IT.p12, password is bad
+```
+
+The file form therefore needs the password glued to the path —
+`--cert-type P12 --cert "C:\path\name.p12:password"` — which leaves a secret in
+the shell history and breaks outright if the password itself contains a `:`.
+The store route has neither problem. (The `C:` of a Windows path is not
+mistaken for that separator: curl recognises a drive letter.) And if schannel
+answers `--cacert is not supported`, drop the flag — the authority is already
+in the root store from the first command.
+
+### Android
+
+Settings → Security → **Encryption & credentials** → *Install a certificate*,
+**twice**, because Android sorts the two itself:
+
+- *CA certificate* for `ca.crt`. It will warn you about what a private
+  authority means; that warning is accurate, and the answer is that you are the
+  authority.
+- *VPN & app user certificate* for the `.p12`, which asks for the export
+  password.
+
+### iOS / iPadOS
+
+Open each file, then Settings → General → **VPN & Device Management** →
+Install. Then the step everybody misses: Settings → General → About →
+**Certificate Trust Settings**, and switch on full trust for `VSSP Unseal CA`.
+A CA installed but not trusted there does nothing at all, silently.
+
+### Checking it works
+
+On Linux or macOS, where curl is built against OpenSSL and the file form is
+fine:
+
+```bash
+curl --cert-type P12 --cert '<name>.p12:<export password>' \
+     --cacert ca.crt https://192.168.1.11:8443/status
+```
+
+Expected, from a safe that is currently open:
+
+```json
+{"sealed": false, "t": 3, "n": 5, "progress": 0}
+```
+
+`Failed to connect to 192.168.1.11 port 8443` is a different statement: the
+service is not running. `systemctl is-active vssp-unseal` on the host, and
+`ss -ltn | grep 8443` to see it listening.
+
+Once imported, delete the `.p12` from the device's filesystem — the certificate
+store holds it now, and the file is a second copy of an identity.
 
 ## Day to day
 
@@ -128,9 +236,16 @@ while in transit. Delete it once imported.
 required.
 
 ```bash
-curl --cert phone.pem --cacert ca.crt https://192.168.1.11:8443/status
-curl --cert phone.pem --cacert ca.crt -X POST \
-     -d '{"passphrase":"..."}' https://192.168.1.11:8443/unseal
+# Linux / macOS — OpenSSL curl takes the .p12 straight from the file
+curl --cert-type P12 --cert 'phone.p12:<export password>' --cacert ca.crt \
+     https://192.168.1.11:8443/status
+curl --cert-type P12 --cert 'phone.p12:<export password>' --cacert ca.crt \
+     -X POST -d '{"passphrase":"..."}' https://192.168.1.11:8443/unseal
+```
+
+```powershell
+# Windows — from the certificate store, see "Why not --cert <file>.p12" above
+curl.exe --cert "CurrentUser\MY\<THUMBPRINT>" https://192.168.1.11:8443/status
 ```
 
 Five wrong passphrases and the door stays shut for **fifteen minutes**,
@@ -181,6 +296,11 @@ file is intact.
 | `429 locked` | five failures; wait, or `sudo rm /etc/vssp-unseal/state.json` |
 | `503 not enrolled` | step 2 was never done |
 | `502 vault unreachable`, or `Connection refused` during enrolment | the safe is not where the tool is looking — see below. A stopped container looks the same; check both |
+| `schannel: ... password is bad` | Windows curl was handed the `.p12` as a file; schannel never asks for its password — use the certificate store |
+| `scp: Permission denied` on the `.p12` | it is 0600 inside a 0700 directory owned by the service account; copy it out with `sudo install -o <you>` first |
+| TLS `certificate required`, or the handshake closes | the `.p12` is not in the personal store, or the client was not told to present it |
+| `unknown CA`, `self-signed certificate in chain` | the `ca.crt` is not in the trusted-root store — that is the other half of the job |
+| A certificate installed on iOS changes nothing | Certificate Trust Settings was never switched on for the CA |
 
 ### `Connection refused` when the container is running
 
