@@ -1103,6 +1103,28 @@ def check_nav_targets(nav: list, declared: set, static_fragment,
     return sorted(set(missing))
 
 
+def merge_under(reference, own, filled: list, prefix: str = ""):
+    """
+    EN | `own` laid over `reference`, recursively: a key `own` has always
+    EN | wins, a key only `reference` has is added and its dotted path
+    EN | appended to `filled`.
+    FR | `own` pose sur `reference`, recursivement : une cle presente dans
+    FR | `own` l'emporte toujours, une cle seulement dans `reference` est
+    FR | ajoutee et son chemin pointe ajoute a `filled`.
+    """
+    if not isinstance(reference, dict) or not isinstance(own, dict):
+        return own
+    out = dict(own)
+    for key, ref_value in reference.items():
+        path = f"{prefix}{key}"
+        if key not in own:
+            out[key] = ref_value
+            filled.append(path)
+        else:
+            out[key] = merge_under(ref_value, own[key], filled, path + ".")
+    return out
+
+
 def render_theme(model: dict, env: Environment, template_name: str,
                   out_path: Path, design_status_path, dry_run: bool,
                   status: dict) -> bool:
@@ -1446,6 +1468,35 @@ def main() -> int:
         model["design"] = design_doc.get("design", {})
     else:
         model["design"] = {}
+    # EN | The pod keeps its own design_system.yaml across deploys, so it is
+    # EN | as old as its last THEME edit and misses every token added since.
+    # EN | theme.yaml.j2 runs under StrictUndefined, so one missing token
+    # EN | (palette.selector_background, on staging) failed the whole
+    # EN | pod-side theme render on every deploy: the theme stayed at the
+    # EN | repository default and design_system_status.json was never
+    # EN | written, so the THEME editor showed factory values instead of the
+    # EN | real ones. The factory reference shipped beside it fills the gaps
+    # EN | — only the gaps: every value the pod file does have wins.
+    # FR | Le pod garde son propre design_system.yaml d'un deploiement a
+    # FR | l'autre : il a l'age de sa derniere edition THEME et ignore tout
+    # FR | token ajoute depuis. theme.yaml.j2 tourne sous StrictUndefined, donc
+    # FR | un seul token absent (palette.selector_background, en staging)
+    # FR | faisait echouer tout le rendu du theme cote pod a chaque
+    # FR | deploiement : le theme restait celui du depot et
+    # FR | design_system_status.json n'etait jamais ecrit, l'editeur THEME
+    # FR | affichait donc les valeurs d'usine au lieu des vraies. La reference
+    # FR | d'usine livree a cote comble les trous — seulement les trous :
+    # FR | chaque valeur que le fichier du pod possede l'emporte.
+    reference_path = design_path.with_name("design_system.default.yaml")
+    if reference_path.exists() and reference_path != design_path:
+        ref_doc = yaml.safe_load(reference_path.read_text(encoding="utf-8")) or {}
+        filled: list = []
+        model["design"] = merge_under(ref_doc.get("design", {}),
+                                      model["design"], filled)
+        if filled:
+            print(f"[i] design: {len(filled)} token(s) missing from "
+                  f"{design_path.name}, taken from {reference_path.name}: "
+                  f"{', '.join(filled)}")
 
     errors, warns = validate_model(model)
     status["warnings"] = warns

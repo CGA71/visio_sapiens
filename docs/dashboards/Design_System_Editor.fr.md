@@ -306,10 +306,18 @@ en pourcentage et en taille résultante d'un texte de référence du rôle.
 
 **Le `design_system.yaml` du pod est antérieur à la section.** Le pod
 garde sa propre copie d'un déploiement à l'autre, il n'a donc pas de
-`typography:` avant le premier APPLIQUER. `font_stack()` se replie sur
-`FONT_DEFAULTS` et `size_scale()` sur 100 % (l'aspect d'avant) quand la
-section ou une valeur manque, et `vssp_theme_apply.py` crée la section à
-l'écriture au lieu d'échouer dessus.
+`typography:` avant le premier APPLIQUER. `generate_dashboards.py`
+pose donc le fichier du pod sur `design_system.default.yaml` avant le
+rendu : chaque token que le fichier du pod possède l'emporte, chaque
+token qui lui manque vient de la référence, et le lancement affiche
+lesquels. Avant cela, un seul token absent
+(`palette.selector_background` en staging) faisait échouer tout le
+rendu du thème côté pod à chaque déploiement — le thème restait celui
+du dépôt et `design_system_status.json` n'était jamais écrit, l'éditeur
+s'ouvrait donc sur les valeurs d'usine. `font_stack()` /
+`size_scale()` se replient toujours d'eux-mêmes, et
+`vssp_theme_apply.py` crée une section absente à l'écriture au lieu
+d'échouer dessus.
 
 **`/local` est mis en cache 31 jours.** Home Assistant sert `/local`
 avec `max-age=2678400`, et sur cette instance les ressources Lovelace

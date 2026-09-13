@@ -285,10 +285,16 @@ resulting pixel size of one reference text of that role.
 
 **Pod-side `design_system.yaml` predates the section.** The pod keeps
 its own copy across deploys, so it has no `typography:` until the first
-APPLY. `font_stack()` falls back to `FONT_DEFAULTS` and `size_scale()`
-to 100 % (the pre-change look) when the section or a value is missing,
-and `vssp_theme_apply.py` creates the section on write instead of
-failing on it.
+APPLY. `generate_dashboards.py` therefore lays the pod file over
+`design_system.default.yaml` before rendering: every token the pod file
+has wins, every token it lacks comes from the reference, and the run
+prints which ones. Before this, one missing token
+(`palette.selector_background` on staging) failed the whole pod-side
+theme render on every deploy — the theme stayed at the repository
+default and `design_system_status.json` was never written, so the
+editor opened on factory values. `font_stack()` / `size_scale()` still
+fall back on their own, and `vssp_theme_apply.py` creates a missing
+section on write instead of failing on it.
 
 **`/local` is cached for 31 days.** Home Assistant serves `/local` with
 `max-age=2678400`, and on this instance the Lovelace resources are in
