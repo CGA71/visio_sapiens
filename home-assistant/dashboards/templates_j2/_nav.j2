@@ -51,7 +51,9 @@
    EN | instead of imposing their own (the title wraps, the square shrinks).
    EN | It used to be min-width: 200px plus a 160px image, i.e. 230px for
    EN | entries that needed ~160. A longer room name or a larger text scale
-   EN | widens it again, by exactly what it needs.
+   EN | widens it again, by exactly what it needs. The inner spacing is
+   EN | tight on purpose (rail 6px, entry 8px, icon column 22px): 16px
+   EN | between the longest text and the rail edge, not 46.
    FR | LARGEUR — le bandeau fait la largeur de sa plus large ENTREE et pas
    FR | plus : chaque layout lui donne une colonne max-content, et rien ici
    FR | n'impose de minimum. Le titre de marque et le carre du logo portent
@@ -60,14 +62,25 @@
    FR | carre retrecit). C'etait min-width: 200px plus une image de 160px,
    FR | soit 230px pour des entrees qui en demandaient ~160. Un nom de piece
    FR | plus long ou une echelle de texte plus grande l'elargit a nouveau,
-   FR | d'exactement ce qu'il faut.
+   FR | d'exactement ce qu'il faut. L'espacement interne est serre a dessein
+   FR | (bandeau 6px, entree 8px, colonne d'icone 22px) : 16px entre le
+   FR | texte le plus long et le bord du bandeau, pas 46.
    ================================================================== #}
       - type: vertical-stack
         view_layout:
           grid-area: nav
         card_mod:
           style: |
+            {# EN | border-box: with width 100% the 20px of padding and 2px
+               EN | of border were ADDED to the column width, so the rail
+               EN | overflowed its own column by 22px into the gap — measured
+               EN | 205px wide in a 190px column.
+               FR | border-box : avec width 100%, les 20px de padding et 2px
+               FR | de bordure s'AJOUTAIENT a la largeur de la colonne, le
+               FR | bandeau debordait donc de 22px sur l'espacement — mesure
+               FR | a 205px dans une colonne de 190px. #}
             :host {
+              box-sizing: border-box;
               display: flex;
               flex-direction: column;
               height: 100%;
@@ -75,7 +88,7 @@
               background: rgba(5,11,18,0.85);
               border-radius: 20px;
               border: 1px solid rgba(0, 229, 255, 0.18);
-              padding: 16px 10px;
+              padding: 14px 6px;
               box-shadow: 0 0 18px rgba(0, 229, 255, 0.12);
               overflow-y: auto;
               scrollbar-width: thin;

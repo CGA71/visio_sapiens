@@ -337,8 +337,25 @@ desktop lui donne une colonne `max-content` (c'était `minmax(200px,
 auto)`, plus un `min-width: 200px` dans `_nav.j2`), et le titre de
 marque et le carré du logo portent `contain: inline-size`, ils
 s'adaptent donc à la largeur choisie par les entrées au lieu d'imposer
-la leur. Mesuré en staging : 230px pour des entrées qui en demandaient
-~160.
+la leur. Le bandeau est en `box-sizing: border-box` — avec
+`width: 100%` en content-box, son padding et sa bordure s'ajoutaient
+par-dessus et il débordait de 22px de sa propre colonne — et son
+espacement est serré (bandeau 6px, entrée 8px, colonne d'icône 22px).
+Mesuré en staging : 205px avant, 157px après, 16px entre le texte le
+plus long et le bord du bandeau.
+
+### Hauteur du bandeau d'en-tête
+
+La ligne du header est `auto` dans chaque layout desktop (c'était 130px
+fixes), chaque case la remplit, et la carte agenda est en
+`contain: size` pour qu'une semaine d'événements ne la fixe jamais —
+elle remplit la hauteur choisie par les autres cases et défile dedans.
+HOME : bandeau de 118px pour 76px de contenu avant, 76px maintenant ;
+des échelles horloge/titre/libellé plus grandes l'agrandissent d'elles-
+mêmes (106px à 200/160/140 %). Réserve : la nav couvre la ligne du
+header, donc sur une page dont le contenu serait plus court que la nav,
+le surplus irait au header ; toutes les pages actuelles sont plus
+hautes que la nav (585px).
 
 **Le `design_system.yaml` du pod est antérieur à la section.** Le pod
 garde sa propre copie d'un déploiement à l'autre, il n'a donc pas de

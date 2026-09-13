@@ -598,7 +598,12 @@ def compute_room_layout(rendered: dict, default_slot: str | None) -> dict:
             cells += [slot["id"]] * span
         return "nav " + " ".join(cells[:5])
 
-    rows = ["130px"]
+    # EN | auto, not 130px: the header band is as tall as its content and
+    # EN | grows with the graphic template's text scales (see _header.j2).
+    # FR | auto, pas 130px : le bandeau fait la hauteur de son contenu et
+    # FR | grandit avec les echelles de texte du template graphique (voir
+    # FR | _header.j2).
+    rows = ["auto"]
     areas = ["nav header header header header header"]
 
     if tier_a:

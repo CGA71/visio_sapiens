@@ -318,9 +318,13 @@ vssp_nav_button:
   styles:
     grid:
       - grid-template-areas: '"i n" "i l"'
-      - grid-template-columns: 28px 1fr
+      # EN | Tight on purpose — the rail is as wide as its widest entry
+      # EN | (see _nav.j2), so every px here is a px taken from the page.
+      # FR | Serre a dessein — le bandeau fait la largeur de sa plus large
+      # FR | entree (voir _nav.j2), chaque px ici est un px pris a la page.
+      - grid-template-columns: 22px 1fr
       - grid-template-rows: min-content min-content
-      - column-gap: 12px
+      - column-gap: 8px
       - row-gap: 2px
       - justify-items: start
       - align-items: center
@@ -338,7 +342,7 @@ vssp_nav_button:
       - border-radius: 12px
       - border: >
           [[[ return variables.active ? '1px solid rgba(0, 229, 255, 0.35)' : '1px solid transparent'; ]]]
-      - padding: 10px 12px
+      - padding: 8px
       - margin-bottom: 4px
       - width: 100%
       - justify-self: stretch

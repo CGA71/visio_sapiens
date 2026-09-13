@@ -72,6 +72,21 @@
    FR | « lundi 4 août » ou « Monday 4 August » sans aucun travail de
    FR | traduction, et il continuera de fonctionner pour toute langue
    FR | ajoutee plus tard.
+
+   EN | HEIGHT — the band is as tall as its tallest cell's content, no
+   EN | more: every desktop layout gives the header an `auto` row (was a
+   EN | fixed 130px), each cell fills that row (height: 100%), and the
+   EN | agenda is `contain: size` so its events never set it. Measured on
+   EN | HOME: 118px band for 76px of content before; 76px now. A larger
+   EN | clock/title/label scale grows it on its own (106px at 200/160/140%).
+   FR | HAUTEUR — le bandeau fait la hauteur du contenu de sa plus haute
+   FR | case, pas plus : chaque layout desktop donne au header une ligne
+   FR | `auto` (c'etait 130px fixes), chaque case remplit cette ligne
+   FR | (height: 100%), et l'agenda est en `contain: size` pour que ses
+   FR | evenements ne la fixent jamais. Mesure sur HOME : bandeau de 118px
+   FR | pour 76px de contenu avant ; 76px maintenant. Une echelle
+   FR | horloge/titre/libelle plus grande l'agrandit d'elle-meme (106px a
+   FR | 200/160/140 %).
    ================================================================== #}
 {# EN | Precedence: an explicit calendar_entity set by the calling template >
    EN | house.calendar_entity (model, or --calendar-entity from the ADMIN
@@ -288,7 +303,17 @@
             description_font_size: "calc(12px * var(--vssp-scale-label, 1))"
             card_mod:
               style: |
-                :host { flex: 1 1 0; }
+                {# EN | contain: size — the agenda never sets the band's
+                    EN | height: a week of events would stretch the whole
+                    EN | header. It fills the height the other cells chose and
+                    EN | scrolls inside it. Its width comes from flex: 1 1 0,
+                    EN | so dropping its intrinsic width costs nothing.
+                    FR | contain: size — l'agenda ne fixe jamais la hauteur du
+                    FR | bandeau : une semaine d'evenements etirerait tout le
+                    FR | header. Il remplit la hauteur choisie par les autres
+                    FR | cases et defile dedans. Sa largeur vient de flex: 1 1
+                    FR | 0, perdre sa largeur intrinseque ne coute donc rien. #}
+                :host { flex: 1 1 0; contain: size; }
                 ha-card {
                   background: var(--card-background-color, rgba(16,27,39,0.85)) !important;
                   border: 1px solid rgba(0, 229, 255, 0.28) !important;
@@ -326,6 +351,6 @@
                   border: 1px solid rgba(0, 229, 255, 0.28) !important;
                   border-radius: var(--ha-card-border-radius, 20px) !important;
                   box-shadow: 0 0 18px rgba(0, 229, 255, 0.12) !important;
-                  height: 100px
+                  height: 100%
                 }
 {% endif %}

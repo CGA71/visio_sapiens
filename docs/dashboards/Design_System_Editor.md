@@ -313,8 +313,23 @@ The rail is as wide as its widest entry: every desktop layout gives it
 a `max-content` column (was `minmax(200px, auto)`, plus a
 `min-width: 200px` in `_nav.j2`), and the brand title and the logo
 square carry `contain: inline-size`, so they fit the width the entries
-chose instead of imposing theirs. Measured on staging: 230px for
-entries that needed ~160.
+chose instead of imposing theirs. The rail is `box-sizing: border-box`
+— with `width: 100%` in content-box its padding and border were added
+on top, and it overflowed its own column by 22px — and its spacing is
+tight (rail 6px, entry 8px, icon column 22px). Measured on staging:
+205px before, 157px after, 16px left between the longest text and the
+rail edge.
+
+### Header band height
+
+The header row is `auto` in every desktop layout (was a fixed 130px),
+each cell fills it, and the agenda card is `contain: size` so a week of
+events never sets it — it fills the height the other cells chose and
+scrolls inside. HOME: 118px band for 76px of content before, 76px now;
+larger clock/title/label scales grow it on their own (106px at
+200/160/140 %). Caveat: the nav spans the header row, so on a page
+whose content is shorter than the nav the leftover would go to the
+header; every current page is taller than the nav (585px).
 
 **Pod-side `design_system.yaml` predates the section.** The pod keeps
 its own copy across deploys, so it has no `typography:` until the first
