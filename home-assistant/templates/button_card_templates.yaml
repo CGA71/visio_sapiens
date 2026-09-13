@@ -58,7 +58,7 @@ vssp_title:
       - font-size: 26px
       - font-weight: 700
       - letter-spacing: 3px
-      - font-family: "Orbitron, sans-serif"
+      - font-family: "var(--vssp-font-display, Orbitron, sans-serif)"
       - justify-self: start
       - text-align: left
       - padding-left: 4px
@@ -127,7 +127,7 @@ vssp_page_header:
       - letter-spacing: 1px
       - justify-self: start
       - text-align: left
-      - font-family: "Orbitron, sans-serif"
+      - font-family: "var(--vssp-font-display, Orbitron, sans-serif)"
     label:
       - color: "var(--secondary-text-color, #8FB6C9)"
       - font-size: 12px
@@ -282,7 +282,7 @@ vssp_sidebar_logo:
       - font-size: 16px
       - font-weight: 700
       - letter-spacing: 2px
-      - font-family: "Orbitron, sans-serif"
+      - font-family: "var(--vssp-font-display, Orbitron, sans-serif)"
       - justify-self: start
       - text-align: left
     label:
@@ -413,7 +413,7 @@ vssp_sidebar_brand_footer:
       - font-size: 14px
       - font-weight: 700
       - letter-spacing: 2px
-      - font-family: "Orbitron, sans-serif"
+      - font-family: "var(--vssp-font-display, Orbitron, sans-serif)"
       - justify-self: center
       - text-shadow: 0 0 10px rgba(0,229,255,.5)
     label:
@@ -894,7 +894,7 @@ vssp_section_title:
       - letter-spacing: 1px
       - justify-self: start
       - text-align: left
-      - font-family: "Orbitron, sans-serif"
+      - font-family: "var(--vssp-font-display, Orbitron, sans-serif)"
 
 # ---------------------------------------------------------------------
 # EN | Sub-section title — a heading INSIDE a panel that already has one,
@@ -940,7 +940,7 @@ vssp_subsection_title:
       - letter-spacing: 1.2px
       - justify-self: start
       - text-align: left
-      - font-family: "Orbitron, sans-serif"
+      - font-family: "var(--vssp-font-display, Orbitron, sans-serif)"
 
 # ---------------------------------------------------------------------
 # EN | Simple statistic: discreet label on top, large value below.
@@ -1313,7 +1313,7 @@ vssp_circuit_switch:
     amp: >
       [[[
         return '<span style="color:#00E5FF;font-size:14px;font-weight:700;' +
-               'font-family:Orbitron,sans-serif;">' + variables.amp + '</span>';
+               'font-family:var(--vssp-font-display,Orbitron,sans-serif);">' + variables.amp + '</span>';
       ]]]
     sw: >
       [[[
@@ -1455,7 +1455,7 @@ vssp_circuit_row:
       [[[
         if (!variables.amp || variables.amp === '—') return '';
         return '<span style="color:#00E5FF;font-size:12px;font-weight:700;' +
-               'font-family:Orbitron,sans-serif;">' + variables.amp + '</span>';
+               'font-family:var(--vssp-font-display,Orbitron,sans-serif);">' + variables.amp + '</span>';
       ]]]
     sw: >
       [[[
@@ -1659,7 +1659,7 @@ vssp_din_module:
           { minimumFractionDigits: kilo ? 2 : 0, maximumFractionDigits: kilo ? 2 : 0 });
         const col = total > 0 ? '#00E5FF' : '#56707E';
         return '<span style="color:' + col + ';font-size:14px;font-weight:700;' +
-               'font-family:Orbitron,sans-serif;">' + v + '</span>' +
+               'font-family:var(--vssp-font-display,Orbitron,sans-serif);">' + v + '</span>' +
                '<span style="color:#56707E;font-size:10px;"> ' + (kilo ? 'kW' : 'W') + '</span>';
       ]]]
   styles:
@@ -1747,7 +1747,7 @@ vssp_din_pole:
         const meter = kind === 'meter' || !entity;
         const amp = variables.amp
           ? '<div style="margin-top:5px;font-size:9px;letter-spacing:.5px;' +
-            'font-family:Orbitron,sans-serif;color:#8FB6C9;">' + variables.amp + '</div>'
+            'font-family:var(--vssp-font-display,Orbitron,sans-serif);color:#8FB6C9;">' + variables.amp + '</div>'
           : '';
         if (meter) {
           // EN | Nothing to switch: draw the slot, not a lever that lies.
@@ -1985,7 +1985,7 @@ vssp_nav_chip:
       - color: >
           [[[ return variables.active ? '#00E5FF' : '#8FB6C9'; ]]]
     name:
-      - font-family: Orbitron, sans-serif
+      - font-family: var(--vssp-font-display, Orbitron, sans-serif)
       - font-size: 10px
       - letter-spacing: 1px
       - justify-self: start

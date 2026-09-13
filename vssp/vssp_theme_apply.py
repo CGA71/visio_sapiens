@@ -82,6 +82,7 @@ from pathlib import Path
 
 try:
     from ruamel.yaml import YAML
+    from ruamel.yaml.comments import CommentedMap
 except ImportError:
     sys.exit("[ERR] ruamel.yaml is missing. Install it: pip install ruamel.yaml")
 
@@ -147,12 +148,21 @@ def apply(design, accepted: dict) -> int:
     FR | Ecrit chaque token accepte a sa place sous `design:`, en modifiant le
     FR | mapping imbrique existant sur place (jamais en le reconstruisant),
     FR | pour que ruamel conserve tous les commentaires de design_system.yaml.
+    EN | A missing section is created rather than a KeyError: the pod keeps
+    EN | its own design_system.yaml across deploys, so one saved before a
+    EN | section existed (typography:) gets it on its first APPLY.
+    FR | Une section absente est creee plutot qu'une KeyError : le pod garde
+    FR | son propre design_system.yaml d'un deploiement a l'autre, donc un
+    FR | fichier enregistre avant qu'une section existe (typography:) la
+    FR | recoit a son premier APPLIQUER.
     """
     written = 0
     for key, value in accepted.items():
         path, _, _ = FIELDS[key]
         node = design
         for segment in path[:-1]:
+            if segment not in node:
+                node[segment] = CommentedMap()
             node = node[segment]
         node[path[-1]] = value
         written += 1

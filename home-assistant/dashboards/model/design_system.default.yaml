@@ -117,3 +117,7 @@ design:
     selected_icon: "#00E5FF"
 
   bubble_backdrop: "transparent"
+
+  typography:
+    display: "Orbitron"
+    body: "Roboto"

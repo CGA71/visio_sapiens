@@ -52,6 +52,52 @@ _RGBA_RE = re.compile(
     r"^rgba\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*(0|1|0?\.\d+)\s*\)$")
 _LENGTH_RE = re.compile(r"^\d{1,3}px$")
 
+# EN | TYPEFACES — a closed list, never free text. A font token is a family
+# EN | NAME the editor picks from this list; the theme gets the full CSS stack
+# EN | beside it (font_stack). Closed because a family name is only half a
+# EN | font: the file has to be served too. Every name here except Roboto and
+# EN | System has its woff2 under www/vssp/fonts/, declared in vssp_fonts.css;
+# EN | Roboto ships with the Home Assistant frontend, System is the device's
+# EN | own. A free-text "Comic Neue" would validate, render into the theme,
+# EN | and quietly fall back to sans-serif on every screen — the far-from-
+# EN | its-cause failure the validation below exists to prevent.
+# FR | POLICES — une liste fermee, jamais du texte libre. Un token de police
+# FR | est un NOM de famille choisi dans cette liste ; le theme recoit la
+# FR | pile CSS complete a cote (font_stack). Fermee parce qu'un nom de
+# FR | famille n'est que la moitie d'une police : il faut aussi servir le
+# FR | fichier. Chaque nom ici sauf Roboto et System a son woff2 sous
+# FR | www/vssp/fonts/, declare dans vssp_fonts.css ; Roboto est livre avec
+# FR | le frontend Home Assistant, System est celle de l'appareil. Un
+# FR | « Comic Neue » en texte libre passerait la validation, se rendrait dans
+# FR | le theme, et retomberait en silence sur sans-serif sur chaque ecran —
+# FR | la panne loin de sa cause que la validation ci-dessous doit empecher.
+FONTS: dict[str, str] = {
+    "Orbitron":        "'Orbitron', 'Segoe UI', system-ui, sans-serif",
+    "Rajdhani":        "'Rajdhani', 'Segoe UI', system-ui, sans-serif",
+    "Exo 2":           "'Exo 2', 'Segoe UI', system-ui, sans-serif",
+    "Oxanium":         "'Oxanium', 'Segoe UI', system-ui, sans-serif",
+    "Chakra Petch":    "'Chakra Petch', 'Segoe UI', system-ui, sans-serif",
+    "Share Tech Mono": "'Share Tech Mono', ui-monospace, monospace",
+    "Roboto":          "Roboto, Noto, sans-serif",
+    "System":          "system-ui, -apple-system, 'Segoe UI', sans-serif",
+}
+
+# EN | What each font token falls back to when design_system.yaml predates
+# EN | `typography:` — the pod keeps its own copy across deploys, so the
+# EN | section is missing there until the THEME editor first writes it. The
+# EN | values are the look before fonts were configurable: Orbitron for every
+# EN | HUD label, Home Assistant's own Roboto for the rest.
+# FR | Ce vers quoi chaque token de police se replie quand design_system.yaml
+# FR | est anterieur a `typography:` — le pod garde sa propre copie d'un
+# FR | deploiement a l'autre, la section y manque donc jusqu'a ce que
+# FR | l'editeur THEME l'ecrive une premiere fois. Les valeurs sont l'aspect
+# FR | d'avant les polices configurables : Orbitron pour chaque libelle HUD,
+# FR | le Roboto de Home Assistant pour le reste.
+FONT_DEFAULTS: dict[str, str] = {
+    "font_display": "Orbitron",
+    "font_body":    "Roboto",
+}
+
 # EN | payload/form key -> (path inside `design:`, kind, max px for lengths)
 # FR | cle du payload/formulaire -> (chemin sous `design:`, nature, max px)
 FIELDS: dict[str, tuple[tuple[str, ...], str, int]] = {
@@ -84,6 +130,12 @@ FIELDS: dict[str, tuple[tuple[str, ...], str, int]] = {
     # EN | The one token allowed to be literally "transparent" as well as a color.
     # FR | Le seul token autorise a valoir litteralement "transparent", en plus d'une couleur.
     "bubble_backdrop":             (("bubble_backdrop",), "color_or_transparent", 0),
+    # EN | display = the HUD face (nav rail, header clock, titles, values);
+    # EN | body = every other piece of text on the generated dashboards.
+    # FR | display = la police HUD (bandeau de nav, horloge du header, titres,
+    # FR | valeurs) ; body = tout le reste du texte des dashboards generes.
+    "font_display":                (("typography", "display"), "font", 0),
+    "font_body":                   (("typography", "body"), "font", 0),
 }
 
 
@@ -131,6 +183,11 @@ def validate(payload: dict) -> tuple[dict, list]:
             if not (0 <= int(value[:-2]) <= max_px):
                 errors.append(f"`{key}`: {value} out of range (0-{max_px}px)")
                 continue
+        elif kind == "font":
+            if value not in FONTS:
+                errors.append(f"`{key}`: unknown font `{value}` — "
+                              f"one of: {', '.join(FONTS)}")
+                continue
 
         accepted[key] = value
 
@@ -163,3 +220,27 @@ def flatten(design) -> dict:
             continue
         flat[key] = node
     return flat
+
+
+def font_stack(design, key: str) -> str:
+    """
+    EN | The CSS font-family stack theme.yaml.j2 writes for one font token,
+    EN | read out of `design:`. A missing `typography:` section or a name that
+    EN | left the list since it was saved both resolve to FONT_DEFAULTS, so
+    EN | the theme always renders — see FONT_DEFAULTS for why it can be absent.
+    FR | La pile CSS font-family que theme.yaml.j2 ecrit pour un token de
+    FR | police, lue depuis `design:`. Une section `typography:` absente ou un
+    FR | nom sorti de la liste depuis son enregistrement se replient tous deux
+    FR | sur FONT_DEFAULTS, pour que le theme se rende toujours — voir
+    FR | FONT_DEFAULTS pour la raison de cette absence.
+    """
+    path, _, _ = FIELDS[key]
+    node = design
+    try:
+        for segment in path:
+            node = node[segment]
+    except (KeyError, TypeError):
+        node = None
+    if not isinstance(node, str) or node not in FONTS:
+        node = FONT_DEFAULTS[key]
+    return FONTS[node]

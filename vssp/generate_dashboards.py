@@ -1521,6 +1521,9 @@ def main() -> int:
     # FR | une apostrophe (ex. fr "À l'arrêt") casse le JS genere et
     # FR | button-card leve ButtonCardJSTemplateError.
     env.filters["js"] = lambda s: str(s).replace("\\", "\\\\").replace("'", "\\'")
+    # EN | theme.yaml.j2 turns a font token's family name into the CSS stack.
+    # FR | theme.yaml.j2 transforme le nom de famille d'un token en pile CSS.
+    env.globals["font_stack"] = vssp_design_fields.font_stack
 
     out_dir.mkdir(parents=True, exist_ok=True)
     n_dev = len(model.get("energy_devices", []))

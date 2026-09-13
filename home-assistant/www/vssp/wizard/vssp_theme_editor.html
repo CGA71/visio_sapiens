@@ -25,6 +25,13 @@
   FR | sur le reseau local — l'identifiant du webhook est le seul secret, et
   FR | il ne quitte jamais le reseau local.
 -->
+<!--
+  EN | The same @font-face sheet the dashboards load, so the Typography
+  EN | pickers and the preview show the real faces, not a fallback.
+  FR | La meme feuille @font-face que chargent les dashboards, pour que les
+  FR | selecteurs Typography et l'apercu montrent les vraies polices.
+-->
+<link rel="stylesheet" href="/local/vssp/css/vssp_fonts.css">
 <style>
   :root {
     --bg: #050b12;
@@ -111,6 +118,16 @@
     padding: 5px 8px; font-size: 11px; font-family: ui-monospace, monospace;
   }
   input[type=range] { width: 120px; accent-color: var(--cyan); }
+  select {
+    width: 100%; background: rgba(0,0,0,.30); color: var(--text);
+    border: 1px solid var(--line-soft); border-radius: 8px;
+    padding: 5px 8px; font-size: 12px;
+  }
+  select option { background: #0A1420; color: var(--text); }
+  .font-sample {
+    color: var(--cyan); font-size: 15px; letter-spacing: 1px;
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
+  }
   .range-val { color: var(--muted); font-size: 11px; width: 34px; text-align: right; }
 
   /* EN | Swatch + popover — a real color-with-alpha picker for the rgba()
@@ -186,12 +203,12 @@
     position: sticky; top: 0;
     border-radius: 14px; overflow: hidden; border: 1px solid var(--line-soft);
     background: var(--p-background, #050B12);
-    font-family: -apple-system, Roboto, sans-serif;
+    font-family: var(--p-font-body, Roboto, Noto, sans-serif);
   }
   #preview .p-header {
     background: var(--p-header-background, #08121C);
     color: var(--p-header-text, #00E5FF);
-    font-family: Orbitron, sans-serif; font-size: 10px; letter-spacing: 1.5px;
+    font-family: var(--p-font-display, Orbitron, sans-serif); font-size: 10px; letter-spacing: 1.5px;
     padding: 10px 12px; text-transform: uppercase;
   }
   #preview .p-body { display: flex; }
@@ -234,7 +251,7 @@
   #preview .p-card .p-muted { color: var(--p-text-secondary, #B8E8F5); font-size: 10px; margin-top: 4px; }
   #preview .p-card .p-btn {
     display: inline-block; margin-top: 10px; padding: 6px 10px;
-    border-radius: 8px; font-size: 10px; font-family: Orbitron, sans-serif;
+    border-radius: 8px; font-size: 10px; font-family: var(--p-font-display, Orbitron, sans-serif);
     letter-spacing: 1px; text-transform: uppercase;
     background: var(--p-primary, #00E5FF); color: #04141B;
   }
@@ -256,6 +273,7 @@
   }
   #preview .p-kpi .p-kpi-label {
     color: var(--p-text-secondary, #B8E8F5); font-size: 8px;
+    font-family: var(--p-font-display, Orbitron, sans-serif);
     text-transform: uppercase; letter-spacing: .5px;
   }
   #preview .p-kpi .p-kpi-bar {
@@ -370,6 +388,24 @@ const DEFAULTS = {
   sidebar_selected_background: 'rgba(0,229,255,0.10)',
   sidebar_selected_text: '#00E5FF', sidebar_selected_icon: '#00E5FF',
   bubble_backdrop: 'transparent',
+  font_display: 'Orbitron', font_body: 'Roboto',
+};
+
+// EN | Mirrors vssp_design_fields.FONTS — the closed list the server accepts,
+// EN | with the stack each name becomes. Used for the picker's options and
+// EN | to paint the preview; the server still decides what is valid.
+// FR | Reprend vssp_design_fields.FONTS — la liste fermee qu'accepte le
+// FR | serveur, avec la pile que devient chaque nom. Sert aux options du
+// FR | selecteur et a peindre l'apercu ; le serveur decide toujours du valide.
+const FONT_STACKS = {
+  'Orbitron': "'Orbitron', 'Segoe UI', system-ui, sans-serif",
+  'Rajdhani': "'Rajdhani', 'Segoe UI', system-ui, sans-serif",
+  'Exo 2': "'Exo 2', 'Segoe UI', system-ui, sans-serif",
+  'Oxanium': "'Oxanium', 'Segoe UI', system-ui, sans-serif",
+  'Chakra Petch': "'Chakra Petch', 'Segoe UI', system-ui, sans-serif",
+  'Share Tech Mono': "'Share Tech Mono', ui-monospace, monospace",
+  'Roboto': "Roboto, Noto, sans-serif",
+  'System': "system-ui, -apple-system, 'Segoe UI', sans-serif",
 };
 
 // EN | type/group drive the form only. The server (vssp_design_fields.py) is
@@ -407,6 +443,8 @@ const FIELDS = [
   { key: 'dialog_radius', label: 'Dialog radius', type: 'range', group: 'Shape', min: 0, max: 60 },
   { key: 'dialog_scrim', label: 'Dialog scrim', type: 'text', group: 'Shape', hint: 'hex or rgba()', picker: true },
   { key: 'bubble_backdrop', label: 'Bubble backdrop', type: 'text', group: 'Shape', hint: 'hex, rgba() or "transparent"', picker: true, allowTransparent: true },
+  { key: 'font_display', label: 'Display font', type: 'font', group: 'Typography', hint: 'nav rail, header, clock, titles, values', sample: 'VISIO SAPIENS 21:45' },
+  { key: 'font_body', label: 'Text font', type: 'font', group: 'Typography', hint: 'every other text — nav entries, cards, dialogs', sample: 'Living room · 21.4°C' },
 ];
 
 const HEX_RE = /^#[0-9A-Fa-f]{6}$/;
@@ -597,6 +635,29 @@ function buildForm() {
         row.appendChild(box);
       } else if (f.type === 'text' && f.picker) {
         row.appendChild(buildRgbaField(f));
+      } else if (f.type === 'font') {
+        // EN | A closed list, never free text — see FONT_STACKS. Each option
+        // EN | is drawn in its own face, and the sample under it too, since
+        // EN | Chrome ignores option styling on some platforms.
+        // FR | Une liste fermee, jamais du texte libre — voir FONT_STACKS.
+        // FR | Chaque option est dessinee dans sa propre police, l'echantillon
+        // FR | dessous aussi, Chrome ignorant le style des options par endroits.
+        const input = document.createElement('select');
+        input.id = 'f_' + f.key;
+        Object.keys(FONT_STACKS).forEach(name => {
+          const opt = document.createElement('option');
+          opt.value = name; opt.textContent = name;
+          opt.style.fontFamily = FONT_STACKS[name];
+          input.appendChild(opt);
+        });
+        const sample = document.createElement('div');
+        sample.className = 'font-sample';
+        sample.textContent = f.sample;
+        input.addEventListener('change', () => {
+          sample.style.fontFamily = FONT_STACKS[input.value];
+          onChange(f.key, input.value);
+        });
+        row.append(input, sample);
       } else {
         const input = document.createElement('input');
         input.type = 'text'; input.id = 'f_' + f.key;
@@ -625,6 +686,9 @@ function setFormValues(values) {
     } else if (f.type === 'range') {
       input.value = parseInt(v, 10) || 0;
       input.dispatchEvent(new Event('input'));
+    } else if (f.type === 'font') {
+      input.value = v in FONT_STACKS ? v : DEFAULTS[f.key];
+      input.dispatchEvent(new Event('change'));
     } else {
       input.value = v;
       // EN | Picker fields (see buildRgbaField) listen for `input` to refresh
@@ -644,7 +708,10 @@ function onChange(key, value) {
 function updatePreview() {
   const p = el('preview');
   Object.keys(VALUES).forEach(key => {
-    p.style.setProperty('--p-' + key.replace(/_/g, '-'), VALUES[key]);
+    // EN | A font token holds a family name; CSS needs the stack.
+    // FR | Un token de police porte un nom de famille ; CSS veut la pile.
+    const v = key.startsWith('font_') ? FONT_STACKS[VALUES[key]] || '' : VALUES[key];
+    p.style.setProperty('--p-' + key.replace(/_/g, '-'), v);
   });
 }
 
@@ -725,6 +792,7 @@ el('apply').addEventListener('click', async () => {
     const v = VALUES[f.key];
     let ok;
     if (f.type === 'range') ok = LENGTH_RE.test(v);
+    else if (f.type === 'font') ok = v in FONT_STACKS;
     else if (f.key === 'bubble_backdrop') ok = v === 'transparent' || isColor(v);
     else ok = isColor(v);
     if (!ok) bad.push(f.key);

@@ -65,6 +65,9 @@ L'éditeur propose :
   `rgba(...)` ;
 - des curseurs pour `card_radius`, `card_border_width`,
   `dialog_radius` ;
+- deux sélecteurs de police, `font_display` et `font_body` (voir
+  *Typographie* plus bas), chacun avec une ligne d'échantillon dessinée
+  dans la police choisie ;
 - un **aperçu live** — une maquette autonome mise à jour à chaque
   saisie, entièrement côté client, sans aller-retour ;
 - **Export** (télécharge les tokens courants en JSON) et **Import**
@@ -237,6 +240,49 @@ Si un second champ texte apparaît un jour sur un autre écran, il faudra
 les trois mêmes lignes — c'est le coût de cette limitation de portée, et
 c'est le côté le moins cher de l'arbitrage.
 
+## Typographie — `font_display` / `font_body`
+
+Deux polices, stockées sous `design.typography` comme un **nom** de
+famille choisi dans une liste fermée (`FONTS` dans
+`vssp_design_fields.py`) : Orbitron, Rajdhani, Exo 2, Oxanium, Chakra
+Petch, Share Tech Mono, Roboto, System. Le thème reçoit la pile CSS
+complète de chacune, jamais le nom seul.
+
+| Token | Variables de thème | Atteint |
+|---|---|---|
+| `font_display` (défaut Orbitron) | `--vssp-font-display` | tout ce que les templates codaient en dur en `Orbitron` : pastilles de nav et nav mobile, titre et horloge du header, titres de page/section, en-têtes de pièce, valeurs énergie, ampérages des circuits |
+| `font_body` (défaut Roboto) | `--vssp-font-body`, `--ha-font-family-body`, `--primary-font-family`, `--paper-font-common-base_-_font-family`, `--mdc-typography-font-family` | tout le reste du texte — entrées de la nav desktop, contenu des cartes, lignes natives, dialogues |
+
+Chaque template écrit `var(--vssp-font-display, Orbitron, sans-serif)`,
+donc un dashboard affiché sans le thème Visio Sapiens garde son ancien
+aspect. La police de texte ne demande aucun changement de template :
+elle passe par les variables de police de Home Assistant lui-même, que
+le thème du dashboard pose sur `<html>` (mesuré en 2026.8 : surcharger
+`--ha-font-family-body` à cet endroit change aussitôt la police des
+entrées de nav).
+
+**Pourquoi une liste fermée et pas du texte libre.** Un nom de famille
+n'est que la moitié d'une police — il faut aussi servir le fichier.
+Avant ce changement, aucune page ne chargeait Orbitron : `document.fonts`
+sur le dashboard en ligne ne contenait que Roboto, donc chaque
+`font-family: Orbitron` retombait sur sans-serif, sauf sur les machines
+où la police se trouvait installée. Les polices sont désormais
+auto-hébergées sous `www/vssp/fonts/` (sous-ensemble latin, woff2, SIL
+OFL 1.1 — textes de licence à côté) et déclarées dans
+`www/vssp/css/vssp_fonts.css`, que `vssp.css` `@import` et que l'éditeur
+THEME lie directement. Aucune requête ne part vers Google Fonts : une
+tablette murale rend la même chose sans internet. Ajouter une police,
+c'est déposer son woff2 à cet endroit, la déclarer dans
+`vssp_fonts.css`, et l'ajouter à `FONTS` et au miroir `FONT_STACKS` de
+l'éditeur.
+
+**Le `design_system.yaml` du pod est antérieur à la section.** Le pod
+garde sa propre copie d'un déploiement à l'autre, il n'a donc pas de
+`typography:` avant le premier APPLIQUER. `font_stack()` se replie sur
+`FONT_DEFAULTS` (l'aspect d'avant) quand la section ou un nom manque, et
+`vssp_theme_apply.py` crée la section à l'écriture au lieu d'échouer
+dessus.
+
 ## Périmètre de cette phase (MVP)
 
 Seuls les **tokens de thème natifs Home Assistant** sont couverts :
@@ -272,14 +318,15 @@ qu'une passe mécanique pourrait introduire.
 ### Phase 2 (travail restant)
 
 Refactoriser les occurrences `border-radius` / `backdrop-filter:
-blur(12px)` / `Orbitron` restantes dans `templates_j2/*.j2` (au cas par
-cas, carte vs dialogue) et chaque doublon dans les pages HTML des
-wizards, pour qu'elles consomment `var(--ha-card-border-radius)` /
+blur(12px)` restantes dans `templates_j2/*.j2` (au cas par cas, carte vs
+dialogue) et chaque doublon dans les pages HTML des wizards, pour
+qu'elles consomment `var(--ha-card-border-radius)` /
 `var(--ha-dialog-border-radius)` — déjà émis tous les deux par
-`theme.yaml.j2` — au lieu de littéraux. `Orbitron` (la police) et le
-rayon de flou n'ont pas encore de champ correspondant dans
-`design_system.yaml`, donc les relier suppose de décider d'abord s'ils
-deviennent des tokens éditables.
+`theme.yaml.j2` — au lieu de littéraux. Le rayon de flou n'a pas encore
+de champ correspondant dans `design_system.yaml`, donc le relier suppose
+de décider d'abord s'il devient un token éditable. (La police est faite
+— voir *Typographie* ; les blocs `<style>` propres aux pages wizard
+nomment encore Orbitron directement, comme leurs couleurs.)
 
 ## Vérification
 

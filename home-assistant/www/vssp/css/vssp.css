@@ -26,6 +26,15 @@
    Loaded as a global lovelace resource (type: css)
    ========================================================================== */
 
+/* EN | The @font-face rules, in their own sheet so the THEME editor's iframe
+   EN | can load the faces without this sheet's global body/ha-card rules.
+   EN | Must stay the first rule: an @import after any other is ignored.
+   FR | Les regles @font-face, dans leur propre feuille pour que l'iframe de
+   FR | l'editeur THEME charge les polices sans les regles globales body/ha-card
+   FR | de celle-ci. Doit rester la premiere regle : un @import apres une autre
+   FR | est ignore. */
+@import url('vssp_fonts.css');
+
 /* --------------------------------------------------------------------------
    1. DESIGN TOKENS
    -------------------------------------------------------------------------- */
@@ -57,6 +66,16 @@
   --vssp-glow-cyan:      0 0 18px rgba(0,229,255,0.18);
   --vssp-glow-cyan-hi:   0 0 34px rgba(0,229,255,0.40);
 
+  /* EN | Fallbacks only. The chosen faces arrive through the theme as
+     EN | --vssp-font-display / --vssp-font-body, set on each Visio Sapiens
+     EN | view rather than on :root — so the rules below read those directly
+     EN | at the element; an alias defined here would resolve at :root, where
+     EN | the theme is not, and always yield the fallback.
+     FR | Replis seulement. Les polices choisies arrivent par le theme en
+     FR | --vssp-font-display / --vssp-font-body, posees sur chaque vue Visio
+     FR | Sapiens et non sur :root — les regles ci-dessous les lisent donc
+     FR | directement sur l'element ; un alias defini ici se resoudrait sur
+     FR | :root, ou le theme n'est pas, et donnerait toujours le repli. */
   --vssp-font:           'Rajdhani', 'Segoe UI', system-ui, sans-serif;
   --vssp-font-mono:      'Orbitron', 'Segoe UI', system-ui, sans-serif;
 }
@@ -99,7 +118,7 @@ ha-card:hover{
   align-items:center;
   justify-content:space-between;
   padding: 14px 26px;
-  font-family: var(--vssp-font-mono);
+  font-family: var(--vssp-font-display, var(--vssp-font-mono));
 }
 .vssp-hud .vssp-logo{
   color: var(--vssp-cyan);
@@ -124,7 +143,7 @@ ha-card:hover{
    fiable au DOM reel. Seul le style de base (police/espacement) reste ici.
    -------------------------------------------------------------------------- */
 .vssp-nav-button{
-  font-family: var(--vssp-font-mono) !important;
+  font-family: var(--vssp-font-display, var(--vssp-font-mono)) !important;
   letter-spacing: 2px !important;
   cursor: pointer;
 }
@@ -185,7 +204,7 @@ ha-card:hover{
 .vssp-ia-status{
   text-align:center;
   margin-top: 14px;
-  font-family: var(--vssp-font-mono);
+  font-family: var(--vssp-font-display, var(--vssp-font-mono));
   font-size: 13px;
   letter-spacing: 2px;
   color: var(--vssp-green);
@@ -200,7 +219,7 @@ ha-card:hover{
    7. METRICS / GAUGES
    -------------------------------------------------------------------------- */
 .vssp-metric-label{
-  font-family: var(--vssp-font-mono);
+  font-family: var(--vssp-font-display, var(--vssp-font-mono));
   font-size: 11px;
   letter-spacing: 2px;
   color: var(--vssp-text-dim);
@@ -229,7 +248,7 @@ ha-card:hover{
   background: rgba(255,61,113,0.08);
   border-radius: var(--vssp-radius-sm);
   padding: 10px 14px;
-  font-family: var(--vssp-font);
+  font-family: var(--vssp-font-body, var(--vssp-font));
   color: var(--vssp-text);
   font-size: 14px;
   animation: vssp-alert-glow 2.2s ease-in-out infinite;
@@ -255,7 +274,7 @@ ha-card:hover{
   align-items:center;
   justify-content:space-between;
   padding: 10px 22px;
-  font-family: var(--vssp-font-mono);
+  font-family: var(--vssp-font-display, var(--vssp-font-mono));
   font-size: 12px;
   letter-spacing: 2px;
   color: var(--vssp-text-dim);
@@ -323,7 +342,7 @@ ha-card:hover{
 }
 .vssp-datetime .vssp-datetime-time{
   color: #FFFFFF;
-  font-family: var(--vssp-font-mono);
+  font-family: var(--vssp-font-display, var(--vssp-font-mono));
   font-size: 20px;
   font-weight: 700;
   line-height: 1.1;
@@ -425,7 +444,7 @@ ha-card:hover{
   border-radius: var(--vssp-radius-sm);
   background: rgba(0,229,255,0.08);
   color: var(--vssp-cyan);
-  font-family: var(--vssp-font-mono);
+  font-family: var(--vssp-font-display, var(--vssp-font-mono));
   font-size: 11px;
   letter-spacing: 1.5px;
   font-weight: 700;

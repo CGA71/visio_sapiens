@@ -131,3 +131,11 @@ design:
   # EN | transparency
   # FR | transparence
   bubble_backdrop: "transparent"
+
+  # EN | Typefaces — a name from vssp_design_fields.FONTS, nothing else.
+  # EN | display: nav rail, header, titles, values. body: all other text.
+  # FR | Polices — un nom de vssp_design_fields.FONTS, rien d'autre.
+  # FR | display : bandeau de nav, header, titres, valeurs. body : le reste.
+  typography:
+    display: "Orbitron"
+    body: "Roboto"

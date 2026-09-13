@@ -60,6 +60,8 @@ The editor offers:
   `sidebar_selected_background`, `bubble_backdrop`), since a native
   `<input type=color>` cannot represent `rgba(...)`;
 - sliders for `card_radius`, `card_border_width`, `dialog_radius`;
+- two font pickers, `font_display` and `font_body` (see *Typography*
+  below), each with a sample line drawn in the chosen face;
 - a **live preview** — a small self-contained mock updated on every
   input, entirely client-side, no round trip;
 - **Export** (downloads the current tokens as JSON) and **Import**
@@ -222,6 +224,44 @@ If a second text field ever appears on another screen, it needs the same
 three lines — that is the cost of scoping, and it is the cheaper side of
 the trade.
 
+## Typography — `font_display` / `font_body`
+
+Two faces, stored under `design.typography` as a family **name** picked
+from a closed list (`FONTS` in `vssp_design_fields.py`): Orbitron,
+Rajdhani, Exo 2, Oxanium, Chakra Petch, Share Tech Mono, Roboto, System.
+The theme receives the full CSS stack for each, never the bare name.
+
+| Token | Theme variables | Reaches |
+|---|---|---|
+| `font_display` (default Orbitron) | `--vssp-font-display` | everything the templates used to hardcode as `Orbitron`: nav chips and mobile nav, header title and clock, page/section titles, room headers, energy values, circuit amps |
+| `font_body` (default Roboto) | `--vssp-font-body`, `--ha-font-family-body`, `--primary-font-family`, `--paper-font-common-base_-_font-family`, `--mdc-typography-font-family` | all other text — desktop nav entries, card contents, native rows, dialogs |
+
+Every template writes `var(--vssp-font-display, Orbitron, sans-serif)`,
+so a dashboard shown without the Visio Sapiens theme keeps its old look.
+The body face needs no template change at all: it rides Home
+Assistant's own font variables, which the dashboard theme sets on
+`<html>` (measured on 2026.8: overriding `--ha-font-family-body` there
+re-fonts the nav entries immediately).
+
+**Why a closed list and not free text.** A family name is half a font —
+the file has to be served too. Until this change no page loaded
+Orbitron at all: `document.fonts` on the live dashboard held only
+Roboto, so every `font-family: Orbitron` fell back to sans-serif except
+on machines where the font happened to be installed. The faces are now
+self-hosted under `www/vssp/fonts/` (latin subset, woff2, SIL OFL 1.1 —
+licence texts alongside) and declared in `www/vssp/css/vssp_fonts.css`,
+which `vssp.css` `@import`s and the THEME editor links directly. No
+request goes to Google Fonts, so a wall tablet renders the same with the
+internet down. Adding a face means dropping its woff2 there, declaring
+it in `vssp_fonts.css`, and adding it to `FONTS` and to the editor's
+`FONT_STACKS` mirror.
+
+**Pod-side `design_system.yaml` predates the section.** The pod keeps
+its own copy across deploys, so it has no `typography:` until the first
+APPLY. `font_stack()` falls back to `FONT_DEFAULTS` (the pre-change look)
+when the section or a name is missing, and `vssp_theme_apply.py` creates
+the section on write instead of failing on it.
+
 ## Scope of this phase (MVP)
 
 Only the Home Assistant **native theme tokens** are covered: the ones
@@ -255,13 +295,14 @@ silently.
 ### Phase 2 (remaining work)
 
 Refactor the remaining hardcoded `border-radius` / `backdrop-filter:
-blur(12px)` / `Orbitron` occurrences in `templates_j2/*.j2` (per
-occurrence, card vs dialog) and every duplicate in the wizard HTML
-pages, to consume `var(--ha-card-border-radius)` /
-`var(--ha-dialog-border-radius)` — both already emitted by
-`theme.yaml.j2` — instead of literals. `Orbitron` (the font) and the
-blur radius have no corresponding `design_system.yaml` field yet, so
-wiring those means deciding whether they become editable tokens first.
+blur(12px)` occurrences in `templates_j2/*.j2` (per occurrence, card vs
+dialog) and every duplicate in the wizard HTML pages, to consume
+`var(--ha-card-border-radius)` / `var(--ha-dialog-border-radius)` — both
+already emitted by `theme.yaml.j2` — instead of literals. The blur
+radius has no corresponding `design_system.yaml` field yet, so wiring it
+means deciding whether it becomes an editable token first. (The font is
+done — see *Typography*; the wizard pages' own `<style>` blocks still
+name Orbitron directly, like their colors.)
 
 ## Verification
 

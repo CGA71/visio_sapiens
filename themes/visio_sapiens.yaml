@@ -54,6 +54,33 @@ Visio Sapiens:
   # transparence
   bubble-default-backdrop-background-color: "transparent"
 
+  # EN | TYPOGRAPHY — two faces. vssp-font-display is the HUD face every
+  # EN | template names explicitly (nav rail, header clock, titles, values:
+  # EN | `var(--vssp-font-display, Orbitron, sans-serif)`); the body face goes
+  # EN | into Home Assistant's own font variables, so every piece of text
+  # EN | that names no font — card contents, native rows, dialogs — follows
+  # EN | it with no template change. Four names because HA read a different
+  # EN | one in each generation of its components (ha-font-family-body today,
+  # EN | primary-font-family and paper-font-* before it, the MWC typography
+  # EN | one inside Material fields). The files come from vssp_fonts.css.
+  # FR | TYPOGRAPHIE — deux polices. vssp-font-display est la police HUD que
+  # FR | chaque template nomme explicitement (bandeau de nav, horloge du
+  # FR | header, titres, valeurs : `var(--vssp-font-display, Orbitron,
+  # FR | sans-serif)`) ; la police de texte va dans les variables de police de
+  # FR | Home Assistant lui-meme, pour que tout texte qui ne nomme aucune
+  # FR | police — contenu des cartes, lignes natives, dialogues — la suive sans
+  # FR | toucher aux templates. Quatre noms parce que HA en a lu un different
+  # FR | a chaque generation de ses composants (ha-font-family-body
+  # FR | aujourd'hui, primary-font-family et paper-font-* avant, celle de la
+  # FR | typographie MWC dans les champs Material). Les fichiers viennent de
+  # FR | vssp_fonts.css.
+  vssp-font-display: "'Orbitron', 'Segoe UI', system-ui, sans-serif"
+  vssp-font-body: "Roboto, Noto, sans-serif"
+  ha-font-family-body: "Roboto, Noto, sans-serif"
+  primary-font-family: "Roboto, Noto, sans-serif"
+  paper-font-common-base_-_font-family: "Roboto, Noto, sans-serif"
+  mdc-typography-font-family: "Roboto, Noto, sans-serif"
+
   # EN | input_select / mwc-select dropdowns (ADMIN's Interface language,
   # EN | Target format, Chatbot provider...) — without these, HA's Material
   # EN | select falls back to its own light-mode default fill (a bright

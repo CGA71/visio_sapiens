@@ -1,0 +1,127 @@
+/*
+ * Visio Sapiens - Neural Home Interface for Home Assistant
+ * Copyright (C) 2026 Expanse IT <expanse-it@outlook.fr>
+ *
+ * SPDX-License-Identifier: GPL-2.0-or-later
+ *
+ * The font files this sheet points at are NOT under the GPL: each is under
+ * the SIL Open Font License 1.1, text and copyright in ../fonts/OFL-*.txt.
+ * Les fichiers de police vises ici ne sont PAS sous GPL : chacun est sous
+ * SIL Open Font License 1.1, texte et copyright dans ../fonts/OFL-*.txt.
+ */
+
+/* ==========================================================================
+   Visio Sapiens — TYPEFACES
+
+   EN | Every family the THEME screen offers (vssp_design_fields.FONTS),
+   EN | served from this Home Assistant — no Google Fonts request, so the
+   EN | wall tablet renders the same with the internet down. Until this file
+   EN | existed, "font-family: Orbitron" was written all over the templates
+   EN | but no page ever loaded Orbitron: it only showed where the font
+   EN | happened to be installed, and was sans-serif everywhere else.
+   EN | Latin subset only (Basic Latin + Latin-1: every French and English
+   EN | glyph); a glyph outside it falls through to the next font in the stack.
+   EN | Loaded twice: @import'ed by vssp.css for the dashboards, linked by
+   EN | vssp_theme_editor.html so its preview shows the real faces.
+   FR | Chaque famille que propose l'ecran THEME (vssp_design_fields.FONTS),
+   FR | servie par ce Home Assistant — aucune requete Google Fonts, la
+   FR | tablette murale rend donc la meme chose sans internet. Avant ce
+   FR | fichier, « font-family: Orbitron » etait ecrit partout dans les
+   FR | templates mais aucune page ne chargeait Orbitron : elle n'apparaissait
+   FR | que la ou la police se trouvait installee, et en sans-serif ailleurs.
+   FR | Sous-ensemble latin seulement (latin de base + Latin-1 : tous les
+   FR | glyphes francais et anglais) ; un glyphe hors de celui-ci passe a la
+   FR | police suivante de la pile.
+   FR | Charge deux fois : @import par vssp.css pour les dashboards, lie par
+   FR | vssp_theme_editor.html pour que son apercu montre les vraies polices.
+   ========================================================================== */
+
+/* EN | Variable fonts: one file carries the whole weight range.
+   FR | Polices variables : un seul fichier porte toute la plage de graisses. */
+@font-face {
+  font-family: 'Orbitron';
+  font-style: normal;
+  font-weight: 400 900;
+  font-display: swap;
+  src: url('../fonts/orbitron-400-900.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Exo 2';
+  font-style: normal;
+  font-weight: 300 800;
+  font-display: swap;
+  src: url('../fonts/exo2-300-800.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Oxanium';
+  font-style: normal;
+  font-weight: 300 800;
+  font-display: swap;
+  src: url('../fonts/oxanium-300-800.woff2') format('woff2');
+}
+
+/* EN | Static fonts: one file per weight.
+   FR | Polices statiques : un fichier par graisse. */
+@font-face {
+  font-family: 'Rajdhani';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../fonts/rajdhani-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Rajdhani';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('../fonts/rajdhani-500.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Rajdhani';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('../fonts/rajdhani-600.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Rajdhani';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('../fonts/rajdhani-700.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Chakra Petch';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../fonts/chakrapetch-400.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Chakra Petch';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('../fonts/chakrapetch-500.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Chakra Petch';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('../fonts/chakrapetch-600.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Chakra Petch';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('../fonts/chakrapetch-700.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'Share Tech Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('../fonts/sharetechmono-400.woff2') format('woff2');
+}
