@@ -100,7 +100,7 @@
                 card_mod:
                   style: |
                     ha-card { padding: 0 0 6px 0 !important; }
-                    #name { font-size: 12px !important; letter-spacing: 1px !important; }
+                    #name { font-size: calc(12px * var(--vssp-scale-text, 1)) !important; letter-spacing: 1px !important; }
 {% endif %}
               # EN | The quotes around the colour are load-bearing. In YAML a
               # EN | `#` that follows whitespace opens a comment, so an

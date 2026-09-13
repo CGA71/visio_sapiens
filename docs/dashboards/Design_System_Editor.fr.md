@@ -68,6 +68,8 @@ L'éditeur propose :
 - deux sélecteurs de police, `font_display` et `font_body` (voir
   *Typographie* plus bas), chacun avec une ligne d'échantillon dessinée
   dans la police choisie ;
+- cinq curseurs de taille par usage — horloge, titres, valeurs, texte,
+  libellés — affichant chacun son pourcentage et la taille résultante ;
 - un **aperçu live** — une maquette autonome mise à jour à chaque
   saisie, entièrement côté client, sans aller-retour ;
 - **Export** (télécharge les tokens courants en JSON) et **Import**
@@ -276,12 +278,50 @@ c'est déposer son woff2 à cet endroit, la déclarer dans
 `vssp_fonts.css`, et l'ajouter à `FONTS` et au miroir `FONT_STACKS` de
 l'éditeur.
 
+### Tailles de texte par usage — `size_clock` / `size_title` / `size_value` / `size_text` / `size_label`
+
+Cinq **échelles**, pas cinq tailles, stockées en `"NNN%"` (50–200 %)
+sous `design.typography.size`. Un rôle couvre volontairement plusieurs
+tailles — un titre fait 20px dans le header, 15px sur une section, 11px
+sur une sous-section — donc une valeur en pixels par rôle écraserait la
+hiérarchie. Chaque `font-size` littéral de
+`button_card_templates.yaml` et `templates_j2/*.j2` (201, plus les deux
+tailles que button-card calcule en JS) vaut désormais
+`calc(<px> * var(--vssp-scale-<rôle>, 1))`, classé selon ce qu'*est* le
+texte :
+
+| Rôle | Quoi | Exemples |
+|---|---|---|
+| `clock` | les chiffres de l'horloge du header | 24px desktop, 20px mobile |
+| `title` | titre du header, logo de la sidebar, titres de page/section/carte | « HOME », « VISIO SAPIENS », « TOP 10 CONSUMPTION » |
+| `value` | une mesure ou un état d'appareil | W, kWh, °C, ampères des circuits, thermostat, état de l'alarme |
+| `text` | les noms et le texte propre à Home Assistant | entrées de nav, noms d'appareils, lignes |
+| `label` | légendes, unités, aides, en-têtes de colonne, badges | « Smart Home OS », « kW », « CPU 6% » |
+
+Le thème écrit chaque échelle comme un multiplicateur sans unité
+(`120%` → `vssp-scale-value: "1.2"`) ; l'échelle `text` pilote aussi
+`ha-font-size-scale`, le multiplicateur propre à Home Assistant, pour
+que cartes et lignes natives suivent. L'éditeur affiche chaque curseur
+en pourcentage et en taille résultante d'un texte de référence du rôle.
+
 **Le `design_system.yaml` du pod est antérieur à la section.** Le pod
 garde sa propre copie d'un déploiement à l'autre, il n'a donc pas de
 `typography:` avant le premier APPLIQUER. `font_stack()` se replie sur
-`FONT_DEFAULTS` (l'aspect d'avant) quand la section ou un nom manque, et
-`vssp_theme_apply.py` crée la section à l'écriture au lieu d'échouer
-dessus.
+`FONT_DEFAULTS` et `size_scale()` sur 100 % (l'aspect d'avant) quand la
+section ou une valeur manque, et `vssp_theme_apply.py` crée la section à
+l'écriture au lieu d'échouer dessus.
+
+**`/local` est mis en cache 31 jours.** Home Assistant sert `/local`
+avec `max-age=2678400`, et sur cette instance les ressources Lovelace
+sont en mode **storage** : le jeton `?v=` que le déploiement écrit dans
+`configuration.yaml` n'atteint donc jamais le navigateur — la ressource
+`vssp.css` était restée à `?v=4` et les navigateurs gardaient une copie
+vieille de plusieurs mois. La ressource a été bumpée à la main
+(`lovelace/resources/update`) pour livrer les polices ; tant que le
+déploiement ne bumpe pas lui-même les ressources en mode storage, tout
+changement de `vssp.css` demandera la même chose. `vssp_fonts.css` est
+importé en `?v=1` — l'incrémenter à chaque changement de la feuille ou
+d'un fichier de police.
 
 ## Périmètre de cette phase (MVP)
 

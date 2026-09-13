@@ -81,6 +81,25 @@ Visio Sapiens:
   paper-font-common-base_-_font-family: "Roboto, Noto, sans-serif"
   mdc-typography-font-family: "Roboto, Noto, sans-serif"
 
+  # EN | TEXT SIZES BY USAGE — multipliers, not sizes: every template size is
+  # EN | calc(<px> * var(--vssp-scale-<role>, 1)), so the hierarchy inside a
+  # EN | role (20px header title, 11px subsection title) survives any scale.
+  # EN | The text scale also drives ha-font-size-scale, Home Assistant's own
+  # EN | multiplier, so native cards and rows grow with the generated ones.
+  # FR | TAILLES DE TEXTE PAR USAGE — des multiplicateurs, pas des tailles :
+  # FR | chaque taille des templates vaut calc(<px> * var(--vssp-scale-<role>,
+  # FR | 1)), la hierarchie interne d'un role (titre du header 20px, titre de
+  # FR | sous-section 11px) survit donc a toute echelle. L'echelle du texte
+  # FR | pilote aussi ha-font-size-scale, le multiplicateur propre a Home
+  # FR | Assistant, pour que cartes et lignes natives grandissent avec les
+  # FR | generees.
+  vssp-scale-clock: "1"
+  vssp-scale-title: "1"
+  vssp-scale-value: "1"
+  vssp-scale-text: "1"
+  vssp-scale-label: "1"
+  ha-font-size-scale: "1"
+
   # EN | input_select / mwc-select dropdowns (ADMIN's Interface language,
   # EN | Target format, Chatbot provider...) — without these, HA's Material
   # EN | select falls back to its own light-mode default fill (a bright

@@ -263,7 +263,7 @@ views:
                 - "--mdc-icon-size": 40px
               label:
                 - color: rgba(143,182,201,0.55)
-                - font-size: 12px
+                - font-size: calc(12px * var(--vssp-scale-label, 1))
                 - letter-spacing: .6px
                 - margin-top: 8px
 
@@ -382,12 +382,12 @@ views:
                         name:
                           - justify-self: start
                           - text-align: left
-                          - font-size: 13px
+                          - font-size: calc(13px * var(--vssp-scale-text, 1))
                           - color: "var(--text-primary-color, #DCEEF6)"
                         state:
                           - justify-self: end
                           - text-align: right
-                          - font-size: 12px
+                          - font-size: calc(12px * var(--vssp-scale-value, 1))
                           - color: "#00E5FF"
                         icon:
                           - color: "var(--paper-item-icon-color, #00E5FF)"
@@ -556,7 +556,7 @@ views:
                         - "--mdc-icon-size": 40px
                       label:
                         - color: rgba(143,182,201,0.55)
-                        - font-size: 12px
+                        - font-size: calc(12px * var(--vssp-scale-label, 1))
 {% endif %}
                   # NVR access — TODO: remplacer l'URL par celle de votre NVR
                   - type: custom:button-card
@@ -577,7 +577,7 @@ views:
                         - gap: 12px
                       name:
                         - color: "var(--secondary-text-color, #B8E8F5)"
-                        - font-size: 13px
+                        - font-size: calc(13px * var(--vssp-scale-text, 1))
                         - letter-spacing: 1px
                       icon:
                         - color: "var(--paper-item-icon-color, #00E5FF)"
@@ -640,7 +640,7 @@ views:
                         - "--mdc-icon-size": 40px
                       label:
                         - color: rgba(143,182,201,0.55)
-                        - font-size: 12px
+                        - font-size: calc(12px * var(--vssp-scale-label, 1))
 {% endif %}
                   # TODO: remplacer par votre entité lock/script d'ouverture
                   - type: grid
@@ -665,7 +665,7 @@ views:
                             - border-radius: 12px
                             - padding: 10px
                           name:
-                            - font-size: 11px
+                            - font-size: calc(11px * var(--vssp-scale-text, 1))
                             - color: "var(--text-primary-color, #DCEEF6)"
                           icon:
                             - color: "#00FFC3"
@@ -687,7 +687,7 @@ views:
                             - border-radius: 12px
                             - padding: 10px
                           name:
-                            - font-size: 11px
+                            - font-size: calc(11px * var(--vssp-scale-text, 1))
                             - color: "var(--text-primary-color, #DCEEF6)"
                           icon:
                             - color: "#FF4D6D"
@@ -708,7 +708,7 @@ views:
                             - border-radius: 12px
                             - padding: 10px
                           name:
-                            - font-size: 11px
+                            - font-size: calc(11px * var(--vssp-scale-text, 1))
                             - color: "var(--text-primary-color, #DCEEF6)"
                           icon:
                             - color: "#FFA726"
@@ -729,7 +729,7 @@ views:
                             - padding: 10px
                             - pointer-events: none
                           name:
-                            - font-size: 11px
+                            - font-size: calc(11px * var(--vssp-scale-text, 1))
                             - color: rgba(220,238,246,0.4)
                           icon:
                             - color: rgba(255,167,38,0.35)
@@ -785,7 +785,7 @@ views:
                       style: |
                         ha-card {
                           background: #4a6d7d;
-                          font-size: 16px;
+                          font-size: calc(16px * var(--vssp-scale-text, 1));
                           font-weight: normal;
                           color: #ffffff;
                         }
@@ -868,10 +868,10 @@ views:
                                   - border-radius: 12px
                                   - padding: 8px
                                 name:
-                                  - font-size: 11px
+                                  - font-size: calc(11px * var(--vssp-scale-text, 1))
                                   - color: "var(--text-primary-color, #DCEEF6)"
                                 state:
-                                  - font-size: 12px
+                                  - font-size: calc(12px * var(--vssp-scale-value, 1))
                                   - color: "#00FFC3"
                                   - font-weight: 700
                                 icon:
@@ -892,10 +892,10 @@ views:
                                   - border-radius: 12px
                                   - padding: 8px
                                 name:
-                                  - font-size: 11px
+                                  - font-size: calc(11px * var(--vssp-scale-text, 1))
                                   - color: "var(--text-primary-color, #DCEEF6)"
                                 state:
-                                  - font-size: 12px
+                                  - font-size: calc(12px * var(--vssp-scale-value, 1))
                                   - color: "#00FFC3"
                                   - font-weight: 700
                                 icon:
@@ -922,10 +922,10 @@ views:
                                   - border-radius: 12px
                                   - padding: 8px
                                 name:
-                                  - font-size: 11px
+                                  - font-size: calc(11px * var(--vssp-scale-text, 1))
                                   - color: "var(--text-primary-color, #DCEEF6)"
                                 label:
-                                  - font-size: 12px
+                                  - font-size: calc(12px * var(--vssp-scale-label, 1))
                                   - color: "#00FFC3"
                                   - font-weight: 700
                                 icon:
@@ -946,10 +946,10 @@ views:
                                   - border-radius: 12px
                                   - padding: 8px
                                 name:
-                                  - font-size: 11px
+                                  - font-size: calc(11px * var(--vssp-scale-text, 1))
                                   - color: "var(--text-primary-color, #DCEEF6)"
                                 state:
-                                  - font-size: 12px
+                                  - font-size: calc(12px * var(--vssp-scale-value, 1))
                                   - color: "#00FFC3"
                                   - font-weight: 700
                                 icon:
@@ -970,10 +970,10 @@ views:
                                   - border-radius: 12px
                                   - padding: 8px
                                 name:
-                                  - font-size: 11px
+                                  - font-size: calc(11px * var(--vssp-scale-text, 1))
                                   - color: "var(--text-primary-color, #DCEEF6)"
                                 state:
-                                  - font-size: 12px
+                                  - font-size: calc(12px * var(--vssp-scale-value, 1))
                                   - color: "#00FFC3"
                                   - font-weight: 700
                                 icon:
@@ -996,7 +996,7 @@ views:
                                   - border-radius: 12px
                                   - padding: 8px
                                 name:
-                                  - font-size: 11px
+                                  - font-size: calc(11px * var(--vssp-scale-text, 1))
                                   - color: "var(--text-primary-color, #DCEEF6)"
                                 icon:
                                   - color: "var(--paper-item-icon-color, #00E5FF)"
@@ -1016,10 +1016,10 @@ views:
                                   - border-radius: 12px
                                   - padding: 8px
                                 name:
-                                  - font-size: 11px
+                                  - font-size: calc(11px * var(--vssp-scale-text, 1))
                                   - color: "var(--text-primary-color, #DCEEF6)"
                                 state:
-                                  - font-size: 12px
+                                  - font-size: calc(12px * var(--vssp-scale-value, 1))
                                   - color: "#00FFC3"
                                   - font-weight: 700
                                 icon:
@@ -1042,7 +1042,7 @@ views:
                                   - border-radius: 12px
                                   - padding: 8px
                                 name:
-                                  - font-size: 11px
+                                  - font-size: calc(11px * var(--vssp-scale-text, 1))
                                   - color: "var(--text-primary-color, #DCEEF6)"
                                 icon:
                                   - color: "var(--paper-item-icon-color, #00E5FF)"
@@ -1090,10 +1090,10 @@ views:
                     - padding: 10px
                     - height: 96px
                   name:
-                    - font-size: 12px
+                    - font-size: calc(12px * var(--vssp-scale-text, 1))
                     - color: "var(--secondary-text-color, #8FB6C9)"
                   state:
-                    - font-size: 15px
+                    - font-size: calc(15px * var(--vssp-scale-value, 1))
                     - font-family: var(--vssp-font-display, Orbitron, sans-serif)
                     - text-transform: uppercase
                 tap_action:
@@ -1147,10 +1147,10 @@ views:
                     - border-radius: 12px
                     - padding: 8px
                   name:
-                    - font-size: 12px
+                    - font-size: calc(12px * var(--vssp-scale-text, 1))
                     - color: "var(--text-primary-color, #DCEEF6)"
                   state:
-                    - font-size: 11px
+                    - font-size: calc(11px * var(--vssp-scale-value, 1))
                     - color: "#00E5FF"
                 tap_action:
                   action: more-info
@@ -1436,12 +1436,12 @@ views:
                         name:
                           - justify-self: start
                           - text-align: left
-                          - font-size: 13px
+                          - font-size: calc(13px * var(--vssp-scale-text, 1))
                           - color: "var(--text-primary-color, #DCEEF6)"
                         state:
                           - justify-self: end
                           - text-align: right
-                          - font-size: 12px
+                          - font-size: calc(12px * var(--vssp-scale-value, 1))
                           - color: "#00E5FF"
                         icon:
                           - color: "var(--paper-item-icon-color, #00E5FF)"
@@ -1481,12 +1481,12 @@ views:
               name:
                 - justify-self: start
                 - text-align: left
-                - font-size: 13px
+                - font-size: calc(13px * var(--vssp-scale-text, 1))
                 - color: "var(--text-primary-color, #DCEEF6)"
               state:
                 - justify-self: end
                 - text-align: right
-                - font-size: 13px
+                - font-size: calc(13px * var(--vssp-scale-value, 1))
                 - font-family: var(--vssp-font-display, Orbitron, sans-serif)
                 - color: "#00E5FF"
               icon:

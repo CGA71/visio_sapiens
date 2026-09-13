@@ -121,3 +121,9 @@ design:
   typography:
     display: "Orbitron"
     body: "Roboto"
+    size:
+      clock: "100%"
+      title: "100%"
+      value: "100%"
+      text: "100%"
+      label: "100%"

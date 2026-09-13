@@ -62,6 +62,8 @@ The editor offers:
 - sliders for `card_radius`, `card_border_width`, `dialog_radius`;
 - two font pickers, `font_display` and `font_body` (see *Typography*
   below), each with a sample line drawn in the chosen face;
+- five size sliders by usage — clock, titles, values, text, labels —
+  each showing its percentage and the resulting pixel size;
 - a **live preview** — a small self-contained mock updated on every
   input, entirely client-side, no round trip;
 - **Export** (downloads the current tokens as JSON) and **Import**
@@ -256,11 +258,47 @@ internet down. Adding a face means dropping its woff2 there, declaring
 it in `vssp_fonts.css`, and adding it to `FONTS` and to the editor's
 `FONT_STACKS` mirror.
 
+### Text sizes by usage — `size_clock` / `size_title` / `size_value` / `size_text` / `size_label`
+
+Five **scales**, not five sizes, stored as `"NNN%"` (50–200 %) under
+`design.typography.size`. A role spans several sizes on purpose — a
+title is 20px in the header, 15px on a section, 11px on a subsection —
+so one pixel value per role would flatten the hierarchy. Every literal
+`font-size` in `button_card_templates.yaml` and `templates_j2/*.j2`
+(201 of them, plus the two sizes button-card computes in JS) is now
+`calc(<px> * var(--vssp-scale-<role>, 1))`, classified by what the text
+*is*:
+
+| Role | What | Examples |
+|---|---|---|
+| `clock` | the header clock digits | 24px desktop, 20px mobile |
+| `title` | header title, sidebar logo, page/section/card headings | "HOME", "VISIO SAPIENS", "TOP 10 CONSUMPTION" |
+| `value` | a reading or a device state | W, kWh, °C, circuit amps, thermostat, alarm state |
+| `text` | names and Home Assistant's own text | nav entries, device names, rows |
+| `label` | captions, units, hints, column headers, legends, badges | "Smart Home OS", "kW", "CPU 6%" |
+
+The theme writes each scale as a unitless multiplier (`120%` →
+`vssp-scale-value: "1.2"`); the `text` scale also drives
+`ha-font-size-scale`, Home Assistant's own multiplier, so native cards
+and rows follow. The editor shows each slider as a percentage and as the
+resulting pixel size of one reference text of that role.
+
 **Pod-side `design_system.yaml` predates the section.** The pod keeps
 its own copy across deploys, so it has no `typography:` until the first
-APPLY. `font_stack()` falls back to `FONT_DEFAULTS` (the pre-change look)
-when the section or a name is missing, and `vssp_theme_apply.py` creates
-the section on write instead of failing on it.
+APPLY. `font_stack()` falls back to `FONT_DEFAULTS` and `size_scale()`
+to 100 % (the pre-change look) when the section or a value is missing,
+and `vssp_theme_apply.py` creates the section on write instead of
+failing on it.
+
+**`/local` is cached for 31 days.** Home Assistant serves `/local` with
+`max-age=2678400`, and on this instance the Lovelace resources are in
+**storage** mode, so the `?v=` token the deploy writes into
+`configuration.yaml` never reaches the browser: the `vssp.css` resource
+stayed at `?v=4` and browsers kept a months-old copy. The resource was
+bumped by hand (`lovelace/resources/update`) to ship the fonts; until
+the deploy bumps storage-mode resources itself, any `vssp.css` change
+needs the same. `vssp_fonts.css` is imported as `?v=1` — bump it with
+any change to the sheet or a font file.
 
 ## Scope of this phase (MVP)
 

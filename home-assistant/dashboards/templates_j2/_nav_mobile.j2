@@ -148,7 +148,7 @@
 {% endif %}
                     name:
                       - font-family: var(--vssp-font-display, Orbitron, sans-serif)
-                      - font-size: 8px
+                      - font-size: calc(8px * var(--vssp-scale-text, 1))
                       - letter-spacing: 0.5px
 {% if item.id == active_nav %}
                       - color: "#00E5FF"

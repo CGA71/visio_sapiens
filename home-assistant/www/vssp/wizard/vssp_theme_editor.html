@@ -208,8 +208,18 @@
   #preview .p-header {
     background: var(--p-header-background, #08121C);
     color: var(--p-header-text, #00E5FF);
-    font-family: var(--p-font-display, Orbitron, sans-serif); font-size: 10px; letter-spacing: 1.5px;
+    font-family: var(--p-font-display, Orbitron, sans-serif); letter-spacing: 1.5px;
+    font-size: calc(10px * var(--p-size-title, 1));
     padding: 10px 12px; text-transform: uppercase;
+    display: flex; justify-content: space-between; align-items: center;
+  }
+  /* EN | Every preview size is the real template's pattern in miniature:
+     EN | calc(<px> * scale of the role that text belongs to).
+     FR | Chaque taille de l'apercu reprend en miniature le patron des vrais
+     FR | templates : calc(<px> * echelle du role auquel ce texte appartient). */
+  #preview .p-header .p-clock {
+    color: var(--p-text-primary, #fff); letter-spacing: 0;
+    font-size: calc(13px * var(--p-size-clock, 1));
   }
   #preview .p-body { display: flex; }
   /* EN | The mock nav rail now carries a couple of room entries alongside
@@ -228,7 +238,7 @@
   }
   #preview .p-sidebar .p-item {
     display: flex; flex-direction: column; align-items: center; gap: 3px;
-    color: var(--p-sidebar-text, #B8E8F5); font-size: 8px; padding: 4px 2px;
+    color: var(--p-sidebar-text, #B8E8F5); font-size: calc(8px * var(--p-size-text, 1)); padding: 4px 2px;
     border-radius: 6px;
   }
   #preview .p-sidebar .p-item .dot {
@@ -247,11 +257,17 @@
     border: var(--p-card-border-width, 1px) solid var(--p-divider, #1F3448);
     border-radius: var(--p-card-radius, 18px);
     padding: 12px; color: var(--p-text-primary, #fff);
+    font-size: calc(12px * var(--p-size-text, 1));
   }
-  #preview .p-card .p-muted { color: var(--p-text-secondary, #B8E8F5); font-size: 10px; margin-top: 4px; }
+  #preview .p-card .p-value {
+    float: right; color: var(--p-primary, #00E5FF);
+    font-family: var(--p-font-display, Orbitron, sans-serif);
+    font-size: calc(16px * var(--p-size-value, 1));
+  }
+  #preview .p-card .p-muted { color: var(--p-text-secondary, #B8E8F5); font-size: calc(10px * var(--p-size-label, 1)); margin-top: 4px; }
   #preview .p-card .p-btn {
     display: inline-block; margin-top: 10px; padding: 6px 10px;
-    border-radius: 8px; font-size: 10px; font-family: var(--p-font-display, Orbitron, sans-serif);
+    border-radius: 8px; font-size: calc(10px * var(--p-size-label, 1)); font-family: var(--p-font-display, Orbitron, sans-serif);
     letter-spacing: 1px; text-transform: uppercase;
     background: var(--p-primary, #00E5FF); color: #04141B;
   }
@@ -272,7 +288,7 @@
     padding: 8px 10px;
   }
   #preview .p-kpi .p-kpi-label {
-    color: var(--p-text-secondary, #B8E8F5); font-size: 8px;
+    color: var(--p-text-secondary, #B8E8F5); font-size: calc(8px * var(--p-size-label, 1));
     font-family: var(--p-font-display, Orbitron, sans-serif);
     text-transform: uppercase; letter-spacing: .5px;
   }
@@ -287,7 +303,7 @@
     margin: 10px 12px 12px; padding: 10px;
     background: var(--p-dialog-scrim, rgba(2,5,11,.75));
     border-radius: var(--p-dialog-radius, 20px);
-    font-size: 9px; color: var(--p-text-secondary, #B8E8F5);
+    font-size: calc(9px * var(--p-size-text, 1)); color: var(--p-text-secondary, #B8E8F5);
   }
 </style>
 </head>
@@ -317,7 +333,7 @@
   </div>
 
   <div id="preview">
-    <div class="p-header">VISIO SAPIENS</div>
+    <div class="p-header"><span>VISIO SAPIENS</span><span class="p-clock">21:45</span></div>
     <div class="p-body">
       <div class="p-sidebar">
         <div class="p-item"><div class="dot"></div>HOME</div>
@@ -330,8 +346,9 @@
       </div>
       <div class="p-content">
         <div class="p-card">
+          <span class="p-value">21.4°C</span>
           Living room
-          <div class="p-muted">21.4°C · 3 devices on</div>
+          <div class="p-muted">3 devices on · 45 W</div>
           <span class="p-btn">Apply</span>
           <span class="p-btn accent">Preview</span>
         </div>
@@ -389,6 +406,8 @@ const DEFAULTS = {
   sidebar_selected_text: '#00E5FF', sidebar_selected_icon: '#00E5FF',
   bubble_backdrop: 'transparent',
   font_display: 'Orbitron', font_body: 'Roboto',
+  size_clock: '100%', size_title: '100%', size_value: '100%',
+  size_text: '100%', size_label: '100%',
 };
 
 // EN | Mirrors vssp_design_fields.FONTS — the closed list the server accepts,
@@ -445,7 +464,18 @@ const FIELDS = [
   { key: 'bubble_backdrop', label: 'Bubble backdrop', type: 'text', group: 'Shape', hint: 'hex, rgba() or "transparent"', picker: true, allowTransparent: true },
   { key: 'font_display', label: 'Display font', type: 'font', group: 'Typography', hint: 'nav rail, header, clock, titles, values', sample: 'VISIO SAPIENS 21:45' },
   { key: 'font_body', label: 'Text font', type: 'font', group: 'Typography', hint: 'every other text — nav entries, cards, dialogs', sample: 'Living room · 21.4°C' },
+  // EN | ref = one real size of that role at 100%, shown beside the slider so
+  // EN | a percentage reads as pixels (vssp_design_fields.SCALE_DEFAULT).
+  // FR | ref = une vraie taille de ce role a 100 %, affichee a cote du curseur
+  // FR | pour qu'un pourcentage se lise en pixels (voir SCALE_DEFAULT).
+  { key: 'size_clock', label: 'Clock', type: 'scale', group: 'Text sizes', hint: 'header clock digits', ref: 24 },
+  { key: 'size_title', label: 'Titles', type: 'scale', group: 'Text sizes', hint: 'header title, logo, page and section headings', ref: 20 },
+  { key: 'size_value', label: 'Values', type: 'scale', group: 'Text sizes', hint: 'readings — W, kWh, °C, A, device states', ref: 15 },
+  { key: 'size_text', label: 'Text', type: 'scale', group: 'Text sizes', hint: 'names — nav entries, devices, rows — and HA\'s own text', ref: 13 },
+  { key: 'size_label', label: 'Labels', type: 'scale', group: 'Text sizes', hint: 'captions, units, hints, column headers, badges', ref: 11 },
 ];
+const SCALE_MIN = 50, SCALE_MAX = 200;
+const PERCENT_RE = /^\d{2,3}%$/;
 
 const HEX_RE = /^#[0-9A-Fa-f]{6}$/;
 const RGBA_RE = /^rgba\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*(0|1|0?\.\d+)\s*\)$/;
@@ -633,6 +663,21 @@ function buildForm() {
         });
         box.append(input, out);
         row.appendChild(box);
+      } else if (f.type === 'scale') {
+        const box = document.createElement('div');
+        box.style.display = 'flex'; box.style.alignItems = 'center'; box.style.gap = '6px';
+        const input = document.createElement('input');
+        input.type = 'range'; input.id = 'f_' + f.key;
+        input.min = SCALE_MIN; input.max = SCALE_MAX; input.step = 5;
+        const out = document.createElement('span');
+        out.className = 'range-val'; out.style.width = 'auto';
+        input.addEventListener('input', () => {
+          const px = Math.round(f.ref * input.value / 10) / 10;
+          out.textContent = input.value + '% · ' + f.ref + '→' + px + 'px';
+          onChange(f.key, input.value + '%');
+        });
+        box.append(input, out);
+        row.appendChild(box);
       } else if (f.type === 'text' && f.picker) {
         row.appendChild(buildRgbaField(f));
       } else if (f.type === 'font') {
@@ -686,6 +731,9 @@ function setFormValues(values) {
     } else if (f.type === 'range') {
       input.value = parseInt(v, 10) || 0;
       input.dispatchEvent(new Event('input'));
+    } else if (f.type === 'scale') {
+      input.value = parseInt(v, 10) || 100;
+      input.dispatchEvent(new Event('input'));
     } else if (f.type === 'font') {
       input.value = v in FONT_STACKS ? v : DEFAULTS[f.key];
       input.dispatchEvent(new Event('change'));
@@ -708,9 +756,13 @@ function onChange(key, value) {
 function updatePreview() {
   const p = el('preview');
   Object.keys(VALUES).forEach(key => {
-    // EN | A font token holds a family name; CSS needs the stack.
-    // FR | Un token de police porte un nom de famille ; CSS veut la pile.
-    const v = key.startsWith('font_') ? FONT_STACKS[VALUES[key]] || '' : VALUES[key];
+    // EN | A font token holds a family name, CSS needs the stack; a size
+    // EN | token holds "120%", calc() needs the unitless 1.2.
+    // FR | Un token de police porte un nom de famille, CSS veut la pile ; un
+    // FR | token de taille porte "120%", calc() veut le 1.2 sans unite.
+    const v = key.startsWith('font_') ? FONT_STACKS[VALUES[key]] || ''
+      : key.startsWith('size_') ? String((parseInt(VALUES[key], 10) || 100) / 100)
+      : VALUES[key];
     p.style.setProperty('--p-' + key.replace(/_/g, '-'), v);
   });
 }
@@ -793,6 +845,7 @@ el('apply').addEventListener('click', async () => {
     let ok;
     if (f.type === 'range') ok = LENGTH_RE.test(v);
     else if (f.type === 'font') ok = v in FONT_STACKS;
+    else if (f.type === 'scale') ok = PERCENT_RE.test(v) && parseInt(v, 10) >= SCALE_MIN && parseInt(v, 10) <= SCALE_MAX;
     else if (f.key === 'bubble_backdrop') ok = v === 'transparent' || isColor(v);
     else ok = isColor(v);
     if (!ok) bad.push(f.key);

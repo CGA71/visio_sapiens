@@ -72,18 +72,18 @@
                   <ha-icon icon="{{ page_icon }}"
                     style="--mdc-icon-size:24px;color:var(--paper-item-icon-color, #00E5FF);flex:none;"></ha-icon>
                   <div style="min-width:0;">
-                    <div style="font-family:var(--vssp-font-display,Orbitron,sans-serif);font-size:17px;
+                    <div style="font-family:var(--vssp-font-display,Orbitron,sans-serif);font-size:calc(17px * var(--vssp-scale-title, 1));
                       letter-spacing:2px;color:var(--text-primary-color, #FFFFFF);line-height:1;
                       white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ page_title }}</div>
-                    <div style="font-size:10px;color:var(--secondary-text-color, #8FB6C9);letter-spacing:.5px;
+                    <div style="font-size:calc(10px * var(--vssp-scale-label, 1));color:var(--secondary-text-color, #8FB6C9);letter-spacing:.5px;
                       margin-top:3px;white-space:nowrap;overflow:hidden;
                       text-overflow:ellipsis;">{{ page_subtitle }}</div>
                   </div>
                 </div>
                 <div style="text-align:right;flex:none;padding-left:8px;">
-                  <div style="font-family:var(--vssp-font-display,Orbitron,sans-serif);font-size:20px;
+                  <div style="font-family:var(--vssp-font-display,Orbitron,sans-serif);font-size:calc(20px * var(--vssp-scale-clock, 1));
                     color:var(--text-primary-color, #FFFFFF);line-height:1;">${time}</div>
-                  <div style="font-size:10px;color:var(--secondary-text-color, #8FB6C9);margin-top:3px;
+                  <div style="font-size:calc(10px * var(--vssp-scale-label, 1));color:var(--secondary-text-color, #8FB6C9);margin-top:3px;
                     text-transform:capitalize;">${date}</div>
                 </div>
               </div>`;

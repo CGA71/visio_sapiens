@@ -139,3 +139,15 @@ design:
   typography:
     display: "Orbitron"
     body: "Roboto"
+    # EN | Size scale per usage, 50%-200% (vssp_design_fields.SCALE_DEFAULT).
+    # EN | clock: header clock. title: headings. value: readings (W, kWh, °C).
+    # EN | text: names and HA's own text. label: captions, units, hints.
+    # FR | Echelle de taille par usage, 50 %-200 % (voir SCALE_DEFAULT).
+    # FR | clock : horloge. title : titres. value : mesures (W, kWh, °C).
+    # FR | text : noms et texte de HA. label : legendes, unites, aides.
+    size:
+      clock: "100%"
+      title: "100%"
+      value: "100%"
+      text: "100%"
+      label: "100%"

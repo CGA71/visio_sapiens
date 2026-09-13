@@ -133,16 +133,16 @@
                     <div style="display:flex;align-items:center;gap:12px;min-width:0;">
                       <ha-icon icon="mdi:chevron-left" style="--mdc-icon-size:24px;color:#8FB6C9;flex:none;"></ha-icon>
                       <div style="min-width:0;">
-                        <div style="font-family:var(--vssp-font-display,Orbitron,sans-serif);font-size:20px;font-weight:700;
+                        <div style="font-family:var(--vssp-font-display,Orbitron,sans-serif);font-size:calc(20px * var(--vssp-scale-title, 1));font-weight:700;
                           letter-spacing:1px;color:var(--text-primary-color, #FFFFFF);white-space:nowrap;
                           overflow:hidden;text-overflow:ellipsis;">{{ page_title }}</div>
-                        <div style="font-size:13px;color:var(--secondary-text-color, #8FB6C9);margin-top:2px;
+                        <div style="font-size:calc(13px * var(--vssp-scale-label, 1));color:var(--secondary-text-color, #8FB6C9);margin-top:2px;
                           white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">{{ page_subtitle }}</div>
                       </div>
                     </div>
                     <div style="text-align:right;flex:none;padding-left:12px;">
-                      <div style="font-family:var(--vssp-font-display,Orbitron,sans-serif);font-size:24px;color:var(--text-primary-color, #FFFFFF);line-height:1;">${time}</div>
-                      <div style="font-size:11px;color:var(--secondary-text-color, #8FB6C9);letter-spacing:.5px;margin-top:4px;text-transform:capitalize;white-space:nowrap;">${date}</div>
+                      <div style="font-family:var(--vssp-font-display,Orbitron,sans-serif);font-size:calc(24px * var(--vssp-scale-clock, 1));color:var(--text-primary-color, #FFFFFF);line-height:1;">${time}</div>
+                      <div style="font-size:calc(11px * var(--vssp-scale-label, 1));color:var(--secondary-text-color, #8FB6C9);letter-spacing:.5px;margin-top:4px;text-transform:capitalize;white-space:nowrap;">${date}</div>
                     </div>
                   </div>`;
               ]]]

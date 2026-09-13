@@ -190,7 +190,7 @@ views:
             card_mod:
               style: |
                 ha-card { padding: 0 0 6px 0 !important; }
-                #name { font-size: 12px !important; letter-spacing: 1px !important; }
+                #name { font-size: calc(12px * var(--vssp-scale-text, 1)) !important; letter-spacing: 1px !important; }
 {% endif %}
 
 {% if slot_id in ['appliances', 'sensors'] %}
@@ -255,7 +255,7 @@ views:
                         name:
                           - justify-self: start
                           - text-align: left
-                          - font-size: 11px
+                          - font-size: calc(11px * var(--vssp-scale-text, 1))
                           - color: "var(--text-primary-color, #DCEEF6)"
                           - white-space: nowrap
                           - overflow: hidden
@@ -263,7 +263,7 @@ views:
                         state:
                           - justify-self: end
                           - text-align: right
-                          - font-size: 11px
+                          - font-size: calc(11px * var(--vssp-scale-value, 1))
                           - color: "#00E5FF"
                         icon:
                           - color: "var(--paper-item-icon-color, #00E5FF)"
@@ -315,12 +315,12 @@ views:
               name:
                 - justify-self: start
                 - text-align: left
-                - font-size: 11px
+                - font-size: calc(11px * var(--vssp-scale-text, 1))
                 - color: "var(--secondary-text-color, #8FB6C9)"
               state:
                 - justify-self: start
                 - text-align: left
-                - font-size: 13px
+                - font-size: calc(13px * var(--vssp-scale-value, 1))
                 - font-family: var(--vssp-font-display, Orbitron, sans-serif)
                 - text-transform: uppercase
             tap_action:
@@ -359,10 +359,10 @@ views:
                     - border-radius: 10px
                     - padding: 6px
                   name:
-                    - font-size: 10px
+                    - font-size: calc(10px * var(--vssp-scale-text, 1))
                     - color: "var(--text-primary-color, #DCEEF6)"
                   state:
-                    - font-size: 10px
+                    - font-size: calc(10px * var(--vssp-scale-value, 1))
                     - color: "#00E5FF"
                 tap_action:
                   action: more-info
@@ -477,7 +477,7 @@ views:
                         name:
                           - justify-self: start
                           - text-align: left
-                          - font-size: 11px
+                          - font-size: calc(11px * var(--vssp-scale-text, 1))
                           - color: "var(--text-primary-color, #DCEEF6)"
                           - white-space: nowrap
                           - overflow: hidden
@@ -485,7 +485,7 @@ views:
                         state:
                           - justify-self: end
                           - text-align: right
-                          - font-size: 11px
+                          - font-size: calc(11px * var(--vssp-scale-value, 1))
                           - color: "#00E5FF"
                         icon:
                           - color: "var(--paper-item-icon-color, #00E5FF)"
@@ -521,7 +521,7 @@ views:
               name:
                 - justify-self: start
                 - text-align: left
-                - font-size: 12px
+                - font-size: calc(12px * var(--vssp-scale-text, 1))
                 - color: "var(--text-primary-color, #DCEEF6)"
                 - white-space: nowrap
                 - overflow: hidden
@@ -529,7 +529,7 @@ views:
               state:
                 - justify-self: end
                 - text-align: right
-                - font-size: 12px
+                - font-size: calc(12px * var(--vssp-scale-value, 1))
                 - font-family: var(--vssp-font-display, Orbitron, sans-serif)
                 - color: "#00E5FF"
               icon:

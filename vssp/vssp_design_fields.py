@@ -51,6 +51,12 @@ _HEX_RE = re.compile(r"^#[0-9A-Fa-f]{6}$")
 _RGBA_RE = re.compile(
     r"^rgba\(\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*\d{1,3}\s*,\s*(0|1|0?\.\d+)\s*\)$")
 _LENGTH_RE = re.compile(r"^\d{1,3}px$")
+_PERCENT_RE = re.compile(r"^\d{2,3}%$")
+# EN | Bounds of a size scale. Below half, a 9px label drops under 5px; above
+# EN | double, the 24px header clock overflows its band.
+# FR | Bornes d'une echelle de taille. Sous la moitie, un libelle de 9px passe
+# FR | sous 5px ; au-dela du double, l'horloge de 24px deborde de son bandeau.
+SCALE_MIN, SCALE_MAX = 50, 200
 
 # EN | TYPEFACES — a closed list, never free text. A font token is a family
 # EN | NAME the editor picks from this list; the theme gets the full CSS stack
@@ -98,6 +104,36 @@ FONT_DEFAULTS: dict[str, str] = {
     "font_body":    "Roboto",
 }
 
+# EN | TEXT SIZES BY USAGE — one scale per role rather than one size per
+# EN | role, because a role spans several sizes on purpose: a "title" is 20px
+# EN | in the header, 15px on a section, 11px on a subsection, and 17px on
+# EN | mobile. One pixel value per role would flatten that hierarchy; a
+# EN | percentage multiplies it. Every literal font-size in the templates is
+# EN | written calc(<px> * var(--vssp-scale-<role>, 1)), classified by what
+# EN | the text IS:
+# EN |   clock  the header clock digits
+# EN |   title  header title, sidebar logo, page/section/card headings
+# EN |   value  a reading: power, energy, temperature, amps, a device state
+# EN |   text   names — nav entries, devices, rows — and HA's own text
+# EN |   label  captions, units, hints, column headers, legends, badges
+# EN | Missing from an older pod-side design_system.yaml = 100%, the look
+# EN | before sizes were configurable.
+# FR | TAILLES DE TEXTE PAR USAGE — une echelle par role plutot qu'une taille
+# FR | par role, car un role couvre volontairement plusieurs tailles : un
+# FR | « titre » fait 20px dans le header, 15px sur une section, 11px sur une
+# FR | sous-section, 17px en mobile. Une valeur en pixels par role ecraserait
+# FR | cette hierarchie ; un pourcentage la multiplie. Chaque font-size
+# FR | litteral des templates s'ecrit calc(<px> * var(--vssp-scale-<role>, 1)),
+# FR | classe selon ce qu'EST le texte :
+# FR |   clock  les chiffres de l'horloge du header
+# FR |   title  titre du header, logo de la sidebar, titres de page/section/carte
+# FR |   value  une mesure : puissance, energie, temperature, amperes, un etat
+# FR |   text   les noms — entrees de nav, appareils, lignes — et le texte de HA
+# FR |   label  legendes, unites, aides, en-tetes de colonne, badges
+# FR | Absent d'un design_system.yaml ancien cote pod = 100 %, l'aspect
+# FR | d'avant les tailles configurables.
+SCALE_DEFAULT = "100%"
+
 # EN | payload/form key -> (path inside `design:`, kind, max px for lengths)
 # FR | cle du payload/formulaire -> (chemin sous `design:`, nature, max px)
 FIELDS: dict[str, tuple[tuple[str, ...], str, int]] = {
@@ -136,6 +172,13 @@ FIELDS: dict[str, tuple[tuple[str, ...], str, int]] = {
     # FR | valeurs) ; body = tout le reste du texte des dashboards generes.
     "font_display":                (("typography", "display"), "font", 0),
     "font_body":                   (("typography", "body"), "font", 0),
+    # EN | Size scales by usage (see SCALE_DEFAULT) — "NNN%".
+    # FR | Echelles de taille par usage (voir SCALE_DEFAULT) — "NNN%".
+    "size_clock":                  (("typography", "size", "clock"), "scale", 0),
+    "size_title":                  (("typography", "size", "title"), "scale", 0),
+    "size_value":                  (("typography", "size", "value"), "scale", 0),
+    "size_text":                   (("typography", "size", "text"), "scale", 0),
+    "size_label":                  (("typography", "size", "label"), "scale", 0),
 }
 
 
@@ -187,6 +230,13 @@ def validate(payload: dict) -> tuple[dict, list]:
             if value not in FONTS:
                 errors.append(f"`{key}`: unknown font `{value}` — "
                               f"one of: {', '.join(FONTS)}")
+                continue
+        elif kind == "scale":
+            if not _PERCENT_RE.match(value):
+                errors.append(f"`{key}`: not a percentage (e.g. `100%`) — got `{value}`")
+                continue
+            if not (SCALE_MIN <= int(value[:-1]) <= SCALE_MAX):
+                errors.append(f"`{key}`: {value} out of range ({SCALE_MIN}-{SCALE_MAX}%)")
                 continue
 
         accepted[key] = value
@@ -244,3 +294,26 @@ def font_stack(design, key: str) -> str:
     if not isinstance(node, str) or node not in FONTS:
         node = FONT_DEFAULTS[key]
     return FONTS[node]
+
+
+def size_scale(design, key: str) -> str:
+    """
+    EN | The unitless multiplier theme.yaml.j2 writes for one size token
+    EN | ("120%" -> "1.2"), for calc(<px> * var(--vssp-scale-<role>, 1)).
+    EN | Missing or out of bounds resolves to SCALE_DEFAULT, like font_stack.
+    FR | Le multiplicateur sans unite que theme.yaml.j2 ecrit pour un token de
+    FR | taille ("120%" -> "1.2"), pour calc(<px> * var(--vssp-scale-<role>, 1)).
+    FR | Absent ou hors bornes, il vaut SCALE_DEFAULT, comme font_stack.
+    """
+    path, _, _ = FIELDS[key]
+    node = design
+    try:
+        for segment in path:
+            node = node[segment]
+    except (KeyError, TypeError):
+        node = None
+    value = str(node).strip() if node is not None else ""
+    if not _PERCENT_RE.match(value) or not (
+            SCALE_MIN <= int(value[:-1]) <= SCALE_MAX):
+        value = SCALE_DEFAULT
+    return f"{int(value[:-1]) / 100:g}"

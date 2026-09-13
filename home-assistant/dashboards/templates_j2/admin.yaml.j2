@@ -1285,7 +1285,7 @@ views:
               head: >
                 [[[
                   return `<div style="display:flex;align-items:center;
-                      gap:8px;color:#FFFFFF;font-size:15px;font-weight:700;
+                      gap:8px;color:#FFFFFF;font-size:calc(15px * var(--vssp-scale-title, 1));font-weight:700;
                       letter-spacing:.4px;padding:2px 0 8px;">
                       <ha-icon icon="mdi:server-network"
                         style="--mdc-icon-size:20px;color:#00E5FF;margin:0;"
@@ -1378,7 +1378,7 @@ views:
                   // FR | margin-left: 768px.
                   const rows = (entity && entity.attributes.components) || [];
                   if (!rows.length) {
-                    return `<div style="color:#56707E;font-size:12px;
+                    return `<div style="color:#56707E;font-size:calc(12px * var(--vssp-scale-label, 1));
                       padding:8px 0;">${L.unprobed}</div>`;
                   }
 
@@ -1543,7 +1543,7 @@ views:
                   // FR | place — c est une information, pas une proposition.
                   const action = r => {
                     if (r.tier === 'locked') {
-                      return `<span style="font-size:9px;color:#56707E;
+                      return `<span style="font-size:calc(9px * var(--vssp-scale-label, 1));color:#56707E;
                         border:1px solid rgba(86,112,126,.45);border-radius:6px;
                         padding:3px 8px;white-space:nowrap;">${L.locked}</span>`;
                     }
@@ -1674,7 +1674,7 @@ views:
                     // FR | ont la meme forme : une regle que button-card ecrit
                     // FR | pour LUI-MEME, heritee par du HTML qu il n avait pas
                     // FR | prevu d heberger.
-                    return `<span onclick="${onclick}" style="font-size:9px;
+                    return `<span onclick="${onclick}" style="font-size:calc(9px * var(--vssp-scale-label, 1));
                       font-weight:700;letter-spacing:.3px;cursor:pointer;
                       pointer-events:auto;
                       color:#00E5FF;border:1px solid rgba(0,229,255,.5);
@@ -1760,15 +1760,15 @@ views:
                           color:${r.pending ? '#00E5FF' : '#56707E'};
                           flex:0 0 auto;margin:0;"></ha-icon>
                         <div style="flex:1 1 auto;min-width:0;text-align:left;
-                          color:#FFFFFF;font-size:12px;font-weight:600;
+                          color:#FFFFFF;font-size:calc(12px * var(--vssp-scale-text, 1));font-weight:600;
                           white-space:nowrap;overflow:hidden;
                           text-overflow:ellipsis;">${L.names[r.key] || r.key}</div>
                         <div style="flex:0 1 auto;min-width:0;max-width:52%;
                           text-align:right;">
-                          <div style="color:${colour};font-size:11px;
+                          <div style="color:${colour};font-size:calc(11px * var(--vssp-scale-label, 1));
                             white-space:nowrap;overflow:hidden;
                             text-overflow:ellipsis;">${text}</div>
-                          <div data-sub style="color:#56707E;font-size:9px;
+                          <div data-sub style="color:#56707E;font-size:calc(9px * var(--vssp-scale-label, 1));
                             line-height:1.35;padding-top:2px;${sub ? ''
                             : 'display:none;'}">${sub}</div>
                         </div>
@@ -1779,7 +1779,7 @@ views:
                     const group = rows.filter(r => layerOf(r) === w);
                     if (!group.length) return '';
                     return `<div style="display:flex;align-items:center;gap:6px;
-                        padding:12px 0 2px;color:#00E5FF;font-size:9px;
+                        padding:12px 0 2px;color:#00E5FF;font-size:calc(9px * var(--vssp-scale-label, 1));
                         font-weight:700;letter-spacing:.6px;
                         text-transform:uppercase;">${L.where[w] || w}</div>`
                       + group.map(line).join('');
@@ -1894,7 +1894,7 @@ views:
                     ? `<div style="padding:8px 10px;margin:8px 0 2px;
                         border-radius:8px;background:rgba(255,152,0,.10);
                         border:1px solid rgba(255,152,0,.45);color:#FF9800;
-                        font-size:10px;line-height:1.4;">
+                        font-size:calc(10px * var(--vssp-scale-label, 1));line-height:1.4;">
                         <div style="display:flex;align-items:flex-start;
                           gap:7px;">
                           <ha-icon icon="mdi:alert-outline"
@@ -1902,7 +1902,7 @@ views:
                             ></ha-icon><span>${bad}</span></div>
                         ${cmd ? `<div style="margin:6px 0 0 21px;padding:4px 8px;
                           border-radius:5px;background:rgba(0,0,0,.35);
-                          color:#FFD180;font-size:10px;user-select:all;
+                          color:#FFD180;font-size:calc(10px * var(--vssp-scale-label, 1));user-select:all;
                           pointer-events:auto;cursor:text;
                           overflow-x:auto;white-space:nowrap;font-family:
                           ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;
@@ -1912,9 +1912,9 @@ views:
                   return warn + `<div style="display:flex;align-items:center;
                       justify-content:space-between;gap:10px;padding:10px 0 2px;
                       border-top:1px solid rgba(0,229,255,.10);">
-                      <div style="color:#56707E;font-size:10px;line-height:1.35;
+                      <div style="color:#56707E;font-size:calc(10px * var(--vssp-scale-label, 1));line-height:1.35;
                         ">{{ t('admin.updates_infra_locked_note') | js }}</div>
-                      <span onclick="${call}" style="font-size:9px;
+                      <span onclick="${call}" style="font-size:calc(9px * var(--vssp-scale-label, 1));
                         font-weight:700;letter-spacing:.3px;cursor:pointer;
                         pointer-events:auto;
                         color:#00E5FF;border:1px solid rgba(0,229,255,.5);
@@ -2689,13 +2689,13 @@ views:
                 - justify-self: start
                 - text-align: left
                 - font-family: var(--vssp-font-display, Orbitron, sans-serif)
-                - font-size: 13px
+                - font-size: calc(13px * var(--vssp-scale-text, 1))
                 - letter-spacing: 1px
                 - color: "var(--secondary-text-color, #8FB6C9)"
               label:
                 - justify-self: start
                 - text-align: left
-                - font-size: 11px
+                - font-size: calc(11px * var(--vssp-scale-label, 1))
                 - color: rgba(143,182,201,0.65)
                 - margin-top: 4px
 {% if screen == 'energy' %}
