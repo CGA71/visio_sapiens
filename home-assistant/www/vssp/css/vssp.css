@@ -32,8 +32,15 @@
    FR | Les regles @font-face, dans leur propre feuille pour que l'iframe de
    FR | l'editeur THEME charge les polices sans les regles globales body/ha-card
    FR | de celle-ci. Doit rester la premiere regle : un @import apres une autre
-   FR | est ignore. */
-@import url('vssp_fonts.css');
+   FR | est ignore.
+   EN | ?v= is a cache key, not decoration: Home Assistant serves /local with
+   EN | max-age=31 days, so bump it whenever vssp_fonts.css or a font file
+   EN | changes, or browsers keep the old list for a month.
+   FR | ?v= est une cle de cache, pas une decoration : Home Assistant sert
+   FR | /local avec max-age=31 jours, donc l'incrementer a chaque changement
+   FR | de vssp_fonts.css ou d'un fichier de police, sinon les navigateurs
+   FR | gardent l'ancienne liste un mois. */
+@import url('vssp_fonts.css?v=1');
 
 /* --------------------------------------------------------------------------
    1. DESIGN TOKENS
