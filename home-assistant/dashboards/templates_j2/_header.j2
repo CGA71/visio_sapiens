@@ -264,6 +264,28 @@
                FR | profil HA / navigateur — et affichait « Sam » et « Aucun
                FR | événement à venir » sur une build anglaise. #}
             language: "{{ locale }}"
+            {# EN | The card's own sizes are fixed px (14/26/14) that ignore
+               EN | the graphic template: at an 80% text scale it stood out as
+               EN | the one oversized cell of the header. Its size options go
+               EN | straight into CSS variables, so they take the same
+               EN | calc(<default px> * role scale) as every template: the
+               EN | date digits follow the clock, events the text, the rest
+               EN | the labels.
+               FR | Les tailles propres a la carte sont des px fixes (14/26/14)
+               FR | qui ignorent le template graphique : a une echelle de texte
+               FR | de 80 % elle ressortait comme la seule case surdimensionnee
+               FR | du header. Ses options de taille vont directement dans des
+               FR | variables CSS, elles prennent donc le meme calc(<px par
+               FR | defaut> * echelle du role) que tous les templates : les
+               FR | chiffres de la date suivent l'horloge, les evenements le
+               FR | texte, le reste les libelles. #}
+            weekday_font_size: "calc(14px * var(--vssp-scale-label, 1))"
+            day_font_size: "calc(26px * var(--vssp-scale-clock, 1))"
+            month_font_size: "calc(12px * var(--vssp-scale-label, 1))"
+            event_font_size: "calc(14px * var(--vssp-scale-text, 1))"
+            time_font_size: "calc(12px * var(--vssp-scale-label, 1))"
+            location_font_size: "calc(12px * var(--vssp-scale-label, 1))"
+            description_font_size: "calc(12px * var(--vssp-scale-label, 1))"
             card_mod:
               style: |
                 :host { flex: 1 1 0; }
