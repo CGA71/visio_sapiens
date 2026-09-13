@@ -149,10 +149,20 @@ views:
           grid-area: solar
         card_mod:
           style: |
+            {# EN | border-box, like PER-DEVICE CONSUMPTION: in content-box the
+               EN | 32px of padding and 2px of border were ADDED to height 100%,
+               EN | so this frame measured 440px in its 406px cell — 34px taller
+               EN | than its neighbour and spilling over the row below.
+               FR | border-box, comme CONSOMMATION PAR APPAREIL : en content-box
+               FR | les 32px de padding et 2px de bordure s'AJOUTAIENT a height
+               FR | 100%, ce cadre mesurait donc 440px dans sa cellule de 406px —
+               FR | 34px de plus que son voisin, en debordant sur la ligne du
+               FR | dessous. #}
             :host {
               display: flex;
               flex-direction: column;
               height: 100%;
+              box-sizing: border-box;
               background: var(--card-background-color, rgba(8,18,28,0.75));
               border-radius: var(--ha-card-border-radius, 20px);
               border: 1px solid rgba(0, 229, 255, 0.28);
@@ -604,10 +614,13 @@ views:
           grid-area: total
         card_mod:
           style: |
+            {# EN | border-box — same 34px overflow as SOLAR PRODUCTION above.
+               FR | border-box — meme debordement de 34px que PRODUCTION SOLAIRE. #}
             :host {
               display: flex;
               flex-direction: column;
               height: 100%;
+              box-sizing: border-box;
               background: var(--card-background-color, rgba(8,18,28,0.75));
               border-radius: var(--ha-card-border-radius, 20px);
               border: 1px solid rgba(0, 229, 255, 0.28);
