@@ -143,7 +143,7 @@ views:
 {% else %}
     type: custom:grid-layout
     layout:
-      grid-template-columns: minmax(200px, auto) 1fr 1fr 1fr 1fr 1fr
+      grid-template-columns: max-content 1fr 1fr 1fr 1fr 1fr
       grid-template-rows: {{ layout.rows }}
       grid-template-areas: |
 {% for line in layout.areas %}

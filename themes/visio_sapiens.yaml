@@ -100,6 +100,18 @@ Visio Sapiens:
   vssp-scale-label: "1"
   ha-font-size-scale: "1"
 
+  # EN | NAV LOGO — the square under the navigation rail (_nav.j2) paints
+  # EN | this image; "none" hides the square. In the theme rather than in
+  # EN | the dashboards so a new logo is live on APPLY, like a color — no
+  # EN | regeneration, and HOME, which a deploy never regenerates, follows.
+  # FR | LOGO DE NAV — le carre sous le bandeau de navigation (_nav.j2)
+  # FR | peint cette image ; "none" masque le carre. Dans le theme plutot que
+  # FR | dans les dashboards pour qu'un nouveau logo soit actif des
+  # FR | l'APPLIQUER, comme une couleur — sans regeneration, et HOME, qu'un
+  # FR | deploiement ne regenere jamais, suit.
+  vssp-nav-logo: "url('/local/vssp/images/logo_VS-Sapiens.png')"
+  vssp-nav-logo-display: "block"
+
   # EN | input_select / mwc-select dropdowns (ADMIN's Interface language,
   # EN | Target format, Chatbot provider...) — without these, HA's Material
   # EN | select falls back to its own light-mode default fill (a bright

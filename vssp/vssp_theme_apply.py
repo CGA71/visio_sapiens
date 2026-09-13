@@ -91,7 +91,80 @@ except ImportError:
 # FR | Le moteur i18n et generate_dashboards.py vivent a cote de ce script,
 # FR | que le repertoire courant soit la racine du repo ou /config/vssp/.
 sys.path.insert(0, str(Path(__file__).resolve().parent))
-from vssp_design_fields import FIELDS, flatten, validate  # noqa: E402
+from vssp_design_fields import FIELDS, flatten, logo_filename, validate  # noqa: E402
+
+# EN | NAV LOGO UPLOAD — the editor squares and compresses the image in the
+# EN | browser before sending it, so the cap is generous for a 256x256 logo
+# EN | yet keeps the whole payload under Linux's 128 KiB limit on ONE
+# EN | argument: the webhook hands the base64 payload to shell_command as a
+# EN | single argv entry, base64 of a JSON that itself holds base64.
+# EN | The type is read from the file's own signature, never trusted from
+# EN | the payload: a name ending in .png proves nothing.
+# FR | ENVOI DU LOGO DE NAV — l'editeur met l'image au carre et la compresse
+# FR | dans le navigateur avant l'envoi, la limite est donc large pour un
+# FR | logo 256x256 tout en gardant le payload entier sous la limite Linux de
+# FR | 128 Kio pour UN argument : le webhook passe le payload base64 a
+# FR | shell_command comme une seule entree argv, base64 d'un JSON qui
+# FR | contient lui-meme du base64.
+# FR | Le type est lu dans la signature du fichier, jamais cru sur parole :
+# FR | un nom finissant en .png ne prouve rien.
+LOGO_MAX_BYTES = 48 * 1024
+_LOGO_SIGNATURES = (
+    (b"\x89PNG\r\n\x1a\n", "png"),
+    (b"\xff\xd8\xff", "jpg"),
+)
+
+
+def sniff_image(data: bytes):
+    for magic, ext in _LOGO_SIGNATURES:
+        if data.startswith(magic):
+            return ext
+    if len(data) >= 12 and data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+        return "webp"
+    return None
+
+
+def receive_logo(upload, logo_dir, dry_run: bool, errors: list):
+    """
+    EN | Validates and stores an uploaded nav logo; returns the nav_logo
+    EN | token value pointing at it, or None (the reason appended to errors).
+    EN | Previous nav_logo.* files are removed so exactly one remains.
+    FR | Valide et enregistre un logo de nav envoye ; renvoie la valeur du
+    FR | token nav_logo qui le vise, ou None (la raison ajoutee a errors).
+    FR | Les anciens nav_logo.* sont supprimes pour qu'il n'en reste qu'un.
+    """
+    if not logo_dir:
+        errors.append("logo upload refused: no --logo-dir configured")
+        return None
+    b64 = upload.get("b64") if isinstance(upload, dict) else None
+    if not isinstance(b64, str) or not b64:
+        errors.append("logo upload refused: no `b64` image data")
+        return None
+    try:
+        data = base64.b64decode(b64, validate=True)
+    except (binascii.Error, ValueError) as exc:
+        errors.append(f"logo upload refused: invalid base64 ({exc})")
+        return None
+    if len(data) > LOGO_MAX_BYTES:
+        errors.append(f"logo upload refused: {len(data)} bytes, "
+                      f"max {LOGO_MAX_BYTES}")
+        return None
+    ext = sniff_image(data)
+    if not ext:
+        errors.append("logo upload refused: not a PNG, JPEG or WebP image")
+        return None
+    stamp = _dt.datetime.now().strftime("%Y%m%d%H%M%S")
+    name = f"nav_logo.{ext}"
+    if dry_run:
+        print(f"[dry-run] logo would be written: {name} ({len(data)} bytes)")
+    else:
+        d = Path(logo_dir)
+        d.mkdir(parents=True, exist_ok=True)
+        for old in d.glob("nav_logo.*"):
+            old.unlink()
+        (d / name).write_bytes(data)
+        print(f"[OK] logo written: {d / name} ({len(data)} bytes)")
+    return f"custom:{name}?v={stamp}"
 
 
 def _yaml():
@@ -182,6 +255,11 @@ def main() -> int:
                           "`design:` block instead (RESTORE REFERENCE)")
     ap.add_argument("--dry-run", action="store_true",
                     help="Validate and report, write nothing")
+    ap.add_argument("--logo-dir", default=None,
+                    help="Where an uploaded nav logo is stored, e.g. "
+                         "/config/www/vssp_user (served as /local/vssp_user). "
+                         "No default on purpose: a repo-relative default "
+                         "would never resolve on the pod.")
     ap.add_argument("--status-file", default="/config/www/vssp/theme_status.json")
     args = ap.parse_args()
 
@@ -200,6 +278,25 @@ def main() -> int:
         sys.exit(f"[ERR] {model_path} has no top-level `design:` key")
 
     accepted, errors = validate(payload)
+
+    # EN | An uploaded image overrides whatever nav_logo the tokens carried;
+    # EN | a custom value WITHOUT an upload (the editor round-tripping the
+    # EN | current one) must name a file that is really there.
+    # FR | Une image envoyee remplace le nav_logo que portaient les tokens ;
+    # FR | une valeur personnalisee SANS envoi (l'editeur renvoyant la
+    # FR | valeur courante) doit nommer un fichier reellement present.
+    if payload.get("logo_upload") is not None:
+        accepted.pop("nav_logo", None)
+        stored = receive_logo(payload["logo_upload"], args.logo_dir,
+                              args.dry_run, errors)
+        if stored:
+            accepted["nav_logo"] = stored
+    elif logo_filename(accepted.get("nav_logo")):
+        name = logo_filename(accepted["nav_logo"])
+        if not args.logo_dir or not (Path(args.logo_dir) / name).is_file():
+            accepted.pop("nav_logo")
+            errors.append(f"`nav_logo`: {name} is not in the logo directory — "
+                          f"send the image again")
 
     status = {
         "ok": bool(accepted) or not errors,

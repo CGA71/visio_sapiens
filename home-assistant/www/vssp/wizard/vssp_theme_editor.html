@@ -124,6 +124,16 @@
     padding: 5px 8px; font-size: 12px;
   }
   select option { background: #0A1420; color: var(--text); }
+  .logo-field { display: flex; align-items: center; gap: 10px; width: 100%; flex-wrap: wrap; }
+  .logo-square {
+    width: 64px; aspect-ratio: 1 / 1; flex: none; border-radius: 8px;
+    border: 1px solid var(--line-soft); background-color: #02050B;
+    background-position: center; background-size: contain; background-repeat: no-repeat;
+  }
+  .logo-square.none { background-image: none !important; display: grid; place-items: center; color: var(--dim); font-size: 10px; }
+  .logo-actions { display: flex; flex-direction: column; gap: 4px; }
+  .logo-actions button { padding: 5px 10px; font-size: 9px; }
+  .logo-state { color: var(--muted); font-size: 10px; width: 100%; }
   .font-sample {
     color: var(--cyan); font-size: 15px; letter-spacing: 1px;
     white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 100%;
@@ -251,6 +261,12 @@
   }
   #preview .p-sidebar .p-item.selected .dot { background: var(--p-sidebar-selected-icon, #00E5FF); }
   #preview .p-sidebar .p-divider { height: 1px; background: var(--p-divider, #1F3448); margin: 4px 4px; }
+  #preview .p-sidebar .p-logo {
+    margin-top: 6px; width: 100%; aspect-ratio: 1 / 1;
+    display: var(--p-nav-logo-display, block);
+    background: var(--p-nav-logo, none) center / contain no-repeat;
+    mix-blend-mode: screen;
+  }
   #preview .p-content { flex: 1; padding: 12px; display: flex; flex-direction: column; gap: 10px; }
   #preview .p-card {
     background: var(--p-card-background, rgba(16,27,39,.85));
@@ -343,6 +359,7 @@
         <div class="p-item selected"><div class="dot"></div>THEME</div>
         <div class="p-item"><div class="dot"></div>ENERGY</div>
         <div class="p-item"><div class="dot"></div>ADMIN</div>
+        <div class="p-logo"></div>
       </div>
       <div class="p-content">
         <div class="p-card">
@@ -408,7 +425,25 @@ const DEFAULTS = {
   font_display: 'Orbitron', font_body: 'Roboto',
   size_clock: '100%', size_title: '100%', size_value: '100%',
   size_text: '100%', size_label: '100%',
+  nav_logo: 'default',
 };
+
+// EN | NAV LOGO — house.logo in house.yaml, used when the status file has
+// EN | not told us the resolved URL yet (first run). LOGO_UPLOAD holds an
+// EN | image picked here and not applied yet; APPLY sends it beside the
+// EN | tokens as `logo_upload`, and the server decides the nav_logo value.
+// FR | LOGO DE NAV — house.logo de house.yaml, utilise tant que le fichier
+// FR | de statut n'a pas donne l'URL resolue (premier lancement).
+// FR | LOGO_UPLOAD porte une image choisie ici et pas encore appliquee ;
+// FR | APPLIQUER l'envoie a cote des tokens en `logo_upload`, et le serveur
+// FR | decide de la valeur de nav_logo.
+const DEFAULT_LOGO_URL = '/local/vssp/images/logo_VS-Sapiens.png';
+let CURRENT_LOGO_URL = DEFAULT_LOGO_URL;
+let LOGO_UPLOAD = null;
+// EN | Keep in step with LOGO_MAX_BYTES in vssp_theme_apply.py.
+// FR | A garder en phase avec LOGO_MAX_BYTES de vssp_theme_apply.py.
+const LOGO_MAX_BYTES = 48 * 1024;
+const LOGO_SIDE = 256;
 
 // EN | Mirrors vssp_design_fields.FONTS — the closed list the server accepts,
 // EN | with the stack each name becomes. Used for the picker's options and
@@ -473,6 +508,7 @@ const FIELDS = [
   { key: 'size_value', label: 'Values', type: 'scale', group: 'Text sizes', hint: 'readings — W, kWh, °C, A, device states', ref: 15 },
   { key: 'size_text', label: 'Text', type: 'scale', group: 'Text sizes', hint: 'names — nav entries, devices, rows — and HA\'s own text', ref: 13 },
   { key: 'size_label', label: 'Labels', type: 'scale', group: 'Text sizes', hint: 'captions, units, hints, column headers, badges', ref: 11 },
+  { key: 'nav_logo', label: 'Logo under the navigation', type: 'logo', group: 'Nav logo', hint: 'shown as a square as wide as the rail — any image is fitted whole, never cropped' },
 ];
 const SCALE_MIN = 50, SCALE_MAX = 200;
 const PERCENT_RE = /^\d{2,3}%$/;
@@ -619,6 +655,119 @@ function buildRgbaField(f) {
   return wrap;
 }
 
+// EN | The URL the nav logo currently resolves to, for both the field's
+// EN | square and the preview: a picked-but-unapplied image first, then
+// EN | the chosen mode.
+// FR | L'URL vers laquelle le logo de nav se resout, pour le carre du champ
+// FR | comme pour l'apercu : une image choisie mais non appliquee d'abord,
+// FR | puis le mode choisi.
+function logoUrl() {
+  if (LOGO_UPLOAD) return LOGO_UPLOAD.dataUrl;
+  const v = VALUES.nav_logo;
+  if (v === 'none') return '';
+  if (v === 'default') return DEFAULT_LOGO_URL;
+  return CURRENT_LOGO_URL;
+}
+
+// EN | Squares any picked image: drawn whole ("contain") and centered on a
+// EN | transparent LOGO_SIDE canvas, so the rail's 1:1 square shows it
+// EN | without cropping or stretching. Then re-encoded — WebP when the
+// EN | browser can, PNG otherwise — lowering quality, then size, until it
+// EN | fits LOGO_MAX_BYTES. Nothing leaves the browser un-squared.
+// FR | Met au carre toute image choisie : dessinee entiere (« contain ») et
+// FR | centree sur un canvas transparent de LOGO_SIDE, pour que le carre 1:1
+// FR | du bandeau la montre sans rognage ni etirement. Puis re-encodee — WebP
+// FR | si le navigateur sait, PNG sinon — en baissant la qualite, puis la
+// FR | taille, jusqu'a tenir dans LOGO_MAX_BYTES. Rien ne quitte le
+// FR | navigateur sans etre mis au carre.
+async function squareImage(file) {
+  const src = URL.createObjectURL(file);
+  try {
+    const img = await new Promise((ok, ko) => {
+      const i = new Image();
+      i.onload = () => ok(i);
+      i.onerror = () => ko(new Error('not a readable image'));
+      i.src = src;
+    });
+    for (const side of [LOGO_SIDE, 192, 128]) {
+      const c = document.createElement('canvas');
+      c.width = c.height = side;
+      const ctx = c.getContext('2d');
+      const k = Math.min(side / img.naturalWidth, side / img.naturalHeight);
+      const w = img.naturalWidth * k, h = img.naturalHeight * k;
+      ctx.drawImage(img, (side - w) / 2, (side - h) / 2, w, h);
+      for (const q of [0.92, 0.8, 0.65]) {
+        let dataUrl = c.toDataURL('image/webp', q);
+        if (!dataUrl.startsWith('data:image/webp')) dataUrl = c.toDataURL('image/png');
+        const b64 = dataUrl.split(',')[1];
+        const bytes = Math.floor(b64.length * 3 / 4);
+        if (bytes <= LOGO_MAX_BYTES) return { dataUrl, b64, bytes, side };
+        if (dataUrl.startsWith('data:image/png')) break;
+      }
+    }
+    throw new Error('still over ' + Math.round(LOGO_MAX_BYTES / 1024) + ' KB once reduced to 128 px — try a simpler image');
+  } finally {
+    URL.revokeObjectURL(src);
+  }
+}
+
+function refreshLogoField() {
+  const sq = el('logo_square'), state = el('logo_state');
+  if (!sq) return;
+  const url = logoUrl();
+  sq.classList.toggle('none', !url);
+  sq.textContent = url ? '' : 'none';
+  sq.style.backgroundImage = url ? `url("${url}")` : 'none';
+  state.textContent = LOGO_UPLOAD
+    ? `New image, ${LOGO_UPLOAD.side}×${LOGO_UPLOAD.side}, ${Math.round(LOGO_UPLOAD.bytes / 1024)} KB — not sent yet, click Apply.`
+    : VALUES.nav_logo === 'none' ? 'No logo: the square is hidden.'
+    : VALUES.nav_logo === 'default' ? 'Default logo (house.logo).'
+    : 'Custom image.';
+}
+
+function buildLogoField(f) {
+  const wrap = document.createElement('div');
+  wrap.className = 'logo-field';
+  const sq = document.createElement('div');
+  sq.className = 'logo-square'; sq.id = 'logo_square';
+  const actions = document.createElement('div');
+  actions.className = 'logo-actions';
+  const file = document.createElement('input');
+  file.type = 'file'; file.accept = 'image/png,image/jpeg,image/webp,image/svg+xml,image/gif';
+  file.style.display = 'none';
+  const pick = document.createElement('button');
+  pick.type = 'button'; pick.textContent = 'Replace image…';
+  pick.addEventListener('click', () => file.click());
+  file.addEventListener('change', async () => {
+    const chosen = file.files[0];
+    file.value = '';
+    if (!chosen) return;
+    try {
+      LOGO_UPLOAD = await squareImage(chosen);
+      show('ok', 'Image squared and ready. Check the preview, then click Apply.');
+    } catch (e) {
+      show('err', 'Could not use that image (' + e.message + ').');
+    }
+    refreshLogoField(); updatePreview();
+  });
+  const mode = (value) => {
+    const b = document.createElement('button');
+    b.type = 'button'; b.className = 'ghost';
+    b.textContent = value === 'none' ? 'None' : 'Default';
+    b.addEventListener('click', () => {
+      LOGO_UPLOAD = null;
+      onChange(f.key, value);
+      refreshLogoField();
+    });
+    return b;
+  };
+  actions.append(pick, mode('default'), mode('none'));
+  const state = document.createElement('div');
+  state.className = 'logo-state'; state.id = 'logo_state';
+  wrap.append(sq, actions, file, state);
+  return wrap;
+}
+
 function buildForm() {
   const wrap = el('form');
   wrap.innerHTML = '';
@@ -678,6 +827,8 @@ function buildForm() {
         });
         box.append(input, out);
         row.appendChild(box);
+      } else if (f.type === 'logo') {
+        row.appendChild(buildLogoField(f));
       } else if (f.type === 'text' && f.picker) {
         row.appendChild(buildRgbaField(f));
       } else if (f.type === 'font') {
@@ -719,6 +870,7 @@ function setFormValues(values) {
   FIELDS.forEach(f => {
     const v = values[f.key];
     if (v === undefined) return;
+    if (f.type === 'logo') { refreshLogoField(); return; }
     const input = el('f_' + f.key);
     if (!input) return;
     if (f.type === 'color') {
@@ -755,7 +907,11 @@ function onChange(key, value) {
 
 function updatePreview() {
   const p = el('preview');
+  const logo = logoUrl();
+  p.style.setProperty('--p-nav-logo', logo ? `url("${logo}")` : 'none');
+  p.style.setProperty('--p-nav-logo-display', logo ? 'block' : 'none');
   Object.keys(VALUES).forEach(key => {
+    if (key === 'nav_logo' || key.startsWith('_')) return;
     // EN | A font token holds a family name, CSS needs the stack; a size
     // EN | token holds "120%", calc() needs the unitless 1.2.
     // FR | Un token de police porte un nom de famille, CSS veut la pile ; un
@@ -781,6 +937,7 @@ async function load() {
     if (res.ok) {
       const data = await res.json();
       values = { ...DEFAULTS, ...data };
+      if (data._nav_logo_url) CURRENT_LOGO_URL = data._nav_logo_url;
       el('subtitle').textContent = 'Loaded from ' + STATUS_URL;
     } else {
       el('subtitle').textContent = 'No generated theme yet — showing factory defaults.';
@@ -796,6 +953,7 @@ async function load() {
 el('reload').addEventListener('click', load);
 
 el('reset').addEventListener('click', () => {
+  LOGO_UPLOAD = null;
   VALUES = { ...DEFAULTS };
   setFormValues(VALUES);
   updatePreview();
@@ -846,6 +1004,7 @@ el('apply').addEventListener('click', async () => {
     if (f.type === 'range') ok = LENGTH_RE.test(v);
     else if (f.type === 'font') ok = v in FONT_STACKS;
     else if (f.type === 'scale') ok = PERCENT_RE.test(v) && parseInt(v, 10) >= SCALE_MIN && parseInt(v, 10) <= SCALE_MAX;
+    else if (f.type === 'logo') ok = v === 'default' || v === 'none' || String(v).startsWith('custom:');
     else if (f.key === 'bubble_backdrop') ok = v === 'transparent' || isColor(v);
     else ok = isColor(v);
     if (!ok) bad.push(f.key);
@@ -855,7 +1014,15 @@ el('apply').addEventListener('click', async () => {
     return;
   }
 
-  const payload = JSON.stringify({ tokens: VALUES });
+  // EN | Only the keys FIELDS declares: the status file also carries
+  // EN | informational "_" keys that are not tokens.
+  // FR | Seulement les cles que declare FIELDS : le fichier de statut porte
+  // FR | aussi des cles "_" informatives qui ne sont pas des tokens.
+  const tokens = {};
+  FIELDS.forEach(f => { if (VALUES[f.key] !== undefined) tokens[f.key] = VALUES[f.key]; });
+  const body = { tokens };
+  if (LOGO_UPLOAD) body.logo_upload = { b64: LOGO_UPLOAD.b64 };
+  const payload = JSON.stringify(body);
   // EN | base64 so the shell_command receives one inert argument — rgba()
   // EN | values carry parentheses and commas, and quoting them through a
   // EN | shell is exactly the kind of thing that breaks silently.
@@ -864,6 +1031,13 @@ el('apply').addEventListener('click', async () => {
   // FR | echapper a travers un shell est precisement le genre de chose qui
   // FR | casse en silence.
   const b64 = btoa(unescape(encodeURIComponent(payload)));
+  // EN | Linux caps ONE argv entry at 128 KiB, and this string is one.
+  // FR | Linux limite UNE entree argv a 128 Kio, et cette chaine en est une.
+  if (b64.length > 120000) {
+    show('err', 'This image is still too heavy to send (' + Math.round(b64.length / 1024)
+      + ' KB encoded). Try a simpler or smaller image.');
+    return;
+  }
   el('apply').disabled = true;
   show('ok', 'Sending…');
   try {

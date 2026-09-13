@@ -134,6 +134,29 @@ FONT_DEFAULTS: dict[str, str] = {
 # FR | d'avant les tailles configurables.
 SCALE_DEFAULT = "100%"
 
+# EN | NAV LOGO — the image under the navigation rail. Three states:
+# EN |   "default"   house.logo from house.yaml, as before
+# EN |   "none"      nothing: the square collapses, the rail gets the room
+# EN |   "custom:nav_logo.<webp|png|jpg>?v=<YYYYmmddHHMMSS>"
+# EN |               an image sent from the THEME screen. Only
+# EN |               vssp_theme_apply.py writes this form, after checking
+# EN |               the file; ?v= is the cache key, since /local is served
+# EN |               with a one-month max-age.
+# EN | The file lives in www/vssp_user/, NOT www/vssp/: each deploy replaces
+# EN | www/vssp wholesale, and an uploaded logo would vanish with it.
+# FR | LOGO DE NAV — l'image sous le bandeau de navigation. Trois etats :
+# FR |   "default"   house.logo de house.yaml, comme avant
+# FR |   "none"      rien : le carre disparait, le bandeau recupere la place
+# FR |   "custom:nav_logo.<webp|png|jpg>?v=<AAAAmmjjHHMMSS>"
+# FR |               une image envoyee depuis l'ecran THEME. Seul
+# FR |               vssp_theme_apply.py ecrit cette forme, apres avoir
+# FR |               verifie le fichier ; ?v= est la cle de cache, /local
+# FR |               etant servi avec un max-age d'un mois.
+# FR | Le fichier vit dans www/vssp_user/, PAS www/vssp/ : chaque deploiement
+# FR | remplace www/vssp en bloc, et un logo envoye disparaitrait avec lui.
+_LOGO_CUSTOM_RE = re.compile(r"^custom:(nav_logo\.(?:webp|png|jpg))\?v=\d{14}$")
+LOGO_URL_DIR = "/local/vssp_user"
+
 # EN | payload/form key -> (path inside `design:`, kind, max px for lengths)
 # FR | cle du payload/formulaire -> (chemin sous `design:`, nature, max px)
 FIELDS: dict[str, tuple[tuple[str, ...], str, int]] = {
@@ -179,6 +202,9 @@ FIELDS: dict[str, tuple[tuple[str, ...], str, int]] = {
     "size_value":                  (("typography", "size", "value"), "scale", 0),
     "size_text":                   (("typography", "size", "text"), "scale", 0),
     "size_label":                  (("typography", "size", "label"), "scale", 0),
+    # EN | See _LOGO_CUSTOM_RE for the three accepted forms.
+    # FR | Voir _LOGO_CUSTOM_RE pour les trois formes acceptees.
+    "nav_logo":                    (("nav_logo",), "logo", 0),
 }
 
 
@@ -237,6 +263,11 @@ def validate(payload: dict) -> tuple[dict, list]:
                 continue
             if not (SCALE_MIN <= int(value[:-1]) <= SCALE_MAX):
                 errors.append(f"`{key}`: {value} out of range ({SCALE_MIN}-{SCALE_MAX}%)")
+                continue
+        elif kind == "logo":
+            if value not in ("default", "none") and not _LOGO_CUSTOM_RE.match(value):
+                errors.append(f"`{key}`: expected `default`, `none` or an "
+                              f"uploaded logo — got `{value}`")
                 continue
 
         accepted[key] = value
@@ -317,3 +348,39 @@ def size_scale(design, key: str) -> str:
             SCALE_MIN <= int(value[:-1]) <= SCALE_MAX):
         value = SCALE_DEFAULT
     return f"{int(value[:-1]) / 100:g}"
+
+
+def logo_filename(value: str):
+    """
+    EN | The file name inside www/vssp_user/ a custom nav_logo value points
+    EN | at ("custom:nav_logo.webp?v=..." -> "nav_logo.webp"), else None.
+    FR | Le nom de fichier sous www/vssp_user/ que vise une valeur nav_logo
+    FR | personnalisee ("custom:nav_logo.webp?v=..." -> "nav_logo.webp"),
+    FR | sinon None.
+    """
+    m = _LOGO_CUSTOM_RE.match(str(value or ""))
+    return m.group(1) if m else None
+
+
+def nav_logo(design, house) -> dict:
+    """
+    EN | What theme.yaml.j2 writes for the nav logo: the CSS `image` for
+    EN | --vssp-nav-logo and the `display` for --vssp-nav-logo-display.
+    EN | Anything unreadable resolves to the default logo, never to a broken
+    EN | url().
+    FR | Ce que theme.yaml.j2 ecrit pour le logo de nav : l'`image` CSS pour
+    FR | --vssp-nav-logo et le `display` pour --vssp-nav-logo-display. Toute
+    FR | valeur illisible se replie sur le logo par defaut, jamais sur un
+    FR | url() casse.
+    """
+    value = design.get("nav_logo", "default") if isinstance(design, dict) else "default"
+    if value == "none":
+        return {"image": "none", "display": "none"}
+    custom = _LOGO_CUSTOM_RE.match(str(value))
+    if custom:
+        url = f"{LOGO_URL_DIR}/{str(value)[len('custom:'):]}"
+    else:
+        url = (house or {}).get("logo") or ""
+    if not url:
+        return {"image": "none", "display": "none"}
+    return {"image": f"url('{url}')", "display": "block"}

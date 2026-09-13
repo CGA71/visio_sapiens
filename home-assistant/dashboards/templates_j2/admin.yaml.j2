@@ -152,7 +152,7 @@ views:
     subview: false
     type: custom:grid-layout
     layout:
-      grid-template-columns: minmax(200px, auto) 1fr 1fr 1fr
+      grid-template-columns: max-content 1fr 1fr 1fr
       grid-template-rows: 130px auto
       grid-template-areas: |
         "nav header header header"
@@ -231,7 +231,7 @@ views:
     subview: true
     type: custom:grid-layout
     layout:
-      grid-template-columns: minmax(200px, auto) 1fr 1fr 1fr
+      grid-template-columns: max-content 1fr 1fr 1fr
       # EN | 1fr, not auto, for the screens that end in a full-height iframe
       # EN | (rooms, assign, theme): auto sizes the row to its content's
       # EN | natural height, which is exactly what left the iframe's own

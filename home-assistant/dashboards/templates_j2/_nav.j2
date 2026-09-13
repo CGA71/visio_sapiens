@@ -43,6 +43,24 @@
      nav         - composed entry list
      active_nav  - id of the current dashboard, highlighted
      format      - 'tablet' | 'mobile', selects path vs path_mobile
+
+   EN | WIDTH — the rail is as wide as its widest ENTRY and no wider: each
+   EN | layout gives it a max-content column, and nothing here sets a
+   EN | minimum. The brand title and the logo square carry
+   EN | `contain: inline-size`, so they fit the width the entries chose
+   EN | instead of imposing their own (the title wraps, the square shrinks).
+   EN | It used to be min-width: 200px plus a 160px image, i.e. 230px for
+   EN | entries that needed ~160. A longer room name or a larger text scale
+   EN | widens it again, by exactly what it needs.
+   FR | LARGEUR — le bandeau fait la largeur de sa plus large ENTREE et pas
+   FR | plus : chaque layout lui donne une colonne max-content, et rien ici
+   FR | n'impose de minimum. Le titre de marque et le carre du logo portent
+   FR | `contain: inline-size`, ils s'adaptent donc a la largeur choisie par
+   FR | les entrees au lieu d'imposer la leur (le titre passe a la ligne, le
+   FR | carre retrecit). C'etait min-width: 200px plus une image de 160px,
+   FR | soit 230px pour des entrees qui en demandaient ~160. Un nom de piece
+   FR | plus long ou une echelle de texte plus grande l'elargit a nouveau,
+   FR | d'exactement ce qu'il faut.
    ================================================================== #}
       - type: vertical-stack
         view_layout:
@@ -54,7 +72,6 @@
               flex-direction: column;
               height: 100%;
               width: 100%;
-              min-width: 200px;
               background: rgba(5,11,18,0.85);
               border-radius: 20px;
               border: 1px solid rgba(0, 229, 255, 0.18);
@@ -70,6 +87,15 @@
             icon: mdi:hexagon-outline
             name: "{{ house.name }}"
             label: "{{ house.tagline }}"
+            styles:
+              name:
+                - white-space: normal
+                - overflow-wrap: anywhere
+              label:
+                - white-space: normal
+            card_mod:
+              style: |
+                :host { contain: inline-size; }
 
 {% for item in nav %}
           - type: custom:button-card
@@ -96,10 +122,22 @@
             show_label: false
             tap_action:
               action: none
+            {# EN | The logo is a SQUARE (aspect-ratio 1/1) as wide as the rail,
+               EN | painted from the theme: --vssp-nav-logo is the image
+               EN | chosen on the THEME screen (default, uploaded, or none),
+               EN | --vssp-nav-logo-display hides the square for "none". Any
+               EN | image fits it uncropped (contain). The url() fallback keeps
+               EN | the house logo on a theme generated before the token.
+               FR | Le logo est un CARRE (aspect-ratio 1/1) de la largeur du
+               FR | bandeau, peint depuis le theme : --vssp-nav-logo est
+               FR | l'image choisie sur l'ecran THEME (defaut, envoyee, ou
+               FR | aucune), --vssp-nav-logo-display masque le carre pour
+               FR | "none". Toute image y tient sans rognage (contain). Le repli
+               FR | url() garde le logo maison sur un theme genere avant le
+               FR | token. #}
             custom_fields:
               logo: >
-                <img src="{{ house.logo }}"
-                     style="width:100%;max-width:160px;display:block;margin:0 auto;mix-blend-mode:screen;filter:drop-shadow(0 0 8px rgba(0, 229, 255, 0.28));" />
+                <div style="width:100%;max-width:160px;aspect-ratio:1 / 1;margin:0 auto;display:var(--vssp-nav-logo-display, block);background:var(--vssp-nav-logo, url('{{ house.logo }}')) center / contain no-repeat;mix-blend-mode:screen;filter:drop-shadow(0 0 8px rgba(0, 229, 255, 0.28));"></div>
             styles:
               card:
                 - background: transparent
@@ -113,7 +151,7 @@
                   - width: 100%
             card_mod:
               style: |
-                :host { margin-top: auto; }
+                :host { margin-top: auto; contain: inline-size; }
                 ha-card {
                   background: transparent !important;
                   border: none !important;

@@ -283,6 +283,39 @@ The theme writes each scale as a unitless multiplier (`120%` →
 and rows follow. The editor shows each slider as a percentage and as the
 resulting pixel size of one reference text of that role.
 
+Third-party cards need the same wiring by hand: `calendar-card-pro` in
+the header had fixed 14/26/14px sizes and stood out as the one
+oversized cell at an 80 % scale. Its `*_font_size` options are copied
+verbatim into CSS variables, so `_header.j2` passes them
+`calc(<default px> * var(--vssp-scale-<role>, 1))` — date digits on
+`clock`, events on `text`, the rest on `label`.
+
+### Nav logo — `nav_logo`
+
+The image under the navigation rail: `"default"` (house.logo),
+`"none"`, or an image sent from the editor. It is painted from the
+theme (`--vssp-nav-logo`, `--vssp-nav-logo-display`), so a new logo is
+live on APPLY like a color — no dashboard regeneration, HOME included.
+It is always a **square** (`aspect-ratio: 1/1`) as wide as the rail;
+the editor fits the picked image whole on a transparent 256×256 canvas
+(never cropped or stretched) and re-encodes it (WebP, else PNG) until it
+is under 48 KB. That cap keeps the payload under Linux's 128 KiB limit
+on one argv entry — the webhook hands it to `shell_command` as a single
+argument. `vssp_theme_apply.py` checks the file's own signature
+(PNG/JPEG/WebP), writes it to `www/vssp_user/nav_logo.<ext>` — outside
+`www/vssp/`, which every deploy replaces — and records
+`custom:nav_logo.<ext>?v=<timestamp>`, the `?v=` being the cache key. A
+`custom:` value naming a file that is not there is refused.
+
+### Nav rail width
+
+The rail is as wide as its widest entry: every desktop layout gives it
+a `max-content` column (was `minmax(200px, auto)`, plus a
+`min-width: 200px` in `_nav.j2`), and the brand title and the logo
+square carry `contain: inline-size`, so they fit the width the entries
+chose instead of imposing theirs. Measured on staging: 230px for
+entries that needed ~160.
+
 **Pod-side `design_system.yaml` predates the section.** The pod keeps
 its own copy across deploys, so it has no `typography:` until the first
 APPLY. `generate_dashboards.py` therefore lays the pod file over

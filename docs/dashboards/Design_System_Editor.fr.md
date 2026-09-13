@@ -304,6 +304,42 @@ Le thème écrit chaque échelle comme un multiplicateur sans unité
 que cartes et lignes natives suivent. L'éditeur affiche chaque curseur
 en pourcentage et en taille résultante d'un texte de référence du rôle.
 
+Les cartes tierces demandent le même branchement à la main :
+`calendar-card-pro` dans le header avait des tailles fixes de
+14/26/14px et ressortait comme la seule case surdimensionnée à une
+échelle de 80 %. Ses options `*_font_size` sont recopiées telles quelles
+dans des variables CSS, donc `_header.j2` leur passe
+`calc(<px par défaut> * var(--vssp-scale-<rôle>, 1))` — chiffres de la
+date sur `clock`, événements sur `text`, le reste sur `label`.
+
+### Logo de nav — `nav_logo`
+
+L'image sous le bandeau de navigation : `"default"` (house.logo),
+`"none"`, ou une image envoyée depuis l'éditeur. Elle est peinte depuis
+le thème (`--vssp-nav-logo`, `--vssp-nav-logo-display`), donc un nouveau
+logo est actif dès l'APPLIQUER comme une couleur — sans régénération de
+dashboard, HOME compris. C'est toujours un **carré** (`aspect-ratio:
+1/1`) de la largeur du bandeau ; l'éditeur place l'image choisie entière
+sur un canvas transparent de 256×256 (jamais rognée ni étirée) et la
+ré-encode (WebP, sinon PNG) jusqu'à passer sous 48 Ko. Cette limite
+garde le payload sous la limite Linux de 128 Kio pour une entrée argv —
+le webhook le passe à `shell_command` en un seul argument.
+`vssp_theme_apply.py` vérifie la signature du fichier (PNG/JPEG/WebP),
+l'écrit dans `www/vssp_user/nav_logo.<ext>` — hors de `www/vssp/`, que
+chaque déploiement remplace — et enregistre
+`custom:nav_logo.<ext>?v=<horodatage>`, le `?v=` servant de clé de
+cache. Une valeur `custom:` qui nomme un fichier absent est refusée.
+
+### Largeur du bandeau de nav
+
+Le bandeau fait la largeur de sa plus large entrée : chaque layout
+desktop lui donne une colonne `max-content` (c'était `minmax(200px,
+auto)`, plus un `min-width: 200px` dans `_nav.j2`), et le titre de
+marque et le carré du logo portent `contain: inline-size`, ils
+s'adaptent donc à la largeur choisie par les entrées au lieu d'imposer
+la leur. Mesuré en staging : 230px pour des entrées qui en demandaient
+~160.
+
 **Le `design_system.yaml` du pod est antérieur à la section.** Le pod
 garde sa propre copie d'un déploiement à l'autre, il n'a donc pas de
 `typography:` avant le premier APPLIQUER. `generate_dashboards.py`

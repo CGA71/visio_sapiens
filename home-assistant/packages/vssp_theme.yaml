@@ -46,10 +46,15 @@ shell_command:
   # FR | Ecrit les tokens soumis dans design_system.yaml. Le payload arrive
   # FR | encode en base64 — meme raisonnement que vssp_assign_apply : les
   # FR | couleurs et valeurs rgba() pourraient casser le quoting shell brutes.
+  # EN | --logo-dir: where a nav logo sent from the editor is stored —
+  # EN | outside www/vssp/, which every deploy replaces wholesale.
+  # FR | --logo-dir : ou est range un logo de nav envoye depuis l'editeur —
+  # FR | hors de www/vssp/, que chaque deploiement remplace en bloc.
   vssp_theme_apply: >-
     python3 /config/vssp/vssp_theme_apply.py
     --model /config/dashboards/model/design_system.yaml
     --json-b64 "{{ content_b64 }}"
+    --logo-dir /config/www/vssp_user
     --status-file /config/www/vssp/theme_status.json
 
   # EN | Targeted backup of the deployed theme file alone, before it is
@@ -97,6 +102,7 @@ shell_command:
     python3 /config/vssp/vssp_theme_apply.py
     --model /config/dashboards/model/design_system.yaml
     --restore-reference /config/dashboards/model/design_system.default.yaml
+    --logo-dir /config/www/vssp_user
     --status-file /config/www/vssp/theme_status.json
 
 # --------------------------------------------------------------------

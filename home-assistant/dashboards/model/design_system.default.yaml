@@ -127,3 +127,5 @@ design:
       value: "100%"
       text: "100%"
       label: "100%"
+
+  nav_logo: "default"

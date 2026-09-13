@@ -151,3 +151,11 @@ design:
       value: "100%"
       text: "100%"
       label: "100%"
+
+  # EN | Image under the navigation rail: "default" (house.logo), "none",
+  # EN | or an image sent from the THEME screen (written by
+  # EN | vssp_theme_apply.py, never by hand).
+  # FR | Image sous le bandeau de navigation : "default" (house.logo),
+  # FR | "none", ou une image envoyee depuis l'ecran THEME (ecrite par
+  # FR | vssp_theme_apply.py, jamais a la main).
+  nav_logo: "default"

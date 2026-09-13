@@ -1183,6 +1183,13 @@ def render_theme(model: dict, env: Environment, template_name: str,
 
         if design_status_path:
             flat = vssp_design_fields.flatten(model.get("design") or {})
+            # EN | Informational, "_"-prefixed so the editor never sends it
+            # EN | back as a token: the resolved logo URL for its preview.
+            # FR | Informatif, prefixe "_" pour que l'editeur ne le renvoie
+            # FR | jamais comme token : l'URL resolue du logo pour l'apercu.
+            image = vssp_design_fields.nav_logo(
+                model.get("design") or {}, model.get("house"))["image"]
+            flat["_nav_logo_url"] = image[5:-2] if image.startswith("url('") else ""
             write_status(design_status_path, flat)
             print(f"[OK] {design_status_path} written "
                   f"({len(flat)} token(s), for the THEME editor)")
@@ -1578,6 +1585,7 @@ def main() -> int:
     # FR | et le pourcentage d'un token de taille en multiplicateur calc().
     env.globals["font_stack"] = vssp_design_fields.font_stack
     env.globals["size_scale"] = vssp_design_fields.size_scale
+    env.globals["nav_logo"] = vssp_design_fields.nav_logo
 
     out_dir.mkdir(parents=True, exist_ok=True)
     n_dev = len(model.get("energy_devices", []))
