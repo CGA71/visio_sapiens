@@ -52,8 +52,6 @@ setting the instance up, or when something below the interface is wrong.
 |---|---|
 | [Vision](project/Vision.md) | what this is for, and the complete architecture of the system |
 | [Integration_Case_Study](project/Integration_Case_Study.md) | integrating TECHNICAL ROOM into the repo |
-| [YouTube_Series](project/YouTube_Series.md) | the series plan — one pilot and four blocks (environment & CI/CD, backup, the safe, the interface) |
-| [episode-01](project/episode-01-vision-architecture.md) | the **pilot**'s shooting script (formerly episode 1) — plus `episode-01-narration.en.txt` (narration only, for TTS) and `episode-01.en.srt` (subtitles) |
 
 ---
 

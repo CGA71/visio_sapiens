@@ -38,5 +38,6 @@ __pycache__/
 # FR | Le build rend sa propre copie dans dist/ - le depot n en porte jamais.
 home-assistant/config-fragment-rooms.yaml
 
-# Rendered videos and their third-party source captures (see docs/project/episode-01-*.md)
-media/
+# YouTube series: plan, scripts, narration, subtitles, rendered videos and
+# third-party captures. Kept out of the repository on purpose.
+youtube/
