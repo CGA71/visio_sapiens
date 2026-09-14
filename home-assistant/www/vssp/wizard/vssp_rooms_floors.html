@@ -196,9 +196,8 @@ const LS_COLORS= "vssp_room_colors";
 // EN | list on the ASSIGN screen (and the room dropdown in it) kept
 // EN | showing house.yaml's old, hand-written room list, never what
 // EN | "Appliquer" had just written to the HA Area registry — same
-// EN | webhook pattern as assign.html's save, because this page is an
-// EN | iframe and cannot reach the `hass` object or a Bearer token any
-// EN | more than that one can.
+// EN | webhook pattern as assign.html's save: writing house.yaml is a
+// EN | server-side script, which no Home Assistant API call reaches.
 // FR | saveHouse() plus bas n a toujours ecrit que dans le localStorage du
 // FR | NAVIGATEUR — jamais dans house.yaml sur le serveur. Or house.yaml
 // FR | est ce que vssp_assign_prepare.py et le generateur lisent
@@ -206,9 +205,8 @@ const LS_COLORS= "vssp_room_colors";
 // FR | deroulant) continuait d afficher l ancienne liste ecrite a la main
 // FR | dans house.yaml, jamais ce que « Appliquer » venait d ecrire dans
 // FR | le registre Zones de HA — meme schema de webhook que
-// FR | l enregistrement d assign.html, car cette page est une iframe et ne
-// FR | peut pas plus atteindre l objet `hass` ou un jeton Bearer que
-// FR | celle-la.
+// FR | l enregistrement d assign.html : ecrire house.yaml est un script
+// FR | cote serveur, qu aucun appel d API Home Assistant n atteint.
 const WEBHOOK_ROOMS = "/api/webhook/vssp_rooms_sync";
 // EN | Written by vssp_rooms_apply.py after every sync — a full snapshot of
 // EN | every room's current slot_set (not just what changed this pass), so
@@ -514,6 +512,43 @@ let ws = null, msgId = 1;
 const pending = {};
 const subscriptions = {};   // id -> callback(event), for subscribe_events messages
 
+// EN | THE SESSION YOU ARE ALREADY LOGGED IN WITH, not a pasted token.
+// EN | This page is served by Home Assistant itself (/local/...) and the
+// EN | iframe card's sandbox carries allow-same-origin, so the parent
+// EN | window is reachable and its `hass.auth` is the login of this very
+// EN | tablet — short-lived access token plus the refresh logic behind it
+// EN | (the companion app's external auth included). A new tablet therefore
+// EN | needs nothing more than logging in to Home Assistant, and no
+// EN | long-lived credential ever sits in this browser's localStorage.
+// EN | The pasted long-lived token remains only as a fallback, for the page
+// EN | opened on its own, outside a dashboard (no parent to borrow from).
+// FR | LA SESSION AVEC LAQUELLE ON EST DEJA CONNECTE, pas un jeton colle.
+// FR | Cette page est servie par Home Assistant lui-meme (/local/...) et le
+// FR | sandbox de la carte iframe porte allow-same-origin : la fenetre
+// FR | parente est donc joignable, et son `hass.auth` est la connexion de
+// FR | cette tablette meme — jeton d acces court et logique de
+// FR | rafraichissement derriere lui (auth externe de l app compagnon
+// FR | comprise). Une nouvelle tablette n a donc besoin que de se connecter
+// FR | a Home Assistant, et aucun identifiant longue duree ne reste dans le
+// FR | localStorage de ce navigateur.
+// FR | Le jeton longue duree colle ne reste qu en repli, pour la page
+// FR | ouverte seule, hors d un dashboard (pas de parent a qui l emprunter).
+function haSession(){
+  try{
+    if (window.parent === window) return null;
+    const ha = window.parent.document.querySelector("home-assistant");
+    return (ha && ha.hass && ha.hass.auth) || null;
+  }catch(_){ return null; }   // EN | cross-origin parent / FR | parent d une autre origine
+}
+async function currentToken(){
+  const auth = haSession();
+  if (auth){
+    if (auth.expired) await auth.refreshAccessToken();
+    return auth.accessToken;
+  }
+  return state.token;
+}
+
 function wsConnect(token){
   return new Promise((resolve,reject)=>{
     const proto = location.protocol === "https:" ? "wss:" : "ws:";
@@ -540,9 +575,15 @@ function wsConnect(token){
     };
     sock.onerror = () => { if(!settled){ settled = true; reject(new Error("WebSocket injoignable.")); } };
     sock.onclose = () => {
+      const wasLive = ws === sock;
       ws = null; state.connected = false;
       Object.keys(pending).forEach(k => { pending[k].reject(new Error("Connexion fermée")); delete pending[k]; });
       if (!settled){ settled = true; reject(new Error("Connexion fermée avant authentification.")); }
+      // EN | Home Assistant restarted: with a session there is nothing to
+      // EN | ask the user, so reconnect instead of showing the token form.
+      // FR | Home Assistant a redemarre : avec une session il n y a rien a
+      // FR | demander, on se reconnecte au lieu d afficher le formulaire.
+      if (wasLive && haSession()) setTimeout(connect, 5000);
     };
   });
 }
@@ -1316,11 +1357,14 @@ function roomCount(){
 async function connect(){
   const inp = document.getElementById("token-input");
   if (inp) state.token = inp.value.trim();
-  if (!state.token){ state.error = t("err_no_token"); return render(); }
-  localStorage.setItem(LS_TOKEN, state.token);
+  const session = haSession();
+  if (!session){
+    if (!state.token){ state.error = t("err_no_token"); return render(); }
+    localStorage.setItem(LS_TOKEN, state.token);
+  }
   setBusy(true, t("busy_connecting"));
   try{
-    await wsConnect(state.token);
+    await wsConnect(await currentToken());
     state.connected = true;
     await loadRegistry();
     await applyDraftSlotSets();
@@ -1332,6 +1376,9 @@ async function connect(){
   }catch(e){
     state.connected = false;
     state.error = e.message;
+    // EN | Still restarting: try again rather than wait for a click.
+    // FR | Toujours en redemarrage : reessayer plutot qu attendre un clic.
+    if (session && !ws) setTimeout(connect, 10000);
   }finally{ setBusy(false); }
 }
 async function reload(){
@@ -1617,7 +1664,7 @@ function renderDiff(){
 // ═══════════════════════════════════════════════════════════════════════════
 applyLang(state.lang);
 render();
-if (state.token) connect();
+if (haSession() || state.token) connect();
 </script>
 </body>
 </html>

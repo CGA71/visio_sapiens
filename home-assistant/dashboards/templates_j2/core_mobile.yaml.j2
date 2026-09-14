@@ -102,8 +102,9 @@ views:
       # EN | CENTRAL CONTENT — core.html
       # FR | CONTENU CENTRAL — core.html
       # ═══════════════════════════════════════════════════════════════
+      # EN | ?v=: see core.yaml.j2. / FR | ?v= : voir core.yaml.j2.
       - type: iframe
-        url: /local/vssp/core.html
+        url: /local/vssp/core.html?v={{ build_stamp }}
         view_layout:
           grid-area: content
         card_mod:

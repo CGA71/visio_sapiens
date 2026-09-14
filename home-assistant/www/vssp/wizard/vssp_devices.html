@@ -34,9 +34,11 @@
   EN | screen cannot: listing pending discoveries exists ONLY on the
   EN | WebSocket API (config_entries/flow/progress — the REST route answers
   EN | 405 to GET), and validating one is a REST POST that must carry the
-  EN | flow reply back to the page. Same reasoning, same token, same
-  EN | localStorage key as vssp_rooms_floors.html, which already drives the
-  EN | area registry this way — connect once, both screens work.
+  EN | flow reply back to the page. Same reasoning as
+  EN | vssp_rooms_floors.html, which already drives the area registry this
+  EN | way. The credential is the tablet's own Home Assistant session,
+  EN | borrowed from the dashboard around the iframe (see haSession below);
+  EN | a pasted long-lived token is only the fallback outside a dashboard.
   FR | POURQUOI UN JETON ET PAS UN WEBHOOK
   FR | assign.html utilise deliberement un webhook : il ne poste jamais
   FR | qu une liste, un identifiant dans le stockage du navigateur y serait
@@ -44,9 +46,11 @@
   FR | attente n existe QUE sur l API WebSocket
   FR | (config_entries/flow/progress — la route REST repond 405 en GET), et
   FR | en valider une est un POST REST dont la reponse doit revenir a la
-  FR | page. Meme raisonnement, meme jeton, meme cle localStorage que
-  FR | vssp_rooms_floors.html, qui pilote deja le registre des zones ainsi —
-  FR | on se connecte une fois, les deux ecrans marchent.
+  FR | page. Meme raisonnement que vssp_rooms_floors.html, qui pilote deja
+  FR | le registre des zones ainsi. L identifiant est la session Home
+  FR | Assistant de la tablette elle-meme, empruntee au dashboard autour de
+  FR | l iframe (voir haSession plus bas) ; un jeton longue duree colle
+  FR | n est que le repli hors d un dashboard.
 -->
 <style>
   :root{
@@ -137,12 +141,12 @@
 
 <script>
 // ═══════════════════════════════════════════════════════════════════════════
-// EN | Same localStorage key as vssp_rooms_floors.html on purpose: one
-// EN | long-lived token for the whole console. A second key would mean
-// EN | pasting the same credential twice and revoking it twice.
-// FR | Meme cle localStorage que vssp_rooms_floors.html a dessein : un seul
-// FR | jeton longue duree pour toute la console. Une seconde cle voudrait
-// FR | dire coller le meme identifiant deux fois et le revoquer deux fois.
+// EN | Fallback only (page opened outside a dashboard). Same localStorage
+// EN | key as vssp_rooms_floors.html on purpose: one long-lived token for
+// EN | the whole console, pasted once and revoked once.
+// FR | Repli seulement (page ouverte hors d un dashboard). Meme cle
+// FR | localStorage que vssp_rooms_floors.html a dessein : un seul jeton
+// FR | longue duree pour toute la console, colle une fois, revoque une fois.
 // ═══════════════════════════════════════════════════════════════════════════
 const LS_TOKEN = "vssp_ha_token";
 
@@ -361,6 +365,30 @@ let ws = null, msgId = 1;
 const pending = {};
 const subscriptions = {};
 
+// EN | The session this tablet is already logged in with, borrowed from
+// EN | the dashboard around this iframe — same helper and same reasoning as
+// EN | vssp_rooms_floors.html. The pasted long-lived token is only the
+// EN | fallback for the page opened on its own.
+// FR | La session avec laquelle cette tablette est deja connectee, empruntee
+// FR | au dashboard autour de cette iframe — meme assistant et meme
+// FR | raisonnement que vssp_rooms_floors.html. Le jeton longue duree colle
+// FR | n est que le repli pour la page ouverte seule.
+function haSession(){
+  try{
+    if (window.parent === window) return null;
+    const ha = window.parent.document.querySelector("home-assistant");
+    return (ha && ha.hass && ha.hass.auth) || null;
+  }catch(_){ return null; }
+}
+async function currentToken(){
+  const auth = haSession();
+  if (auth){
+    if (auth.expired) await auth.refreshAccessToken();
+    return auth.accessToken;
+  }
+  return state.token;
+}
+
 function wsConnect(token){
   return new Promise((resolve,reject)=>{
     const proto = location.protocol === "https:" ? "wss:" : "ws:";
@@ -387,9 +415,13 @@ function wsConnect(token){
     };
     sock.onerror = () => { if(!settled){ settled = true; reject(new Error("WebSocket injoignable.")); } };
     sock.onclose = () => {
+      const wasLive = ws === sock;
       ws = null; state.connected = false;
       Object.keys(pending).forEach(k => { pending[k].reject(new Error("Connexion fermée")); delete pending[k]; });
       if (!settled){ settled = true; reject(new Error("Connexion fermée avant authentification.")); }
+      // EN | Restart of Home Assistant: reconnect with the session.
+      // FR | Redemarrage de Home Assistant : reconnexion avec la session.
+      if (wasLive && haSession()) setTimeout(connect, 5000);
     };
   });
 }
@@ -424,7 +456,7 @@ function wsSubscribe(type, payload, callback){
 async function api(method, path, body){
   const res = await fetch("/api/" + path, {
     method,
-    headers: Object.assign({"Authorization": "Bearer " + state.token},
+    headers: Object.assign({"Authorization": "Bearer " + await currentToken()},
                            body === undefined ? {} : {"Content-Type": "application/json"}),
     body: body === undefined ? undefined : JSON.stringify(body)
   });
@@ -680,11 +712,14 @@ async function saveRename(deviceId){
 async function connect(){
   const inp = document.getElementById("token-input");
   if (inp) state.token = inp.value.trim();
-  if (!state.token){ state.error = t("err_no_token"); return render(); }
-  localStorage.setItem(LS_TOKEN, state.token);
+  const session = haSession();
+  if (!session){
+    if (!state.token){ state.error = t("err_no_token"); return render(); }
+    localStorage.setItem(LS_TOKEN, state.token);
+  }
   setBusy(true, t("busy_connecting"));
   try{
-    await wsConnect(state.token);
+    await wsConnect(await currentToken());
     state.connected = true;
     await loadLanguage();
     subscribeLanguage();
@@ -693,6 +728,7 @@ async function connect(){
   }catch(e){
     state.connected = false;
     state.error = e.message;
+    if (session && !ws) setTimeout(connect, 10000);
   }finally{ setBusy(false); }
 }
 async function reload(){
@@ -902,7 +938,7 @@ function render(){
 // ═══════════════════════════════════════════════════════════════════════════
 applyLang("fr");
 render();
-if (state.token) connect();
+if (haSession() || state.token) connect();
 </script>
 </body>
 </html>

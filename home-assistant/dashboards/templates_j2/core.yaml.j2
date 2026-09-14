@@ -139,8 +139,12 @@ views:
       # FR | bordures card_mod. Il est dessine DANS core.html (regle
       # FR | body::before fixe). Ici, uniquement la hauteur ; core.html defile
       # FR | a l'interieur.
+      # EN | ?v= like every other VSSP iframe: /local is cached for 31 days,
+      # EN | so without it a tablet keeps running an old core.html.
+      # FR | ?v= comme toute autre iframe VSSP : /local est mis en cache
+      # FR | 31 jours, sans lui une tablette garde un ancien core.html.
       - type: iframe
-        url: /local/vssp/core.html
+        url: /local/vssp/core.html?v={{ build_stamp }}
         view_layout:
           grid-area: content
         card_mod:
