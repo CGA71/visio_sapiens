@@ -1,15 +1,16 @@
-# ÉPISODE 1 — Vision & Architecture
+# ÉPISODE PILOTE — Vision & Architecture
 ## "Visio Sapiens : pourquoi j'ai jeté les cartes Lovelace natives"
 
 **Doc source :** `Vision.md`
 **Question centrale de l'épisode :** Pourquoi remplacer les cartes natives de Lovelace par un moteur maison ?
 **Ancrage visuel :** diagramme d'architecture + visite en direct du dashboard HOME
-**Durée estimée :** 11-13 min
-**Format de tournage :** aucun plan visage. La chaîne repose sur **voix off + captures d'écran + plans mains** (clavier, souris, éventuellement un stylet sur tablette pour annoter le diagramme). Chaque indication "face caméra" des versions précédentes est remplacée ci-dessous.
+**Durée estimée :** 13-15 min
+**Révision :** 14 septembre 2026 — voir [Révision du 14 septembre](#révision-du-14-septembre-2026) en fin de document pour ce qui a changé et pourquoi.
+**Format de tournage :** aucun plan visage. La chaîne repose sur **voix off + captures d'écran + plans mains** (clavier, souris, éventuellement un stylet sur tablette pour annoter le diagramme).
 
-**Objectif :** donner aux spectateurs le modèle mental avant tout code. Ce qu'est Visio Sapiens — une interface façon centre de contrôle posée sur Home Assistant, **pas** un simple dashboard habillé — et pourquoi le projet refuse les cartes Lovelace natives, sauf exceptions documentées (`weather-forecast`, `logbook`, `apexcharts-card`).
+**Objectif :** donner aux spectateurs le modèle mental avant tout code. Ce qu'est Visio Sapiens — une interface façon centre de contrôle posée sur Home Assistant, **pas** un simple dashboard habillé — pourquoi le projet construit son propre moteur de rendu au lieu d'assembler des cartes toutes faites, et comment la suite de la série est organisée.
 
-**⚠️ À ne pas filmer tout de suite :** tout ce qui dépend de secrets en direct (mot de passe Livebox, jetons longue durée) — garder la gestion des secrets pour l'épisode 4 ou 6.
+**⚠️ À ne pas filmer :** tout secret en direct — mot de passe Livebox, valeurs du coffre-fort, phrase de descellement, clés des fournisseurs du chatbot. Leur gestion a ses épisodes : bloc C (coffre-fort), D3 (Livebox), D6 (chatbot). Une nouvelle tablette ne demande plus de jeton d'accès longue durée : la connexion Home Assistant suffit, il n'y a donc rien à masquer à ce sujet.
 
 ---
 
@@ -30,7 +31,7 @@
 **Voix off :**
 > "Et il y a un deuxième problème, plus grave encore : ce tableau de bord, si vous voulez y accéder depuis votre téléphone en dehors de chez vous, il doit être exposé sur Internet. Et ce n'est pas juste des cartes qu'on expose — ce sont vos données personnelles. Vos habitudes de présence, vos caméras, parfois vos serrures. Un dashboard mal sécurisé sur une plateforme accessible depuis l'extérieur, c'est une porte ouverte sur votre maison."
 
-**Titre animé :** VISIO SAPIENS — Épisode 1 : Vision & Architecture
+**Titre animé :** VISIO SAPIENS — Pilote : Vision & Architecture
 
 ---
 
@@ -43,7 +44,7 @@
 >
 > Ça veut dire : le moins de dépendances externes possible sur lesquelles je n'ai aucun contrôle, une architecture pensée dès le départ pour être exposée sur Internet sans que ce soit un pari, et un environnement qui permet de revenir en arrière proprement si quelque chose casse — parce que ça arrivera, tôt ou tard, sur n'importe quel projet.
 >
-> Concrètement, ça se traduit par un environnement CI/CD qui permet à **une personne autodidacte** — pas une équipe DevOps, juste quelqu'un de motivé — de faire évoluer le produit progressivement, ou tout simplement de **restaurer une version précédente directement dans HAOS** si une mise à jour se passe mal. On détaillera ce pipeline en profondeur dans l'épisode 6, mais je voulais que vous sachiez, dès cet épisode 1, que ce filet de sécurité existe et qu'il fait partie du socle du projet, pas d'une fonctionnalité annexe."
+> Concrètement, ça se traduit par un environnement CI/CD qui permet à **une personne autodidacte** — pas une équipe DevOps, juste quelqu'un de motivé — de faire évoluer le produit progressivement, ou tout simplement de **restaurer une version précédente directement dans HAOS** si une mise à jour se passe mal. On détaillera ce pipeline dans le bloc A de la série, et la sauvegarde a son propre bloc, le bloc B. Mais je voulais que vous sachiez, dès ce premier épisode, que ce filet de sécurité existe et qu'il fait partie du socle du projet."
 
 **Texte à l'écran (encadré) :**
 > 🔧 Peu de dépendances externes non maîtrisées
@@ -75,9 +76,9 @@
 >
 > La nuance est importante. Un dashboard, c'est une collection de cartes qu'on assemble. Un centre de contrôle, c'est un système cohérent, avec son propre moteur de rendu, sa propre logique visuelle, sa propre identité — et qui se contente d'aller chercher les données chez Home Assistant.
 >
-> Et cette nuance a une conséquence très concrète, que vous verrez à l'œuvre dans tous les épisodes : l'interface n'est pas assemblée à la main, elle est **générée**. Vous décrivez votre maison une fois — la langue, le format, les pièces — et l'ensemble des écrans est produit à partir de cette description, puis tenu en cohérence quand la maison change. Ajouter une pièce, ce n'est pas dessiner un nouveau dashboard : c'est déclarer une pièce, et laisser le générateur faire le reste. Un dashboard qu'on assemble à la main vieillit. Un dashboard généré suit.
+> Et cette nuance a une conséquence très concrète, que vous verrez à l'œuvre dans tous les épisodes : l'interface n'est pas assemblée à la main, elle est **générée**. Vous décrivez votre maison une fois, dans une console d'administration — la langue, le format, les pièces, l'apparence — et l'ensemble des écrans est produit à partir de cette description, puis tenu en cohérence quand la maison change. Ajouter une pièce, ce n'est pas dessiner un nouveau dashboard : c'est déclarer une pièce, et laisser le générateur faire le reste. Un dashboard qu'on assemble à la main vieillit. Un dashboard généré suit.
 >
-> Et ça mène à la règle unique qui pilote absolument toutes les décisions techniques de ce projet, celle que vous allez retrouver dans chaque épisode :
+> Et ça mène à la règle unique qui pilote toutes les décisions techniques de ce projet, celle que vous allez retrouver dans chaque épisode :
 >
 > **Home Assistant n'est plus qu'un moteur de données. L'interface est entièrement pilotée par VSSP.**"
 
@@ -89,123 +90,180 @@
 
 ## 4. POURQUOI PAS LES CARTES LOVELACE NATIVES ? (5:00 - 7:30)
 
-**Visuel :** écran partagé — à gauche l'éditeur Lovelace natif avec ses cartes standards, à droite le dashboard HOME de Visio Sapiens. Toujours aucune caméra.
+**Visuel :** écran partagé — à gauche l'éditeur Lovelace natif avec ses cartes standards, à droite le dashboard HOME de Visio Sapiens. Au passage sur les trois fondations, incruster leurs noms sur l'écran de droite. Au passage sur card-mod, montrer la carte météo du bandeau, puis la règle `::after` de `_header.j2` qui réécrit son texte. Toujours aucune caméra.
 
 **Voix off :**
 > "Alors la question qui vient tout de suite : pourquoi ne pas juste utiliser les cartes natives de Lovelace ? Elles existent, elles sont maintenues par le cœur de Home Assistant, elles marchent très bien.
 >
-> Justement — elles marchent **très bien pour ce qu'elles sont** : un système de cartes empilées. Mais dès qu'on veut une identité visuelle cohérente, des animations qui répondent en temps réel, un HUD qui se comporte comme une vraie interface système et pas comme une grille de widgets, on se heurte au plafond de verre de Lovelace.
+> Justement — elles marchent très bien **pour ce qu'elles sont** : un système de cartes empilées. Mais dès qu'on veut une identité visuelle cohérente et un HUD qui se comporte comme une vraie interface système, pas comme une grille de widgets, on se heurte au plafond de verre de Lovelace.
 >
-> Alors le projet a fait un choix radical : **refuser les cartes Lovelace natives**, et construire son propre moteur de rendu par-dessus. Avec trois exceptions, assumées et documentées, parce que ce serait stupide de réinventer ce qui fonctionne déjà très bien : `weather-forecast`, `logbook`, et `apexcharts-card`.
+> Alors le projet a fait un choix : ne pas assembler des cartes toutes faites, mais construire son propre moteur de rendu. Et je veux être précis, parce que la version courte serait fausse : ce moteur ne part pas de zéro. Il repose sur trois briques de la communauté — **button-card, card-mod et layout-card**. Des fondations, pas des widgets : l'une dessine, l'autre habille, la troisième place. Tout ce que vous voyez au-dessus — la navigation, le bandeau, les jauges, les pièces — ce sont des gabarits que j'écris, générés et versionnés dans le dépôt. Et quelques cartes spécialisées font ce qu'il serait absurde de réécrire : les graphiques, la météo, l'agenda, l'historique.
 >
-> Tout le reste — la sidebar, le HUD, les jauges, les rangées énergie, les pièces — c'est du moteur maison, que **je** maintiens, avec le même pipeline CI/CD dont je vous parlais tout à l'heure. Pas de dépendance à un mainteneur communautaire qui peut disparaître du jour au lendemain.
+> La différence avec un dashboard communautaire classique, c'est la surface exposée. Trois fondations et une poignée de cartes, que l'écran des mises à jour surveille comme une famille à part — pas trente widgets avec trente mainteneurs. Le jour où une brique lâche, c'est une brique à remplacer, pas trente cartes à retrouver.
 >
-> Alors soyons honnêtes sur le prix de ce choix, parce qu'il en a un : en refusant les cartes de la communauté, **je deviens le mainteneur**. Si une jauge casse, personne d'autre ne viendra la réparer. C'est un vrai coût, et je l'assume pour une raison précise : ce coût-là, je le **contrôle**. Une carte communautaire qui disparaît, je ne contrôle rien — ni le calendrier, ni la décision, ni la migration. Un bug dans mon propre moteur, je peux le corriger le soir même et le déployer dans la foulée.
+> Le prix de ce choix existe, soyons honnêtes : pour tout ce qui est au-dessus des fondations, **je deviens le mainteneur**. Mais ce coût-là, je le **contrôle** : un bug dans mes gabarits, je le corrige le soir même.
 >
-> Et il y a un effet de bord que je n'avais pas anticipé en commençant. Quand on écrit son propre moteur, on arrête d'empiler des rustines. Le fameux `card-mod`, avec ses sélecteurs CSS qui vont piocher dans le shadow DOM d'une carte qu'on ne maîtrise pas — ça fonctionne, oui, jusqu'à la mise à jour qui renomme une classe. Là, il n'y a plus de rustine : il y a du CSS que j'écris, sur du HTML que je produis."
+> Et card-mod mérite un mot. Sur mes propres gabarits, c'est un outil. Dans le shadow DOM d'une carte que je ne maîtrise pas, c'est une rustine — et il m'en reste une : pour forcer la langue d'une carte météo tierce, je masque son texte et j'en écris un autre par-dessus. Ça tient jusqu'à la mise à jour qui renomme une classe. C'est pour ça que ce genre de rustine reste une exception, et qu'elle est documentée."
 
 **Texte à l'écran (encadré) :**
-> ✅ Exceptions documentées : `weather-forecast` · `logbook` · `apexcharts-card`
-> 🔧 Tout le reste : moteur VSSP, maintenu en interne
+> 🧱 Fondations : `button-card` · `card-mod` · `layout-card`
+> 📊 Cartes spécialisées : graphiques · météo · agenda · historique
+> 🔧 Au-dessus : les gabarits VSSP, générés et versionnés
 
 ---
 
 ## 5. LE DIAGRAMME D'ARCHITECTURE (7:30 - 9:30)
 
-**Visuel :** plein écran sur le diagramme d'architecture de `Vision.md`. Plan mains avec stylet/tablette graphique pour surligner chaque bloc au fur et à mesure — c'est le seul moment de "présence physique" de l'épisode, limité aux mains.
+**Visuel :** plein écran sur le diagramme « Vue d'ensemble » de `Vision.md` (§2), redessiné à la résolution d'enregistrement. Plan mains avec stylet/tablette graphique pour surligner chaque bloc au fur et à mesure — c'est le seul moment de "présence physique" de l'épisode, limité aux mains. Enchaîner sur la chaîne de génération (§4), puis sur la boucle en six temps de la console (§5).
 
 **Voix off :**
-> "Voilà à quoi ressemble l'architecture complète. Je vous la montre une fois, en entier, parce que c'est la carte mentale dont vous aurez besoin pour comprendre tous les épisodes qui suivent."
+> "Voilà à quoi ressemble l'architecture complète. Je vous la montre une fois, en entier, parce que c'est la carte dont vous aurez besoin pour suivre toute la série."
 
 **Parcours du diagramme, bloc par bloc (surlignage successif au stylet) :**
 
-> "**CORE** : le socle système — c'est lui qui expose les métriques, l'état de la machine, ce sur quoi tout le reste s'appuie. On y reviendra en détail dans l'épisode 2.
+> "Cinq endroits détiennent quelque chose, et ils ne sont pas interchangeables. Le **dépôt Git**, sur mon poste : le modèle, les gabarits, les traductions, l'outillage. Le **pipeline GitLab**, qui valide, construit et déploie. **Deux cibles**, qui reçoivent le même paquet : un cluster k3s pour le staging, Home Assistant OS pour la production. Et le **navigateur** — la tablette, le téléphone — où s'affichent les dashboards.
 >
-> **Room Engine** : la logique qui transforme une définition de pièce en interface — c'est le cœur du générateur de dashboards, épisode 3.
+> Au milieu, une seule commande : **le générateur**. Il prend la description de la maison, les gabarits et la langue, et il produit tous les dashboards et le thème. Personne n'écrit un dashboard à la main.
 >
-> **IA Layer** : la couche qui branche de l'intelligence dans l'interface — le chatbot, les automatisations. Épisode 9.
->
-> **Animation Engine, CSS Engine, JS Engine, Theme Engine** : les quatre couches qui donnent à Visio Sapiens son identité visuelle et son comportement — c'est ce qui fait qu'une pièce ne ressemble pas à une carte Lovelace avec un joli thème, mais à une vraie interface vivante."
+> Et chaque écran de la console d'administration suit **la même boucle** : un formulaire envoie ce que vous avez décidé, un script sauvegarde d'abord, écrit le modèle, régénère, puis rend compte de ce qu'il a fait."
 
 **Voix off (conclusion du parcours) :**
-> "Retenez juste une chose de ce schéma : chaque couche a une responsabilité précise, et aucune ne fait le travail d'une autre. C'est ce qui permet au projet de tenir dans la durée sans devenir un plat de spaghettis YAML — et c'est aussi ce qui rend le pipeline CI/CD possible : on ne peut versionner et restaurer proprement que ce qui est structuré."
+> "Retenez une chose de ce schéma : chaque morceau a une responsabilité précise, et aucun ne fait le travail d'un autre. C'est ce qui permet au projet de tenir dans la durée sans devenir un plat de spaghettis YAML — et c'est ce qui rend possible le reste de la série : on ne peut versionner, sauvegarder et restaurer proprement que ce qui est structuré."
 
 ---
 
 ## 6. VISITE EN DIRECT DU DASHBOARD HOME (9:30 - 11:30)
 
-**Visuel :** écran en direct, souris qui pointe chaque élément au fur et à mesure du texte. Aucun visage.
+**Visuel :** capture en direct à **1194 × 834** — la tablette murale réelle (iPad 11 pouces, paysage), barre latérale de Home Assistant masquée. Souris qui pointe chaque élément au fur et à mesure du texte. Aucun visage.
 
 **Voix off :**
-> "Assez de théorie, on regarde le résultat. Voici HOME, l'écran d'accueil de Visio Sapiens."
+> "Assez de théorie, on regarde le résultat. Voici HOME, l'écran d'accueil, tel qu'il s'affiche sur la tablette du salon."
 
 **Pointage successif (curseur souris) :**
-> "La **sidebar** — navigation entre les écrans du centre de contrôle.
+> "À gauche, le **rail de navigation** : une entrée par pièce déclarée, plus les écrans système. Il est généré lui aussi — ajoutez une pièce, son entrée apparaît sur tous les écrans à la fois.
 >
-> La **rangée HUD** dans le header : météo, horloge, statut d'alarme, avatar — tout ce qu'on veut voir d'un coup d'œil en entrant dans la maison.
+> En haut, le **bandeau** : le nom de l'écran et l'heure, la météo, l'agenda. Le même bandeau sur chaque dashboard, parce qu'il vient d'un seul gabarit.
 >
-> La **rangée énergie** — production, consommation, ce que la maison fait en ce moment, pas un historique qu'on doit aller chercher.
+> Juste en dessous, la **rangée d'état** : le système, l'énergie, l'alarme avec ses modes et son bouton panique, le thermostat — et ce voyant de mises à jour, qui passe à l'orange quand quelque chose attend, et qui mène à l'écran qui dit exactement quoi.
 >
-> Les **modules de pièces** — un écran par pièce déclarée, tous produits par le même générateur, à partir du même gabarit. Ce ne sont pas dix dashboards écrits dix fois : c'est un gabarit, et dix pièces.
->
-> Et le **rail de navigation**, ici, qui se reconstruit tout seul quand une pièce apparaît ou disparaît — parce qu'il est généré lui aussi, pas entretenu à la main dans un coin de YAML qu'on finit toujours par oublier."
+> Au centre, le **radar des protocoles**, et à côté, les appareils mesurés avec ce qu'ils consomment. Puis la **barre de l'assistant**, et les derniers événements de la maison."
 
 **Transition vers le repo :**
-> "Et maintenant, la partie que je préfère montrer, parce qu'elle rend tout ça concret : l'arborescence du dépôt, en direct, à côté de ce qui s'affiche à l'écran."
+> "Et maintenant, la partie que je préfère montrer, parce qu'elle rend tout ça concret : d'où vient l'apparence de cet écran."
 
-**Visuel :** split screen — arborescence du repo à gauche (dans un éditeur de code type VS Code), dashboard HOME à droite.
+**Visuel :** split screen — à gauche `dashboards/model/design_system.yaml` dans un éditeur de code, à droite l'écran ADMIN → TEMPLATE GRAPHIQUE, puis HOME. Monter le curseur « Values » du groupe Text sizes, appliquer, revenir sur HOME.
 
 **Voix off :**
-> "Ce fichier — `www/vssp/css/vssp.css` — c'est **littéralement** ce qui peint cet écran. Pas une métaphore : chaque couleur, chaque espacement que vous voyez à droite vient de ce fichier à gauche. C'est ça, avoir un moteur maison plutôt qu'un thème posé sur des cartes génériques : le code et l'interface parlent la même langue — et donc, sont versionnables comme un vrai projet logiciel.
->
-> Et si je change une couleur ici, à gauche, elle change à droite au prochain déploiement. Sur tous les écrans à la fois, parce qu'il n'y a qu'une seule source. Pas dix cartes à retoucher une par une en espérant n'en oublier aucune."
+> "À gauche, un fichier du dépôt, `design_system.yaml` : chaque couleur, la police, la taille de chaque catégorie de texte. À droite, l'écran de la console qui l'édite. Je monte la taille des valeurs — et tous les écrans suivent en même temps, parce qu'il n'y a qu'une seule source. Pas dix cartes à retoucher une par une en espérant n'en oublier aucune. Le code et l'interface parlent la même langue — et donc, ils se versionnent comme un vrai projet logiciel."
 
 ---
 
-## 7. UNE NOTE SUR LES NOMS (11:30 - 12:00)
+## 7. UNE NOTE SUR LES NOMS (11:30 - 12:15)
 
-**Visuel :** capture de l'historique Git / anciens noms de fichiers à l'écran (`osvision_v2/...`), voix off seule, pas de plan mains nécessaire ici.
+**Visuel :** le commit du 12 septembre (`refactor: the old name is gone from the code…`) à l'écran, puis les deux traces restantes : `class OSVisionEngine` dans `www/vssp/js/vssp.js`, et le chemin `/local/osvision_v2/k3s_stats.json` dans `core.html`. Voix off seule.
 
 **Voix off :**
-> "Petite parenthèse avant de conclure, parce que vous allez tomber dessus dans les épisodes suivants : le projet s'appelait au départ **OSVision**, et a été renommé en **VSSP**. Vous allez croiser d'anciens noms de fichiers, d'anciens chemins, qui datent de cette époque.
->
-> Je le mentionne maintenant pour une raison simple : l'histoire d'un projet laisse des traces. Un bon projet ne cache pas ces traces, il les documente. Vous verrez cette cicatrice de renommage plus tard, notamment dans le bug K3s de l'épisode 2 — et maintenant vous saurez pourquoi elle existe."
+> "Petite parenthèse avant de conclure, parce que vous allez tomber dessus : le projet s'appelait au départ **OSVision**, avant de devenir **VSSP**. En septembre, un grand ménage a retiré l'ancien nom des identifiants, des composants et des feuilles de style — et ce ménage a fait remonter trois vrais bugs, dont un lien mort que personne n'avait vu. Mais il reste des traces : le moteur JavaScript porte encore l'ancien nom, et le panneau K3s de l'écran CORE cherche toujours son fichier sous l'ancien chemin. Un bon projet ne cache pas ces traces, il les documente. Celle-là, on la corrigera en direct dans l'épisode D1."
 
 ---
 
-## 8. MONTAGE RAPIDE — CHANGELOG (12:00 - 12:30)
+## 8. MONTAGE RAPIDE — CE QUI A ÉTÉ LIVRÉ (12:15 - 12:45)
 
-**Visuel :** montage rythmé, défilement du changelog de `Vision.md`, captures d'écran qui s'enchaînent en rythme avec la musique. Aucune caméra, uniquement écran + musique.
+**Visuel :** montage rythmé calé sur la musique, un plan par jalon : le générateur qui régénère, l'écran PIÈCES & ÉTAGES, le bouton DESCELLER du coffre-fort, l'écran MISES À JOUR, le TEMPLATE GRAPHIQUE qui change la police. Source des jalons : l'historique Git (`git log --oneline`), `Vision.md` n'ayant plus de section changelog depuis sa réécriture du 9 septembre.
 
 **Voix off (courte, punchy) :**
-> "Tout ce que vous venez de voir n'existait pas il y a quelques mois. [liste rapide de 3-4 jalons du changelog, à choisir dans `Vision.md`]. Ce n'est pas un projet figé — c'est un système qui a une histoire, et qui continue d'en écrire une."
+> "Tout ce que vous venez de voir n'existait pas il y a quelques mois. Un générateur qui produit chaque écran. Une console qui déclare les pièces. Un coffre-fort qui se descelle depuis un appareil enrôlé. Un écran de mises à jour qui sait ce qu'il ne sait pas. Une charte graphique qui change jusqu'à la police. Ce n'est pas un projet figé — c'est un système qui a une histoire, et qui continue d'en écrire une."
 
 *(Note prod : ce bloc peut aussi servir d'ouverture alternative si le montage final préfère un cold open plus dynamique.)*
 
 ---
 
-## 9. TRANSITION VERS L'ÉPISODE 2 (12:30 - 13:15)
+## 9. LA CARTE DE LA SÉRIE (12:45 - 13:45)
+
+**Visuel :** motion design — quatre tuiles qui s'allument l'une après l'autre (A · B · C · D), chacune avec le titre de son bloc et le nombre de ses épisodes (5 · 4 · 4 · 10), puis les quatre ensemble.
+
+**Voix off :**
+> "La suite de la série est organisée en quatre blocs, et vous choisissez votre porte d'entrée.
+>
+> Le **bloc A**, c'est le socle : la machine, le cluster, le pipeline, et ce qui casse quand l'un des trois ment.
+>
+> Le **bloc B**, c'est la sauvegarde — jusqu'à la seule preuve qui compte : la restauration.
+>
+> Le **bloc C**, c'est le coffre-fort : où vivent les secrets, et comment on le descelle sans taper trois clés à la main.
+>
+> Et le **bloc D**, c'est l'interface elle-même, de la jauge jusqu'au générateur.
+>
+> À l'intérieur d'un bloc, l'ordre compte. Entre les blocs, non : si vous êtes venu pour les sauvegardes, vous n'avez pas à regarder dix épisodes d'interface d'abord."
+
+**Texte à l'écran (encadré) :**
+> A · Environnement & CI/CD — B · Sauvegarde — C · Coffre-fort — D · Interface
+
+---
+
+## 10. CONCLUSION (13:45 - 14:30)
 
 **Visuel :** retour sur le dashboard HOME en plein écran, ou logo de la chaîne animé. Voix off seule.
 
 **Voix off :**
-> "Ce qu'il faut retenir de cet épisode : Visio Sapiens n'est pas un dashboard, c'est un centre de contrôle, pensé pour être simple, efficace et sécurisé par défaut. Home Assistant fournit la donnée, VSSP fournit tout le reste — sans dépendre de cartes communautaires qui peuvent lâcher sans prévenir, et avec un pipeline qui permet de revenir en arrière si besoin, même en autodidacte.
+> "Ce qu'il faut retenir : Visio Sapiens n'est pas un dashboard, c'est un centre de contrôle, simple, efficace et sécurisé par défaut. Home Assistant fournit la donnée, VSSP fournit l'interface — sur un petit nombre de fondations surveillées, avec un pipeline qui permet de revenir en arrière.
 >
-> Dans le prochain épisode, on descend d'un niveau : on suit une seule donnée, depuis `psutil` sur la machine hôte jusqu'à une jauge SVG dans votre navigateur, avec les DevTools ouverts pour tout voir passer en direct.
+> Si vous ne savez pas par où commencer, prenez D1 : on suit une seule donnée, de la machine hôte jusqu'à une jauge dans votre navigateur.
 >
-> Abonnez-vous, activez la cloche, et dites-moi en commentaire : votre install Home Assistant, elle ressemble encore à un empilement de cartes Lovelace, ou vous avez déjà commencé à en sortir ?
->
-> À très vite."
+> Abonnez-vous, et dites-moi en commentaire : votre Home Assistant, c'est encore un empilement de cartes, ou vous avez commencé à en sortir ? À très vite."
 
 ---
 
 ## NOTES DE PRODUCTION
 
 - **Format sans visage :** aucun plan caméra face ne doit être filmé. La voix off porte tout le récit. Les seuls plans "présence humaine" autorisés sont des plans mains (clavier, souris, stylet sur tablette pour annoter le diagramme d'architecture, section 5). Le reste est 100% captures d'écran, motion design, et texte à l'écran.
-- **Enregistrement voix :** prévoir une prise de voix off propre, séparée du tournage écran, pour pouvoir resynchroniser facilement en montage.
-- **Ton général :** pédagogue, affirmatif sur le choix "moteur maison vs Lovelace natif" et sur la sécurité — c'est la thèse de l'épisode, elle doit être défendue clairement, pas juste énoncée.
+- **Enregistrement voix :** une section = un fichier audio, posé au début de son créneau. La narration seule, découpée par section, vit dans `episode-01-narration.fr.txt` ; les sous-titres dans `episode-01.fr.srt`. Les deux sont **générés depuis ce script** — les régénérer après toute modification de voix off plutôt que de les retoucher à la main.
+- **Ton général :** pédagogue, affirmatif sur le choix "moteur maison vs Lovelace natif" et sur la sécurité — c'est la thèse de l'épisode, elle doit être défendue clairement. Mais la section 4 dit exactement sur quoi le moteur repose : c'est ce qui rend la thèse défendable face à un spectateur qui ouvre le dépôt.
 - **Fil rouge de l'intro :** double problème (maintenance communautaire qui lâche + exposition Internet non sécurisée) → réponse du projet (produit simple/efficace/sécurisé + CI/CD restaurable en HAOS) → complexité native de HA → simplification.
-- **Diagramme d'architecture :** à refaire à la résolution d'enregistrement avant tournage.
-- **B-roll :** dashboards communautaires (avant/après cassure — capture du fil forum "Bar-Card Repo Removed in 2025.6.2"), schéma exposition Internet, interface HA native (complexité), dashboard HOME en direct, arborescence du repo, changelog `Vision.md`.
-- **Ne pas filmer :** tout secret en direct (mot de passe Livebox, jetons longue durée) → épisodes 4/6.
-- **Renvois croisés :** pipeline CI/CD détaillé en épisode 6 ; bug K3s et cicatrice OSVision → VSSP en épisode 2 ; sécurité approfondie en épisode 12.
+- **Captures :** toutes à **1194 × 834** (iPad 11 pouces, paysage — la tablette murale réelle), barre latérale de Home Assistant masquée. Toute capture de HOME faite avant le 14 septembre 2026 est périmée : le bandeau, la rangée d'état et la liste des appareils ont changé depuis.
+- **Diagramme d'architecture :** les diagrammes de `Vision.md` (§2, §4, §5) sont en mermaid ; les redessiner à la résolution d'enregistrement avant tournage.
+- **B-roll :** dashboards communautaires (avant/après cassure — capture du fil forum "Bar-Card Repo Removed in 2025.6.2"), schéma exposition Internet, interface HA native (complexité), dashboard HOME en direct, `design_system.yaml` et l'écran TEMPLATE GRAPHIQUE, historique Git pour le montage.
+- **Ne pas filmer :** tout secret en direct → bloc C, D3, D6.
+- **Renvois croisés :** pipeline CI/CD → A2 ; sauvegarde et restauration → bloc B ; coffre-fort → bloc C ; revue de sécurité → C4 ; CORE et le bug K3s de l'ancien chemin → D1 ; générateur → D2 ; chatbot → D6 ; charte graphique → D7.
+
+---
+
+## MINUTAGE DE LA NARRATION
+
+Mesuré contre les créneaux ci-dessus, à 140 mots par minute. La narration seule, découpée par section, vit dans `episode-01-narration.fr.txt`.
+
+<!-- TIMING-TABLE -->
+| # | Section | Créneau | Narration | Écart |
+|---|---|---|---|---|
+| 0 | Cold open | 60 s | 60 s | ±0 s |
+| 1 | Mon approche | 90 s | 87 s | −3 s |
+| 2 | La complexité de HA | 60 s | 37 s | −23 s |
+| 3 | Ce qu'est Visio Sapiens | 90 s | 86 s | −4 s |
+| 4 | Pourquoi pas les cartes natives | 150 s | 151 s | +1 s |
+| 5 | Diagramme d'architecture | 120 s | 95 s | −25 s |
+| 6 | Visite de HOME | 120 s | 105 s | −15 s |
+| 7 | Une note sur les noms | 45 s | 44 s | −1 s |
+| 8 | Montage — ce qui a été livré | 30 s | 32 s | +2 s |
+| 9 | La carte de la série | 60 s | 48 s | −12 s |
+| 10 | Conclusion | 45 s | 40 s | −5 s |
+| | **Total** | **14:30** | **13:05** | **−85 s** |
+
+Sections volontairement courtes, où l'image porte le temps : 2, 5, 6. Partout ailleurs, la narration remplit son créneau.
+<!-- /TIMING-TABLE -->
+
+---
+
+## Révision du 14 septembre 2026
+
+Le script du 10 septembre avait été écrit contre un projet qui avait déjà bougé sous lui, et le projet a encore bougé depuis. Ce qui a changé, et pourquoi :
+
+| Section | Avant | Maintenant | Pourquoi |
+|---|---|---|---|
+| Tout le script | renvois « épisode 2, 3, 6, 9, 12 » | codes de bloc (A2, D1, D2, D6, C4…) | la série a été regroupée en quatre blocs le 12 septembre ; les anciens numéros n'existent plus |
+| 4 | « aucune dépendance à un mainteneur communautaire », « plus de rustine card-mod », exceptions `weather-forecast` · `logbook` · `apexcharts-card` | trois fondations nommées (button-card, card-mod, layout-card), cartes spécialisées, une rustine card-mod assumée | les gabarits comptent 173 `custom:button-card`, 10 `grid-layout` et 95 blocs `card_mod` ; `weather-forecast` n'est utilisée nulle part (la météo passe par `dynamic-weather-card` et `simple-weather-card`). L'ancienne formulation était fausse pour quiconque ouvre le dépôt |
+| 5 | diagramme « CORE / Room Engine / IA Layer / Animation / CSS / JS / Theme Engine » | la vue d'ensemble de `Vision.md` (§2), la chaîne de génération (§4), la boucle de la console (§5) | `Vision.md` a été réécrit le 9 septembre ; l'ancien diagramme n'y figure plus |
+| 6 | « rangée HUD : météo, horloge, statut d'alarme, avatar », « rangée énergie », `vssp.css` comme source de l'apparence | bandeau (écran + heure, météo, agenda), rangée d'état (système, énergie, alarme, thermostat, voyant de mises à jour), radar, appareils mesurés, assistant ; `design_system.yaml` + écran TEMPLATE GRAPHIQUE | c'est ce qu'affiche HOME aujourd'hui ; depuis le 13 septembre la police et les tailles de texte sont des réglages de la charte |
+| 7 | « vous allez croiser d'anciens noms de fichiers » | le ménage du 12 septembre, ses trois bugs, et les deux traces qui restent | l'ancien nom a été retiré du code le 12 septembre, sauf `OSVisionEngine` et le chemin K3s de CORE |
+| 8 | placeholder « [liste de 3-4 jalons, à choisir dans Vision.md] » | cinq jalons écrits | `Vision.md` n'a plus de section changelog |
+| 9 | — | **nouvelle section** : la carte des quatre blocs | le plan de série dit que le pilote « les annonce tous » ; le script ne le faisait pas |
+| 10 | « le prochain épisode suit une donnée depuis psutil » | D1 proposé comme point d'entrée, pas comme suite obligée | entre les blocs, l'ordre ne compte plus |
+| Avertissement | « ne pas filmer : jetons longue durée » | secrets listés ; plus de jeton longue durée sur les tablettes | depuis le 14 septembre, les pages de la console empruntent la session Home Assistant de la tablette |

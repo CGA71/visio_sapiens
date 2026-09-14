@@ -200,10 +200,15 @@ sequenceDiagram
 
 Three details of that loop are load-bearing:
 
-- **The form is an iframe, so it has no `hass` object.** It authenticates on
-  its own with a long-lived access token the user pastes once, kept in
-  `localStorage`. The parent dashboard passes it only what it cannot deduce
-  — the language, and, for the scheduler popup, the entity list of the slot.
+- **The form is an iframe served by Home Assistant itself.** Same origin as
+  the dashboard, and a sandbox carrying `allow-same-origin`: the pages that
+  talk to the WebSocket (ROOMS & FLOORS, DETECTED DEVICES — and CORE) borrow
+  the tablet's own session through the parent dashboard's `hass.auth`, a
+  short-lived token Home Assistant refreshes. No long-lived token is asked
+  for any more; one can still be pasted, only for a page opened on its own,
+  outside a dashboard. Beyond that, the parent dashboard passes the iframe
+  only what it cannot deduce — the language, and, for the scheduler popup,
+  the entity list of the slot.
 - **The payload is base64.** Colours, `rgba()` values and free text would
   otherwise break shell quoting on the way to Python.
 - **The status file carries a `message_key` *and* a rendered message.** The
@@ -273,8 +278,11 @@ Lovelace YAML (generated)
                       └─ web components + iframes
 ```
 
-The rule is: no classic Lovelace card except deliberate, documented
-exceptions (`weather-forecast`, `logbook`, `apexcharts-card`, `iframe`).
+The rule is: no classic Lovelace card in the dashboards except deliberate
+exceptions — `logbook` and `iframe`, plus `tile`, `entities` and `markdown`
+in the admin console only. A few specialised community cards do what the
+engine does not rewrite: `apexcharts-card` (charts), `dynamic-weather-card`
+and `simple-weather-card` (weather), `calendar-card-pro` (calendar).
 `button_card_templates.yaml` and `decluttering_templates.yaml` are read
 as-is by Home Assistant through `!include`, so `t()` does **not** work there
 — displayed text must arrive already translated from the calling dashboard.
@@ -340,7 +348,7 @@ to.
 | **Updates** | `packages/vssp_updates.yaml`, `vssp_infra_updates.py` | groups every pending `update.*` entity by family — system, HACS, device firmware — with the auto-update policy in one place. A fourth family, **infrastructure**, has no entities behind it: a probe reads the Ubuntu host, k3s, GitLab, the runner and Vault over SSH, with its credentials taken from the safe by the Python process rather than by Home Assistant. |
 | **Vault** | `packages/vssp_vault.yaml`, `vault/`, `addons/vssp-vault/` | the safe. Docker Compose on the k3s host, a Supervisor add-on on HAOS. **Home Assistant's token grants `secret/metadata/*` and nothing on `secret/data/*`**: HA can list and describe every entry and is refused, by Vault itself, if it ever asks for a value — because anything HA reads lands in the recorder database in clear text. The browser reads values directly. |
 | **Technical room / LAN** | `packages/vssp_technical_room.yaml`, `vssp_lan_probe.py` | probes the Livebox and the switch, printed as JSON on stdout and consumed by `command_line` sensors. The box password is a masked CI variable written to `/config/vssp/.livebox.env` at deploy time, never committed. |
-| **CORE** | `www/vssp/core.html` | a standalone page, not a Lovelace view: it calls the HA REST API with its own token and reads the k3s stats JSON. The CORE dashboard is just an iframe onto it. |
+| **CORE** | `www/vssp/core.html` | a standalone page, not a Lovelace view: it calls the HA REST API with the tablet's session, borrowed from the dashboard around it, and reads the k3s stats JSON. The CORE dashboard is just an iframe onto it. |
 
 ---
 

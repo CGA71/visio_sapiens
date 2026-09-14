@@ -1,10 +1,11 @@
-# VISIO SAPIENS - EPISODE 1 - Vision & Architecture
-# Narration only. One section = one audio file.
+# VISIO SAPIENS - PILOT EPISODE - Vision & Architecture
+# Narration only. One section = one audio file, placed at the start of its slot.
 # Reference pace: 140 words per minute.
+# GENERATED from episode-01-vision-architecture.md — do not edit by hand.
 #--------------------------------------------------------------------
 
 ## [00] COLD OPEN — THE DOUBLE PROBLEM
-##      narration | slot 0:00-1:00 (60s) | 139 words | target 60s
+##      narration | slot 0:00-1:00 (60s) | 137 words | target 59s
 
 I think these dashboards are beautiful. The Home Assistant community turns out cards that are genuinely stunning to look at.
 
@@ -13,107 +14,112 @@ Bar Card, one of the most widely used cards for animated energy bars, lost its r
 And there's a second problem, and this one is more serious: if you want to reach that dashboard from your phone when you're away from home, it has to be exposed to the internet. And it isn't just cards you're exposing — it's your personal data. Your presence patterns, your cameras, sometimes your locks. A poorly secured dashboard on a platform reachable from outside is an open door into your house.
 
 ## [01] MY APPROACH: SIMPLE, EFFECTIVE, SECURE
-##      narration | slot 1:00-2:30 (90s) | 193 words | target 83s
+##      narration | slot 1:00-2:30 (90s) | 198 words | target 85s
 
 Faced with those two problems — maintenance that gives out, and security that gets neglected — I made one decision up front, and it's the one that defines the whole project: build something simple and effective, that ships with as much security as possible by default, not as an option you bolt on later if you happen to think of it.
 
 In practice that means: as few external dependencies I have no control over as possible, an architecture designed from day one to be exposed to the internet without that being a gamble, and an environment that lets me roll back cleanly when something breaks — because it will break, sooner or later, on any project.
 
-Concretely, that translates into a CI/CD setup that lets one self-taught person — not a DevOps team, just someone motivated — grow the product step by step, or simply restore a previous version straight into HAOS when an update goes wrong. We'll go deep on that pipeline in episode 6, but I wanted you to know, right here in episode 1, that this safety net exists and that it's part of the foundation, not a side feature.
+Concretely, that translates into a CI/CD setup that lets one self-taught person — not a DevOps team, just someone motivated — grow the product step by step, or simply restore a previous version straight into HAOS when an update goes wrong. We'll go deep on that pipeline in block A of the series, and backups have a block of their own, block B. But I wanted you to know, right here in the first episode, that this safety net exists and that it's part of the foundation.
 
 ## [02] THE OTHER PROBLEM NOBODY SEES: HA'S COMPLEXITY
-##      narration | slot 2:30-3:30 (60s) | 81 words | target 35s
+##      narration | slot 2:30-3:30 (60s) | 79 words | target 34s
 
 There's a third reason behind all this, simpler to state but just as central: Home Assistant's native interface is very complex. Powerful, yes — but complex. Between the configuration menus, the entities, the areas, the nested dashboards, it's easy to get lost, especially when you're starting out.
 
 What Visio Sapiens sets out to do is simplify that experience — not hide Home Assistant's power, but make it reachable through a coherent interface, designed for daily use rather than for technical configuration.
 
 ## [03] WHAT VISIO SAPIENS ACTUALLY IS
-##      narration | slot 3:30-5:00 (90s) | 189 words | target 81s
+##      narration | slot 3:30-5:00 (90s) | 191 words | target 82s
 
 So what is it, concretely? Visio Sapiens is not a dashboard. It's a control-center-style interface, sitting on top of Home Assistant.
 
 The distinction matters. A dashboard is a collection of cards you assemble. A control center is a coherent system, with its own rendering engine, its own visual logic, its own identity — and it simply goes to Home Assistant to fetch the data.
 
-And that distinction has a very concrete consequence, one you'll see at work in every episode: the interface isn't assembled by hand, it's generated. You describe your home once — the language, the format, the rooms — and every screen is produced from that description, then kept in step as the home changes. Adding a room isn't drawing a new dashboard: it's declaring a room, and letting the generator do the rest. A dashboard you assemble by hand ages. A dashboard that's generated keeps up.
+And that distinction has a very concrete consequence, one you'll see at work in every episode: the interface isn't assembled by hand, it's generated. You describe your home once, in an admin console — the language, the format, the rooms, the look — and every screen is produced from that description, then kept in step as the home changes. Adding a room isn't drawing a new dashboard: it's declaring a room, and letting the generator do the rest. A dashboard you assemble by hand ages. A dashboard that's generated keeps up.
 
-And that leads to the single rule that drives absolutely every technical decision in this project, the one you'll meet again in every episode:
+And that leads to the single rule that drives every technical decision in this project, the one you'll meet again in every episode:
 
 Home Assistant is nothing more than a data engine. The interface is driven entirely by VSSP.
 
 ## [04] WHY NOT THE NATIVE LOVELACE CARDS?
-##      narration | slot 5:00-7:30 (150s) | 320 words | target 137s
+##      narration | slot 5:00-7:30 (150s) | 337 words | target 144s
 
 So here's the question that comes up straight away: why not just use the native Lovelace cards? They exist, they're maintained by the Home Assistant core, they work perfectly well.
 
-Exactly — they work perfectly well for what they are: a system of stacked cards. But the moment you want a coherent visual identity, animations that respond in real time, a HUD that behaves like a real system interface rather than a grid of widgets, you hit Lovelace's glass ceiling.
+Exactly — they work perfectly well for what they are: a system of stacked cards. But the moment you want a coherent visual identity and a HUD that behaves like a real system interface rather than a grid of widgets, you hit Lovelace's glass ceiling.
 
-So the project made a radical call: refuse the native Lovelace cards, and build its own rendering engine on top. With three exceptions, deliberate and documented, because it would be stupid to reinvent what already works well: weather-forecast, logbook, and apexcharts-card.
+So the project made a call: don't assemble ready-made cards, build a rendering engine of its own. And I want to be precise, because the short version would be wrong: this engine doesn't start from nothing. It stands on three community building blocks — button-card, card-mod and layout-card. Foundations, not widgets: one draws, one styles, one places. Everything you see on top — the navigation, the header band, the gauges, the rooms — is templates I write, generated and versioned in the repository. And a handful of specialised cards do what it would be absurd to rewrite: the charts, the weather, the calendar, the history.
 
-Everything else — the sidebar, the HUD, the gauges, the energy rows, the rooms — is the in-house engine, which I maintain, through the same CI/CD pipeline I mentioned a moment ago. No dependency on a community maintainer who can vanish overnight.
+The difference from a typical community dashboard is the exposed surface. Three foundations and a handful of cards, which the updates screen watches as a family of their own — not thirty widgets with thirty maintainers. The day a building block gives out, it's one block to replace, not thirty cards to track down.
 
-Now let's be honest about the price of that choice, because there is one: by refusing the community cards, I become the maintainer. If a gauge breaks, nobody else is coming to fix it. That's a real cost, and I take it on for a precise reason: that cost is one I control. When a community card disappears, I control nothing — not the timing, not the decision, not the migration. A bug in my own engine, I can fix that same evening and ship it straight out.
+The price of that choice is real, let's be honest: for everything above the foundations, I become the maintainer. But that cost is one I control: a bug in my templates, I fix it that same evening.
 
-And there's a side effect I hadn't seen coming. Once you write your own engine, you stop piling up patches. The famous card-mod, with its CSS selectors reaching into the shadow DOM of a card you don't control — it works, sure, right up until the update that renames a class. At that point there's no patch left to write: there's CSS I wrote, sitting on HTML I produced.
+And card-mod deserves a word. On my own templates, it's a tool. Inside the shadow DOM of a card I don't control, it's a patch — and I still have one: to force the language of a third-party weather card, I hide its text and write another one over it. It holds until the update that renames a class. That's why that kind of patch stays an exception, and why it's documented.
 
 ## [05] THE ARCHITECTURE DIAGRAM
-##      narration | slot 7:30-9:30 (120s) | 203 words | target 87s
+##      narration | slot 7:30-9:30 (120s) | 214 words | target 92s
 
-Here's what the full architecture looks like. I'm showing it to you once, in full, because it's the mental map you'll need to follow every episode that comes after.
+Here's what the full architecture looks like. I'm showing it to you once, in full, because it's the map you'll need to follow the whole series.
 
-CORE: the system foundation — this is what exposes the metrics, the machine state, the thing everything else leans on. We'll come back to it in detail in episode 2.
+Five places hold something, and they are not interchangeable. The Git repository, on my workstation: the model, the templates, the translations, the tooling. The GitLab pipeline, which validates, builds and deploys. Two targets, receiving the same package: a k3s cluster for staging, Home Assistant OS for production. And the browser — the tablet, the phone — where the dashboards appear.
 
-Room Engine: the logic that turns a room definition into an interface — the heart of the dashboard generator, episode 3.
+In the middle, one single command: the generator. It takes the description of the house, the templates and the language, and it produces every dashboard and the theme. Nobody writes a dashboard by hand.
 
-AI Layer: the layer that wires intelligence into the interface — the chatbot, the automations. Episode 9.
+And every screen of the admin console follows the same loop: a form sends what you decided, a script backs up first, writes the model, regenerates, then reports what it did.
 
-Animation Engine, CSS Engine, JS Engine, Theme Engine: the four layers that give Visio Sapiens its visual identity and its behaviour — this is what makes a room feel like a living interface rather than a Lovelace card wearing a nice theme.
-
-Take just one thing away from this diagram: every layer has one precise responsibility, and none of them does another one's job. That's what lets the project hold up over time instead of turning into a plate of YAML spaghetti — and it's also what makes the CI/CD pipeline possible: you can only version and restore cleanly what is structured in the first place.
+Take one thing away from this diagram: every piece has one precise responsibility, and none of them does another one's job. That's what lets the project hold up over time instead of turning into a plate of YAML spaghetti — and it's what makes the rest of the series possible: you can only version, back up and restore cleanly what is structured in the first place.
 
 ## [06] LIVE TOUR OF THE HOME DASHBOARD
-##      narration | slot 9:30-11:30 (120s) | 277 words | target 119s
+##      narration | slot 9:30-11:30 (120s) | 245 words | target 105s
 
-Enough theory, let's look at the result. This is HOME, the landing screen of Visio Sapiens.
+Enough theory, let's look at the result. This is HOME, the landing screen, as it appears on the living-room tablet.
 
-The sidebar — navigation between the screens of the control center.
+On the left, the navigation rail: one entry per declared room, plus the system screens. It's generated too — add a room, and its entry appears on every screen at once.
 
-The HUD row in the header: weather, clock, alarm status, avatar — everything you want to take in at a glance as you walk into the house.
+At the top, the header band: the screen's name and the time, the weather, the calendar. The same band on every dashboard, because it comes from a single template.
 
-The energy row — production, consumption, what the house is doing right now, not a history you have to go digging for.
+Just below, the status row: the system, the energy, the alarm with its modes and its panic button, the thermostat — and this updates light, which turns orange when something is waiting, and leads to the screen that says exactly what.
 
-The room modules — one screen per declared room, all produced by the same generator, from the same template. These aren't ten dashboards written ten times: it's one template, and ten rooms.
+In the centre, the protocol radar, and next to it, the metered devices with what they draw. Then the assistant bar, and the house's latest events.
 
-And the navigation rail, here, which rebuilds itself when a room appears or disappears — because it's generated too, not maintained by hand in some corner of YAML that you always end up forgetting.
+And now the part I most enjoy showing, because it makes all of this concrete: where this screen's look comes from.
 
-And now the part I most enjoy showing, because it makes all of this concrete: the repository tree, live, side by side with what's on screen.
-
-This file — www/vssp/css/vssp.css — is literally what paints that screen. Not a metaphor: every colour, every bit of spacing you see on the right comes from that file on the left. That's what having an in-house engine means, rather than a theme laid over generic cards: the code and the interface speak the same language — and so they're versionable like a real software project.
-
-And if I change a colour here, on the left, it changes on the right at the next deployment. On every screen at once, because there's only one source. Not ten cards to touch up one by one, hoping you didn't miss any.
+On the left, a file in the repository, design_system.yaml: every colour, the typeface, the size of each kind of text. On the right, the console screen that edits it. I raise the size of the values — and every screen follows at once, because there's only one source. Not ten cards to touch up one by one, hoping you didn't miss any. The code and the interface speak the same language — and so they're versioned like a real software project.
 
 ## [07] A NOTE ON NAMES
-##      narration | slot 11:30-12:00 (30s) | 87 words | target 37s
+##      narration | slot 11:30-12:15 (45s) | 102 words | target 44s
 
-A quick aside before we wrap up, because you're going to run into this in later episodes: the project was originally called OSVision, and was renamed to VSSP. You'll come across old file names and old paths dating from that era.
+A quick aside before we wrap up, because you're going to run into this: the project was originally called OSVision, before it became VSSP. In September, a big sweep removed the old name from the identifiers, the components and the stylesheets — and that sweep surfaced three real bugs, including a dead link nobody had noticed. But some traces remain: the JavaScript engine still carries the old name, and the K3s panel on the CORE screen still looks for its file under the old path. A good project doesn't hide those marks, it documents them. That one, we'll fix live in episode D1.
 
-I'm mentioning it now for a simple reason: a project's history leaves marks. A good project doesn't hide those marks, it documents them. You'll see this renaming scar again later, notably in the K3s bug in episode 2 — and now you'll know why it's there.
+## [08] QUICK MONTAGE — WHAT HAS SHIPPED
+##      narration | slot 12:15-12:45 (30s) | 66 words | target 28s
 
-## [08] QUICK MONTAGE — CHANGELOG
-##      narration | slot 12:00-12:30 (30s) | 39 words | target 17s
+None of what you've just seen existed a few months ago. A generator that produces every screen. A console that declares the rooms. A safe that unseals from an enrolled device. An updates screen that knows what it doesn't know. A visual charter that changes right down to the typeface. This isn't a frozen project — it's a system with a history, and it's still writing one.
 
-None of what you've just seen existed a few months ago. quick list of 3-4 changelog milestones, to be picked from Vision.md. This isn't a frozen project — it's a system with a history, and it's still writing one.
+## [09] THE MAP OF THE SERIES
+##      narration | slot 12:45-13:45 (60s) | 110 words | target 47s
 
-## [09] TRANSITION TO EPISODE 2
-##      narration | slot 12:30-13:15 (45s) | 138 words | target 59s
+The rest of the series is organised into four blocks, and you choose your way in.
 
-What to take away from this episode: Visio Sapiens isn't a dashboard, it's a control center, built to be simple, effective and secure by default. Home Assistant supplies the data, VSSP supplies everything else — without depending on community cards that can give out without warning, and with a pipeline that lets you roll back when you need to, even self-taught.
+Block A is the foundation: the machine, the cluster, the pipeline, and what breaks when one of the three lies.
 
-In the next episode we go down a level: we follow a single piece of data, from psutil on the host machine all the way to an SVG gauge in your browser, with DevTools open so you can watch every step go past.
+Block B is backup — all the way to the only proof that counts: the restore.
 
-Subscribe, hit the bell, and tell me in the comments: does your Home Assistant install still look like a stack of Lovelace cards, or have you already started climbing out?
+Block C is the safe: where the secrets live, and how you unseal it without typing three keys by hand.
 
-See you very soon.
+And block D is the interface itself, from the gauge to the generator.
+
+Inside a block, the order matters. Between blocks, it doesn't: if you came for the backups, you don't have to sit through ten interface episodes first.
+
+## [10] CLOSE
+##      narration | slot 13:45-14:30 (45s) | 98 words | target 42s
+
+What to take away: Visio Sapiens isn't a dashboard, it's a control center, simple, effective and secure by default. Home Assistant supplies the data, VSSP supplies the interface — on a small number of watched foundations, with a pipeline that lets you roll back.
+
+If you don't know where to start, take D1: we follow a single piece of data, from the host machine all the way to a gauge in your browser.
+
+Subscribe, and tell me in the comments: is your Home Assistant still a stack of cards, or have you started climbing out? See you very soon.
 
 #--------------------------------------------------------------------
-# TOTAL: 1666 words, 11 min 54 s
+# TOTAL: 1777 words, 12 min 42 s

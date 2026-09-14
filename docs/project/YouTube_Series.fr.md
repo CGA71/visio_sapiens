@@ -17,10 +17,17 @@ d'un bloc, l'ordre compte ; entre blocs, non.
 | **A** | Environnement & CI/CD | 5 |
 | **B** | Sauvegarde | 4 |
 | **C** | Coffre-fort | 4 |
-| **D** | Interface domotique | 9 |
+| **D** | Interface domotique | 10 |
 
 Les docs sources citées existent dans `docs/` dans les deux langues
-(`X.md` / `X.fr.md`).
+(`X.md` / `X.fr.md`), sauf mention *à écrire*.
+
+> **Révision du 14 septembre 2026.** Ce plan a été relu contre le dépôt deux
+> jours après son découpage. Le pilote a été réécrit (sa narration et ses
+> sous-titres régénérés), un épisode D10 s'ajoute, et plusieurs sections
+> décrivaient un état qui n'est plus vrai. Le détail est dans
+> [Ce qui a changé depuis le 12 septembre](#ce-qui-a-changé-depuis-le-12-septembre) ;
+> les sections concernées sont corrigées en place.
 
 ---
 
@@ -81,7 +88,8 @@ et le plus démontrable.
 ## Bloc D — Interface domotique
 
 Le cœur historique du projet : l'interface elle-même, de la jauge au
-générateur. Neuf épisodes, tous déjà documentés.
+générateur. Dix épisodes : les neuf premiers ont leur doc, D10 doit d'abord
+écrire la sienne.
 
 | # | Titre | Doc source | Question centrale |
 |---|---|---|---|
@@ -91,9 +99,10 @@ générateur. Neuf épisodes, tous déjà documentés.
 | D4 | Étude de cas : le wizard d'assignation | `Deployment.md` | Comment transformer un scan brut en formulaire sûr ? |
 | D5 | Automatiser une configuration OAuth | `Google_Calendar.md` | Jusqu'où automatiser — et où ça s'arrête ? |
 | D6 | Un chatbot dans le dashboard | `Chatbot_Integration.md` | Quatre fournisseurs derrière une carte, sans backend ? |
-| D7 | L'éditeur de design system | `Design_System_Editor.md` | Comment rendre une charte modifiable sans laisser casser l'UI ? |
-| D8 | Bilingue par construction | `Google_Calendar.md` + `locales/` | Que faut-il pour tenir **une** langue sur **un** écran ? |
+| D7 | L'éditeur de charte graphique (TEMPLATE GRAPHIQUE) | `Design_System_Editor.md` | Comment rendre une charte modifiable sans laisser casser l'UI ? |
+| D8 | Bilingue par construction | `Google_Calendar.md` + `locales/` + `_header.j2` | Que faut-il pour tenir **une** langue sur **un** écran ? |
 | D9 | Le planificateur | `Scheduler.md`, `AI_Assistant.md` | Comment une interface ne ment-elle pas sur le futur ? |
+| D10 | La tablette murale : concevoir pour 1194 × 834 | *à écrire* (`Tablet_Layout.md`) | Pourquoi un écran qui marche sur un bureau casse-t-il sur la tablette du salon ? |
 
 ---
 
@@ -105,7 +114,7 @@ commun que leur brièveté.
 
 | Ancien | Devient | Remarque |
 |---|---|---|
-| 1 Vision & architecture | **Pilote** | inchangé, déjà tourné |
+| 1 Vision & architecture | **Pilote** | script révisé le 14 septembre, narration et sous-titres régénérés |
 | 2 CORE | **D1** | |
 | 3 Générateur | **D2** | |
 | 4 Câbler une pièce | **D3** | |
@@ -117,46 +126,57 @@ commun que leur brièveté.
 | 10 Design system | **D7** | |
 | 11 Bilingue | **D8** | |
 | 12 Sauvegardes + sécurité | **B2** *et* **C4** | coupé en deux |
-| — | A1, A4, A5, B1, B3, B4, C1, C2, C3, D9 | dix épisodes nouveaux |
+| — | A1, A4, A5, B1, B3, B4, C1, C2, C3, D9, D10 | onze épisodes nouveaux |
 
 ---
 
 ## Pilote — Vision & architecture
 
-C'est le premier épisode tourné, et le seul qui n'appartient à aucun bloc
-parce qu'il les annonce tous. Son script complet existe déjà :
-`episode-01-vision-architecture.fr.md`, avec sa narration et ses sous-titres.
+Le seul épisode qui n'appartient à aucun bloc, parce qu'il les annonce tous.
+Son script complet : `episode-01-vision-architecture.fr.md`, révisé le
+14 septembre 2026. Sa narration (`episode-01-narration.fr.txt`) et ses
+sous-titres (`episode-01.fr.srt`) sont **générés** depuis le script par
+`scripts/build_episode_media.py` — les régénérer après toute retouche de voix
+off plutôt que de les éditer à la main.
 
 **Objectif :** donner aux spectateurs le modèle mental avant tout code. Ce
 qu'est Visio Sapiens (une interface façon centre de contrôle posée sur Home
-Assistant, pas un simple dashboard habillé), et pourquoi le projet refuse les
-cartes Lovelace natives sauf exceptions documentées (`weather-forecast`,
-`logbook`, `apexcharts-card`).
+Assistant, pas un simple dashboard habillé), pourquoi le projet construit son
+propre moteur de rendu au lieu d'assembler des cartes toutes faites, et comment
+la série est organisée.
 
 **À montrer à l'écran :**
-- Le diagramme d'architecture de `Vision.md` (CORE / Room Engine / IA Layer /
-  Animation Engine / CSS Engine / JS Engine / Theme Engine).
-- Une visite en direct du dashboard HOME, en pointant des éléments concrets :
-  la sidebar, la rangée HUD du header (météo, horloge, statut alarme,
-  avatar), la rangée énergie.
-- L'arborescence du dépôt, mise en correspondance en direct avec ce qui est
-  affiché (`www/vssp/css/vssp.css` est littéralement ce qui peint cet écran).
+- Les diagrammes de `Vision.md` : la vue d'ensemble (§2), la chaîne de
+  génération (§4), la boucle en six temps de la console (§5). L'ancien
+  diagramme « CORE / Room Engine / IA Layer / … » n'existe plus depuis la
+  réécriture de `Vision.md` du 9 septembre.
+- Une visite en direct de HOME **à 1194 × 834** (la tablette murale) : le rail
+  de navigation, le bandeau (écran + heure, météo, agenda), la rangée d'état
+  (système, énergie, alarme, thermostat, voyant de mises à jour), le radar, les
+  appareils mesurés, la barre de l'assistant.
+- `dashboards/model/design_system.yaml` à côté de l'écran TEMPLATE GRAPHIQUE :
+  une taille de texte changée, tous les écrans qui suivent.
+- La carte des quatre blocs, en motion design.
 
 **Points à aborder :**
 - La règle unique qui pilote toutes les autres décisions : « Home Assistant
   n'est plus qu'un moteur de données ; l'interface est entièrement pilotée
   par VSSP. »
-- La migration de nommage (OSVision → VSSP) comme étude de cas sur la façon
-  dont l'histoire d'un projet laisse des traces — utile pour expliquer
-  pourquoi certains noms de fichiers ne concorderont qu'à partir d'épisodes
-  ultérieurs.
-- La section changelog de `Vision.md` est un montage tout prêt de « tout ce
-  qui a été livré » — bon pour une ouverture ou une conclusion en montage
-  rapide.
+- **Sur quoi le moteur repose, dit exactement :** trois fondations
+  communautaires (`button-card`, `card-mod`, `layout-card`), quelques cartes
+  spécialisées (graphiques, météo, agenda, historique), et les gabarits VSSP
+  au-dessus. L'ancienne formule — « aucune dépendance communautaire, plus de
+  rustine card-mod » — était fausse pour quiconque ouvre le dépôt.
+- La migration de nommage (OSVision → VSSP) : le ménage du 12 septembre, les
+  trois bugs qu'il a fait remonter, et les deux traces qui restent
+  (`OSVisionEngine`, le chemin K3s de CORE — le correctif en direct de D1).
+- Le montage « ce qui a été livré » se construit depuis l'historique Git :
+  `Vision.md` n'a plus de section changelog.
 
-**À ne pas filmer tout de suite :** tout ce qui dépend de secrets en direct
-(mot de passe Livebox, jetons longue durée) — garder la gestion des secrets
-pour l'épisode D3/A2.
+**À ne pas filmer :** tout secret en direct (mot de passe Livebox, valeurs du
+coffre-fort, phrase de descellement, clés du chatbot) — gardés pour le bloc C,
+D3 et D6. Les jetons longue durée ne font plus partie de la mise en service
+d'une tablette depuis le 14 septembre.
 
 ---
 
@@ -202,9 +222,11 @@ fonctionnalité particulière.
   `kubectl cp`) vs. tag → `deploy:production` (HAOS, SSH) avec une porte
   manuelle.
 - Un run de pipeline GitLab en direct, étape par étape.
-- Un des trous G1–G5 encore ouverts, corrigé en direct (G1, l'écart d'URL
-  CSS/JS, est le plus visuel : une feuille de style en 404 qui devient une
-  page stylisée à l'écran).
+- Un des trous de `CI_CD.md` encore ouverts, corrigé en direct. G1 (l'écart
+  d'URL CSS/JS, le plus visuel) et G4 (l'ancien nom) sont **désormais
+  fermés**. G2, G3 et G5 restent marqués ouverts — mais le pipeline déploie
+  aujourd'hui l'ADMIN et régénère les dashboards sur le pod, donc G2 et G3
+  sont à re-vérifier contre le pipeline actuel avant d'en faire la démo.
 
 **Points à aborder :**
 - La règle `workflow:` comme « premier réflexe de diagnostic » — un push sur
@@ -232,8 +254,8 @@ symptômes, de vraies commandes lancées pour cerner la cause — le format qui
 tend à le mieux performer parce que la résolution est gagnée à l'écran plutôt
 que supposée.
 
-**À montrer à l'écran, comme trois (ou quatre) mini-cas indépendants tirés de
-`Troubleshooting.md` :**
+**À montrer à l'écran — une réserve de huit mini-cas indépendants. En retenir
+quatre par épisode, ou scinder en A3a / A3b :**
 1. **Le staging semble inchangé après un pipeline vert** — le job
    `deploy:staging` ne redémarrait jamais Home Assistant, donc
    `lovelace.dashboards` et `homeassistant.packages` continuaient de servir
@@ -248,7 +270,7 @@ que supposée.
    jeton longue durée vide produisait un 401 silencieux, et
    `continue_on_error: true` laissait le générateur tourner quand même sur
    un modèle vide, écrasant un dashboard fonctionnel par un vide.
-4. **Bonus, tiré des logs de cette session même :** le wizard ROOMS & FLOORS
+4. **Bonus, tiré de l'historique du projet :** le wizard ROOMS & FLOORS
    restant en français malgré un sélecteur de langue sur `en` — retracé
    jusqu'à un jeton de cache-busting `?v=` manquant sur une seule URL
    d'iframe, le seul actif de tout le pipeline non couvert par l'étape `sed`
@@ -256,6 +278,27 @@ que supposée.
    un pipeline mature peut avoir exactement un coin non couvert, et que
    « c'est probablement mis en cache » vaut la peine d'être vérifié avant de
    supposer qu'un déploiement a échoué.
+5. **Le cluster qui meurt à chaque démarrage** *(11 septembre)* —
+   `k3s.service` et `k3s-agent.service` se disputaient `127.0.0.1:6444` ;
+   l'hôte démarrait sans jamais finir. « Le service est actif » ≠ « le service
+   fonctionne ». Se tourne en binôme avec A1.
+6. **`set -e` : Illegal option** *(12 septembre)* — un script shell écrit
+   depuis une copie Windows, donc en CRLF : `dash` lit `-e` suivi d'un retour
+   chariot. Le correctif est une ligne de `.gitattributes`, pas le script.
+7. **Coller le jeton faisait planter CORE** *(12 septembre)* — sans jeton,
+   `init()` remplaçait toute la page par le formulaire ; `saveToken()`
+   rappelait ensuite `init()` sur des éléments qui n'existaient plus. Le bug
+   dormait tant que tout le monde avait déjà un jeton, et le renommage de la
+   clé l'a réveillé. *(Depuis le 14 septembre, CORE ne demande plus de jeton
+   du tout — le cas reste bon, le formulaire n'est plus qu'un repli.)*
+8. **Des icônes absentes sur un seul appareil** *(14 septembre)* — sur l'iPad,
+   seule l'icône d'APPAREILS ÉNERGIE s'affichait dans le menu ADMIN.
+   Hypothèse fausse : le manque de place. Ce qui a tranché : Chromium à la
+   même taille montrait les neuf icônes, et le serveur servait les neuf.
+   L'icône visible était la seule déjà utilisée par le rail de navigation,
+   donc déjà en cache ; les autres échouaient au chargement depuis un frontend
+   périmé. Correctif : réinitialiser le cache du frontend. « Même taille
+   d'écran » ≠ « même navigateur ».
 
 **Points à aborder :**
 - Chaque cas suit la même forme : symptôme → première hypothèse fausse → la
@@ -265,7 +308,8 @@ que supposée.
   vidéos sur de nouveaux bugs.
 - Le motif « pipeline vert, résultat inchangé » mérite d'être nommé comme un
   concept à part entière — il revient dans les cas 1, 2 et 4 sous des formes
-  différentes.
+  différentes. Le cas 8 en est le cousin : **un seul client en tort**, alors
+  que tout ce qui est vérifiable depuis le poste est juste.
 
 ---
 
@@ -503,6 +547,11 @@ trois clés à la main » sans supprimer ce qui le rendait sûr.
 - Les questions de conception encore ouvertes, telles quelles.
 - Ce qui a changé depuis la première rédaction du document — le coffre et le
   descellement sont précisément des réponses à deux de ces points.
+- **Le jeton longue durée retiré des tablettes** *(14 septembre)* : les pages
+  de la console (PIÈCES & ÉTAGES, APPAREILS DÉTECTÉS, CORE) empruntent la
+  session Home Assistant du dashboard qui les contient, au lieu d'un jeton
+  collé et gardé en clair dans `localStorage`. `Security.md` ne parle pas du
+  tout de ce jeton — c'est un manque à combler avant le tournage.
 
 **Points à aborder :**
 - La différence entre un projet qui a un modèle de menace et un projet qui a
@@ -539,7 +588,13 @@ peut suivre pas à pas.
 - Le bug encore ouvert du chemin K3s (404 sur `/local/osvision_v2/...`)
   corrigé en direct : le trouver, expliquer pourquoi le `catch` avale
   l'erreur silencieusement, patcher la ligne, redéployer, montrer le panneau
-  K3s reprendre vie.
+  K3s reprendre vie. *Toujours présent dans `core.html` au 14 septembre.*
+- **L'authentification a changé** *(14 septembre)* : `core.html` ne demande
+  plus de jeton, il emprunte la session du dashboard CORE (`hass.auth`, jeton
+  court rafraîchi à la demande), et son URL porte désormais `?v=` comme les
+  autres iframes. Dans l'onglet Réseau, l'en-tête `Authorization` porte ce
+  jeton court. `Core_Dashboard.md` décrit encore l'ancien jeton sous l'ancienne
+  clé (`osv_ha_token`) : à réécrire avant le tournage.
 - `esc()` et l'angle XSS — un aparté de 90 secondes sur pourquoi on échappe
   les données de son **propre** backend, pas seulement les entrées
   « non fiables ».
@@ -576,8 +631,11 @@ projet.
   signalé mais pas retiré, `keep: true` comme échappatoire) — bonne matière
   pour « comment éviter qu'un script n'efface la personnalisation manuelle de
   quelqu'un ».
-- Le pont encore ouvert (`vssp_model_sync.py`, wizard → modèle) comme
-  accroche « dans un prochain épisode ».
+- Le pont wizard → modèle, que `Dashboard_Generator.md` annonce encore sous le
+  nom `vssp_model_sync.py`, **existe désormais sous une autre forme** : les
+  applicateurs de la console (`vssp_rooms_apply.py`, `vssp_assign_apply.py`)
+  écrivent le modèle puis régénèrent. Accroche naturelle vers D4 — et section
+  de la doc à mettre à jour avant le tournage.
 
 ---
 
@@ -615,7 +673,7 @@ l'intégration de Technical Room comme exemple travaillé.
 **Objectif :** une deuxième étude de cas, en contraste — un outil interactif
 plutôt qu'un dashboard statique, et un bon moment pour montrer la forme
 récurrente « découvrir → décider → appliquer » qu'on retrouve dans tout le
-projet (c'est la même forme que le wizard ROOMS & FLOORS de cette session).
+projet (c'est la même forme que l'écran PIÈCES & ÉTAGES).
 
 **À montrer à l'écran :**
 - Le pipeline de `Deployment.md` :
@@ -670,7 +728,7 @@ sur la seule étape qui ne se replie pas.
 - La gestion des secrets une fois de plus, cette fois comme un motif
   reconnaissable du projet plutôt qu'un cas isolé : le secret client est
   écrit dans un fichier 0600 et n'atteint jamais une ligne de commande,
-  exactement comme `vssp_ha_token` et les clés du chatbot.
+  exactement comme le mot de passe Livebox et les clés du chatbot.
 
 **Bon appariement :** l'épisode D8 reprend ce même écran comme exemple
 travaillé — les filmer coup sur coup, tant que le matériau est frais.
@@ -701,16 +759,28 @@ propre au projet — et les contraintes qui façonnent une telle chose.
 
 ---
 
-## D7 — L'éditeur de design system
+## D7 — L'éditeur de charte graphique (TEMPLATE GRAPHIQUE)
 
 **Objectif :** une charte graphique qui tenait dans un fichier de thème
 édité à la main, devenue un modèle plus un générateur plus un écran
 d'édition — la même forme modèle→template→généré que l'épisode D2, appliquée
 à l'apparence au lieu de la structure.
 
+> **Statut remis à zéro le 13 septembre** (règle 2 du plan d'action) : l'écran
+> a reçu la police, les tailles de texte par usage et le logo remplaçable.
+> Rien de ce qui aurait été filmé avant n'est encore juste.
+
 **À montrer à l'écran :**
 - `model/design_system.yaml` à côté du thème généré, une couleur changée en
   direct, régénération, et toute l'interface qui suit.
+- **Les tailles de texte par usage** — horloge, titres, valeurs, texte,
+  libellés, chacune de 50 à 200 % : un curseur, et toutes les valeurs de tous
+  les écrans suivent. C'est aussi la démo du pilote (section 6).
+- **La police qui rejoint la charte**, et le piège de sa feuille : `/local` est
+  mis en cache un mois par le navigateur, donc une police changée n'arrive pas
+  tant que l'URL de la feuille ne porte pas de version.
+- **Le logo carré remplaçable** du rail de navigation (par défaut, envoyé, ou
+  aucun), dans un rail qui ne fait que la largeur de sa plus longue entrée.
 - Le retour aux valeurs par défaut (`design_system.default.yaml`), qui est ce
   qui rend l'expérimentation assez sûre pour être filmée.
 - Un piège CSS en direct, qui mérite son propre moment : `color-mix()` est
@@ -724,6 +794,15 @@ d'édition — la même forme modèle→template→généré que l'épisode D2, 
   permissif.
 - Les design tokens comme contrat entre le générateur et le CSS — la raison
   pour laquelle une seule valeur peut déplacer toute l'interface.
+- **Un modèle plus ancien que le code** : le modèle vivant du pod ne connaît
+  pas les tokens ajoutés après sa création. Plutôt que de retomber sur rien,
+  le générateur complète chaque token manquant depuis la référence d'usine
+  (`design_system.default.yaml`). Une règle transposable : une donnée écrite
+  par l'utilisateur vieillit plus lentement que le code qui la lit.
+
+**Bon appariement :** D10 — la même semaine de travail, vue depuis la
+tablette : le rail ajusté à ses entrées et le bandeau ramené à sa hauteur
+sont nés là.
 
 ---
 
@@ -765,11 +844,20 @@ entièrement sur l'écran CALENDRIER, le cas qui l'a rendu évident.
   arbitrage délibéré — et il vaut mieux le défendre à l'écran que le passer
   sous silence.
 
+**Second cas — les cartes tierces qui parlent la langue du navigateur**
+*(12 septembre)* : avec des dashboards générés en anglais, l'agenda et la
+météo du bandeau restaient en français. Ces cartes lisent `hass.language` —
+la langue du navigateur (fr-FR) — et non la langue générée. Correctif :
+l'option `language:` quand la carte en a une (calendar-card-pro), sinon
+card-mod qui masque le texte et le réécrit (simple-weather-card) — la rustine
+assumée dans la section 4 du pilote. Un basculement fr→en qui « ne marche
+pas » peut vouloir dire « une seule carte tierce est restée en français ».
+
 **Bon appariement :** le quatrième cas de l'épisode A3 (un wizard bloqué en
 français parce qu'une URL d'iframe n'avait pas d'anti-cache) est la
 mauvaise traduction antérieure du même écran, pour une cause complètement
-différente. Montrés ensemble, ils établissent que « mauvaise langue à
-l'écran » est un symptôme, pas un diagnostic.
+différente. Montrés ensemble — avec le second cas ci-dessus — ils établissent
+que « mauvaise langue à l'écran » est un symptôme, pas un diagnostic.
 
 ---
 
@@ -792,6 +880,71 @@ dans le temps plutôt que sur commande.
 
 ---
 
+## D10 — La tablette murale : concevoir pour 1194 × 834
+
+**Objectif :** l'appareil qui compte n'est pas l'écran de bureau sur lequel on
+développe, c'est l'iPad 11 pouces en paysage accroché au mur. Un épisode sur
+tout ce qu'un écran de bureau ne montre pas — et sur la règle qui en est
+sortie : **chaque test se fait à 1194 × 834**.
+
+**À montrer à l'écran, quatre cas du 14 septembre :**
+1. **Des noms d'appareils à 0 px de large.** Dans CONSOMMATION PAR APPAREIL,
+   une ligne dispose de 272 px, et ses colonnes fixes (icône, pièce,
+   puissance, énergie, flèche, espaces) en réclamaient 358. La colonne du nom
+   tombait à zéro — pendant que la colonne pièce n'affichait qu'un tiret.
+   Retirer la colonne ne suffisait pas (18 px) ; il a fallu ajuster chaque
+   colonne à son contenu réel.
+2. **Un bandeau de 246 px au lieu de 76.** Le rail de navigation couvre les
+   deux lignes de la grille ; avec des lignes `auto auto` et un contenu court,
+   la grille répartit la hauteur du rail sur les deux — l'en-tête gonfle. Neuf
+   écrans sur dix passaient par chance, parce que leur contenu était plus haut
+   que le rail. `auto 1fr` partout.
+3. **Une tablette neuve = une connexion.** Les pages de la console (des
+   iframes) demandaient un jeton longue durée à coller. Elles empruntent
+   désormais la session de la tablette elle-même : rien à coller, rien de
+   permanent stocké dans le navigateur.
+4. **Ce que le poste de test ne voit pas.** Des icônes absentes sur l'iPad
+   seulement : Chromium à la même taille les affichait toutes. La taille de
+   l'écran se simule ; le moteur du navigateur, non (voir A3, cas 8).
+
+**Points à aborder :**
+- Mesurer plutôt que regarder : chaque cas a été tranché par une largeur ou
+  une hauteur lue dans le DOM, pas par une capture.
+- Un rail aussi large que sa plus longue entrée, un en-tête à la hauteur de
+  son contenu : laisser le contenu dimensionner la mise en page plutôt que
+  l'inverse.
+- Pourquoi les tests se font dans un navigateur qui n'est pas celui de la
+  tablette, et comment le dire honnêtement dans chaque compte rendu.
+
+**Source :** *à écrire* — `docs/dashboards/Tablet_Layout.md`. Les quatre cas
+sont documentés dans leurs commits du 14 septembre ; les écrire tant qu'ils
+sont frais.
+
+---
+
+## Ce qui a changé depuis le 12 septembre
+
+Le plan a été découpé le 12 septembre ; ce qui suit a bougé depuis, ou était
+déjà faux ce jour-là.
+
+| Date | Ce qui a changé | Épisodes touchés |
+|---|---|---|
+| 9 sept. | `Vision.md` réécrit : l'ancien diagramme « Room Engine / IA Layer » et la section changelog disparaissent | Pilote |
+| 12 sept. | L'ancien nom retiré du code — sauf `OSVisionEngine` et le chemin K3s de CORE | Pilote, D1, A3 |
+| 12 sept. | Agenda et météo du bandeau suivent la langue générée, plus celle du navigateur | D8 |
+| 13 sept. | La police, les tailles de texte par usage et le logo remplaçable rejoignent le TEMPLATE GRAPHIQUE ; les tokens manquants sont complétés depuis la référence d'usine | D7 (statut remis à zéro), Pilote |
+| 13-14 sept. | Le rail de navigation et le bandeau s'ajustent à leur contenu ; les panneaux ÉNERGIE s'alignent en hauteur ; la colonne pièce disparaît de CONSOMMATION PAR APPAREIL | D10, Pilote |
+| 14 sept. | Les pages de la console empruntent la session de la tablette : plus de jeton longue durée | C4, D1, D10, Pilote |
+| 14 sept. | L'en-tête d'APPAREILS ÉNERGIE ramené au standard (76 px) | D10 |
+| — | Déjà faux le 12 : G1 et G4 fermés dans `CI_CD.md` ; le pont `vssp_model_sync.py` construit sous une autre forme ; `weather-forecast` utilisée nulle part ; « tout le reste est du moteur maison » contredit par 173 `button-card` et 95 blocs `card_mod` | A2, D2, Pilote |
+
+Trois docs sources décrivent encore l'état d'avant et doivent être mises à
+jour **avant** leur épisode (règle 1) : `Core_Dashboard.md` (l'ancien jeton,
+D1), `Dashboard_Generator.md` (le pont, D2), `CI_CD.md` (le statut de G2/G3,
+A2).
+
+---
+
 ## Plan d'action — quoi filmer ensuite
 
 Le statut porte sur la **filmabilité**, pas sur le fait que la fonctionnalité
@@ -800,23 +953,25 @@ survit à une prise existent toutes les deux aujourd'hui.
 
 | # | Épisode | Prêt à filmer ? | Prochaine étape concrète |
 |---|---|---|---|
+| — | Pilote | **Script révisé — voix et captures à refaire** | Recapturer HOME à 1194 × 834 ; ré-enregistrer la voix section par section ; relancer `scripts/build_episode_media.py` après toute retouche du script |
 | C3 | Desceller depuis un appareil enrôlé | **Prêt, et le plus frais** | Sceller le coffre exprès pour la prise ; prévoir un second appareil non enrôlé pour filmer le refus |
 | A5 | L'écran UPDATES | **Prêt** | Capturer l'écran gris « mesuré le … » pendant que le coffre est scellé — ça n'arrive que là |
 | C2 | L'écran COFFRE-FORT | **Prêt** | Préparer des secrets de démonstration ; rien de réel à l'écran |
 | D5 | Automatiser une configuration OAuth | **Prêt** | Un projet Google Cloud vierge, pour que le consentement soit filmable sans coupure |
-| D8 | Bilingue par construction | **Prêt** | Capturer EN/FR côte à côte et le commit d'avant correctif avant qu'il ne vieillisse |
-| D2 | Le générateur de dashboards | Prêt | Choisir l'unique modification de modèle à démontrer |
-| D7 | L'éditeur de design system | Prêt | Décider si le piège `color-mix()` est un moment ou un short à part |
+| D8 | Bilingue par construction | **Prêt** | Capturer EN/FR côte à côte ; le second cas (cartes tierces du bandeau) n'existe plus que dans l'historique — rejouer le commit d'avant le 12 septembre |
+| D2 | Le générateur de dashboards | Prêt, doc à retoucher | Choisir l'unique modification de modèle à démontrer ; mettre à jour la section « pont » de `Dashboard_Generator.md` |
+| D7 | L'éditeur de charte graphique | **Écran changé — statut remis à zéro** | Refilmer avec la police, les tailles de texte et le logo ; décider si le piège `color-mix()` est un moment ou un short à part |
 | D6 | Un chatbot dans le dashboard | Prêt, avec une réserve | Confirmer quelles clés peuvent être à l'écran ; flouter ou clé jetable |
 | A4 | HTTPS et le piège du proxy | Prêt, non appliqué | L'ingress n'est pas encore posé : le faire une première fois **hors caméra**, puis rejouer |
-| A2 | Le pipeline CI/CD | Prêt | Choisir lequel de G1–G5 est corrigé à l'écran (G1 est le plus visuel) |
+| A2 | Le pipeline CI/CD | Prêt, démo à rechoisir | G1 est fermé : re-vérifier G2/G3/G5 contre le pipeline actuel, puis choisir celui qu'on corrige à l'écran |
 | C1 | Pourquoi un coffre | Prêt | Retrouver le fichier de secrets d'avant dans l'historique git |
-| D1 | CORE | Bloqué sur un correctif | Le 404 `/local/osvision_v2/…` est le correctif en direct — vérifier qu'il se reproduit |
+| D1 | CORE | Bloqué sur un correctif, doc à réécrire | Le 404 `/local/osvision_v2/…` se reproduit toujours (vérifié dans le code le 14 septembre) ; réécrire la partie authentification de `Core_Dashboard.md` |
 | D4 | Le wizard d'assignation | Prêt | Relire la doc source de bout en bout avant d'écrire le script |
 | D3 | Câbler une pièce entière | Partiellement bloqué | Deux arbitrages ouverts — trancher, ou les filmer comme questions ouvertes |
 | B2 | Rotation et rétention | Prêt | Laisser le répertoire vieillir : un dossier de trois fichiers ne montre rien |
-| C4 | Revue de sécurité honnête | Prêt | Re-vérifier `Security.md` le jour du tournage — c'est la doc qui se périme le plus silencieusement |
-| A3 | Sessions de débogage | Prêt, à filmer en dernier | Ajouter le crash-loop k3s et le CRLF comme nouveaux cas |
+| C4 | Revue de sécurité honnête | Prêt, doc à compléter | Ajouter à `Security.md` le retrait du jeton longue durée des tablettes ; re-vérifier le document le jour du tournage |
+| A3 | Sessions de débogage | Prêt, à filmer en dernier | Huit cas en réserve : en choisir quatre, ou scinder en A3a / A3b |
+| D10 | La tablette murale | **Doc à écrire** | `Tablet_Layout.md` : quatre cas frais du 14 septembre, à écrire tant qu'ils le sont |
 | A1 | L'environnement | **Doc à écrire** | Aucune doc ne décrit l'hôte lui-même ; l'écrire d'abord |
 | D9 | Le planificateur | **Doc à relire** | `Scheduler.md` est antérieur aux derniers écrans |
 | B1 | Rien n'est jamais écrit à moitié | **Doc à écrire** | L'invariant est appliqué en trois endroits mais documenté nulle part |
@@ -826,11 +981,12 @@ survit à une prise existent toutes les deux aujourd'hui.
 Trois règles permanentes pour ce plan :
 
 1. **Une doc s'écrit avant son épisode, jamais après.** C'est ce qui rend
-   l'étape d'écriture du script courte — et c'est la règle qui classe quatre
-   épisodes du bloc B en « doc à écrire » plutôt qu'en « prêt ».
+   l'étape d'écriture du script courte — et c'est la règle qui classe trois
+   épisodes du bloc B, A1 et D10 en « doc à écrire » plutôt qu'en « prêt ».
 2. **Quand un écran change, le statut de son épisode repart à zéro.** L'écran
    COFFRE-FORT a reçu son bouton DESCELLER après la rédaction de ce plan : tout
-   ce qui aurait été filmé avant serait déjà faux.
+   ce qui aurait été filmé avant serait déjà faux. Même chose le 13 septembre
+   pour le TEMPLATE GRAPHIQUE (D7), et le 14 pour HOME (le pilote).
 3. **Un bloc se publie dans l'ordre, les blocs se publient dans n'importe
    lequel.** C'est ce qui permet de sortir C3 tant qu'il est frais sans
    attendre que le bloc B soit écrit.
@@ -857,7 +1013,14 @@ Trois règles permanentes pour ce plan :
   entièrement résolu.
 - **C1 → C2 → C3 → C4** est le seul bloc qui se regarde vraiment comme une
   histoire : un problème, un outil, une automatisation, un bilan honnête.
-- La console ADMIN a maintenant assez d'écrans (ROOMS & FLOORS, ASSIGN, ENERGY,
-  CALENDRIER, THEME, GÉNÉRATION, COFFRE-FORT, UPDATES) pour qu'un court « tour
-  de la console » serve de bande-annonce, monté à partir de rushes que les
-  autres épisodes produisent déjà.
+- **Le pilote se publie en premier**, et c'est lui qui doit être juste avant
+  tout le reste : il cite des épisodes de chaque bloc. Le refaire après D7 ou
+  D10 obligerait à le refaire une troisième fois.
+- **D7 → D10** : la même semaine de travail — la charte, puis la tablette qui
+  l'affiche. À tourner dans cet ordre, pendant que les écrans sont stables.
+- La console ADMIN a maintenant neuf écrans (PIÈCES & ÉTAGES, APPAREILS
+  DÉTECTÉS, ASSIGNATION DES APPAREILS, APPAREILS ÉNERGIE, CALENDRIER GOOGLE,
+  TEMPLATE GRAPHIQUE, DASHBOARDS, MISES À JOUR, COFFRE-FORT) — assez pour qu'un
+  court « tour de la console » serve de bande-annonce, monté à partir de rushes
+  que les autres épisodes produisent déjà. APPAREILS ÉNERGIE affiche encore
+  « pas encore construit » : le montrer tel quel, ou le couper.

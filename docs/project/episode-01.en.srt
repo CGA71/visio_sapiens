@@ -1,802 +1,876 @@
 1
-00:00:00,000 --> 00:00:02,590
+00:00:00,000 --> 00:00:02,571
 I think these dashboards are beautiful.
 
 2
-00:00:02,590 --> 00:00:05,612
-The Home Assistant community turns out
-cards
+00:00:02,571 --> 00:00:05,571
+The Home Assistant
+community turns out cards
 
 3
-00:00:05,612 --> 00:00:08,633
+00:00:05,571 --> 00:00:08,571
 that are genuinely stunning to look at.
 
 4
-00:00:08,633 --> 00:00:14,245
-Bar Card, one of the most widely used
-cards for animated energy bars,
+00:00:08,571 --> 00:00:14,143
+Bar Card, one of the most widely
+used cards for animated energy bars,
 
 5
-00:00:14,245 --> 00:00:19,424
-lost its repository on HACS in 2025 — no
-official maintainer left.
+00:00:14,143 --> 00:00:18,857
+lost its repository on HACS in
+2025 — no official maintainer left.
 
 6
-00:00:19,424 --> 00:00:22,878
-The result: thousands of dashboards with a
-broken
+00:00:18,857 --> 00:00:22,714
+The result: thousands of
+dashboards with a broken red
 
 7
-00:00:22,878 --> 00:00:26,331
-red card, overnight, with no warning to
-anyone.
+00:00:22,714 --> 00:00:25,714
+card, overnight, with
+no warning to anyone.
 
 8
-00:00:26,331 --> 00:00:29,353
-'Beautiful' and 'maintained' are two
-different things.
+00:00:25,714 --> 00:00:28,714
+'Beautiful' and 'maintained'
+are two different things.
 
 9
-00:00:29,353 --> 00:00:34,532
-And there's a second problem, and this one
-is more serious: if
+00:00:28,714 --> 00:00:33,857
+And there's a second problem,
+and this one is more serious: if
 
 10
-00:00:34,532 --> 00:00:39,712
-you want to reach that dashboard from your
-phone when you're away
+00:00:33,857 --> 00:00:38,571
+you want to reach that dashboard
+from your phone when you're
 
 11
-00:00:39,712 --> 00:00:44,029
-from home, it has to be exposed to the
-internet.
+00:00:38,571 --> 00:00:43,286
+away from home, it has to
+be exposed to the internet.
 
 12
-00:00:44,029 --> 00:00:49,209
-And it isn't just cards you're exposing —
-it's your personal data.
+00:00:43,286 --> 00:00:48,000
+And it isn't just cards you're
+exposing — it's your personal data.
 
 13
-00:00:49,209 --> 00:00:52,662
-Your presence patterns, your cameras,
-sometimes your locks.
+00:00:48,000 --> 00:00:51,429
+Your presence patterns, your
+cameras, sometimes your locks.
 
 14
-00:00:52,662 --> 00:00:56,547
-A poorly secured dashboard on a platform
-reachable from
+00:00:51,429 --> 00:00:54,857
+A poorly secured dashboard
+on a platform reachable
 
 15
-00:00:56,547 --> 00:01:00,000
-outside is an open door into your house.
+00:00:54,857 --> 00:00:58,714
+from outside is an open
+door into your house.
 
 16
-00:01:00,000 --> 00:01:05,130
-Faced with those two problems —
+00:01:00,000 --> 00:01:04,286
+Faced with those two problems —
 maintenance that gives out, and
 
 17
-00:01:05,130 --> 00:01:10,259
-security that gets neglected — I made one
-decision up front,
+00:01:04,286 --> 00:01:09,857
+security that gets neglected — I made
+one decision up front, and it's the
 
 18
-00:01:10,259 --> 00:01:15,389
-and it's the one that defines the whole
-project: build something
+00:01:09,857 --> 00:01:14,143
+one that defines the whole
+project: build something simple and
 
 19
-00:01:15,389 --> 00:01:20,518
-simple and effective, that ships with as
-much security as possible
+00:01:14,143 --> 00:01:19,286
+effective, that ships with as much
+security as possible by default, not
 
 20
-00:01:20,518 --> 00:01:25,648
-by default, not as an option you bolt on
-later if
+00:01:19,286 --> 00:01:25,286
+as an option you bolt on later
+if you happen to think of it.
 
 21
-00:01:25,648 --> 00:01:28,446
-you happen to think of it.
+00:01:25,286 --> 00:01:30,000
+In practice that means: as few
+external dependencies I have no
 
 22
-00:01:28,446 --> 00:01:33,575
-In practice that means: as few external
-dependencies I have no
+00:01:30,000 --> 00:01:34,714
+control over as possible, an
+architecture designed from day one to
 
 23
-00:01:33,575 --> 00:01:38,705
-control over as possible, an architecture
-designed from day one to
+00:01:34,714 --> 00:01:39,857
+be exposed to the internet without
+that being a gamble, and an
 
 24
-00:01:38,705 --> 00:01:43,834
-be exposed to the internet without that
-being a gamble, and
+00:01:39,857 --> 00:01:43,714
+environment that lets me roll
+back cleanly when something
 
 25
-00:01:43,834 --> 00:01:48,964
-an environment that lets me roll back
-cleanly when something breaks
+00:01:43,714 --> 00:01:48,429
+breaks — because it will break,
+sooner or later, on any project.
 
 26
-00:01:48,964 --> 00:01:54,093
-— because it will break, sooner or later,
-on any project.
+00:01:48,429 --> 00:01:52,714
+Concretely, that translates
+into a CI/CD setup that lets one
 
 27
-00:01:54,093 --> 00:01:59,223
-Concretely, that translates into a CI/CD
-setup that lets one self-taught
+00:01:52,714 --> 00:01:56,571
+self-taught person — not a DevOps
+team, just someone motivated —
 
 28
-00:01:59,223 --> 00:02:04,352
-person — not a DevOps team, just someone
-motivated — grow
+00:01:56,571 --> 00:02:01,286
+grow the product step by step,
+or simply restore a previous
 
 29
-00:02:04,352 --> 00:02:09,482
-the product step by step, or simply
-restore a previous version
+00:02:01,286 --> 00:02:05,143
+version straight into HAOS
+when an update goes wrong.
 
 30
-00:02:09,482 --> 00:02:13,212
-straight into HAOS when an update goes
-wrong.
+00:02:05,143 --> 00:02:10,286
+We'll go deep on that pipeline
+in block A of the series,
 
 31
-00:02:13,212 --> 00:02:18,808
-We'll go deep on that pipeline in episode
-6, but I wanted
+00:02:10,286 --> 00:02:14,571
+and backups have a block
+of their own, block B.
 
 32
-00:02:18,808 --> 00:02:24,404
-you to know, right here in episode 1, that
-this safety net
+00:02:14,571 --> 00:02:20,143
+But I wanted you to know, right
+here in the first episode, that
 
 33
-00:02:24,404 --> 00:02:29,1000
-exists and that it's part of the
-foundation, not a side feature.
+00:02:20,143 --> 00:02:24,857
+this safety net exists and that
+it's part of the foundation.
 
 34
-00:02:30,000 --> 00:02:38,148
-There's a third reason behind all this,
-simpler to state but
+00:02:30,000 --> 00:02:35,571
+There's a third reason behind all
+this, simpler to state but just as
 
 35
-00:02:38,148 --> 00:02:45,556
-just as central: Home Assistant's native
+00:02:35,571 --> 00:02:39,000
+central: Home Assistant's native
 interface is very complex.
 
 36
-00:02:45,556 --> 00:02:49,259
-Powerful, yes — but complex.
+00:02:39,000 --> 00:02:40,714
+Powerful, yes — but complex.
 
 37
-00:02:49,259 --> 00:02:54,444
-Between the configuration menus, the
-entities, the
+00:02:40,714 --> 00:02:45,000
+Between the configuration menus,
+the entities, the areas, the nested
 
 38
-00:02:54,444 --> 00:02:59,630
-areas, the nested dashboards, it's easy to
+00:02:45,000 --> 00:02:49,714
+dashboards, it's easy to get lost,
+especially when you're starting out.
 
 39
-00:02:59,630 --> 00:03:04,815
-get lost, especially when you're starting
-out.
+00:02:49,714 --> 00:02:55,286
+What Visio Sapiens sets out to do is
+simplify that experience — not hide
 
 40
-00:03:04,815 --> 00:03:13,704
-What Visio Sapiens sets out to do is
-simplify that experience —
-
-41
-00:03:13,704 --> 00:03:22,593
-not hide Home Assistant's power, but make
+00:02:55,286 --> 00:02:59,571
+Home Assistant's power, but make
 it reachable through a coherent
 
-42
-00:03:22,593 --> 00:03:30,000
-interface, designed for daily use rather
-than for technical configuration.
+41
+00:02:59,571 --> 00:03:03,857
+interface, designed for daily use
+rather than for technical configuration.
 
-43
-00:03:30,000 --> 00:03:32,381
+42
+00:03:30,000 --> 00:03:32,143
 So what is it, concretely?
 
-44
-00:03:32,381 --> 00:03:35,238
+43
+00:03:32,143 --> 00:03:34,714
 Visio Sapiens is not a dashboard.
 
-45
-00:03:35,238 --> 00:03:40,000
+44
+00:03:34,714 --> 00:03:39,000
 It's a control-center-style interface,
 sitting on top of Home Assistant.
 
-46
-00:03:40,000 --> 00:03:41,429
+45
+00:03:39,000 --> 00:03:40,286
 The distinction matters.
 
+46
+00:03:40,286 --> 00:03:44,143
+A dashboard is a collection
+of cards you assemble.
+
 47
-00:03:41,429 --> 00:03:45,714
-A dashboard is a collection of cards you
-assemble.
+00:03:44,143 --> 00:03:48,429
+A control center is a
+coherent system, with its own
 
 48
-00:03:45,714 --> 00:03:50,952
-A control center is a coherent system,
-with its own rendering
+00:03:48,429 --> 00:03:52,714
+rendering engine, its own visual
+logic, its own identity — and
 
 49
-00:03:50,952 --> 00:03:56,190
-engine, its own visual logic, its own
-identity — and it
+00:03:52,714 --> 00:03:57,000
+it simply goes to Home
+Assistant to fetch the data.
 
 50
-00:03:56,190 --> 00:04:00,476
-simply goes to Home Assistant to fetch the
-data.
+00:03:57,000 --> 00:04:03,000
+And that distinction has a very concrete
+consequence, one you'll see at work in
 
 51
-00:04:00,476 --> 00:04:06,190
-And that distinction has a very concrete
-consequence, one you'll see at
-
-52
-00:04:06,190 --> 00:04:11,905
-work in every episode: the interface isn't
+00:04:03,000 --> 00:04:07,286
+every episode: the interface isn't
 assembled by hand, it's generated.
 
+52
+00:04:07,286 --> 00:04:12,429
+You describe your home once, in an
+admin console — the language, the
+
 53
-00:04:11,905 --> 00:04:16,667
-You describe your home once — the
-language, the format,
+00:04:12,429 --> 00:04:16,714
+format, the rooms, the look —
+and every screen is produced
 
 54
-00:04:16,667 --> 00:04:21,429
-the rooms — and every screen is produced
-from that
+00:04:16,714 --> 00:04:21,429
+from that description, then kept
+in step as the home changes.
 
 55
-00:04:21,429 --> 00:04:25,714
-description, then kept in step as the home
-changes.
+00:04:21,429 --> 00:04:25,286
+Adding a room isn't drawing
+a new dashboard: it's
 
 56
-00:04:25,714 --> 00:04:30,476
-Adding a room isn't drawing a new
-dashboard: it's declaring
+00:04:25,286 --> 00:04:29,571
+declaring a room, and letting
+the generator do the rest.
 
 57
-00:04:30,476 --> 00:04:34,762
-a room, and letting the generator do the
-rest.
-
-58
-00:04:34,762 --> 00:04:38,095
+00:04:29,571 --> 00:04:32,571
 A dashboard you assemble by hand ages.
 
-59
-00:04:38,095 --> 00:04:40,952
+58
+00:04:32,571 --> 00:04:35,143
 A dashboard that's generated keeps up.
 
-60
-00:04:40,952 --> 00:04:46,667
-And that leads to the single rule that
-drives absolutely every technical
+59
+00:04:35,143 --> 00:04:40,286
+And that leads to the single rule
+that drives every technical decision
 
-61
-00:04:46,667 --> 00:04:52,381
-decision in this project, the one you'll
+60
+00:04:40,286 --> 00:04:45,000
+in this project, the one you'll
 meet again in every episode:
 
-62
-00:04:52,381 --> 00:04:56,667
-Home Assistant is nothing more than a data
-engine.
+61
+00:04:45,000 --> 00:04:48,857
+Home Assistant is nothing
+more than a data engine.
 
-63
-00:04:56,667 --> 00:04:59,1000
+62
+00:04:48,857 --> 00:04:51,857
 The interface is driven entirely by VSSP.
 
+63
+00:05:00,000 --> 00:05:03,857
+So here's the question that
+comes up straight away:
+
 64
-00:05:00,000 --> 00:05:04,219
-So here's the question that comes up
-straight away:
+00:05:03,857 --> 00:05:07,286
+why not just use the
+native Lovelace cards?
 
 65
-00:05:04,219 --> 00:05:07,969
-why not just use the native Lovelace
-cards?
+00:05:07,286 --> 00:05:10,286
+They exist, they're maintained by the Home
 
 66
-00:05:07,969 --> 00:05:14,062
-They exist, they're maintained by the Home
+00:05:10,286 --> 00:05:12,857
 Assistant core, they work perfectly well.
 
 67
-00:05:14,062 --> 00:05:21,094
-Exactly — they work perfectly well for
+00:05:12,857 --> 00:05:18,857
+Exactly — they work perfectly well for
 what they are: a system of stacked cards.
 
 68
-00:05:21,094 --> 00:05:26,719
-But the moment you want a coherent visual
-identity, animations that respond
+00:05:18,857 --> 00:05:24,000
+But the moment you want a
+coherent visual identity and a HUD
 
 69
-00:05:26,719 --> 00:05:32,344
-in real time, a HUD that behaves like a
-real system interface
+00:05:24,000 --> 00:05:28,286
+that behaves like a real
+system interface rather than a
 
 70
-00:05:32,344 --> 00:05:37,500
-rather than a grid of widgets, you hit
+00:05:28,286 --> 00:05:31,714
+grid of widgets, you hit
 Lovelace's glass ceiling.
 
 71
-00:05:37,500 --> 00:05:42,188
-So the project made a radical call: refuse
-the native
+00:05:31,714 --> 00:05:35,571
+So the project made a call:
+don't assemble ready-made
 
 72
-00:05:42,188 --> 00:05:46,875
-Lovelace cards, and build its own
-rendering engine on top.
+00:05:35,571 --> 00:05:39,000
+cards, build a rendering
+engine of its own.
 
 73
-00:05:46,875 --> 00:05:50,156
-With three exceptions, deliberate and
-documented, because
+00:05:39,000 --> 00:05:43,714
+And I want to be precise,
+because the short version would
 
 74
-00:05:50,156 --> 00:05:53,438
-it would be stupid to reinvent what
+00:05:43,714 --> 00:05:47,143
+be wrong: this engine
+doesn't start from nothing.
 
 75
-00:05:53,438 --> 00:05:56,719
-already works well: weather-forecast,
-logbook, and apexcharts-card.
+00:05:47,143 --> 00:05:50,143
+It stands on three
+community building blocks —
 
 76
-00:05:56,719 --> 00:06:01,875
-Everything else — the sidebar, the HUD,
-the gauges, the energy
+00:05:50,143 --> 00:05:51,857
+button-card, card-mod and layout-card.
 
 77
-00:06:01,875 --> 00:06:07,031
-rows, the rooms — is the in-house engine,
-which I maintain,
+00:05:51,857 --> 00:05:55,714
+Foundations, not widgets: one
+draws, one styles, one places.
 
 78
-00:06:07,031 --> 00:06:11,719
-through the same CI/CD pipeline I
-mentioned a moment ago.
+00:05:55,714 --> 00:05:59,571
+Everything you see on top —
+the navigation, the header
 
 79
-00:06:11,719 --> 00:06:16,406
-No dependency on a community maintainer
-who can vanish overnight.
+00:05:59,571 --> 00:06:03,000
+band, the gauges, the
+rooms — is templates I
 
 80
-00:06:16,406 --> 00:06:22,031
-Now let's be honest about the price of
-that choice, because there
+00:06:03,000 --> 00:06:06,000
+write, generated and
+versioned in the repository.
 
 81
-00:06:22,031 --> 00:06:27,188
-is one: by refusing the community cards, I
-become the maintainer.
+00:06:06,000 --> 00:06:11,571
+And a handful of specialised cards
+do what it would be absurd to
 
 82
-00:06:27,188 --> 00:06:32,344
-If a gauge breaks, nobody else is coming
-to fix it.
+00:06:11,571 --> 00:06:15,429
+rewrite: the charts, the weather,
+the calendar, the history.
 
 83
-00:06:32,344 --> 00:06:37,031
-That's a real cost, and I take it on for
+00:06:15,429 --> 00:06:20,143
+The difference from a typical community
+dashboard is the exposed surface.
 
 84
-00:06:37,031 --> 00:06:41,250
-a precise reason: that cost is one I
-control.
+00:06:20,143 --> 00:06:25,714
+Three foundations and a handful of cards,
+which the updates screen watches as
 
 85
-00:06:41,250 --> 00:06:45,469
-When a community card disappears, I
-control nothing —
+00:06:25,714 --> 00:06:30,429
+a family of their own — not thirty
+widgets with thirty maintainers.
 
 86
-00:06:45,469 --> 00:06:49,688
-not the timing, not the decision, not the
-migration.
+00:06:30,429 --> 00:06:34,714
+The day a building block
+gives out, it's one block
 
 87
-00:06:49,688 --> 00:06:57,656
-A bug in my own engine, I can fix that
-same evening and ship it straight out.
+00:06:34,714 --> 00:06:38,143
+to replace, not thirty
+cards to track down.
 
 88
-00:06:57,656 --> 00:07:01,875
-And there's a side effect I hadn't seen
-coming.
+00:06:38,143 --> 00:06:42,857
+The price of that choice is
+real, let's be honest: for
 
 89
-00:07:01,875 --> 00:07:07,031
-Once you write your own engine, you stop
-piling up patches.
+00:06:42,857 --> 00:06:46,286
+everything above the foundations,
+I become the maintainer.
 
 90
-00:07:07,031 --> 00:07:12,188
-The famous card-mod, with its CSS
-selectors reaching into the shadow
+00:06:46,286 --> 00:06:51,000
+But that cost is one
+I control: a bug in my
 
 91
-00:07:12,188 --> 00:07:17,344
-DOM of a card you don't control — it
-works, sure,
+00:06:51,000 --> 00:06:54,000
+templates, I fix it that same evening.
 
 92
-00:07:17,344 --> 00:07:21,562
-right up until the update that renames a
-class.
+00:06:54,000 --> 00:06:56,143
+And card-mod deserves a word.
 
 93
-00:07:21,562 --> 00:07:25,781
-At that point there's no patch left to
-write:
+00:06:56,143 --> 00:06:59,143
+On my own templates, it's a tool.
 
 94
-00:07:25,781 --> 00:07:30,000
-there's CSS I wrote, sitting on HTML I
-produced.
+00:06:59,143 --> 00:07:05,143
+Inside the shadow DOM of a card I
+don't control, it's a patch — and
 
 95
-00:07:30,000 --> 00:07:34,138
-Here's what the full architecture looks
-like.
+00:07:05,143 --> 00:07:09,857
+I still have one: to force
+the language of a third-party
 
 96
-00:07:34,138 --> 00:07:40,640
-I'm showing it to you once, in full,
-because it's the
+00:07:09,857 --> 00:07:15,000
+weather card, I hide its text
+and write another one over it.
 
 97
-00:07:40,640 --> 00:07:47,143
-mental map you'll need to follow every
-episode that comes after.
+00:07:15,000 --> 00:07:18,857
+It holds until the update
+that renames a class.
 
 98
-00:07:47,143 --> 00:07:53,054
-CORE: the system foundation — this is what
-exposes the
+00:07:18,857 --> 00:07:24,429
+That's why that kind of patch stays
+an exception, and why it's documented.
 
 99
-00:07:53,054 --> 00:07:58,966
-metrics, the machine state, the thing
-everything else leans on.
+00:07:30,000 --> 00:07:33,000
+Here's what the full
+architecture looks like.
 
 100
-00:07:58,966 --> 00:08:04,877
-We'll come back to it in detail in episode
-2.
+00:07:33,000 --> 00:07:37,714
+I'm showing it to you once,
+in full, because it's the
 
 101
-00:08:04,877 --> 00:08:11,379
-Room Engine: the logic that turns a room
-definition into an
+00:07:37,714 --> 00:07:41,143
+map you'll need to
+follow the whole series.
 
 102
-00:08:11,379 --> 00:08:17,291
-interface — the heart of the dashboard
-generator, episode 3.
+00:07:41,143 --> 00:07:45,000
+Five places hold something, and
+they are not interchangeable.
 
 103
-00:08:17,291 --> 00:08:22,020
-AI Layer: the layer that wires
-intelligence into
+00:07:45,000 --> 00:07:48,857
+The Git repository, on my
+workstation: the model, the
 
 104
-00:08:22,020 --> 00:08:26,158
-the interface — the chatbot, the
-automations.
+00:07:48,857 --> 00:07:51,000
+templates, the translations, the tooling.
 
 105
-00:08:26,158 --> 00:08:27,340
-Episode 9.
+00:07:51,000 --> 00:07:54,429
+The GitLab pipeline, which
+validates, builds and deploys.
 
 106
-00:08:27,340 --> 00:08:33,842
-Animation Engine, CSS Engine, JS Engine,
-Theme Engine: the four layers
+00:07:54,429 --> 00:07:58,286
+Two targets, receiving the
+same package: a k3s cluster
 
 107
-00:08:33,842 --> 00:08:40,345
-that give Visio Sapiens its visual
-identity and its behaviour —
+00:07:58,286 --> 00:08:01,286
+for staging, Home Assistant
+OS for production.
 
 108
-00:08:40,345 --> 00:08:46,847
-this is what makes a room feel like a
-living interface
+00:08:01,286 --> 00:08:06,000
+And the browser — the tablet, the
+phone — where the dashboards appear.
 
 109
-00:08:46,847 --> 00:08:52,167
-rather than a Lovelace card wearing a nice
-theme.
+00:08:06,000 --> 00:08:09,429
+In the middle, one single
+command: the generator.
 
 110
-00:08:52,167 --> 00:08:58,670
-Take just one thing away from this
-diagram: every layer has
+00:08:09,429 --> 00:08:14,143
+It takes the description of the
+house, the templates and the
 
 111
-00:08:58,670 --> 00:09:05,172
-one precise responsibility, and none of
-them does another one's job.
+00:08:14,143 --> 00:08:18,000
+language, and it produces
+every dashboard and the theme.
 
 112
-00:09:05,172 --> 00:09:13,448
-That's what lets the project hold up over
-time instead of turning into a
+00:08:18,000 --> 00:08:20,571
+Nobody writes a dashboard by hand.
 
 113
-00:09:13,448 --> 00:09:21,724
-plate of YAML spaghetti — and it's also
-what makes the CI/CD pipeline possible:
+00:08:20,571 --> 00:08:25,714
+And every screen of the admin
+console follows the same loop: a
 
 114
-00:09:21,724 --> 00:09:29,1000
-you can only version and restore cleanly
-what is structured in the first place.
+00:08:25,714 --> 00:08:30,000
+form sends what you decided,
+a script backs up first,
 
 115
-00:09:30,000 --> 00:09:33,032
-Enough theory, let's look at the result.
+00:08:30,000 --> 00:08:33,857
+writes the model, regenerates,
+then reports what it did.
 
 116
-00:09:33,032 --> 00:09:36,931
-This is HOME, the landing screen of Visio
-Sapiens.
+00:08:33,857 --> 00:08:39,000
+Take one thing away from this
+diagram: every piece has one precise
 
 117
-00:09:36,931 --> 00:09:41,697
-The sidebar — navigation between the
-screens of the control center.
+00:08:39,000 --> 00:08:42,857
+responsibility, and none of
+them does another one's job.
 
 118
-00:09:41,697 --> 00:09:47,762
-The HUD row in the header: weather, clock,
-alarm status, avatar — everything you
+00:08:42,857 --> 00:08:49,714
+That's what lets the project hold up over
+time instead of turning into a plate of
 
 119
-00:09:47,762 --> 00:09:53,394
-want to take in at a glance as you walk
-into the house.
+00:08:49,714 --> 00:08:56,143
+YAML spaghetti — and it's what makes the
+rest of the series possible: you can only
 
 120
-00:09:53,394 --> 00:09:58,159
-The energy row — production, consumption,
-what the house is doing
+00:08:56,143 --> 00:09:01,714
+version, back up and restore cleanly
+what is structured in the first place.
 
 121
-00:09:58,159 --> 00:10:02,924
-right now, not a history you have to go
-digging for.
+00:09:30,000 --> 00:09:33,000
+Enough theory, let's look at the result.
 
 122
-00:10:02,924 --> 00:10:07,256
-The room modules — one screen per declared
-room, all
+00:09:33,000 --> 00:09:38,571
+This is HOME, the landing screen, as
+it appears on the living-room tablet.
 
 123
-00:10:07,256 --> 00:10:11,155
-produced by the same generator, from the
-same template.
+00:09:38,571 --> 00:09:42,429
+On the left, the navigation
+rail: one entry per
 
 124
-00:10:11,155 --> 00:10:16,787
-These aren't ten dashboards written ten
-times: it's one template, and ten rooms.
+00:09:42,429 --> 00:09:45,000
+declared room, plus the system screens.
 
 125
-00:10:16,787 --> 00:10:21,986
-And the navigation rail, here, which
-rebuilds itself when a room appears
+00:09:45,000 --> 00:09:51,429
+It's generated too — add a room, and its
+entry appears on every screen at once.
 
 126
-00:10:21,986 --> 00:10:27,184
-or disappears — because it's generated
-too, not maintained by hand in
+00:09:51,429 --> 00:09:55,286
+At the top, the header
+band: the screen's name
 
 127
-00:10:27,184 --> 00:10:31,516
-some corner of YAML that you always end up
-forgetting.
+00:09:55,286 --> 00:09:58,286
+and the time, the weather, the calendar.
 
 128
-00:10:31,516 --> 00:10:37,148
-And now the part I most enjoy showing,
-because it makes all of
+00:09:58,286 --> 00:10:03,857
+The same band on every dashboard,
+because it comes from a single template.
 
 129
-00:10:37,148 --> 00:10:42,780
-this concrete: the repository tree, live,
-side by side with what's on screen.
+00:10:03,857 --> 00:10:10,286
+Just below, the status row: the system,
+the energy, the alarm with its modes and
 
 130
-00:10:42,780 --> 00:10:47,545
-This file — www/vssp/css/vssp.css — is
-literally what paints that screen.
+00:10:10,286 --> 00:10:15,429
+its panic button, the thermostat — and
+this updates light, which turns orange
 
 131
-00:10:47,545 --> 00:10:52,310
-Not a metaphor: every colour, every bit of
-spacing you see
+00:10:15,429 --> 00:10:21,000
+when something is waiting, and leads
+to the screen that says exactly what.
 
 132
-00:10:52,310 --> 00:10:56,643
-on the right comes from that file on the
-left.
+00:10:21,000 --> 00:10:25,286
+In the centre, the protocol
+radar, and next to it,
 
 133
-00:10:56,643 --> 00:11:01,841
-That's what having an in-house engine
-means, rather than a theme laid
+00:10:25,286 --> 00:10:28,286
+the metered devices with what they draw.
 
 134
-00:11:01,841 --> 00:11:07,040
-over generic cards: the code and the
-interface speak the same language
+00:10:28,286 --> 00:10:32,143
+Then the assistant bar, and
+the house's latest events.
 
 135
-00:11:07,040 --> 00:11:11,372
-— and so they're versionable like a real
-software project.
+00:10:32,143 --> 00:10:37,714
+And now the part I most enjoy
+showing, because it makes all of
 
 136
-00:11:11,372 --> 00:11:15,704
-And if I change a colour here, on the
-left,
+00:10:37,714 --> 00:10:41,143
+this concrete: where this
+screen's look comes from.
 
 137
-00:11:15,704 --> 00:11:19,603
-it changes on the right at the next
-deployment.
+00:10:41,143 --> 00:10:45,429
+On the left, a file in the
+repository, design_system.yaml: every
 
 138
-00:11:19,603 --> 00:11:23,935
-On every screen at once, because there's
-only one source.
+00:10:45,429 --> 00:10:49,714
+colour, the typeface, the
+size of each kind of text.
 
 139
-00:11:23,935 --> 00:11:29,1000
-Not ten cards to touch up one by one,
-hoping you didn't miss any.
+00:10:49,714 --> 00:10:53,571
+On the right, the console
+screen that edits it.
 
 140
-00:11:30,000 --> 00:11:33,448
-A quick aside before we wrap up, because
-you're going
+00:10:53,571 --> 00:10:57,857
+I raise the size of the
+values — and every screen
 
 141
-00:11:33,448 --> 00:11:36,897
-to run into this in later episodes: the
-project was
+00:10:57,857 --> 00:11:01,286
+follows at once, because
+there's only one source.
 
 142
-00:11:36,897 --> 00:11:39,655
-originally called OSVision, and was
-renamed to VSSP.
+00:11:01,286 --> 00:11:07,286
+Not ten cards to touch up one by
+one, hoping you didn't miss any.
 
 143
-00:11:39,655 --> 00:11:44,138
-You'll come across old file names and old
-paths dating from that era.
+00:11:07,286 --> 00:11:12,000
+The code and the interface
+speak the same language — and so
 
 144
-00:11:44,138 --> 00:11:48,621
-I'm mentioning it now for a simple reason:
-a project's history leaves marks.
+00:11:12,000 --> 00:11:15,000
+they're versioned like
+a real software project.
 
 145
-00:11:48,621 --> 00:11:52,069
-A good project doesn't hide those marks,
-it documents them.
+00:11:30,000 --> 00:11:36,000
+A quick aside before we wrap up,
+because you're going to run into this:
 
 146
-00:11:52,069 --> 00:11:56,207
-You'll see this renaming scar again later,
-notably in the K3s bug
+00:11:36,000 --> 00:11:40,286
+the project was originally called
+OSVision, before it became VSSP.
 
 147
-00:11:56,207 --> 00:11:59,1000
-in episode 2 — and now you'll know why
-it's there.
+00:11:40,286 --> 00:11:45,429
+In September, a big sweep removed
+the old name from the identifiers,
 
 148
-00:12:00,000 --> 00:12:08,462
-None of what you've just seen existed a
-few months ago.
+00:11:45,429 --> 00:11:49,286
+the components and the stylesheets —
+and that sweep surfaced
 
 149
-00:12:08,462 --> 00:12:16,923
-quick list of 3-4 changelog milestones, to
-be picked from Vision.md.
+00:11:49,286 --> 00:11:53,571
+three real bugs, including a
+dead link nobody had noticed.
 
 150
-00:12:16,923 --> 00:12:23,846
-This isn't a frozen project — it's a
-system
+00:11:53,571 --> 00:11:59,571
+But some traces remain: the JavaScript
+engine still carries the old name, and the
 
 151
-00:12:23,846 --> 00:12:30,000
-with a history, and it's still writing
-one.
+00:11:59,571 --> 00:12:06,000
+K3s panel on the CORE screen still
+looks for its file under the old path.
 
 152
-00:12:30,000 --> 00:12:34,239
-What to take away from this episode: Visio
-Sapiens isn't a dashboard, it's
+00:12:06,000 --> 00:12:10,286
+A good project doesn't hide
+those marks, it documents them.
 
 153
-00:12:34,239 --> 00:12:38,152
-a control center, built to be simple,
-effective and secure by default.
+00:12:10,286 --> 00:12:13,714
+That one, we'll fix live in episode D1.
 
 154
-00:12:38,152 --> 00:12:41,087
-Home Assistant supplies the data, VSSP
-supplies everything else
+00:12:15,000 --> 00:12:19,714
+None of what you've just seen
+existed a few months ago.
 
 155
-00:12:41,087 --> 00:12:44,022
-— without depending on community cards
-that can give
+00:12:19,714 --> 00:12:22,286
+A generator that produces every screen.
 
 156
-00:12:44,022 --> 00:12:46,957
-out without warning, and with a pipeline
-that lets
+00:12:22,286 --> 00:12:24,857
+A console that declares the rooms.
 
 157
-00:12:46,957 --> 00:12:49,891
-you roll back when you need to, even
-self-taught.
+00:12:24,857 --> 00:12:28,286
+A safe that unseals
+from an enrolled device.
 
 158
-00:12:49,891 --> 00:12:54,783
-In the next episode we go down a level: we
-follow a single piece of
+00:12:28,286 --> 00:12:32,143
+An updates screen that
+knows what it doesn't know.
 
 159
-00:12:54,783 --> 00:12:59,674
-data, from psutil on the host machine all
-the way to an SVG gauge in
+00:12:32,143 --> 00:12:36,429
+A visual charter that changes
+right down to the typeface.
 
 160
-00:12:59,674 --> 00:13:03,913
-your browser, with DevTools open so you
-can watch every step go past.
+00:12:36,429 --> 00:12:40,286
+This isn't a frozen
+project — it's a system with
 
 161
-00:13:03,913 --> 00:13:07,174
-Subscribe, hit the bell, and tell me in
-the comments:
+00:12:40,286 --> 00:12:43,286
+a history, and it's still writing one.
 
 162
-00:13:07,174 --> 00:13:10,435
-does your Home Assistant install still
-look like a stack
+00:12:45,000 --> 00:12:48,857
+The rest of the series
+is organised into four
 
 163
-00:13:10,435 --> 00:13:13,696
-of Lovelace cards, or have you already
-started climbing out?
+00:12:48,857 --> 00:12:51,857
+blocks, and you choose your way in.
 
 164
-00:13:13,696 --> 00:13:15,000
+00:12:51,857 --> 00:12:56,143
+Block A is the foundation:
+the machine, the cluster, the
+
+165
+00:12:56,143 --> 00:13:00,429
+pipeline, and what breaks
+when one of the three lies.
+
+166
+00:13:00,429 --> 00:13:06,857
+Block B is backup — all the way to the
+only proof that counts: the restore.
+
+167
+00:13:06,857 --> 00:13:12,000
+Block C is the safe: where
+the secrets live, and how you
+
+168
+00:13:12,000 --> 00:13:15,429
+unseal it without typing
+three keys by hand.
+
+169
+00:13:15,429 --> 00:13:21,000
+And block D is the interface itself,
+from the gauge to the generator.
+
+170
+00:13:21,000 --> 00:13:23,571
+Inside a block, the order matters.
+
+171
+00:13:23,571 --> 00:13:28,286
+Between blocks, it doesn't: if
+you came for the backups, you
+
+172
+00:13:28,286 --> 00:13:32,143
+don't have to sit through
+ten interface episodes first.
+
+173
+00:13:45,000 --> 00:13:49,714
+What to take away: Visio Sapiens
+isn't a dashboard, it's a
+
+174
+00:13:49,714 --> 00:13:53,143
+control center, simple,
+effective and secure by default.
+
+175
+00:13:53,143 --> 00:13:58,286
+Home Assistant supplies the data, VSSP
+supplies the interface — on a small
+
+176
+00:13:58,286 --> 00:14:03,429
+number of watched foundations, with
+a pipeline that lets you roll back.
+
+177
+00:14:03,429 --> 00:14:09,857
+If you don't know where to start,
+take D1: we follow a single piece of
+
+178
+00:14:09,857 --> 00:14:15,857
+data, from the host machine all
+the way to a gauge in your browser.
+
+179
+00:14:15,857 --> 00:14:20,571
+Subscribe, and tell me in the
+comments: is your Home Assistant
+
+180
+00:14:20,571 --> 00:14:25,286
+still a stack of cards, or
+have you started climbing out?
+
+181
+00:14:25,286 --> 00:14:27,000
 See you very soon.

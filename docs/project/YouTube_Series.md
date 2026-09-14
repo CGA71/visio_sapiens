@@ -17,10 +17,17 @@ matters; between blocks it does not.
 | **A** | Environment & CI/CD | 5 |
 | **B** | Backup | 4 |
 | **C** | The safe | 4 |
-| **D** | Home-automation interface | 9 |
+| **D** | Home-automation interface | 10 |
 
 The source docs cited below exist in `docs/` in both languages
-(`X.md` / `X.fr.md`).
+(`X.md` / `X.fr.md`), unless marked *to write*.
+
+> **Revised 14 September 2026.** This plan was re-read against the repository
+> two days after it was laid out. The pilot was rewritten (its narration and
+> subtitles regenerated), a D10 episode joins, and several sections described
+> a state that no longer holds. The detail is in
+> [What changed since 12 September](#what-changed-since-12-september); the
+> affected sections are corrected in place.
 
 ---
 
@@ -80,7 +87,8 @@ demonstrable.
 ## Block D — Home-automation interface
 
 The project's historical core: the interface itself, from the gauge to the
-generator. Nine episodes, all already documented.
+generator. Ten episodes: the first nine have their doc, D10 has to write its
+own first.
 
 | # | Title | Source doc | Central question |
 |---|---|---|---|
@@ -90,9 +98,10 @@ generator. Nine episodes, all already documented.
 | D4 | Case study: the device assignment wizard | `Deployment.md` | How do you turn a raw scan into a safe form? |
 | D5 | Automating an OAuth setup | `Google_Calendar.md` | How far can it be automated — and where does that stop? |
 | D6 | A chatbot in the dashboard | `Chatbot_Integration.md` | Four providers behind one card, with no backend? |
-| D7 | The design system editor | `Design_System_Editor.md` | How do you make a brand editable without letting the UI break? |
-| D8 | Bilingual by construction | `Google_Calendar.md` + `locales/` | What does it take to hold **one** language on **one** screen? |
+| D7 | The visual charter editor (GRAPHIC TEMPLATE) | `Design_System_Editor.md` | How do you make a brand editable without letting the UI break? |
+| D8 | Bilingual by construction | `Google_Calendar.md` + `locales/` + `_header.j2` | What does it take to hold **one** language on **one** screen? |
 | D9 | The scheduler | `Scheduler.md`, `AI_Assistant.md` | How does an interface avoid lying about the future? |
+| D10 | The wall tablet: designing for 1194 × 834 | *to write* (`Tablet_Layout.md`) | Why does a screen that works on a desk break on the living-room tablet? |
 
 ---
 
@@ -103,7 +112,7 @@ only one **cut in two** — its halves had nothing in common but their brevity.
 
 | Old | Becomes | Note |
 |---|---|---|
-| 1 Vision & architecture | **Pilot** | unchanged, already shot |
+| 1 Vision & architecture | **Pilot** | script revised on 14 September, narration and subtitles regenerated |
 | 2 CORE | **D1** | |
 | 3 Generator | **D2** | |
 | 4 Wiring a whole room | **D3** | |
@@ -115,41 +124,54 @@ only one **cut in two** — its halves had nothing in common but their brevity.
 | 10 Design system | **D7** | |
 | 11 Bilingual | **D8** | |
 | 12 Backups + security | **B2** *and* **C4** | cut in two |
-| — | A1, A4, A5, B1, B3, B4, C1, C2, C3, D9 | ten new episodes |
+| — | A1, A4, A5, B1, B3, B4, C1, C2, C3, D9, D10 | eleven new episodes |
 
 ---
 
 ## Pilot — Vision & architecture
 
-It is the first episode shot, and the only one belonging to no block
-because it announces all of them. Its full script already exists:
-`episode-01-vision-architecture.md`, with its narration and subtitles.
+The only episode belonging to no block, because it announces all of them. Its
+full script: `episode-01-vision-architecture.md`, revised on 14 September
+2026. Its narration (`episode-01-narration.en.txt`) and subtitles
+(`episode-01.en.srt`) are **generated** from the script by
+`scripts/build_episode_media.py` — regenerate them after any voice-over change
+rather than editing them by hand.
 
 **Goal:** give viewers the mental model before any code. What Visio Sapiens
 *is* (an OS-like control-center UI layered on top of Home Assistant, not a
-themed dashboard), and why the project refuses native Lovelace cards except
-for a documented shortlist (`weather-forecast`, `logbook`, `apexcharts-card`).
+themed dashboard), why the project builds its own rendering engine instead of
+assembling ready-made cards, and how the series is organised.
 
 **Show on screen:**
-- The architecture diagram from `Vision.md` (CORE / Room Engine / IA Layer /
-  Animation Engine / CSS Engine / JS Engine / Theme Engine).
-- A live tour of the HOME dashboard, pointing at concrete pieces: the sidebar,
-  the HUD header row (weather, clock, alarm status, avatar), the energy row.
-- The repo tree, mapped live to what's on screen (`www/vssp/css/vssp.css` is
-  literally what's painting this).
+- The diagrams in `Vision.md`: the system overview (§2), the generation chain
+  (§4), the console's six-beat loop (§5). The old "CORE / Room Engine / IA
+  Layer / …" diagram has not existed since `Vision.md` was rewritten on
+  9 September.
+- A live tour of HOME **at 1194 × 834** (the wall tablet): the navigation
+  rail, the header band (screen + time, weather, calendar), the status row
+  (system, energy, alarm, thermostat, updates light), the radar, the metered
+  devices, the assistant bar.
+- `dashboards/model/design_system.yaml` beside the GRAPHIC TEMPLATE screen: one
+  text size changed, every screen following.
+- The map of the four blocks, in motion design.
 
 **Talking points:**
 - The one rule that drives every other decision: "Home Assistant is a data
   engine now; the UI is entirely driven by VSSP."
-- The naming migration (OSVision → VSSP) as a case study in how a project's
-  history leaves traces — useful framing for why some file names still won't
-  match until later episodes fix them.
-- The changelog section of `Vision.md` is a ready-made "here's everything
-  that's shipped" montage list — good for a fast-cut opening or closing
-  summary.
+- **What the engine stands on, said exactly:** three community foundations
+  (`button-card`, `card-mod`, `layout-card`), a few specialised cards (charts,
+  weather, calendar, history), and the VSSP templates on top. The old line —
+  "no community dependency, no more card-mod patches" — was false for anyone
+  who opens the repository.
+- The naming migration (OSVision → VSSP): the 12 September sweep, the three
+  bugs it surfaced, and the two traces left (`OSVisionEngine`, CORE's K3s
+  path — D1's live fix).
+- The "what has shipped" montage is built from the Git history: `Vision.md`
+  has no changelog section any more.
 
-**Don't film yet:** anything that depends on live secrets (Livebox
-password, long-lived tokens) — save credential handling for episode D3/A2.
+**Don't film:** any live secret (Livebox password, values from the safe, the
+unseal passphrase, chatbot keys) — kept for block C, D3 and D6. Long-lived
+tokens have not been part of setting up a tablet since 14 September.
 
 ---
 
@@ -192,8 +214,11 @@ pipeline as its own subject, independent of any one feature.
 - The pipeline diagram: MR/master → build → `deploy:staging` (k3s, `kubectl
   cp`) vs. tag → `deploy:production` (HAOS, SSH) with a manual gate.
 - A live GitLab pipeline run, stage by stage.
-- One of the G1–G5 open gaps, fixed live (G1, the CSS/JS URL mismatch, is the
-  most visual: a 404'd stylesheet turning into a styled page on screen).
+- One of `CI_CD.md`'s still-open gaps, fixed live. G1 (the CSS/JS URL
+  mismatch, the most visual) and G4 (the old name) are **now closed**. G2, G3
+  and G5 are still marked open — but the pipeline now deploys ADMIN and
+  regenerates the dashboards on the pod, so G2 and G3 need re-checking
+  against the current pipeline before they are demonstrated.
 
 **Talking points:**
 - The `workflow:` rule as "the number one diagnostic reflex" — a push to a
@@ -206,9 +231,9 @@ pipeline as its own subject, independent of any one feature.
   staging, stdin in production. Worth a full explanation, it's reusable
   knowledge outside this project entirely.
 
-**Optional split:** if 6 runs long, cut it into 6a (pipeline mechanics) and
-A2b (the G1–G5 open gaps as a "known issues" episode) — the source doc
-already separates cleanly along that line.
+**Optional split:** if A2 runs long, cut it into A2a (pipeline mechanics) and
+A2b (the G1–G5 gaps as a "known issues" episode) — the source doc already
+separates cleanly along that line.
 
 ---
 
@@ -218,8 +243,8 @@ already separates cleanly along that line.
 commands run to narrow down the cause — the format that tends to perform
 best because the payoff (the fix) is earned on screen instead of assumed.
 
-**Show on screen, as three (or four) independent mini-cases from
-`Troubleshooting.md`:**
+**Show on screen — a pool of eight independent mini-cases. Pick four per
+episode, or split into A3a / A3b:**
 1. **Staging looks unchanged after a green pipeline** — the `deploy:staging`
    job never restarted Home Assistant, so `lovelace.dashboards` and
    `homeassistant.packages` kept serving stale config even though the files
@@ -232,13 +257,33 @@ best because the payoff (the fix) is earned on screen instead of assumed.
    long-lived token produced a silent 401, and `continue_on_error: true`
    let the generator run anyway on an empty model, overwriting a working
    dashboard with a blank one.
-4. **Bonus, from this project's own session logs:** the ROOMS & FLOORS
+4. **Bonus, from the project's own history:** the ROOMS & FLOORS
    wizard staying in French despite the language selector reading `en` —
    traced to a missing cache-busting `?v=` token on one specific iframe URL,
    the one asset in the whole pipeline that wasn't covered by the existing
    cache-busting `sed` step. A good closing case because it shows that even
    a mature pipeline can have exactly one uncovered corner, and that "it's
    probably cached" is worth checking before assuming a deploy failed.
+5. **The cluster that died at every boot** *(11 September)* — `k3s.service`
+   and `k3s-agent.service` fought over `127.0.0.1:6444`; the host started
+   without ever finishing. "The service is active" ≠ "the service works".
+   Films as a pair with A1.
+6. **`set -e`: Illegal option** *(12 September)* — a shell script written from
+   a Windows checkout, so in CRLF: `dash` reads `-e` followed by a carriage
+   return. The fix is one line of `.gitattributes`, not the script.
+7. **Pasting the token crashed CORE** *(12 September)* — with no token,
+   `init()` replaced the whole page with the login form; `saveToken()` then
+   called `init()` again on elements that no longer existed. The bug slept
+   while everyone already had a token, and renaming the key woke it up.
+   *(Since 14 September CORE asks for no token at all — the case still holds,
+   the form is only a fallback now.)*
+8. **Icons missing on one device only** *(14 September)* — on the iPad, only
+   the ENERGY DEVICES icon showed in the ADMIN menu. Wrong first guess: lack
+   of space. What settled it: Chromium at the same size showed all nine
+   icons, and the server served all nine. The one visible icon was the only
+   one the navigation rail already used, so it was already cached; the others
+   failed to load from a stale frontend. Fix: reset the frontend cache. "Same
+   screen size" ≠ "same browser".
 
 **Talking points:**
 - Each case follows the same shape: symptom → wrong first guess → the
@@ -246,7 +291,9 @@ best because the payoff (the fix) is earned on screen instead of assumed.
   added afterward so it can't silently recur. Naming that shape explicitly
   makes the format replicable for future videos on new bugs.
 - The "green pipeline, unchanged result" pattern is worth naming as its own
-  concept — it recurs across cases 1, 2, and 4 in different disguises.
+  concept — it recurs across cases 1, 2, and 4 in different disguises. Case 8
+  is its cousin: **one client in the wrong**, while everything checkable from
+  the workstation is right.
 
 ---
 
@@ -478,6 +525,11 @@ keys by hand" without removing what made it safe.
 - The open design questions, as they stand.
 - What has changed since the document was first written — the safe and the
   unseal service are precisely answers to two of those points.
+- **The long-lived token removed from tablets** *(14 September)*: the console
+  pages (ROOMS & FLOORS, DETECTED DEVICES, CORE) borrow the Home Assistant
+  session of the dashboard around them, instead of a pasted token kept in
+  clear in `localStorage`. `Security.md` does not mention that token at all —
+  a gap to fill before filming.
 
 **Points to make:**
 - The difference between a project that has a threat model and a project that
@@ -509,7 +561,14 @@ the browser — as a single, followable data path.
   questions about trade-offs.
 - The still-open K3s path bug (`/local/osvision_v2/...` 404) as a live fix:
   find it, explain why the `catch` swallows it silently, patch the one line,
-  redeploy, show the K3s panel come alive.
+  redeploy, show the K3s panel come alive. *Still present in `core.html` on
+  14 September.*
+- **Authentication has changed** *(14 September)*: `core.html` no longer asks
+  for a token, it borrows the CORE dashboard's session (`hass.auth`, a
+  short-lived token refreshed on demand), and its URL now carries `?v=` like
+  the other iframes. In the Network tab, the `Authorization` header carries
+  that short-lived token. `Core_Dashboard.md` still describes the old token
+  under the old key (`osv_ha_token`): rewrite it before filming.
 - `esc()` and the XSS angle — a 90-second aside on why you escape data from
   your *own* backend, not just "untrusted" input.
 
@@ -542,8 +601,11 @@ work, which is the freshest, most demoable material in the whole project.
   known device preserved, missing device flagged not deleted, `keep: true`
   as an escape hatch) — good material for "here's how you avoid a script
   eating someone's manual customization."
-- The still-open bridge (`vssp_model_sync.py`, wizard → model) as a "coming
-  in a future episode" hook.
+- The wizard → model bridge, which `Dashboard_Generator.md` still announces
+  as `vssp_model_sync.py`, **now exists in another form**: the console's
+  appliers (`vssp_rooms_apply.py`, `vssp_assign_apply.py`) write the model
+  and then regenerate. A natural hook into D4 — and a section of the doc to
+  update before filming.
 
 ---
 
@@ -579,7 +641,7 @@ example.
 **Goal:** a second, contrasting case study — an interactive tool instead of a
 static dashboard, and a good moment to show the whole discover → decide →
 apply shape that recurs across the project (it's the same shape as the
-ROOMS & FLOORS wizard from this session).
+ROOMS & FLOORS screen).
 
 **Show on screen:**
 - The pipeline from `Deployment.md`:
@@ -628,7 +690,8 @@ form — then stop honestly at the one step that cannot collapse.
   registered, not the first in the list.
 - Secret handling once more, now as a recognisable project pattern rather
   than a one-off: the client secret is written to a 0600 file and never
-  reaches a command line, exactly like `vssp_ha_token` and the chatbot keys.
+  reaches a command line, exactly like the Livebox password and the chatbot
+  keys.
 
 **Good pairing:** episode D8 uses this same screen as its worked example —
 film them back to back while the material is fresh.
@@ -659,16 +722,28 @@ own — and the constraints that shape such a thing.
 
 ---
 
-## D7 — The design system editor
+## D7 — The visual charter editor (GRAPHIC TEMPLATE)
 
 **Goal:** a visual charter that used to be one hand-edited theme file,
 turned into a model plus a generator plus an editing screen — the same
 model→template→generated shape as episode D2, applied to appearance instead
 of structure.
 
+> **Status reset on 13 September** (rule 2 of the action plan): the screen
+> gained the typeface, text sizes by usage and the replaceable logo. Nothing
+> filmed before would still be right.
+
 **Show on screen:**
 - `model/design_system.yaml` next to the generated theme, one color changed
   live, regenerate, and the whole interface following.
+- **Text sizes by usage** — clock, titles, values, text, labels, each from 50
+  to 200 %: one slider, and every value on every screen follows. It is also
+  the pilot's demo (section 6).
+- **The typeface joining the charter**, and the trap of its stylesheet:
+  `/local` is cached for a month by the browser, so a changed typeface does
+  not arrive until the stylesheet's URL carries a version.
+- **The replaceable square logo** of the navigation rail (default, uploaded,
+  or none), in a rail only as wide as its longest entry.
 - The reset-to-default path (`design_system.default.yaml`), which is what
   makes experimenting safe enough to do on camera.
 - A live CSS trap worth its own beat: `color-mix()` is parsed but silently
@@ -681,6 +756,15 @@ of structure.
   model in the repo is the guard rail that lets the editor stay permissive.
 - The design tokens as a contract between the generator and the CSS — the
   reason a single value can move the entire UI.
+- **A model older than the code**: the pod's live model does not know the
+  tokens added after it was created. Rather than falling back to nothing, the
+  generator fills each missing token from the factory reference
+  (`design_system.default.yaml`). A transferable rule: data the user wrote
+  ages more slowly than the code that reads it.
+
+**Good pairing:** D10 — the same week of work, seen from the tablet: the rail
+fitted to its entries and the header band brought back to its height were
+born there.
 
 ---
 
@@ -719,10 +803,20 @@ the case that made it obvious.
   because the language is baked in at generate time. That's a deliberate
   trade — and worth defending on camera rather than glossing over.
 
+**Second case — third-party cards speaking the browser's language**
+*(12 September)*: with dashboards generated in English, the header's calendar
+and weather stayed in French. Those cards read `hass.language` — the
+browser's language (fr-FR) — not the generated one. Fix: the `language:`
+option where the card has one (calendar-card-pro), otherwise card-mod hiding
+the text and rewriting it (simple-weather-card) — the patch owned up to in
+section 4 of the pilot. A fr→en switch that "doesn't work" can mean "one
+third-party card stayed French".
+
 **Good pairing:** episode A3's fourth case (a wizard stuck in French because
 one iframe URL lacked a cache-buster) is the same screen's earlier
-mistranslation, from a completely different cause. Shown together they make
-the point that "wrong language on screen" is a symptom, not a diagnosis.
+mistranslation, from a completely different cause. Shown together — with the
+second case above — they make the point that "wrong language on screen" is a
+symptom, not a diagnosis.
 
 ---
 
@@ -745,6 +839,68 @@ over time rather than on command.
 
 ---
 
+## D10 — The wall tablet: designing for 1194 × 834
+
+**Goal:** the device that matters is not the desktop screen you develop on,
+it is the 11-inch iPad in landscape hanging on the wall. An episode about
+everything a desktop screen does not show — and about the rule that came out
+of it: **every test runs at 1194 × 834**.
+
+**On screen, four cases from 14 September:**
+1. **Device names 0 px wide.** In PER-DEVICE CONSUMPTION a row gets 272 px,
+   and its fixed columns (icon, room, power, energy, chevron, gaps) asked for
+   358. The name column fell to zero — while the room column only printed a
+   dash. Dropping the column was not enough (18 px); every column had to be
+   fitted to its real content.
+2. **A 246 px header band instead of 76.** The navigation rail spans both
+   grid rows; with `auto auto` rows and a short body, the grid spreads the
+   rail's height over both — the header swells. Nine screens out of ten got
+   away with it only because their body was taller than the rail. `auto 1fr`
+   everywhere.
+3. **A new tablet = one login.** The console pages (iframes) asked for a
+   long-lived token to paste. They now borrow the tablet's own session:
+   nothing to paste, nothing permanent stored in the browser.
+4. **What the test workstation does not see.** Icons missing on the iPad
+   only: Chromium at the same size showed them all. Screen size can be
+   simulated; the browser engine cannot (see A3, case 8).
+
+**Points to make:**
+- Measure rather than look: every case was settled by a width or a height
+  read from the DOM, not by a screenshot.
+- A rail as wide as its longest entry, a header as tall as its content: let
+  the content size the layout rather than the other way round.
+- Why the tests run in a browser that is not the tablet's, and how to say so
+  honestly in every report.
+
+**Source:** *to write* — `docs/dashboards/Tablet_Layout.md`. The four cases are
+recorded in their commits of 14 September; write them up while they are
+fresh.
+
+---
+
+## What changed since 12 September
+
+The plan was laid out on 12 September; what follows has moved since, or was
+already wrong that day.
+
+| Date | What changed | Episodes affected |
+|---|---|---|
+| 9 Sep | `Vision.md` rewritten: the old "Room Engine / IA Layer" diagram and the changelog section disappear | Pilot |
+| 12 Sep | The old name removed from the code — except `OSVisionEngine` and CORE's K3s path | Pilot, D1, A3 |
+| 12 Sep | The header's calendar and weather follow the generated language, no longer the browser's | D8 |
+| 13 Sep | The typeface, text sizes by usage and the replaceable logo join the GRAPHIC TEMPLATE; missing tokens are filled from the factory reference | D7 (status reset), Pilot |
+| 13-14 Sep | The navigation rail and header band fit their content; the ENERGY panels line up in height; the room column leaves PER-DEVICE CONSUMPTION | D10, Pilot |
+| 14 Sep | The console pages borrow the tablet's session: no more long-lived token | C4, D1, D10, Pilot |
+| 14 Sep | The ENERGY DEVICES header brought back to the standard (76 px) | D10 |
+| — | Already wrong on the 12th: G1 and G4 closed in `CI_CD.md`; the `vssp_model_sync.py` bridge built in another form; `weather-forecast` used nowhere; "everything else is the in-house engine" contradicted by 173 `button-card` and 95 `card_mod` blocks | A2, D2, Pilot |
+
+Three source docs still describe the earlier state and must be updated
+**before** their episode (rule 1): `Core_Dashboard.md` (the old token, D1),
+`Dashboard_Generator.md` (the bridge, D2), `CI_CD.md` (the status of G2/G3,
+A2).
+
+---
+
 ## Action plan — what to film next
 
 Status is about **filmability**, not about whether the feature works: a row is
@@ -753,23 +909,25 @@ today.
 
 | # | Episode | Ready to film? | Concrete next step |
 |---|---|---|---|
+| — | Pilot | **Script revised — voice and captures to redo** | Recapture HOME at 1194 × 834; re-record the voice section by section; rerun `scripts/build_episode_media.py` after any script change |
 | C3 | Unsealing from an enrolled device | **Ready, and the freshest** | Seal the safe on purpose for the take; have a second, unenrolled device to film the refusal |
 | A5 | The UPDATES screen | **Ready** | Capture the grey "last measured …" rows while the safe is sealed — that only happens there |
 | C2 | The SAFE screen | **Ready** | Prepare demo secrets; nothing real on screen |
 | D5 | Automating an OAuth setup | **Ready** | A blank Google Cloud project, so consent is filmable without a cut |
-| D8 | Bilingual by construction | **Ready** | Capture EN/FR side by side and the pre-fix commit before it ages |
-| D2 | The dashboard generator | Ready | Pick the single model change to demonstrate |
-| D7 | The design system editor | Ready | Decide whether the `color-mix()` trap is a moment here or its own short |
+| D8 | Bilingual by construction | **Ready** | Capture EN/FR side by side; the second case (the header's third-party cards) only exists in history now — replay the commit from before 12 September |
+| D2 | The dashboard generator | Ready, doc to touch up | Pick the single model change to demonstrate; update the "bridge" section of `Dashboard_Generator.md` |
+| D7 | The visual charter editor | **Screen changed — status reset** | Refilm with the typeface, text sizes and logo; decide whether the `color-mix()` trap is a moment here or its own short |
 | D6 | A chatbot in the dashboard | Ready, with a caveat | Confirm which provider keys can be on screen; blur or use a throwaway |
 | A4 | HTTPS and the proxy trap | Ready, not applied | The ingress is not in place yet: do it once **off camera**, then replay it |
-| A2 | The CI/CD pipeline | Ready | Pick which of G1–G5 is fixed on screen (G1 is the most visual) |
+| A2 | The CI/CD pipeline | Ready, demo to re-pick | G1 is closed: re-check G2/G3/G5 against the current pipeline, then pick the one fixed on screen |
 | C1 | Why a safe | Ready | Find the previous secrets file in git history |
-| D1 | CORE | Blocked on a fix | The `/local/osvision_v2/…` 404 is the live fix — check it still reproduces |
+| D1 | CORE | Blocked on a fix, doc to rewrite | The `/local/osvision_v2/…` 404 still reproduces (checked in the code on 14 September); rewrite the authentication part of `Core_Dashboard.md` |
 | D4 | The assignment wizard | Ready | Re-read the source doc end to end before writing the script |
 | D3 | Wiring a whole room | Partly blocked | Two open calls — settle them, or film them as open questions |
 | B2 | Rotation and retention | Ready | Let the directory age: a folder with three files shows nothing |
-| C4 | Honest security review | Ready | Re-check `Security.md` on the day — it is the doc that goes stale most quietly |
-| A3 | Debugging sessions | Ready, film last | Add the k3s crash-loop and the CRLF case as new material |
+| C4 | Honest security review | Ready, doc to complete | Add the removal of the tablets' long-lived token to `Security.md`; re-check the document on the day |
+| A3 | Debugging sessions | Ready, film last | Eight cases in the pool: pick four, or split into A3a / A3b |
+| D10 | The wall tablet | **Doc to write** | `Tablet_Layout.md`: four fresh cases from 14 September, to write while they are |
 | A1 | The environment | **Doc to write** | No document describes the host itself; write it first |
 | D9 | The scheduler | **Doc to re-read** | `Scheduler.md` predates the latest screens |
 | B1 | Nothing is ever half-written | **Doc to write** | The invariant is enforced in three places and documented in none |
@@ -779,11 +937,12 @@ today.
 Three standing rules for this plan:
 
 1. **A doc is written before its episode, never after.** That is what keeps the
-   scripting step short — and it is the rule that files four block-B episodes
-   under "doc to write" rather than "ready".
+   scripting step short — and it is the rule that files three block-B
+   episodes, A1 and D10 under "doc to write" rather than "ready".
 2. **When a screen changes, its episode's status resets.** The SAFE screen got
    its UNSEAL button after this plan was written: anything filmed before would
-   already be wrong.
+   already be wrong. The same happened on 13 September to the GRAPHIC TEMPLATE
+   (D7), and on the 14th to HOME (the pilot).
 3. **A block is published in order, blocks are published in any order.** That is
    what allows C3 to go out while it is fresh, without waiting for block B to be
    written.
@@ -808,6 +967,13 @@ Three standing rules for this plan:
   resolved.
 - **C1 → C2 → C3 → C4** is the one block that really watches as a story: a
   problem, a tool, an automation, an honest reckoning.
-- The ADMIN console now has enough screens (ROOMS & FLOORS, ASSIGN, ENERGY,
-  CALENDAR, THEME, GENERATION, SAFE, UPDATES) for a short "console tour" to
-  serve as a trailer, cut from footage the other episodes already produce.
+- **The pilot is published first**, and it is the one that has to be right
+  before everything else: it cites episodes from every block. Redoing it
+  after D7 or D10 would mean redoing it a third time.
+- **D7 → D10**: the same week of work — the charter, then the tablet that
+  shows it. Film them in that order, while the screens are stable.
+- The ADMIN console now has nine screens (ROOMS & FLOORS, DETECTED DEVICES,
+  DEVICE ASSIGNMENT, ENERGY DEVICES, GOOGLE CALENDAR, GRAPHIC TEMPLATE,
+  DASHBOARDS, UPDATES, SAFE) — enough for a short "console tour" to serve as a
+  trailer, cut from footage the other episodes already produce. ENERGY DEVICES
+  still reads "not built yet": show it as it is, or cut it.
