@@ -284,7 +284,7 @@ energy:
   # FR | En-tetes de colonnes du tableau par appareil.
   col:
     device: Device
-    room: Room
+    power: Power
     power_hint: "(current)"
     energy: Energy
     energy_hint: "(today)"

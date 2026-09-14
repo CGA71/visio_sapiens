@@ -492,18 +492,27 @@ views:
             show_state: false
             custom_fields:
               c1: '<span style="color:#56707E;font-size:calc(11px * var(--vssp-scale-label, 1))">{{ t('energy.col.device') }}</span>'
-              cr: '<span style="color:#8FB6C9;font-size:calc(11px * var(--vssp-scale-label, 1));display:block;text-align:right">{{ t('energy.col.room') }}</span>'
+              # EN | "Power", not the Total Consumption panel title it used to
+              # EN | borrow: this column is the instant draw in W, and the
+              # EN | panel title does not fit a 52px column.
+              # FR | « Puissance », pas le titre du panneau Consommation totale
+              # FR | qu'elle empruntait : cette colonne est l'appel instantane
+              # FR | en W, et ce titre ne tient pas dans 52px.
               c2: >
-                <span style="color:#8FB6C9;font-size:calc(11px * var(--vssp-scale-label, 1));display:block;text-align:right">{{ t('energy.panel.total_consumption') }}<br>
+                <span style="color:#8FB6C9;font-size:calc(11px * var(--vssp-scale-label, 1));display:block;text-align:right">{{ t('energy.col.power') }}<br>
                 <span style="color:#56707E;font-size:calc(9px * var(--vssp-scale-label, 1))">{{ t('energy.col.power_hint') }}</span></span>
               c3: >
                 <span style="color:#8FB6C9;font-size:calc(11px * var(--vssp-scale-label, 1));display:block;text-align:right">{{ t('energy.col.energy') }}<br>
                 <span style="color:#56707E;font-size:calc(9px * var(--vssp-scale-label, 1))">{{ t('energy.col.energy_hint') }}</span></span>
             styles:
               grid:
-                - grid-template-areas: '"c1 cr c2 c3 pad"'
-                - grid-template-columns: 1fr 96px 84px 84px 18px
-                - column-gap: 8px
+                # EN | Same columns as vssp_energy_device_row, c1 spanning its
+                # EN | icon + name, so the headings sit over their values.
+                # FR | Memes colonnes que vssp_energy_device_row, c1 couvrant
+                # FR | icone + nom, pour que les titres tombent sur leurs valeurs.
+                - grid-template-areas: '"c1 c2 c3 pad"'
+                - grid-template-columns: 1fr 52px 62px 12px
+                - column-gap: 6px
                 - align-items: center
               card:
                 - background: rgba(0,0,0,.22)
@@ -518,9 +527,6 @@ views:
                 c1:
                   - justify-self: start
                   - text-align: left
-                cr:
-                  - justify-self: end
-                  - text-align: right
                 c2:
                   - justify-self: end
                   - text-align: right
@@ -568,9 +574,10 @@ views:
                   cards:
                     # ── Lignes appareils ──────────────────────────────
                     # EN | FLAT list: the ENERGY dashboard is not a room
-            # FR | Liste PLATE : le dashboard ENERGY n'est pas un
-                    # dashboard de pièce. `room` n'est qu'un libellé de
-                    # provenance affiché sous le nom de l'appareil.
+                    # EN | dashboard, and the rows carry no room column.
+                    # FR | Liste PLATE : le dashboard ENERGY n'est pas un
+                    # FR | dashboard de pièce, et les lignes n'ont pas de
+                    # FR | colonne pièce.
                     # Alimentée par vssp_energy_sync.py (ajout/retrait
                     # automatique selon les entités présentes dans HA).
 {% for d in energy_devices %}
@@ -580,7 +587,6 @@ views:
                       name: "{{ d.name }}"
                       icon: {{ d.icon }}
                       variables:
-                        room: "{{ d.room }}"
                         model: "{{ d.model | default('—', true) }}"
                         energy_entity: {{ d.energy_entity }}
                       tap_action:
@@ -596,7 +602,6 @@ views:
                       name: "{{ t('energy.empty.devices') }}"
                       icon: mdi:help-circle-outline
                       variables:
-                        room: "—"
                         model: "vssp_energy_sync.py"
 {% endif %}
           # ── EN | Total / FR | Total ───────────────────────────────

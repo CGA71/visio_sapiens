@@ -345,10 +345,10 @@ views:
                 ha-card { padding: 0 0 6px 0 !important; }
                 #name { font-size: calc(12px * var(--vssp-scale-text, 1)) !important; letter-spacing: 1px !important; }
 
-          # EN | No column headers on mobile: four labels over 380px would
+          # EN | No column headers on mobile: three labels over 380px would
           # EN | wrap and cost more height than they explain. vssp_energy_device_row
           # EN | already labels its own values.
-          # FR | Pas d'en-tetes de colonnes en mobile : quatre libelles sur
+          # FR | Pas d'en-tetes de colonnes en mobile : trois libelles sur
           # FR | 380px se replieraient et couteraient plus de hauteur qu'ils
           # FR | n'expliquent. vssp_energy_device_row etiquette deja ses
           # FR | propres valeurs.
@@ -397,7 +397,6 @@ views:
                       name: "{{ d.name }}"
                       icon: {{ d.icon }}
                       variables:
-                        room: "{{ d.room }}"
                         model: "{{ d.model | default('—', true) }}"
                         energy_entity: {{ d.energy_entity }}
                       tap_action:
@@ -409,7 +408,6 @@ views:
                       name: "{{ t('energy.empty.devices') }}"
                       icon: mdi:help-circle-outline
                       variables:
-                        room: "—"
                         model: "{{ t('energy.empty.devices_hint') }}"
 {% endif %}
 

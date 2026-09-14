@@ -676,7 +676,7 @@ views:
           # EN | pan-y and all — that is this project's already-proven fix
           # EN | for a scrollable list nested inside a page that also
           # EN | scrolls (mirrors the pan-x used by the chip nav bar). No
-          # EN | column headers either, same reasoning as ENERGY's: four
+          # EN | column headers either, same reasoning as ENERGY's: three
           # EN | labels over ~380px would wrap and cost more height than
           # EN | they explain — vssp_energy_device_row already labels its
           # EN | own values.
@@ -686,7 +686,7 @@ views:
           # FR | eprouve de ce projet pour une liste defilante imbriquee
           # FR | dans une page qui defile aussi (miroir du pan-x de la barre
           # FR | de chips de nav). Pas d'en-tetes de colonnes non plus, meme
-          # FR | raisonnement que ENERGY : quatre libelles sur ~380px se
+          # FR | raisonnement que ENERGY : trois libelles sur ~380px se
           # FR | replieraient et couteraient plus de hauteur qu'ils
           # FR | n'expliquent — vssp_energy_device_row etiquette deja ses
           # FR | propres valeurs.
@@ -729,7 +729,6 @@ views:
                       name: "{{ d.name }}"
                       icon: {{ d.icon }}
                       variables:
-                        room: "{{ d.room }}"
                         model: "{{ d.model | default('—', true) }}"
                         energy_entity: {{ d.energy_entity }}
                       tap_action:
@@ -740,8 +739,6 @@ views:
                       template: vssp_energy_device_row
                       name: "{{ t('energy.empty.devices') }}"
                       icon: mdi:help-circle-outline
-                      variables:
-                        room: "—"
 {% endif %}
 
           # Courbe production solaire vs consommation

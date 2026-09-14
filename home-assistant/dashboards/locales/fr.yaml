@@ -184,7 +184,7 @@ energy:
   # FR | Voir la note dans en.yaml.
   col:
     device: Appareil
-    room: Pièce
+    power: Puissance
     power_hint: "(actuelle)"
     energy: Énergie
     energy_hint: "(aujourd'hui)"
