@@ -698,179 +698,427 @@ they're versioned like
 a real software project.
 
 145
-00:11:30,000 --> 00:11:36,000
+00:11:30,000 --> 00:11:35,571
+I told you the interface is generated
+from a description of the house.
+
+146
+00:11:35,571 --> 00:11:39,000
+Here's where you write
+it: the admin console.
+
+147
+00:11:39,000 --> 00:11:41,143
+Nine screens, one per decision.
+
+148
+00:11:41,143 --> 00:11:43,286
+The rooms and the floors.
+
+149
+00:11:43,286 --> 00:11:46,286
+The devices the network
+has just discovered.
+
+150
+00:11:46,286 --> 00:11:48,857
+Which room each device belongs to.
+
+151
+00:11:48,857 --> 00:11:51,857
+The Google calendar,
+the visual charter, the
+
+152
+00:11:51,857 --> 00:11:54,857
+dashboards themselves,
+the updates, and the safe.
+
+153
+00:11:54,857 --> 00:11:57,000
+Let's declare a room, live.
+
+154
+00:11:57,000 --> 00:12:00,000
+A laundry room, on the ground floor.
+
+155
+00:12:00,000 --> 00:12:00,857
+I apply.
+
+156
+00:12:00,857 --> 00:12:07,286
+What happens during those few seconds
+is the loop I showed you on the diagram.
+
+157
+00:12:07,286 --> 00:12:09,857
+The form sends what I decided.
+
+158
+00:12:09,857 --> 00:12:15,000
+A script backs up the current state
+first — always, before writing anything.
+
+159
+00:12:15,000 --> 00:12:18,857
+It writes the model, reruns
+the generator, and reports
+
+160
+00:12:18,857 --> 00:12:22,286
+back: that message, up
+there, is the report.
+
+161
+00:12:22,286 --> 00:12:24,429
+I go back to HOME.
+
+162
+00:12:24,429 --> 00:12:27,000
+The laundry is in the rail.
+
+163
+00:12:27,000 --> 00:12:32,571
+And it's there on every screen at
+once — the energy, the system, the
+
+164
+00:12:32,571 --> 00:12:36,429
+console — because the rail
+isn't written by hand anywhere.
+
+165
+00:12:36,429 --> 00:12:41,571
+One honest detail: the room's own
+screen is declared in Home Assistant's
+
+166
+00:12:41,571 --> 00:12:45,857
+configuration, and Home Assistant only
+rereads that configuration at startup.
+
+167
+00:12:45,857 --> 00:12:50,571
+Its entry appears straight away;
+its screen, at the next restart.
+
+168
+00:12:50,571 --> 00:12:54,857
+I'd rather tell you
+than cut it in the edit.
+
+169
+00:12:54,857 --> 00:12:58,286
+And it's the same gesture
+for everything else.
+
+170
+00:12:58,286 --> 00:13:00,429
+You never draw a dashboard.
+
+171
+00:13:00,429 --> 00:13:03,000
+You decide, and the console writes.
+
+172
+00:14:00,000 --> 00:14:03,857
+At the start I promised
+you security by default.
+
+173
+00:14:03,857 --> 00:14:08,143
+A promise can be checked —
+so here's what it means
+
+174
+00:14:08,143 --> 00:14:10,714
+concretely, including what isn't done yet.
+
+175
+00:14:10,714 --> 00:14:14,571
+One: the console's forms
+send nothing with a password.
+
+176
+00:14:14,571 --> 00:14:17,571
+They go through entry
+points Home Assistant
+
+177
+00:14:17,571 --> 00:14:20,143
+only accepts from the local network.
+
+178
+00:14:20,143 --> 00:14:22,714
+From the internet, they don't exist.
+
+179
+00:14:22,714 --> 00:14:26,143
+Two: a new tablet keeps
+no permanent credential.
+
+180
+00:14:26,143 --> 00:14:30,857
+The console screens borrow the
+session you logged in with, a
+
+181
+00:14:30,857 --> 00:14:33,857
+short-lived token Home
+Assistant renews by itself.
+
+182
+00:14:33,857 --> 00:14:36,857
+Losing the tablet isn't losing a key.
+
+183
+00:14:36,857 --> 00:14:40,714
+Three: secrets live in
+a safe, not in files.
+
+184
+00:14:40,714 --> 00:14:46,714
+Home Assistant can read the name of every
+secret there, never its value — because
+
+185
+00:14:46,714 --> 00:14:51,857
+everything Home Assistant reads ends
+up in clear in its history database.
+
+186
+00:14:51,857 --> 00:14:56,571
+The safe closes at every
+restart, and you reopen it with
+
+187
+00:14:56,571 --> 00:14:59,571
+one passphrase, from a
+device you've enrolled.
+
+188
+00:14:59,571 --> 00:15:04,714
+Four: no password ever goes
+through a command line or into a
+
+189
+00:15:04,714 --> 00:15:08,143
+log — not the router's,
+not the assistants' keys.
+
+190
+00:15:08,143 --> 00:15:10,286
+And now, what isn't done.
+
+191
+00:15:10,286 --> 00:15:15,857
+Today, on the local network, the Home
+Assistant password still travels in clear.
+
+192
+00:15:15,857 --> 00:15:21,429
+The move to HTTPS is written and
+documented; it isn't in place yet.
+
+193
+00:15:21,429 --> 00:15:24,857
+It has its own episode, in block A.
+
+194
+00:15:24,857 --> 00:15:30,000
+That's what security by default
+means to me: not a list of
+
+195
+00:15:30,000 --> 00:15:34,714
+promises, but a list of things
+you can check — and, published
+
+196
+00:15:34,714 --> 00:15:39,000
+right beside it, the list
+of the ones still missing.
+
+197
+00:16:30,000 --> 00:16:36,000
 A quick aside before we wrap up,
 because you're going to run into this:
 
-146
-00:11:36,000 --> 00:11:40,286
+198
+00:16:36,000 --> 00:16:40,286
 the project was originally called
 OSVision, before it became VSSP.
 
-147
-00:11:40,286 --> 00:11:45,429
+199
+00:16:40,286 --> 00:16:45,429
 In September, a big sweep removed
 the old name from the identifiers,
 
-148
-00:11:45,429 --> 00:11:49,286
+200
+00:16:45,429 --> 00:16:49,286
 the components and the stylesheets —
 and that sweep surfaced
 
-149
-00:11:49,286 --> 00:11:53,571
+201
+00:16:49,286 --> 00:16:53,571
 three real bugs, including a
 dead link nobody had noticed.
 
-150
-00:11:53,571 --> 00:11:59,571
+202
+00:16:53,571 --> 00:16:59,571
 But some traces remain: the JavaScript
 engine still carries the old name, and the
 
-151
-00:11:59,571 --> 00:12:06,000
+203
+00:16:59,571 --> 00:17:06,000
 K3s panel on the CORE screen still
 looks for its file under the old path.
 
-152
-00:12:06,000 --> 00:12:10,286
+204
+00:17:06,000 --> 00:17:10,286
 A good project doesn't hide
 those marks, it documents them.
 
-153
-00:12:10,286 --> 00:12:13,714
+205
+00:17:10,286 --> 00:17:13,714
 That one, we'll fix live in episode D1.
 
-154
-00:12:15,000 --> 00:12:19,714
+206
+00:17:15,000 --> 00:17:19,714
 None of what you've just seen
 existed a few months ago.
 
-155
-00:12:19,714 --> 00:12:22,286
+207
+00:17:19,714 --> 00:17:22,286
 A generator that produces every screen.
 
-156
-00:12:22,286 --> 00:12:24,857
+208
+00:17:22,286 --> 00:17:24,857
 A console that declares the rooms.
 
-157
-00:12:24,857 --> 00:12:28,286
+209
+00:17:24,857 --> 00:17:28,286
 A safe that unseals
 from an enrolled device.
 
-158
-00:12:28,286 --> 00:12:32,143
+210
+00:17:28,286 --> 00:17:32,143
 An updates screen that
 knows what it doesn't know.
 
-159
-00:12:32,143 --> 00:12:36,429
+211
+00:17:32,143 --> 00:17:36,429
 A visual charter that changes
 right down to the typeface.
 
-160
-00:12:36,429 --> 00:12:40,286
+212
+00:17:36,429 --> 00:17:40,286
 This isn't a frozen
 project — it's a system with
 
-161
-00:12:40,286 --> 00:12:43,286
+213
+00:17:40,286 --> 00:17:43,286
 a history, and it's still writing one.
 
-162
-00:12:45,000 --> 00:12:48,857
+214
+00:18:00,000 --> 00:18:03,857
 The rest of the series
 is organised into four
 
-163
-00:12:48,857 --> 00:12:51,857
+215
+00:18:03,857 --> 00:18:06,857
 blocks, and you choose your way in.
 
-164
-00:12:51,857 --> 00:12:56,143
+216
+00:18:06,857 --> 00:18:12,429
+Every episode runs about twenty
+minutes: time to show, not just to tell.
+
+217
+00:18:12,429 --> 00:18:16,714
 Block A is the foundation:
 the machine, the cluster, the
 
-165
-00:12:56,143 --> 00:13:00,429
+218
+00:18:16,714 --> 00:18:21,000
 pipeline, and what breaks
 when one of the three lies.
 
-166
-00:13:00,429 --> 00:13:06,857
+219
+00:18:21,000 --> 00:18:27,429
 Block B is backup — all the way to the
 only proof that counts: the restore.
 
-167
-00:13:06,857 --> 00:13:12,000
+220
+00:18:27,429 --> 00:18:32,571
 Block C is the safe: where
 the secrets live, and how you
 
-168
-00:13:12,000 --> 00:13:15,429
+221
+00:18:32,571 --> 00:18:36,000
 unseal it without typing
 three keys by hand.
 
-169
-00:13:15,429 --> 00:13:21,000
+222
+00:18:36,000 --> 00:18:41,571
 And block D is the interface itself,
 from the gauge to the generator.
 
-170
-00:13:21,000 --> 00:13:23,571
+223
+00:18:41,571 --> 00:18:44,143
 Inside a block, the order matters.
 
-171
-00:13:23,571 --> 00:13:28,286
+224
+00:18:44,143 --> 00:18:48,857
 Between blocks, it doesn't: if
 you came for the backups, you
 
-172
-00:13:28,286 --> 00:13:32,143
+225
+00:18:48,857 --> 00:18:52,714
 don't have to sit through
 ten interface episodes first.
 
-173
-00:13:45,000 --> 00:13:49,714
+226
+00:19:00,000 --> 00:19:04,714
 What to take away: Visio Sapiens
 isn't a dashboard, it's a
 
-174
-00:13:49,714 --> 00:13:53,143
+227
+00:19:04,714 --> 00:19:08,143
 control center, simple,
 effective and secure by default.
 
-175
-00:13:53,143 --> 00:13:58,286
+228
+00:19:08,143 --> 00:19:13,286
 Home Assistant supplies the data, VSSP
 supplies the interface — on a small
 
-176
-00:13:58,286 --> 00:14:03,429
+229
+00:19:13,286 --> 00:19:18,429
 number of watched foundations, with
 a pipeline that lets you roll back.
 
-177
-00:14:03,429 --> 00:14:09,857
+230
+00:19:18,429 --> 00:19:24,857
 If you don't know where to start,
 take D1: we follow a single piece of
 
-178
-00:14:09,857 --> 00:14:15,857
+231
+00:19:24,857 --> 00:19:30,857
 data, from the host machine all
 the way to a gauge in your browser.
 
-179
-00:14:15,857 --> 00:14:20,571
+232
+00:19:30,857 --> 00:19:35,571
 Subscribe, and tell me in the
 comments: is your Home Assistant
 
-180
-00:14:20,571 --> 00:14:25,286
+233
+00:19:35,571 --> 00:19:40,286
 still a stack of cards, or
 have you started climbing out?
 
-181
-00:14:25,286 --> 00:14:27,000
+234
+00:19:40,286 --> 00:19:42,000
 See you very soon.

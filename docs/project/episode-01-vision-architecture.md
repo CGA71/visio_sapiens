@@ -4,11 +4,11 @@
 **Source doc:** `Vision.md`
 **Central question of the episode:** Why replace Home Assistant's native Lovelace cards with an in-house engine?
 **Visual anchor:** architecture diagram + live tour of the HOME dashboard
-**Estimated length:** 13-15 min
+**Length:** 20 min — the format of the whole series
 **Revision:** 14 September 2026 — see [Revision of 14 September](#revision-of-14-september-2026) at the end for what changed and why.
 **Shooting format:** no face on camera at any point. The channel runs on **voice-over + screen capture + hands-only shots** (keyboard, mouse, optionally a stylus on a tablet to annotate the diagram).
 
-**Goal:** give viewers the mental model before any code. What Visio Sapiens is — a control-center-style interface sitting on top of Home Assistant, **not** a dashboard with a nice skin — why the project builds its own rendering engine instead of assembling ready-made cards, and how the rest of the series is organised.
+**Goal:** give viewers the mental model before any code. What Visio Sapiens is — a control-center-style interface sitting on top of Home Assistant, **not** a dashboard with a nice skin — why the project builds its own rendering engine instead of assembling ready-made cards, what the console and "secure by default" look like once demonstrated, and how the rest of the series is organised.
 
 **⚠️ Do not film:** any live secret — Livebox password, values from the safe, the unseal passphrase, the chatbot providers' keys. Their handling has its own episodes: block C (the safe), D3 (Livebox), D6 (chatbot). A new tablet no longer asks for a long-lived access token: logging in to Home Assistant is enough, so there is nothing to hide on that front.
 
@@ -158,7 +158,56 @@
 
 ---
 
-## 7. A NOTE ON NAMES (11:30 - 12:15)
+## 7. THE CONSOLE: DESCRIBE THE HOUSE ONCE (11:30 - 14:00)
+
+**Visual:** capture at 1194 × 834. The ADMIN menu and its nine rows, then ROOMS & FLOORS: declare a demo room ("Laundry", ground floor), APPLY, the status message appearing. Back to HOME, close-up on the rail; then ENERGY and CORE to show the same entry everywhere.
+
+**Voice-over:**
+> "I told you the interface is generated from a description of the house. Here's where you write it: the **admin console**.
+>
+> Nine screens, one per decision. The rooms and the floors. The devices the network has just discovered. Which room each device belongs to. The Google calendar, the visual charter, the dashboards themselves, the updates, and the safe.
+>
+> Let's declare a room, live. A laundry room, on the ground floor. I apply.
+>
+> What happens during those few seconds is the loop I showed you on the diagram. The form sends what I decided. A script **backs up** the current state **first** — always, before writing anything. It writes the model, reruns the generator, and reports back: that message, up there, is the report.
+>
+> I go back to HOME. The laundry is in the rail. And it's there on every screen at once — the energy, the system, the console — because the rail isn't written by hand anywhere.
+>
+> One honest detail: the room's own screen is declared in Home Assistant's configuration, and Home Assistant only rereads that configuration at startup. Its entry appears straight away; its screen, at the next restart. I'd rather tell you than cut it in the edit.
+>
+> And it's the same gesture for everything else. You never draw a dashboard. You decide, and the console writes."
+
+---
+
+## 8. SECURE BY DEFAULT, CONCRETELY (14:00 - 16:30)
+
+**Visual:** four tiles in motion design, each opening onto proof on screen: a webhook automation with `local_only: true`; the DevTools of a console iframe, `localStorage` holding no token; the SAFE screen with **demo** secrets (names visible, values hidden); a `0600` file and a deploy log with no password in it. Then `Https.md` on screen for the "not done yet" part.
+
+**Voice-over:**
+> "At the start I promised you security by default. A promise can be checked — so here's what it means concretely, including what isn't done yet.
+>
+> **One**: the console's forms send nothing with a password. They go through entry points Home Assistant only accepts from the local network. From the internet, they don't exist.
+>
+> **Two**: a new tablet keeps no permanent credential. The console screens borrow the session you logged in with, a short-lived token Home Assistant renews by itself. Losing the tablet isn't losing a key.
+>
+> **Three**: secrets live in a safe, not in files. Home Assistant can read the name of every secret there, never its value — because everything Home Assistant reads ends up in clear in its history database. The safe closes at every restart, and you reopen it with one passphrase, from a device you've enrolled.
+>
+> **Four**: no password ever goes through a command line or into a log — not the router's, not the assistants' keys.
+>
+> And now, what isn't done. Today, on the local network, the Home Assistant password still travels in clear. The move to HTTPS is written and documented; it isn't in place yet. It has its own episode, in block A.
+>
+> That's what security by default means to me: not a list of promises, but a list of things you can check — and, published right beside it, the list of the ones still missing."
+
+**On-screen text (boxed):**
+> 🏠 Webhooks: local network only
+> 📱 Tablets: the session, never a permanent token
+> 🔐 Secrets: in the safe — HA reads the names, never the values
+> 🚫 No password on a command line or in a log
+> ⏳ HTTPS: documented, not in place yet
+
+---
+
+## 9. A NOTE ON NAMES (16:30 - 17:15)
 
 **Visual:** the commit of 12 September (`refactor: the old name is gone from the code…`) on screen, then the two remaining traces: `class OSVisionEngine` in `www/vssp/js/vssp.js`, and the `/local/osvision_v2/k3s_stats.json` path in `core.html`. Voice-over alone.
 
@@ -167,7 +216,7 @@
 
 ---
 
-## 8. QUICK MONTAGE — WHAT HAS SHIPPED (12:15 - 12:45)
+## 10. QUICK MONTAGE — WHAT HAS SHIPPED (17:15 - 18:00)
 
 **Visual:** fast-cut montage timed to the music, one shot per milestone: the generator regenerating, the ROOMS & FLOORS screen, the safe's UNSEAL button, the UPDATES screen, the GRAPHIC TEMPLATE changing the typeface. Milestones sourced from the Git history (`git log --oneline`): `Vision.md` has had no changelog section since it was rewritten on 9 September.
 
@@ -178,12 +227,12 @@
 
 ---
 
-## 9. THE MAP OF THE SERIES (12:45 - 13:45)
+## 11. THE MAP OF THE SERIES (18:00 - 19:00)
 
-**Visual:** motion design — four tiles lighting up one after another (A · B · C · D), each with its block's title and episode count (5 · 4 · 4 · 10), then all four together.
+**Visual:** motion design — four tiles lighting up one after another (A · B · C · D), each with its block's title and episode count (6 · 2 · 3 · 10), then all four together, with "20 min" under each tile.
 
 **Voice-over:**
-> "The rest of the series is organised into four blocks, and you choose your way in.
+> "The rest of the series is organised into four blocks, and you choose your way in. Every episode runs about twenty minutes: time to show, not just to tell.
 >
 > **Block A** is the foundation: the machine, the cluster, the pipeline, and what breaks when one of the three lies.
 >
@@ -200,9 +249,9 @@
 
 ---
 
-## 10. CLOSE (13:45 - 14:30)
+## 12. CLOSE (19:00 - 20:00)
 
-**Visual:** back to the HOME dashboard full screen, or animated channel logo. Voice-over alone.
+**Visual:** back to the HOME dashboard full screen, or animated channel logo. Voice-over alone. The last twenty seconds carry the YouTube end screen (subscribe + D1 + a block C episode).
 
 **Voice-over:**
 > "What to take away: Visio Sapiens isn't a dashboard, it's a control center, simple, effective and secure by default. Home Assistant supplies the data, VSSP supplies the interface — on a small number of watched foundations, with a pipeline that lets you roll back.
@@ -222,8 +271,9 @@
 - **Captures:** all at **1194 × 834** (11-inch iPad, landscape — the actual wall tablet), Home Assistant's sidebar hidden. Any HOME capture made before 14 September 2026 is stale: the header band, the status row and the device list have changed since.
 - **Architecture diagram:** the diagrams in `Vision.md` (§2, §4, §5) are mermaid; redraw them at recording resolution before shooting.
 - **B-roll:** community dashboards (before/after the break — capture of the "Bar-Card Repo Removed in 2025.6.2" forum thread), internet exposure diagram, native HA interface (complexity), live HOME dashboard, `design_system.yaml` and the GRAPHIC TEMPLATE screen, Git history for the montage.
-- **Do not film:** any live secret → block C, D3, D6.
-- **Cross-references:** CI/CD pipeline → A2; backup and restore → block B; the safe → block C; security review → C4; CORE and the old-path K3s bug → D1; generator → D2; chatbot → D6; visual charter → D7.
+- **Do not film:** any live secret → block C, D3, D6. In section 8 the safe shows demo secrets only.
+- **The demo room (section 7):** declare it, apply, film the rail; its own screen only exists once the configuration fragment is merged and Home Assistant restarted — do that off camera if you want to open it. Delete it after the take (ROOMS & FLOORS), or it stays in the rail of every screen.
+- **Cross-references:** CI/CD pipeline → A2; HTTPS → A4; backup and restore → block B; the safe → C1, C2; security review → C3; CORE and the old-path K3s bug → D1; generator → D2; assignment → D4; chatbot → D6; visual charter → D7; the wall tablet → D10.
 
 ---
 
@@ -241,13 +291,15 @@ Measured against the slots above, at 140 words per minute. The narration-only te
 | 4 | Why not native cards | 150 s | 144 s | −6 s |
 | 5 | Architecture diagram | 120 s | 92 s | −28 s |
 | 6 | HOME tour | 120 s | 105 s | −15 s |
-| 7 | A note on names | 45 s | 44 s | −1 s |
-| 8 | Montage — what has shipped | 30 s | 28 s | −2 s |
-| 9 | The map of the series | 60 s | 47 s | −13 s |
-| 10 | Close | 45 s | 42 s | −3 s |
-| | **Total** | **14:30** | **12:42** | **−108 s** |
+| 7 | The console | 150 s | 93 s | −57 s |
+| 8 | Secure by default | 150 s | 99 s | −51 s |
+| 9 | A note on names | 45 s | 44 s | −1 s |
+| 10 | Montage — what has shipped | 45 s | 28 s | −17 s |
+| 11 | The map of the series | 60 s | 53 s | −7 s |
+| 12 | Close | 60 s | 42 s | −18 s |
+| | **Total** | **20:00** | **15:59** | **−241 s** |
 
-Sections deliberately short, where the picture carries the time: 2, 5, 6. Everywhere else the narration fills its slot.
+Sections deliberately short, where the picture carries the time: 2, 5, 6, 7, 8, 10, 12. Everywhere else the narration fills its slot.
 <!-- /TIMING-TABLE -->
 
 ---
@@ -262,8 +314,11 @@ The script of 10 September had been written against a project that had already m
 | 4 | "no dependency on a community maintainer", "no more card-mod patches", exceptions `weather-forecast` · `logbook` · `apexcharts-card` | three named foundations (button-card, card-mod, layout-card), specialised cards, one card-mod patch owned up to | the templates hold 173 `custom:button-card`, 10 `grid-layout` and 95 `card_mod` blocks; `weather-forecast` is used nowhere (the weather goes through `dynamic-weather-card` and `simple-weather-card`). The old wording was false for anyone who opens the repository |
 | 5 | "CORE / Room Engine / AI Layer / Animation / CSS / JS / Theme Engine" diagram | `Vision.md`'s system overview (§2), generation chain (§4), console loop (§5) | `Vision.md` was rewritten on 9 September; the old diagram is no longer in it |
 | 6 | "HUD row: weather, clock, alarm status, avatar", "energy row", `vssp.css` as the source of the look | header band (screen + time, weather, calendar), status row (system, energy, alarm, thermostat, updates light), radar, metered devices, assistant; `design_system.yaml` + GRAPHIC TEMPLATE screen | that is what HOME shows today; since 13 September the typeface and text sizes are charter settings |
-| 7 | "you'll come across old file names" | the 12 September sweep, its three bugs, and the two traces left | the old name was removed from the code on 12 September, except `OSVisionEngine` and CORE's K3s path |
-| 8 | placeholder "[3-4 milestones, to be picked from Vision.md]" | five milestones written out | `Vision.md` has no changelog section any more |
-| 9 | — | **new section**: the map of the four blocks | the series plan says the pilot "announces all of them"; the script did not |
-| 10 | "the next episode follows a piece of data from psutil" | D1 offered as a way in, not as the mandatory next step | between blocks, order no longer matters |
+| 9 | "you'll come across old file names" | the 12 September sweep, its three bugs, and the two traces left | the old name was removed from the code on 12 September, except `OSVisionEngine` and CORE's K3s path |
+| 10 | placeholder "[3-4 milestones, to be picked from Vision.md]" | five milestones written out | `Vision.md` has no changelog section any more |
+| 7 | — | **new section**: the console, and a room declared live | move to the 20-minute format; it is the proof of "the interface is generated", section 3's thesis |
+| 8 | — | **new section**: secure by default, four checkable measures and what is missing | move to the 20-minute format; the cold open promises security, nothing showed it |
+| 11 | — | **new section**: the map of the four blocks (6 · 2 · 3 · 10 episodes of 20 min) | the series plan says the pilot "announces all of them"; the script did not |
+| 12 | "the next episode follows a piece of data from psutil" | D1 offered as a way in, not as the mandatory next step | between blocks, order no longer matters |
+| Length | 11-13 then 13-15 min | **20 min** | the format common to the whole series, decided on 14 September |
 | Warning | "do not film: long-lived tokens" | secrets listed; no more long-lived token on tablets | since 14 September, the console pages borrow the tablet's Home Assistant session |

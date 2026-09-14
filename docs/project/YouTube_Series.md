@@ -6,7 +6,9 @@ This document maps the project's documentation onto a sequence of videos. Each
 episode has a source doc, a central question it answers, and a suggested
 on-screen demo.
 
-The series is organised into **four thematic blocks** plus a pilot. A block is
+The series is organised into **four thematic blocks** plus a pilot, and
+**every episode runs 20 minutes**, the pilot included (see
+[The format: 20 minutes](#the-format-20-minutes)). A block is
 watched in order and stands on its own: somebody who came for the backups does
 not have to watch nine interface episodes first. Inside a block the order
 matters; between blocks it does not.
@@ -14,9 +16,9 @@ matters; between blocks it does not.
 | Block | Subject | Episodes |
 |---|---|---|
 | — | Pilot | 1 |
-| **A** | Environment & CI/CD | 5 |
-| **B** | Backup | 4 |
-| **C** | The safe | 4 |
+| **A** | Environment & CI/CD | 6 |
+| **B** | Backup | 2 |
+| **C** | The safe | 3 |
 | **D** | Home-automation interface | 10 |
 
 The source docs cited below exist in `docs/` in both languages
@@ -27,7 +29,40 @@ The source docs cited below exist in `docs/` in both languages
 > subtitles regenerated), a D10 episode joins, and several sections described
 > a state that no longer holds. The detail is in
 > [What changed since 12 September](#what-changed-since-12-september); the
-> affected sections are corrected in place.
+> affected sections are corrected in place. The same day, the format moved
+> to **20 minutes per episode**, the pilot included: block B goes down to two
+> episodes, block C to three, and A3 splits in two.
+
+---
+
+## The format: 20 minutes
+
+Every episode, the pilot included, runs **20 minutes**. The common template:
+
+| Time | Part |
+|---|---|
+| 0:00 - 2:00 | the hook: the symptom or the question, shown on screen |
+| 2:00 - 17:00 | three or four chapters, each **demonstrated** rather than told |
+| 17:00 - 19:00 | the trap, the live fix, or what is not done |
+| 19:00 - 20:00 | wrap-up, pointer, end screen |
+
+Twenty minutes cannot be filled with just anything: an episode that only
+holds ten minutes of demonstration becomes a slow episode. Moving to this
+format therefore re-cut the series:
+
+- **Block B goes from 4 to 2 episodes.** Rotation alone, and blind spots
+  alone, did not hold 20 minutes. B1 brings together the invariant and
+  retention (everything that happens *before* overwriting); B2 brings together
+  the restore and what it does not bring back.
+- **Block C goes from 4 to 3.** The case for the safe is best demonstrated on
+  the screen it justifies: C1 brings the two together.
+- **A3 splits in two.** Eight debugging cases do not fit in one episode; A3a
+  and A3b take four each.
+- **The pilot goes from 14 min 30 to 20 minutes**: it gains the console in
+  action (a room declared live) and secure-by-default, demonstrated.
+
+Every episode below carries its **20-minute breakdown**. It is also a test: if
+the breakdown only holds by padding, the episode is not ready.
 
 ---
 
@@ -41,7 +76,8 @@ does code get there".
 |---|---|---|---|
 | A1 | The environment: where this actually runs | `Vision.md`, `mosquitto-k3s.md` | Why a k3s cluster for a house? |
 | A2 | The CI/CD pipeline | `CI_CD.md` | How does one commit reach two very different targets? |
-| A3 | Debugging sessions | `Troubleshooting.md` | What does hunting a "this should not be possible" bug look like? |
+| A3a | Debugging I: green pipeline, unchanged result | `Troubleshooting.md` | What does hunting a "this should not be possible" bug look like? |
+| A3b | Debugging II: active, but not working | `Troubleshooting.md` | What do you do when everything checkable from the workstation is right? |
 | A4 | HTTPS, and the proxy trap | `Https.md` | How do you encrypt without locking yourself out? |
 | A5 | The UPDATES screen | `Updates.md` | How does a screen say what it does not know? |
 
@@ -49,23 +85,22 @@ does code get there".
 
 ## Block B — Backup
 
-Four short episodes where there used to be half a video. The subject is not
-"how to copy a file" but **what you owe someone before overwriting their
+Two 20-minute episodes where there used to be half a video. The subject is
+not "how to copy a file" but **what you owe someone before overwriting their
 work** — and the block goes all the way to the only proof that counts, the
 restore.
 
 | # | Title | Source doc | Central question |
 |---|---|---|---|
-| B1 | Nothing is ever half-written | `Backup_Retention.md`, `Deployment.md` | How do you guarantee atomicity without transactions? |
-| B2 | Rotation and retention | `Backup_Retention.md` | What is kept, for how long, and who decided? |
-| B3 | Restoring: the test nobody runs | `Backup_Retention.md` | Does a backup never restored exist? |
-| B4 | What the backup does not cover | `Security.md`, `Vision.md` | Where does "backed up" stop and "reproducible" start? |
+| B1 | Before overwriting: write, keep, prune | `Backup_Retention.md`, `Deployment.md` | How do you guarantee atomicity without transactions — and what is kept, for how long? |
+| B2 | Restoring, and what does not come back | `Backup_Retention.md`, `Security.md` | Does a backup never restored exist — and what does it not bring back? |
 
 > **An honest reservation about this block.** `Backup_Retention.md` is 79 lines
-> today: enough for B2, not for B1, B3 and B4. By the project's own rule — *a
-> doc is written before its episode, never after* — those three need their
-> source written first. B3 in particular has **no documented restore
-> procedure** yet, and that is the kind of gap you discover on the wrong day.
+> today: enough for the retention part of B1, not for the rest. By the
+> project's own rule — *a doc is written before its episode, never after* —
+> both episodes need their source written first. B2 in particular has **no
+> documented restore procedure** yet, and that is the kind of gap you discover
+> on the wrong day.
 
 ---
 
@@ -77,10 +112,9 @@ demonstrable.
 
 | # | Title | Source doc | Central question |
 |---|---|---|---|
-| C1 | Why a safe rather than a file | `Vault.md` | What does a safe give you that a `0600` file does not? |
-| C2 | The SAFE screen | `Vault.md` | What does a defensible secrets console look like? |
-| C3 | Unsealing with one password, from an enrolled device | `Unseal.md` | How do you remove the manual step without removing its safety? |
-| C4 | An honest security review | `Security.md` | What must be said about what is not protected? |
+| C1 | A safe, and its console | `Vault.md` | What does a safe give you that a `0600` file does not — and what does a defensible secrets console look like? |
+| C2 | Unsealing with one password, from an enrolled device | `Unseal.md` | How do you remove the manual step without removing its safety? |
+| C3 | An honest security review | `Security.md` | What must be said about what is not protected? |
 
 ---
 
@@ -107,8 +141,9 @@ own first.
 
 ## Mapping to the old numbering
 
-All twelve original episodes are placed; none is lost. Old episode 12 is the
-only one **cut in two** — its halves had nothing in common but their brevity.
+All twelve original episodes are placed; none is lost. Old episode 12 is
+**cut in two** — its halves had nothing in common but their brevity — and old
+episode 7 splits in two under the 20-minute format.
 
 | Old | Becomes | Note |
 |---|---|---|
@@ -118,13 +153,13 @@ only one **cut in two** — its halves had nothing in common but their brevity.
 | 4 Wiring a whole room | **D3** | |
 | 5 Assignment wizard | **D4** | |
 | 6 CI/CD pipeline | **A2** | |
-| 7 Debugging sessions | **A3** | |
+| 7 Debugging sessions | **A3a** *and* **A3b** | split under the 20-min format |
 | 8 OAuth | **D5** | |
 | 9 Chatbot | **D6** | |
 | 10 Design system | **D7** | |
 | 11 Bilingual | **D8** | |
-| 12 Backups + security | **B2** *and* **C4** | cut in two |
-| — | A1, A4, A5, B1, B3, B4, C1, C2, C3, D9, D10 | eleven new episodes |
+| 12 Backups + security | **B1** *and* **C3** | cut in two |
+| — | A1, A4, A5, B2, C1, C2, D9, D10 | eight new episodes |
 
 ---
 
@@ -153,7 +188,20 @@ assembling ready-made cards, and how the series is organised.
   devices, the assistant bar.
 - `dashboards/model/design_system.yaml` beside the GRAPHIC TEMPLATE screen: one
   text size changed, every screen following.
-- The map of the four blocks, in motion design.
+- **The console in action**: a demo room declared live in ROOMS & FLOORS, and
+  the rail showing it on every screen (its own screen only exists after an HA
+  restart — say so, don't cut it).
+- **Secure by default, in four proofs**: webhooks limited to the local
+  network, tablets with no permanent token, a safe that gives HA the names
+  only, no password on a command line — and HTTPS, documented but not in place
+  yet.
+- The map of the four blocks (6 · 2 · 3 · 10 episodes of 20 min), in motion
+  design.
+
+**20-min breakdown:** 0-1 cold open · 1-5 the approach, HA's complexity, what
+Visio Sapiens is · 5-7:30 why not native cards · 7:30-11:30 the architecture
+and HOME · 11:30-14 the console · 14-16:30 secure by default · 16:30-18 names
+and the montage · 18-20 the map of the series, close.
 
 **Talking points:**
 - The one rule that drives every other decision: "Home Assistant is a data
@@ -196,10 +244,12 @@ two targets.
 - Why k3s rather than Docker Compose: not "Kubernetes because it is modern",
   but the runner, the PVCs and the automatic restart.
 - The honest cost: a cluster that never finishes booting blocks everything, and
-  it happens — episode A3 demonstrates it.
+  it happens — episode A3b demonstrates it.
 - The rival-units trap: `k3s.service` and `k3s-agent.service` fight over
   `127.0.0.1:6444`, and the symptom is a host that starts without ever
   finishing. A textbook case of "the service is active" ≠ "the service works".
+
+**20-min breakdown:** 0-2 a host that boots without ever finishing · 2-7 the machine: k3s, the pods, the PVC · 7-11 k3s staging against HAOS production · 11-15 GitLab and its runner inside the cluster, Vault beside it · 15-18 the two-k3s-units trap · 18-20 wrap-up, pointer to A2.
 
 **Source:** `Vision.md`, `mosquitto-k3s.md`, `Updates.md` (k3s section).
 
@@ -226,25 +276,27 @@ pipeline as its own subject, independent of any one feature.
   thing that wastes an hour if you don't know to check it first.
 - Why `configuration.yaml` needing a full HA restart (not a hot reload) was
   the root cause of an entire "staging looks unchanged" class of bugs — ties
-  directly into episode A3.
+  directly into episode A3a.
 - Secrets never touch a command line or a log: positional shell arguments in
   staging, stdin in production. Worth a full explanation, it's reusable
   knowledge outside this project entirely.
 
-**Optional split:** if A2 runs long, cut it into A2a (pipeline mechanics) and
-A2b (the G1–G5 gaps as a "known issues" episode) — the source doc already
-separates cleanly along that line.
+**Under the 20-minute format**, the pipeline mechanics and one gap fixed on
+screen fit in a single episode: the old A2a / A2b split is no longer needed.
+
+**20-min breakdown:** 0-2 one commit, two targets · 2-8 the diagram and the `workflow:` rule · 8-13 a live run, stage by stage · 13-17 a `CI_CD.md` gap fixed on screen · 17-19 secrets kept off command lines · 19-20 wrap-up.
 
 ---
 
-## A3 — Debugging sessions
+## A3a · A3b — Debugging sessions
 
 **Goal:** the "detective story" episode. Real bugs, real symptoms, real
 commands run to narrow down the cause — the format that tends to perform
 best because the payoff (the fix) is earned on screen instead of assumed.
 
-**Show on screen — a pool of eight independent mini-cases. Pick four per
-episode, or split into A3a / A3b:**
+**Show on screen — eight independent mini-cases, four per episode. A3a
+(cases 1 to 4): "green pipeline, unchanged result". A3b (cases 5 to 8):
+"active, but not working" — what the workstation does not see.**
 1. **Staging looks unchanged after a green pipeline** — the `deploy:staging`
    job never restarted Home Assistant, so `lovelace.dashboards` and
    `homeassistant.packages` kept serving stale config even though the files
@@ -295,6 +347,8 @@ episode, or split into A3a / A3b:**
   is its cousin: **one client in the wrong**, while everything checkable from
   the workstation is right.
 
+**20-min breakdown:** **A3a** 0-1:30 the shape of an investigation · 1:30-17:30 cases 1 to 4, about four minutes each · 17:30-20 the "green pipeline, unchanged result" pattern. **A3b** 0-1:30 · 1:30-17:30 cases 5 to 8 · 17:30-20 the "one client in the wrong" pattern.
+
 ---
 
 ## A4 — HTTPS, and the proxy trap
@@ -320,6 +374,8 @@ without breaking the one way back in when the configuration is wrong.
 - Mixed content: an HTTPS page can no longer call an `http://` address.
   Checked across the whole repository, and worth re-checking for every page
   added later.
+
+**20-min breakdown:** 0-3 the password captured in clear · 3-8 Traefik, the ingress, the certificate · 8-13 the trap live: 400s everywhere, the log line · 13-17 `trusted_proxies` and bypassable banning · 17-19 mixed content · 19-20 wrap-up.
 
 **Source:** `Https.md`.
 
@@ -349,22 +405,32 @@ its button would install, or explains why it cannot say.
 - An installer that says "started, not finished" rather than "finished" when it
   cannot know.
 
+**20-min breakdown:** 0-2 an orange light, and the question "why?" · 2-7 the eight rows · 7-12 the sealed safe, the screen greying instead of emptying · 12-16 current but stopped; the installer that says "started, not finished" · 16-19 the row that refuses to be carried forward · 19-20 wrap-up.
+
 **Source:** `Updates.md`.
 
 ---
 
-## B1 — Nothing is ever half-written
+## B1 — Before overwriting: write, keep, prune
 
-**Goal:** open the BACKUP block with the invariant that makes it necessary,
-before any question of rotation or retention.
+**Goal:** open the BACKUP block with what you owe someone before overwriting
+their work — the invariant that makes backups necessary — then turn "I take
+backups" into a policy that can be stated, checked and defended. *(Brings
+together old B1 and B2: at 20 minutes, rotation alone did not hold an
+episode.)*
 
 **On screen:**
 - A HOME regeneration launched live: the timestamped backup is written
   **before** the first byte of the new file exists.
-- The three independent places the same invariant shows up: the assignment
-  applier, the generator's protected dashboards, and the backup step itself.
+- The three independent places the same invariant shows up: the console's
+  appliers (assignment, rooms), the generator's protected dashboards, and the
+  backup step itself.
 - A failure forced mid-write — kill the generator while it writes — and the
   original file still intact.
+- The backup directory after several weeks of real work: how many files, what
+  size, what age.
+- The "show me what you would delete" mode run before the real prune, then
+  the rotation rule applied live.
 
 **Points to make:**
 - Atomicity in a system with no transactions: validate the whole payload before
@@ -372,36 +438,25 @@ before any question of rotation or retention.
   here".
 - Why "re-running a scan does not reset previous work" is a guarantee that
   looks trivial while it holds and catastrophic when it breaks.
+- A retention policy is a trade between disk and regret, and it is better
+  written down than left to the mood of manual `rm`s.
+- What rotation **must never** take away, and how that is guaranteed.
+
+**20-min breakdown:** 0-2 an overwritten file, the hook · 2-8 the invariant in
+three places, and the forced failure · 8-11 write beside, then rename · 11-16
+the real directory, rotation, the rehearsal mode · 16-19 what rotation must
+never take away · 19-20 wrap-up, pointer to B2.
 
 **Source:** `Backup_Retention.md`, `Deployment.md`, `Dashboard_Generator.md`.
 
 ---
 
-## B2 — Rotation and retention: what is kept, and for how long
+## B2 — Restoring, and what does not come back
 
-**Goal:** turn "I take backups" into a policy that can be stated, checked and
-defended.
-
-**On screen:**
-- The backup directory after several weeks of real work: how many files, what
-  size, what age.
-- The "show me what you would delete" mode run before the real prune. A
-  destructive tool that can rehearse before it plays.
-- The rotation rule applied live, and the file disappearing.
-
-**Points to make:**
-- A retention policy is a trade between disk and regret, and it is better
-  written down than left to the mood of manual `rm`s.
-- What rotation **must never** take away, and how that is guaranteed.
-
-**Source:** `Backup_Retention.md`.
-
----
-
-## B3 — Restoring: the test nobody runs
-
-**Goal:** the episode that gives the two before it their value. A backup never
-restored is a hypothesis, not a backup.
+**Goal:** the episode that gives the one before it its value. A backup never
+restored is a hypothesis, not a backup — and a successful restore does not
+bring everything back. *(Brings together old B3 and B4: blind spots are best
+shown right after a restore, by looking at what is missing.)*
 
 **On screen:**
 - Break a dashboard for real, on camera, with no prepared safety net.
@@ -409,83 +464,72 @@ restored is a hypothesis, not a backup.
   back".
 - The after-restore check: is the screen really the one from before, or only
   something that resembles it?
+- What did not come back, and could not: the Home Assistant registry (rooms
+  and devices live **inside** HA — `house.yaml` is empty by design), the
+  secrets (block C's subject), the long history of the state database and
+  what it holds in clear.
 
 **Points to make:**
 - Why a successful restore proves nothing if it was not performed from the
   actual failed state.
 - What to write down the day it happens for real: the order of the steps, what
   must restart, what does not reload hot.
-
-**Source:** `Backup_Retention.md`, `Troubleshooting.md`.
-
----
-
-## B4 — What the backup does not cover
-
-**Goal:** the short honest episode. Naming the blind spots beats discovering
-them.
-
-**On screen:**
-- The Home Assistant registry: rooms and devices live **inside** HA, not in the
-  repository — `house.yaml` is empty by design.
-- Secrets: nothing encrypted is backed up by these scripts, and that is block
-  C's subject.
-- Long history: Home Assistant's state database, what it holds in clear, and
-  what that implies.
-
-**Points to make:**
-- The difference between "backed up" and "reproducible": the repository rebuilds
-  the interface, it does not rebuild the installation.
+- The difference between "backed up" and "reproducible": the repository
+  rebuilds the interface, it does not rebuild the installation.
 - Publishing your blind spots is a feature, not a confession.
 
-**Source:** `Backup_Retention.md`, `Security.md`, `Vision.md`.
+**20-min breakdown:** 0-2 break it for real · 2-9 the restore, stopwatch on
+screen · 9-12 the after-restore check · 12-17 what did not come back:
+registry, secrets, history · 17-19 backed up ≠ reproducible · 19-20 wrap-up.
+
+**Source:** `Backup_Retention.md`, `Troubleshooting.md`, `Security.md`,
+`Vision.md`.
 
 ---
 
-## C1 — Why a safe rather than a file
+## C1 — A safe, and its console
 
-**Goal:** open the SAFE block with the argument, not the installation. What
-does a safe give you that a `0600` file does not?
+**Goal:** open the SAFE block with the argument, then show the console that
+makes it usable. What does a safe give you that a `0600` file does not — and
+what does a defensible secrets console look like? *(Brings together old C1 and
+C2: the argument alone did not hold 20 minutes, and it is best demonstrated on
+the screen it justifies.)*
 
 **On screen:**
 - The previous secrets file, opened on screen, and the question asked plainly:
   who can read this, and what stops them?
-- Vault running, its KV paths, one write then one read.
-- The two installations — staging and production — and why they differ.
-
-**Points to make:**
-- What a safe **is not**: it does not protect you from an administrator of the
-  machine, and saying so early avoids false security.
-- Sealing as a design choice: the safe reseals on every restart, deliberately.
-  It is a constraint, and the whole block turns around it.
-
-**Source:** `Vault.md`.
-
----
-
-## C2 — The SAFE screen
-
-**Goal:** a secrets console inside the dashboard, and the decisions that make
-it defensible.
-
-**On screen:**
-- ADMIN → SAFE: log in, the three branches, reveal a secret, hide it, edit it.
-- The token in `sessionStorage` and never `localStorage` — and the difference
-  demonstrated: closing the tab ends the session.
+- Vault running, its KV paths, one write then one read; the two
+  installations — staging and production — and why they differ.
+- ADMIN → SAFE, with demo secrets: log in, the three branches, reveal a
+  secret, hide it, edit it.
+- The safe's token in `sessionStorage` and never `localStorage` — and the
+  difference demonstrated: closing the tab ends the session.
 - The screen while the safe is sealed: what it can still say, and what it can
   no longer say.
 
 **Points to make:**
+- What a safe **is not**: it does not protect you from an administrator of the
+  machine, and saying so early avoids false security.
+- Home Assistant reads the **names**, never the values: its token is only
+  granted the metadata, because everything HA reads ends up in clear in its
+  history database.
+- Sealing as a design choice: the safe reseals on every restart, deliberately.
+  It is a constraint, and the whole block turns around it.
 - A page talking to Vault from the browser is a CORS problem, and an address
   written twice is an address that will eventually disagree with itself — hence
   a URL derived from the page's own hostname.
 - What is never displayed, even to the legitimate user, and why.
 
+**20-min breakdown:** 0-2 the previous file · 2-7 what a safe gives you, and
+what it is not · 7-10 Vault running, staging and production · 10-16 the SAFE
+screen, sessionStorage · 16-19 sealed safe; CORS and the derived URL · 19-20
+wrap-up, pointer to C2.
+
 **Source:** `Vault.md`.
 
 ---
 
-## C3 — Unsealing with one password, from an enrolled device
+## C2 — Unsealing with one password, from an enrolled device
 
 **Goal:** the densest episode of the block. Remove the "`docker exec` and three
 keys by hand" without removing what made it safe.
@@ -512,11 +556,13 @@ keys by hand" without removing what made it safe.
   so they can be raised later without orphaning the data.
 - Five failures, fifteen minutes of shut door, counter persisted.
 
+**20-min breakdown:** 0-2 the safe sealed on purpose · 2-7 the click from an enrolled device · 7-10 the refusal of an unenrolled device · 10-15 CORS and the client certificate: the specification constraint · 15-18 `scrypt`, the five failures, the log · 18-20 wrap-up.
+
 **Source:** `Unseal.md`.
 
 ---
 
-## C4 — An honest security review
+## C3 — An honest security review
 
 **Goal:** close the block by reading out, on screen, what is **not** protected.
 
@@ -536,6 +582,8 @@ keys by hand" without removing what made it safe.
   has a vibe.
 - Why this is the episode that will age best, and why the document must be
   re-checked on the day of filming: it is the doc that goes stale most quietly.
+
+**20-min breakdown:** 0-2 what this document refuses to hide · 2-10 `Security.md` read, uncomfortable passages included · 10-15 what changed: the safe, unsealing, the tablets' session · 15-18 the open questions, HTTPS not in place yet · 18-20 a threat model against a vibe.
 
 **Source:** `Security.md`.
 
@@ -573,7 +621,9 @@ the browser — as a single, followable data path.
   your *own* backend, not just "untrusted" input.
 
 **Good pairing:** this episode's live bug fix is a light version of what
-episode A3 does at length — consider cross-linking.
+A3a and A3b do at length — consider cross-linking.
+
+**20-min breakdown:** 0-2 a gauge that moves · 2-6 the Glances → HA → `core.html` chain · 6-10 DevTools: the call, the interval, the short-lived token · 10-13 `findEntity()` and its cost · 13-17 the K3s 404 fixed live · 17-19 `esc()` and XSS · 19-20 wrap-up.
 
 ---
 
@@ -607,6 +657,8 @@ work, which is the freshest, most demoable material in the whole project.
   and then regenerate. A natural hook into D4 — and a section of the doc to
   update before filming.
 
+**20-min breakdown:** 0-2 a device added without touching a dashboard · 2-7 model and template side by side · 7-10 `--preview` · 10-14 why Lovelace cannot loop; ENERGY's two speeds · 14-18 `vssp_energy_sync.py`'s non-destructive merge · 18-20 the bridge to D4.
+
 ---
 
 ## D3 — Case study: wiring up a whole room
@@ -634,6 +686,8 @@ example.
   links elsewhere in the UI, so integrating it made existing links work
   rather than adding new ones.
 
+**20-min breakdown:** 0-2 a whole room, end to end · 2-8 the file table, opened one by one · 8-13 `LIVEBOX_PASSWORD` end to end · 13-16 GitLab's `Protected` trap · 16-19 the two open calls · 19-20 wrap-up.
+
 ---
 
 ## D4 — Case study: the device assignment wizard
@@ -649,7 +703,7 @@ ROOMS & FLOORS screen).
   webhook → apply → house.yaml → the generator → dashboards/views/`.
 - A live scan → assignment → apply cycle in the browser.
 - The MD5-checked file table as a "how we made sure the right files shipped"
-  beat — pairs well with episode A3's caching postmortem.
+  beat — pairs well with episode A3a's caching postmortem.
 
 **Talking points:**
 - "Nothing is ever half-written": the applier validates the whole payload
@@ -658,6 +712,8 @@ ROOMS & FLOORS screen).
 - Re-running a scan doesn't reset prior work — a subtle but important
   guarantee to call out explicitly, since it's exactly the kind of thing that
   looks unremarkable when it works and catastrophic when it doesn't.
+
+**20-min breakdown:** 0-2 a raw, unreadable scan · 2-6 the DISCOVERY → apply pipeline · 6-12 a live scan → assign → apply cycle · 12-16 validate everything before writing, back up first · 16-19 re-running a scan erases nothing · 19-20 wrap-up.
 
 ---
 
@@ -696,6 +752,8 @@ form — then stop honestly at the one step that cannot collapse.
 **Good pairing:** episode D8 uses this same screen as its worked example —
 film them back to back while the material is fresh.
 
+**20-min breakdown:** 0-2 nine native steps · 2-6 the two paths side by side · 6-11 the websocket detour, frames on screen · 11-14 the consent, filmed · 14-18 `UPDATE_FIELDS = {}` · 18-20 automate around what you cannot automate.
+
 ---
 
 ## D6 — A chatbot inside the dashboard
@@ -719,6 +777,8 @@ own — and the constraints that shape such a thing.
   into: the HTML lives in a shadow root, so `document.getElementById` finds
   nothing and the handler has to be passed `this` instead. Short, concrete,
   and it will save a viewer an evening.
+
+**20-min breakdown:** 0-2 a question asked from HOME · 2-7 the inline answer, then the provider switched · 7-11 the keys, each in its own file · 11-15 the custom provider · 15-18 inline rather than a popup; the shadow-DOM trap · 18-20 wrap-up.
 
 ---
 
@@ -766,6 +826,8 @@ of structure.
 fitted to its entries and the header band brought back to its height were
 born there.
 
+**20-min breakdown:** 0-2 one colour, the whole interface · 2-6 the model, the generated theme, regeneration · 6-10 text sizes by usage · 10-13 the typeface and the month-long cache · 13-15 the logo and the rail · 15-18 `color-mix()` and the factory reference · 18-20 wrap-up.
+
 ---
 
 ## D8 — Bilingual by construction
@@ -812,11 +874,13 @@ the text and rewriting it (simple-weather-card) — the patch owned up to in
 section 4 of the pilot. A fr→en switch that "doesn't work" can mean "one
 third-party card stayed French".
 
-**Good pairing:** episode A3's fourth case (a wizard stuck in French because
+**Good pairing:** A3a's fourth case (a wizard stuck in French because
 one iframe URL lacked a cache-buster) is the same screen's earlier
 mistranslation, from a completely different cause. Shown together — with the
 second case above — they make the point that "wrong language on screen" is a
 symptom, not a diagnosis.
+
+**20-min breakdown:** 0-2 the bug first · 2-8 the three sources of language · 8-12 the fix live, EN and FR side by side · 12-16 second case: third-party cards · 16-19 translate at the last moment; what cannot be localised · 19-20 wrap-up.
 
 ---
 
@@ -834,6 +898,8 @@ over time rather than on command.
 - Why scheduling is a case where the interface cannot lie: a mistake is not
   visible at the moment of the click but three hours later.
 - The AI assistant as the natural extension of the same screen.
+
+**20-min breakdown:** 0-2 a mistake that only shows three hours later · 2-8 a slot created then edited, the real effect · 8-12 what is generated, what is read at run time · 12-17 the AI assistant · 17-19 why the interface cannot lie about the future · 19-20 wrap-up.
 
 **Source:** `Scheduler.md`, `AI_Assistant.md`.
 
@@ -862,7 +928,7 @@ of it: **every test runs at 1194 × 834**.
    nothing to paste, nothing permanent stored in the browser.
 4. **What the test workstation does not see.** Icons missing on the iPad
    only: Chromium at the same size showed them all. Screen size can be
-   simulated; the browser engine cannot (see A3, case 8).
+   simulated; the browser engine cannot (see A3b, case 8).
 
 **Points to make:**
 - Measure rather than look: every case was settled by a width or a height
@@ -871,6 +937,8 @@ of it: **every test runs at 1194 × 834**.
   the content size the layout rather than the other way round.
 - Why the tests run in a browser that is not the tablet's, and how to say so
   honestly in every report.
+
+**20-min breakdown:** 0-2 the same screen, at the desk and on the wall · 2-7 names 0 px wide · 7-11 a 246 px header band · 11-14 a new tablet, one login · 14-17 what the test workstation does not see · 17-20 measure rather than look; the 1194 × 834 rule.
 
 **Source:** *to write* — `docs/dashboards/Tablet_Layout.md`. The four cases are
 recorded in their commits of 14 September; write them up while they are
@@ -890,8 +958,9 @@ already wrong that day.
 | 12 Sep | The header's calendar and weather follow the generated language, no longer the browser's | D8 |
 | 13 Sep | The typeface, text sizes by usage and the replaceable logo join the GRAPHIC TEMPLATE; missing tokens are filled from the factory reference | D7 (status reset), Pilot |
 | 13-14 Sep | The navigation rail and header band fit their content; the ENERGY panels line up in height; the room column leaves PER-DEVICE CONSUMPTION | D10, Pilot |
-| 14 Sep | The console pages borrow the tablet's session: no more long-lived token | C4, D1, D10, Pilot |
+| 14 Sep | The console pages borrow the tablet's session: no more long-lived token | C3, D1, D10, Pilot |
 | 14 Sep | The ENERGY DEVICES header brought back to the standard (76 px) | D10 |
+| 14 Sep | **20-minute format** for every episode, the pilot included: the pilot gains the console and security; B goes from 4 to 2 episodes, C from 4 to 3, A3 splits in two | Pilot, A3, blocks B and C |
 | — | Already wrong on the 12th: G1 and G4 closed in `CI_CD.md`; the `vssp_model_sync.py` bridge built in another form; `weather-forecast` used nowhere; "everything else is the in-house engine" contradicted by 173 `button-card` and 95 `card_mod` blocks | A2, D2, Pilot |
 
 Three source docs still describe the earlier state and must be updated
@@ -905,68 +974,65 @@ A2).
 
 Status is about **filmability**, not about whether the feature works: a row is
 "ready" only if the documentation and a demo that survives one take both exist
-today.
+today. And since the move to 20 minutes, an episode is "ready" only if its
+breakdown holds with demonstration, not padding.
 
 | # | Episode | Ready to film? | Concrete next step |
 |---|---|---|---|
 | — | Pilot | **Script revised — voice and captures to redo** | Recapture HOME at 1194 × 834; re-record the voice section by section; rerun `scripts/build_episode_media.py` after any script change |
-| C3 | Unsealing from an enrolled device | **Ready, and the freshest** | Seal the safe on purpose for the take; have a second, unenrolled device to film the refusal |
+| C2 | Unsealing from an enrolled device | **Ready, and the freshest** | Seal the safe on purpose for the take; have a second, unenrolled device to film the refusal |
 | A5 | The UPDATES screen | **Ready** | Capture the grey "last measured …" rows while the safe is sealed — that only happens there |
-| C2 | The SAFE screen | **Ready** | Prepare demo secrets; nothing real on screen |
+| C1 | A safe, and its console | **Ready** | Prepare demo secrets, nothing real on screen; find the previous secrets file in git history |
 | D5 | Automating an OAuth setup | **Ready** | A blank Google Cloud project, so consent is filmable without a cut |
 | D8 | Bilingual by construction | **Ready** | Capture EN/FR side by side; the second case (the header's third-party cards) only exists in history now — replay the commit from before 12 September |
 | D2 | The dashboard generator | Ready, doc to touch up | Pick the single model change to demonstrate; update the "bridge" section of `Dashboard_Generator.md` |
 | D7 | The visual charter editor | **Screen changed — status reset** | Refilm with the typeface, text sizes and logo; decide whether the `color-mix()` trap is a moment here or its own short |
-| D6 | A chatbot in the dashboard | Ready, with a caveat | Confirm which provider keys can be on screen; blur or use a throwaway |
+| D6 | A chatbot in the dashboard | Ready, with a caveat | Confirm which provider keys can be on screen; blur or use a throwaway. The tightest of the block at 20 minutes: check that its breakdown holds |
 | A4 | HTTPS and the proxy trap | Ready, not applied | The ingress is not in place yet: do it once **off camera**, then replay it |
 | A2 | The CI/CD pipeline | Ready, demo to re-pick | G1 is closed: re-check G2/G3/G5 against the current pipeline, then pick the one fixed on screen |
-| C1 | Why a safe | Ready | Find the previous secrets file in git history |
 | D1 | CORE | Blocked on a fix, doc to rewrite | The `/local/osvision_v2/…` 404 still reproduces (checked in the code on 14 September); rewrite the authentication part of `Core_Dashboard.md` |
 | D4 | The assignment wizard | Ready | Re-read the source doc end to end before writing the script |
 | D3 | Wiring a whole room | Partly blocked | Two open calls — settle them, or film them as open questions |
-| B2 | Rotation and retention | Ready | Let the directory age: a folder with three files shows nothing |
-| C4 | Honest security review | Ready, doc to complete | Add the removal of the tablets' long-lived token to `Security.md`; re-check the document on the day |
-| A3 | Debugging sessions | Ready, film last | Eight cases in the pool: pick four, or split into A3a / A3b |
+| C3 | Honest security review | Ready, doc to complete | Add the removal of the tablets' long-lived token to `Security.md`; re-check the document on the day |
+| A3a · A3b | Debugging sessions | Ready, film last | Four cases per episode; film A3b near A1 and D10, which share two of its cases |
 | D10 | The wall tablet | **Doc to write** | `Tablet_Layout.md`: four fresh cases from 14 September, to write while they are |
 | A1 | The environment | **Doc to write** | No document describes the host itself; write it first |
 | D9 | The scheduler | **Doc to re-read** | `Scheduler.md` predates the latest screens |
-| B1 | Nothing is ever half-written | **Doc to write** | The invariant is enforced in three places and documented in none |
-| B3 | Restoring | **Doc to write — priority** | No restore procedure exists. That is a gap, not just a missing episode |
-| B4 | What the backup does not cover | **Doc to write** | Depends on B3 |
+| B1 | Before overwriting: write, keep, prune | **Doc to write** | The invariant is enforced in three places and documented in none; also let the directory age — a folder with three files shows nothing |
+| B2 | Restoring, and what does not come back | **Doc to write — priority** | No restore procedure exists. That is a gap, not just a missing episode |
 
 Three standing rules for this plan:
 
 1. **A doc is written before its episode, never after.** That is what keeps the
-   scripting step short — and it is the rule that files three block-B
+   scripting step short — and it is the rule that files the two block-B
    episodes, A1 and D10 under "doc to write" rather than "ready".
 2. **When a screen changes, its episode's status resets.** The SAFE screen got
    its UNSEAL button after this plan was written: anything filmed before would
    already be wrong. The same happened on 13 September to the GRAPHIC TEMPLATE
    (D7), and on the 14th to HOME (the pilot).
 3. **A block is published in order, blocks are published in any order.** That is
-   what allows C3 to go out while it is fresh, without waiting for block B to be
+   what allows C2 to go out while it is fresh, without waiting for block B to be
    written.
 
 ---
 
 ## Sequencing notes
 
-- **Block C is the readiest**, which is counter-intuitive: it is the newest. C3
+- **Block C is the readiest**, which is counter-intuitive: it is the newest. C2
   in particular should be shot soon — an episode about a mechanism you have just
   built tells better than one about a mechanism from six months ago.
-- **Block B is the least ready**, and knowing that is useful: three of its four
-  episodes need a doc first. B3 is the most important of the three, because
-  writing its doc means acquiring a restore procedure that does not yet exist.
-- **A1 → A2 → A3** is the natural "here is the machine, here is how code reaches
+- **Block B is the least ready**, and knowing that is useful: both of its
+  episodes need a doc first. B2 is the more important, because writing its doc means acquiring a restore procedure that does not yet exist.
+- **A1 → A2 → A3a** is the natural "here is the machine, here is how code reaches
   it, here is what breaks" thread. Filmable as a mini-arc.
 - **D5 → D8** is still the best pairing: the same screen, first as a feature then
   as a language problem. Same session, that order — D8's before/after only
   exists while the pre-fix version is recent in history.
-- **A3 is best filmed last** for each bug — once the fix is deployed and
+- **A3a and A3b are best filmed last** for each bug — once the fix is deployed and
   confirmed — but can be **published** earlier if a case is already fully
   resolved.
-- **C1 → C2 → C3 → C4** is the one block that really watches as a story: a
-  problem, a tool, an automation, an honest reckoning.
+- **C1 → C2 → C3** is the one block that really watches as a story: a
+  problem and its tool, an automation, an honest reckoning.
 - **The pilot is published first**, and it is the one that has to be right
   before everything else: it cites episodes from every block. Redoing it
   after D7 or D10 would mean redoing it a third time.

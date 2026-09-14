@@ -733,195 +733,478 @@ ils se versionnent comme
 un vrai projet logiciel.
 
 152
-00:11:30,000 --> 00:11:34,714
+00:11:30,000 --> 00:11:33,857
+Je vous ai dit que
+l'interface est générée à
+
+153
+00:11:33,857 --> 00:11:36,429
+partir d'une description de la maison.
+
+154
+00:11:36,429 --> 00:11:39,429
+Voici où on l'écrit : la
+console d'administration.
+
+155
+00:11:39,429 --> 00:11:41,571
+Neuf écrans, un par décision.
+
+156
+00:11:41,571 --> 00:11:43,714
+Les pièces et les étages.
+
+157
+00:11:43,714 --> 00:11:47,143
+Les appareils que le
+réseau vient de découvrir.
+
+158
+00:11:47,143 --> 00:11:50,143
+L'affectation de chaque
+appareil à une pièce.
+
+159
+00:11:50,143 --> 00:11:53,143
+L'agenda Google, la charte
+graphique, les dashboards
+
+160
+00:11:53,143 --> 00:11:56,571
+eux-mêmes, les mises à
+jour, et le coffre-fort.
+
+161
+00:11:56,571 --> 00:11:59,143
+On déclare une pièce, en direct.
+
+162
+00:11:59,143 --> 00:12:00,857
+Une buanderie, au rez-de-chaussée.
+
+163
+00:12:00,857 --> 00:12:01,286
+J'applique.
+
+164
+00:12:01,286 --> 00:12:05,571
+Ce qui se passe pendant ces
+quelques secondes, c'est la
+
+165
+00:12:05,571 --> 00:12:09,429
+boucle que je vous ai
+montrée sur le schéma.
+
+166
+00:12:09,429 --> 00:12:12,429
+Le formulaire envoie ce que j'ai décidé.
+
+167
+00:12:12,429 --> 00:12:15,000
+Un script sauvegarde
+d'abord l'état actuel —
+
+168
+00:12:15,000 --> 00:12:18,000
+toujours, avant d'écrire quoi que ce soit.
+
+169
+00:12:18,000 --> 00:12:21,857
+Il écrit le modèle, relance
+le générateur, et rend
+
+170
+00:12:21,857 --> 00:12:24,857
+compte : ce message-là,
+en haut, c'est lui.
+
+171
+00:12:24,857 --> 00:12:26,571
+Je reviens sur HOME.
+
+172
+00:12:26,571 --> 00:12:29,143
+La buanderie est dans le rail.
+
+173
+00:12:29,143 --> 00:12:35,571
+Et elle y est sur tous les écrans à
+la fois — l'énergie, le système, la
+
+174
+00:12:35,571 --> 00:12:40,714
+console — parce que le rail
+n'est écrit nulle part à la main.
+
+175
+00:12:40,714 --> 00:12:44,571
+Un détail honnête : l'écran
+de la pièce elle-même est
+
+176
+00:12:44,571 --> 00:12:48,429
+déclaré dans la configuration
+de Home Assistant, et Home
+
+177
+00:12:48,429 --> 00:12:51,429
+Assistant ne relit cette
+configuration qu'au démarrage.
+
+178
+00:12:51,429 --> 00:12:56,143
+Son entrée apparaît tout de suite ;
+son écran, au prochain redémarrage.
+
+179
+00:12:56,143 --> 00:13:00,857
+Je préfère vous le dire que
+de le couper au montage.
+
+180
+00:13:00,857 --> 00:13:04,714
+Et c'est le même geste pour tout le reste.
+
+181
+00:13:04,714 --> 00:13:07,286
+On ne dessine jamais un dashboard.
+
+182
+00:13:07,286 --> 00:13:09,857
+On décide, et la console écrit.
+
+183
+00:14:00,000 --> 00:14:04,286
+Au début, je vous ai promis
+la sécurité par défaut.
+
+184
+00:14:04,286 --> 00:14:09,429
+Une promesse, ça se vérifie —
+alors voici ce que ça veut dire
+
+185
+00:14:09,429 --> 00:14:13,286
+concrètement, y compris ce
+qui n'est pas encore fait.
+
+186
+00:14:13,286 --> 00:14:18,857
+Un : les formulaires de la console
+n'envoient rien avec un mot de passe.
+
+187
+00:14:18,857 --> 00:14:22,286
+Ils passent par des
+points d'entrée que Home
+
+188
+00:14:22,286 --> 00:14:25,286
+Assistant n'accepte que
+depuis le réseau local.
+
+189
+00:14:25,286 --> 00:14:27,429
+Depuis Internet, ils n'existent pas.
+
+190
+00:14:27,429 --> 00:14:31,286
+Deux : une tablette neuve ne
+garde aucun identifiant permanent.
+
+191
+00:14:31,286 --> 00:14:36,857
+Les écrans de la console empruntent la
+session avec laquelle vous vous êtes
+
+192
+00:14:36,857 --> 00:14:40,714
+connecté, un jeton court que Home
+Assistant renouvelle lui-même.
+
+193
+00:14:40,714 --> 00:14:44,571
+Perdre la tablette, ce
+n'est pas perdre une clé.
+
+194
+00:14:44,571 --> 00:14:49,286
+Trois : les secrets vivent dans un
+coffre-fort, pas dans des fichiers.
+
+195
+00:14:49,286 --> 00:14:53,571
+Home Assistant peut y lire
+le nom de chaque secret,
+
+196
+00:14:53,571 --> 00:14:57,857
+jamais sa valeur — parce que
+tout ce que Home Assistant
+
+197
+00:14:57,857 --> 00:15:01,286
+lit finit en clair dans
+sa base d'historique.
+
+198
+00:15:01,286 --> 00:15:06,000
+Le coffre se referme à chaque
+redémarrage, et on le rouvre
+
+199
+00:15:06,000 --> 00:15:09,857
+d'une phrase secrète, depuis
+un appareil qu'on a enrôlé.
+
+200
+00:15:09,857 --> 00:15:15,857
+Quatre : aucun mot de passe ne passe
+sur une ligne de commande ni dans
+
+201
+00:15:15,857 --> 00:15:21,000
+un journal — ni celui de la
+box, ni les clés des assistants.
+
+202
+00:15:21,000 --> 00:15:24,000
+Et maintenant, ce qui n'est pas fait.
+
+203
+00:15:24,000 --> 00:15:27,857
+Aujourd'hui, sur le réseau
+local, le mot de passe
+
+204
+00:15:27,857 --> 00:15:30,857
+de Home Assistant voyage encore en clair.
+
+205
+00:15:30,857 --> 00:15:36,429
+Le passage en HTTPS est écrit et
+documenté ; il n'est pas encore posé.
+
+206
+00:15:36,429 --> 00:15:39,857
+Il a son épisode, dans le bloc A.
+
+207
+00:15:39,857 --> 00:15:45,000
+C'est ça, pour moi, la sécurité
+par défaut : pas une liste de
+
+208
+00:15:45,000 --> 00:15:49,286
+promesses, mais une liste de
+choses qu'on peut vérifier — et,
+
+209
+00:15:49,286 --> 00:15:53,571
+publiée juste à côté, la
+liste de celles qui manquent.
+
+210
+00:16:30,000 --> 00:16:34,714
 Petite parenthèse avant de conclure,
 parce que vous allez tomber dessus :
 
-153
-00:11:34,714 --> 00:11:39,000
+211
+00:16:34,714 --> 00:16:39,000
 le projet s'appelait au départ
 OSVision, avant de devenir VSSP.
 
-154
-00:11:39,000 --> 00:11:43,714
+212
+00:16:39,000 --> 00:16:43,714
 En septembre, un grand ménage a
 retiré l'ancien nom des identifiants,
 
-155
-00:11:43,714 --> 00:11:48,857
+213
+00:16:43,714 --> 00:16:48,857
 des composants et des feuilles
 de style — et ce ménage a fait
 
-156
-00:11:48,857 --> 00:11:54,000
+214
+00:16:48,857 --> 00:16:54,000
 remonter trois vrais bugs, dont un
 lien mort que personne n'avait vu.
 
-157
-00:11:54,000 --> 00:11:57,857
+215
+00:16:54,000 --> 00:16:57,857
 Mais il reste des traces :
 le moteur JavaScript porte
 
-158
-00:11:57,857 --> 00:12:02,143
+216
+00:16:57,857 --> 00:17:02,143
 encore l'ancien nom, et le
 panneau K3s de l'écran CORE
 
-159
-00:12:02,143 --> 00:12:05,143
+217
+00:17:02,143 --> 00:17:05,143
 cherche toujours son fichier
 sous l'ancien chemin.
 
-160
-00:12:05,143 --> 00:12:09,857
+218
+00:17:05,143 --> 00:17:09,857
 Un bon projet ne cache pas
 ces traces, il les documente.
 
-161
-00:12:09,857 --> 00:12:13,714
+219
+00:17:09,857 --> 00:17:13,714
 Celle-là, on la corrigera
 en direct dans l'épisode D1.
 
-162
-00:12:15,000 --> 00:12:20,600
+220
+00:17:15,000 --> 00:17:21,000
 Tout ce que vous venez de voir
 n'existait pas il y a quelques mois.
 
-163
-00:12:20,600 --> 00:12:23,000
+221
+00:17:21,000 --> 00:17:23,571
 Un générateur qui produit chaque écran.
 
-164
-00:12:23,000 --> 00:12:25,400
+222
+00:17:23,571 --> 00:17:26,143
 Une console qui déclare les pièces.
 
-165
-00:12:25,400 --> 00:12:29,000
+223
+00:17:26,143 --> 00:17:30,000
 Un coffre-fort qui se descelle
 depuis un appareil enrôlé.
 
-166
-00:12:29,000 --> 00:12:34,200
+224
+00:17:30,000 --> 00:17:35,571
 Un écran de mises à jour qui
 sait ce qu'il ne sait pas.
 
-167
-00:12:34,200 --> 00:12:37,400
+225
+00:17:35,571 --> 00:17:39,000
 Une charte graphique qui
 change jusqu'à la police.
 
-168
-00:12:37,400 --> 00:12:41,800
+226
+00:17:39,000 --> 00:17:43,714
 Ce n'est pas un projet
 figé — c'est un système qui a
 
-169
-00:12:41,800 --> 00:12:45,000
+227
+00:17:43,714 --> 00:17:47,143
 une histoire, et qui
 continue d'en écrire une.
 
-170
-00:12:45,000 --> 00:12:49,286
+228
+00:18:00,000 --> 00:18:04,286
 La suite de la série est
 organisée en quatre blocs,
 
-171
-00:12:49,286 --> 00:12:51,857
+229
+00:18:04,286 --> 00:18:06,857
 et vous choisissez votre porte d'entrée.
 
-172
-00:12:51,857 --> 00:12:56,571
+230
+00:18:06,857 --> 00:18:10,286
+Chaque épisode dure une
+vingtaine de minutes : le
+
+231
+00:18:10,286 --> 00:18:13,286
+temps de montrer, pas
+seulement de raconter.
+
+232
+00:18:13,286 --> 00:18:18,000
 Le bloc A, c'est le socle :
 la machine, le cluster, le
 
-173
-00:12:56,571 --> 00:13:00,857
+233
+00:18:18,000 --> 00:18:22,286
 pipeline, et ce qui casse
 quand l'un des trois ment.
 
-174
-00:13:00,857 --> 00:13:04,286
+234
+00:18:22,286 --> 00:18:25,714
 Le bloc B, c'est la
 sauvegarde — jusqu'à la
 
-175
-00:13:04,286 --> 00:13:06,857
+235
+00:18:25,714 --> 00:18:28,286
 seule preuve qui compte : la restauration.
 
-176
-00:13:06,857 --> 00:13:11,571
+236
+00:18:28,286 --> 00:18:33,000
 Le bloc C, c'est le coffre-fort :
 où vivent les secrets, et
 
-177
-00:13:11,571 --> 00:13:16,286
+237
+00:18:33,000 --> 00:18:37,714
 comment on le descelle sans
 taper trois clés à la main.
 
-178
-00:13:16,286 --> 00:13:21,429
+238
+00:18:37,714 --> 00:18:42,857
 Et le bloc D, c'est l'interface elle-même,
 de la jauge jusqu'au générateur.
 
-179
-00:13:21,429 --> 00:13:24,000
+239
+00:18:42,857 --> 00:18:45,429
 À l'intérieur d'un bloc, l'ordre compte.
 
-180
-00:13:24,000 --> 00:13:29,143
+240
+00:18:45,429 --> 00:18:50,571
 Entre les blocs, non : si vous êtes
 venu pour les sauvegardes, vous
 
-181
-00:13:29,143 --> 00:13:32,571
+241
+00:18:50,571 --> 00:18:54,000
 n'avez pas à regarder dix
 épisodes d'interface d'abord.
 
-182
-00:13:45,000 --> 00:13:50,143
+242
+00:19:00,000 --> 00:19:05,143
 Ce qu'il faut retenir : Visio Sapiens
 n'est pas un dashboard, c'est un
 
-183
-00:13:50,143 --> 00:13:54,000
+243
+00:19:05,143 --> 00:19:09,000
 centre de contrôle, simple,
 efficace et sécurisé par défaut.
 
-184
-00:13:54,000 --> 00:13:57,000
+244
+00:19:09,000 --> 00:19:12,000
 Home Assistant fournit
 la donnée, VSSP fournit
 
-185
-00:13:57,000 --> 00:14:00,429
+245
+00:19:12,000 --> 00:19:15,429
 l'interface — sur un petit
 nombre de fondations surveillées,
 
-186
-00:14:00,429 --> 00:14:04,286
+246
+00:19:15,429 --> 00:19:19,286
 avec un pipeline qui permet
 de revenir en arrière.
 
-187
-00:14:04,286 --> 00:14:10,286
+247
+00:19:19,286 --> 00:19:25,286
 Si vous ne savez pas par où commencer,
 prenez D1 : on suit une seule
 
-188
-00:14:10,286 --> 00:14:15,000
+248
+00:19:25,286 --> 00:19:30,000
 donnée, de la machine hôte jusqu'à
 une jauge dans votre navigateur.
 
-189
-00:14:15,000 --> 00:14:18,857
+249
+00:19:30,000 --> 00:19:33,857
 Abonnez-vous, et dites-moi en
 commentaire : votre Home Assistant, c'est
 
-190
-00:14:18,857 --> 00:14:24,000
+250
+00:19:33,857 --> 00:19:39,000
 encore un empilement de cartes, ou
 vous avez commencé à en sortir ?
 
-191
-00:14:24,000 --> 00:14:25,286
+251
+00:19:39,000 --> 00:19:40,286
 À très vite.

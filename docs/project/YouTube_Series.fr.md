@@ -6,7 +6,9 @@ Ce document fait correspondre la documentation du projet à une séquence de
 vidéos. Chaque épisode a une doc source, une question centrale à laquelle il
 répond, et une démo suggérée à l'écran.
 
-La série est organisée en **quatre blocs thématiques** plus un pilote. Un bloc
+La série est organisée en **quatre blocs thématiques** plus un pilote, et
+**chaque épisode dure 20 minutes**, pilote compris (voir
+[Le format : 20 minutes](#le-format--20-minutes)). Un bloc
 se regarde dans l'ordre et se tient debout tout seul : quelqu'un venu pour les
 sauvegardes n'a pas à regarder neuf épisodes d'interface d'abord. À l'intérieur
 d'un bloc, l'ordre compte ; entre blocs, non.
@@ -14,9 +16,9 @@ d'un bloc, l'ordre compte ; entre blocs, non.
 | Bloc | Sujet | Épisodes |
 |---|---|---|
 | — | Pilote | 1 |
-| **A** | Environnement & CI/CD | 5 |
-| **B** | Sauvegarde | 4 |
-| **C** | Coffre-fort | 4 |
+| **A** | Environnement & CI/CD | 6 |
+| **B** | Sauvegarde | 2 |
+| **C** | Coffre-fort | 3 |
 | **D** | Interface domotique | 10 |
 
 Les docs sources citées existent dans `docs/` dans les deux langues
@@ -27,7 +29,40 @@ Les docs sources citées existent dans `docs/` dans les deux langues
 > sous-titres régénérés), un épisode D10 s'ajoute, et plusieurs sections
 > décrivaient un état qui n'est plus vrai. Le détail est dans
 > [Ce qui a changé depuis le 12 septembre](#ce-qui-a-changé-depuis-le-12-septembre) ;
-> les sections concernées sont corrigées en place.
+> les sections concernées sont corrigées en place. Le même jour, le format
+> est passé à **20 minutes par épisode**, pilote compris : le bloc B passe
+> à deux épisodes, le bloc C à trois, et A3 se dédouble.
+
+---
+
+## Le format : 20 minutes
+
+Chaque épisode, pilote compris, dure **20 minutes**. Le gabarit commun :
+
+| Temps | Partie |
+|---|---|
+| 0:00 - 2:00 | l'accroche : le symptôme ou la question, montrés à l'écran |
+| 2:00 - 17:00 | trois ou quatre chapitres, chacun **démontré** plutôt que raconté |
+| 17:00 - 19:00 | le piège, le correctif en direct, ou ce qui n'est pas fait |
+| 19:00 - 20:00 | bilan, renvoi, écran de fin |
+
+Vingt minutes ne se remplissent pas avec n'importe quoi : un épisode qui ne
+tient que dix minutes de démonstration devient un épisode lent. Le passage à
+ce format a donc redécoupé la série :
+
+- **Le bloc B passe de 4 à 2 épisodes.** La rotation seule, et les angles
+  morts seuls, ne tenaient pas 20 minutes. B1 réunit l'invariant et la
+  rétention (tout ce qui se passe *avant* d'écraser) ; B2 réunit la
+  restauration et ce qu'elle ne ramène pas.
+- **Le bloc C passe de 4 à 3.** L'argument du coffre se démontre mieux sur
+  l'écran qu'il justifie : C1 réunit les deux.
+- **A3 se dédouble.** Huit cas de débogage ne tiennent pas dans un épisode ;
+  A3a et A3b en prennent quatre chacun.
+- **Le pilote passe de 14 min 30 à 20 minutes** : il gagne la console en
+  action (une pièce déclarée en direct) et la sécurité par défaut, démontrée.
+
+Chaque épisode ci-dessous porte son **découpage en 20 minutes**. C'est aussi
+un test : si le découpage ne tient qu'en remplissant, l'épisode n'est pas prêt.
 
 ---
 
@@ -41,7 +76,8 @@ arrive-t-il ».
 |---|---|---|---|
 | A1 | L'environnement : où tourne réellement tout ça | `Vision.md`, `mosquitto-k3s.md` | Pourquoi un cluster k3s pour une maison ? |
 | A2 | Le pipeline CI/CD | `CI_CD.md` | Comment un seul commit atteint deux cibles très différentes ? |
-| A3 | Sessions de débogage | `Troubleshooting.md` | À quoi ressemble la traque d'un bug qui « ne devrait pas être possible » ? |
+| A3a | Débogage I : pipeline vert, résultat inchangé | `Troubleshooting.md` | À quoi ressemble la traque d'un bug qui « ne devrait pas être possible » ? |
+| A3b | Débogage II : actif, mais pas fonctionnel | `Troubleshooting.md` | Que faire quand tout ce qu'on peut vérifier depuis le poste est juste ? |
 | A4 | HTTPS, et le piège du proxy | `Https.md` | Comment chiffrer sans s'enfermer dehors ? |
 | A5 | L'écran UPDATES | `Updates.md` | Comment un écran dit-il ce qu'il ne sait pas ? |
 
@@ -49,24 +85,22 @@ arrive-t-il ».
 
 ## Bloc B — Sauvegarde
 
-Quatre épisodes courts là où il n'y avait qu'une demi-vidéo. Le sujet n'est pas
-« comment copier un fichier » mais **ce qu'on doit à quelqu'un avant d'écraser
-son travail** — et le bloc va jusqu'à la seule preuve qui compte, la
+Deux épisodes de 20 minutes là où il n'y avait qu'une demi-vidéo. Le sujet
+n'est pas « comment copier un fichier » mais **ce qu'on doit à quelqu'un avant
+d'écraser son travail** — et le bloc va jusqu'à la seule preuve qui compte, la
 restauration.
 
 | # | Titre | Doc source | Question centrale |
 |---|---|---|---|
-| B1 | Rien n'est jamais écrit à moitié | `Backup_Retention.md`, `Deployment.md` | Comment garantir l'atomicité sans transactions ? |
-| B2 | Rotation et rétention | `Backup_Retention.md` | Que garde-t-on, combien de temps, et qui l'a décidé ? |
-| B3 | Restaurer : l'épreuve que personne ne fait | `Backup_Retention.md` | Une sauvegarde jamais restaurée existe-t-elle ? |
-| B4 | Ce que la sauvegarde ne couvre pas | `Security.md`, `Vision.md` | Où s'arrête « sauvegardé », où commence « reproductible » ? |
+| B1 | Avant d'écraser : écrire, garder, élaguer | `Backup_Retention.md`, `Deployment.md` | Comment garantir l'atomicité sans transactions — et que garde-t-on, combien de temps ? |
+| B2 | Restaurer, et ce qui ne revient pas | `Backup_Retention.md`, `Security.md` | Une sauvegarde jamais restaurée existe-t-elle — et que ne ramène-t-elle pas ? |
 
 > **Réserve honnête sur ce bloc.** `Backup_Retention.md` fait 79 lignes
-> aujourd'hui : c'est assez pour B2, pas pour B1, B3 et B4. Selon la règle du
-> projet — *une doc s'écrit avant son épisode, jamais après* — ces trois-là
-> demandent d'abord d'écrire leur source. B3 en particulier n'a encore **aucune
-> procédure de restauration documentée**, et c'est le genre de manque qu'on
-> découvre le mauvais jour.
+> aujourd'hui : assez pour la partie rétention de B1, pas pour le reste. Selon
+> la règle du projet — *une doc s'écrit avant son épisode, jamais après* — les
+> deux épisodes demandent d'abord d'écrire leur source. B2 en particulier n'a
+> encore **aucune procédure de restauration documentée**, et c'est le genre de
+> manque qu'on découvre le mauvais jour.
 
 ---
 
@@ -78,10 +112,9 @@ et le plus démontrable.
 
 | # | Titre | Doc source | Question centrale |
 |---|---|---|---|
-| C1 | Pourquoi un coffre plutôt qu'un fichier | `Vault.md` | Qu'apporte un coffre qu'un `0600` n'apporte pas ? |
-| C2 | L'écran COFFRE-FORT | `Vault.md` | À quoi ressemble une console de secrets défendable ? |
-| C3 | Desceller d'un mot de passe, depuis un appareil enrôlé | `Unseal.md` | Comment supprimer le geste manuel sans supprimer sa sûreté ? |
-| C4 | Une revue de sécurité honnête | `Security.md` | Que doit-on dire sur ce qui n'est pas protégé ? |
+| C1 | Un coffre, et sa console | `Vault.md` | Qu'apporte un coffre qu'un `0600` n'apporte pas — et à quoi ressemble une console de secrets défendable ? |
+| C2 | Desceller d'un mot de passe, depuis un appareil enrôlé | `Unseal.md` | Comment supprimer le geste manuel sans supprimer sa sûreté ? |
+| C3 | Une revue de sécurité honnête | `Security.md` | Que doit-on dire sur ce qui n'est pas protégé ? |
 
 ---
 
@@ -109,8 +142,8 @@ générateur. Dix épisodes : les neuf premiers ont leur doc, D10 doit d'abord
 ## Correspondance avec l'ancienne numérotation
 
 Les douze épisodes d'origine sont tous replacés ; aucun n'est perdu. L'ancien
-épisode 12 est le seul à être **coupé en deux** — ses deux moitiés n'avaient en
-commun que leur brièveté.
+épisode 12 est **coupé en deux** — ses deux moitiés n'avaient en commun que
+leur brièveté — et l'ancien 7 se dédouble au format 20 minutes.
 
 | Ancien | Devient | Remarque |
 |---|---|---|
@@ -120,13 +153,13 @@ commun que leur brièveté.
 | 4 Câbler une pièce | **D3** | |
 | 5 Wizard d'assignation | **D4** | |
 | 6 Pipeline CI/CD | **A2** | |
-| 7 Sessions de débogage | **A3** | |
+| 7 Sessions de débogage | **A3a** *et* **A3b** | dédoublé au format 20 min |
 | 8 OAuth | **D5** | |
 | 9 Chatbot | **D6** | |
 | 10 Design system | **D7** | |
 | 11 Bilingue | **D8** | |
-| 12 Sauvegardes + sécurité | **B2** *et* **C4** | coupé en deux |
-| — | A1, A4, A5, B1, B3, B4, C1, C2, C3, D9, D10 | onze épisodes nouveaux |
+| 12 Sauvegardes + sécurité | **B1** *et* **C3** | coupé en deux |
+| — | A1, A4, A5, B2, C1, C2, D9, D10 | huit épisodes nouveaux |
 
 ---
 
@@ -156,7 +189,22 @@ la série est organisée.
   appareils mesurés, la barre de l'assistant.
 - `dashboards/model/design_system.yaml` à côté de l'écran TEMPLATE GRAPHIQUE :
   une taille de texte changée, tous les écrans qui suivent.
-- La carte des quatre blocs, en motion design.
+- **La console en action** : une pièce de démonstration déclarée en direct
+  dans PIÈCES & ÉTAGES, et le rail qui la montre sur tous les écrans (son
+  propre écran n'existe qu'après un redémarrage de HA — le dire, pas le
+  couper).
+- **La sécurité par défaut, en quatre preuves** : webhooks limités au réseau
+  local, tablettes sans jeton permanent, coffre qui ne donne à HA que les noms,
+  aucun mot de passe en ligne de commande — et HTTPS, documenté mais pas encore
+  posé.
+- La carte des quatre blocs (6 · 2 · 3 · 10 épisodes de 20 min), en motion
+  design.
+
+**Découpage 20 min :** 0-1 cold open · 1-5 l'approche, la complexité de HA, ce
+qu'est Visio Sapiens · 5-7:30 pourquoi pas les cartes natives · 7:30-11:30
+l'architecture et HOME · 11:30-14 la console · 14-16:30 la sécurité par
+défaut · 16:30-18 les noms et le montage · 18-20 la carte de la série,
+conclusion.
 
 **Points à aborder :**
 - La règle unique qui pilote toutes les autres décisions : « Home Assistant
@@ -201,11 +249,13 @@ pourquoi le déploiement a deux cibles.
 - Pourquoi k3s plutôt que Docker Compose : ce n'est pas « Kubernetes parce que
   c'est moderne », c'est le runner, les PVC et le redémarrage automatique.
 - Le coût honnête : un cluster qui ne finit pas son démarrage bloque tout, et
-  ça arrive — l'épisode A3 en fait la démonstration.
+  ça arrive — l'épisode A3b en fait la démonstration.
 - Le piège des unités rivales : `k3s.service` et `k3s-agent.service` se
   disputent `127.0.0.1:6444`, et le symptôme est un hôte qui démarre sans
   jamais finir. Un cas d'école sur « le service est actif » ≠ « le service
   fonctionne ».
+
+**Découpage 20 min :** 0-2 un hôte qui démarre sans jamais finir · 2-7 la machine : k3s, les pods, le PVC · 7-11 staging k3s contre production HAOS · 11-15 GitLab et son runner dans le cluster, Vault à côté · 15-18 le piège des deux unités k3s · 18-20 bilan, renvoi vers A2.
 
 **Source :** `Vision.md`, `mosquitto-k3s.md`, `Updates.md` (section k3s).
 
@@ -236,26 +286,29 @@ fonctionnalité particulière.
 - Pourquoi le fait que `configuration.yaml` nécessite un redémarrage complet
   de HA (pas un rechargement à chaud) était la cause racine de toute une
   classe de bugs « le staging semble inchangé » — lien direct avec
-  l'épisode A3.
+  l'épisode A3a.
 - Les secrets ne touchent jamais une ligne de commande ni un log : arguments
   shell positionnels en staging, stdin en production. Mérite une explication
   complète, c'est un savoir réutilisable bien au-delà de ce projet.
 
-**Découpage optionnel :** si l'épisode A2 est trop long, le scinder en A2a
-(mécanique du pipeline) et A2b (les trous G1–G5 comme épisode « problèmes
-connus ») — la doc source se sépare déjà proprement sur cette ligne.
+**Au format 20 minutes**, la mécanique du pipeline et un trou corrigé à
+l'écran tiennent dans un seul épisode : l'ancien découpage A2a / A2b n'est
+plus nécessaire.
+
+**Découpage 20 min :** 0-2 un commit, deux cibles · 2-8 le diagramme et la règle `workflow:` · 8-13 un run en direct, étape par étape · 13-17 un trou de `CI_CD.md` corrigé à l'écran · 17-19 les secrets hors des lignes de commande · 19-20 bilan.
 
 ---
 
-## A3 — Sessions de débogage
+## A3a · A3b — Sessions de débogage
 
 **Objectif :** l'épisode « enquête policière ». De vrais bugs, de vrais
 symptômes, de vraies commandes lancées pour cerner la cause — le format qui
 tend à le mieux performer parce que la résolution est gagnée à l'écran plutôt
 que supposée.
 
-**À montrer à l'écran — une réserve de huit mini-cas indépendants. En retenir
-quatre par épisode, ou scinder en A3a / A3b :**
+**À montrer à l'écran — huit mini-cas indépendants, quatre par épisode. A3a
+(cas 1 à 4) : « pipeline vert, résultat inchangé ». A3b (cas 5 à 8) : « actif,
+mais pas fonctionnel » — ce que le poste de travail ne voit pas.**
 1. **Le staging semble inchangé après un pipeline vert** — le job
    `deploy:staging` ne redémarrait jamais Home Assistant, donc
    `lovelace.dashboards` et `homeassistant.packages` continuaient de servir
@@ -311,6 +364,8 @@ quatre par épisode, ou scinder en A3a / A3b :**
   différentes. Le cas 8 en est le cousin : **un seul client en tort**, alors
   que tout ce qui est vérifiable depuis le poste est juste.
 
+**Découpage 20 min :** **A3a** 0-1:30 la forme d'une enquête · 1:30-17:30 cas 1 à 4, environ quatre minutes chacun · 17:30-20 le motif « pipeline vert, résultat inchangé ». **A3b** 0-1:30 · 1:30-17:30 cas 5 à 8 · 17:30-20 le motif « un seul client en tort ».
+
 ---
 
 ## A4 — HTTPS, et le piège du proxy
@@ -337,6 +392,8 @@ trompe.
 - Le contenu mixte : une page en HTTPS ne peut plus appeler une adresse en
   `http://`. Vérifié sur tout le dépôt, et à re-vérifier pour chaque page
   ajoutée ensuite.
+
+**Découpage 20 min :** 0-3 le mot de passe capturé en clair · 3-8 Traefik, l'ingress, le certificat · 8-13 le piège en direct : des 400 partout, la ligne de log · 13-17 `trusted_proxies` et le bannissement contournable · 17-19 le contenu mixte · 19-20 bilan.
 
 **Source :** `Https.md`.
 
@@ -367,23 +424,32 @@ ce que son bouton installerait, ou explique pourquoi elle ne peut pas le dire.
 - Un installeur qui dit « lancé, pas terminé » plutôt que « terminé » quand il
   ne peut pas le savoir.
 
+**Découpage 20 min :** 0-2 un voyant orange, et la question « pourquoi ? » · 2-7 les huit lignes · 7-12 le coffre scellé, l'écran qui se grise au lieu de se vider · 12-16 à jour mais arrêté ; l'installeur « lancé, pas terminé » · 16-19 la ligne qui refuse d'être reportée · 19-20 bilan.
+
 **Source :** `Updates.md`.
 
 ---
 
-## B1 — Rien n'est jamais écrit à moitié
+## B1 — Avant d'écraser : écrire, garder, élaguer
 
-**Objectif :** ouvrir le bloc SAUVEGARDE par l'invariant qui le rend
-nécessaire, avant toute question de rotation ou de rétention.
+**Objectif :** ouvrir le bloc SAUVEGARDE par ce qu'on doit à quelqu'un avant
+d'écraser son travail — l'invariant qui rend la sauvegarde nécessaire — puis
+transformer « je fais des sauvegardes » en une politique qu'on peut énoncer,
+vérifier et défendre. *(Réunit les anciens B1 et B2 : à 20 minutes, la
+rotation seule ne tenait pas un épisode.)*
 
 **À montrer à l'écran :**
 - Une régénération de HOME lancée en direct : la sauvegarde horodatée est
   écrite **avant** que le premier octet du nouveau fichier n'existe.
-- Les trois endroits indépendants où le même invariant apparaît :
-  l'applicateur d'assignation, les dashboards protégés du générateur, l'étape
-  de sauvegarde elle-même.
+- Les trois endroits indépendants où le même invariant apparaît : les
+  applicateurs de la console (assignation, pièces), les dashboards protégés du
+  générateur, l'étape de sauvegarde elle-même.
 - Un échec provoqué en plein milieu — couper le générateur pendant qu'il écrit
   — et le fichier d'origine toujours intact.
+- Le répertoire de sauvegardes après plusieurs semaines de travail réel :
+  combien de fichiers, quelle taille, quelle ancienneté.
+- Le mode « montre ce que tu supprimerais » lancé avant le vrai élagage, puis
+  la règle de rotation appliquée en direct.
 
 **Points à aborder :**
 - L'atomicité dans un système qui n'a pas de transactions : valider tout le
@@ -392,36 +458,26 @@ nécessaire, avant toute question de rotation ou de rétention.
 - Pourquoi « relancer un scan ne réinitialise pas le travail précédent » est
   une garantie qui paraît anodine quand elle tient et catastrophique quand
   elle lâche.
+- Une politique de rétention est un arbitrage entre le disque et le regret, et
+  il vaut mieux l'écrire que le laisser au hasard des `rm` manuels.
+- Ce que la rotation **ne doit jamais** emporter, et comment on le garantit.
+
+**Découpage 20 min :** 0-2 un fichier écrasé, l'accroche · 2-8 l'invariant en
+trois endroits, et l'échec provoqué · 8-11 écrire à côté puis renommer ·
+11-16 le répertoire réel, la rotation, le mode répétition · 16-19 ce que la
+rotation ne doit jamais emporter · 19-20 bilan, renvoi vers B2.
 
 **Source :** `Backup_Retention.md`, `Deployment.md`, `Dashboard_Generator.md`.
 
 ---
 
-## B2 — Rotation et rétention : ce qu'on garde, et combien de temps
+## B2 — Restaurer, et ce qui ne revient pas
 
-**Objectif :** transformer « je fais des sauvegardes » en une politique qu'on
-peut énoncer, vérifier et défendre.
-
-**À montrer à l'écran :**
-- Le répertoire de sauvegardes après plusieurs semaines de travail réel :
-  combien de fichiers, quelle taille, quelle ancienneté.
-- Le mode « montre ce que tu supprimerais » lancé avant le vrai élagage. Un
-  outil destructif qui sait répéter avant de jouer.
-- La règle de rotation appliquée en direct, et le fichier qui disparaît.
-
-**Points à aborder :**
-- Une politique de rétention est un arbitrage entre le disque et le regret, et
-  il vaut mieux l'écrire que le laisser au hasard des `rm` manuels.
-- Ce que la rotation **ne doit jamais** emporter, et comment on le garantit.
-
-**Source :** `Backup_Retention.md`.
-
----
-
-## B3 — Restaurer : l'épreuve que personne ne fait
-
-**Objectif :** l'épisode qui donne sa valeur aux deux précédents. Une
-sauvegarde jamais restaurée est une hypothèse, pas une sauvegarde.
+**Objectif :** l'épisode qui donne sa valeur au précédent. Une sauvegarde
+jamais restaurée est une hypothèse, pas une sauvegarde — et une restauration
+réussie ne ramène pas tout. *(Réunit les anciens B3 et B4 : les angles morts
+se montrent le mieux juste après une restauration, en regardant ce qui
+manque.)*
 
 **À montrer à l'écran :**
 - Casser un dashboard pour de bon, à l'écran, sans filet préparé.
@@ -429,84 +485,73 @@ sauvegarde jamais restaurée est une hypothèse, pas une sauvegarde.
   « c'est cassé » et « c'est revenu ».
 - Le contrôle d'après-restauration : l'écran est-il vraiment celui d'avant, ou
   seulement quelque chose qui lui ressemble ?
+- Ce qui n'est pas revenu, et ne pouvait pas revenir : le registre Home
+  Assistant (les pièces et les appareils vivent **dans** HA — `house.yaml` est
+  vide par conception), les secrets (le sujet du bloc C), l'historique long de
+  la base d'états et ce qu'elle contient en clair.
 
 **Points à aborder :**
 - Pourquoi une restauration réussie ne prouve rien si elle n'a pas été faite
   depuis l'état réel de panne.
 - Ce qu'il faut noter le jour où ça arrive pour de vrai : l'ordre des gestes,
   ce qui doit redémarrer, ce qui ne se recharge pas à chaud.
-
-**Source :** `Backup_Retention.md`, `Troubleshooting.md`.
-
----
-
-## B4 — Ce que la sauvegarde ne couvre pas
-
-**Objectif :** le court épisode honnête. Nommer les angles morts vaut mieux que
-les découvrir.
-
-**À montrer à l'écran :**
-- Le registre Home Assistant : les pièces et les appareils vivent **dans** HA,
-  pas dans le dépôt — `house.yaml` est vide par conception.
-- Les secrets : rien de ce qui est chiffré n'est sauvegardé par ces scripts, et
-  c'est le sujet du bloc C.
-- L'historique long : la base d'états de Home Assistant, ce qu'elle contient en
-  clair, et ce que ça implique.
-
-**Points à aborder :**
 - La différence entre « sauvegardé » et « reproductible » : le dépôt
   reconstruit l'interface, il ne reconstruit pas l'installation.
 - Publier ses angles morts est une fonctionnalité, pas un aveu.
 
-**Source :** `Backup_Retention.md`, `Security.md`, `Vision.md`.
+**Découpage 20 min :** 0-2 casser pour de bon · 2-9 la restauration,
+chronomètre à l'écran · 9-12 le contrôle d'après-restauration · 12-17 ce qui
+n'est pas revenu : registre, secrets, historique · 17-19 sauvegardé ≠
+reproductible · 19-20 bilan.
+
+**Source :** `Backup_Retention.md`, `Troubleshooting.md`, `Security.md`,
+`Vision.md`.
 
 ---
 
-## C1 — Pourquoi un coffre plutôt qu'un fichier
+## C1 — Un coffre, et sa console
 
-**Objectif :** ouvrir le bloc COFFRE-FORT par l'argument, pas par
-l'installation. Qu'apporte un coffre qu'un fichier en `0600` n'apporte pas ?
+**Objectif :** ouvrir le bloc COFFRE-FORT par l'argument, puis montrer la
+console qui le rend utilisable. Qu'apporte un coffre qu'un fichier en `0600`
+n'apporte pas — et à quoi ressemble une console de secrets défendable ?
+*(Réunit les anciens C1 et C2 : l'argument seul ne tenait pas 20 minutes, et
+il se démontre mieux sur l'écran qu'il justifie.)*
 
 **À montrer à l'écran :**
 - Le fichier de secrets d'avant, ouvert à l'écran, et la question posée
   franchement : qui peut le lire, et qu'est-ce qui l'en empêche ?
-- Vault en marche, ses chemins KV, une écriture puis une lecture.
-- Les deux installations — staging et production — et pourquoi elles diffèrent.
-
-**Points à aborder :**
-- Ce qu'un coffre **n'est pas** : il ne protège pas d'un administrateur de la
-  machine, et le dire tôt évite une fausse sécurité.
-- Le scellement comme choix de conception : le coffre se rescelle à chaque
-  redémarrage, exprès. C'est une contrainte, et le bloc entier tourne autour.
-
-**Source :** `Vault.md`.
-
----
-
-## C2 — L'écran COFFRE-FORT
-
-**Objectif :** une console de secrets dans le dashboard, et les décisions qui
-la rendent défendable.
-
-**À montrer à l'écran :**
-- L'écran ADMIN → COFFRE-FORT : connexion, les trois branches, révéler un
-  secret, le masquer, l'éditer.
-- Le jeton en `sessionStorage` et jamais en `localStorage` — et la
+- Vault en marche, ses chemins KV, une écriture puis une lecture ; les deux
+  installations — staging et production — et pourquoi elles diffèrent.
+- L'écran ADMIN → COFFRE-FORT, avec des secrets de démonstration : connexion,
+  les trois branches, révéler un secret, le masquer, l'éditer.
+- Le jeton du coffre en `sessionStorage` et jamais en `localStorage` — et la
   démonstration de la différence : fermer l'onglet met fin à la session.
 - L'écran quand le coffre est scellé : ce qu'il peut encore dire, et ce qu'il
   ne peut plus.
 
 **Points à aborder :**
+- Ce qu'un coffre **n'est pas** : il ne protège pas d'un administrateur de la
+  machine, et le dire tôt évite une fausse sécurité.
+- Home Assistant lit les **noms**, jamais les valeurs : son jeton n'a droit
+  qu'aux métadonnées, parce que tout ce que HA lit finit en clair dans sa base
+  d'historique.
+- Le scellement comme choix de conception : le coffre se rescelle à chaque
+  redémarrage, exprès. C'est une contrainte, et le bloc entier tourne autour.
 - Une page qui parle à Vault depuis le navigateur, c'est du CORS, et une
   adresse écrite deux fois est une adresse qui finira par se contredire — d'où
   une URL dérivée du nom d'hôte de la page.
 - Ce qu'on n'affiche jamais, même à l'utilisateur légitime, et pourquoi.
 
+**Découpage 20 min :** 0-2 le fichier d'avant · 2-7 ce qu'un coffre apporte,
+et ce qu'il n'est pas · 7-10 Vault en marche, staging et production · 10-16
+l'écran COFFRE-FORT, sessionStorage · 16-19 coffre scellé ; CORS et l'URL
+dérivée · 19-20 bilan, renvoi vers C2.
+
 **Source :** `Vault.md`.
 
 ---
 
-## C3 — Desceller d'un mot de passe, depuis un appareil enrôlé
+## C2 — Desceller d'un mot de passe, depuis un appareil enrôlé
 
 **Objectif :** l'épisode le plus dense du bloc. Supprimer le « `docker exec` et
 trois clés à la main » sans supprimer ce qui le rendait sûr.
@@ -534,11 +579,13 @@ trois clés à la main » sans supprimer ce qui le rendait sûr.
   dur, pour pouvoir les durcir plus tard sans orpheliner les données.
 - Cinq échecs, quinze minutes de porte fermée, compteur persisté.
 
+**Découpage 20 min :** 0-2 le coffre scellé exprès · 2-7 le clic depuis un appareil enrôlé · 7-10 le refus d'un appareil non enrôlé · 10-15 CORS et certificat client : la contrainte de spécification · 15-18 `scrypt`, les cinq échecs, le journal · 18-20 bilan.
+
 **Source :** `Unseal.md`.
 
 ---
 
-## C4 — Une revue de sécurité honnête
+## C3 — Une revue de sécurité honnête
 
 **Objectif :** clore le bloc en lisant à l'écran ce qui n'est **pas** protégé.
 
@@ -559,6 +606,8 @@ trois clés à la main » sans supprimer ce qui le rendait sûr.
 - Pourquoi c'est l'épisode qui vieillira le mieux, et pourquoi il faut
   re-vérifier le document le jour du tournage : c'est la doc qui se périme le
   plus silencieusement.
+
+**Découpage 20 min :** 0-2 ce que ce document refuse de cacher · 2-10 `Security.md` lu, passages inconfortables compris · 10-15 ce qui a changé : coffre, descellement, session des tablettes · 15-18 les questions ouvertes, HTTPS pas encore posé · 18-20 un modèle de menace contre une ambiance.
 
 **Source :** `Security.md`.
 
@@ -600,7 +649,9 @@ peut suivre pas à pas.
   « non fiables ».
 
 **Bon pairing :** le correctif en direct de cet épisode est une version
-courte de ce que fait l'épisode A3 en détail — envisager un renvoi croisé.
+courte de ce que font A3a et A3b en détail — envisager un renvoi croisé.
+
+**Découpage 20 min :** 0-2 une jauge qui bouge · 2-6 la chaîne Glances → HA → `core.html` · 6-10 les DevTools : l'appel, l'intervalle, le jeton court · 10-13 `findEntity()` et son coût · 13-17 le 404 K3s corrigé en direct · 17-19 `esc()` et le XSS · 19-20 bilan.
 
 ---
 
@@ -637,6 +688,8 @@ projet.
   écrivent le modèle puis régénèrent. Accroche naturelle vers D4 — et section
   de la doc à mettre à jour avant le tournage.
 
+**Découpage 20 min :** 0-2 un appareil ajouté sans toucher un dashboard · 2-7 modèle et template côte à côte · 7-10 `--preview` · 10-14 pourquoi Lovelace ne boucle pas ; les deux vitesses d'ENERGY · 14-18 la fusion non destructive de `vssp_energy_sync.py` · 18-20 le pont vers D4.
+
 ---
 
 ## D3 — Étude de cas : câbler une pièce entière
@@ -666,6 +719,8 @@ l'intégration de Technical Room comme exemple travaillé.
   comme des liens morts ailleurs dans l'interface, donc l'intégrer a rendu
   des liens existants vivants plutôt que d'en ajouter de nouveaux.
 
+**Découpage 20 min :** 0-2 une pièce entière, de bout en bout · 2-8 le tableau des fichiers, ouverts un à un · 8-13 `LIVEBOX_PASSWORD` de bout en bout · 13-16 le piège `Protected` de GitLab · 16-19 les deux arbitrages ouverts · 19-20 bilan.
+
 ---
 
 ## D4 — Étude de cas : le wizard d'assignation d'appareils
@@ -682,7 +737,7 @@ projet (c'est la même forme que l'écran PIÈCES & ÉTAGES).
 - Un cycle scan → assignation → application en direct dans le navigateur.
 - Le tableau des fichiers vérifiés par MD5 comme moment « comment on s'est
   assuré que les bons fichiers sont partis » — s'accorde bien avec le
-  post-mortem du cache de l'épisode A3.
+  post-mortem du cache de l'épisode A3a.
 
 **Points à aborder :**
 - « Rien n'est jamais écrit à moitié » : l'applicateur valide tout le
@@ -692,6 +747,8 @@ projet (c'est la même forme que l'écran PIÈCES & ÉTAGES).
   subtile mais importante à souligner explicitement, car c'est exactement le
   genre de chose qui paraît anodine quand ça marche et catastrophique quand
   ça ne marche pas.
+
+**Découpage 20 min :** 0-2 un scan brut, illisible · 2-6 le pipeline DISCOVERY → apply · 6-12 un cycle scan → assignation → application en direct · 12-16 tout valider avant d'écrire, sauvegarder d'abord · 16-19 relancer un scan n'efface rien · 19-20 bilan.
 
 ---
 
@@ -733,6 +790,8 @@ sur la seule étape qui ne se replie pas.
 **Bon appariement :** l'épisode D8 reprend ce même écran comme exemple
 travaillé — les filmer coup sur coup, tant que le matériau est frais.
 
+**Découpage 20 min :** 0-2 neuf étapes natives · 2-6 les deux parcours côte à côte · 6-11 le détour websocket, trames à l'écran · 11-14 le consentement, filmé · 14-18 `UPDATE_FIELDS = {}` · 18-20 automatiser autour de ce qu'on ne peut pas automatiser.
+
 ---
 
 ## D6 — Un chatbot dans le dashboard
@@ -756,6 +815,8 @@ propre au projet — et les contraintes qui façonnent une telle chose.
   d'une `button-card` : le HTML vit dans un shadow root, donc
   `document.getElementById` ne trouve rien et le handler doit recevoir `this`
   à la place. Court, concret, et ça épargnera une soirée à un spectateur.
+
+**Découpage 20 min :** 0-2 une question posée depuis HOME · 2-7 la réponse en ligne, puis le fournisseur changé · 7-11 les clés, chacune dans son fichier · 11-15 le fournisseur personnalisé · 15-18 réponse en ligne plutôt qu'en popup ; le piège du shadow DOM · 18-20 bilan.
 
 ---
 
@@ -803,6 +864,8 @@ d'édition — la même forme modèle→template→généré que l'épisode D2, 
 **Bon appariement :** D10 — la même semaine de travail, vue depuis la
 tablette : le rail ajusté à ses entrées et le bandeau ramené à sa hauteur
 sont nés là.
+
+**Découpage 20 min :** 0-2 une couleur, toute l'interface · 2-6 le modèle, le thème généré, la régénération · 6-10 les tailles de texte par usage · 10-13 la police et le cache d'un mois · 13-15 le logo et le rail · 15-18 `color-mix()` et la référence d'usine · 18-20 bilan.
 
 ---
 
@@ -853,11 +916,13 @@ card-mod qui masque le texte et le réécrit (simple-weather-card) — la rustin
 assumée dans la section 4 du pilote. Un basculement fr→en qui « ne marche
 pas » peut vouloir dire « une seule carte tierce est restée en français ».
 
-**Bon appariement :** le quatrième cas de l'épisode A3 (un wizard bloqué en
+**Bon appariement :** le quatrième cas d'A3a (un wizard bloqué en
 français parce qu'une URL d'iframe n'avait pas d'anti-cache) est la
 mauvaise traduction antérieure du même écran, pour une cause complètement
 différente. Montrés ensemble — avec le second cas ci-dessus — ils établissent
 que « mauvaise langue à l'écran » est un symptôme, pas un diagnostic.
+
+**Découpage 20 min :** 0-2 le bug d'abord · 2-8 les trois sources de langue · 8-12 le correctif en direct, EN et FR côte à côte · 12-16 second cas : les cartes tierces · 16-19 traduire au dernier moment ; ce qui ne se localise pas · 19-20 bilan.
 
 ---
 
@@ -875,6 +940,8 @@ dans le temps plutôt que sur commande.
 - Pourquoi la planification est un cas où l'interface ne peut pas mentir : une
   erreur ne se voit pas au moment du clic mais trois heures plus tard.
 - L'assistant IA comme prolongement naturel du même écran.
+
+**Découpage 20 min :** 0-2 une erreur qui ne se voit que trois heures plus tard · 2-8 un créneau créé puis modifié, l'effet réel · 8-12 ce qui est généré, ce qui est lu à l'exécution · 12-17 l'assistant IA · 17-19 pourquoi l'interface ne peut pas mentir sur le futur · 19-20 bilan.
 
 **Source :** `Scheduler.md`, `AI_Assistant.md`.
 
@@ -905,7 +972,7 @@ sortie : **chaque test se fait à 1194 × 834**.
    permanent stocké dans le navigateur.
 4. **Ce que le poste de test ne voit pas.** Des icônes absentes sur l'iPad
    seulement : Chromium à la même taille les affichait toutes. La taille de
-   l'écran se simule ; le moteur du navigateur, non (voir A3, cas 8).
+   l'écran se simule ; le moteur du navigateur, non (voir A3b, cas 8).
 
 **Points à aborder :**
 - Mesurer plutôt que regarder : chaque cas a été tranché par une largeur ou
@@ -915,6 +982,8 @@ sortie : **chaque test se fait à 1194 × 834**.
   l'inverse.
 - Pourquoi les tests se font dans un navigateur qui n'est pas celui de la
   tablette, et comment le dire honnêtement dans chaque compte rendu.
+
+**Découpage 20 min :** 0-2 le même écran, au bureau et au mur · 2-7 des noms à 0 px · 7-11 un bandeau de 246 px · 11-14 une tablette neuve, une connexion · 14-17 ce que le poste de test ne voit pas · 17-20 mesurer plutôt que regarder ; la règle 1194 × 834.
 
 **Source :** *à écrire* — `docs/dashboards/Tablet_Layout.md`. Les quatre cas
 sont documentés dans leurs commits du 14 septembre ; les écrire tant qu'ils
@@ -934,8 +1003,9 @@ déjà faux ce jour-là.
 | 12 sept. | Agenda et météo du bandeau suivent la langue générée, plus celle du navigateur | D8 |
 | 13 sept. | La police, les tailles de texte par usage et le logo remplaçable rejoignent le TEMPLATE GRAPHIQUE ; les tokens manquants sont complétés depuis la référence d'usine | D7 (statut remis à zéro), Pilote |
 | 13-14 sept. | Le rail de navigation et le bandeau s'ajustent à leur contenu ; les panneaux ÉNERGIE s'alignent en hauteur ; la colonne pièce disparaît de CONSOMMATION PAR APPAREIL | D10, Pilote |
-| 14 sept. | Les pages de la console empruntent la session de la tablette : plus de jeton longue durée | C4, D1, D10, Pilote |
+| 14 sept. | Les pages de la console empruntent la session de la tablette : plus de jeton longue durée | C3, D1, D10, Pilote |
 | 14 sept. | L'en-tête d'APPAREILS ÉNERGIE ramené au standard (76 px) | D10 |
+| 14 sept. | **Format 20 minutes** pour tous les épisodes, pilote compris : le pilote gagne la console et la sécurité ; B passe de 4 à 2 épisodes, C de 4 à 3, A3 se dédouble | Pilote, A3, blocs B et C |
 | — | Déjà faux le 12 : G1 et G4 fermés dans `CI_CD.md` ; le pont `vssp_model_sync.py` construit sous une autre forme ; `weather-forecast` utilisée nulle part ; « tout le reste est du moteur maison » contredit par 173 `button-card` et 95 blocs `card_mod` | A2, D2, Pilote |
 
 Trois docs sources décrivent encore l'état d'avant et doivent être mises à
@@ -949,46 +1019,45 @@ A2).
 
 Le statut porte sur la **filmabilité**, pas sur le fait que la fonctionnalité
 marche : une ligne n'est « prête » que si la documentation et une démo qui
-survit à une prise existent toutes les deux aujourd'hui.
+survit à une prise existent toutes les deux aujourd'hui. Et depuis le passage
+à 20 minutes, un épisode n'est « prêt » que si son découpage tient avec de la
+démonstration, pas du remplissage.
 
 | # | Épisode | Prêt à filmer ? | Prochaine étape concrète |
 |---|---|---|---|
 | — | Pilote | **Script révisé — voix et captures à refaire** | Recapturer HOME à 1194 × 834 ; ré-enregistrer la voix section par section ; relancer `scripts/build_episode_media.py` après toute retouche du script |
-| C3 | Desceller depuis un appareil enrôlé | **Prêt, et le plus frais** | Sceller le coffre exprès pour la prise ; prévoir un second appareil non enrôlé pour filmer le refus |
+| C2 | Desceller depuis un appareil enrôlé | **Prêt, et le plus frais** | Sceller le coffre exprès pour la prise ; prévoir un second appareil non enrôlé pour filmer le refus |
 | A5 | L'écran UPDATES | **Prêt** | Capturer l'écran gris « mesuré le … » pendant que le coffre est scellé — ça n'arrive que là |
-| C2 | L'écran COFFRE-FORT | **Prêt** | Préparer des secrets de démonstration ; rien de réel à l'écran |
+| C1 | Un coffre, et sa console | **Prêt** | Préparer des secrets de démonstration, rien de réel à l'écran ; retrouver le fichier de secrets d'avant dans l'historique git |
 | D5 | Automatiser une configuration OAuth | **Prêt** | Un projet Google Cloud vierge, pour que le consentement soit filmable sans coupure |
 | D8 | Bilingue par construction | **Prêt** | Capturer EN/FR côte à côte ; le second cas (cartes tierces du bandeau) n'existe plus que dans l'historique — rejouer le commit d'avant le 12 septembre |
 | D2 | Le générateur de dashboards | Prêt, doc à retoucher | Choisir l'unique modification de modèle à démontrer ; mettre à jour la section « pont » de `Dashboard_Generator.md` |
 | D7 | L'éditeur de charte graphique | **Écran changé — statut remis à zéro** | Refilmer avec la police, les tailles de texte et le logo ; décider si le piège `color-mix()` est un moment ou un short à part |
-| D6 | Un chatbot dans le dashboard | Prêt, avec une réserve | Confirmer quelles clés peuvent être à l'écran ; flouter ou clé jetable |
+| D6 | Un chatbot dans le dashboard | Prêt, avec une réserve | Confirmer quelles clés peuvent être à l'écran ; flouter ou clé jetable. Le plus juste du bloc à 20 minutes : vérifier que son découpage tient |
 | A4 | HTTPS et le piège du proxy | Prêt, non appliqué | L'ingress n'est pas encore posé : le faire une première fois **hors caméra**, puis rejouer |
 | A2 | Le pipeline CI/CD | Prêt, démo à rechoisir | G1 est fermé : re-vérifier G2/G3/G5 contre le pipeline actuel, puis choisir celui qu'on corrige à l'écran |
-| C1 | Pourquoi un coffre | Prêt | Retrouver le fichier de secrets d'avant dans l'historique git |
 | D1 | CORE | Bloqué sur un correctif, doc à réécrire | Le 404 `/local/osvision_v2/…` se reproduit toujours (vérifié dans le code le 14 septembre) ; réécrire la partie authentification de `Core_Dashboard.md` |
 | D4 | Le wizard d'assignation | Prêt | Relire la doc source de bout en bout avant d'écrire le script |
 | D3 | Câbler une pièce entière | Partiellement bloqué | Deux arbitrages ouverts — trancher, ou les filmer comme questions ouvertes |
-| B2 | Rotation et rétention | Prêt | Laisser le répertoire vieillir : un dossier de trois fichiers ne montre rien |
-| C4 | Revue de sécurité honnête | Prêt, doc à compléter | Ajouter à `Security.md` le retrait du jeton longue durée des tablettes ; re-vérifier le document le jour du tournage |
-| A3 | Sessions de débogage | Prêt, à filmer en dernier | Huit cas en réserve : en choisir quatre, ou scinder en A3a / A3b |
+| C3 | Revue de sécurité honnête | Prêt, doc à compléter | Ajouter à `Security.md` le retrait du jeton longue durée des tablettes ; re-vérifier le document le jour du tournage |
+| A3a · A3b | Sessions de débogage | Prêt, à filmer en dernier | Quatre cas par épisode ; A3b se tourne près d'A1 et de D10, qui partagent deux de ses cas |
 | D10 | La tablette murale | **Doc à écrire** | `Tablet_Layout.md` : quatre cas frais du 14 septembre, à écrire tant qu'ils le sont |
 | A1 | L'environnement | **Doc à écrire** | Aucune doc ne décrit l'hôte lui-même ; l'écrire d'abord |
 | D9 | Le planificateur | **Doc à relire** | `Scheduler.md` est antérieur aux derniers écrans |
-| B1 | Rien n'est jamais écrit à moitié | **Doc à écrire** | L'invariant est appliqué en trois endroits mais documenté nulle part |
-| B3 | Restaurer | **Doc à écrire — priorité** | Aucune procédure de restauration n'existe. C'est un manque, pas seulement un épisode manquant |
-| B4 | Ce que la sauvegarde ne couvre pas | **Doc à écrire** | Dépend de B3 |
+| B1 | Avant d'écraser : écrire, garder, élaguer | **Doc à écrire** | L'invariant est appliqué en trois endroits mais documenté nulle part ; laisser aussi vieillir le répertoire — un dossier de trois fichiers ne montre rien |
+| B2 | Restaurer, et ce qui ne revient pas | **Doc à écrire — priorité** | Aucune procédure de restauration n'existe. C'est un manque, pas seulement un épisode manquant |
 
 Trois règles permanentes pour ce plan :
 
 1. **Une doc s'écrit avant son épisode, jamais après.** C'est ce qui rend
-   l'étape d'écriture du script courte — et c'est la règle qui classe trois
+   l'étape d'écriture du script courte — et c'est la règle qui classe les deux
    épisodes du bloc B, A1 et D10 en « doc à écrire » plutôt qu'en « prêt ».
 2. **Quand un écran change, le statut de son épisode repart à zéro.** L'écran
    COFFRE-FORT a reçu son bouton DESCELLER après la rédaction de ce plan : tout
    ce qui aurait été filmé avant serait déjà faux. Même chose le 13 septembre
    pour le TEMPLATE GRAPHIQUE (D7), et le 14 pour HOME (le pilote).
 3. **Un bloc se publie dans l'ordre, les blocs se publient dans n'importe
-   lequel.** C'est ce qui permet de sortir C3 tant qu'il est frais sans
+   lequel.** C'est ce qui permet de sortir C2 tant qu'il est frais sans
    attendre que le bloc B soit écrit.
 
 ---
@@ -996,23 +1065,22 @@ Trois règles permanentes pour ce plan :
 ## Notes de séquencement
 
 - **Le bloc C est le plus prêt**, et c'est contre-intuitif : c'est le plus
-  récent. C3 en particulier devrait être tourné vite — un épisode sur un
+  récent. C2 en particulier devrait être tourné vite — un épisode sur un
   mécanisme qu'on vient de construire se raconte mieux que six mois plus tard.
-- **Le bloc B est le moins prêt**, et le savoir est utile : trois de ses quatre
-  épisodes demandent d'abord une doc. B3 est le plus important des trois, parce
-  qu'écrire sa doc revient à se doter d'une procédure de restauration qui
+- **Le bloc B est le moins prêt**, et le savoir est utile : ses deux épisodes
+  demandent d'abord une doc. B2 est le plus important, parce qu'écrire sa doc revient à se doter d'une procédure de restauration qui
   n'existe pas encore.
-- **A1 → A2 → A3** est le fil naturel « voici la machine, voici comment le code
+- **A1 → A2 → A3a** est le fil naturel « voici la machine, voici comment le code
   y arrive, voici ce qui casse ». Filmable comme un mini-arc.
 - **D5 → D8** reste le meilleur binôme : le même écran, d'abord comme
   fonctionnalité puis comme problème de langue. Dans cette session et dans cet
   ordre — l'avant/après de D8 n'existe que tant que la version d'avant correctif
   est récente dans l'historique.
-- **A3 gagne à être filmé en dernier** pour chaque bug — une fois le correctif
+- **A3a et A3b gagnent à être filmés en dernier** pour chaque bug — une fois le correctif
   déployé et confirmé — mais peut être **publié** plus tôt si un cas est déjà
   entièrement résolu.
-- **C1 → C2 → C3 → C4** est le seul bloc qui se regarde vraiment comme une
-  histoire : un problème, un outil, une automatisation, un bilan honnête.
+- **C1 → C2 → C3** est le seul bloc qui se regarde vraiment comme une
+  histoire : un problème et son outil, une automatisation, un bilan honnête.
 - **Le pilote se publie en premier**, et c'est lui qui doit être juste avant
   tout le reste : il cite des épisodes de chaque bloc. Le refaire après D7 ou
   D10 obligerait à le refaire une troisième fois.

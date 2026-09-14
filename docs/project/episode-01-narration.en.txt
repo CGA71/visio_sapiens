@@ -87,20 +87,54 @@ And now the part I most enjoy showing, because it makes all of this concrete: wh
 
 On the left, a file in the repository, design_system.yaml: every colour, the typeface, the size of each kind of text. On the right, the console screen that edits it. I raise the size of the values — and every screen follows at once, because there's only one source. Not ten cards to touch up one by one, hoping you didn't miss any. The code and the interface speak the same language — and so they're versioned like a real software project.
 
-## [07] A NOTE ON NAMES
-##      narration | slot 11:30-12:15 (45s) | 102 words | target 44s
+## [07] THE CONSOLE: DESCRIBE THE HOUSE ONCE
+##      narration | slot 11:30-14:00 (150s) | 217 words | target 93s
+
+I told you the interface is generated from a description of the house. Here's where you write it: the admin console.
+
+Nine screens, one per decision. The rooms and the floors. The devices the network has just discovered. Which room each device belongs to. The Google calendar, the visual charter, the dashboards themselves, the updates, and the safe.
+
+Let's declare a room, live. A laundry room, on the ground floor. I apply.
+
+What happens during those few seconds is the loop I showed you on the diagram. The form sends what I decided. A script backs up the current state first — always, before writing anything. It writes the model, reruns the generator, and reports back: that message, up there, is the report.
+
+I go back to HOME. The laundry is in the rail. And it's there on every screen at once — the energy, the system, the console — because the rail isn't written by hand anywhere.
+
+One honest detail: the room's own screen is declared in Home Assistant's configuration, and Home Assistant only rereads that configuration at startup. Its entry appears straight away; its screen, at the next restart. I'd rather tell you than cut it in the edit.
+
+And it's the same gesture for everything else. You never draw a dashboard. You decide, and the console writes.
+
+## [08] SECURE BY DEFAULT, CONCRETELY
+##      narration | slot 14:00-16:30 (150s) | 231 words | target 99s
+
+At the start I promised you security by default. A promise can be checked — so here's what it means concretely, including what isn't done yet.
+
+One: the console's forms send nothing with a password. They go through entry points Home Assistant only accepts from the local network. From the internet, they don't exist.
+
+Two: a new tablet keeps no permanent credential. The console screens borrow the session you logged in with, a short-lived token Home Assistant renews by itself. Losing the tablet isn't losing a key.
+
+Three: secrets live in a safe, not in files. Home Assistant can read the name of every secret there, never its value — because everything Home Assistant reads ends up in clear in its history database. The safe closes at every restart, and you reopen it with one passphrase, from a device you've enrolled.
+
+Four: no password ever goes through a command line or into a log — not the router's, not the assistants' keys.
+
+And now, what isn't done. Today, on the local network, the Home Assistant password still travels in clear. The move to HTTPS is written and documented; it isn't in place yet. It has its own episode, in block A.
+
+That's what security by default means to me: not a list of promises, but a list of things you can check — and, published right beside it, the list of the ones still missing.
+
+## [09] A NOTE ON NAMES
+##      narration | slot 16:30-17:15 (45s) | 102 words | target 44s
 
 A quick aside before we wrap up, because you're going to run into this: the project was originally called OSVision, before it became VSSP. In September, a big sweep removed the old name from the identifiers, the components and the stylesheets — and that sweep surfaced three real bugs, including a dead link nobody had noticed. But some traces remain: the JavaScript engine still carries the old name, and the K3s panel on the CORE screen still looks for its file under the old path. A good project doesn't hide those marks, it documents them. That one, we'll fix live in episode D1.
 
-## [08] QUICK MONTAGE — WHAT HAS SHIPPED
-##      narration | slot 12:15-12:45 (30s) | 66 words | target 28s
+## [10] QUICK MONTAGE — WHAT HAS SHIPPED
+##      narration | slot 17:15-18:00 (45s) | 66 words | target 28s
 
 None of what you've just seen existed a few months ago. A generator that produces every screen. A console that declares the rooms. A safe that unseals from an enrolled device. An updates screen that knows what it doesn't know. A visual charter that changes right down to the typeface. This isn't a frozen project — it's a system with a history, and it's still writing one.
 
-## [09] THE MAP OF THE SERIES
-##      narration | slot 12:45-13:45 (60s) | 110 words | target 47s
+## [11] THE MAP OF THE SERIES
+##      narration | slot 18:00-19:00 (60s) | 123 words | target 53s
 
-The rest of the series is organised into four blocks, and you choose your way in.
+The rest of the series is organised into four blocks, and you choose your way in. Every episode runs about twenty minutes: time to show, not just to tell.
 
 Block A is the foundation: the machine, the cluster, the pipeline, and what breaks when one of the three lies.
 
@@ -112,8 +146,8 @@ And block D is the interface itself, from the gauge to the generator.
 
 Inside a block, the order matters. Between blocks, it doesn't: if you came for the backups, you don't have to sit through ten interface episodes first.
 
-## [10] CLOSE
-##      narration | slot 13:45-14:30 (45s) | 98 words | target 42s
+## [12] CLOSE
+##      narration | slot 19:00-20:00 (60s) | 98 words | target 42s
 
 What to take away: Visio Sapiens isn't a dashboard, it's a control center, simple, effective and secure by default. Home Assistant supplies the data, VSSP supplies the interface — on a small number of watched foundations, with a pipeline that lets you roll back.
 
@@ -122,4 +156,4 @@ If you don't know where to start, take D1: we follow a single piece of data, fro
 Subscribe, and tell me in the comments: is your Home Assistant still a stack of cards, or have you started climbing out? See you very soon.
 
 #--------------------------------------------------------------------
-# TOTAL: 1777 words, 12 min 42 s
+# TOTAL: 2238 words, 15 min 59 s

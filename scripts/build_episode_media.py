@@ -63,7 +63,7 @@ L10N = {
         none="La narration remplit chaque créneau.",
         names=["Cold open", "Mon approche", "La complexité de HA", "Ce qu'est Visio Sapiens",
                "Pourquoi pas les cartes natives", "Diagramme d'architecture", "Visite de HOME",
-               "Une note sur les noms", "Montage — ce qui a été livré", "La carte de la série",
+               "La console", "La sécurité par défaut", "Une note sur les noms", "Montage — ce qui a été livré", "La carte de la série",
                "Conclusion"],
     ),
     "en": dict(
@@ -79,7 +79,7 @@ L10N = {
         none="The narration fills every slot.",
         names=["Cold open", "My approach", "HA's complexity", "What Visio Sapiens is",
                "Why not native cards", "Architecture diagram", "HOME tour",
-               "A note on names", "Montage — what has shipped", "The map of the series",
+               "The console", "Secure by default", "A note on names", "Montage — what has shipped", "The map of the series",
                "Close"],
     ),
 }

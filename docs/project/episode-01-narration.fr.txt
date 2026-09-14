@@ -87,20 +87,54 @@ Et maintenant, la partie que je préfère montrer, parce qu'elle rend tout ça c
 
 À gauche, un fichier du dépôt, design_system.yaml : chaque couleur, la police, la taille de chaque catégorie de texte. À droite, l'écran de la console qui l'édite. Je monte la taille des valeurs — et tous les écrans suivent en même temps, parce qu'il n'y a qu'une seule source. Pas dix cartes à retoucher une par une en espérant n'en oublier aucune. Le code et l'interface parlent la même langue — et donc, ils se versionnent comme un vrai projet logiciel.
 
-## [07] UNE NOTE SUR LES NOMS
-##      narration | creneau 11:30-12:15 (45s) | 102 mots | vise 44s
+## [07] LA CONSOLE : DÉCRIRE LA MAISON UNE FOIS
+##      narration | creneau 11:30-14:00 (150s) | 233 mots | vise 100s
+
+Je vous ai dit que l'interface est générée à partir d'une description de la maison. Voici où on l'écrit : la console d'administration.
+
+Neuf écrans, un par décision. Les pièces et les étages. Les appareils que le réseau vient de découvrir. L'affectation de chaque appareil à une pièce. L'agenda Google, la charte graphique, les dashboards eux-mêmes, les mises à jour, et le coffre-fort.
+
+On déclare une pièce, en direct. Une buanderie, au rez-de-chaussée. J'applique.
+
+Ce qui se passe pendant ces quelques secondes, c'est la boucle que je vous ai montrée sur le schéma. Le formulaire envoie ce que j'ai décidé. Un script sauvegarde d'abord l'état actuel — toujours, avant d'écrire quoi que ce soit. Il écrit le modèle, relance le générateur, et rend compte : ce message-là, en haut, c'est lui.
+
+Je reviens sur HOME. La buanderie est dans le rail. Et elle y est sur tous les écrans à la fois — l'énergie, le système, la console — parce que le rail n'est écrit nulle part à la main.
+
+Un détail honnête : l'écran de la pièce elle-même est déclaré dans la configuration de Home Assistant, et Home Assistant ne relit cette configuration qu'au démarrage. Son entrée apparaît tout de suite ; son écran, au prochain redémarrage. Je préfère vous le dire que de le couper au montage.
+
+Et c'est le même geste pour tout le reste. On ne dessine jamais un dashboard. On décide, et la console écrit.
+
+## [08] LA SÉCURITÉ PAR DÉFAUT, CONCRÈTEMENT
+##      narration | creneau 14:00-16:30 (150s) | 265 mots | vise 114s
+
+Au début, je vous ai promis la sécurité par défaut. Une promesse, ça se vérifie — alors voici ce que ça veut dire concrètement, y compris ce qui n'est pas encore fait.
+
+Un : les formulaires de la console n'envoient rien avec un mot de passe. Ils passent par des points d'entrée que Home Assistant n'accepte que depuis le réseau local. Depuis Internet, ils n'existent pas.
+
+Deux : une tablette neuve ne garde aucun identifiant permanent. Les écrans de la console empruntent la session avec laquelle vous vous êtes connecté, un jeton court que Home Assistant renouvelle lui-même. Perdre la tablette, ce n'est pas perdre une clé.
+
+Trois : les secrets vivent dans un coffre-fort, pas dans des fichiers. Home Assistant peut y lire le nom de chaque secret, jamais sa valeur — parce que tout ce que Home Assistant lit finit en clair dans sa base d'historique. Le coffre se referme à chaque redémarrage, et on le rouvre d'une phrase secrète, depuis un appareil qu'on a enrôlé.
+
+Quatre : aucun mot de passe ne passe sur une ligne de commande ni dans un journal — ni celui de la box, ni les clés des assistants.
+
+Et maintenant, ce qui n'est pas fait. Aujourd'hui, sur le réseau local, le mot de passe de Home Assistant voyage encore en clair. Le passage en HTTPS est écrit et documenté ; il n'est pas encore posé. Il a son épisode, dans le bloc A.
+
+C'est ça, pour moi, la sécurité par défaut : pas une liste de promesses, mais une liste de choses qu'on peut vérifier — et, publiée juste à côté, la liste de celles qui manquent.
+
+## [09] UNE NOTE SUR LES NOMS
+##      narration | creneau 16:30-17:15 (45s) | 102 mots | vise 44s
 
 Petite parenthèse avant de conclure, parce que vous allez tomber dessus : le projet s'appelait au départ OSVision, avant de devenir VSSP. En septembre, un grand ménage a retiré l'ancien nom des identifiants, des composants et des feuilles de style — et ce ménage a fait remonter trois vrais bugs, dont un lien mort que personne n'avait vu. Mais il reste des traces : le moteur JavaScript porte encore l'ancien nom, et le panneau K3s de l'écran CORE cherche toujours son fichier sous l'ancien chemin. Un bon projet ne cache pas ces traces, il les documente. Celle-là, on la corrigera en direct dans l'épisode D1.
 
-## [08] MONTAGE RAPIDE — CE QUI A ÉTÉ LIVRÉ
-##      narration | creneau 12:15-12:45 (30s) | 75 mots | vise 32s
+## [10] MONTAGE RAPIDE — CE QUI A ÉTÉ LIVRÉ
+##      narration | creneau 17:15-18:00 (45s) | 75 mots | vise 32s
 
 Tout ce que vous venez de voir n'existait pas il y a quelques mois. Un générateur qui produit chaque écran. Une console qui déclare les pièces. Un coffre-fort qui se descelle depuis un appareil enrôlé. Un écran de mises à jour qui sait ce qu'il ne sait pas. Une charte graphique qui change jusqu'à la police. Ce n'est pas un projet figé — c'est un système qui a une histoire, et qui continue d'en écrire une.
 
-## [09] LA CARTE DE LA SÉRIE
-##      narration | creneau 12:45-13:45 (60s) | 111 mots | vise 48s
+## [11] LA CARTE DE LA SÉRIE
+##      narration | creneau 18:00-19:00 (60s) | 126 mots | vise 54s
 
-La suite de la série est organisée en quatre blocs, et vous choisissez votre porte d'entrée.
+La suite de la série est organisée en quatre blocs, et vous choisissez votre porte d'entrée. Chaque épisode dure une vingtaine de minutes : le temps de montrer, pas seulement de raconter.
 
 Le bloc A, c'est le socle : la machine, le cluster, le pipeline, et ce qui casse quand l'un des trois ment.
 
@@ -112,8 +146,8 @@ Et le bloc D, c'est l'interface elle-même, de la jauge jusqu'au générateur.
 
 À l'intérieur d'un bloc, l'ordre compte. Entre les blocs, non : si vous êtes venu pour les sauvegardes, vous n'avez pas à regarder dix épisodes d'interface d'abord.
 
-## [10] CONCLUSION
-##      narration | creneau 13:45-14:30 (45s) | 94 mots | vise 40s
+## [12] CONCLUSION
+##      narration | creneau 19:00-20:00 (60s) | 94 mots | vise 40s
 
 Ce qu'il faut retenir : Visio Sapiens n'est pas un dashboard, c'est un centre de contrôle, simple, efficace et sécurisé par défaut. Home Assistant fournit la donnée, VSSP fournit l'interface — sur un petit nombre de fondations surveillées, avec un pipeline qui permet de revenir en arrière.
 
@@ -122,4 +156,4 @@ Si vous ne savez pas par où commencer, prenez D1 : on suit une seule donnée, d
 Abonnez-vous, et dites-moi en commentaire : votre Home Assistant, c'est encore un empilement de cartes, ou vous avez commencé à en sortir ? À très vite.
 
 #--------------------------------------------------------------------
-# TOTAL : 1831 mots, 13 min 05 s
+# TOTAL : 2344 mots, 16 min 45 s
