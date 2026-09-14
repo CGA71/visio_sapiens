@@ -1,77 +1,76 @@
 1
-00:00:00,000 --> 00:00:02,571
+00:00:00,000 --> 00:00:02,432
 Ces dashboards, je les trouve magnifiques.
 
 2
-00:00:02,571 --> 00:00:06,429
+00:00:02,432 --> 00:00:06,081
 La communauté Home Assistant produit
 des cartes bluffantes visuellement.
 
 3
-00:00:06,429 --> 00:00:11,143
-Bar Card, une des cartes les
-plus utilisées pour les barres
+00:00:06,081 --> 00:00:10,946
+Bar Card, une des cartes les plus
+utilisées pour les barres d'énergie
 
 4
-00:00:11,143 --> 00:00:13,714
-d'énergie animées, s'est
-retrouvée sans dépôt
+00:00:10,946 --> 00:00:15,405
+animées, a été retirée de HACS
+en juin 2025 : plus maintenue.
 
 5
-00:00:13,714 --> 00:00:17,571
-disponible dans HACS en 2025 —
-plus de mainteneur officiel.
+00:00:15,405 --> 00:00:20,270
+Tous ceux qui l'utilisaient ont reçu le
+même avertissement : allez la supprimer.
 
 6
-00:00:17,571 --> 00:00:21,429
-Résultat : des milliers de
-dashboards avec une carte rouge,
+00:00:20,270 --> 00:00:24,324
+Elle marche encore — mais
+le jour où une mise à
 
 7
-00:00:21,429 --> 00:00:24,857
-cassée, du jour au lendemain,
-sans prévenir personne.
+00:00:24,324 --> 00:00:27,162
+jour la casse, personne ne la réparera.
 
 8
-00:00:24,857 --> 00:00:28,286
+00:00:27,162 --> 00:00:30,405
 'Beau' et 'maintenu', ce
 sont deux choses différentes.
 
 9
-00:00:28,286 --> 00:00:33,429
+00:00:30,405 --> 00:00:35,270
 Et il y a un deuxième problème,
 plus grave encore : ce tableau
 
 10
-00:00:33,429 --> 00:00:38,143
+00:00:35,270 --> 00:00:39,730
 de bord, si vous voulez y
 accéder depuis votre téléphone en
 
 11
-00:00:38,143 --> 00:00:42,429
+00:00:39,730 --> 00:00:43,784
 dehors de chez vous, il doit
 être exposé sur Internet.
 
 12
-00:00:42,429 --> 00:00:45,857
+00:00:43,784 --> 00:00:47,027
 Et ce n'est pas juste des cartes qu'on
 
 13
-00:00:45,857 --> 00:00:48,429
+00:00:47,027 --> 00:00:49,459
 expose — ce sont vos données personnelles.
 
 14
-00:00:48,429 --> 00:00:52,286
+00:00:49,459 --> 00:00:53,108
 Vos habitudes de présence, vos
 caméras, parfois vos serrures.
 
 15
-00:00:52,286 --> 00:00:56,143
+00:00:53,108 --> 00:00:56,757
 Un dashboard mal sécurisé sur
 une plateforme accessible depuis
 
 16
-00:00:56,143 --> 00:00:59,571
+00:00:56,757 --> 00:01:00,000
 l'extérieur, c'est une porte
 ouverte sur votre maison.
 

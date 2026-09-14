@@ -16,15 +16,15 @@
 
 ## 0. COLD OPEN — THE DOUBLE PROBLEM (0:00 - 1:00)
 
-**Visual:** montage of Reddit/HACS screenshots — gorgeous community dashboards, animations, custom gauges. No camera, screens only.
+**Visual:** the animated power meter posted by seanblanchfield on the Home Assistant forum ("Dashboard real-time power meter with device-level detail", May 2022) — built, as it happens, with Bar Card. No camera, screens only. Credit on screen.
 
 **Voice-over:**
 > "I think these dashboards are beautiful. The Home Assistant community turns out cards that are genuinely stunning to look at."
 
-**Visual (cut):** real capture of the community forum — the "Bar-Card Repo Removed in 2025.6.2" thread — then that same card showing red in a dashboard with "Custom element doesn't exist".
+**Visual (cut):** real capture of the "Bar-Card Repo Removed in 2025.6.2" thread (Home Assistant forum, June 2025): the "Repository removed from HACS" warning posted by the thread's author, then the reply "The bar-card still works". Credit on screen.
 
 **Voice-over:**
-> "Bar Card, one of the most widely used cards for animated energy bars, lost its repository on HACS in 2025 — no official maintainer left. The result: thousands of dashboards with a broken red card, overnight, with no warning to anyone. 'Beautiful' and 'maintained' are two different things."
+> "Bar Card, one of the most widely used cards for animated energy bars, was removed from HACS in June 2025: no longer maintained. Everyone using it got the same warning: go and remove it. It still works — but the day an update breaks it, nobody will fix it. 'Beautiful' and 'maintained' are two different things."
 
 **Visual (cut):** padlock icon in motion design, then a simple diagram — a house, an "Internet" arrow, a red question mark on the arrow.
 
@@ -270,7 +270,8 @@
 - **Through-line of the intro:** double problem (community maintenance giving out + unsecured internet exposure) → the project's answer (simple/effective/secure product + CI/CD restorable in HAOS) → HA's native complexity → simplification.
 - **Captures:** all at **1194 × 834** (11-inch iPad, landscape — the actual wall tablet), Home Assistant's sidebar hidden. Any HOME capture made before 14 September 2026 is stale: the header band, the status row and the device list have changed since.
 - **Architecture diagram:** the diagrams in `Vision.md` (§2, §4, §5) are mermaid; redraw them at recording resolution before shooting.
-- **B-roll:** community dashboards (before/after the break — capture of the "Bar-Card Repo Removed in 2025.6.2" forum thread), internet exposure diagram, native HA interface (complexity), live HOME dashboard, `design_system.yaml` and the GRAPHIC TEMPLATE screen, Git history for the montage.
+- **B-roll:** seanblanchfield's animated power meter and the "Bar-Card Repo Removed in 2025.6.2" thread (Home Assistant forum — see "Chapter 0 montage" below), internet exposure diagram, native HA interface (complexity), live HOME dashboard, `design_system.yaml` and the GRAPHIC TEMPLATE screen, Git history for the montage.
+- **Chapter 0 montage:** rendered on 14 September 2026 (60 s, 1920 × 1080, 30 fps, no sound), timed on the FR subtitles; a version with the FR subtitles burned in serves as a preview. The three captures come from the Home Assistant forum and are **quotations**: keep the on-screen credits, link the threads in the description, and ask seanblanchfield's permission for the GIF before publishing. Kept in `media/pilote/chapitre-00/`, which git ignores: the videos, `pilote_chap00_SOURCES.txt` (running order, sources, credits) and, in `sources/`, the captures and the script that re-renders it.
 - **Do not film:** any live secret → block C, D3, D6. In section 8 the safe shows demo secrets only.
 - **The demo room (section 7):** declare it, apply, film the rail; its own screen only exists once the configuration fragment is merged and Home Assistant restarted — do that off camera if you want to open it. Delete it after the take (ROOMS & FLOORS), or it stays in the rail of every screen.
 - **Cross-references:** CI/CD pipeline → A2; HTTPS → A4; backup and restore → block B; the safe → C1, C2; security review → C3; CORE and the old-path K3s bug → D1; generator → D2; assignment → D4; chatbot → D6; visual charter → D7; the wall tablet → D10.
@@ -284,7 +285,7 @@ Measured against the slots above, at 140 words per minute. The narration-only te
 <!-- TIMING-TABLE -->
 | # | Section | Slot | Narration | Delta |
 |---|---|---|---|---|
-| 0 | Cold open | 60 s | 59 s | −1 s |
+| 0 | Cold open | 60 s | 62 s | +2 s |
 | 1 | My approach | 90 s | 85 s | −5 s |
 | 2 | HA's complexity | 60 s | 34 s | −26 s |
 | 3 | What Visio Sapiens is | 90 s | 82 s | −8 s |
@@ -297,7 +298,7 @@ Measured against the slots above, at 140 words per minute. The narration-only te
 | 10 | Montage — what has shipped | 45 s | 28 s | −17 s |
 | 11 | The map of the series | 60 s | 53 s | −7 s |
 | 12 | Close | 60 s | 42 s | −18 s |
-| | **Total** | **20:00** | **15:59** | **−241 s** |
+| | **Total** | **20:00** | **16:03** | **−237 s** |
 
 Sections deliberately short, where the picture carries the time: 2, 5, 6, 7, 8, 10, 12. Everywhere else the narration fills its slot.
 <!-- /TIMING-TABLE -->
@@ -310,6 +311,7 @@ The script of 10 September had been written against a project that had already m
 
 | Section | Before | Now | Why |
 |---|---|---|---|
+| 0 | "thousands of dashboards with a broken red card, overnight" | HACS's real warning, and a card that still works with no maintainer | the thread the script cites shows the "Repository removed from HACS" warning and a reply "The bar-card still works" — no red card. The "beautiful ≠ maintained" point holds without the exaggeration |
 | Whole script | pointers to "episode 2, 3, 6, 9, 12" | block codes (A2, D1, D2, D6, C4…) | the series was regrouped into four blocks on 12 September; the old numbers no longer exist |
 | 4 | "no dependency on a community maintainer", "no more card-mod patches", exceptions `weather-forecast` · `logbook` · `apexcharts-card` | three named foundations (button-card, card-mod, layout-card), specialised cards, one card-mod patch owned up to | the templates hold 173 `custom:button-card`, 10 `grid-layout` and 95 `card_mod` blocks; `weather-forecast` is used nowhere (the weather goes through `dynamic-weather-card` and `simple-weather-card`). The old wording was false for anyone who opens the repository |
 | 5 | "CORE / Room Engine / AI Layer / Animation / CSS / JS / Theme Engine" diagram | `Vision.md`'s system overview (§2), generation chain (§4), console loop (§5) | `Vision.md` was rewritten on 9 September; the old diagram is no longer in it |

@@ -1,73 +1,73 @@
 1
-00:00:00,000 --> 00:00:02,571
+00:00:00,000 --> 00:00:02,483
 I think these dashboards are beautiful.
 
 2
-00:00:02,571 --> 00:00:05,571
+00:00:02,483 --> 00:00:05,379
 The Home Assistant
 community turns out cards
 
 3
-00:00:05,571 --> 00:00:08,571
+00:00:05,379 --> 00:00:08,276
 that are genuinely stunning to look at.
 
 4
-00:00:08,571 --> 00:00:14,143
+00:00:08,276 --> 00:00:13,655
 Bar Card, one of the most widely
 used cards for animated energy bars,
 
 5
-00:00:14,143 --> 00:00:18,857
-lost its repository on HACS in
-2025 — no official maintainer left.
+00:00:13,655 --> 00:00:17,793
+was removed from HACS in June
+2025: no longer maintained.
 
 6
-00:00:18,857 --> 00:00:22,714
-The result: thousands of
-dashboards with a broken red
+00:00:17,793 --> 00:00:22,345
+Everyone using it got the same
+warning: go and remove it.
 
 7
-00:00:22,714 --> 00:00:25,714
-card, overnight, with
-no warning to anyone.
+00:00:22,345 --> 00:00:28,138
+It still works — but the day an
+update breaks it, nobody will fix it.
 
 8
-00:00:25,714 --> 00:00:28,714
+00:00:28,138 --> 00:00:31,034
 'Beautiful' and 'maintained'
 are two different things.
 
 9
-00:00:28,714 --> 00:00:33,857
+00:00:31,034 --> 00:00:36,000
 And there's a second problem,
 and this one is more serious: if
 
 10
-00:00:33,857 --> 00:00:38,571
+00:00:36,000 --> 00:00:40,552
 you want to reach that dashboard
 from your phone when you're
 
 11
-00:00:38,571 --> 00:00:43,286
+00:00:40,552 --> 00:00:45,103
 away from home, it has to
 be exposed to the internet.
 
 12
-00:00:43,286 --> 00:00:48,000
+00:00:45,103 --> 00:00:49,655
 And it isn't just cards you're
 exposing — it's your personal data.
 
 13
-00:00:48,000 --> 00:00:51,429
+00:00:49,655 --> 00:00:52,966
 Your presence patterns, your
 cameras, sometimes your locks.
 
 14
-00:00:51,429 --> 00:00:54,857
+00:00:52,966 --> 00:00:56,276
 A poorly secured dashboard
 on a platform reachable
 
 15
-00:00:54,857 --> 00:00:58,714
+00:00:56,276 --> 00:01:00,000
 from outside is an open
 door into your house.
 

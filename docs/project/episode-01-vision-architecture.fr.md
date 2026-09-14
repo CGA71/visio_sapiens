@@ -16,15 +16,15 @@
 
 ## 0. COLD OPEN — LE DOUBLE PROBLÈME (0:00 - 1:00)
 
-**Visuel :** montage de captures Reddit/HACS — dashboards communautaires magnifiques, animations, gauges custom. Aucune caméra, uniquement des écrans.
+**Visuel :** le compteur de puissance animé publié par seanblanchfield sur le forum Home Assistant (« Dashboard real-time power meter with device-level detail », mai 2022) — construit, justement, avec Bar Card. Aucune caméra, uniquement des écrans. Crédit à l'écran.
 
 **Voix off :**
 > "Ces dashboards, je les trouve magnifiques. La communauté Home Assistant produit des cartes bluffantes visuellement."
 
-**Visuel (cut) :** capture réelle du forum communautaire — le fil "Bar-Card Repo Removed in 2025.6.2" — puis la même carte affichée en rouge dans un dashboard avec "Custom element doesn't exist".
+**Visuel (cut) :** capture réelle du fil "Bar-Card Repo Removed in 2025.6.2" (forum Home Assistant, juin 2025) : l'avertissement "Repository removed from HACS" publié par l'auteur du fil, puis la réponse "The bar-card still works". Crédit à l'écran.
 
 **Voix off :**
-> "Bar Card, une des cartes les plus utilisées pour les barres d'énergie animées, s'est retrouvée sans dépôt disponible dans HACS en 2025 — plus de mainteneur officiel. Résultat : des milliers de dashboards avec une carte rouge, cassée, du jour au lendemain, sans prévenir personne. 'Beau' et 'maintenu', ce sont deux choses différentes."
+> "Bar Card, une des cartes les plus utilisées pour les barres d'énergie animées, a été retirée de HACS en juin 2025 : plus maintenue. Tous ceux qui l'utilisaient ont reçu le même avertissement : allez la supprimer. Elle marche encore — mais le jour où une mise à jour la casse, personne ne la réparera. 'Beau' et 'maintenu', ce sont deux choses différentes."
 
 **Visuel (cut) :** icône de cadenas en motion design, puis schéma simple — une maison, une flèche "Internet", un point d'interrogation rouge sur la flèche.
 
@@ -270,7 +270,8 @@
 - **Fil rouge de l'intro :** double problème (maintenance communautaire qui lâche + exposition Internet non sécurisée) → réponse du projet (produit simple/efficace/sécurisé + CI/CD restaurable en HAOS) → complexité native de HA → simplification.
 - **Captures :** toutes à **1194 × 834** (iPad 11 pouces, paysage — la tablette murale réelle), barre latérale de Home Assistant masquée. Toute capture de HOME faite avant le 14 septembre 2026 est périmée : le bandeau, la rangée d'état et la liste des appareils ont changé depuis.
 - **Diagramme d'architecture :** les diagrammes de `Vision.md` (§2, §4, §5) sont en mermaid ; les redessiner à la résolution d'enregistrement avant tournage.
-- **B-roll :** dashboards communautaires (avant/après cassure — capture du fil forum "Bar-Card Repo Removed in 2025.6.2"), schéma exposition Internet, interface HA native (complexité), dashboard HOME en direct, `design_system.yaml` et l'écran TEMPLATE GRAPHIQUE, historique Git pour le montage.
+- **B-roll :** le compteur de puissance animé de seanblanchfield et le fil "Bar-Card Repo Removed in 2025.6.2" (forum Home Assistant — voir « Montage du chapitre 0 » ci-dessous), schéma exposition Internet, interface HA native (complexité), dashboard HOME en direct, `design_system.yaml` et l'écran TEMPLATE GRAPHIQUE, historique Git pour le montage.
+- **Montage du chapitre 0 :** rendu le 14 septembre 2026 (60 s, 1920 × 1080, 30 i/s, sans son), calé sur les sous-titres FR ; une version avec les sous-titres FR incrustés sert d'aperçu. Les trois captures viennent du forum Home Assistant et sont des **citations** : garder les crédits à l'écran, lier les fils en description, et, pour le GIF de seanblanchfield, lui demander l'accord avant publication. Rangé dans `media/pilote/chapitre-00/`, que git ignore : les vidéos, `pilote_chap00_SOURCES.txt` (déroulé, sources, crédits) et, dans `sources/`, les captures et le script qui refait le rendu.
 - **Ne pas filmer :** tout secret en direct → bloc C, D3, D6. En section 8, le coffre-fort ne montre que des secrets de démonstration.
 - **La pièce de démonstration (section 7) :** la déclarer, appliquer, filmer le rail ; son propre écran n'existe qu'après intégration du fragment de configuration et redémarrage de Home Assistant — le faire hors caméra si on veut l'ouvrir. La supprimer après la prise (PIÈCES & ÉTAGES), sinon elle reste dans le rail de chaque écran.
 - **Renvois croisés :** pipeline CI/CD → A2 ; HTTPS → A4 ; sauvegarde et restauration → bloc B ; coffre-fort → C1, C2 ; revue de sécurité → C3 ; CORE et le bug K3s de l'ancien chemin → D1 ; générateur → D2 ; assignation → D4 ; chatbot → D6 ; charte graphique → D7 ; la tablette murale → D10.
@@ -284,7 +285,7 @@ Mesuré contre les créneaux ci-dessus, à 140 mots par minute. La narration seu
 <!-- TIMING-TABLE -->
 | # | Section | Créneau | Narration | Écart |
 |---|---|---|---|---|
-| 0 | Cold open | 60 s | 60 s | ±0 s |
+| 0 | Cold open | 60 s | 63 s | +3 s |
 | 1 | Mon approche | 90 s | 87 s | −3 s |
 | 2 | La complexité de HA | 60 s | 37 s | −23 s |
 | 3 | Ce qu'est Visio Sapiens | 90 s | 86 s | −4 s |
@@ -297,7 +298,7 @@ Mesuré contre les créneaux ci-dessus, à 140 mots par minute. La narration seu
 | 10 | Montage — ce qui a été livré | 45 s | 32 s | −13 s |
 | 11 | La carte de la série | 60 s | 54 s | −6 s |
 | 12 | Conclusion | 60 s | 40 s | −20 s |
-| | **Total** | **20:00** | **16:45** | **−195 s** |
+| | **Total** | **20:00** | **16:48** | **−192 s** |
 
 Sections volontairement courtes, où l'image porte le temps : 2, 5, 6, 7, 8, 12. Partout ailleurs, la narration remplit son créneau.
 <!-- /TIMING-TABLE -->
@@ -310,6 +311,7 @@ Le script du 10 septembre avait été écrit contre un projet qui avait déjà b
 
 | Section | Avant | Maintenant | Pourquoi |
 |---|---|---|---|
+| 0 | « des milliers de dashboards avec une carte rouge, cassée, du jour au lendemain » | l'avertissement réel de HACS, et une carte qui marche encore sans mainteneur | le fil que cite le script montre l'avertissement « Repository removed from HACS » et une réponse « The bar-card still works » — aucune carte rouge. L'argument « beau ≠ maintenu » tient sans l'exagération |
 | Tout le script | renvois « épisode 2, 3, 6, 9, 12 » | codes de bloc (A2, D1, D2, D6, C4…) | la série a été regroupée en quatre blocs le 12 septembre ; les anciens numéros n'existent plus |
 | 4 | « aucune dépendance à un mainteneur communautaire », « plus de rustine card-mod », exceptions `weather-forecast` · `logbook` · `apexcharts-card` | trois fondations nommées (button-card, card-mod, layout-card), cartes spécialisées, une rustine card-mod assumée | les gabarits comptent 173 `custom:button-card`, 10 `grid-layout` et 95 blocs `card_mod` ; `weather-forecast` n'est utilisée nulle part (la météo passe par `dynamic-weather-card` et `simple-weather-card`). L'ancienne formulation était fausse pour quiconque ouvre le dépôt |
 | 5 | diagramme « CORE / Room Engine / IA Layer / Animation / CSS / JS / Theme Engine » | la vue d'ensemble de `Vision.md` (§2), la chaîne de génération (§4), la boucle de la console (§5) | `Vision.md` a été réécrit le 9 septembre ; l'ancien diagramme n'y figure plus |

@@ -5,11 +5,11 @@
 #--------------------------------------------------------------------
 
 ## [00] COLD OPEN — LE DOUBLE PROBLÈME
-##      narration | creneau 0:00-1:00 (60s) | 139 mots | vise 60s
+##      narration | creneau 0:00-1:00 (60s) | 148 mots | vise 63s
 
 Ces dashboards, je les trouve magnifiques. La communauté Home Assistant produit des cartes bluffantes visuellement.
 
-Bar Card, une des cartes les plus utilisées pour les barres d'énergie animées, s'est retrouvée sans dépôt disponible dans HACS en 2025 — plus de mainteneur officiel. Résultat : des milliers de dashboards avec une carte rouge, cassée, du jour au lendemain, sans prévenir personne. 'Beau' et 'maintenu', ce sont deux choses différentes.
+Bar Card, une des cartes les plus utilisées pour les barres d'énergie animées, a été retirée de HACS en juin 2025 : plus maintenue. Tous ceux qui l'utilisaient ont reçu le même avertissement : allez la supprimer. Elle marche encore — mais le jour où une mise à jour la casse, personne ne la réparera. 'Beau' et 'maintenu', ce sont deux choses différentes.
 
 Et il y a un deuxième problème, plus grave encore : ce tableau de bord, si vous voulez y accéder depuis votre téléphone en dehors de chez vous, il doit être exposé sur Internet. Et ce n'est pas juste des cartes qu'on expose — ce sont vos données personnelles. Vos habitudes de présence, vos caméras, parfois vos serrures. Un dashboard mal sécurisé sur une plateforme accessible depuis l'extérieur, c'est une porte ouverte sur votre maison.
 
@@ -156,4 +156,4 @@ Si vous ne savez pas par où commencer, prenez D1 : on suit une seule donnée, d
 Abonnez-vous, et dites-moi en commentaire : votre Home Assistant, c'est encore un empilement de cartes, ou vous avez commencé à en sortir ? À très vite.
 
 #--------------------------------------------------------------------
-# TOTAL : 2344 mots, 16 min 45 s
+# TOTAL : 2353 mots, 16 min 48 s

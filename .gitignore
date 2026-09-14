@@ -37,3 +37,6 @@ __pycache__/
 # FR | Genere par generate_dashboards.py, y compris sur un --dry-run.
 # FR | Le build rend sa propre copie dans dist/ - le depot n en porte jamais.
 home-assistant/config-fragment-rooms.yaml
+
+# Rendered videos and their third-party source captures (see docs/project/episode-01-*.md)
+media/
