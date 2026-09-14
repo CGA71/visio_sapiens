@@ -241,10 +241,16 @@ views:
       # EN | there (as it just did when the DISCOVERY SCAN button was added
       # EN | to this screen). 1fr makes the row — and everything stretched
       # EN | to fill it below — consume exactly what's left of the
-      # EN | viewport, no matter what sits above. Screens without a
-      # EN | fill-the-rest iframe (energy, dashboards) keep auto:
-      # EN | their content should size to itself and let the page scroll,
-      # EN | not stretch to the window.
+      # EN | viewport, no matter what sits above.
+      # EN | And 1fr on EVERY screen, not only those: the nav rail spans
+      # EN | both rows, and with `auto auto` a body shorter than the rail
+      # EN | made the grid spread the rail's height over BOTH rows. ENERGY
+      # EN | DEVICES (one short card) got a 246px header band instead of
+      # EN | the 76px every other screen has. 1fr hands that extra height
+      # EN | to the body row alone. It stretches nothing visible: a
+      # EN | vertical-stack keeps its cards at their own height, and a long
+      # EN | body (dashboards, updates) still sizes the row to itself and
+      # EN | lets the page scroll, since 1fr never goes below its content.
       # FR | 1fr, pas auto, pour les ecrans qui se terminent par une iframe
       # FR | pleine hauteur (rooms, assign, theme) : auto dimensionne la ligne
       # FR | a la hauteur naturelle de son contenu, ce qui est precisement ce
@@ -255,11 +261,19 @@ views:
       # FR | de se produire avec l'ajout du bouton DISCOVERY SCAN sur cet
       # FR | ecran). 1fr fait que la ligne — et tout ce qui s'y etire en
       # FR | dessous — consomme exactement ce qu'il reste du viewport, quoi
-      # FR | qu'il y ait au-dessus. Les ecrans sans iframe a etirer
-      # FR | (energy, dashboards) gardent auto : leur contenu doit se
-      # FR | dimensionner a lui-meme et laisser la page defiler, pas
-      # FR | s'etirer jusqu'a la fenetre.
-      grid-template-rows: auto {{ '1fr' if screen in ['rooms', 'devices', 'assign', 'theme', 'calendar', 'vault'] else 'auto' }}
+      # FR | qu'il y ait au-dessus.
+      # FR | Et 1fr sur TOUS les ecrans, pas seulement ceux-la : le
+      # FR | bandeau de nav couvre les deux lignes, et avec `auto auto` un
+      # FR | corps plus court que le bandeau faisait repartir sa hauteur
+      # FR | sur les DEUX lignes. APPAREILS ENERGIE (une seule carte
+      # FR | courte) avait un bandeau d'en-tete de 246px au lieu des 76px
+      # FR | de tous les autres ecrans. 1fr donne ce surplus a la seule
+      # FR | ligne du corps. Rien de visible ne s'etire : un vertical-stack
+      # FR | garde ses cartes a leur propre hauteur, et un corps long
+      # FR | (dashboards, updates) dimensionne toujours la ligne a
+      # FR | lui-meme et laisse la page defiler, 1fr ne descendant jamais
+      # FR | sous son contenu.
+      grid-template-rows: auto 1fr
       grid-template-areas: |
         "nav header header header"
         "nav body body body"
