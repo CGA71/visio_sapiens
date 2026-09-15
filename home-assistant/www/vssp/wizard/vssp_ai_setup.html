@@ -1,0 +1,656 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Visio Sapiens — AI setup</title>
+<!--
+  EN | Served as /local/vssp/wizard/vssp_ai_setup.html, inside a browser_mod
+  EN | popup. Two ways in: vssp.js opens it the moment the chatbot provider
+  EN | is changed on ADMIN > DASHBOARDS (?provider= the new choice), and the
+  EN | "Set up the AI" button there opens it for the current choice (no
+  EN | ?provider=, the page reads input_select.vssp_chatbot_provider itself).
+  EN |
+  EN | WHAT IT DOES — the guided setup of the provider through Home
+  EN | Assistant's OWN integration (Anthropic, Google Gemini, OpenAI,
+  EN | Ollama): the API key is typed into Home Assistant's native form, never
+  EN | here. Each step has a button that opens the right Home Assistant
+  EN | screen, and a live check read from the parent page's `hass` (config
+  EN | entries, entity registry, Assist pipelines — read-only calls, the
+  EN | same session the tablet already has). Nothing on this page writes.
+  EN |
+  EN | Once the integration is there, the Visio Sapiens chatbot and the CORE
+  EN | SCAN go through its agent (packages/vssp_chatbot.yaml,
+  EN | packages/vssp_core.yaml).
+  FR | Servi comme /local/vssp/wizard/vssp_ai_setup.html, dans un popup
+  FR | browser_mod. Deux entrees : vssp.js l'ouvre des que le fournisseur du
+  FR | chatbot change sur ADMIN > DASHBOARDS (?provider= le nouveau choix), et
+  FR | le bouton « Configurer l'IA » de cet ecran l'ouvre pour le choix
+  FR | courant (sans ?provider=, la page lit elle-meme
+  FR | input_select.vssp_chatbot_provider).
+  FR |
+  FR | CE QU'ELLE FAIT — la configuration guidee du fournisseur par
+  FR | l'integration PROPRE de Home Assistant (Anthropic, Google Gemini,
+  FR | OpenAI, Ollama) : la cle API se saisit dans le formulaire natif de Home
+  FR | Assistant, jamais ici. Chaque etape a un bouton qui ouvre le bon ecran,
+  FR | et une verification en direct lue sur le `hass` de la page parente
+  FR | (entrees de configuration, registre des entites, pipelines Assist —
+  FR | appels en lecture seule, la session que la tablette a deja). Rien sur
+  FR | cette page n'ecrit.
+  FR |
+  FR | Une fois l'integration en place, le chatbot Visio Sapiens et le SCAN
+  FR | de CORE passent par son agent (packages/vssp_chatbot.yaml,
+  FR | packages/vssp_core.yaml).
+-->
+<style>
+  :root {
+    --bg: #050b12;
+    --panel: rgba(8,18,28,0.75);
+    --line: rgba(0,229,255,0.28);
+    --line-soft: rgba(0,229,255,0.12);
+    --cyan: #00E5FF;
+    --green: #00FFC3;
+    --amber: #FFB84D;
+    --red: #FF4D6D;
+    --text: #DCEEF6;
+    --muted: #8FB6C9;
+    --dim: #56707E;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    background: var(--bg);
+    color: var(--text);
+    font-family: -apple-system, Roboto, "Helvetica Neue", sans-serif;
+    font-size: 13px;
+    line-height: 1.45;
+  }
+  body { padding: 0 16px 18px; }
+  a { color: var(--cyan); }
+  code {
+    font-family: ui-monospace, Menlo, Consolas, monospace; font-size: 12px;
+    background: rgba(0,229,255,0.08); border-radius: 4px; padding: 1px 4px;
+  }
+  .header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 14px 0 12px; border-bottom: 1px solid var(--line-soft);
+  }
+  .logo {
+    width: 40px; height: 40px; flex: none; border-radius: 10px;
+    display: grid; place-items: center; background: rgba(255,255,255,0.06);
+    border: 1px solid var(--line-soft);
+  }
+  .logo img, .logo svg { width: 26px; height: 26px; }
+  h1 {
+    font-family: Orbitron, sans-serif; font-size: 14px; letter-spacing: 2px;
+    color: var(--cyan); margin: 0; text-transform: uppercase;
+  }
+  .sub { color: var(--muted); font-size: 11px; margin-top: 2px; }
+
+  .box {
+    margin-top: 12px; padding: 10px 12px; border-radius: 12px;
+    background: var(--panel); border: 1px solid var(--line-soft);
+  }
+  .box h2 {
+    margin: 0 0 6px; font-size: 10px; letter-spacing: 1.5px; font-weight: 700;
+    color: var(--muted); text-transform: uppercase;
+  }
+  .status-grid { display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-size: 12px; }
+  .status-grid .k { color: var(--muted); }
+  .status-grid .v { word-break: break-word; }
+  .ok { color: var(--green); }
+  .warn { color: var(--amber); }
+  .bad { color: var(--red); }
+  .muted { color: var(--dim); }
+
+  ol.steps { list-style: none; margin: 12px 0 0; padding: 0; display: flex; flex-direction: column; gap: 10px; }
+  .step {
+    display: grid; grid-template-columns: 30px 1fr; gap: 10px;
+    padding: 12px; border-radius: 12px;
+    background: var(--panel); border: 1px solid var(--line-soft);
+  }
+  .step.done { border-color: rgba(0,255,195,0.35); }
+  .num {
+    width: 28px; height: 28px; border-radius: 50%; display: grid; place-items: center;
+    font-weight: 700; color: var(--cyan); border: 1px solid var(--line);
+  }
+  .step.done .num { background: rgba(0,255,195,0.14); color: var(--green); border-color: rgba(0,255,195,0.5); }
+  .step-head { display: flex; align-items: baseline; justify-content: space-between; gap: 8px; flex-wrap: wrap; }
+  .step h3 { margin: 0; font-size: 13px; }
+  .where { color: var(--dim); font-size: 11px; margin-top: 1px; }
+  .badge {
+    font-size: 10px; letter-spacing: .5px; padding: 2px 8px; border-radius: 999px;
+    border: 1px solid var(--line-soft); color: var(--muted); white-space: nowrap;
+  }
+  .badge.ok { border-color: rgba(0,255,195,0.45); color: var(--green); }
+  .badge.warn { border-color: rgba(255,184,77,0.5); color: var(--amber); }
+  .step ol { margin: 8px 0 0; padding-left: 18px; }
+  .step li + li { margin-top: 3px; }
+  .actions { margin-top: 10px; display: flex; gap: 8px; flex-wrap: wrap; }
+  .btn {
+    display: inline-flex; align-items: center; gap: 6px;
+    background: var(--cyan); color: #06121A; border: none; border-radius: 10px;
+    padding: 8px 14px; font-weight: 700; letter-spacing: .4px; cursor: pointer;
+    font-size: 11px; text-transform: uppercase; text-decoration: none;
+  }
+  .btn.ghost { background: transparent; color: var(--cyan); border: 1px solid var(--line); }
+  .note { margin-top: 12px; color: var(--muted); font-size: 12px; }
+  .note p { margin: 0; }
+  .note p + p { margin-top: 6px; }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="logo" id="logo"></div>
+  <div>
+    <h1 id="title"></h1>
+    <div class="sub" id="subtitle"></div>
+  </div>
+</div>
+
+<div class="box" id="statusBox">
+  <h2 id="statusTitle"></h2>
+  <div class="status-grid" id="status"></div>
+</div>
+
+<div class="box">
+  <h2 id="prereqTitle"></h2>
+  <div id="prereq"></div>
+</div>
+
+<ol class="steps" id="steps"></ol>
+
+<div class="box" id="altBox" hidden>
+  <h2 id="altTitle"></h2>
+  <div id="altText"></div>
+  <div class="actions"><button class="btn ghost" type="button" id="altBtn"></button></div>
+</div>
+
+<div class="note" id="note"></div>
+
+<script>
+'use strict';
+const params = new URLSearchParams(location.search);
+const LANG = (params.get('lang') || 'en').slice(0, 2).toLowerCase() === 'fr' ? 'fr' : 'en';
+document.documentElement.lang = LANG;
+
+const PROVIDER_ENTITY = 'input_select.vssp_chatbot_provider';
+const CUSTOM_ENDPOINT = 'input_text.vssp_chatbot_custom_endpoint';
+
+// EN | Interface strings. The step texts, per provider, are in PROVIDERS.
+// FR | Chaines de l'interface. Les textes des etapes, par fournisseur, sont dans PROVIDERS.
+const UI = {
+  en: {
+    title: '{name} setup',
+    subtitle: "Through Home Assistant's official {integration} integration",
+    status: 'Live status',
+    prereq: 'Before you start',
+    st_integration: 'Integration',
+    st_agent: 'Conversation agent',
+    st_model: 'Model',
+    st_default: 'Default Assist agent',
+    st_chatbot: 'Visio Sapiens chatbot',
+    installed: 'installed',
+    missing: 'not installed',
+    not_running: 'installed, not running ({state}) — check the key and the account credit',
+    yes: 'yes',
+    no: 'no — Assist uses {engine}',
+    none: '—',
+    via_agent: 'answers through {agent}',
+    via_form: 'answers through the form endpoint ({url})',
+    via_key: 'no integration yet — falls back to a key saved in Visio Sapiens, if any',
+    done: 'Done',
+    todo: 'To do',
+    optional: 'Optional',
+    btn_add: 'Add the {integration} integration',
+    btn_open: 'Open the integration',
+    btn_assist: 'Open Voice assistants',
+    no_hass: 'Open this page from Home Assistant to see the live status.',
+    not_admin: 'An administrator account is needed to read the status.',
+    note_agent: "As soon as the integration is installed, the Visio Sapiens chatbot (HOME bar and full conversation) and the CORE SCAN go through its agent: the key stays in Home Assistant and is never typed again here.",
+    note_default: 'Step 4 only concerns Assist (voice, mobile app): the Visio Sapiens chatbot calls this agent directly.',
+    note_custom: 'If the "other server" form below is filled in, it takes precedence over Ollama for the Visio Sapiens chatbot.',
+  },
+  fr: {
+    title: 'Configuration de {name}',
+    subtitle: "Par l'intégration officielle {integration} de Home Assistant",
+    status: 'État en direct',
+    prereq: 'Prérequis',
+    st_integration: 'Intégration',
+    st_agent: 'Agent de conversation',
+    st_model: 'Modèle',
+    st_default: "Agent par défaut d'Assist",
+    st_chatbot: 'Chatbot Visio Sapiens',
+    installed: 'installée',
+    missing: 'non installée',
+    not_running: 'installée, ne démarre pas ({state}) — vérifiez la clé et le crédit du compte',
+    yes: 'oui',
+    no: 'non — Assist utilise {engine}',
+    none: '—',
+    via_agent: 'répond par {agent}',
+    via_form: 'répond par le point d’accès du formulaire ({url})',
+    via_key: "pas encore d'intégration — se rabat sur une clé saisie dans Visio Sapiens, s'il y en a une",
+    done: 'Fait',
+    todo: 'À faire',
+    optional: 'Facultatif',
+    btn_add: "Ajouter l'intégration {integration}",
+    btn_open: "Ouvrir l'intégration",
+    btn_assist: 'Ouvrir Assistants vocaux',
+    no_hass: "Ouvrez cette page depuis Home Assistant pour voir l'état en direct.",
+    not_admin: "Un compte administrateur est nécessaire pour lire l'état.",
+    note_agent: "Dès que l'intégration est installée, le chatbot Visio Sapiens (barre HOME et conversation complète) et le SCAN de CORE passent par son agent : la clé reste dans Home Assistant et ne se ressaisit jamais ici.",
+    note_default: "L'étape 4 ne concerne qu'Assist (voix, application mobile) : le chatbot Visio Sapiens appelle cet agent directement.",
+    note_custom: "Si le formulaire « autre serveur » ci-dessous est rempli, il passe avant Ollama pour le chatbot Visio Sapiens.",
+  },
+};
+
+// EN | Home Assistant's own labels are quoted exactly as its French and
+// EN | English translations print them (read from frontend/get_translations
+// EN | on 2026.8), so the words in a step are the words on the screen.
+// FR | Les libelles de Home Assistant sont cites exactement comme ses
+// FR | traductions francaise et anglaise les affichent (lus dans
+// FR | frontend/get_translations sur 2026.8) : les mots d'une etape sont
+// FR | ceux de l'ecran.
+const PROVIDERS = {
+  claude: {
+    name: 'Claude', integration: 'Anthropic', domain: 'anthropic',
+    logo: '../images/providers/claude.svg',
+    site: 'https://console.anthropic.com/settings/keys',
+    en: {
+      prereq: 'An account on <a href="https://console.anthropic.com" target="_blank" rel="noopener noreferrer">console.anthropic.com</a> with API credits. A Claude Pro subscription does not include API access.',
+      steps: [
+        { t: 'Generate an Anthropic API key', where: 'console.anthropic.com', btn: 'site', btnLabel: 'Open the Anthropic Console', items: [
+          'Sign in to the <b>Anthropic Console</b>.',
+          'Go to <b>API Keys</b> and click <b>Create Key</b>.',
+          'Copy the key (<code>sk-ant-…</code>) and keep it: it is shown only once.' ] },
+        { t: 'Add the Anthropic integration', where: 'Settings › Devices & services', btn: 'add', items: [
+          'In Home Assistant, go to <b>Settings › Devices &amp; services</b>.',
+          'Click <b>Add integration</b>.',
+          'Search for <b>Anthropic</b> and select it.',
+          'Paste your API key.' ] },
+        { t: 'Configure the Claude model', where: 'Integration options', btn: 'open', items: [
+          'On the Anthropic integration page, click the gear ⚙ of the <b>Conversation agent</b>.',
+          'Untick <b>Recommended model settings</b> to choose the model: <b>Claude Haiku 4.5</b> for speed and lower cost, <b>Claude Sonnet 5</b> for finer understanding. (The Claude 3.5 models are retired.)',
+          'Under <b>Control Home Assistant</b>, tick <b>Assist</b> if you want Claude to control your devices.' ] },
+        { t: 'Make Claude the default agent', where: 'Settings › Voice assistants', btn: 'assist', optional: true, items: [
+          'Go to <b>Settings › Voice assistants</b>.',
+          'Select your main assistant.',
+          'Set the <b>Conversation agent</b> field to <b>Claude conversation</b>.' ] },
+      ],
+    },
+    fr: {
+      prereq: 'Un compte sur <a href="https://console.anthropic.com" target="_blank" rel="noopener noreferrer">console.anthropic.com</a> avec des crédits API configurés. L’abonnement Claude Pro classique ne fournit pas d’accès API.',
+      steps: [
+        { t: 'Générer une clé API Anthropic', where: 'console.anthropic.com', btn: 'site', btnLabel: 'Ouvrir la console Anthropic', items: [
+          'Connectez-vous à la <b>Anthropic Console</b>.',
+          'Allez dans la section <b>API Keys</b> et cliquez sur <b>Create Key</b>.',
+          'Copiez la clé (<code>sk-ant-…</code>) et enregistrez-la : elle ne s’affiche qu’une fois.' ] },
+        { t: 'Ajouter l’intégration Anthropic', where: 'Paramètres › Appareils et services', btn: 'add', items: [
+          'Dans Home Assistant, allez dans <b>Paramètres › Appareils et services</b>.',
+          'Cliquez sur <b>Ajouter une intégration</b>.',
+          'Recherchez <b>Anthropic</b> et sélectionnez-la.',
+          'Collez votre clé API.' ] },
+        { t: 'Configurer le modèle Claude', where: 'Options de l’intégration', btn: 'open', items: [
+          'Sur la page de l’intégration Anthropic, cliquez sur la roue dentée ⚙ de l’<b>Agent de conversation</b>.',
+          'Décochez <b>Paramètres recommandés pour le modèle</b> pour choisir le modèle : <b>Claude Haiku 4.5</b> pour la rapidité et le coût réduit, <b>Claude Sonnet 5</b> pour une compréhension plus fine. (Les modèles Claude 3.5 sont retirés.)',
+          'Sous <b>Contrôler Home Assistant</b>, cochez <b>Assist</b> si vous voulez que Claude puisse piloter vos appareils.' ] },
+        { t: 'Définir Claude comme agent par défaut', where: 'Paramètres › Assistants vocaux', btn: 'assist', optional: true, items: [
+          'Allez dans <b>Paramètres › Assistants vocaux</b>.',
+          'Sélectionnez votre assistant principal.',
+          'Changez le champ <b>Agent de conversation</b> pour choisir <b>Claude conversation</b>.' ] },
+      ],
+    },
+  },
+
+  gemini: {
+    name: 'Gemini', integration: 'Google Gemini', domain: 'google_generative_ai_conversation',
+    logo: '../images/providers/gemini.svg',
+    site: 'https://aistudio.google.com/app/apikey',
+    en: {
+      prereq: 'A Google account and an API key from <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">Google AI Studio</a>. The free tier has limited quotas; enable billing on the key’s Google Cloud project for more. A Gemini (Google AI) subscription does not replace an API key.',
+      steps: [
+        { t: 'Generate a Gemini API key', where: 'aistudio.google.com', btn: 'site', btnLabel: 'Open Google AI Studio', items: [
+          'Sign in to <b>Google AI Studio</b> with your Google account.',
+          'Click <b>Get API key</b>, then <b>Create API key</b>.',
+          'Copy the key (<code>AIza…</code>) and keep it.' ] },
+        { t: 'Add the Google Gemini integration', where: 'Settings › Devices & services', btn: 'add', items: [
+          'In Home Assistant, go to <b>Settings › Devices &amp; services</b>.',
+          'Click <b>Add integration</b>.',
+          'Search for <b>Google Gemini</b> and select it.',
+          'Paste your API key.' ] },
+        { t: 'Configure the Gemini model', where: 'Integration options', btn: 'open', items: [
+          'On the Google Gemini integration page, click the gear ⚙ of the <b>Conversation agent</b>.',
+          'Keep <b>Recommended model settings</b> for a fast, low-cost model, or untick it to pick one in <b>Model</b>: a <b>Flash</b> model for speed and cost, a <b>Pro</b> model for finer understanding.',
+          'Under <b>Control Home Assistant</b>, tick <b>Assist</b> if you want Gemini to control your devices.' ] },
+        { t: 'Make Gemini the default agent', where: 'Settings › Voice assistants', btn: 'assist', optional: true, items: [
+          'Go to <b>Settings › Voice assistants</b>.',
+          'Select your main assistant.',
+          'Set the <b>Conversation agent</b> field to <b>Google AI Conversation</b>.' ] },
+      ],
+    },
+    fr: {
+      prereq: 'Un compte Google et une clé API de <a href="https://aistudio.google.com/app/apikey" target="_blank" rel="noopener noreferrer">Google AI Studio</a>. L’offre gratuite a des quotas limités ; activez la facturation sur le projet Google Cloud de la clé pour aller au-delà. Un abonnement Gemini (Google AI) ne remplace pas une clé API.',
+      steps: [
+        { t: 'Générer une clé API Gemini', where: 'aistudio.google.com', btn: 'site', btnLabel: 'Ouvrir Google AI Studio', items: [
+          'Connectez-vous à <b>Google AI Studio</b> avec votre compte Google.',
+          'Cliquez sur <b>Get API key</b>, puis <b>Create API key</b>.',
+          'Copiez la clé (<code>AIza…</code>) et enregistrez-la.' ] },
+        { t: 'Ajouter l’intégration Google Gemini', where: 'Paramètres › Appareils et services', btn: 'add', items: [
+          'Dans Home Assistant, allez dans <b>Paramètres › Appareils et services</b>.',
+          'Cliquez sur <b>Ajouter une intégration</b>.',
+          'Recherchez <b>Google Gemini</b> et sélectionnez-la.',
+          'Collez votre clé API.' ] },
+        { t: 'Configurer le modèle Gemini', where: 'Options de l’intégration', btn: 'open', items: [
+          'Sur la page de l’intégration Google Gemini, cliquez sur la roue dentée ⚙ de l’<b>Agent de conversation</b>.',
+          'Gardez <b>Paramètres recommandés pour le modèle</b> pour un modèle rapide et économique, ou décochez-les pour en choisir un dans <b>Modèle</b> : un modèle <b>Flash</b> pour la rapidité et le coût, un modèle <b>Pro</b> pour une compréhension plus fine.',
+          'Sous <b>Contrôler Home Assistant</b>, cochez <b>Assist</b> si vous voulez que Gemini puisse piloter vos appareils.' ] },
+        { t: 'Définir Gemini comme agent par défaut', where: 'Paramètres › Assistants vocaux', btn: 'assist', optional: true, items: [
+          'Allez dans <b>Paramètres › Assistants vocaux</b>.',
+          'Sélectionnez votre assistant principal.',
+          'Changez le champ <b>Agent de conversation</b> pour choisir <b>Google AI Conversation</b>.' ] },
+      ],
+    },
+  },
+
+  chatgpt: {
+    name: 'ChatGPT', integration: 'OpenAI', domain: 'openai_conversation',
+    logo: '../images/providers/chatgpt.svg',
+    site: 'https://platform.openai.com/api-keys',
+    en: {
+      prereq: 'An account on <a href="https://platform.openai.com" target="_blank" rel="noopener noreferrer">platform.openai.com</a> with API credits (Settings › Billing). A ChatGPT Plus subscription does not include API access.',
+      steps: [
+        { t: 'Generate an OpenAI API key', where: 'platform.openai.com', btn: 'site', btnLabel: 'Open the OpenAI platform', items: [
+          'Sign in to the <b>OpenAI platform</b>.',
+          'Go to <b>API keys</b> and click <b>Create new secret key</b>.',
+          'Copy the key (<code>sk-…</code>) and keep it: it is shown only once.' ] },
+        { t: 'Add the OpenAI integration', where: 'Settings › Devices & services', btn: 'add', items: [
+          'In Home Assistant, go to <b>Settings › Devices &amp; services</b>.',
+          'Click <b>Add integration</b>.',
+          'Search for <b>OpenAI</b> and select it.',
+          'Paste your API key.' ] },
+        { t: 'Configure the ChatGPT model', where: 'Integration options', btn: 'open', items: [
+          'On the OpenAI integration page, click the gear ⚙ of the <b>Conversation agent</b>.',
+          'Keep <b>Recommended model settings</b> for a fast, low-cost model, or untick it to choose a more capable model.',
+          'Under <b>Control Home Assistant</b>, tick <b>Assist</b> if you want ChatGPT to control your devices.' ] },
+        { t: 'Make ChatGPT the default agent', where: 'Settings › Voice assistants', btn: 'assist', optional: true, items: [
+          'Go to <b>Settings › Voice assistants</b>.',
+          'Select your main assistant.',
+          'Set the <b>Conversation agent</b> field to <b>OpenAI Conversation</b>.' ] },
+      ],
+    },
+    fr: {
+      prereq: 'Un compte sur <a href="https://platform.openai.com" target="_blank" rel="noopener noreferrer">platform.openai.com</a> avec des crédits API (Settings › Billing). L’abonnement ChatGPT Plus ne fournit pas d’accès API.',
+      steps: [
+        { t: 'Générer une clé API OpenAI', where: 'platform.openai.com', btn: 'site', btnLabel: 'Ouvrir la plateforme OpenAI', items: [
+          'Connectez-vous à la <b>plateforme OpenAI</b>.',
+          'Allez dans <b>API keys</b> et cliquez sur <b>Create new secret key</b>.',
+          'Copiez la clé (<code>sk-…</code>) et enregistrez-la : elle ne s’affiche qu’une fois.' ] },
+        { t: 'Ajouter l’intégration OpenAI', where: 'Paramètres › Appareils et services', btn: 'add', items: [
+          'Dans Home Assistant, allez dans <b>Paramètres › Appareils et services</b>.',
+          'Cliquez sur <b>Ajouter une intégration</b>.',
+          'Recherchez <b>OpenAI</b> et sélectionnez-la.',
+          'Collez votre clé API.' ] },
+        { t: 'Configurer le modèle ChatGPT', where: 'Options de l’intégration', btn: 'open', items: [
+          'Sur la page de l’intégration OpenAI, cliquez sur la roue dentée ⚙ de l’<b>Agent de conversation</b>.',
+          'Gardez <b>Paramètres recommandés pour le modèle</b> pour un modèle rapide et économique, ou décochez-les pour choisir un modèle plus puissant.',
+          'Sous <b>Contrôler Home Assistant</b>, cochez <b>Assist</b> si vous voulez que ChatGPT puisse piloter vos appareils.' ] },
+        { t: 'Définir ChatGPT comme agent par défaut', where: 'Paramètres › Assistants vocaux', btn: 'assist', optional: true, items: [
+          'Allez dans <b>Paramètres › Assistants vocaux</b>.',
+          'Sélectionnez votre assistant principal.',
+          'Changez le champ <b>Agent de conversation</b> pour choisir <b>OpenAI Conversation</b>.' ] },
+      ],
+    },
+  },
+
+  custom: {
+    name: 'Custom', nameFr: 'Personnalisé', integration: 'Ollama', domain: 'ollama',
+    logo: null,
+    site: 'https://ollama.com/download',
+    en: {
+      prereq: 'A model that runs in the house: an <a href="https://ollama.com" target="_blank" rel="noopener noreferrer">Ollama</a> server on a computer of the network (or the server itself), with enough memory for the chosen model. No account, no API key, nothing leaves the house.',
+      steps: [
+        { t: 'Install Ollama on the network', where: 'ollama.com', btn: 'site', btnLabel: 'Open ollama.com', items: [
+          'Download and install <b>Ollama</b> on the computer that will run the model.',
+          'Make it reachable from the network: set <code>OLLAMA_HOST=0.0.0.0</code> (by default it only listens on the computer itself), then restart it.',
+          'Note its address: <code>http://&lt;its IP&gt;:11434</code>.' ] },
+        { t: 'Add the Ollama integration', where: 'Settings › Devices & services', btn: 'add', items: [
+          'In Home Assistant, go to <b>Settings › Devices &amp; services</b>.',
+          'Click <b>Add integration</b>.',
+          'Search for <b>Ollama</b> and select it.',
+          'In <b>URL</b>, type the address noted above.' ] },
+        { t: 'Choose the model', where: 'Integration options', btn: 'open', items: [
+          'On the Ollama integration page, add or open the <b>Conversation agent</b> (gear ⚙).',
+          'Pick a model in <b>Model</b>: Home Assistant downloads it to the Ollama server if it is not there yet (several GB, a few minutes).',
+          'Under <b>Control Home Assistant</b>, tick <b>Assist</b> only with a model that supports tools.' ] },
+        { t: 'Make it the default agent', where: 'Settings › Voice assistants', btn: 'assist', optional: true, items: [
+          'Go to <b>Settings › Voice assistants</b>.',
+          'Select your main assistant.',
+          'Set the <b>Conversation agent</b> field to <b>Ollama Conversation</b>.' ] },
+      ],
+      altTitle: 'Another OpenAI-compatible server',
+      altText: 'LM Studio, text-generation-webui, vLLM…: Home Assistant has no official integration for them. Visio Sapiens can call their <code>/chat/completions</code> endpoint directly — fill in the form.',
+      altBtn: 'Open the form',
+    },
+    fr: {
+      prereq: 'Un modèle qui tourne dans la maison : un serveur <a href="https://ollama.com" target="_blank" rel="noopener noreferrer">Ollama</a> sur un ordinateur du réseau (ou le serveur lui-même), avec assez de mémoire pour le modèle choisi. Pas de compte, pas de clé API, rien ne sort de la maison.',
+      steps: [
+        { t: 'Installer Ollama sur le réseau', where: 'ollama.com', btn: 'site', btnLabel: 'Ouvrir ollama.com', items: [
+          'Téléchargez et installez <b>Ollama</b> sur l’ordinateur qui fera tourner le modèle.',
+          'Rendez-le joignable depuis le réseau : réglez <code>OLLAMA_HOST=0.0.0.0</code> (par défaut il n’écoute que l’ordinateur lui-même), puis relancez-le.',
+          'Notez son adresse : <code>http://&lt;son IP&gt;:11434</code>.' ] },
+        { t: 'Ajouter l’intégration Ollama', where: 'Paramètres › Appareils et services', btn: 'add', items: [
+          'Dans Home Assistant, allez dans <b>Paramètres › Appareils et services</b>.',
+          'Cliquez sur <b>Ajouter une intégration</b>.',
+          'Recherchez <b>Ollama</b> et sélectionnez-la.',
+          'Dans <b>URL</b>, tapez l’adresse notée plus haut.' ] },
+        { t: 'Choisir le modèle', where: 'Options de l’intégration', btn: 'open', items: [
+          'Sur la page de l’intégration Ollama, ajoutez ou ouvrez l’<b>Agent de conversation</b> (roue dentée ⚙).',
+          'Choisissez un modèle dans <b>Modèle</b> : Home Assistant le télécharge sur le serveur Ollama s’il n’y est pas encore (plusieurs Go, quelques minutes).',
+          'Sous <b>Contrôler Home Assistant</b>, ne cochez <b>Assist</b> qu’avec un modèle qui gère les outils.' ] },
+        { t: 'En faire l’agent par défaut', where: 'Paramètres › Assistants vocaux', btn: 'assist', optional: true, items: [
+          'Allez dans <b>Paramètres › Assistants vocaux</b>.',
+          'Sélectionnez votre assistant principal.',
+          'Changez le champ <b>Agent de conversation</b> pour choisir <b>Ollama Conversation</b>.' ] },
+      ],
+      altTitle: 'Un autre serveur compatible OpenAI',
+      altText: 'LM Studio, text-generation-webui, vLLM… : Home Assistant n’a pas d’intégration officielle pour eux. Visio Sapiens peut appeler directement leur point d’accès <code>/chat/completions</code> — remplissez le formulaire.',
+      altBtn: 'Ouvrir le formulaire',
+    },
+  },
+};
+
+const CUSTOM_ICON = '<svg viewBox="0 0 24 24" fill="#00E5FF" aria-hidden="true"><path d="M4 1h16a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V2a1 1 0 0 1 1-1m0 8h16a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1m0 8h16a1 1 0 0 1 1 1v4a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1v-4a1 1 0 0 1 1-1M9 5h1V3H9zm0 8h1v-2H9zm0 8h1v-2H9zM5 3v2h2V3zm0 8v2h2v-2zm0 8v2h2v-2z"/></svg>';
+
+const el = (id) => document.getElementById(id);
+function t(key, vars) {
+  const s = (UI[LANG][key] !== undefined ? UI[LANG][key] : UI.en[key]) || key;
+  return s.replace(/\{(\w+)\}/g, (_, n) => (vars && vars[n] !== undefined ? vars[n] : ''));
+}
+function esc(s) {
+  return String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+}
+
+// EN | The parent page is Home Assistant itself (browser_mod popups live in
+// EN | its document), so its `hass` object is reachable — read-only use.
+// FR | La page parente est Home Assistant lui-meme (les popups browser_mod
+// FR | vivent dans son document), son objet `hass` est donc joignable —
+// FR | usage en lecture seule.
+function parentHass() {
+  try {
+    if (window.parent === window) return null;
+    const ha = window.parent.document.querySelector('home-assistant');
+    return (ha && ha.hass) || null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function resolveProvider() {
+  const asked = (params.get('provider') || '').toLowerCase();
+  if (PROVIDERS[asked]) return asked;
+  const hass = parentHass();
+  const st = hass && hass.states[PROVIDER_ENTITY];
+  return st && PROVIDERS[st.state] ? st.state : 'claude';
+}
+
+const KEY = resolveProvider();
+const P = PROVIDERS[KEY];
+const TXT = P[LANG];
+const DISPLAY = LANG === 'fr' && P.nameFr ? P.nameFr : P.name;
+
+// EN | Home Assistant navigation, from inside the popup: the parent's own
+// EN | router (pushState + location-changed, what its links do), then the
+// EN | popup closes so the screen it opened is the one in front.
+// FR | Navigation Home Assistant, depuis le popup : le routeur du parent
+// FR | (pushState + location-changed, ce que font ses liens), puis le popup
+// FR | se ferme pour laisser devant l'ecran qu'il vient d'ouvrir.
+function go(path) {
+  const p = window.parent;
+  try {
+    if (p === window) throw new Error('not embedded');
+    p.history.pushState(null, '', path);
+    p.dispatchEvent(new CustomEvent('location-changed', { detail: { replace: false } }));
+    if (p.browser_mod && typeof p.browser_mod.service === 'function') {
+      p.browser_mod.service('close_popup', {});
+    }
+  } catch (e) {
+    window.open(path, '_blank', 'noopener');
+  }
+}
+
+const PATHS = {
+  add: '/config/integrations/dashboard/add?domain=' + P.domain,
+  open: '/config/integrations/integration/' + P.domain,
+  assist: '/config/voice-assistants/assistants',
+};
+
+function render() {
+  el('title').textContent = t('title', { name: DISPLAY });
+  el('subtitle').textContent = t('subtitle', { integration: P.integration });
+  el('statusTitle').textContent = t('status');
+  el('prereqTitle').textContent = t('prereq');
+  el('logo').innerHTML = P.logo ? '<img alt="" src="' + P.logo + '">' : CUSTOM_ICON;
+  el('prereq').innerHTML = TXT.prereq;
+
+  const ol = el('steps');
+  ol.innerHTML = '';
+  TXT.steps.forEach((s, i) => {
+    const li = document.createElement('li');
+    li.className = 'step';
+    li.id = 'step' + (i + 1);
+    const label = s.btn === 'site' ? s.btnLabel
+      : s.btn === 'add' ? t('btn_add', { integration: P.integration })
+      : s.btn === 'open' ? t('btn_open')
+      : t('btn_assist');
+    const button = s.btn === 'site'
+      ? '<a class="btn" href="' + P.site + '" target="_blank" rel="noopener noreferrer">' + esc(label) + ' ↗</a>'
+      : '<button class="btn" type="button" data-go="' + s.btn + '">' + esc(label) + '</button>';
+    li.innerHTML =
+      '<div class="num">' + (i + 1) + '</div>' +
+      '<div>' +
+        '<div class="step-head"><div><h3>' + esc(s.t) + '</h3><div class="where">' + esc(s.where) + '</div></div>' +
+        '<span class="badge" id="badge' + (i + 1) + '">' + esc(s.optional ? t('optional') : t('todo')) + '</span></div>' +
+        '<ol>' + s.items.map((x) => '<li>' + x + '</li>').join('') + '</ol>' +
+        '<div class="actions">' + button + '</div>' +
+      '</div>';
+    ol.appendChild(li);
+  });
+  ol.querySelectorAll('[data-go]').forEach((b) => b.addEventListener('click', () => go(PATHS[b.dataset.go])));
+
+  if (TXT.altTitle) {
+    el('altBox').hidden = false;
+    el('altTitle').textContent = TXT.altTitle;
+    el('altText').innerHTML = TXT.altText;
+    el('altBtn').textContent = TXT.altBtn;
+    el('altBtn').addEventListener('click', () => {
+      location.href = 'vssp_chatbot.html?mode=custom&lang=' + LANG;
+    });
+  }
+
+  el('note').innerHTML = '<p>' + esc(t('note_agent')) + '</p><p>' + esc(t('note_default')) + '</p>' +
+    (KEY === 'custom' ? '<p>' + esc(t('note_custom')) + '</p>' : '');
+}
+
+function setBadge(n, state) {
+  const b = el('badge' + n);
+  const li = el('step' + n);
+  if (!b || !li) return;
+  const s = TXT.steps[n - 1];
+  b.className = 'badge' + (state === 'done' ? ' ok' : state === 'warn' ? ' warn' : '');
+  b.textContent = state === 'done' ? '✓ ' + t('done') : s.optional ? t('optional') : t('todo');
+  li.classList.toggle('done', state === 'done');
+}
+
+function row(k, v, cls) {
+  return '<div class="k">' + esc(k) + '</div><div class="v ' + (cls || '') + '">' + esc(v) + '</div>';
+}
+
+// EN | Everything read here is read-only: config entries of one domain, the
+// EN | entity and device registries already in `hass`, the Assist pipelines.
+// FR | Tout ce qui est lu ici l'est en lecture seule : les entrees de
+// FR | configuration d'un domaine, les registres d'entites et d'appareils
+// FR | deja dans `hass`, les pipelines Assist.
+async function refresh() {
+  const box = el('status');
+  const hass = parentHass();
+  if (!hass) {
+    box.innerHTML = '<div class="v muted" style="grid-column:1/-1">' + esc(t('no_hass')) + '</div>';
+    return;
+  }
+  if (hass.user && !hass.user.is_admin) {
+    box.innerHTML = '<div class="v muted" style="grid-column:1/-1">' + esc(t('not_admin')) + '</div>';
+    return;
+  }
+  let entries = [];
+  let pipes = null;
+  try {
+    entries = await hass.callWS({ type: 'config_entries/get', domain: P.domain });
+  } catch (e) { /* keep empty */ }
+  try {
+    pipes = await hass.callWS({ type: 'assist_pipeline/pipeline/list' });
+  } catch (e) { /* Assist not loaded */ }
+
+  const loaded = entries.find((e) => e.state === 'loaded');
+  const anyEntry = entries[0];
+  const agent = Object.keys(hass.entities || {}).find((id) =>
+    id.startsWith('conversation.') && hass.entities[id].platform === P.domain &&
+    (!hass.states[id] || hass.states[id].state !== 'unavailable'));
+  let model = '';
+  if (agent) {
+    const dev = hass.devices && hass.devices[hass.entities[agent].device_id];
+    model = (dev && dev.model) || '';
+  }
+  let engine = '';
+  if (pipes && pipes.pipelines) {
+    const pref = pipes.pipelines.find((p) => p.id === pipes.preferred_pipeline) || pipes.pipelines[0];
+    engine = (pref && pref.conversation_engine) || '';
+  }
+  const isDefault = !!agent && (engine === agent || (loaded && engine === loaded.entry_id));
+  const endpointState = hass.states[CUSTOM_ENDPOINT];
+  const endpoint = endpointState && !['', 'unknown', 'unavailable'].includes(endpointState.state) ? endpointState.state : '';
+
+  let html = '';
+  if (loaded) html += row(t('st_integration'), t('installed') + ' · ' + loaded.title, 'ok');
+  else if (anyEntry) html += row(t('st_integration'), t('not_running', { state: anyEntry.state }), 'warn');
+  else html += row(t('st_integration'), t('missing'), 'bad');
+  html += row(t('st_agent'), agent || t('none'), agent ? 'ok' : 'muted');
+  html += row(t('st_model'), model || t('none'), model ? '' : 'muted');
+  html += row(t('st_default'), isDefault ? t('yes') : t('no', { engine: engine || t('none') }), isDefault ? 'ok' : 'muted');
+  if (KEY === 'custom' && endpoint) html += row(t('st_chatbot'), t('via_form', { url: endpoint }), 'ok');
+  else if (agent) html += row(t('st_chatbot'), t('via_agent', { agent }), 'ok');
+  else html += row(t('st_chatbot'), t('via_key'), 'warn');
+  box.innerHTML = html;
+
+  setBadge(1, anyEntry ? 'done' : '');
+  setBadge(2, loaded ? 'done' : anyEntry ? 'warn' : '');
+  setBadge(3, agent ? 'done' : '');
+  setBadge(4, isDefault ? 'done' : '');
+}
+
+render();
+refresh();
+setInterval(() => { if (document.visibilityState === 'visible') refresh(); }, 5000);
+</script>
+</body>
+</html>

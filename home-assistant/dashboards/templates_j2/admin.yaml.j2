@@ -2130,59 +2130,87 @@ views:
                   - type: select-options
                 features_position: inline
                 {{ selector_card_mod() }}
-          # EN | Only shown once "custom" is selected above — opens the
-          # EN | popup where the local/self-hosted model's fields
-          # EN | (endpoint, model, API key...) are filled in. See
-          # EN | vssp_chatbot.html and the vssp_chatbot_custom_config
-          # EN | webhook (packages/vssp_chatbot.yaml). REQUIRES
-          # EN | browser_mod installed (HACS) — see docs/platform/Security.md.
-          # FR | Affiche uniquement quand "custom" est selectionne
-          # FR | ci-dessus — ouvre le popup ou renseigner les champs du
-          # FR | modele local/auto-heberge (URL, modele, cle API...). Voir
-          # FR | vssp_chatbot.html et le webhook vssp_chatbot_custom_config
-          # FR | (packages/vssp_chatbot.yaml). REQUIERT browser_mod
-          # FR | installe (HACS) — voir docs/platform/Security.md.
-          - type: conditional
-            conditions:
-              - entity: input_select.vssp_chatbot_provider
-                state: custom
-            card:
-              type: custom:button-card
-              template: vssp_admin_button
-              icon: mdi:tune-variant
-              name: "{{ t('admin.chatbot_custom_label') }}"
-              label: "{{ t('admin.chatbot_custom_popup_title') }}"
-              # EN | fire-dom-event, not perform-action — and this tile
-              # EN | carried the same defect since the day it was written, so
-              # EN | it has never opened anything.
-              # EN | `browser_id: this` can only be resolved by the FRONTEND:
-              # EN | "this browser" is a fact the backend cannot know. A
-              # EN | perform-action tap sends a plain service call, the
-              # EN | backend gets the literal string "this", and nothing
-              # EN | happens — while the call reports success, which is why
-              # EN | it went unnoticed. fire-dom-event raises the `ll-custom`
-              # EN | event browser_mod's own frontend listens for.
-              # FR | fire-dom-event, pas perform-action — et cette tuile
-              # FR | portait le meme defaut depuis le jour ou elle a ete
-              # FR | ecrite : elle n'a donc jamais rien ouvert.
-              # FR | `browser_id: this` ne peut etre resolu que par le
-              # FR | FRONTEND : « ce navigateur-ci » est un fait que le
-              # FR | backend ne peut pas connaitre. Un tap perform-action
-              # FR | envoie un simple appel de service, le backend recoit la
-              # FR | chaine litterale « this », et rien ne se passe — pendant
-              # FR | que l'appel signale un succes, ce qui explique que cela
-              # FR | soit passe inapercu. fire-dom-event leve l'evenement
-              # FR | `ll-custom` qu'ecoute le frontend de browser_mod.
-              tap_action:
-                action: fire-dom-event
-                browser_mod:
-                  service: browser_mod.popup
-                  data:
-                    title: "{{ t('admin.chatbot_custom_popup_title') }}"
-                    size: normal
-                    content:
-                      type: iframe
-                      url: /local/vssp/wizard/vssp_chatbot.html?mode=custom
+          # EN | The guided setup of the provider picked above
+          # EN | (wizard/vssp_ai_setup.html): its Home Assistant
+          # EN | integration, step by step, with a live check of each step.
+          # EN | Picking a provider in the dropdown opens the same popup on
+          # EN | its own (VsspAiSetup in js/vssp.js); this button is for
+          # EN | coming back to it without changing the choice. No
+          # EN | ?provider= in the URL: the page reads the current one.
+          # EN | "Custom" leads to Ollama, and from there to the old form for
+          # EN | any other OpenAI-compatible server (vssp_chatbot.html).
+          # EN | REQUIRES browser_mod installed (HACS) — see
+          # EN | docs/platform/Security.md.
+          # FR | La configuration guidee du fournisseur choisi ci-dessus
+          # FR | (wizard/vssp_ai_setup.html) : son integration Home
+          # FR | Assistant, etape par etape, avec une verification en direct
+          # FR | de chaque etape. Choisir un fournisseur dans le menu ouvre
+          # FR | le meme popup tout seul (VsspAiSetup dans js/vssp.js) ; ce
+          # FR | bouton sert a y revenir sans changer de choix. Pas de
+          # FR | ?provider= dans l'URL : la page lit le choix courant.
+          # FR | « Personnalise » mene a Ollama, et de la a l'ancien
+          # FR | formulaire pour tout autre serveur compatible OpenAI
+          # FR | (vssp_chatbot.html). REQUIERT browser_mod installe (HACS) —
+          # FR | voir docs/platform/Security.md.
+          - type: custom:button-card
+            template: vssp_admin_button
+            icon: mdi:robot-happy-outline
+            name: "{{ t('admin.chatbot_setup_label') }}"
+            label: "{{ t('admin.chatbot_setup_hint') }}"
+            # EN | fire-dom-event, not perform-action — the custom-model
+            # EN | tile this button replaces used perform-action and never
+            # EN | opened anything.
+            # EN | `browser_id: this` can only be resolved by the FRONTEND:
+            # EN | "this browser" is a fact the backend cannot know. A
+            # EN | perform-action tap sends a plain service call, the
+            # EN | backend gets the literal string "this", and nothing
+            # EN | happens — while the call reports success, which is why
+            # EN | it went unnoticed. fire-dom-event raises the `ll-custom`
+            # EN | event browser_mod's own frontend listens for.
+            # FR | fire-dom-event, pas perform-action — la tuile du modele
+            # FR | personnalise que ce bouton remplace utilisait
+            # FR | perform-action et n'a jamais rien ouvert.
+            # FR | `browser_id: this` ne peut etre resolu que par le
+            # FR | FRONTEND : « ce navigateur-ci » est un fait que le
+            # FR | backend ne peut pas connaitre. Un tap perform-action
+            # FR | envoie un simple appel de service, le backend recoit la
+            # FR | chaine litterale « this », et rien ne se passe — pendant
+            # FR | que l'appel signale un succes, ce qui explique que cela
+            # FR | soit passe inapercu. fire-dom-event leve l'evenement
+            # FR | `ll-custom` qu'ecoute le frontend de browser_mod.
+            tap_action:
+              action: fire-dom-event
+              browser_mod:
+                service: browser_mod.popup
+                data:
+                  title: "{{ t('admin.chatbot_setup_title') }}"
+                  size: normal
+                  content:
+                    type: iframe
+                    url: /local/vssp/wizard/vssp_ai_setup.html?v={{ build_stamp }}&lang={{ locale }}
+                    # EN | Same sizing as the schedule popup (_slot_schedule.j2):
+                    # EN | the wrapper div has to grow, not only the iframe.
+                    # FR | Meme dimensionnement que le popup de planification
+                    # FR | (_slot_schedule.j2) : le div d'enveloppe doit grandir,
+                    # FR | pas seulement l'iframe.
+                    card_mod:
+                      style: |
+                        ha-card {
+                          background: transparent !important;
+                          border: none !important;
+                          box-shadow: none !important;
+                          overflow: hidden;
+                          height: min(78vh, 760px) !important;
+                        }
+                        ha-card > div {
+                          padding-top: 0 !important;
+                          height: 100% !important;
+                        }
+                        iframe {
+                          width: 100%;
+                          height: 100% !important;
+                          border: none;
+                        }
           - type: entities
             entities:
               - entity: sensor.vssp_deployed_locale

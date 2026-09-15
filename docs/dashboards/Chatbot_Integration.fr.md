@@ -11,27 +11,87 @@ ChatGPT, ou un modèle auto-hébergé (« custom ») — au lieu d'être de
 simples cadres d'accueil.
 
 ```
-Barre Chatbot HOME (saisit + envoie directement)   Bouton "Custom" de l'ADMIN (si custom est sélectionné)
-        │  window.vsspChatbot.send() (js/vssp.js)          │  tap_action : browser_mod.popup
-        │  fetch()                                          ▼
-        │                        /local/vssp/wizard/vssp_chatbot.html (iframe — chat ou formulaire)
-        │                                                    │  POST (webhook local_only)
-        ▼                                                    ▼
-                    packages/vssp_chatbot.yaml  automatisations
-                            │  shell_command
-                            ▼
-        vssp/vssp_chatbot_send.py  ──HTTP──▶  Gemini / Claude / ChatGPT / votre serveur
-                            │  écrit
-                            ▼
-        /config/www/vssp/chatbot_status.json   (interrogé par la barre HOME et par l'iframe)
+Barre Chatbot HOME / popup de chat complet (vssp_chatbot.html)
+        │  POST /api/webhook/vssp_chatbot_send (local_only, base64 vérifié)
+        ▼
+packages/vssp_chatbot.yaml
+        ├─ 1er choix : l'intégration Home Assistant du fournisseur
+        │     conversation.process (agent d'Anthropic / Google Gemini / OpenAI / Ollama)
+        │     └─ shell_command.vssp_chatbot_reply ─▶ vssp_chatbot_send.py --agent (classe la réponse)
+        └─ repli : shell_command.vssp_chatbot_send ─▶ vssp_chatbot_send.py ──HTTP──▶ API du fournisseur
+                                                        (fichier de clé, ou point d'accès du formulaire custom)
+        ▼  écrit
+/config/www/vssp/chatbot_status.json   (interrogé par la barre HOME et le popup)
+
+ADMIN > DASHBOARDS : choisir un fournisseur ──▶ popup de configuration de l'IA (wizard/vssp_ai_setup.html)
+                     ou taper CONFIGURER L'IA     installation guidée de l'intégration, état en direct
 ```
 
 Même forme que l'écran THEME
 (voir [Design_System_Editor.md](Design_System_Editor.fr.md)) : une page
 HTML statique dans une iframe parle à Home Assistant via un **webhook
-local uniquement**, jamais via l'API REST, car une iframe ne peut pas
-atteindre l'objet `hass` de la page parente, et un jeton longue durée
-n'a rien à faire dans un navigateur pour cela.
+local uniquement**, jamais avec un jeton longue durée dans le
+navigateur.
+
+## Configurer un fournisseur — le popup de configuration de l'IA
+
+Choisir un fournisseur dans le menu de ADMIN > DASHBOARDS ouvre aussitôt
+sa configuration guidée, dans un popup `browser_mod`
+(`home-assistant/www/vssp/wizard/vssp_ai_setup.html`). Le bouton
+**CONFIGURER L'IA** sous le menu ouvre le même popup pour le choix
+courant, pour y revenir plus tard.
+
+Chaque fournisseur se configure par **l'intégration propre de Home
+Assistant**, pas par une clé saisie dans Visio Sapiens :
+
+| Choix | Intégration | Clé API |
+|---|---|---|
+| Claude | Anthropic (`anthropic`) | console.anthropic.com › API Keys (crédits API nécessaires — Claude Pro ne donne pas l'API) |
+| Gemini | Google Gemini (`google_generative_ai_conversation`) | aistudio.google.com › Get API key |
+| ChatGPT | OpenAI (`openai_conversation`) | platform.openai.com › API keys (crédits API nécessaires — ChatGPT Plus ne donne pas l'API) |
+| Personnalisé | Ollama (`ollama`), un modèle qui tourne dans la maison | pas de clé : l'URL du serveur Ollama |
+
+Le popup déroule quatre étapes : obtenir la clé, ajouter l'intégration,
+choisir le modèle (roue dentée de l'**Agent de conversation**, décocher
+**Paramètres recommandés pour le modèle** ; cocher **Assist** sous
+**Contrôler Home Assistant** pour qu'il pilote les appareils) et, en
+option, en faire l'agent par défaut dans **Paramètres › Assistants
+vocaux**. Chaque étape a un bouton qui ouvre le bon écran de Home
+Assistant (directement la boîte d'ajout d'intégration, via
+`/config/integrations/dashboard/add?domain=…`), et une vérification en
+direct lue avec la session de la tablette — installée ou non, entité
+de l'agent, modèle, agent Assist par défaut. La page ne fait que lire
+(`config_entries/get`, les registres d'entités et d'appareils,
+`assist_pipeline/pipeline/list`).
+
+« Personnalisé » mène aussi à l'ancien formulaire pour tout autre
+serveur compatible OpenAI (LM Studio, text-generation-webui, vLLM…),
+pour lequel Home Assistant n'a pas d'intégration.
+
+**Pourquoi le menu l'ouvre tout seul :** la fonctionnalité
+`select-options` de la tuile ne peut pas exécuter de code. `VsspAiSetup`
+dans `js/vssp.js` surveille `input_select.vssp_chatbot_provider` et ouvre
+le popup quand il change, **par l'utilisateur connecté**
+(`context.user_id`), **pendant que cet écran affiche ADMIN >
+DASHBOARDS**. Un changement fait par une automatisation (l'enregistrement
+du formulaire custom) ou sur une autre tablette n'ouvre rien.
+
+## Quel chemin répond à un message
+
+1. **L'intégration du fournisseur, quand elle est installée** —
+   l'automatisation du webhook trouve son entité `conversation.*`
+   (`integration_entities`) et appelle `conversation.process`. La clé
+   reste dans Home Assistant ; l'agent garde la conversation sous un
+   `conversation_id` que le fichier de statut rend au popup de chat
+   complet, qui le renvoie avec le message suivant. Pour « custom », le
+   point d'accès du formulaire, s'il est rempli, passe avant Ollama.
+2. **Sinon, le repli** — `vssp_chatbot_send.py` appelle l'API du
+   fournisseur avec la clé enregistrée dans Visio Sapiens (voir
+   [Secrets](#secrets)), ou le point d'accès du formulaire custom.
+
+Le SCAN de CORE suit la même préférence : la tâche IA (`ai_task.*`) de
+l'intégration du fournisseur choisi d'abord, puis n'importe quelle
+autre.
 
 ## La barre HOME — vraie saisie, aucun popup pour envoyer
 
@@ -74,28 +134,24 @@ ce qui ouvre encore le popup de conversation complète
 (`vssp_chatbot.html?mode=chat` via
 [browser_mod](https://github.com/thomasloven/hass-browser_mod)) — pour
 l'historique de messages que la barre HOME (un tour à la fois) ne
-garde pas. La tuile fournisseur « custom » de l'ADMIN réutilise
-exactement le même mécanisme de popup, en mode formulaire de
-configuration plutôt qu'en mode chat (`?mode=custom`).
+garde pas.
 
 **`browser_mod` est une intégration HACS et n'est pas installée par ce
 dépôt.** Elle doit être installée une fois sur le pod en production
 (HACS → Intégrations → rechercher « browser_mod » → Installer →
-redémarrer Home Assistant) avant que le popup de conversation complète
-(ou le popup de configuration « custom » de l'ADMIN) ne s'ouvre — la
-saisie/réponse en ligne de la barre HOME n'en a besoin en rien.
+redémarrer Home Assistant) avant que les popups (conversation complète,
+configuration de l'IA) ne s'ouvrent — la saisie/réponse en ligne de la
+barre HOME n'en a besoin en rien.
 
-**À vérifier au déploiement** — ce dépôt n'a aucun exemple `browser_mod`
-fonctionnel dont copier l'appel exact du popup (rien d'autre dans le
-projet ne l'utilisait avant cette fonctionnalité). L'appel
-`browser_mod.popup` dans `js/vssp.js` (`openFullChat()`) et
-`admin.yaml.j2` (`browser_id: this`, `size: normal`, `content: {type:
-iframe, url: ...}`) est écrit d'après la convention documentée de
-browser_mod, mais les clés acceptées peuvent varier selon la version.
-Si le popup ne s'ouvre pas après avoir installé browser_mod, vérifiez
-le schéma exact du service sous Outils de développement > Actions >
-`browser_mod.popup` sur l'instance en production et ajustez en
-conséquence.
+**Comment les popups s'ouvrent** — jamais par un appel de service
+backend : `browser_id: this` n'a de sens que pour le frontend, donc un
+`hass.callService('browser_mod', 'popup', {browser_id: 'this'})` atteint
+un serveur qui ne sait pas quel navigateur est « celui-ci », signale un
+succès et n'ouvre rien. En JavaScript, `js/vssp.js` appelle le service
+frontend de browser_mod (`window.browser_mod.service('popup', …)`, sans
+`browser_id` : cet écran) ; depuis un dashboard, `tap_action:
+fire-dom-event` avec un bloc `browser_mod:`. Vérifié sur browser_mod
+3.2.3.
 
 ## Sélecteur de fournisseur — visuel inchangé
 
@@ -108,12 +164,13 @@ fonctionnalité l'avait remplacé par une ligne de boutons-logos ; c'est
 revenu en arrière à la demande de l'utilisateur — le visuel du
 sélecteur a été volontairement laissé intact.
 
-Ce qui est nouveau : un petit **bouton « Custom » apparaît sous la
-ligne du sélecteur, uniquement quand « custom » est l'option
-sélectionnée** (`type: conditional`, même motif que les boutons
-CRÉER/RÉGÉNÉRER HOME de `system_dashboards.yaml`). Le taper ouvre le
-même popup de configuration qu'avant, pour les champs du modèle
-local/auto-hébergé.
+Ce qui est nouveau : choisir une option ouvre son popup de
+configuration de l'IA, et un bouton **CONFIGURER L'IA** sous la ligne du
+sélecteur le rouvre (voir
+[Configurer un fournisseur](#configurer-un-fournisseur--le-popup-de-configuration-de-lia)).
+Il remplace l'ancien bouton « Custom », affiché seulement pour
+`custom` : le formulaire custom s'atteint maintenant depuis le popup
+Personnalisé.
 
 Les trois SVG de logo provisoires
 (`home-assistant/www/vssp/images/providers/{gemini,claude,chatgpt}.svg`)
@@ -124,6 +181,10 @@ HOME (voir plus haut), pas le sélecteur de l'ADMIN, qui reste
 inchangé.
 
 ## Secrets
+
+Par le chemin intégration, la clé vit dans l'entrée de configuration de
+Home Assistant, saisie dans son formulaire natif — Visio Sapiens ne la
+voit jamais. Les helpers ci-dessous ne servent qu'au repli.
 
 Même convention que l'`input_text.vssp_ha_token` existant
 (`packages/vssp_admin.yaml`) : chaque clé API est un helper
@@ -159,11 +220,12 @@ pris en charge sans modifier
 ## Limites connues de cette v1
 
 - La barre HOME ne garde aucun historique de conversation (chaque
-  message est isolé) et le popup de chat garde l'historique en mémoire
-  uniquement — le fermer puis le rouvrir démarre une conversation
-  neuve. Rien n'est persisté côté serveur au-delà du dernier échange
-  (`chatbot_status.json`), par conception (ce projet n'a pas de
-  stockage d'historique de chat).
+  message est isolé). Le popup de chat garde sa conversation jusqu'à sa
+  fermeture : par le `conversation_id` de l'agent sur le chemin
+  intégration, en mémoire sur le repli. Visio Sapiens ne persiste rien
+  au-delà du dernier échange (`chatbot_status.json`).
+- Un seul fichier de statut pour toute la maison : deux tablettes qui
+  envoient à la même seconde peuvent lire la réponse l'une de l'autre.
 - Le formulaire de configuration du modèle custom s'ouvre toujours
   vide ; il ne se pré-remplit pas depuis les valeurs déjà
   enregistrées. Consultez
@@ -177,17 +239,23 @@ pris en charge sans modifier
 
 - `home-assistant/packages/vssp_admin.yaml` — helpers clé API/modèle,
   `shell_command` d'écriture des clés, scripts d'enregistrement.
-- `home-assistant/packages/vssp_chatbot.yaml` — le webhook d'envoi et
-  le webhook de configuration custom.
-- `vssp/vssp_chatbot_send.py` — appelle la vraie API du fournisseur.
+- `home-assistant/packages/vssp_chatbot.yaml` — le webhook d'envoi
+  (agent de l'intégration d'abord, puis le repli) et le webhook de
+  configuration custom.
+- `vssp/vssp_chatbot_send.py` — classe la réponse de l'agent de
+  l'intégration (`--agent`), ou appelle lui-même l'API du fournisseur
+  (repli).
+- `home-assistant/www/vssp/wizard/vssp_ai_setup.html` — le popup de
+  configuration de l'IA, une configuration guidée par fournisseur.
 - `home-assistant/dashboards/templates_j2/home.yaml.j2` — la barre
   Chatbot de HOME (« Cadre 2 »).
 - `home-assistant/www/vssp/js/vssp.js` — `VsspChatbotBar`
   (`window.vsspChatbot`) : envoi/interrogation/micro/openFullChat pour
-  la barre HOME.
+  la barre HOME ; `VsspAiSetup` (`window.vsspAiSetup`) : ouvre le popup
+  de configuration de l'IA quand le fournisseur change.
 - `home-assistant/www/vssp/images/providers/{gemini,claude,chatgpt}.svg`
   — le badge par fournisseur de la barre HOME.
 - `home-assistant/dashboards/templates_j2/admin.yaml.j2` — le bouton
-  conditionnel « Custom » sous le sélecteur (inchangé).
+  CONFIGURER L'IA sous le sélecteur (inchangé).
 - `home-assistant/www/vssp/wizard/vssp_chatbot.html` — le contenu du
   popup de conversation complète (interface de chat + formulaire).

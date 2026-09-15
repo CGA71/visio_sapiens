@@ -327,23 +327,129 @@ class VsspChatbotBar {
   // FR | taper l'icone est donc ce qui reste pour atteindre la vue de
   // FR | conversation complete (avec historique) plutot que les reponses en
   // FR | ligne, un tour a la fois, de cette barre.
+  // EN | browser_mod's FRONTEND service, not hass.callService: a backend
+  // EN | call with browser_id 'this' reaches a server that cannot know which
+  // EN | browser "this" is, reports success and opens nothing (the defect
+  // EN | admin.yaml.j2 documents for its own tiles). Without a browser_id,
+  // EN | window.browser_mod.service opens the popup here, on this screen.
+  // FR | Le service FRONTEND de browser_mod, pas hass.callService : un appel
+  // FR | backend avec browser_id 'this' atteint un serveur qui ne peut pas
+  // FR | savoir quel navigateur est « celui-ci », signale un succes et
+  // FR | n'ouvre rien (le defaut documente par admin.yaml.j2 pour ses
+  // FR | propres tuiles). Sans browser_id, window.browser_mod.service ouvre
+  // FR | le popup ici, sur cet ecran.
   openFullChat(el) {
-    try {
-      const ha = document.querySelector('home-assistant');
-      if (!ha || !ha.hass) return;
-      ha.hass.callService('browser_mod', 'popup', {
-        browser_id: 'this',
-        title: (el && el.dataset && el.dataset.title) || 'Chatbot',
-        size: 'normal',
-        content: {
-          type: 'iframe',
-          url: '/local/vssp/wizard/vssp_chatbot.html?mode=chat',
-        },
-      });
-    } catch (e) {
-      /* browser_mod not installed yet — see docs/platform/Security.md */
-    }
+    vsspPopup((el && el.dataset && el.dataset.title) || 'Chatbot',
+      '/local/vssp/wizard/vssp_chatbot.html?mode=chat');
   }
 }
 
 window.vsspChatbot = window.vsspChatbot || new VsspChatbotBar();
+
+// EN | The build token of this very file (…/vssp.js?v=<token>), reused on the
+// EN | popup pages it opens: /local is cached for 31 days, and an iframe URL
+// EN | without a changing token keeps its first content on that tablet.
+// FR | Le jeton de build de ce fichier (…/vssp.js?v=<jeton>), repris sur les
+// FR | pages de popup qu'il ouvre : /local est mis en cache 31 jours, et une
+// FR | URL d'iframe sans jeton qui change garde son premier contenu sur la
+// FR | tablette.
+const VSSP_BUILD = (() => {
+  try {
+    return new URL(import.meta.url).searchParams.get('v') || '';
+  } catch (e) {
+    return '';
+  }
+})();
+
+// EN | One browser_mod popup holding an iframe page, sized like the schedule
+// EN | popup (_slot_schedule.j2): an iframe card is 50 % as tall as wide by
+// EN | default, and the wrapper div — not the iframe — is what has to grow.
+// FR | Un popup browser_mod contenant une page en iframe, dimensionne comme
+// FR | celui de la planification (_slot_schedule.j2) : une carte iframe fait
+// FR | par defaut 50 % de sa largeur en hauteur, et c'est le div d'enveloppe
+// FR | — pas l'iframe — qui doit grandir.
+function vsspPopup(title, url) {
+  const bm = window.browser_mod;
+  if (!bm || typeof bm.service !== 'function') {
+    console.warn('Visio Sapiens: browser_mod is not loaded — no popup (see docs/platform/Security.md).');
+    return false;
+  }
+  bm.service('popup', {
+    title,
+    size: 'normal',
+    content: {
+      type: 'iframe',
+      url,
+      card_mod: {
+        style: `
+          ha-card { background: transparent !important; border: none !important;
+                    box-shadow: none !important; overflow: hidden; height: min(78vh, 760px) !important; }
+          ha-card > div { padding-top: 0 !important; height: 100% !important; }
+          iframe { width: 100%; height: 100% !important; border: none; }
+        `,
+      },
+    },
+  });
+  return true;
+}
+
+/**
+ * Visio Sapiens — AI setup popup, opened when the chatbot provider changes.
+ *
+ * ADMIN > DASHBOARDS keeps its plain dropdown (a tile card with
+ * select-options — the look the user asked to keep). What it cannot do is run
+ * code when an option is picked, so this watches the helper instead: when
+ * input_select.vssp_chatbot_provider changes, by THIS user, while THIS screen
+ * shows ADMIN > DASHBOARDS, the guided setup of the new provider opens here
+ * (wizard/vssp_ai_setup.html). A change made by an automation (user_id null —
+ * the custom form's own save, for one) or on another tablet opens nothing.
+ */
+class VsspAiSetup {
+  constructor() {
+    this._seen = null;
+    setInterval(() => this._tick(), 500);
+  }
+
+  _hass() {
+    const ha = document.querySelector('home-assistant');
+    return (ha && ha.hass) || null;
+  }
+
+  // EN | The generated locale, like every other VSSP popup (?lang=): the
+  // EN | language of the labels around the dropdown, not the browser's.
+  // FR | La locale generee, comme tout autre popup VSSP (?lang=) : la langue
+  // FR | des libelles autour du menu, pas celle du navigateur.
+  _lang(hass) {
+    const s = hass.states['sensor.vssp_deployed_locale'];
+    const l = ((s && s.state) || hass.language || 'en').slice(0, 2).toLowerCase();
+    return l === 'fr' ? 'fr' : 'en';
+  }
+
+  _tick() {
+    const hass = this._hass();
+    const st = hass && hass.states['input_select.vssp_chatbot_provider'];
+    if (!st) return;
+    const mark = st.state + '|' + st.last_changed;
+    if (this._seen === null || mark === this._seen) {
+      this._seen = mark;
+      return;
+    }
+    this._seen = mark;
+    if (!/^\/visio-sapiens-admin\/dashboards\/?$/.test(location.pathname)) return;
+    if (document.visibilityState !== 'visible') return;
+    if (!hass.user || !st.context || st.context.user_id !== hass.user.id) return;
+    this.open(st.state);
+  }
+
+  open(provider) {
+    const hass = this._hass();
+    if (!hass) return false;
+    const lang = this._lang(hass);
+    const names = { gemini: 'Gemini', claude: 'Claude', chatgpt: 'ChatGPT', custom: lang === 'fr' ? 'Personnalisé' : 'Custom' };
+    const p = names[provider] ? provider : 'claude';
+    const title = lang === 'fr' ? `${names[p]} — configuration` : `${names[p]} — setup`;
+    return vsspPopup(title, `/local/vssp/wizard/vssp_ai_setup.html?v=${encodeURIComponent(VSSP_BUILD)}&lang=${lang}&provider=${p}`);
+  }
+}
+
+window.vsspAiSetup = window.vsspAiSetup || new VsspAiSetup();

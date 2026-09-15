@@ -440,8 +440,9 @@ admin:
   apply_language: APPLIQUER LA LANGUE
   apply_language_hint: Rendre le fragment, patcher la config, regénérer
   select_chatbot: Assistant chatbot
-  chatbot_custom_label: Personnalisé
-  chatbot_custom_popup_title: Configuration du chatbot personnalisé
+  chatbot_setup_label: CONFIGURER L'IA
+  chatbot_setup_hint: Configuration guidée de l'intégration Home Assistant du fournisseur choisi
+  chatbot_setup_title: Configuration de l'IA
   auto_regenerate: Régénération automatique
   auto_regenerate_hint: Relance RÉGÉNÉRER TOUT (HOME protégé) selon l'intervalle ci-dessous
   auto_regenerate_interval: Intervalle (heures)

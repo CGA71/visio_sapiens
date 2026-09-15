@@ -109,10 +109,21 @@ automation:
               # FR | PREMIER CHOIX : l IA que Home Assistant a deja. Aucune cle
               # FR | saisie deux fois, et ai_task.generate_data tourne ici, dans
               # FR | l automatisation — pas de limite de 60 s a contourner.
+              # EN | The AI task of the provider picked in ADMIN > DASHBOARDS
+              # EN | first, then any other one.
+              # FR | La tache IA du fournisseur choisi dans ADMIN > DASHBOARDS
+              # FR | d abord, puis n importe quelle autre.
               - variables:
                   agent: >-
-                    {{ states.ai_task | map(attribute='entity_id')
-                       | select('match', '^ai_task\.[a-z0-9_]+$') | list | first | default('') }}
+                    {% set domain = {'claude': 'anthropic',
+                                     'gemini': 'google_generative_ai_conversation',
+                                     'chatgpt': 'openai_conversation',
+                                     'custom': 'ollama'}.get(states('input_select.vssp_chatbot_provider'), '') %}
+                    {% set own = integration_entities(domain) | select('match', '^ai_task\.[a-z0-9_]+$')
+                                 | list if domain else [] %}
+                    {% set any = states.ai_task | map(attribute='entity_id')
+                                 | select('match', '^ai_task\.[a-z0-9_]+$') | list %}
+                    {{ (own + any) | first | default('') }}
               - if:
                   - condition: template
                     value_template: "{{ agent != '' }}"

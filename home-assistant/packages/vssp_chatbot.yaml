@@ -2,6 +2,17 @@
 # Visio Sapiens — CHATBOT package (integration reelle Gemini/Claude/
 # ChatGPT/Custom)
 #
+# EN | SINCE THE AI SETUP POPUP: a message goes first to the conversation
+# EN | agent of the provider's Home Assistant integration (Anthropic,
+# EN | Google Gemini, OpenAI, Ollama — conversation.process), and only
+# EN | without one to vssp_chatbot_send.py and its own key file. The
+# EN | description below is that fallback path.
+# FR | DEPUIS LE POPUP DE CONFIGURATION DE L'IA : un message va d'abord a
+# FR | l'agent de conversation de l'integration Home Assistant du
+# FR | fournisseur (Anthropic, Google Gemini, OpenAI, Ollama —
+# FR | conversation.process), et seulement a defaut a vssp_chatbot_send.py
+# FR | et son fichier de cle. La description ci-dessous est ce repli.
+#
 # EN | WHAT THIS WIRES UP
 # EN |   HOME chatbot card (home.yaml.j2, "Cadre 2") -> browser_mod.popup ->
 # EN |   iframe /local/vssp/wizard/vssp_chatbot.html (real chat UI) -> this
@@ -89,6 +100,22 @@ shell_command:
     --history-b64 '{{ history_b64 }}'
     --status-file /config/www/vssp/chatbot_status.json
 
+  # EN | Files the answer of a Home Assistant conversation agent (the
+  # EN | integration path below). Same guarantees: `provider` is the helper's
+  # EN | own state, `agent` an entity id matched against a strict pattern,
+  # EN | the message and the answer travel as base64.
+  # FR | Classe la reponse d'un agent de conversation Home Assistant (le
+  # FR | chemin integration ci-dessous). Memes garanties : `provider` est
+  # FR | l'etat propre du helper, `agent` un entity id verifie par un motif
+  # FR | strict, le message et la reponse voyagent en base64.
+  vssp_chatbot_reply: >-
+    python3 /config/vssp/vssp_chatbot_send.py
+    --provider '{{ provider }}'
+    --agent '{{ agent }}'
+    --message-b64 '{{ message_b64 }}'
+    --answer-b64 '{{ answer_b64 }}'
+    --status-file /config/www/vssp/chatbot_status.json
+
 # --------------------------------------------------------------------
 # EN | WEBHOOKS — how the chat iframe talks back to Home Assistant. Same
 # EN | reasoning as vssp_theme.yaml's webhook: the iframe cannot reach the
@@ -113,9 +140,25 @@ automation:
           - POST
     actions:
       - choose:
+          # EN | Both base64 fields are CHECKED to be base64 before anything
+          # EN | runs: they are quoted into a shell line below, and "it is
+          # EN | base64, so no quote can be in it" only holds once verified —
+          # EN | the webhook accepts whatever JSON the LAN sends.
+          # FR | Les deux champs base64 sont VERIFIES comme tels avant tout :
+          # FR | ils sont cites dans une ligne shell plus bas, et « c'est du
+          # FR | base64, donc aucun guillemet » ne tient qu'une fois verifie
+          # FR | — le webhook accepte n'importe quel JSON venu du reseau local.
           - conditions:
               - condition: template
-                value_template: "{{ trigger.json.message_b64 is defined }}"
+                value_template: >-
+                  {{ trigger.json is mapping
+                     and trigger.json.message_b64 is defined
+                     and trigger.json.message_b64 is string
+                     and trigger.json.message_b64 | length < 20000
+                     and trigger.json.message_b64 is match('^[A-Za-z0-9+/]+={0,2}$')
+                     and (trigger.json.history_b64 | default('')) is string
+                     and (trigger.json.history_b64 | default('')) | length < 60000
+                     and (trigger.json.history_b64 | default('')) is match('^[A-Za-z0-9+/]*={0,2}$') }}
             sequence:
               # EN | provider comes from Home Assistant's OWN state, not
               # EN | from the webhook payload — the iframe never needs to
@@ -131,12 +174,92 @@ automation:
               # FR | toujours exactement l'une des 4 options declarees par
               # FR | input_select.vssp_chatbot_provider (vssp_generation.yaml),
               # FR | jamais un texte fourni par le client.
-              - action: shell_command.vssp_chatbot_send
-                data:
+              #
+              # EN | FIRST CHOICE: the conversation agent of the provider's
+              # EN | own Home Assistant integration — what the ADMIN setup
+              # EN | popup (wizard/vssp_ai_setup.html) walks through. The key
+              # EN | stays in Home Assistant, and the agent keeps the
+              # EN | conversation itself (conversation_id, handed back to the
+              # EN | page through the status file). "custom" maps to Ollama,
+              # EN | unless the custom form has an endpoint: that form is the
+              # EN | explicit choice for any other server.
+              # FR | PREMIER CHOIX : l'agent de conversation de l'integration
+              # FR | Home Assistant du fournisseur — ce que parcourt le popup
+              # FR | de configuration de l'ADMIN (wizard/vssp_ai_setup.html).
+              # FR | La cle reste dans Home Assistant, et l'agent garde lui-meme
+              # FR | la conversation (conversation_id, rendu a la page par le
+              # FR | fichier de statut). « custom » correspond a Ollama, sauf si
+              # FR | le formulaire custom a un point d'acces : ce formulaire est
+              # FR | le choix explicite pour tout autre serveur.
+              - variables:
                   provider: "{{ states('input_select.vssp_chatbot_provider') }}"
-                  message_b64: "{{ trigger.json.message_b64 }}"
-                  history_b64: "{{ trigger.json.history_b64 | default('') }}"
-                response_variable: sent
+                  domain: >-
+                    {{ {'claude': 'anthropic',
+                        'gemini': 'google_generative_ai_conversation',
+                        'chatgpt': 'openai_conversation',
+                        'custom': 'ollama'}.get(provider, '') }}
+                  custom_form: >-
+                    {{ provider == 'custom'
+                       and (states('input_text.vssp_chatbot_custom_endpoint') | trim)
+                           not in ['', 'unknown', 'unavailable'] }}
+                  agent: >-
+                    {{ '' if custom_form or domain == '' else
+                       integration_entities(domain)
+                       | select('match', '^conversation\.[a-z0-9_]+$')
+                       | reject('is_state', 'unavailable') | list | first | default('') }}
+                  conversation_id: >-
+                    {{ trigger.json.conversation_id
+                       if trigger.json.conversation_id is defined
+                          and trigger.json.conversation_id is string
+                          and trigger.json.conversation_id is match('^[A-Za-z0-9_-]{1,64}$')
+                       else '' }}
+              - if:
+                  - condition: template
+                    value_template: "{{ agent != '' }}"
+                then:
+                  # EN | The text reaches a native service call, no shell:
+                  # EN | decoding it here is safe. conversation_id only when
+                  # EN | the page has one — an empty id would be taken as a
+                  # EN | real one and every HOME bar message would share it.
+                  # FR | Le texte atteint un appel de service natif, sans
+                  # FR | shell : le decoder ici est sans risque.
+                  # FR | conversation_id seulement si la page en a un — un id
+                  # FR | vide serait pris pour un vrai, et tous les messages
+                  # FR | de la barre HOME le partageraient.
+                  - action: conversation.process
+                    continue_on_error: true
+                    data: >-
+                      {% set d = {'agent_id': agent,
+                                  'text': trigger.json.message_b64 | base64_decode} %}
+                      {{ dict(d, conversation_id=conversation_id) if conversation_id else d }}
+                    response_variable: answer
+                  - action: shell_command.vssp_chatbot_reply
+                    data:
+                      provider: "{{ provider }}"
+                      agent: "{{ agent }}"
+                      message_b64: "{{ trigger.json.message_b64 }}"
+                      answer_b64: >-
+                        {%- if answer is defined and answer.response is defined -%}
+                        {%- set r = answer.response -%}
+                        {%- set speech = r.speech.plain.speech
+                              if r.speech is defined and r.speech.plain is defined else '' -%}
+                        {{ {'type': r.response_type | default(''),
+                            'speech': speech[:8000],
+                            'conversation_id': answer.conversation_id | default('')}
+                           | to_json | base64_encode }}
+                        {%- endif -%}
+                    response_variable: sent
+                else:
+                  # EN | FALLBACK: the provider's own API, with the key saved
+                  # EN | in Visio Sapiens (or the custom form's endpoint).
+                  # FR | REPLI : l'API du fournisseur, avec la cle enregistree
+                  # FR | dans Visio Sapiens (ou le point d'acces du formulaire).
+                  - action: shell_command.vssp_chatbot_send
+                    data:
+                      provider: "{{ provider }}"
+                      message_b64: "{{ trigger.json.message_b64 }}"
+                      history_b64: "{{ trigger.json.history_b64 | default('') }}"
+                    response_variable: sent
               # EN | No success notification — unlike a rare admin action
               # EN | (theme apply), a chat message can happen every few
               # EN | seconds; the iframe already shows the reply inline by
@@ -167,8 +290,8 @@ automation:
             data:
               title: "Visio Sapiens — Message chatbot malforme"
               message: >
-                Le webhook a recu un payload sans message_b64. Rien n'a
-                ete envoye.
+                Le webhook a recu un payload sans message_b64 valide
+                (absent, trop long ou pas du base64). Rien n'a ete envoye.
 
   # EN | WHY NO base64/content_b64 HERE, UNLIKE THE THEME WEBHOOK — that
   # EN | payload is handed to a shell one-liner (rgba() values would break

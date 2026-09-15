@@ -51,9 +51,18 @@ en mode API OpenAI...). Un serveur qui parle un protocole different n'est
 pas pris en charge sans adapter build_custom_request()/parse_custom_response()
 ci-dessous.
 
+CHEMIN INTEGRATION (--agent) : quand le fournisseur a son integration Home
+Assistant (Anthropic, Google Gemini, OpenAI, Ollama), l'automatisation
+appelle elle-meme conversation.process et ce script ne fait que classer la
+reponse (--answer-b64) dans le meme fichier de statut, avec le
+conversation_id que la page renverra au message suivant. Tout ce qui suit
+(cles, API des fournisseurs) n'est alors pas utilise.
+
 Usage :
     python3 vssp_chatbot_send.py --provider claude --message-b64 "..." \
         --status-file /config/www/vssp/chatbot_status.json
+    python3 vssp_chatbot_send.py --provider claude --message-b64 "..." \
+        --agent conversation.claude_conversation --answer-b64 "..."
     python3 vssp_chatbot_send.py --provider gemini --message-b64 "..." --dry-run
 """
 from __future__ import annotations
@@ -62,6 +71,7 @@ import argparse
 import base64
 import binascii
 import json
+import re
 import sys
 import urllib.error
 import urllib.request
@@ -218,6 +228,52 @@ def write_status(status_file: str, **fields) -> None:
         json.dumps(payload, indent=2, ensure_ascii=False), encoding="utf-8")
 
 
+AGENT_RE = re.compile(r"^conversation\.[a-z0-9_]+$")
+CONVERSATION_ID_RE = re.compile(r"^[A-Za-z0-9_-]{1,64}$")
+
+
+def file_agent_answer(args, message: str) -> int:
+    """Chemin integration : l'automatisation a deja appele
+    conversation.process (agent de l'integration Home Assistant du
+    fournisseur) et passe sa reponse en base64 — ce script ne fait que la
+    classer dans le fichier de statut que la page interroge.
+
+    Une erreur de l'agent (cle refusee, compte sans credit...) sort en 0 :
+    elle est dans le statut, la page l'affiche. Le code non nul reste
+    reserve a ce qui empeche d'ecrire un statut utile, pour que
+    l'automatisation ne notifie pas a chaque message."""
+    agent = args.agent if AGENT_RE.match(args.agent or "") else ""
+    base = {"provider": args.provider, "agent": agent, "request_message": message}
+    if not agent:
+        write_status(args.status_file, ok=False, reply=None,
+                     error=f"Agent invalide : {args.agent!r}.", **base)
+        return 1
+    answer = {}
+    if args.answer_b64:
+        try:
+            answer = json.loads(base64.b64decode(args.answer_b64).decode("utf-8"))
+        except (binascii.Error, UnicodeDecodeError, json.JSONDecodeError) as exc:
+            print(f"[ERR] answer_b64 illisible : {exc}")
+            answer = {}
+    if not isinstance(answer, dict) or not answer:
+        err = (f"{agent} n'a pas repondu. Verifiez l'integration (cle, credit "
+               "du compte) dans Parametres > Appareils et services, et le "
+               "journal de Home Assistant.")
+        write_status(args.status_file, ok=False, reply=None, error=err, **base)
+        return 0
+    speech = answer.get("speech") if isinstance(answer.get("speech"), str) else ""
+    cid = answer.get("conversation_id") if isinstance(answer.get("conversation_id"), str) else ""
+    cid = cid if CONVERSATION_ID_RE.match(cid) else ""
+    if answer.get("type") == "error":
+        write_status(args.status_file, ok=False, reply=None, conversation_id=cid,
+                     error=f"{agent} : {speech or 'erreur sans message'}", **base)
+        return 0
+    write_status(args.status_file, ok=True, reply=speech, error=None,
+                 conversation_id=cid, **base)
+    print(f"[OK] reponse de {agent} ecrite dans {args.status_file}")
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--url", default="http://localhost:8123")
@@ -236,6 +292,12 @@ def main() -> int:
     ap.add_argument("--status-file", default="/config/www/vssp/chatbot_status.json")
     ap.add_argument("--dry-run", action="store_true",
                      help="Construit la requete et l'affiche, sans appeler le fournisseur.")
+    ap.add_argument("--agent", default="",
+                     help="Chemin integration : l'agent conversation.* qui a "
+                          "deja repondu (shell_command.vssp_chatbot_reply).")
+    ap.add_argument("--answer-b64", default="",
+                     help="Avec --agent : {type, speech, conversation_id} en "
+                          "JSON base64, tire de la reponse de conversation.process.")
     args = ap.parse_args()
 
     try:
@@ -252,6 +314,9 @@ def main() -> int:
                      error="Message vide.")
         return 1
 
+    if args.agent:
+        return file_agent_answer(args, message)
+
     history: list = []
     if args.history_b64:
         try:
@@ -265,9 +330,11 @@ def main() -> int:
     if key_path.exists():
         api_key = key_path.read_text(encoding="utf-8").strip()
     if args.provider != "custom" and not api_key:
-        err = (f"Aucune cle API pour {args.provider}. Collez-la dans "
+        err = (f"{args.provider} n'est pas configure : ADMIN > DASHBOARDS > "
+               f"CONFIGURER L'IA / SET UP THE AI installe son integration Home Assistant "
+               f"(ou, sans integration, collez une cle dans "
                f"input_text.vssp_{args.provider}_api_key puis lancez "
-               f"script.vssp_save_{args.provider}_key.")
+               f"script.vssp_save_{args.provider}_key).")
         print(f"[ERR] {err}")
         write_status(args.status_file, ok=False, provider=args.provider,
                      reply=None, request_message=message, error=err)

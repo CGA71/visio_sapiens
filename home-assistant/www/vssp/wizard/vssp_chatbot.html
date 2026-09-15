@@ -239,6 +239,15 @@ function initChat() {
   el('subtitle').textContent = 'Sends to whichever provider is selected in ADMIN > GENERATION.';
 
   const history = []; // [{role: 'user'|'assistant', content: string}] — in-memory only, resets on reopen
+  // EN | Set by the first reply of a Home Assistant conversation agent (the
+  // EN | integration path): the agent keeps the history itself under this
+  // EN | id, so it travels back with every next message. Empty on the
+  // EN | key-file path, which uses `history` above instead.
+  // FR | Fixe par la premiere reponse d'un agent de conversation Home
+  // FR | Assistant (le chemin integration) : l'agent garde lui-meme
+  // FR | l'historique sous cet id, qui repart donc avec chaque message
+  // FR | suivant. Vide sur le chemin fichier de cle, qui utilise `history`.
+  let conversationId = '';
   const messagesEl = el('messages');
   const input = el('chatInput');
   const sendBtn = el('sendBtn');
@@ -278,6 +287,9 @@ function initChat() {
       // FR | popup precedente) serait pris pour cette reponse.
       if (!data.timestamp || new Date(data.timestamp).getTime() < sentAt) continue;
       pendingBubble.remove();
+      if (typeof data.conversation_id === 'string' && /^[A-Za-z0-9_-]{1,64}$/.test(data.conversation_id)) {
+        conversationId = data.conversation_id;
+      }
       if (data.ok) {
         addBubble('assistant', data.reply || '(empty reply)');
         history.push({ role: 'assistant', content: data.reply || '' });
@@ -304,10 +316,10 @@ function initChat() {
       const res = await fetch(WEBHOOK_SEND, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+        body: JSON.stringify(Object.assign({
           message_b64: b64EncodeUnicode(text),
           history_b64: b64EncodeUnicode(JSON.stringify(recentHistory)),
-        }),
+        }, conversationId ? { conversation_id: conversationId } : {})),
       });
       if (!res.ok) throw new Error('HTTP ' + res.status);
       history.push({ role: 'user', content: text });
