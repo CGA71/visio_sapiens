@@ -161,7 +161,7 @@ code.cmd{display:block;margin-top:4px;padding:4px 8px;background:rgba(0,0,0,.35)
 // FR | ailleurs.
 var I18N={
 en:{title:'SYSTEM DASHBOARD',hostname:'Hostname',uptime:'Uptime',updated:'Updated',clear_cache:'↻ CLEAR CACHE',clear_cache_tip:'Reload the page without cache',
-load:'Load average',cpu_temp:'CPU temp',average:'Average',cores:'{n} cores',partitions:'PARTITIONS',history:'HISTORY (LAST 5 DAYS)',chart_cpu:'CPU usage (%)',chart_ram:'RAM usage (%)',chart_net:'Network',chart_disk:'Disk',
+load:'Load average',load_note:'Glances in Home Assistant gives the 15-min average only',cpu_temp:'CPU temp',average:'Average',cores:'{n} cores',partitions:'PARTITIONS',history:'HISTORY (LAST 5 DAYS)',chart_cpu:'CPU usage (%)',chart_ram:'RAM usage (%)',chart_net:'Network',chart_disk:'Disk',
 temps:'COMPONENT TEMPERATURES',component:'Component',sensor:'Sensor',temperature:'Temperature',state:'State',no_sensor:'No sensor',loading:'Loading…',
 mount:'Mount',fs:'FS',size:'Size',used:'Used',free:'Free',usage:'Usage',inodes:'Inodes',parts_host:'Read on the host (df) · {t}',parts_glances:'From Glances only (the host collector has no data yet)',parts_none:'No partition data',
 k3s_title:'K3S CLUSTER',src_live:'measured {t}',src_stale:'last measurement {t} — not refreshed',src_legacy:'basic data only (old host timer)',
@@ -196,7 +196,7 @@ k_update:'k3s {a} → {b} available',k_update_d:'Planned on the UPDATES screen o
 k_all_ok:'Cluster healthy',k_all_ok_d:'Nodes ready, no failing pod, no warning in the last 24 h.',
 login:'CONNECTION',login_need:'Home Assistant token required',login_btn:'Connect',error:'Error'},
 fr:{title:'TABLEAU DE BORD SYSTÈME',hostname:'Nom d’hôte',uptime:'Uptime',updated:'Mise à jour',clear_cache:'↻ VIDER LE CACHE',clear_cache_tip:'Recharger la page sans cache',
-load:'Charge moyenne',cpu_temp:'Temp. CPU',average:'Moyenne',cores:'{n} cœurs',partitions:'PARTITIONS',history:'HISTORIQUE (5 DERNIERS JOURS)',chart_cpu:'Utilisation CPU (%)',chart_ram:'Utilisation RAM (%)',chart_net:'Réseau',chart_disk:'Disque',
+load:'Charge moyenne',load_note:'Glances dans Home Assistant ne donne que la moyenne 15 min',cpu_temp:'Temp. CPU',average:'Moyenne',cores:'{n} cœurs',partitions:'PARTITIONS',history:'HISTORIQUE (5 DERNIERS JOURS)',chart_cpu:'Utilisation CPU (%)',chart_ram:'Utilisation RAM (%)',chart_net:'Réseau',chart_disk:'Disque',
 temps:'TEMPÉRATURE DES COMPOSANTS',component:'Composant',sensor:'Capteur',temperature:'Température',state:'État',no_sensor:'Aucun capteur',loading:'Chargement…',
 mount:'Montage',fs:'Type',size:'Taille',used:'Utilisé',free:'Libre',usage:'Occupation',inodes:'Inodes',parts_host:'Lu sur l’hôte (df) · {t}',parts_glances:'Glances seulement (le collecteur hôte n’a pas encore de données)',parts_none:'Aucune donnée de partition',
 k3s_title:'CLUSTER K3S',src_live:'mesuré {t}',src_stale:'dernière mesure {t} — non rafraîchie',src_legacy:'données de base seulement (ancien minuteur hôte)',
@@ -359,15 +359,33 @@ try{var r=await fetch(HA_URL+'/api/webhook/vssp_core_scan',{method:'POST',header
 var tick=setInterval(async function(){var s=await localJson('/local/vssp/core_scan_'+scope+'.json');var mine=s&&s.request_id===rid;if(mine&&s.state==='done'){clearInterval(tick);btn.disabled=false;renderScan(scope,s);return}if(Date.now()-SCANS[scope].t0>3e5){clearInterval(tick);btn.disabled=false;renderScan(scope,{state:'done',ok:false,message:t('scan_timeout')});return}renderScan(scope,{state:'running'})},3000)}
 async function loadLastScans(){for(var sc of['system','k3s']){var s=await localJson('/local/vssp/core_scan_'+sc+'.json');if(s&&s.state==='done')renderScan(sc,s)}}
 
+// ── EN | Same device, or no answer / FR | Le meme appareil, ou pas de reponse ──
+// EN | The keyword search ran over the whole house: the load card read two of
+// EN | its lines from the NAS ("charge moyenne du processeur"), and the network
+// EN | chart the history of an amplifier button whose name contains "rx".
+// EN | Every Glances figure is now looked up among the entities of the CPU
+// EN | entity's own device, asked once to Home Assistant's template API.
+// FR | La recherche par mots-cles parcourait toute la maison : la carte de
+// FR | charge lisait deux de ses lignes sur le NAS (« charge moyenne du
+// FR | processeur »), et le graphique reseau l historique d un bouton d ampli
+// FR | dont le nom contient « rx ». Chaque valeur Glances est maintenant
+// FR | cherchee parmi les entites de l appareil de l entite CPU, demandees une
+// FR | fois a l API de template de Home Assistant.
+var DEVICE={cpu:null,ids:null};
+async function sameDevice(states,cpu){if(!cpu)return states;if(DEVICE.cpu!==cpu.entity_id){var ids=[];try{var r=await fetch(HA_URL+'/api/template',{method:'POST',headers:Object.assign({'Content-Type':'application/json'},await authHeader()),body:JSON.stringify({template:"{{ device_entities(device_id('"+cpu.entity_id+"')) | tojson }}"})});if(r.ok)ids=JSON.parse(await r.text())}catch(e){}DEVICE={cpu:cpu.entity_id,ids:ids}}if(!DEVICE.ids||!DEVICE.ids.length)return states;var set=new Set(DEVICE.ids);return states.filter(function(e){return set.has(e.entity_id)})}
+
 // ── EN | The 30 s cycle / FR | Le cycle de 30 s ──
 async function refresh(){var states=await haGet('states');var hostname=findEntity(states,['hostname']);var up=findEntity(states,['uptime'],['update','ios']);if(hostname){document.getElementById('hostname').textContent=hostname.state}else{var g=findEntity(states,['cpu_load'])||findEntity(states,['uptime'],['update','ios']);if(g){var m=g.entity_id.match(/(\d{1,3}[_.]\d{1,3}[_.]\d{1,3}[_.]\d{1,3})/);document.getElementById('hostname').textContent=m?m[1].replace(/_/g,'.'):'--'}}if(up)document.getElementById('uptime').textContent=since(up.state);document.getElementById('last-update').textContent=new Date().toLocaleTimeString(LOCALE);
 var stats=await localJson('/local/vssp/core_stats.json'),host=(stats&&stats.host)||{};
 var cpu=findEntity(states,['cpu','use'],['core','temp','temperature'])||findEntity(states,['cpu_percent'])||findEntity(states,['utilisation','cpu'],['core','temp']);renderGauge('g-cpu',num(cpu)||0,100,'%','#00FFC3',cpu?(cpu.attributes.friendly_name||'').substring(0,25):'');
-var ram=findEntity(states,['ram','use'],['swap'])||findEntity(states,['memory','use'],['swap','gpu'])||findEntity(states,['utilisation','memoire'],['swap'])||findEntity(states,['utilisation','mémoire'],['swap']);renderGauge('g-ram',num(ram)||0,100,'%','#3AA7FF',ram?(ram.attributes.friendly_name||'').substring(0,25):'');
-var l1=findEntity(states,['charge','processeur','1'],['15'])||findEntity(states,['load','1m']),l5=findEntity(states,['charge','processeur','5'],['15'])||findEntity(states,['load','5m']),l15=findEntity(states,['charge','processeur','15'])||findEntity(states,['load','15m']);
-document.getElementById('g-load').innerHTML='<div style="text-align:left;padding:10px"><div style="color:#8FB6C9;margin-bottom:6px">1m: <span style="color:#fff;font-weight:bold">'+esc(load(l1))+'</span></div><div style="color:#8FB6C9;margin-bottom:6px">5m: <span style="color:#fff;font-weight:bold">'+esc(load(l5))+'</span></div><div style="color:#8FB6C9">15m: <span style="color:#fff;font-weight:bold">'+esc(load(l15))+'</span></div>'+(host.cpus?'<div class="muted" style="font-size:10px;margin-top:6px">'+esc(t('cores',{n:host.cpus}))+'</div>':'')+'</div>';
-var sw=findEntity(states,['swap','use'])||findEntity(states,['utilisation','espace_d_echange']);renderGauge('g-swap',num(sw)||0,100,'%','#B084FF',sw?(sw.attributes.friendly_name||'').substring(0,25):'');
-var ct=findEntity(states,['cpu','temp'])||findEntity(states,['package','temp'])||findEntity(states,['edge','temp']);renderGauge('g-temp',num(ct)||0,100,'°C','#FF9800',t('average'));
+var dev=await sameDevice(states,cpu);
+var ram=findEntity(dev,['ram','use'],['swap'])||findEntity(dev,['memory','use'],['swap','gpu'])||findEntity(dev,['utilisation','memoire'],['swap'])||findEntity(dev,['utilisation','mémoire'],['swap']);renderGauge('g-ram',num(ram)||0,100,'%','#3AA7FF',ram?(ram.attributes.friendly_name||'').substring(0,25):'');
+// EN | Glances in Home Assistant exposes ONE load figure: the 15-minute average.
+// FR | Glances dans Home Assistant n expose QU UNE charge : la moyenne sur 15 minutes.
+var l15=findEntity(dev,['cpu_load'])||findEntity(dev,['charge'],['conteneur'])||findEntity(dev,['load']);
+document.getElementById('g-load').innerHTML='<div style="text-align:left;padding:10px"><div style="color:#8FB6C9;margin-bottom:6px">15 min: <span style="color:#fff;font-weight:bold;font-size:20px">'+esc(load(l15))+'</span></div>'+(host.cpus?'<div style="color:#8FB6C9">'+esc(t('cores',{n:host.cpus}))+'</div>':'')+'<div class="muted" style="font-size:10px;margin-top:6px">'+esc(t('load_note'))+'</div></div>';
+var sw=findEntity(dev,['swap','use'])||findEntity(dev,['utilisation','espace_d_echange']);renderGauge('g-swap',num(sw)||0,100,'%','#B084FF',sw?(sw.attributes.friendly_name||'').substring(0,25):'');
+var ct=findEntity(dev,['cpu','temp'])||findEntity(dev,['package','temp'])||findEntity(dev,['edge','temp']);renderGauge('g-temp',num(ct)||0,100,'°C','#FF9800',t('average'));
 var te=findEntities(states,['temp'],['weather','forecast','room','bedroom','bathroom','kitchen','living','garden','spa','secret','computer_room_temp','technical_room_temp']);var sensors=te.filter(function(s){var id=s.entity_id.toLowerCase();return(id.includes('cpu')||id.includes('core')||id.includes('nvme')||id.includes('ssd')||id.includes('package')||id.includes('edge')||id.includes('board')||id.includes('k10')||id.includes('it87'))&&!isNaN(parseFloat(s.state))});renderTemps(sensors);
 var os=findEntity(states,['operating_system'])||findEntity(states,['os_version']);document.getElementById('os-info').textContent=host.os||(os?os.state:'Linux');
 // EN | Partitions / FR | Partitions
@@ -385,7 +403,7 @@ STATE.context={os:host.os||(os?os.state:''),kernel:host.kernel||'',k3s:(k&&k.ver
 // FR | Historique : toutes les 5 min, pas toutes les 30 s — Glances ne se
 // FR | rafraichit lui-meme que toutes les 60 s, et 4 requetes de 5 jours par
 // FR | cycle pesent sur le recorder.
-if(Date.now()-lastHistory>3e5){lastHistory=Date.now();if(cpu)createChart('chart-cpu','CPU (%)',processHistory(await haHistory(cpu.entity_id,5)),'#3AA7FF','%');if(ram)createChart('chart-ram','RAM (%)',processHistory(await haHistory(ram.entity_id,5)),'#00FFC3','%');var nr=findEntity(states,['rx'],['error']);if(nr)createChart('chart-net',t('chart_net'),processHistory(await haHistory(nr.entity_id,5)),'#B084FF',' Mb/s');var di=findEntity(states,['disk','use'],['swap'])||findEntity(states,['utilisation','disque'],['kubelet']);if(di)createChart('chart-disk',t('chart_disk'),processHistory(await haHistory(di.entity_id,5)),'#FF9800','')}}
+if(Date.now()-lastHistory>3e5){lastHistory=Date.now();if(cpu)createChart('chart-cpu','CPU (%)',processHistory(await haHistory(cpu.entity_id,5)),'#3AA7FF','%');if(ram)createChart('chart-ram','RAM (%)',processHistory(await haHistory(ram.entity_id,5)),'#00FFC3','%');var nr=findEntity(dev,['rx'],['error','veth','flannel','cni','docker','lo_']);if(nr)createChart('chart-net',t('chart_net'),processHistory(await haHistory(nr.entity_id,5)),'#B084FF',' Mb/s');var di=findEntity(dev,['disk','use'],['swap'])||findEntity(dev,['utilisation','disque'],['kubelet']);if(di)createChart('chart-disk',t('chart_disk'),processHistory(await haHistory(di.entity_id,5)),'#FF9800','')}}
 var errBox=null;
 // EN | The timer is rescheduled in `finally`: a network error used to stop
 // EN | the loop for good until someone reloaded the page.
