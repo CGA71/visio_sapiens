@@ -340,7 +340,7 @@ class VsspChatbotBar {
   // FR | le popup ici, sur cet ecran.
   openFullChat(el) {
     vsspPopup((el && el.dataset && el.dataset.title) || 'Chatbot',
-      '/local/vssp/wizard/vssp_chatbot.html?mode=chat');
+      `/local/vssp/wizard/vssp_chatbot.html?mode=chat&v=${encodeURIComponent(VSSP_BUILD)}`);
   }
 }
 
@@ -441,14 +441,37 @@ class VsspAiSetup {
     this.open(st.state);
   }
 
-  open(provider) {
+  // EN | The build stamp the ADMIN dashboard itself was generated with (its
+  // EN | SET UP THE AI button carries it): it changes with every deploy,
+  // EN | while this file's own ?v= only changes when its storage-mode
+  // EN | resource is bumped by hand. A page cached under an old stamp would
+  // EN | otherwise stay on the tablet for 31 days.
+  // FR | L'empreinte de build avec laquelle le dashboard ADMIN a ete genere
+  // FR | (son bouton CONFIGURER L'IA la porte) : elle change a chaque
+  // FR | deploiement, alors que le ?v= de ce fichier ne change que si sa
+  // FR | ressource en mode storage est bumpee a la main. Sinon une page mise
+  // FR | en cache sous une ancienne empreinte resterait 31 jours sur la
+  // FR | tablette.
+  async _stamp(hass) {
+    try {
+      const cfg = await hass.callWS({ type: 'lovelace/config', url_path: 'visio-sapiens-admin' });
+      const m = JSON.stringify(cfg).match(/vssp_ai_setup\.html\?v=([A-Za-z0-9._-]+)/);
+      if (m) return m[1];
+    } catch (e) {
+      /* fall back to this file's own token */
+    }
+    return VSSP_BUILD;
+  }
+
+  async open(provider) {
     const hass = this._hass();
     if (!hass) return false;
     const lang = this._lang(hass);
     const names = { gemini: 'Gemini', claude: 'Claude', chatgpt: 'ChatGPT', custom: lang === 'fr' ? 'Personnalisé' : 'Custom' };
     const p = names[provider] ? provider : 'claude';
     const title = lang === 'fr' ? `${names[p]} — configuration` : `${names[p]} — setup`;
-    return vsspPopup(title, `/local/vssp/wizard/vssp_ai_setup.html?v=${encodeURIComponent(VSSP_BUILD)}&lang=${lang}&provider=${p}`);
+    const v = await this._stamp(hass);
+    return vsspPopup(title, `/local/vssp/wizard/vssp_ai_setup.html?v=${encodeURIComponent(v)}&lang=${lang}&provider=${p}`);
   }
 }
 
