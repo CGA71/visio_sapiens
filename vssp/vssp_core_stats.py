@@ -343,7 +343,8 @@ def read_k3s(host: "infra.Host") -> dict:
     if code == 0 and m:
         try:
             end = _dt.datetime.strptime(m.group(1).strip(), "%b %d %H:%M:%S %Y %Z")
-            cert_days = (end - _dt.datetime.utcnow()).days
+            cert_days = (end.replace(tzinfo=_dt.timezone.utc)
+                         - _dt.datetime.now(_dt.timezone.utc)).days
         except ValueError:
             pass
 

@@ -379,7 +379,8 @@ core.html interroge /local/vssp/core_scan_<portée>.json toutes les 3 s jusqu'à
 ```
 
 - **Fournisseur** : `input_select.vssp_chatbot_provider` et son fichier de clé
-  (`/config/vssp/.<fournisseur>_key`), partagés avec la bulle de chat. Claude tourne sur
+  (`/config/vssp/.<fournisseur>_key`), partagés avec la bulle de chat (la clé se pose avec `input_text.vssp_<fournisseur>_api_key` puis
+  `script.vssp_save_<fournisseur>_key`). Claude tourne sur
   `claude-opus-5` avec l'outil `web_search_20260209` (5 recherches au plus, repli côté
   serveur en cas de refus), quel que soit l'ancien modèle de la bulle de chat ; Gemini utilise
   l'ancrage `google_search` et ChatGPT l'outil `web_search` de l'API Responses, chacun avec le

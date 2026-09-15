@@ -387,7 +387,8 @@ core.html polls /local/vssp/core_scan_<scope>.json every 3 s until it carries it
 ```
 
 - **Provider**: `input_select.vssp_chatbot_provider` and its key file (`/config/vssp/.<provider>_key`),
-  shared with the chat bubble. Claude runs on `claude-opus-5` with the `web_search_20260209`
+  shared with the chat bubble (the key is set with `input_text.vssp_<provider>_api_key` then
+  `script.vssp_save_<provider>_key`). Claude runs on `claude-opus-5` with the `web_search_20260209`
   tool (5 searches at most, server-side fallback on refusal), whatever older model the chat
   uses; Gemini uses `google_search` grounding and ChatGPT the Responses API `web_search`
   tool, each with the model set in the console. The custom provider has no web search: SCAN

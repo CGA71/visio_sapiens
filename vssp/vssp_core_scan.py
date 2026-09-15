@@ -98,7 +98,7 @@ MESSAGES = {
     "scan.running": "Searching the web…",
     "scan.ok": "{count} recommendation(s) from {provider}.",
     "error.payload": "The request from the page was malformed: {detail}",
-    "error.no_key": "No API key for {provider}: enter it in the assistant settings of the console.",
+    "error.no_key": "No API key for {provider}: fill input_text.vssp_{provider}_api_key, then run script.vssp_save_{provider}_key.",
     "error.no_web": "The custom provider has no web search: choose Claude, Gemini or ChatGPT for SCAN.",
     "error.provider": "{provider} answered {code}: {detail}",
     "error.refusal": "{provider} declined the request.",
