@@ -48,9 +48,9 @@ The full chain is as follows:
 └──────────────┘
 
        ┌───────────────────────────────────────────┐
-       │ Separate channel for K3s:                  │
-       │ cron k3s_stats.sh → k3s_stats.json         │
-       │ → /config/www/vssp/ → /local/vssp/...      │
+       │ Separate channel, partitions + K3s:        │
+       │ vssp_core_stats.py (ssh, every 5 min)      │
+       │ → /local/vssp/core_stats.json   (§4.4)     │
        └───────────────────────────────────────────┘
 ```
 
@@ -115,24 +115,18 @@ HA's `recorder` is what stores the history later queried by the charts.
 
 ## 3. Authentication
 
-```js
-var HA_URL = window.location.origin,
-    TOKEN  = localStorage.getItem('osv_ha_token') || '';
-```
+The page borrows the **tablet's own Home Assistant session** from the CORE dashboard around
+the iframe (same origin, `sandbox allow-same-origin`): `window.parent.document
+.querySelector('home-assistant').hass.auth`. `hass.auth` refreshes its short-lived token by
+itself, which matters here since the page polls every 30 s for as long as it stays open. A
+new tablet therefore only has to log in to Home Assistant.
 
-- On first load, if no token is cached, `init()` replaces the entire content of `.page` with
-  a small login form.
-- `saveToken()` writes the token to `localStorage` under the key **`osv_ha_token`**, then
-  calls `init()` again.
-- The token is an HA **Long-Lived Access Token** (user profile → bottom of page → "Create
-  Token").
-- It is then sent on every request: `Authorization: Bearer <TOKEN>`.
+The pasted long-lived token (`localStorage` key `vssp_ha_token`) is only the fallback for
+`core.html` opened on its own, outside the dashboard; without a session and without it, the
+page shows a small login form.
 
-⚠️ The token is stored in plaintext in `localStorage` and stays valid for a very long time —
-treat it as a secret granting full access to Home Assistant. The `osv_ha_token` key name is a
-naming leftover: renaming it would break the session of every browser already paired, so it
-should only be done with an explicit migration (read the old key, rewrite it under the new
-one, delete the old one).
+`/local/` files (`core_stats.json`, `core_scan_*.json`, `infra_updates.json`) need no token,
+and the SCAN webhook is unauthenticated but `local_only`.
 
 ---
 
@@ -212,96 +206,85 @@ GET /api/history/period/<start_iso>
 3. **downsamples** to ~200 points max (`step = floor(len/200)`), otherwise Chart.js would
    collapse under 5 days of minute-by-minute readings.
 
-### 4.4 K3s statistics — separate channel 🔴 broken path
+### 4.4 Partitions and k3s — the host collector
 
-The Kubernetes cluster **does not go through the HA API**:
+Glances, through Home Assistant, reports `/` once and then every kubelet volume bind-mounted
+from it (dozens of identical rows, never `/boot/efi`), and knows nothing about the cluster.
+Both come from **`vssp/vssp_core_stats.py`**, run every 5 minutes (and 2 minutes after a
+Home Assistant start) by the automation *CORE : collecte hôte et cluster*
+(`packages/vssp_core.yaml`):
 
-```js
-var k3r = await fetch(HA_URL+'/local/osvision_v2/k3s_stats.json?t='+Date.now());
+```
+vssp_core_stats.py ──ssh (credentials from the safe, vssp-maint)──► host
+   LC_ALL=C df -P -T -B1 / df -P -i      → partitions (kubelet bind mounts filtered out)
+   nproc, /etc/os-release, uname -r      → cores, OS, kernel
+   systemctl is-active k3s, k3s --version
+   k3s kubectl get nodes,pods,deployments,statefulsets,daemonsets,pvc,services,namespaces -A -o json
+   k3s kubectl get events -A --field-selector type=Warning -o json
+   k3s kubectl top nodes                 → CPU / memory load (metrics-server)
+   openssl x509 -enddate (API server certificate)
+        │
+        ▼
+/config/www/vssp/core_stats.json  →  /local/vssp/core_stats.json
 ```
 
-**This path is stale.** The project's `www/` folder is now called `vssp/`
-(`home-assistant/www/vssp/` → `/local/vssp/`), and the pipeline no longer deploys anything
-under `/local/osvision_v2/`. The `fetch` therefore always returns a 404, the `catch`
-swallows the error, and the panel permanently shows *"K3s stats unavailable. Install the
-k3s_stats.sh cron on the host."* — even when the cron is running fine.
+- Same door as `vssp_infra_updates.py` (it reuses its `Safe` and `open_host`): the host
+  credentials live in the safe, the script holds them for one run, Home Assistant only ever
+  sees the JSON. `kubectl` goes through `run_maybe_sudo` — `k3s.yaml` is `0600 root` on this
+  host. **Every command is a read**; nothing is written on the host.
+- **Sealed safe** (the usual state after a host reboot): the file is rewritten with the last
+  measurement marked `stale` and the safe's `message_key`; the page says so, shows the
+  partitions from Glances, and for the cluster falls back to the old host timer's file (next
+  point).
+- **The old host timer.** Until now the panel was fed by `/opt/osvision/k3s_stats.sh`, a root
+  systemd timer (`k3s-stats.timer`, every 60 s) installed by hand on the host, outside this
+  repository, writing into the HA volume at `www/osvision_v2/k3s_stats.json`. Its version is
+  always empty (`kubectl version --short` no longer exists) and its event messages are cut to
+  their last word. `core.html` only reads it when `core_stats.json` has no cluster data, and
+  labels it *basic data only*. Once the collector is confirmed, the timer can be removed:
+  `sudo systemctl disable --now k3s-stats.timer osvision-k3s-stats.timer`.
 
-**Fix, a one-line change in `core.html`:**
-
-```js
-var k3r = await fetch(HA_URL+'/local/vssp/k3s_stats.json?t='+Date.now());
-```
-
-And make sure the cron actually writes to the new folder:
-
-```sh
-# k3s_stats.sh, host side
-OUT=/config/www/vssp/k3s_stats.json
-```
-
-How it works once fixed:
-
-- A `k3s_stats.sh` script (run via cron on the host) calls `kubectl` and writes a JSON file
-  to `/config/www/vssp/k3s_stats.json`.
-- HA serves `/config/www/` under the `/local/` URL — no token needed here.
-- The `?t=<timestamp>` parameter acts as a **cache-buster**.
-- If the file is missing or invalid, `renderK3s(null)` displays the help message.
-
-Expected JSON structure:
+Main fields of `core_stats.json`:
 
 ```json
 {
-  "version": "v1.29.4+k3s1",
-  "node_count": 3,
-  "pods_total": 87,
-  "pods_running": 85,
-  "deployments": 24,
-  "services": 31,
-  "namespaces": 12,
-  "nodes": [{"name":"node1","status":"Ready","role":"control-plane",
-             "cpu_capacity":"8","memory_capacity":"32Gi"}],
-  "top_namespaces":  [{"ns":"default","count":14}],
-  "top_deployments": [{"name":"nginx","ready":"3/3"}],
-  "events": [{"time":"14:32","type":"Warning","object":"pod/x","message":"..."}]
+  "ok": true, "stale": false, "message_key": "stats.ok", "generated": "…", "measured": "…",
+  "host": {"cpus": 24, "os": "Ubuntu 26.04.1 LTS", "kernel": "…",
+           "partitions": [{"mount": "/", "device": "/dev/sda2", "fs": "ext4",
+                           "size": 490164953088, "used": …, "avail": …, "pct": 26, "inodes_pct": 4}]},
+  "k3s": {"service": "active", "version": "v1.36.4+k3s1", "reachable": true,
+          "nodes": [{"name": "k3s-master", "ready": true, "pressure": [], "cpu_pct": 6, "mem_pct": 41, "pods_capacity": 110, …}],
+          "pods": {"total": 12, "running": 11, "pending": 0, "failed": 0, "not_ready": 0, "restarts": 3},
+          "problem_pods": [{"ns": "…", "name": "…", "reason": "CrashLoopBackOff", "restarts": 14}],
+          "workloads": {"deployments": 8, "unavailable": [], "top": […]},
+          "pvc": {"total": 3, "not_bound": []}, "events": [{"time": "…", "reason": "BackOff", …}],
+          "cert_days": 320}
 }
 ```
 
-> `k3s_stats.json` is produced on the host, not in the repo: it must **not** be versioned,
-> and deployment (`rm -rf /config/www/vssp` then `mv`) overwrites it on every run. If you
-> want it to survive deployments, have it write elsewhere
-> (e.g. `/config/www/vssp_runtime/`) — a folder the CI does not replace.
+`/config/www/vssp/` is replaced on every deployment: the file disappears with it and comes
+back at the next run (at most 5 minutes, or 2 minutes after the restart that follows the
+deployment).
 
 ---
 
 ## 5. Refresh loop
 
-```js
-setTimeout(init, 30000);   // last line of init()'s try block
-```
+`cycle()` runs `refresh()` every 30 s and **reschedules itself in `finally`**: a network error
+shows a red box and the next cycle clears it (it used to stop the loop for good). Each cycle:
 
-There is **no WebSocket, no SSE, no EventSource**: it's **recursive polling every 30
-seconds**, which replays the entire cycle:
-
-1. `GET /api/states` (all entities),
-2. entity re-discovery by keywords,
-3. re-rendering the 5 gauges,
-4. **4 history calls over 5 days** (CPU, RAM, network, disk),
-5. destroying + recreating the 4 Chart.js instances,
-6. fetching the K3s JSON,
-7. rescheduling the timer.
-
-Effective "real time" is therefore bounded by the full chain:
+1. `GET /api/states` (all entities) and keyword discovery,
+2. `core_stats.json`, `infra_updates.json` (and, as a fallback, the old `k3s_stats.json`),
+3. gauges, partitions, temperatures, the K3s panel, both recommendation boxes,
+4. the **four 5-day history charts only every 5 minutes** — Glances itself refreshes every
+   60 s, and four five-day queries every 30 s weighed on the recorder for nothing.
 
 | Stage | Latency |
 |---|---|
 | Glances → system read | ~1 s (internal) |
 | HA → Glances polling | 60 s by default (`scan_interval`) |
-| core.html → HA polling | 30 s |
-| **Actual freshness shown** | **up to ~90 s** |
-
-Refreshing the page faster than the Glances integration's `scan_interval` therefore gains
-nothing. For true real time, either lower the `scan_interval` on the HA side, or switch to
-the HA WebSocket with `subscribe_events` / `state_changed`.
+| Host collector (partitions, k3s) | 5 min |
+| core.html → HA / files | 30 s |
 
 ---
 
@@ -349,30 +332,70 @@ data coming from HA, and especially for K3s event messages.
 - **`clearCache()`** (the "↻ CLEAR CACHE" button): purges the browser's Cache API, then
   reloads the page with `?nocache=<timestamp>`. Useful when the HA service worker is serving
   a stale version of the file.
-- **Error handling**: the whole of `init()` is wrapped in a `try/catch`; an error displays a
-  red box at the bottom of the page. Note — on error, **the `setTimeout` is never reached**,
-  so the loop stops for good until the page is manually reloaded.
-- **CI cache-busting**: the `build` job's `find … sed` only rewrites the `?v=` of the
-  `*.yaml` files in `dist/`. `core.html` is **not** covered, and isn't declared as a Lovelace
-  resource anyway: it's the iframe URL in `core.yaml` that should carry a `?v=` if you want
-  to force a reload after deployment. Without that, only the "CLEAR CACHE" button can unstick
-  a browser that has cached the page.
+- **Error handling**: `refresh()` runs inside `cycle()`'s `try/catch/finally`; an error shows
+  a red box at the bottom of the page, and the next cycle — always rescheduled — clears it.
+- **Cache-busting**: the iframe URL in `core.yaml.j2` carries `?v={{ build_stamp }}` (and
+  `&lang={{ locale }}`), so a deployment reaches every tablet; "CLEAR CACHE" keeps both
+  parameters when it reloads.
 
 ---
 
 ## 8. Points of attention / improvement ideas
 
-| Problem | Impact | Suggested fix |
+| Problem | Impact | Status / suggested fix |
 |---|---|---|
-| **K3s path `/local/osvision_v2/`** | K3s panel always empty, no visible error | Switch to `/local/vssp/` (§4.4) |
-| `setTimeout` inside the `try` | The loop dies on the first network error | Move it into a `finally` |
-| `saveToken()` calls `init()` again | Risk of multiple concurrent loops | Keep the timer id and `clearTimeout` it |
-| 4 five-day history requests every 30 s | Needless load on the HA recorder | Refresh history only every 5–10 min |
+| ~~K3s path `/local/osvision_v2/`~~ | K3s panel fed by an out-of-repo timer | **Fixed**: `vssp_core_stats.py` → `/local/vssp/core_stats.json`; the old file is a fallback only |
+| ~~`setTimeout` inside the `try`~~ | The loop died on the first network error | **Fixed**: rescheduled in `finally` |
+| ~~4 five-day history requests every 30 s~~ | Needless load on the recorder | **Fixed**: every 5 min |
+| ~~French only~~ | CORE in French on an English interface | **Fixed**: `?lang=` from `core.yaml.j2` |
+| ~~No `?v=` on the iframe~~ | Stale version after deployment | **Fixed**: `?v={{ build_stamp }}&lang={{ locale }}` |
+| ~~Hardcoded `pods_total / 330`~~ | Wrong ratio | **Fixed**: sum of the nodes' allocatable pods |
 | Keyword-based discovery | Silent breakage on entity rename | Explicit `entity_id` config as an override |
 | Hardcoded room exclusions | Every new room pollutes the temperature table | Filter on the HA Area instead of the name |
-| Chart.js via CDN | Dashboard broken offline | Host the file under `/local/vssp/js/` |
-| Token in `localStorage` | Full HA access exposed to XSS | Dedicated / time-limited token |
-| Hardcoded `pods_total / 330` | Wrong ratio if the node count changes | Compute `node_count × 110` |
-| Temperature Min/Max columns | Always `--` | Track extremes via HA history |
-| 30 s polling vs. 60 s scan | Half the cycles carry no new data | HA WebSocket `state_changed` |
-| No `?v=` on the iframe | Stale version served after deployment | Add a version token to `core.yaml` |
+| Chart.js via CDN | Charts missing offline | Host the file under `/local/vssp/js/` |
+| Orphaned Glances entities (one per kubelet volume) | Hundreds of `unavailable` sensors | Hide `/var/lib/kubelet/.*` in `glances.conf` (the page recommends it when there are ≥ 10) |
+| Temperature Min/Max | Removed (they were always `--`) | Track extremes via HA history if wanted |
+
+---
+
+## 9. Recommendations and SCAN
+
+### Recommendation boxes
+
+Two framed boxes, **SYSTEM RECOMMENDATIONS** (next to the partitions) and **K3S
+RECOMMENDATIONS** (under the cluster KPIs), turn what is on screen into advice. They are
+computed in the page (`systemRecs()`, `k3sRecs()`), in the language of `?lang=`, every
+cycle. Each finding has a severity, a sentence, and the read-only command to start with; the
+worst severity colours the frame.
+
+| Box | Rules |
+|---|---|
+| System | CPU ≥ 75/90 %, RAM ≥ 80/90 %, swap ≥ 50 %, 15-min load above the core count (×1.5 = critical), component ≥ 75/85 °C, partition ≥ 80/90 % (specific advice for `/` — kubelet image GC at 85 %, eviction at 90 % — and `/boot`), inodes ≥ 85 %, ≥ 10 orphaned Glances entities, collector missing / blocked by a sealed safe / older than 15 min |
+| K3s | k3s service not `active`, API not answering, node NotReady, Disk/Memory/PID pressure, node CPU/memory ≥ 85 %, pods in CrashLoopBackOff / image pull failure / OOMKilled / Pending > 5 min / Failed, ≥ 10 restarts, workloads not fully available, PVC not bound, warning events in the last 24 h, pods ≥ 80 % of capacity, API certificate < 90 / < 30 days, k3s update pending on the UPDATES screen |
+
+### SCAN
+
+Each box has a **SCAN** button that asks the chat assistant configured in the console to look
+its findings up **on the internet** and bring back what to do, with its sources.
+
+```
+core.html ──POST /api/webhook/vssp_core_scan {payload_b64}──► automation (local_only, base64 checked)
+   ──► shell_command.vssp_core_scan ──► vssp_core_scan.py --detach
+         writes core_scan_<scope>.json {state: "running"}, forks, returns (HA kills a shell_command at 60 s)
+         child: provider + web search → core_scan_<scope>.json {state: "done", summary, items, citations}
+core.html polls /local/vssp/core_scan_<scope>.json every 3 s until it carries its request_id
+```
+
+- **Provider**: `input_select.vssp_chatbot_provider` and its key file (`/config/vssp/.<provider>_key`),
+  shared with the chat bubble. Claude runs on `claude-opus-5` with the `web_search_20260209`
+  tool (5 searches at most, server-side fallback on refusal), whatever older model the chat
+  uses; Gemini uses `google_search` grounding and ChatGPT the Responses API `web_search`
+  tool, each with the model set in the console. The custom provider has no web search: SCAN
+  says so. Only the Claude path has been exercised end to end.
+- **What leaves the house**: the finding texts as the page wrote them, the OS, kernel and k3s
+  versions, the core count and the memory size. Never the hostname; anything shaped like an
+  IPv4 address is masked by the script anyway. Each scan is a paid API call: it only ever runs
+  on a press of the button.
+- **Result**: summary, one item per finding (advice, commands, sources), then the pages cited.
+  The last result of each box stays on screen until the next deployment. The page reminds the
+  reader to check the sources before applying anything.

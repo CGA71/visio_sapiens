@@ -144,7 +144,7 @@ views:
       # FR | ?v= comme toute autre iframe VSSP : /local est mis en cache
       # FR | 31 jours, sans lui une tablette garde un ancien core.html.
       - type: iframe
-        url: /local/vssp/core.html?v={{ build_stamp }}
+        url: /local/vssp/core.html?v={{ build_stamp }}&lang={{ locale }}
         view_layout:
           grid-area: content
         card_mod:

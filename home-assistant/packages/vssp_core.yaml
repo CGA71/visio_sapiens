@@ -1,0 +1,110 @@
+########################################################################
+# Visio Sapiens — CORE screen: partitions, cluster state, SCAN
+#
+# EN | Two data flows behind core.html, both written as files under
+# EN | /local/vssp/ that the page reads — no entity carries any of it, so
+# EN | nothing here reaches the recorder.
+# EN |   1. every 5 min: vssp_core_stats.py -> core_stats.json (partitions
+# EN |      and k3s state, read over ssh with the maintenance credentials of
+# EN |      the safe, like vssp_infra_updates.py).
+# EN |   2. on the SCAN button: webhook -> vssp_core_scan.py ->
+# EN |      core_scan_<scope>.json (recommendations the chat assistant looked
+# EN |      up on the web for what the page flagged).
+# FR | Deux flux de donnees derriere core.html, tous deux ecrits en fichiers
+# FR | sous /local/vssp/ que la page lit — aucune entite n en porte quoi que
+# FR | ce soit, donc rien ici n atteint le recorder.
+# FR |   1. toutes les 5 min : vssp_core_stats.py -> core_stats.json
+# FR |      (partitions et etat de k3s, lus par ssh avec les identifiants de
+# FR |      maintenance du coffre, comme vssp_infra_updates.py).
+# FR |   2. sur le bouton SCAN : webhook -> vssp_core_scan.py ->
+# FR |      core_scan_<scope>.json (preconisations que l assistant de chat a
+# FR |      cherchees sur le web pour ce que la page a signale).
+########################################################################
+
+shell_command:
+  vssp_core_stats: >-
+    python3 /config/vssp/vssp_core_stats.py
+    --out /config/www/vssp/core_stats.json
+
+  # EN | Same rule as vssp_chatbot_send: `provider` is the helper's OWN state
+  # EN | (one of its 4 declared options), and payload_b64 reaches this line
+  # EN | only after the automation below checked it is base64 and nothing
+  # EN | else — a quote or `$(...)` cannot get through. --detach because a
+  # EN | web search outlives the 60 s Home Assistant allows a shell_command.
+  # FR | Meme regle que vssp_chatbot_send : `provider` est l etat PROPRE du
+  # FR | helper (l une de ses 4 options declarees), et payload_b64 n atteint
+  # FR | cette ligne qu apres que l automatisation ci-dessous a verifie qu il
+  # FR | n est que du base64 — un guillemet ou un `$(...)` ne peut pas passer.
+  # FR | --detach parce qu une recherche web depasse les 60 s que Home
+  # FR | Assistant laisse a un shell_command.
+  vssp_core_scan: >-
+    python3 /config/vssp/vssp_core_scan.py
+    --provider '{{ provider }}'
+    --payload-b64 '{{ payload_b64 }}'
+    --status-dir /config/www/vssp
+    --detach
+
+automation:
+  - id: vssp_core_stats_scheduled
+    alias: "Visio Sapiens — CORE : collecte hôte et cluster"
+    mode: single
+    triggers:
+      - trigger: time_pattern
+        minutes: "/5"
+      - trigger: homeassistant
+        event: start
+        id: start
+    actions:
+      # EN | At start, the network and the safe may not be there yet.
+      # FR | Au demarrage, le reseau et le coffre peuvent ne pas etre la.
+      - if:
+          - condition: template
+            value_template: "{{ trigger.id == 'start' }}"
+        then:
+          - delay:
+              minutes: 2
+      - action: shell_command.vssp_core_stats
+
+  - id: vssp_core_scan_request
+    alias: "Visio Sapiens — CORE : SCAN des préconisations"
+    mode: queued
+    max: 4
+    triggers:
+      - trigger: webhook
+        webhook_id: vssp_core_scan
+        local_only: true
+        allowed_methods:
+          - POST
+    actions:
+      - choose:
+          - conditions:
+              - condition: template
+                value_template: >-
+                  {{ trigger.json is mapping
+                     and trigger.json.payload_b64 is defined
+                     and trigger.json.payload_b64 is string
+                     and trigger.json.payload_b64 | length < 24000
+                     and trigger.json.payload_b64 is match('^[A-Za-z0-9+/]+={0,2}$') }}
+            sequence:
+              - action: shell_command.vssp_core_scan
+                data:
+                  provider: "{{ states('input_select.vssp_chatbot_provider') }}"
+                  payload_b64: "{{ trigger.json.payload_b64 }}"
+                response_variable: launched
+              - if:
+                  - condition: template
+                    value_template: "{{ launched.returncode != 0 }}"
+                then:
+                  - action: persistent_notification.create
+                    data:
+                      title: "Visio Sapiens — SCAN CORE"
+                      message: >
+                        vssp_core_scan.py a quitté avec le code
+                        {{ launched.returncode }} : {{ launched.stderr | default('') }}
+        default:
+          - action: persistent_notification.create
+            data:
+              title: "Visio Sapiens — SCAN CORE refusé"
+              message: >
+                Le webhook vssp_core_scan a reçu un payload qui n'est pas du
+                base64 valide. Rien n'a été lancé.

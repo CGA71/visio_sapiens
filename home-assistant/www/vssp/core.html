@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="fr">
+<html lang="en">
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
@@ -16,124 +16,383 @@ body{background:#02050B;color:#fff;font-family:'Rajdhani','Segoe UI',system-ui,s
 .header-info-item{text-align:center}
 .header-info-label{color:#56707E;font-size:10px;letter-spacing:1px}
 .header-info-value{color:#B8E8F5;font-size:13px;font-weight:600}
+.btn{padding:6px 12px;background:rgba(0,229,255,.1);border:1px solid rgba(0,229,255,.4);border-radius:8px;color:#00E5FF;cursor:pointer;font-family:inherit;font-size:11px;letter-spacing:1px;font-weight:700}
+.btn:disabled{opacity:.5;cursor:default}
 .section{background:rgba(8,18,28,.85);border:1px solid rgba(0,229,255,.22);border-radius:18px;padding:20px;margin-bottom:16px}
 .section-title{font-family:'Orbitron','Courier New',monospace;color:#00E5FF;font-size:13px;letter-spacing:2px;margin-bottom:16px;padding-bottom:8px;border-bottom:1px solid rgba(0,229,255,.15)}
 .gauge-grid{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;margin-bottom:16px}
 .gauge-card{background:rgba(0,229,255,.04);border:1px solid rgba(0,229,255,.2);border-radius:14px;padding:16px;text-align:center}
 .gauge-card-title{font-family:'Orbitron','Courier New',monospace;color:#8FB6C9;font-size:11px;letter-spacing:1.5px;margin-bottom:8px}
+.two-col{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-bottom:16px;align-items:start}
+.two-col>.section{margin-bottom:0}
 .charts-grid{display:grid;grid-template-columns:1fr 1fr;gap:14px}
 .chart-card{background:rgba(0,229,255,.04);border:1px solid rgba(0,229,255,.2);border-radius:14px;padding:16px;height:220px;max-height:220px;overflow:hidden;position:relative}
 .chart-title{color:#8FB6C9;font-size:12px;font-weight:600;letter-spacing:1px;margin-bottom:8px}
-.temp-table{width:100%;border-collapse:collapse}
-.temp-table th{color:#56707E;font-size:10px;letter-spacing:1px;text-align:left;padding:8px 10px;border-bottom:1px solid rgba(0,229,255,.15)}
-.temp-table td{color:#B8E8F5;font-size:13px;padding:8px 10px;border-bottom:1px solid rgba(0,229,255,.06)}
-.temp-bar{height:6px;border-radius:3px;background:rgba(0,229,255,.15);min-width:80px}
-.temp-bar-fill{height:100%;border-radius:3px}
-.temp-ok{background:linear-gradient(90deg,#00FFC3,#3AA7FF)}
-.temp-warn{background:linear-gradient(90deg,#FF9800,#FF3D71)}
+.tbl{width:100%;border-collapse:collapse}
+.tbl th{color:#56707E;font-size:10px;letter-spacing:1px;text-align:left;padding:6px 8px;border-bottom:1px solid rgba(0,229,255,.15);text-transform:uppercase}
+.tbl td{color:#B8E8F5;font-size:12px;padding:6px 8px;border-bottom:1px solid rgba(0,229,255,.06)}
+.muted{color:#56707E}
+.bar{height:6px;border-radius:3px;background:rgba(0,229,255,.15);min-width:60px}
+.bar-fill{height:100%;border-radius:3px;background:linear-gradient(90deg,#00FFC3,#3AA7FF)}
+.bar-fill.warn{background:linear-gradient(90deg,#FF9800,#FFB74D)}
+.bar-fill.crit{background:linear-gradient(90deg,#FF3D71,#FF9800)}
 .status-dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px;vertical-align:middle}
 .dot-ok{background:#00FFC3;box-shadow:0 0 6px #00FFC3}
 .dot-warn{background:#FF9800;box-shadow:0 0 6px #FF9800}
-.k3s-header{display:flex;align-items:center;gap:12px;margin-bottom:16px}
+.dot-crit{background:#FF3D71;box-shadow:0 0 6px #FF3D71}
+.dot-info{background:#00E5FF;box-shadow:0 0 6px #00E5FF}
+.k3s-header{display:flex;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}
 .k3s-kpi-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:10px;margin-bottom:16px}
 .k3s-kpi{background:rgba(0,229,255,.04);border:1px solid rgba(0,229,255,.2);border-radius:10px;padding:12px;text-align:center}
-.k3s-kpi-label{color:#56707E;font-size:10px;letter-spacing:1px}
-.k3s-kpi-value{color:#fff;font-size:20px;font-weight:700;font-family:'Orbitron','Courier New',monospace}
+.k3s-kpi-label{color:#56707E;font-size:10px;letter-spacing:1px;text-transform:uppercase}
+.k3s-kpi-value{color:#fff;font-size:20px;font-weight:700;font-family:'Orbitron','Courier New',monospace;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .k3s-kpi-sub{color:#8FB6C9;font-size:10px}
 .k3s-tables{display:grid;grid-template-columns:1.5fr 1fr;gap:14px;margin-bottom:14px}
-.k3s-table{width:100%;border-collapse:collapse}
-.k3s-table th{color:#56707E;font-size:10px;letter-spacing:1px;text-align:left;padding:6px 8px;border-bottom:1px solid rgba(0,229,255,.15)}
-.k3s-table td{color:#B8E8F5;font-size:12px;padding:6px 8px;border-bottom:1px solid rgba(0,229,255,.06)}
 .k3s-bottom{display:grid;grid-template-columns:1fr 1fr 1.5fr;gap:14px}
-.progress{height:8px;background:rgba(0,229,255,.1);border-radius:4px;overflow:hidden;min-width:40px;display:inline-block;vertical-align:middle;width:60px;margin-right:6px}
-.progress-fill{height:100%;border-radius:4px;background:linear-gradient(90deg,#00FFC3,#3AA7FF)}
+.sub-title{font-family:'Orbitron','Courier New',monospace;color:#00E5FF;font-size:11px;letter-spacing:2px;margin-bottom:10px;padding-bottom:6px;border-bottom:1px solid rgba(0,229,255,.15)}
 .badge{display:inline-block;padding:2px 8px;border-radius:6px;font-size:10px;font-weight:700}
 .badge-ok{background:rgba(0,255,195,.15);color:#00FFC3;border:1px solid rgba(0,255,195,.3)}
 .badge-warn{background:rgba(255,152,0,.15);color:#FF9800;border:1px solid rgba(255,152,0,.3)}
+.badge-crit{background:rgba(255,61,113,.15);color:#FF3D71;border:1px solid rgba(255,61,113,.3)}
 .badge-info{background:rgba(0,229,255,.1);color:#00E5FF;border:1px solid rgba(0,229,255,.3)}
+/* EN | The recommendation box: a frame of its own, coloured by the worst finding in it.
+   FR | L encadre de preconisations : un cadre a lui, colore par le pire constat qu il contient. */
+.advice{border:1px solid rgba(0,229,255,.35);border-left:4px solid #00E5FF;border-radius:14px;background:rgba(0,229,255,.05);padding:14px 16px;margin-bottom:16px}
+.advice.lvl-warn{border-color:rgba(255,152,0,.45);border-left-color:#FF9800;background:rgba(255,152,0,.05)}
+.advice.lvl-crit{border-color:rgba(255,61,113,.45);border-left-color:#FF3D71;background:rgba(255,61,113,.05)}
+.advice.lvl-ok{border-color:rgba(0,255,195,.35);border-left-color:#00FFC3;background:rgba(0,255,195,.04)}
+.advice-head{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.advice-title{font-family:'Orbitron','Courier New',monospace;font-size:12px;letter-spacing:2px;color:#fff}
+.advice-head .btn{margin-left:auto}
+.advice ul{list-style:none}
+.advice li{display:flex;gap:10px;padding:7px 0;border-top:1px solid rgba(255,255,255,.05)}
+.advice li:first-child{border-top:none}
+.advice li .status-dot{margin-top:6px;flex:none}
+.advice-t{color:#fff;font-size:13px;font-weight:700}
+.advice-d{color:#B8E8F5;font-size:12px;line-height:1.35}
+code.cmd{display:block;margin-top:4px;padding:4px 8px;background:rgba(0,0,0,.35);border:1px solid rgba(0,229,255,.12);border-radius:6px;color:#8FE9FF;font-family:Consolas,'Courier New',monospace;font-size:11px;white-space:pre-wrap;word-break:break-all}
+.scan{margin-top:12px;padding-top:10px;border-top:1px dashed rgba(0,229,255,.25)}
+.scan-head{color:#8FB6C9;font-size:11px;letter-spacing:1px;margin-bottom:6px}
+.scan-sum{color:#B8E8F5;font-size:12px;margin-bottom:6px}
+.scan-item{padding:6px 0}
+.scan-src a{color:#00E5FF;font-size:11px;text-decoration:none;margin-right:10px}
+.scan-src a:hover{text-decoration:underline}
+.scan-note{color:#56707E;font-size:10px;margin-top:6px}
+.scan-err{color:#FF9800;font-size:12px}
 @keyframes spin{to{transform:rotate(360deg)}}
-.spinner{display:inline-block;width:18px;height:18px;border:2px solid rgba(0,229,255,.2);border-top-color:#00E5FF;border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle;margin-right:6px}
-@media(max-width:900px){.gauge-grid{grid-template-columns:repeat(3,1fr)}.charts-grid,.k3s-tables{grid-template-columns:1fr}.k3s-kpi-grid{grid-template-columns:repeat(3,1fr)}.k3s-bottom{grid-template-columns:1fr}}
+.spinner{display:inline-block;width:14px;height:14px;border:2px solid rgba(0,229,255,.2);border-top-color:#00E5FF;border-radius:50%;animation:spin .8s linear infinite;vertical-align:middle;margin-right:6px}
+@media(max-width:900px){.gauge-grid{grid-template-columns:repeat(3,1fr)}.charts-grid,.k3s-tables,.two-col{grid-template-columns:1fr}.k3s-kpi-grid{grid-template-columns:repeat(3,1fr)}.k3s-bottom{grid-template-columns:1fr}}
 </style>
 </head>
 <body>
 <div class="page">
   <div class="header">
-    <div><div class="header-logo">DASHBOARD SYSTEME</div><div class="header-sub">Glances Monitoring</div></div>
+    <div><div class="header-logo" data-t="title"></div><div class="header-sub">Glances Monitoring</div></div>
     <div class="header-info">
-      <div class="header-info-item"><div class="header-info-label">Hostname</div><div class="header-info-value" id="hostname">--</div></div>
+      <div class="header-info-item"><div class="header-info-label" data-t="hostname"></div><div class="header-info-value" id="hostname">--</div></div>
       <div class="header-info-item"><div class="header-info-label">OS</div><div class="header-info-value" id="os-info">--</div></div>
-      <div class="header-info-item"><div class="header-info-label">Uptime</div><div class="header-info-value" id="uptime">--</div></div>
-      <div class="header-info-item"><div class="header-info-label">Mise a jour</div><div class="header-info-value" id="last-update">--</div></div>
-      <div class="header-info-item"><button onclick="clearCache()" title="Recharge la page sans cache et rafraichit le jeton" style="padding:6px 12px;background:rgba(0,229,255,.1);border:1px solid rgba(0,229,255,.4);border-radius:8px;color:#00E5FF;cursor:pointer;font-family:inherit;font-size:11px;letter-spacing:1px">&#8635; VIDER CACHE</button></div>
+      <div class="header-info-item"><div class="header-info-label" data-t="uptime"></div><div class="header-info-value" id="uptime">--</div></div>
+      <div class="header-info-item"><div class="header-info-label" data-t="updated"></div><div class="header-info-value" id="last-update">--</div></div>
+      <div class="header-info-item"><button class="btn" onclick="clearCache()" data-t="clear_cache" data-title="clear_cache_tip"></button></div>
     </div>
   </div>
   <div class="gauge-grid">
     <div class="gauge-card"><div class="gauge-card-title">CPU</div><div id="g-cpu">--</div></div>
     <div class="gauge-card"><div class="gauge-card-title">RAM</div><div id="g-ram">--</div></div>
-    <div class="gauge-card"><div class="gauge-card-title">Load Average</div><div id="g-load">--</div></div>
+    <div class="gauge-card"><div class="gauge-card-title" data-t="load"></div><div id="g-load">--</div></div>
     <div class="gauge-card"><div class="gauge-card-title">Swap</div><div id="g-swap">--</div></div>
-    <div class="gauge-card"><div class="gauge-card-title">CPU Temp</div><div id="g-temp">--</div></div>
+    <div class="gauge-card"><div class="gauge-card-title" data-t="cpu_temp"></div><div id="g-temp">--</div></div>
   </div>
-  <div class="section">
-    <div class="section-title">HISTORIQUE (5 DERNIERS JOURS)</div>
-    <div class="charts-grid">
-      <div class="chart-card"><div class="chart-title">Utilisation CPU (%)</div><div style="position:relative;height:160px;width:100%"><canvas id="chart-cpu"></canvas></div></div>
-      <div class="chart-card"><div class="chart-title">Utilisation RAM (%)</div><div style="position:relative;height:160px;width:100%"><canvas id="chart-ram"></canvas></div></div>
-      <div class="chart-card"><div class="chart-title">Utilisation Network</div><div style="position:relative;height:160px;width:100%"><canvas id="chart-net"></canvas></div></div>
-      <div class="chart-card"><div class="chart-title">Utilisation I/O (Disk)</div><div style="position:relative;height:160px;width:100%"><canvas id="chart-disk"></canvas></div></div>
+  <div class="two-col">
+    <div class="section">
+      <div class="section-title" data-t="partitions"></div>
+      <table class="tbl" id="parts"></table>
+      <div class="muted" style="font-size:10px;margin-top:8px" id="parts-src"></div>
+    </div>
+    <div class="advice" id="adv-system">
+      <div class="advice-head"><span style="font-size:16px">&#128161;</span><span class="advice-title" data-t="adv_system"></span><button class="btn" id="scan-system" onclick="startScan('system')">&#128269; SCAN</button></div>
+      <ul id="adv-system-list"><li class="muted" data-t="loading"></li></ul>
+      <div class="scan" id="scan-system-out" hidden></div>
     </div>
   </div>
   <div class="section">
-    <div class="section-title">TEMPERATURE DES COMPOSANTS</div>
-    <table class="temp-table">
-      <thead><tr><th>Composant</th><th>Capteur</th><th>Temperature</th><th></th><th>Min</th><th>Max</th><th>Etat</th></tr></thead>
-      <tbody id="temp-body"><tr><td colspan="7" style="color:#56707E;text-align:center">Chargement...</td></tr></tbody>
+    <div class="section-title" data-t="history"></div>
+    <div class="charts-grid">
+      <div class="chart-card"><div class="chart-title" data-t="chart_cpu"></div><div style="position:relative;height:160px;width:100%"><canvas id="chart-cpu"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title" data-t="chart_ram"></div><div style="position:relative;height:160px;width:100%"><canvas id="chart-ram"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title" data-t="chart_net"></div><div style="position:relative;height:160px;width:100%"><canvas id="chart-net"></canvas></div></div>
+      <div class="chart-card"><div class="chart-title" data-t="chart_disk"></div><div style="position:relative;height:160px;width:100%"><canvas id="chart-disk"></canvas></div></div>
+    </div>
+  </div>
+  <div class="section">
+    <div class="section-title" data-t="temps"></div>
+    <table class="tbl">
+      <thead><tr><th data-t="component"></th><th data-t="sensor"></th><th data-t="temperature"></th><th></th><th data-t="state"></th></tr></thead>
+      <tbody id="temp-body"><tr><td colspan="5" class="muted" style="text-align:center" data-t="loading"></td></tr></tbody>
     </table>
   </div>
   <div class="section">
-    <div class="k3s-header"><span style="font-size:28px">&#9881;</span><div style="font-family:'Orbitron','Courier New',monospace;color:#fff;font-size:16px;letter-spacing:2px">K3S CLUSTER DASHBOARD</div></div>
-    <div class="k3s-kpi-grid" id="k3s-kpis"><div style="color:#56707E;grid-column:1/-1;text-align:center">Chargement...</div></div>
+    <div class="k3s-header"><span style="font-size:28px">&#9881;</span><div style="font-family:'Orbitron','Courier New',monospace;color:#fff;font-size:16px;letter-spacing:2px" data-t="k3s_title"></div><span id="k3s-src" class="muted" style="font-size:11px;margin-left:auto"></span></div>
+    <div class="k3s-kpi-grid" id="k3s-kpis"><div class="muted" style="grid-column:1/-1;text-align:center" data-t="loading"></div></div>
+    <div class="advice" id="adv-k3s">
+      <div class="advice-head"><span style="font-size:16px">&#128161;</span><span class="advice-title" data-t="adv_k3s"></span><button class="btn" id="scan-k3s" onclick="startScan('k3s')">&#128269; SCAN</button></div>
+      <ul id="adv-k3s-list"><li class="muted" data-t="loading"></li></ul>
+      <div class="scan" id="scan-k3s-out" hidden></div>
+    </div>
     <div class="k3s-tables">
-      <div><div class="section-title" style="font-size:11px">NODES</div><table class="k3s-table" id="k3s-nodes"></table></div>
-      <div><div class="section-title" style="font-size:11px">RESSOURCES CLUSTER</div><table class="k3s-table" id="k3s-resources"></table></div>
+      <div><div class="sub-title" data-t="nodes"></div><table class="tbl" id="k3s-nodes"></table></div>
+      <div><div class="sub-title" data-t="resources"></div><table class="tbl" id="k3s-resources"></table></div>
     </div>
     <div class="k3s-bottom">
-      <div><div class="section-title" style="font-size:11px">TOP NAMESPACES</div><table class="k3s-table" id="k3s-namespaces"></table></div>
-      <div><div class="section-title" style="font-size:11px">TOP DEPLOYMENTS</div><table class="k3s-table" id="k3s-deployments"></table></div>
-      <div><div class="section-title" style="font-size:11px">EVENEMENTS RECENTS</div><table class="k3s-table" id="k3s-events"></table></div>
+      <div><div class="sub-title" data-t="top_ns"></div><table class="tbl" id="k3s-namespaces"></table></div>
+      <div><div class="sub-title" data-t="workloads"></div><table class="tbl" id="k3s-deployments"></table></div>
+      <div><div class="sub-title" data-t="events"></div><table class="tbl" id="k3s-events"></table></div>
     </div>
   </div>
 </div>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <script>
-var HA_URL=window.location.origin,TOKEN=localStorage.getItem('vssp_ha_token')||'',chartInstances={};
+// EN | LANGUAGE — ?lang= from core.yaml.j2, like every other VSSP iframe. The
+// EN | page used to be French only; machine tokens from the status files
+// EN | (message_key) are translated here and nowhere else.
+// FR | LANGUE — ?lang= fourni par core.yaml.j2, comme toute autre iframe
+// FR | VSSP. La page n existait qu en francais ; les jetons machine des
+// FR | fichiers de statut (message_key) sont traduits ici et nulle part
+// FR | ailleurs.
+var I18N={
+en:{title:'SYSTEM DASHBOARD',hostname:'Hostname',uptime:'Uptime',updated:'Updated',clear_cache:'↻ CLEAR CACHE',clear_cache_tip:'Reload the page without cache',
+load:'Load average',cpu_temp:'CPU temp',average:'Average',cores:'{n} cores',partitions:'PARTITIONS',history:'HISTORY (LAST 5 DAYS)',chart_cpu:'CPU usage (%)',chart_ram:'RAM usage (%)',chart_net:'Network',chart_disk:'Disk',
+temps:'COMPONENT TEMPERATURES',component:'Component',sensor:'Sensor',temperature:'Temperature',state:'State',no_sensor:'No sensor',loading:'Loading…',
+mount:'Mount',fs:'FS',size:'Size',used:'Used',free:'Free',usage:'Usage',inodes:'Inodes',parts_host:'Read on the host (df) · {t}',parts_glances:'From Glances only (the host collector has no data yet)',parts_none:'No partition data',
+k3s_title:'K3S CLUSTER',src_live:'measured {t}',src_stale:'last measurement {t} — not refreshed',src_legacy:'basic data only (old host timer)',
+kpi_status:'Cluster status',kpi_version:'Version',kpi_nodes:'Nodes',kpi_pods:'Pods',kpi_workloads:'Workloads',kpi_warnings:'Warnings 24 h',healthy:'Healthy',degraded:'Degraded',down:'Down',unknown:'Unknown',ready:'ready',running:'running',available:'available',
+nodes:'NODES',resources:'CLUSTER RESOURCES',top_ns:'TOP NAMESPACES',workloads:'WORKLOADS',events:'RECENT WARNINGS',name:'Name',status:'Status',role:'Role',memory:'Memory',load_now:'Load',pods_cap:'Pods / capacity',namespaces:'Namespaces',services:'Services',volumes:'Volumes (PVC)',cert:'API certificate',days:'{n} days',none:'None',no_events:'No warning',waiting:'Waiting for data…',time:'When',type:'Type',object:'Object',message:'Message',ready_col:'Ready',
+ago_m:'{n} min ago',ago_h:'{n} h ago',ago_d:'{n} d ago',
+adv_system:'SYSTEM RECOMMENDATIONS',adv_k3s:'K3S RECOMMENDATIONS',
+scan_running:'Searching the web… {s} s',scan_from:'From the web · {p} ({m}) · {n} search(es) · {t}',scan_note:'Found on the internet by the assistant: read the sources and check before applying anything.',scan_timeout:'No answer after 5 minutes. The scan may still finish: reopen the page later.',scan_send_fail:'The request could not be sent to Home Assistant ({e}).',steps:'Steps',
+'error.vault_sealed':'The safe is sealed: partitions and cluster cannot be read until it is unsealed (ADMIN → SAFE).','error.no_token':'No maintenance token: /config/vssp/.vault_maint_token is missing.','error.vault':'The safe answered {code}.','error.secret_missing':'Safe entry vssp/infra/{name} is missing.','error.ssh':'The host refused the connection: {detail}','error.no_transport':'No SSH client in the Home Assistant container.','stats.k3s_down':'The cluster did not answer: {detail}',
+'scan.ok':'{count} recommendation(s) from {provider}.','error.payload':'The request was malformed: {detail}','error.no_key':'No API key for {provider}: enter it in the assistant settings of the console.','error.no_web':'The custom assistant has no web search: choose Claude, Gemini or ChatGPT to use SCAN.','error.provider':'{provider} answered {code}: {detail}','error.refusal':'{provider} declined the request.','error.parse':'{provider} answered, but not in the expected form.',
+r_all_ok:'Nothing to report',r_all_ok_d:'Every value on screen is within its normal range.',
+r_no_glances:'No Glances data',r_no_glances_d:'CPU, RAM and temperatures come from the Glances integration: check that it is installed and that glances -w runs on the host.',
+r_cpu:'CPU at {v} %',r_cpu_d:'Find what is using it, on the host and in the cluster.',
+r_ram:'Memory at {v} %',r_ram_d:'Close to the limit, the kernel starts killing processes and k3s evicts pods. Find the biggest consumers.',
+r_swap:'Swap at {v} %',r_swap_d:'The machine is short of memory and pages to disk, which slows everything down.',
+r_load:'Load {v} for {n} cores',r_load_d:'More work is queued than the processor can take (15-minute average). Look for a runaway process or I/O wait.',
+r_temp:'{name} at {v} °C',r_temp_d:'Check the fans and the airflow; above 85 °C the processor throttles.',
+r_part:'Partition {m} at {v} % ({f} free)',r_part_d:'Free space before it fills up.',r_part_root_d:'Free space on /: old logs, unused container images and apt caches are the usual culprits. At 85 % the kubelet starts deleting images, at 90 % it evicts pods.',r_part_boot_d:'Old kernels fill /boot: remove the ones no longer used.',
+r_inodes:'Inodes on {m} at {v} %',r_inodes_d:'Too many small files: the partition can fill up with free space left.',
+r_orphans:'{n} orphaned Glances entities',r_orphans_d:'Glances creates one entity per kubelet volume and never removes them when the pod goes. Hide those mounts in glances.conf, then delete the unavailable entities in Home Assistant.',
+r_sealed:'Host collector blocked',r_nocollector:'Host collector has not run yet',r_nocollector_d:'core_stats.json does not exist: the collection runs every 5 minutes (automation "CORE : collecte hôte et cluster").',r_stats_old:'Host data is {n} min old',r_stats_old_d:'The collector did not refresh: check the safe and the automation.',
+k_basic:'Detailed cluster data unavailable',k_basic_d:'Only the counts of the old host timer are shown; the recommendations below cannot see failing pods or node pressure.',
+k_service:'k3s service is {v}',k_service_d:'The cluster is not running: read its logs before restarting it.',k_api:'The cluster API does not answer',
+k_notready:'Node {n} is NotReady',k_notready_d:'The kubelet does not report: look at the node conditions and the k3s logs.',
+k_pressure:'{n}: {p}',k_disk_pressure_d:'The kubelet is evicting pods for lack of disk space: free space on / first.',k_mem_pressure_d:'The kubelet is evicting pods for lack of memory.',k_pid_pressure_d:'Too many processes on the node.',
+k_node_cpu:'Node {n} CPU at {v} %',k_node_mem:'Node {n} memory at {v} %',k_node_load_d:'See which pods use it.',
+k_crash:'{n} pod(s) in CrashLoopBackOff',k_crash_d:'The container starts and dies again: its previous logs say why.',k_pull:'{n} pod(s) cannot pull their image',k_pull_d:'Wrong image name or tag, registry unreachable, or rate limit.',k_oom:'{n} pod(s) killed for lack of memory (OOMKilled)',k_oom_d:'Raise resources.limits.memory of the container, or find the leak.',k_pending:'{n} pod(s) stuck in Pending',k_pending_d:'Not scheduled: resources, volume or node selector — the pod events say which.',k_failed:'{n} failed pod(s) left behind',k_failed_d:'Evicted or failed pods stay listed until deleted; diagnose first, then clean up.',k_restarts:'{n} pod(s) restarted 10 times or more',k_restarts_d:'They recover, but keep failing: check their logs.',
+k_workload:'{n} workload(s) not fully available',k_workload_d:'Fewer replicas ready than requested.',k_pvc:'{n} volume(s) not bound',k_pvc_d:'A PVC waits for storage: check the provisioner (local-path).',
+k_events:'{n} warning event(s) in the last 24 h',k_events_d:'Most frequent: {r}.',k_capacity:'Pods at {v} % of capacity',k_capacity_d:'New pods will stay Pending when the node is full.',
+k_cert_soon:'API certificate expires in {n} days',k_cert_soon_d:'k3s renews certificates close to expiry when it starts: restart it in a quiet moment, or rotate them.',k_cert_renew:'API certificate: {n} days left',k_cert_renew_d:'It will be renewed at the next k3s restart.',
+k_update:'k3s {a} → {b} available',k_update_d:'Planned on the UPDATES screen of the console (one minor version at a time).',
+k_all_ok:'Cluster healthy',k_all_ok_d:'Nodes ready, no failing pod, no warning in the last 24 h.',
+login:'CONNECTION',login_need:'Home Assistant token required',login_btn:'Connect',error:'Error'},
+fr:{title:'TABLEAU DE BORD SYSTÈME',hostname:'Nom d’hôte',uptime:'Uptime',updated:'Mise à jour',clear_cache:'↻ VIDER LE CACHE',clear_cache_tip:'Recharger la page sans cache',
+load:'Charge moyenne',cpu_temp:'Temp. CPU',average:'Moyenne',cores:'{n} cœurs',partitions:'PARTITIONS',history:'HISTORIQUE (5 DERNIERS JOURS)',chart_cpu:'Utilisation CPU (%)',chart_ram:'Utilisation RAM (%)',chart_net:'Réseau',chart_disk:'Disque',
+temps:'TEMPÉRATURE DES COMPOSANTS',component:'Composant',sensor:'Capteur',temperature:'Température',state:'État',no_sensor:'Aucun capteur',loading:'Chargement…',
+mount:'Montage',fs:'Type',size:'Taille',used:'Utilisé',free:'Libre',usage:'Occupation',inodes:'Inodes',parts_host:'Lu sur l’hôte (df) · {t}',parts_glances:'Glances seulement (le collecteur hôte n’a pas encore de données)',parts_none:'Aucune donnée de partition',
+k3s_title:'CLUSTER K3S',src_live:'mesuré {t}',src_stale:'dernière mesure {t} — non rafraîchie',src_legacy:'données de base seulement (ancien minuteur hôte)',
+kpi_status:'État du cluster',kpi_version:'Version',kpi_nodes:'Nœuds',kpi_pods:'Pods',kpi_workloads:'Charges',kpi_warnings:'Alertes 24 h',healthy:'Sain',degraded:'Dégradé',down:'Arrêté',unknown:'Inconnu',ready:'prêts',running:'en marche',available:'disponibles',
+nodes:'NŒUDS',resources:'RESSOURCES DU CLUSTER',top_ns:'TOP NAMESPACES',workloads:'CHARGES',events:'ALERTES RÉCENTES',name:'Nom',status:'Statut',role:'Rôle',memory:'Mémoire',load_now:'Charge',pods_cap:'Pods / capacité',namespaces:'Namespaces',services:'Services',volumes:'Volumes (PVC)',cert:'Certificat API',days:'{n} jours',none:'Aucun',no_events:'Aucune alerte',waiting:'En attente de données…',time:'Quand',type:'Type',object:'Objet',message:'Message',ready_col:'Prêts',
+ago_m:'il y a {n} min',ago_h:'il y a {n} h',ago_d:'il y a {n} j',
+adv_system:'PRÉCONISATIONS SYSTÈME',adv_k3s:'PRÉCONISATIONS K3S',
+scan_running:'Recherche sur le web… {s} s',scan_from:'Sur le web · {p} ({m}) · {n} recherche(s) · {t}',scan_note:'Trouvé sur Internet par l’assistant : lisez les sources et vérifiez avant d’appliquer quoi que ce soit.',scan_timeout:'Pas de réponse après 5 minutes. Le scan peut encore aboutir : rouvrez la page plus tard.',scan_send_fail:'La demande n’a pas pu être envoyée à Home Assistant ({e}).',steps:'Étapes',
+'error.vault_sealed':'Le coffre est scellé : partitions et cluster illisibles tant qu’il n’est pas descellé (ADMIN → COFFRE-FORT).','error.no_token':'Pas de jeton de maintenance : /config/vssp/.vault_maint_token est absent.','error.vault':'Le coffre a répondu {code}.','error.secret_missing':'L’entrée vssp/infra/{name} du coffre est absente.','error.ssh':'L’hôte a refusé la connexion : {detail}','error.no_transport':'Aucun client SSH dans le conteneur Home Assistant.','stats.k3s_down':'Le cluster n’a pas répondu : {detail}',
+'scan.ok':'{count} préconisation(s) de {provider}.','error.payload':'La demande était mal formée : {detail}','error.no_key':'Pas de clé API pour {provider} : saisissez-la dans les réglages de l’assistant, dans la console.','error.no_web':'L’assistant personnalisé n’a pas de recherche web : choisissez Claude, Gemini ou ChatGPT pour utiliser SCAN.','error.provider':'{provider} a répondu {code} : {detail}','error.refusal':'{provider} a refusé la demande.','error.parse':'{provider} a répondu, mais pas sous la forme attendue.',
+r_all_ok:'Rien à signaler',r_all_ok_d:'Toutes les valeurs à l’écran sont dans leur plage normale.',
+r_no_glances:'Pas de données Glances',r_no_glances_d:'CPU, RAM et températures viennent de l’intégration Glances : vérifiez qu’elle est installée et que glances -w tourne sur l’hôte.',
+r_cpu:'CPU à {v} %',r_cpu_d:'Trouvez ce qui la consomme, sur l’hôte et dans le cluster.',
+r_ram:'Mémoire à {v} %',r_ram_d:'Près de la limite, le noyau tue des processus et k3s évince des pods. Repérez les plus gros consommateurs.',
+r_swap:'Swap à {v} %',r_swap_d:'La machine manque de mémoire et pagine sur le disque, ce qui ralentit tout.',
+r_load:'Charge {v} pour {n} cœurs',r_load_d:'Plus de travail en file que le processeur ne peut en traiter (moyenne 15 min). Cherchez un processus embalé ou de l’attente disque.',
+r_temp:'{name} à {v} °C',r_temp_d:'Vérifiez les ventilateurs et la circulation d’air ; au-delà de 85 °C le processeur se bride.',
+r_part:'Partition {m} à {v} % ({f} libres)',r_part_d:'Libérez de l’espace avant qu’elle ne soit pleine.',r_part_root_d:'Libérez de l’espace sur / : vieux journaux, images de conteneurs inutilisées et caches apt sont les suspects habituels. À 85 % le kubelet supprime des images, à 90 % il évince des pods.',r_part_boot_d:'Les anciens noyaux remplissent /boot : supprimez ceux qui ne servent plus.',
+r_inodes:'Inodes de {m} à {v} %',r_inodes_d:'Trop de petits fichiers : la partition peut se remplir alors qu’il reste de l’espace.',
+r_orphans:'{n} entités Glances orphelines',r_orphans_d:'Glances crée une entité par volume kubelet et ne les retire jamais quand le pod disparaît. Masquez ces montages dans glances.conf, puis supprimez les entités indisponibles dans Home Assistant.',
+r_sealed:'Collecteur hôte bloqué',r_nocollector:'Le collecteur hôte n’a pas encore tourné',r_nocollector_d:'core_stats.json n’existe pas : la collecte tourne toutes les 5 minutes (automatisation « CORE : collecte hôte et cluster »).',r_stats_old:'Données hôte vieilles de {n} min',r_stats_old_d:'Le collecteur ne rafraîchit plus : vérifiez le coffre et l’automatisation.',
+k_basic:'Données détaillées du cluster indisponibles',k_basic_d:'Seuls les comptes de l’ancien minuteur hôte sont affichés ; les préconisations ci-dessous ne voient ni les pods en échec ni la pression des nœuds.',
+k_service:'Le service k3s est {v}',k_service_d:'Le cluster ne tourne pas : lisez ses journaux avant de le redémarrer.',k_api:'L’API du cluster ne répond pas',
+k_notready:'Le nœud {n} est NotReady',k_notready_d:'Le kubelet ne remonte plus : regardez les conditions du nœud et les journaux de k3s.',
+k_pressure:'{n} : {p}',k_disk_pressure_d:'Le kubelet évince des pods faute d’espace disque : libérez d’abord de la place sur /.',k_mem_pressure_d:'Le kubelet évince des pods faute de mémoire.',k_pid_pressure_d:'Trop de processus sur le nœud.',
+k_node_cpu:'CPU du nœud {n} à {v} %',k_node_mem:'Mémoire du nœud {n} à {v} %',k_node_load_d:'Voyez quels pods la consomment.',
+k_crash:'{n} pod(s) en CrashLoopBackOff',k_crash_d:'Le conteneur démarre et meurt aussitôt : ses journaux précédents disent pourquoi.',k_pull:'{n} pod(s) ne récupèrent pas leur image',k_pull_d:'Nom ou tag d’image faux, registre injoignable, ou limite de débit.',k_oom:'{n} pod(s) tué(s) faute de mémoire (OOMKilled)',k_oom_d:'Augmentez resources.limits.memory du conteneur, ou cherchez la fuite.',k_pending:'{n} pod(s) bloqué(s) en Pending',k_pending_d:'Non placé : ressources, volume ou sélecteur de nœud — les événements du pod disent lequel.',k_failed:'{n} pod(s) en échec laissé(s) derrière',k_failed_d:'Les pods évincés ou en échec restent listés tant qu’on ne les supprime pas : diagnostiquez, puis nettoyez.',k_restarts:'{n} pod(s) redémarré(s) 10 fois ou plus',k_restarts_d:'Ils repartent, mais continuent d’échouer : lisez leurs journaux.',
+k_workload:'{n} charge(s) pas entièrement disponible(s)',k_workload_d:'Moins de répliques prêtes que demandé.',k_pvc:'{n} volume(s) non attaché(s)',k_pvc_d:'Un PVC attend son stockage : vérifiez le provisionneur (local-path).',
+k_events:'{n} alerte(s) sur les dernières 24 h',k_events_d:'La plus fréquente : {r}.',k_capacity:'Pods à {v} % de la capacité',k_capacity_d:'Les nouveaux pods resteront en Pending quand le nœud sera plein.',
+k_cert_soon:'Le certificat de l’API expire dans {n} jours',k_cert_soon_d:'k3s renouvelle les certificats proches de l’expiration à son démarrage : redémarrez-le à un moment calme, ou faites-les tourner.',k_cert_renew:'Certificat de l’API : {n} jours restants',k_cert_renew_d:'Il sera renouvelé au prochain redémarrage de k3s.',
+k_update:'k3s {a} → {b} disponible',k_update_d:'Planifié dans l’écran MISES À JOUR de la console (une version mineure à la fois).',
+k_all_ok:'Cluster sain',k_all_ok_d:'Nœuds prêts, aucun pod en échec, aucune alerte sur les dernières 24 h.',
+login:'CONNEXION',login_need:'Jeton Home Assistant requis',login_btn:'Connexion',error:'Erreur'}};
+var LANG=(new URLSearchParams(location.search).get('lang')||'en').slice(0,2);if(!I18N[LANG])LANG='en';
+var LOCALE=LANG==='fr'?'fr-FR':'en-GB';
+function t(k,v){var s=I18N[LANG][k];if(s===undefined)s=I18N.en[k];if(s===undefined)return k;return String(s).replace(/\{(\w+)\}/g,function(_,n){return v&&v[n]!==undefined?v[n]:''})}
+function applyStatic(){document.documentElement.lang=LANG;document.querySelectorAll('[data-t]').forEach(function(el){el.textContent=t(el.getAttribute('data-t'))});document.querySelectorAll('[data-title]').forEach(function(el){el.title=t(el.getAttribute('data-title'))})}
+function msgOf(s){return s&&s.message_key&&(I18N[LANG][s.message_key]||I18N.en[s.message_key])?t(s.message_key,s.message_vars||{}):(s&&s.message)||''}
+
+var HA_URL=window.location.origin,TOKEN=localStorage.getItem('vssp_ha_token')||'',chartInstances={},lastHistory=0,STATE={};
 // EN | The tablet's own Home Assistant session, borrowed from the CORE
 // EN | dashboard around this iframe (same origin, sandbox allow-same-origin),
 // EN | so a new tablet only has to log in to Home Assistant. `hass.auth`
-// EN | refreshes its short-lived token itself — needed here, since init()
-// EN | polls every 30 s for as long as the page stays open. TOKEN (a pasted
+// EN | refreshes its short-lived token itself — needed here, since the page
+// EN | polls every 30 s for as long as it stays open. TOKEN (a pasted
 // EN | long-lived token) is only the fallback for core.html opened alone.
 // FR | La session Home Assistant de la tablette elle-meme, empruntee au
 // FR | dashboard CORE autour de cette iframe (meme origine, sandbox
 // FR | allow-same-origin) : une nouvelle tablette n a qu a se connecter a
 // FR | Home Assistant. `hass.auth` rafraichit lui-meme son jeton court —
-// FR | necessaire ici, init() interrogeant toutes les 30 s tant que la page
+// FR | necessaire ici, la page interrogeant toutes les 30 s tant qu elle
 // FR | reste ouverte. TOKEN (jeton longue duree colle) n est que le repli
 // FR | pour core.html ouvert seul.
 function haSession(){try{if(window.parent===window)return null;var ha=window.parent.document.querySelector('home-assistant');return(ha&&ha.hass&&ha.hass.auth)||null}catch(e){return null}}
 async function authHeader(){var a=haSession();if(a){if(a.expired)await a.refreshAccessToken();return{Authorization:'Bearer '+a.accessToken}}return{Authorization:'Bearer '+TOKEN}}
-function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
+function esc(s){return String(s===undefined||s===null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
 async function haGet(p){var r=await fetch(HA_URL+'/api/'+p,{headers:await authHeader()});if(!r.ok)throw new Error(p+': '+r.status);return r.json()}
 async function haHistory(e,d){var end=new Date().toISOString(),start=new Date(Date.now()-d*864e5).toISOString();var r=await fetch(HA_URL+'/api/history/period/'+start+'?filter_entity_id='+e+'&end_time='+end+'&minimal_response&no_attributes',{headers:await authHeader()});if(!r.ok)return[];var data=await r.json();return data[0]||[]}
+async function localJson(p){try{var r=await fetch(HA_URL+p+(p.indexOf('?')<0?'?':'&')+'t='+Date.now(),{cache:'no-store'});return r.ok?await r.json():null}catch(e){return null}}
 function findEntity(s,k,x){x=x||[];return s.find(function(e){var c=(e.entity_id+' '+(e.attributes.friendly_name||'')).toLowerCase();return k.every(function(w){return c.includes(w.toLowerCase())})&&!x.some(function(w){return c.includes(w.toLowerCase())})})}
 function findEntities(s,k,x){x=x||[];return s.filter(function(e){var c=(e.entity_id+' '+(e.attributes.friendly_name||'')).toLowerCase();return k.every(function(w){return c.includes(w.toLowerCase())})&&!x.some(function(w){return c.includes(w.toLowerCase())})})}
+function num(e){var v=e?parseFloat(e.state):NaN;return isNaN(v)?null:v}
+function fmtBytes(b){if(b===null||b===undefined||isNaN(b))return'--';var u=LANG==='fr'?['o','Kio','Mio','Gio','Tio']:['B','KiB','MiB','GiB','TiB'],i=0;b=Number(b);while(b>=1024&&i<u.length-1){b/=1024;i++}return b.toLocaleString(LOCALE,{maximumFractionDigits:b<10?1:0})+' '+u[i]}
+function fmtKi(s){var m=String(s||'').match(/^(\d+)(Ki|Mi|Gi)?$/);if(!m)return s||'--';var f={Ki:1024,Mi:1048576,Gi:1073741824}[m[2]]||1;return fmtBytes(parseInt(m[1],10)*f)}
+function ago(iso){var d=Date.parse(iso);if(isNaN(d))return iso||'--';var m=Math.max(0,Math.round((Date.now()-d)/6e4));if(m<60)return t('ago_m',{n:m});if(m<2880)return t('ago_h',{n:Math.round(m/60)});return t('ago_d',{n:Math.round(m/1440)})}
+function since(iso){var d=Date.parse(iso);if(isNaN(d)||!/\d{4}-\d\d-\d\d/.test(iso))return iso;var m=Math.max(0,Math.round((Date.now()-d)/6e4)),dd=Math.floor(m/1440),hh=Math.floor(m%1440/60);return dd?dd+(LANG==='fr'?' j ':' d ')+hh+' h':hh+' h '+(m%60)+' min'}
+function load(e){var v=num(e);return v===null?(e?e.state:'--'):v.toFixed(2)}
+function hhmm(iso){var d=new Date(iso);return isNaN(d)?'--':d.toLocaleTimeString(LOCALE,{hour:'2-digit',minute:'2-digit'})}
+function lvlClass(p){return p>=90?'crit':p>=80?'warn':''}
+
 function renderGauge(id,v,mx,u,co,sub){var pct=Math.min(v/mx*100,100),ang=(pct/100)*270,r=50,cx=60,cy=60,sa=-225,ea=sa+ang,bea=sa+270;function p(a){var rad=(a-90)*Math.PI/180;return{x:cx+r*Math.cos(rad),y:cy+r*Math.sin(rad)}}var bs=p(sa),be=p(bea),vs=p(sa),ve=p(ea);var gc=pct>80?'#FF3D71':pct>60?'#FF9800':co||'#00FFC3';document.getElementById(id).innerHTML='<svg viewBox="0 0 120 120" width="120" height="120"><path d="M '+bs.x+' '+bs.y+' A '+r+' '+r+' 0 1 1 '+be.x+' '+be.y+'" fill="none" stroke="rgba(0,229,255,.1)" stroke-width="10" stroke-linecap="round"/><path d="M '+vs.x+' '+vs.y+' A '+r+' '+r+' 0 '+(ang>180?1:0)+' 1 '+ve.x+' '+ve.y+'" fill="none" stroke="'+gc+'" stroke-width="10" stroke-linecap="round" filter="drop-shadow(0 0 4px '+gc+'66)"/><text x="60" y="58" text-anchor="middle" fill="#fff" font-size="22" font-weight="700" font-family="monospace">'+Math.round(v)+(u||'')+'</text><text x="60" y="76" text-anchor="middle" fill="#56707E" font-size="10">'+esc(sub||'')+'</text></svg>'}
-function createChart(id,label,data,color,unit){var ctx=document.getElementById(id);if(!ctx)return;if(chartInstances[id]){chartInstances[id].destroy()}chartInstances[id]=new Chart(ctx,{type:'line',data:{labels:data.map(function(d){return d.t}),datasets:[{label:label,data:data.map(function(d){return d.v}),borderColor:color,backgroundColor:color+'22',fill:true,tension:.3,pointRadius:0,borderWidth:1.5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8FB6C9',font:{size:10}}}},scales:{x:{ticks:{color:'#56707E',font:{size:9},maxTicksLimit:6},grid:{color:'rgba(0,229,255,.06)'}},y:{ticks:{color:'#56707E',font:{size:9},callback:function(v){return v+(unit||'')}},grid:{color:'rgba(0,229,255,.06)'}}}}})}
-function renderTemps(ents){var tb=document.getElementById('temp-body');if(!ents.length){tb.innerHTML='<tr><td colspan="7" style="color:#56707E;text-align:center">Aucun capteur</td></tr>';return}tb.innerHTML=ents.map(function(s){var t=parseFloat(s.state)||0,n=s.attributes.friendly_name||s.entity_id,sn=s.entity_id.split('.')[1]||'',pct=Math.min(t/85*100,100),w=t>70;return'<tr><td>'+esc(n)+'</td><td style="color:#56707E;font-size:11px">'+esc(sn)+'</td><td style="color:'+(w?'#FF9800':'#00FFC3')+';font-weight:bold">'+t+'\u00B0C</td><td><div class="temp-bar"><div class="temp-bar-fill '+(w?'temp-warn':'temp-ok')+'" style="width:'+pct+'%"></div></div></td><td style="color:#56707E">--\u00B0C</td><td style="color:#56707E">--\u00B0C</td><td><span class="status-dot '+(w?'dot-warn':'dot-ok')+'"></span>'+(w?'WARN':'OK')+'</td></tr>'}).join('')}
-function renderK3s(data){if(!data){document.getElementById('k3s-kpis').innerHTML='<div style="color:#56707E;padding:20px;text-align:center;grid-column:1/-1">K3s stats non disponibles. Installez le cron k3s_stats.sh sur le host.</div>';return}var kpis=[{l:'Cluster Status',v:'\u2713',s:'Healthy',c:'#00FFC3'},{l:'K3s Version',v:data.version||'--',s:'',c:'#fff'},{l:'Nodes',v:data.node_count||'--',s:'Ready',c:'#fff'},{l:'Pods',v:data.pods_total||'--',s:'Running: '+(data.pods_running||'--'),c:'#fff'},{l:'Deployments',v:data.deployments||'--',s:'Up-to-date',c:'#fff'},{l:'Services',v:data.services||'--',s:'Active',c:'#fff'}];document.getElementById('k3s-kpis').innerHTML=kpis.map(function(k){return'<div class="k3s-kpi"><div class="k3s-kpi-label">'+k.l+'</div><div class="k3s-kpi-value" style="color:'+k.c+'">'+k.v+'</div><div class="k3s-kpi-sub">'+k.s+'</div></div>'}).join('');var nodes=data.nodes||[];var nh='<thead><tr><th>Nom</th><th>Statut</th><th>Role</th><th>CPU</th><th>Memoire</th></tr></thead><tbody>';if(nodes.length){nodes.forEach(function(n){nh+='<tr><td>'+esc(n.name)+'</td><td><span class="badge badge-ok">'+esc(n.status)+'</span></td><td>'+esc(n.role)+'</td><td>'+esc(n.cpu_capacity||'--')+' cores</td><td>'+esc(n.memory_capacity||'--')+'</td></tr>'})}else{nh+='<tr><td colspan="5" style="color:#56707E">En attente...</td></tr>'}nh+='</tbody>';document.getElementById('k3s-nodes').innerHTML=nh;document.getElementById('k3s-resources').innerHTML='<thead><tr><th>Ressource</th><th></th><th>Usage</th></tr></thead><tbody><tr><td>Pods</td><td><div class="progress" style="width:100px"><div class="progress-fill" style="width:'+Math.round((data.pods_total||0)/330*100)+'%"></div></div></td><td style="color:#8FB6C9">'+(data.pods_total||'--')+' / 330</td></tr><tr><td>Namespaces</td><td></td><td style="color:#8FB6C9">'+(data.namespaces||'--')+' actifs</td></tr></tbody>';var topNs=data.top_namespaces||[];var nsh='<thead><tr><th>Namespace</th><th>Pods</th><th>Status</th></tr></thead><tbody>';topNs.forEach(function(n){nsh+='<tr><td>'+esc(n.ns)+'</td><td>'+n.count+'</td><td><span class="badge badge-ok">Running</span></td></tr>'});if(!topNs.length)nsh+='<tr><td colspan="3" style="color:#56707E">En attente...</td></tr>';nsh+='</tbody>';document.getElementById('k3s-namespaces').innerHTML=nsh;var topDep=data.top_deployments||[];var dh='<thead><tr><th>Deployment</th><th>Ready</th><th>Status</th></tr></thead><tbody>';topDep.forEach(function(d){dh+='<tr><td>'+esc(d.name)+'</td><td>'+esc(d.ready)+'</td><td><span class="badge badge-ok">\u2713</span></td></tr>'});if(!topDep.length)dh+='<tr><td colspan="3" style="color:#56707E">En attente...</td></tr>';dh+='</tbody>';document.getElementById('k3s-deployments').innerHTML=dh;var events=data.events||[];var eh='<thead><tr><th>Heure</th><th>Type</th><th>Objet</th><th>Message</th></tr></thead><tbody>';events.forEach(function(e){eh+='<tr><td style="white-space:nowrap">'+esc(e.time)+'</td><td><span class="badge '+(e.type==='Warning'?'badge-warn':'badge-info')+'">'+esc(e.type)+'</span></td><td style="color:#00E5FF">'+esc(e.object)+'</td><td>'+esc(e.message)+'</td></tr>'});if(!events.length)eh+='<tr><td colspan="4" style="color:#56707E;text-align:center">Aucun evenement</td></tr>';eh+='</tbody>';document.getElementById('k3s-events').innerHTML=eh}
-function processHistory(h){var d=h.filter(function(x){return!isNaN(parseFloat(x.s||x.state))}).map(function(x){return{t:new Date(x.lu||x.last_updated).toLocaleDateString('fr-FR',{day:'2-digit',month:'2-digit'}),v:parseFloat(x.s||x.state)}});var s=Math.max(1,Math.floor(d.length/200));return d.filter(function(_,i){return i%s===0})}
-async function init(){if(!TOKEN&&!haSession()){document.querySelector('.page').innerHTML='<div class="section" style="max-width:400px;margin:80px auto"><div class="section-title">CONNEXION</div><p style="color:#8FB6C9;margin-bottom:12px">Jeton HA requis</p><input type="password" id="tok" placeholder="eyJhbGciOi..." style="width:100%;padding:8px;background:rgba(0,229,255,.06);border:1px solid rgba(0,229,255,.3);border-radius:8px;color:#fff;margin-bottom:12px"><button onclick="saveToken()" style="padding:8px 20px;background:rgba(0,229,255,.12);border:1px solid #00E5FF;border-radius:8px;color:#00E5FF;cursor:pointer">Connexion</button></div>';return}try{var states=await haGet('states');var hostname=findEntity(states,['hostname']);var up=findEntity(states,['uptime'],['update','ios']);if(hostname){document.getElementById('hostname').textContent=hostname.state}else{var g=findEntity(states,['cpu_load'])||findEntity(states,['uptime'],['update','ios']);if(g){var m=g.entity_id.match(/(\d{1,3}[_.]\d{1,3}[_.]\d{1,3}[_.]\d{1,3})/);document.getElementById('hostname').textContent=m?m[1].replace(/_/g,'.'):'--'}}if(up)document.getElementById('uptime').textContent=up.state;document.getElementById('last-update').textContent=new Date().toLocaleTimeString('fr-FR');var cpu=findEntity(states,['cpu','use'],['core','temp','temperature']);if(!cpu)cpu=findEntity(states,['cpu_percent']);if(!cpu)cpu=findEntity(states,['utilisation','cpu'],['core','temp']);renderGauge('g-cpu',cpu?parseFloat(cpu.state):0,100,'%','#00FFC3',cpu?(cpu.attributes.friendly_name||'').substring(0,25):'');var ram=findEntity(states,['ram','use'],['swap']);if(!ram)ram=findEntity(states,['memory','use'],['swap','gpu']);if(!ram)ram=findEntity(states,['utilisation','memoire'],['swap']);renderGauge('g-ram',ram?parseFloat(ram.state):0,100,'%','#3AA7FF',ram?(ram.attributes.friendly_name||'').substring(0,25):'');var l1=findEntity(states,['charge','processeur','1'],['15'])||findEntity(states,['load','1m']),l5=findEntity(states,['charge','processeur','5'],['15'])||findEntity(states,['load','5m']),l15=findEntity(states,['charge','processeur','15'])||findEntity(states,['load','15m']);document.getElementById('g-load').innerHTML='<div style="text-align:left;padding:10px"><div style="color:#8FB6C9;margin-bottom:6px">1m: <span style="color:#fff;font-weight:bold">'+(l1?l1.state:'--')+'</span></div><div style="color:#8FB6C9;margin-bottom:6px">5m: <span style="color:#fff;font-weight:bold">'+(l5?l5.state:'--')+'</span></div><div style="color:#8FB6C9">15m: <span style="color:#fff;font-weight:bold">'+(l15?l15.state:'--')+'</span></div></div>';var sw=findEntity(states,['swap','use']);renderGauge('g-swap',sw?parseFloat(sw.state):0,100,'%','#B084FF',sw?(sw.attributes.friendly_name||'').substring(0,25):'');var ct=findEntity(states,['cpu','temp']);if(!ct)ct=findEntity(states,['package','temp']);if(!ct)ct=findEntity(states,['edge','temp']);renderGauge('g-temp',ct?parseFloat(ct.state):0,100,'\u00B0C','#FF9800','Moyenne');var te=findEntities(states,['temp'],['weather','forecast','room','bedroom','bathroom','kitchen','living','garden','spa','secret','computer_room_temp','technical_room_temp']);var st=te.filter(function(s){var id=s.entity_id.toLowerCase();return(id.includes('cpu')||id.includes('core')||id.includes('nvme')||id.includes('ssd')||id.includes('package')||id.includes('edge')||id.includes('board')||id.includes('k10')||id.includes('it87'))&&!isNaN(parseFloat(s.state))});renderTemps(st);if(cpu){var h1=await haHistory(cpu.entity_id,5);createChart('chart-cpu','CPU (%)',processHistory(h1),'#3AA7FF','%')}if(ram){var h2=await haHistory(ram.entity_id,5);createChart('chart-ram','RAM (%)',processHistory(h2),'#00FFC3','%')}var nr=findEntity(states,['rx'],['error']);if(nr){var h3=await haHistory(nr.entity_id,5);createChart('chart-net','Network',processHistory(h3),'#B084FF',' Mb/s')}var di=findEntity(states,['disk','use'],['swap']);if(!di)di=findEntity(states,['espace']);if(di){var h4=await haHistory(di.entity_id,5);createChart('chart-disk','Disk',processHistory(h4),'#FF9800','')}try{var k3r=await fetch(HA_URL+'/local/osvision_v2/k3s_stats.json?t='+Date.now());if(k3r.ok)renderK3s(await k3r.json());else renderK3s(null)}catch(e){renderK3s(null)}var os=findEntity(states,['operating_system'])||findEntity(states,['os_version']);if(os)document.getElementById('os-info').textContent=os.state;else document.getElementById('os-info').textContent='Linux';setTimeout(init,30000)}catch(e){console.error(e);document.querySelector('.page').innerHTML+='<div class="section" style="border-color:#FF3D71"><div style="color:#FF3D71">Erreur: '+esc(e.message)+'</div></div>'}}
+function createChart(id,label,data,color,unit){var ctx=document.getElementById(id);if(!ctx||!window.Chart)return;if(chartInstances[id]){chartInstances[id].destroy()}chartInstances[id]=new Chart(ctx,{type:'line',data:{labels:data.map(function(d){return d.t}),datasets:[{label:label,data:data.map(function(d){return d.v}),borderColor:color,backgroundColor:color+'22',fill:true,tension:.3,pointRadius:0,borderWidth:1.5}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#8FB6C9',font:{size:10}}}},scales:{x:{ticks:{color:'#56707E',font:{size:9},maxTicksLimit:6},grid:{color:'rgba(0,229,255,.06)'}},y:{ticks:{color:'#56707E',font:{size:9},callback:function(v){return v+(unit||'')}},grid:{color:'rgba(0,229,255,.06)'}}}}})}
+function processHistory(h){var d=h.filter(function(x){return!isNaN(parseFloat(x.s||x.state))}).map(function(x){return{t:new Date(x.lu||x.last_updated).toLocaleDateString(LOCALE,{day:'2-digit',month:'2-digit'}),v:parseFloat(x.s||x.state)}});var s=Math.max(1,Math.floor(d.length/200));return d.filter(function(_,i){return i%s===0})}
+function renderTemps(ents){var tb=document.getElementById('temp-body');if(!ents.length){tb.innerHTML='<tr><td colspan="5" class="muted" style="text-align:center">'+esc(t('no_sensor'))+'</td></tr>';return}tb.innerHTML=ents.map(function(s){var v=parseFloat(s.state)||0,n=s.attributes.friendly_name||s.entity_id,sn=s.entity_id.split('.')[1]||'',pct=Math.min(v/85*100,100),w=v>=75,c=v>=85;return'<tr><td>'+esc(n)+'</td><td class="muted" style="font-size:11px">'+esc(sn)+'</td><td style="color:'+(c?'#FF3D71':w?'#FF9800':'#00FFC3')+';font-weight:bold">'+v+'°C</td><td><div class="bar"><div class="bar-fill '+(c?'crit':w?'warn':'')+'" style="width:'+pct+'%"></div></div></td><td><span class="status-dot '+(c?'dot-crit':w?'dot-warn':'dot-ok')+'"></span>'+(c?'CRIT':w?'WARN':'OK')+'</td></tr>'}).join('')}
+
+// ── EN | Partitions: the host collector first, Glances as the fallback / FR | Partitions : le collecteur hote d abord, Glances en repli ──
+function glancesPartitions(states){var rx=/(espace utilisé|espace libre|taille du disque|utilisation disque|disk used|disk free|disk size|disk usage)\s+(\/\S*)$/i,by={};states.forEach(function(e){var fn=e.attributes.friendly_name||'',m=fn.match(rx);if(!m||m[2].indexOf('/var/lib/kubelet')===0)return;var v=parseFloat(e.state);if(isNaN(v))return;var p=by[m[2]]=by[m[2]]||{mount:m[2],fs:''};var k=m[1].toLowerCase(),g=(e.attributes.unit_of_measurement||'GiB')==='TiB'?1099511627776:1073741824;if(/utilisé|used/.test(k))p.used=v*g;else if(/libre|free/.test(k))p.avail=v*g;else if(/taille|size/.test(k))p.size=v*g;else p.pct=v});return Object.keys(by).sort().map(function(k){return by[k]})}
+function renderPartitions(parts,src){var h='<thead><tr><th>'+esc(t('mount'))+'</th><th>'+esc(t('fs'))+'</th><th>'+esc(t('size'))+'</th><th>'+esc(t('free'))+'</th><th>'+esc(t('usage'))+'</th><th>'+esc(t('inodes'))+'</th></tr></thead><tbody>';if(!parts.length)h+='<tr><td colspan="6" class="muted">'+esc(t('parts_none'))+'</td></tr>';parts.forEach(function(p){var pct=p.pct!==undefined&&p.pct!==null?Math.round(p.pct):(p.size?Math.round(p.used/p.size*100):null);h+='<tr><td style="color:#fff;font-weight:700">'+esc(p.mount)+'</td><td class="muted">'+esc(p.fs||'')+'</td><td>'+fmtBytes(p.size)+'</td><td>'+fmtBytes(p.avail)+'</td><td style="white-space:nowrap"><div class="bar" style="display:inline-block;width:70px;vertical-align:middle;margin-right:6px"><div class="bar-fill '+lvlClass(pct||0)+'" style="width:'+(pct||0)+'%"></div></div>'+(pct===null?'--':pct+' %')+'</td><td class="muted">'+(p.inodes_pct===null||p.inodes_pct===undefined?'--':p.inodes_pct+' %')+'</td></tr>'});document.getElementById('parts').innerHTML=h+'</tbody>';document.getElementById('parts-src').textContent=src}
+
+// ── EN | Recommendations — rules on the values on screen / FR | Preconisations — des regles sur les valeurs a l ecran ──
+// EN | Each finding: sev (crit|warn|info|ok), title, detail, cmd. The worst
+// EN | severity colours the whole box. The same list is what SCAN sends out.
+// FR | Chaque constat : sev (crit|warn|info|ok), titre, detail, commande. La
+// FR | pire severite colore tout l encadre. C est aussi cette liste que SCAN
+// FR | envoie.
+var SEV_ORDER={crit:0,warn:1,info:2,ok:3};
+function rec(sev,title,detail,cmd){return{sev:sev,title:title,detail:detail,cmd:cmd||''}}
+function renderAdvice(scope,list){if(!list.length)list=[scope==='system'?rec('ok',t('r_all_ok'),t('r_all_ok_d')):rec('ok',t('k_all_ok'),t('k_all_ok_d'))];list.sort(function(a,b){return SEV_ORDER[a.sev]-SEV_ORDER[b.sev]});STATE['recs_'+scope]=list;var box=document.getElementById('adv-'+scope);box.className='advice lvl-'+list[0].sev;document.getElementById('adv-'+scope+'-list').innerHTML=list.map(function(r){return'<li><span class="status-dot dot-'+r.sev+'"></span><div><div class="advice-t">'+esc(r.title)+'</div><div class="advice-d">'+esc(r.detail)+'</div>'+(r.cmd?'<code class="cmd">'+esc(r.cmd)+'</code>':'')+'</div></li>'}).join('')}
+function systemRecs(c){var out=[];if(!c.hasGlances)out.push(rec('warn',t('r_no_glances'),t('r_no_glances_d')));
+if(c.cpu!==null&&c.cpu>=75)out.push(rec(c.cpu>=90?'crit':'warn',t('r_cpu',{v:Math.round(c.cpu)}),t('r_cpu_d'),'top -o %CPU\nsudo k3s kubectl top pods -A --sort-by=cpu'));
+if(c.ram!==null&&c.ram>=80)out.push(rec(c.ram>=90?'crit':'warn',t('r_ram',{v:Math.round(c.ram)}),t('r_ram_d'),'free -h\nsudo k3s kubectl top pods -A --sort-by=memory'));
+if(c.swap!==null&&c.swap>=50)out.push(rec('warn',t('r_swap',{v:Math.round(c.swap)}),t('r_swap_d'),'free -h; vmstat 5 5'));
+if(c.load15!==null&&c.cpus&&c.load15>c.cpus)out.push(rec(c.load15>c.cpus*1.5?'crit':'warn',t('r_load',{v:c.load15,n:c.cpus}),t('r_load_d'),'uptime; vmstat 5 5; top'));
+c.temps.forEach(function(x){if(x.v>=75)out.push(rec(x.v>=85?'crit':'warn',t('r_temp',{name:x.name,v:x.v}),t('r_temp_d'),'sensors'))});
+c.parts.forEach(function(p){var pct=p.pct!==undefined&&p.pct!==null?p.pct:(p.size?Math.round(p.used/p.size*100):null);if(pct!==null&&pct>=80){var root=p.mount==='/',boot=p.mount.indexOf('/boot')===0;out.push(rec(pct>=90?'crit':'warn',t('r_part',{m:p.mount,v:pct,f:fmtBytes(p.avail)}),root?t('r_part_root_d'):boot?t('r_part_boot_d'):t('r_part_d'),root?'sudo du -xh / --max-depth=2 | sort -h | tail -15\nsudo journalctl --vacuum-size=500M\nsudo k3s crictl rmi --prune\nsudo apt-get clean':boot?'uname -r; dpkg -l "linux-image-*" | grep ^ii\nsudo apt-get autoremove --purge':'sudo du -xh '+p.mount+' --max-depth=2 | sort -h | tail -15'))}if(p.inodes_pct!==null&&p.inodes_pct!==undefined&&p.inodes_pct>=85)out.push(rec('warn',t('r_inodes',{m:p.mount,v:p.inodes_pct}),t('r_inodes_d'),'sudo find '+p.mount+' -xdev -type f | cut -d/ -f2,3 | sort | uniq -c | sort -n | tail'))});
+if(c.orphans>=10)out.push(rec('info',t('r_orphans',{n:c.orphans}),t('r_orphans_d'),'# glances.conf\n[fs]\nhide=/var/lib/kubelet/.*'));
+var st=c.stats;if(!st)out.push(rec('info',t('r_nocollector'),t('r_nocollector_d')));else if(!st.ok)out.push(rec('warn',t('r_sealed'),msgOf(st)));else if(c.statsAge!==null&&c.statsAge>15)out.push(rec('warn',t('r_stats_old',{n:c.statsAge}),t('r_stats_old_d')));
+return out}
+function k3sRecs(k,upd){var out=[];if(!k)return[rec('info',t('k_basic'),t('k_basic_d'))];if(k.legacy)out.push(rec('info',t('k_basic'),t('k_basic_d')));
+if(k.service&&k.service!=='active'&&k.service!=='unknown')out.push(rec('crit',t('k_service',{v:k.service}),t('k_service_d'),'sudo systemctl status k3s\nsudo journalctl -u k3s -n 100 --no-pager'));
+if(k.reachable===false)out.push(rec('crit',t('k_api'),k.detail||'','sudo systemctl status k3s\nsudo k3s kubectl get --raw=/readyz?verbose'));
+(k.nodes||[]).forEach(function(n){if(!n.ready)out.push(rec('crit',t('k_notready',{n:n.name}),t('k_notready_d'),'sudo k3s kubectl describe node '+n.name+'\nsudo journalctl -u k3s -n 100 --no-pager'));(n.pressure||[]).forEach(function(p){out.push(rec(p==='PIDPressure'?'warn':'crit',t('k_pressure',{n:n.name,p:p}),p==='DiskPressure'?t('k_disk_pressure_d'):p==='MemoryPressure'?t('k_mem_pressure_d'):t('k_pid_pressure_d'),p==='DiskPressure'?'df -h /\nsudo k3s crictl rmi --prune':'sudo k3s kubectl describe node '+n.name))});if(n.cpu_pct>=85)out.push(rec('warn',t('k_node_cpu',{n:n.name,v:n.cpu_pct}),t('k_node_load_d'),'sudo k3s kubectl top pods -A --sort-by=cpu | head'));if(n.mem_pct>=85)out.push(rec('warn',t('k_node_mem',{n:n.name,v:n.mem_pct}),t('k_node_load_d'),'sudo k3s kubectl top pods -A --sort-by=memory | head'))});
+var groups={};(k.problem_pods||[]).forEach(function(p){var g=/CrashLoop/.test(p.reason)?'crash':/ImagePull|ErrImage|InvalidImage/.test(p.reason)?'pull':p.reason==='OOMKilled'?'oom':p.reason==='Pending'?'pending':p.phase==='Failed'?'failed':p.reason?'crash':'restarts';(groups[g]=groups[g]||[]).push(p)});
+function podCmd(g,p){var ns=p.ns,n=p.name;return g==='crash'||g==='restarts'||g==='oom'?'sudo k3s kubectl -n '+ns+' logs '+n+' --previous --tail=50\nsudo k3s kubectl -n '+ns+' describe pod '+n:g==='failed'?'sudo k3s kubectl get pods -A --field-selector=status.phase=Failed\nsudo k3s kubectl -n '+ns+' describe pod '+n:'sudo k3s kubectl -n '+ns+' describe pod '+n}
+[['crash','crit'],['pull','crit'],['oom','warn'],['pending','warn'],['failed','warn'],['restarts','info']].forEach(function(gs){var l=groups[gs[0]];if(!l)return;out.push(rec(gs[1],t('k_'+gs[0],{n:l.length}),t('k_'+gs[0]+'_d')+' '+l.slice(0,4).map(function(p){return p.ns+'/'+p.name+(p.restarts?' ('+p.restarts+'×)':'')}).join(', '),podCmd(gs[0],l[0])))});
+var un=(k.workloads||{}).unavailable||[];if(un.length)out.push(rec('warn',t('k_workload',{n:un.length}),t('k_workload_d')+' '+un.slice(0,4).map(function(w){return w.ns+'/'+w.name+' '+w.ready}).join(', '),'sudo k3s kubectl -n '+un[0].ns+' rollout status '+un[0].kind.toLowerCase()+'/'+un[0].name));
+var pv=((k.pvc||{}).not_bound)||[];if(pv.length)out.push(rec('warn',t('k_pvc',{n:pv.length}),t('k_pvc_d'),'sudo k3s kubectl -n '+pv[0].ns+' describe pvc '+pv[0].name));
+var recent=(k.events||[]).filter(function(e){return Date.now()-Date.parse(e.time)<864e5});if(recent.length){var rc={};recent.forEach(function(e){rc[e.reason]=(rc[e.reason]||0)+(e.count||1)});var top=Object.keys(rc).sort(function(a,b){return rc[b]-rc[a]})[0];out.push(rec('info',t('k_events',{n:recent.length}),t('k_events_d',{r:top}),'sudo k3s kubectl get events -A --field-selector type=Warning --sort-by=.lastTimestamp | tail'))}
+var cap=0;(k.nodes||[]).forEach(function(n){cap+=n.pods_capacity||0});if(cap&&k.pods&&k.pods.total/cap>=.8)out.push(rec('warn',t('k_capacity',{v:Math.round(k.pods.total/cap*100)}),t('k_capacity_d')));
+if(k.cert_days!==null&&k.cert_days!==undefined){if(k.cert_days<30)out.push(rec('warn',t('k_cert_soon',{n:k.cert_days}),t('k_cert_soon_d'),'sudo k3s certificate check\nsudo systemctl restart k3s'));else if(k.cert_days<90)out.push(rec('info',t('k_cert_renew',{n:k.cert_days}),t('k_cert_renew_d'),'sudo k3s certificate check'))}
+if(upd&&upd.pending&&upd.latest)out.push(rec('info',t('k_update',{a:upd.installed,b:upd.next||upd.latest}),t('k_update_d')));
+return out}
+
+// ── EN | K3s panel / FR | Panneau K3s ──
+// EN | core_stats.json (vssp_core_stats.py) first. When the safe is sealed and
+// EN | nothing was ever measured, the old host timer's file still gives counts.
+// FR | core_stats.json (vssp_core_stats.py) d abord. Coffre scelle et rien
+// FR | jamais mesure : le fichier de l ancien minuteur hote donne encore des
+// FR | comptes.
+function fromLegacy(d){if(!d)return null;return{legacy:true,service:'unknown',version:d.version||'',reachable:true,nodes:(d.nodes||[]).map(function(n){return{name:n.name,ready:n.status==='Ready',roles:n.role,cpu:n.cpu_capacity,memory:n.memory_capacity,pods_capacity:parseInt(n.pods_capacity,10)||0,pressure:[]}}),pods:{total:d.pods_total||0,running:d.pods_running||0},problem_pods:[],workloads:{deployments:d.deployments||0,statefulsets:0,daemonsets:0,unavailable:[],top:(d.top_deployments||[]).map(function(x){return{kind:'Deployment',ns:'',name:x.name,ready:x.ready}})},services:d.services,namespaces:d.namespaces,top_namespaces:d.top_namespaces||[],pvc:{total:null,not_bound:[]},events:[],cert_days:null,measured:d.timestamp}}
+function renderK3s(k,srcText){document.getElementById('k3s-src').textContent=srcText||'';if(!k){document.getElementById('k3s-kpis').innerHTML='<div class="muted" style="padding:20px;text-align:center;grid-column:1/-1">'+esc(t('waiting'))+'</div>';['k3s-nodes','k3s-resources','k3s-namespaces','k3s-deployments','k3s-events'].forEach(function(id){document.getElementById(id).innerHTML=''});return}
+var nodes=k.nodes||[],ready=nodes.filter(function(n){return n.ready}).length,pods=k.pods||{},wl=k.workloads||{},wlTotal=(wl.deployments||0)+(wl.statefulsets||0)+(wl.daemonsets||0),recent=(k.events||[]).filter(function(e){return Date.now()-Date.parse(e.time)<864e5}).length;
+var bad=(k.service&&k.service!=='active'&&k.service!=='unknown')||k.reachable===false,deg=!bad&&(ready<nodes.length||(k.problem_pods||[]).some(function(p){return p.reason})||(wl.unavailable||[]).length||nodes.some(function(n){return(n.pressure||[]).length}));
+var st=bad?[t('down'),'#FF3D71','✖']:deg?[t('degraded'),'#FF9800','!']:k.legacy?[t('unknown'),'#8FB6C9','?']:[t('healthy'),'#00FFC3','✓'];
+var kpis=[{l:t('kpi_status'),v:st[2],s:st[0],c:st[1]},{l:t('kpi_version'),v:(k.version||'--').replace(/^v/,'').replace(/\+k3s\d+$/,''),s:k.version||'',c:'#fff'},{l:t('kpi_nodes'),v:ready+'/'+nodes.length,s:t('ready'),c:ready<nodes.length?'#FF3D71':'#fff'},{l:t('kpi_pods'),v:(pods.running||0)+'/'+(pods.total||0),s:t('running'),c:'#fff'},{l:t('kpi_workloads'),v:(wlTotal-(wl.unavailable||[]).length)+'/'+wlTotal,s:t('available'),c:(wl.unavailable||[]).length?'#FF9800':'#fff'},{l:t('kpi_warnings'),v:k.legacy?'--':recent,s:'',c:recent?'#FF9800':'#fff'}];
+document.getElementById('k3s-kpis').innerHTML=kpis.map(function(x){return'<div class="k3s-kpi"><div class="k3s-kpi-label">'+esc(x.l)+'</div><div class="k3s-kpi-value" style="color:'+x.c+'">'+esc(x.v)+'</div><div class="k3s-kpi-sub">'+esc(x.s)+'</div></div>'}).join('');
+var nh='<thead><tr><th>'+esc(t('name'))+'</th><th>'+esc(t('status'))+'</th><th>'+esc(t('role'))+'</th><th>CPU</th><th>'+esc(t('memory'))+'</th><th>'+esc(t('load_now'))+'</th></tr></thead><tbody>';
+if(!nodes.length)nh+='<tr><td colspan="6" class="muted">'+esc(t('waiting'))+'</td></tr>';nodes.forEach(function(n){var pr=(n.pressure||[]).length;nh+='<tr><td>'+esc(n.name)+'</td><td><span class="badge '+(!n.ready?'badge-crit':pr?'badge-warn':'badge-ok')+'">'+esc(!n.ready?'NotReady':pr?n.pressure.join(', '):'Ready')+'</span></td><td>'+esc(n.roles)+'</td><td>'+esc(n.cpu||'--')+'</td><td>'+esc(fmtKi(n.memory))+'</td><td class="muted">'+(n.cpu_pct!==null&&n.cpu_pct!==undefined?'CPU '+n.cpu_pct+' % · RAM '+n.mem_pct+' %':'--')+'</td></tr>'});document.getElementById('k3s-nodes').innerHTML=nh+'</tbody>';
+var cap=0;nodes.forEach(function(n){cap+=n.pods_capacity||0});var pc=cap?Math.round((pods.total||0)/cap*100):0;
+var rh='<tbody><tr><td>'+esc(t('pods_cap'))+'</td><td style="white-space:nowrap"><div class="bar" style="display:inline-block;width:80px;vertical-align:middle;margin-right:6px"><div class="bar-fill '+lvlClass(pc)+'" style="width:'+pc+'%"></div></div>'+(pods.total||0)+' / '+(cap||'--')+'</td></tr><tr><td>'+esc(t('namespaces'))+'</td><td>'+esc(k.namespaces===undefined?'--':k.namespaces)+'</td></tr><tr><td>'+esc(t('services'))+'</td><td>'+esc(k.services===undefined?'--':k.services)+'</td></tr><tr><td>'+esc(t('volumes'))+'</td><td>'+((k.pvc||{}).total===null||(k.pvc||{}).total===undefined?'--':k.pvc.total+((k.pvc.not_bound||[]).length?' · <span style="color:#FF9800">'+k.pvc.not_bound.length+' Pending</span>':''))+'</td></tr><tr><td>'+esc(t('cert'))+'</td><td>'+(k.cert_days===null||k.cert_days===undefined?'--':esc(t('days',{n:k.cert_days})))+'</td></tr></tbody>';document.getElementById('k3s-resources').innerHTML=rh;
+var ns=k.top_namespaces||[],nsh='<thead><tr><th>Namespace</th><th>Pods</th></tr></thead><tbody>';ns.forEach(function(n){nsh+='<tr><td>'+esc(n.ns)+'</td><td>'+esc(n.count)+'</td></tr>'});if(!ns.length)nsh+='<tr><td colspan="2" class="muted">'+esc(t('waiting'))+'</td></tr>';document.getElementById('k3s-namespaces').innerHTML=nsh+'</tbody>';
+var tops=(wl.top||[]),dh='<thead><tr><th>'+esc(t('name'))+'</th><th>'+esc(t('ready_col'))+'</th><th></th></tr></thead><tbody>';tops.forEach(function(d){var p=String(d.ready||'').split('/'),ok=p.length===2&&p[0]===p[1];dh+='<tr><td title="'+esc(d.kind+' '+d.ns)+'">'+esc(d.name)+'</td><td>'+esc(d.ready)+'</td><td><span class="badge '+(ok?'badge-ok':'badge-warn')+'">'+(ok?'✓':'!')+'</span></td></tr>'});if(!tops.length)dh+='<tr><td colspan="3" class="muted">'+esc(t('waiting'))+'</td></tr>';document.getElementById('k3s-deployments').innerHTML=dh+'</tbody>';
+var ev=k.events||[],eh='<thead><tr><th>'+esc(t('time'))+'</th><th>'+esc(t('object'))+'</th><th>'+esc(t('message'))+'</th></tr></thead><tbody>';ev.forEach(function(e){eh+='<tr><td style="white-space:nowrap">'+esc(ago(e.time))+'</td><td><span class="badge badge-warn">'+esc(e.reason)+'</span><div style="color:#00E5FF;font-size:11px">'+esc(e.object)+'</div></td><td style="font-size:11px">'+esc(e.message)+(e.count>1?' <span class="muted">(×'+e.count+')</span>':'')+'</td></tr>'});if(!ev.length)eh+='<tr><td colspan="3" class="muted" style="text-align:center">'+esc(k.legacy?'--':t('no_events'))+'</td></tr>';document.getElementById('k3s-events').innerHTML=eh+'</tbody>'}
+
+// ── EN | SCAN — the findings go to the assistant, the answer comes back as a file
+// ── FR | SCAN — les constats partent vers l assistant, la reponse revient en fichier
+// EN | POST to the local_only webhook (no token), then poll
+// EN | core_scan_<scope>.json until it carries OUR request_id and is done.
+// EN | Nothing identifying goes out: findings are the rule texts above, plus
+// EN | the OS and k3s versions — never the hostname.
+// FR | POST sur le webhook local_only (sans jeton), puis interrogation de
+// FR | core_scan_<scope>.json jusqu a ce qu il porte NOTRE request_id et soit
+// FR | termine. Rien d identifiant ne sort : les constats sont les textes des
+// FR | regles ci-dessus, plus les versions de l OS et de k3s — jamais le nom
+// FR | d hote.
+var SCANS={};
+function scanOut(scope){return document.getElementById('scan-'+scope+'-out')}
+function renderScan(scope,s){var el=scanOut(scope);if(!s){el.hidden=true;return}el.hidden=false;if(s.state==='running'){var t0=(SCANS[scope]||{}).t0||Date.now();el.innerHTML='<div class="scan-head"><span class="spinner"></span>'+esc(t('scan_running',{s:Math.round((Date.now()-t0)/1000)}))+'</div>';return}
+if(!s.ok){el.innerHTML='<div class="scan-err">'+esc(msgOf(s))+'</div>';return}
+var h='<div class="scan-head">'+esc(t('scan_from',{p:(s.provider||'').replace(/^./,function(c){return c.toUpperCase()}),m:s.model||'',n:s.searches||0,t:hhmm(s.generated)}))+'</div>';if(s.summary)h+='<div class="scan-sum">'+esc(s.summary)+'</div>';
+(s.items||[]).forEach(function(it){h+='<div class="scan-item"><div class="advice-t"><span class="status-dot dot-'+esc(it.severity)+'"></span>'+esc(it.finding)+'</div><div class="advice-d">'+esc(it.advice)+'</div>';if((it.steps||[]).length)h+='<code class="cmd">'+esc(it.steps.join('\n'))+'</code>';var srcs=(it.sources||[]).filter(function(x){return/^https?:\/\//.test(x.url)});if(srcs.length)h+='<div class="scan-src">'+srcs.map(function(x){return'<a href="'+esc(x.url)+'" target="_blank" rel="noopener noreferrer">↗ '+esc(x.title||x.url.replace(/^https?:\/\//,'').split('/')[0])+'</a>'}).join('')+'</div>';h+='</div>'});
+var cites=(s.citations||[]).filter(function(x){return/^https?:\/\//.test(x.url)});if(cites.length)h+='<div class="scan-src" style="margin-top:6px">'+cites.slice(0,8).map(function(x){return'<a href="'+esc(x.url)+'" target="_blank" rel="noopener noreferrer">↗ '+esc(x.title||x.url)+'</a>'}).join('')+'</div>';
+h+='<div class="scan-note">'+esc(t('scan_note'))+'</div>';el.innerHTML=h}
+function b64(s){return btoa(unescape(encodeURIComponent(s)))}
+async function startScan(scope){var btn=document.getElementById('scan-'+scope);if(btn.disabled)return;btn.disabled=true;
+var rid=Date.now().toString(36)+'-'+Math.random().toString(36).slice(2,10),recs=(STATE['recs_'+scope]||[]).filter(function(r){return r.sev!=='ok'}),ctx=STATE.context||{};
+var payload={request_id:rid,scope:scope,lang:LANG,context:ctx,findings:recs.map(function(r){return{sev:r.sev,title:r.title,detail:r.detail}})};
+SCANS[scope]={rid:rid,t0:Date.now()};renderScan(scope,{state:'running'});
+try{var r=await fetch(HA_URL+'/api/webhook/vssp_core_scan',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({payload_b64:b64(JSON.stringify(payload))})});if(!r.ok)throw new Error('HTTP '+r.status)}catch(e){btn.disabled=false;renderScan(scope,{state:'done',ok:false,message:t('scan_send_fail',{e:e.message})});return}
+var tick=setInterval(async function(){var s=await localJson('/local/vssp/core_scan_'+scope+'.json');var mine=s&&s.request_id===rid;if(mine&&s.state==='done'){clearInterval(tick);btn.disabled=false;renderScan(scope,s);return}if(Date.now()-SCANS[scope].t0>3e5){clearInterval(tick);btn.disabled=false;renderScan(scope,{state:'done',ok:false,message:t('scan_timeout')});return}renderScan(scope,{state:'running'})},3000)}
+async function loadLastScans(){for(var sc of['system','k3s']){var s=await localJson('/local/vssp/core_scan_'+sc+'.json');if(s&&s.state==='done')renderScan(sc,s)}}
+
+// ── EN | The 30 s cycle / FR | Le cycle de 30 s ──
+async function refresh(){var states=await haGet('states');var hostname=findEntity(states,['hostname']);var up=findEntity(states,['uptime'],['update','ios']);if(hostname){document.getElementById('hostname').textContent=hostname.state}else{var g=findEntity(states,['cpu_load'])||findEntity(states,['uptime'],['update','ios']);if(g){var m=g.entity_id.match(/(\d{1,3}[_.]\d{1,3}[_.]\d{1,3}[_.]\d{1,3})/);document.getElementById('hostname').textContent=m?m[1].replace(/_/g,'.'):'--'}}if(up)document.getElementById('uptime').textContent=since(up.state);document.getElementById('last-update').textContent=new Date().toLocaleTimeString(LOCALE);
+var stats=await localJson('/local/vssp/core_stats.json'),host=(stats&&stats.host)||{};
+var cpu=findEntity(states,['cpu','use'],['core','temp','temperature'])||findEntity(states,['cpu_percent'])||findEntity(states,['utilisation','cpu'],['core','temp']);renderGauge('g-cpu',num(cpu)||0,100,'%','#00FFC3',cpu?(cpu.attributes.friendly_name||'').substring(0,25):'');
+var ram=findEntity(states,['ram','use'],['swap'])||findEntity(states,['memory','use'],['swap','gpu'])||findEntity(states,['utilisation','memoire'],['swap'])||findEntity(states,['utilisation','mémoire'],['swap']);renderGauge('g-ram',num(ram)||0,100,'%','#3AA7FF',ram?(ram.attributes.friendly_name||'').substring(0,25):'');
+var l1=findEntity(states,['charge','processeur','1'],['15'])||findEntity(states,['load','1m']),l5=findEntity(states,['charge','processeur','5'],['15'])||findEntity(states,['load','5m']),l15=findEntity(states,['charge','processeur','15'])||findEntity(states,['load','15m']);
+document.getElementById('g-load').innerHTML='<div style="text-align:left;padding:10px"><div style="color:#8FB6C9;margin-bottom:6px">1m: <span style="color:#fff;font-weight:bold">'+esc(load(l1))+'</span></div><div style="color:#8FB6C9;margin-bottom:6px">5m: <span style="color:#fff;font-weight:bold">'+esc(load(l5))+'</span></div><div style="color:#8FB6C9">15m: <span style="color:#fff;font-weight:bold">'+esc(load(l15))+'</span></div>'+(host.cpus?'<div class="muted" style="font-size:10px;margin-top:6px">'+esc(t('cores',{n:host.cpus}))+'</div>':'')+'</div>';
+var sw=findEntity(states,['swap','use'])||findEntity(states,['utilisation','espace_d_echange']);renderGauge('g-swap',num(sw)||0,100,'%','#B084FF',sw?(sw.attributes.friendly_name||'').substring(0,25):'');
+var ct=findEntity(states,['cpu','temp'])||findEntity(states,['package','temp'])||findEntity(states,['edge','temp']);renderGauge('g-temp',num(ct)||0,100,'°C','#FF9800',t('average'));
+var te=findEntities(states,['temp'],['weather','forecast','room','bedroom','bathroom','kitchen','living','garden','spa','secret','computer_room_temp','technical_room_temp']);var sensors=te.filter(function(s){var id=s.entity_id.toLowerCase();return(id.includes('cpu')||id.includes('core')||id.includes('nvme')||id.includes('ssd')||id.includes('package')||id.includes('edge')||id.includes('board')||id.includes('k10')||id.includes('it87'))&&!isNaN(parseFloat(s.state))});renderTemps(sensors);
+var os=findEntity(states,['operating_system'])||findEntity(states,['os_version']);document.getElementById('os-info').textContent=host.os||(os?os.state:'Linux');
+// EN | Partitions / FR | Partitions
+var parts=host.partitions||[],src;if(parts.length)src=t('parts_host',{t:stats.stale?t('src_stale',{t:ago(stats.measured)}):ago(stats.measured)});else{parts=glancesPartitions(states);src=parts.length?t('parts_glances'):''}renderPartitions(parts,src);
+var orphans=states.filter(function(e){return(e.attributes.friendly_name||'').indexOf('/var/lib/kubelet/pods/')>=0&&e.state==='unavailable'}).length;
+var statsAge=stats&&stats.generated?Math.round((Date.now()-Date.parse(stats.generated))/6e4):null;
+renderAdvice('system',systemRecs({hasGlances:!!cpu,cpu:num(cpu),ram:num(ram),swap:num(sw),load15:num(l15),cpus:host.cpus||null,temps:sensors.map(function(s){return{name:s.attributes.friendly_name||s.entity_id,v:parseFloat(s.state)}}),parts:parts,orphans:orphans,stats:stats,statsAge:statsAge}));
+// EN | Cluster / FR | Cluster
+var k=stats&&stats.k3s?stats.k3s:null,ksrc='';if(k&&stats){k.measured=stats.measured;ksrc=stats.stale?t('src_stale',{t:ago(stats.measured)}):t('src_live',{t:ago(stats.measured)})}else{k=fromLegacy(await localJson('/local/osvision_v2/k3s_stats.json'));if(k)ksrc=t('src_legacy')}
+var upd=null,inf=await localJson('/local/vssp/infra_updates.json');if(inf&&inf.components)upd=inf.components.find(function(c){return c.key==='k3s'})||null;
+renderK3s(k,ksrc);var krecs=k3sRecs(k,upd);if(stats&&!stats.ok&&!stats.k3s)krecs.unshift(rec('warn',t('r_sealed'),msgOf(stats)));renderAdvice('k3s',krecs);
+STATE.context={os:host.os||(os?os.state:''),kernel:host.kernel||'',k3s:(k&&k.version)||'',cpus:host.cpus||'',ram:(k&&k.nodes&&k.nodes[0]&&fmtKi(k.nodes[0].memory))||''};
+// EN | History: every 5 min, not every 30 s — Glances itself only refreshes
+// EN | every 60 s, and 4 five-day queries per cycle weigh on the recorder.
+// FR | Historique : toutes les 5 min, pas toutes les 30 s — Glances ne se
+// FR | rafraichit lui-meme que toutes les 60 s, et 4 requetes de 5 jours par
+// FR | cycle pesent sur le recorder.
+if(Date.now()-lastHistory>3e5){lastHistory=Date.now();if(cpu)createChart('chart-cpu','CPU (%)',processHistory(await haHistory(cpu.entity_id,5)),'#3AA7FF','%');if(ram)createChart('chart-ram','RAM (%)',processHistory(await haHistory(ram.entity_id,5)),'#00FFC3','%');var nr=findEntity(states,['rx'],['error']);if(nr)createChart('chart-net',t('chart_net'),processHistory(await haHistory(nr.entity_id,5)),'#B084FF',' Mb/s');var di=findEntity(states,['disk','use'],['swap'])||findEntity(states,['utilisation','disque'],['kubelet']);if(di)createChart('chart-disk',t('chart_disk'),processHistory(await haHistory(di.entity_id,5)),'#FF9800','')}}
+var errBox=null;
+// EN | The timer is rescheduled in `finally`: a network error used to stop
+// EN | the loop for good until someone reloaded the page.
+// FR | Le minuteur est relance dans `finally` : une erreur reseau arretait
+// FR | la boucle pour de bon jusqu a ce que quelqu un recharge la page.
+async function cycle(){try{await refresh();if(errBox){errBox.remove();errBox=null}}catch(e){console.error(e);if(!errBox){errBox=document.createElement('div');errBox.className='section';errBox.style.borderColor='#FF3D71';document.querySelector('.page').appendChild(errBox)}errBox.innerHTML='<div style="color:#FF3D71">'+esc(t('error'))+': '+esc(e.message)+'</div>'}finally{setTimeout(cycle,30000)}}
+function init(){applyStatic();if(!TOKEN&&!haSession()){document.querySelector('.page').innerHTML='<div class="section" style="max-width:400px;margin:80px auto"><div class="section-title">'+esc(t('login'))+'</div><p style="color:#8FB6C9;margin-bottom:12px">'+esc(t('login_need'))+'</p><input type="password" id="tok" placeholder="eyJhbGciOi..." style="width:100%;padding:8px;background:rgba(0,229,255,.06);border:1px solid rgba(0,229,255,.3);border-radius:8px;color:#fff;margin-bottom:12px"><button class="btn" onclick="saveToken()">'+esc(t('login_btn'))+'</button></div>';return}loadLastScans();cycle()}
 // EN | RELOAD, do not call init() again. When there is no token, init()
 // EN | replaces the whole .page with the login form - so every element it
 // EN | needs afterwards (#hostname, #uptime, #g-cpu...) no longer exists,
@@ -153,8 +412,8 @@ async function init(){if(!TOKEN&&!haSession()){document.querySelector('.page').i
 // FR | premier collage.
 // FR | Le jeton est deja persiste par la ligne precedente : un rechargement
 // FR | revient donc avec TOKEN pose et s'execute sur le DOM d'origine, intact.
-function saveToken(){var t=document.getElementById('tok').value.trim();if(t){localStorage.setItem('vssp_ha_token',t);location.reload()}}
-function clearCache(){try{if(window.caches&&caches.keys){caches.keys().then(function(ks){ks.forEach(function(k){caches.delete(k)})})}}catch(e){}location.replace(location.pathname+'?nocache='+Date.now())}
+function saveToken(){var t_=document.getElementById('tok').value.trim();if(t_){localStorage.setItem('vssp_ha_token',t_);location.reload()}}
+function clearCache(){try{if(window.caches&&caches.keys){caches.keys().then(function(ks){ks.forEach(function(k){caches.delete(k)})})}}catch(e){}var q=new URLSearchParams(location.search);q.set('nocache',Date.now());location.replace(location.pathname+'?'+q.toString())}
 init();
 </script>
 </body>
