@@ -386,7 +386,13 @@ core.html ──POST /api/webhook/vssp_core_scan {payload_b64}──► automati
 core.html polls /local/vssp/core_scan_<scope>.json every 3 s until it carries its request_id
 ```
 
-- **Provider**: `input_select.vssp_chatbot_provider` and its key file (`/config/vssp/.<provider>_key`),
+- **First choice — Home Assistant's own AI**: when an `ai_task` entity exists (here the OpenAI
+  integration's *AI Task*), the automation calls `ai_task.generate_data` itself:
+  `vssp_core_scan.py --stage prepare` files "running" and prints the instructions,
+  `--stage finish` files the answer (JSON summary, items, sources). No key is entered twice,
+  none reaches a command line or the recorder, and no 60 s limit applies. A failure — no
+  credit left on the account, for instance — is reported in the box.
+- **Fallback, when no `ai_task` entity exists** — **Provider**: `input_select.vssp_chatbot_provider` and its key file (`/config/vssp/.<provider>_key`),
   shared with the chat bubble (the key is set with `input_text.vssp_<provider>_api_key` then
   `script.vssp_save_<provider>_key`). Claude runs on `claude-opus-5` with the `web_search_20260209`
   tool (5 searches at most, server-side fallback on refusal), whatever older model the chat

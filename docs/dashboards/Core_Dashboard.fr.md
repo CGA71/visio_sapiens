@@ -378,7 +378,13 @@ core.html ──POST /api/webhook/vssp_core_scan {payload_b64}──► automati
 core.html interroge /local/vssp/core_scan_<portée>.json toutes les 3 s jusqu'à y trouver son request_id
 ```
 
-- **Fournisseur** : `input_select.vssp_chatbot_provider` et son fichier de clé
+- **Premier choix — l'IA de Home Assistant** : quand une entité `ai_task` existe (ici l'*AI Task*
+  de l'intégration OpenAI), l'automatisation appelle elle-même `ai_task.generate_data` :
+  `vssp_core_scan.py --stage prepare` classe « en cours » et imprime la consigne,
+  `--stage finish` classe la réponse (résumé JSON, éléments, sources). Aucune clé saisie deux
+  fois, aucune qui atteigne une ligne de commande ou le recorder, et pas de limite de 60 s.
+  Un échec — plus de crédit sur le compte, par exemple — est dit dans l'encadré.
+- **Repli, quand aucune entité `ai_task` n'existe** — **Fournisseur** : `input_select.vssp_chatbot_provider` et son fichier de clé
   (`/config/vssp/.<fournisseur>_key`), partagés avec la bulle de chat (la clé se pose avec `input_text.vssp_<fournisseur>_api_key` puis
   `script.vssp_save_<fournisseur>_key`). Claude tourne sur
   `claude-opus-5` avec l'outil `web_search_20260209` (5 recherches au plus, repli côté

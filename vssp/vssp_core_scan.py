@@ -23,11 +23,16 @@
 # Visio Sapiens — CORE screen: SCAN, recommendations looked up on the web
 #
 # EN | The two recommendation boxes of core.html are computed in the page,
-# EN | from thresholds: they say WHAT is wrong. The SCAN button asks the
-# EN | chat assistant already configured in the console (packages/
-# EN | vssp_chatbot.yaml, same key files) to look each finding up on the
-# EN | internet — the provider's own web search — and bring back what to do,
-# EN | with the pages it read.
+# EN | from thresholds: they say WHAT is wrong. The SCAN button asks an AI
+# EN | to look each finding up and bring back what to do, with its sources.
+# EN | FIRST CHOICE: the AI Home Assistant already has (an ai_task entity —
+# EN | here the OpenAI integration). The automation calls
+# EN | ai_task.generate_data itself; this script only prepares the request
+# EN | (--stage prepare) and files the answer (--stage finish). No key to
+# EN | enter twice, and none that ever reaches a command line or the
+# EN | recorder. FALLBACK, when no ai_task entity exists: the chat
+# EN | assistant's own provider and key files (packages/vssp_chatbot.yaml),
+# EN | with the provider's web search, detached (below).
 # EN | What leaves the house: the findings as the page wrote them (a disk at
 # EN | 91 %, a pod in CrashLoopBackOff, a k3s version), the OS and k3s
 # EN | versions, and nothing else. No hostname, no address — the page never
@@ -39,10 +44,16 @@
 # EN | into the same file, which the page polls.
 # FR | Les deux encadres de preconisations de core.html sont calcules dans la
 # FR | page, a partir de seuils : ils disent CE QUI ne va pas. Le bouton SCAN
-# FR | demande a l assistant deja configure dans la console (packages/
-# FR | vssp_chatbot.yaml, memes fichiers de cle) de chercher chaque constat
-# FR | sur Internet — la recherche web du fournisseur lui-meme — et de
-# FR | rapporter quoi faire, avec les pages lues.
+# FR | demande a une IA de chercher chaque constat et de rapporter quoi
+# FR | faire, avec ses sources. PREMIER CHOIX : l IA que Home Assistant a
+# FR | deja (une entite ai_task — ici l integration OpenAI). L automatisation
+# FR | appelle elle-meme ai_task.generate_data ; ce script ne fait que
+# FR | preparer la demande (--stage prepare) et classer la reponse
+# FR | (--stage finish). Aucune cle a saisir deux fois, et aucune qui
+# FR | atteigne une ligne de commande ou le recorder. REPLI, quand aucune
+# FR | entite ai_task n existe : le fournisseur et les fichiers de cle de
+# FR | l assistant de chat (packages/vssp_chatbot.yaml), avec la recherche
+# FR | web du fournisseur, detache (ci-dessous).
 # FR | Ce qui sort de la maison : les constats tels que la page les a ecrits
 # FR | (un disque a 91 %, un pod en CrashLoopBackOff, une version de k3s),
 # FR | les versions de l OS et de k3s, et rien d autre. Ni nom d hote, ni
@@ -103,6 +114,7 @@ MESSAGES = {
     "error.provider": "{provider} answered {code}: {detail}",
     "error.refusal": "{provider} declined the request.",
     "error.parse": "{provider} answered, but not in the expected form.",
+    "error.ai_task": "The assistant ({provider}) did not answer: check its integration in Settings (for example the account's credit) and the Home Assistant logs.",
 }
 
 
@@ -343,9 +355,48 @@ def run(req: dict, provider: str, args) -> dict:
     return dict(answer, model=model, searches=searches, citations=citations[:12])
 
 
+def agent_stage(args, req: dict, out: Path) -> int:
+    """EN | The Home Assistant AI path. prepare: file "running" and print the
+    EN | instructions for ai_task.generate_data (the automation reads stdout).
+    EN | finish: file the answer it got back, or the failure.
+    FR | Le chemin de l IA de Home Assistant. prepare : classer « en cours » et
+    FR | imprimer la consigne pour ai_task.generate_data (l automatisation lit
+    FR | stdout). finish : classer la reponse obtenue, ou l echec."""
+    label = "Home Assistant AI"
+    base = {"request_id": req["request_id"], "scope": req["scope"], "provider": label,
+            "model": args.agent, "started": now()}
+    if args.stage == "prepare":
+        write_json(out, dict(base, state="running", ok=True, **status("scan.running")))
+        system, prompt = build_prompt(req)
+        print(system + "\n\n" + prompt)
+        return 0
+    text = ""
+    if args.answer_b64:
+        try:
+            text = base64.b64decode(args.answer_b64, validate=True).decode("utf-8")
+        except (binascii.Error, UnicodeDecodeError):
+            text = ""
+    try:
+        if not text.strip():
+            raise ScanError("error.ai_task", provider=args.agent)
+        answer = parse_answer(text, label)
+        urls = re.findall(r"https?://[^\s\"'<>)\]]+", text)
+        cites = [{"title": u.split("/")[2], "url": u} for u in dict.fromkeys(urls)][:12]
+        payload = dict(base, state="done", ok=True, generated=now(), searches=None,
+                       citations=cites, **answer,
+                       **status("scan.ok", count=len(answer["items"]), provider=label))
+    except ScanError as exc:
+        payload = dict(base, state="done", ok=False, generated=now(), **status(exc.key, **exc.vars))
+    write_json(out, payload)
+    return 0
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Visio Sapiens — CORE SCAN")
-    ap.add_argument("--provider", required=True, choices=["gemini", "claude", "chatgpt", "custom"])
+    ap.add_argument("--provider", default="", choices=["", "gemini", "claude", "chatgpt", "custom"])
+    ap.add_argument("--agent", default="", help="EN | ai_task entity / FR | entite ai_task")
+    ap.add_argument("--stage", default="", choices=["", "prepare", "finish"])
+    ap.add_argument("--answer-b64", default="")
     ap.add_argument("--payload-b64", required=True)
     ap.add_argument("--status-dir", default="/config/www/vssp")
     ap.add_argument("--url", default="http://localhost:8123")
@@ -365,6 +416,14 @@ def main() -> int:
         print(status(exc.key, **exc.vars)["message"], file=sys.stderr)
         return 1
     out = Path(args.status_dir) / f"core_scan_{req['scope']}.json"
+    if args.stage:
+        if not re.fullmatch(r"ai_task\.[a-z0-9_]+", args.agent):
+            print("--stage needs --agent ai_task.<name>", file=sys.stderr)
+            return 1
+        return agent_stage(args, req, out)
+    if not args.provider:
+        print("--provider or --stage is required", file=sys.stderr)
+        return 1
     base = {"request_id": req["request_id"], "scope": req["scope"], "provider": args.provider,
             "started": now()}
     write_json(out, dict(base, state="running", ok=True, **status("scan.running")))

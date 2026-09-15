@@ -44,6 +44,23 @@ shell_command:
     --status-dir /config/www/vssp
     --detach
 
+  # EN | The Home Assistant AI path: `agent` is an ai_task entity id checked
+  # EN | by the automation (and again by the script), the two others base64.
+  # FR | Le chemin de l IA de Home Assistant : `agent` est un id d entite
+  # FR | ai_task verifie par l automatisation (et encore par le script), les
+  # FR | deux autres du base64.
+  vssp_core_scan_prepare: >-
+    python3 /config/vssp/vssp_core_scan.py --stage prepare
+    --agent '{{ agent }}'
+    --payload-b64 '{{ payload_b64 }}'
+    --status-dir /config/www/vssp
+  vssp_core_scan_finish: >-
+    python3 /config/vssp/vssp_core_scan.py --stage finish
+    --agent '{{ agent }}'
+    --payload-b64 '{{ payload_b64 }}'
+    --answer-b64 '{{ answer_b64 }}'
+    --status-dir /config/www/vssp
+
 automation:
   - id: vssp_core_stats_scheduled
     alias: "Visio Sapiens — CORE : collecte hôte et cluster"
@@ -86,21 +103,57 @@ automation:
                      and trigger.json.payload_b64 | length < 24000
                      and trigger.json.payload_b64 is match('^[A-Za-z0-9+/]+={0,2}$') }}
             sequence:
-              - action: shell_command.vssp_core_scan
-                data:
-                  provider: "{{ states('input_select.vssp_chatbot_provider') }}"
-                  payload_b64: "{{ trigger.json.payload_b64 }}"
-                response_variable: launched
+              # EN | FIRST CHOICE: the AI Home Assistant already has. No key is
+              # EN | entered twice, and ai_task.generate_data runs here, in the
+              # EN | automation — no 60 s shell_command limit to work around.
+              # FR | PREMIER CHOIX : l IA que Home Assistant a deja. Aucune cle
+              # FR | saisie deux fois, et ai_task.generate_data tourne ici, dans
+              # FR | l automatisation — pas de limite de 60 s a contourner.
+              - variables:
+                  agent: >-
+                    {{ states.ai_task | map(attribute='entity_id')
+                       | select('match', '^ai_task\.[a-z0-9_]+$') | list | first | default('') }}
               - if:
                   - condition: template
-                    value_template: "{{ launched.returncode != 0 }}"
+                    value_template: "{{ agent != '' }}"
                 then:
-                  - action: persistent_notification.create
+                  - action: shell_command.vssp_core_scan_prepare
                     data:
-                      title: "Visio Sapiens — SCAN CORE"
-                      message: >
-                        vssp_core_scan.py a quitté avec le code
-                        {{ launched.returncode }} : {{ launched.stderr | default('') }}
+                      agent: "{{ agent }}"
+                      payload_b64: "{{ trigger.json.payload_b64 }}"
+                    response_variable: prepared
+                  - action: ai_task.generate_data
+                    continue_on_error: true
+                    data:
+                      task_name: "Visio Sapiens CORE scan"
+                      entity_id: "{{ agent }}"
+                      instructions: "{{ prepared.stdout }}"
+                    response_variable: answer
+                  - action: shell_command.vssp_core_scan_finish
+                    data:
+                      agent: "{{ agent }}"
+                      payload_b64: "{{ trigger.json.payload_b64 }}"
+                      answer_b64: >-
+                        {{ (answer.data | string) | base64_encode
+                           if answer is defined and answer.data is defined else '' }}
+                else:
+                  # EN | FALLBACK: the chat assistant's provider and key file.
+                  # FR | REPLI : le fournisseur et le fichier de cle de l assistant.
+                  - action: shell_command.vssp_core_scan
+                    data:
+                      provider: "{{ states('input_select.vssp_chatbot_provider') }}"
+                      payload_b64: "{{ trigger.json.payload_b64 }}"
+                    response_variable: launched
+                  - if:
+                      - condition: template
+                        value_template: "{{ launched.returncode != 0 }}"
+                    then:
+                      - action: persistent_notification.create
+                        data:
+                          title: "Visio Sapiens — SCAN CORE"
+                          message: >
+                            vssp_core_scan.py a quitté avec le code
+                            {{ launched.returncode }} : {{ launched.stderr | default('') }}
         default:
           - action: persistent_notification.create
             data:
