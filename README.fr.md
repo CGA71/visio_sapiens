@@ -20,6 +20,27 @@ Les dashboards sont **générés**, pas écrits à la main, et **dynamiques** :
 ils suivent le modèle de la maison en temps réel au lieu d'être un export
 figé.
 
+## Installer le theme via HACS
+
+Le theme `Visio Sapiens` (`themes/visio_sapiens.yaml`) s'installe depuis ce
+depot, mis en miroir sur GitHub :
+[CGA71/visio_sapiens](https://github.com/CGA71/visio_sapiens) — HACS ne lit
+que GitHub.
+
+1. HACS -> les trois points -> **Depots personnalises**
+2. URL `https://github.com/CGA71/visio_sapiens`, categorie **Theme**
+3. Installer, puis redemarrer Home Assistant
+
+Le `configuration.yaml` doit declarer le dossier des themes une fois :
+
+```yaml
+frontend:
+  themes: !include_dir_merge_named themes
+```
+
+Choisissez ensuite **Visio Sapiens** dans votre profil. Les dashboards, eux,
+ne sont pas installes par HACS : ils sont generes (voir plus bas).
+
 ## Stack
 
 Home Assistant (Lovelace YAML), button-card, card-mod, layout-card,

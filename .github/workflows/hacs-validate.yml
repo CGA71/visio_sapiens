@@ -1,0 +1,25 @@
+# EN | HACS only reads GitHub, and this repository reaches it through the
+# EN | GitLab push mirror. This action is what tells us whether the theme is
+# EN | installable (and, later, what is still missing for the default store).
+# FR | HACS ne lit que GitHub, et ce depot y arrive par le miroir push GitLab.
+# FR | Cette action dit si le theme est installable (et, plus tard, ce qui
+# FR | manque encore pour le store par defaut).
+name: HACS
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  schedule:
+    - cron: "0 4 * * 1"
+  workflow_dispatch:
+
+jobs:
+  validate:
+    name: Theme
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hacs/action@main
+        with:
+          category: theme

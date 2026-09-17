@@ -1,0 +1,30 @@
+# EN | A push mirror carries branches and tags, never releases — and HACS reads
+# EN | the version from the latest RELEASE, falling back to the default branch.
+# EN | So the tag pushed from GitLab is turned into a real release here.
+# FR | Un miroir push transporte les branches et les tags, jamais les releases —
+# FR | et HACS lit la version depuis la derniere RELEASE, a defaut la branche
+# FR | par defaut. Le tag pousse depuis GitLab devient donc ici une vraie release.
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Create the GitHub release for this tag
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release view "${GITHUB_REF_NAME}" >/dev/null 2>&1 && exit 0
+          gh release create "${GITHUB_REF_NAME}" \
+            --title "${GITHUB_REF_NAME}" \
+            --generate-notes

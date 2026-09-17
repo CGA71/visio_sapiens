@@ -18,6 +18,27 @@ futuristic HUD inspired by Visio Sapiens.
 Dashboards are **generated**, not hand-written, and **dynamic**: they
 follow the home model in real time rather than being a one-off export.
 
+## Install the theme through HACS
+
+The `Visio Sapiens` theme (`themes/visio_sapiens.yaml`) installs from this
+repository, mirrored to GitHub at
+[CGA71/visio_sapiens](https://github.com/CGA71/visio_sapiens) — HACS only
+reads GitHub.
+
+1. HACS -> the three dots -> **Custom repositories**
+2. URL `https://github.com/CGA71/visio_sapiens`, category **Theme**
+3. Install, then restart Home Assistant
+
+Your `configuration.yaml` needs the themes directory declared once:
+
+```yaml
+frontend:
+  themes: !include_dir_merge_named themes
+```
+
+Then pick **Visio Sapiens** in your profile. The dashboards themselves are
+not installed by HACS: they are generated (see below).
+
 ## Stack
 
 Home Assistant (Lovelace YAML), button-card, card-mod, layout-card,
