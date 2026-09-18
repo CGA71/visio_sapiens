@@ -44,11 +44,46 @@ The theme is a plain Home Assistant theme: it dresses the whole interface —
 sidebar, header, cards, dialogs, dropdowns — not only this project's screens,
 and it needs nothing else to work.
 
-## The look
+## Palette
 
 - Deep navy ground (`#050B12`), cyan primary (`#00E5FF`), mint accent (`#00FFD5`)
 - Translucent cards, 18 px corners; the sidebar and the header follow suit
 - No web font to fetch: Roboto/Noto, the ones Home Assistant already ships
+
+## What it looks like
+
+<img src="https://raw.githubusercontent.com/CGA71/visio_sapiens/master/docs/screenshots/home.png" alt="HOME — the landing screen" width="100%">
+
+*HOME: the rooms in the rail, the status row, the protocol radar and what the
+metered devices are drawing.*
+
+<img src="https://raw.githubusercontent.com/CGA71/visio_sapiens/master/docs/screenshots/core.png" alt="CORE — system monitoring" width="100%">
+
+*CORE: host metrics read through Glances, the partitions, and the advice box
+with its SCAN button.*
+
+<img src="https://raw.githubusercontent.com/CGA71/visio_sapiens/master/docs/screenshots/energy.png" alt="ENERGY — consumption" width="520">
+
+*ENERGY: per-device consumption and the day/month/year totals.*
+
+## What works in this release
+
+The theme installs on its own. The rest of the project is the source of a
+complete Home Assistant setup, and it asks for more than a download.
+
+| | State | What it needs |
+|---|---|---|
+| `Visio Sapiens` theme | **works on its own** | nothing but the include above |
+| Generated dashboards — HOME, rooms, CORE, ENERGY, ADMIN | works | the repository deployed into your Home Assistant config, plus the HACS cards it builds on (button-card, card-mod, layout-card…) |
+| Admin console — rooms, theme, dashboards, updates | works | its popups need [browser_mod](https://github.com/thomasloven/hass-browser_mod) |
+| CORE — CPU, RAM, swap, temperature, history | works | the Glances integration |
+| CORE — partitions and the k3s cluster | works | the collector, which reads the host over SSH with credentials taken from the vault |
+| CORE — advice box and SCAN | partly | the findings are computed locally; SCAN needs an AI integration with credit (Anthropic, Google Gemini, OpenAI, or a local Ollama) |
+| Chatbot bar on HOME | works | the same AI integration, or a key saved in the admin console |
+| ENERGY — per-device consumption, totals, tariffs | works | metered devices (Shelly here) declared in the model |
+| ENERGY — solar production | **not shown here** | producer entities; the screens above come from an instance without panels |
+| Vault add-on | works | it is a Home Assistant add-on, not a HACS one: added as an add-on repository |
+| HTTPS in front of Home Assistant | **not done** | documented, not in place — said out loud rather than hidden |
 
 ## Requirements
 

@@ -46,11 +46,46 @@ Le thème est un thème Home Assistant ordinaire : il habille toute l'interface 
 barre latérale, en-tête, cartes, boîtes de dialogue, menus déroulants — pas
 seulement les écrans de ce projet, et il n'a besoin de rien d'autre.
 
-## L'allure
+## Palette
 
 - Fond bleu nuit (`#050B12`), cyan principal (`#00E5FF`), accent menthe (`#00FFD5`)
 - Cartes translucides, coins de 18 px ; la barre latérale et l'en-tête suivent
 - Aucune police à télécharger : Roboto/Noto, celles que Home Assistant fournit
+
+## À quoi ça ressemble
+
+<img src="https://raw.githubusercontent.com/CGA71/visio_sapiens/master/docs/screenshots/home.png" alt="HOME — l'écran d'accueil" width="100%">
+
+*HOME : les pièces dans le rail, la ligne d'état, le radar des protocoles et ce
+que tirent les appareils mesurés.*
+
+<img src="https://raw.githubusercontent.com/CGA71/visio_sapiens/master/docs/screenshots/core.png" alt="CORE — supervision système" width="100%">
+
+*CORE : les métriques de l'hôte lues via Glances, les partitions, et l'encadré
+de préconisations avec son bouton SCAN.*
+
+<img src="https://raw.githubusercontent.com/CGA71/visio_sapiens/master/docs/screenshots/energy.png" alt="ENERGY — consommation" width="520">
+
+*ENERGY : la consommation par appareil et les totaux jour / mois / année.*
+
+## Ce qui fonctionne dans cette version
+
+Le thème s'installe seul. Le reste du projet est la source d'une installation
+Home Assistant complète, et demande plus qu'un téléchargement.
+
+| | État | Ce qu'il faut |
+|---|---|---|
+| Thème `Visio Sapiens` | **fonctionne seul** | rien d'autre que l'include ci-dessus |
+| Dashboards générés — HOME, pièces, CORE, ENERGY, ADMIN | fonctionne | le dépôt déployé dans votre configuration Home Assistant, et les cartes HACS sur lesquelles il s'appuie (button-card, card-mod, layout-card…) |
+| Console d'administration — pièces, thème, dashboards, mises à jour | fonctionne | ses popups demandent [browser_mod](https://github.com/thomasloven/hass-browser_mod) |
+| CORE — processeur, RAM, swap, température, historique | fonctionne | l'intégration Glances |
+| CORE — partitions et cluster k3s | fonctionne | le collecteur, qui lit l'hôte en SSH avec des identifiants tirés du coffre |
+| CORE — encadré de préconisations et SCAN | en partie | les constats sont calculés en local ; SCAN demande une intégration d'IA avec du crédit (Anthropic, Google Gemini, OpenAI, ou un Ollama local) |
+| Barre chatbot de HOME | fonctionne | la même intégration d'IA, ou une clé enregistrée dans la console |
+| ENERGY — consommation par appareil, totaux, tarifs | fonctionne | des appareils mesurés (ici Shelly) déclarés dans le modèle |
+| ENERGY — production solaire | **pas montrée ici** | des entités de production ; les écrans ci-dessus viennent d'une instance sans panneaux |
+| Add-on coffre-fort | fonctionne | c'est un add-on Home Assistant, pas un HACS : il s'ajoute en dépôt d'add-ons |
+| HTTPS devant Home Assistant | **pas fait** | documenté, pas en place — dit franchement plutôt que caché |
 
 ## Prérequis
 
