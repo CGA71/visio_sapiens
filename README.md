@@ -2,6 +2,9 @@
 
 **English** · [Français](README.fr.md)
 
+<img src="home-assistant/www/vssp/images/logo_VS-Sapiens.png" alt="Visio Sapiens" width="180">
+
+
 Visio Sapiens builds **predefined Home Assistant dashboard templates**. You
 describe your home once in an admin console — language, format, rooms —
 and the whole interface is generated from that description, then kept in
