@@ -2,7 +2,7 @@
 
 [English](README.md) · **Français**
 
-<img src="home-assistant/www/vssp/images/logo_VS-Sapiens.png" alt="Visio Sapiens" width="180">
+<img src="https://raw.githubusercontent.com/CGA71/visio_sapiens/master/home-assistant/www/vssp/images/logo_VS-Sapiens.png" alt="Visio Sapiens" width="180">
 
 
 Visio Sapiens conçoit des **templates de dashboards Home Assistant
