@@ -12,6 +12,51 @@ générée à partir de cette description, puis maintenue à jour au fil des
 évolutions. Chaque pièce devient un module système dans un HUD futuriste
 inspiré Visio Sapiens.
 
+> **Dans HACS, ce dépôt installe une seule chose : le thème `Visio Sapiens`.**
+> Les dashboards, la console d'administration et le générateur sont le reste du
+> projet, et HACS ne les installe pas — voir [Ce que vous obtenez](#ce-que-vous-obtenez).
+
+## Installer le thème
+
+1. HACS → les trois points, en haut à droite → **Dépôts personnalisés**
+2. Dépôt `https://github.com/CGA71/visio_sapiens`, catégorie **Theme**
+3. Ouvrir la fiche, **Télécharger**, puis redémarrer Home Assistant
+
+Home Assistant doit déclarer le dossier des thèmes une fois, dans
+`configuration.yaml` :
+
+```yaml
+frontend:
+  themes: !include_dir_merge_named themes
+```
+
+Choisissez ensuite **Visio Sapiens** dans votre profil (en bas à gauche → votre
+utilisateur → Thème).
+
+## Ce que vous obtenez
+
+| | Installé par HACS | Où ça vit |
+|---|---|---|
+| Le thème `Visio Sapiens` — 54 variables | **oui** | `themes/visio_sapiens.yaml` |
+| Les dashboards générés (pièces, CORE, ENERGY, ADMIN) | non | le générateur Jinja, `vssp/` |
+| Les cartes maison (radar, horloge, HUD) | non | `home-assistant/www/vssp/` |
+| L'add-on coffre-fort | non | `addons/vssp-vault` |
+
+Le thème est un thème Home Assistant ordinaire : il habille toute l'interface —
+barre latérale, en-tête, cartes, boîtes de dialogue, menus déroulants — pas
+seulement les écrans de ce projet, et il n'a besoin de rien d'autre.
+
+## L'allure
+
+- Fond bleu nuit (`#050B12`), cyan principal (`#00E5FF`), accent menthe (`#00FFD5`)
+- Cartes translucides, coins de 18 px ; la barre latérale et l'en-tête suivent
+- Aucune police à télécharger : Roboto/Noto, celles que Home Assistant fournit
+
+## Prérequis
+
+- Home Assistant avec `frontend: themes:` déclaré, comme ci-dessus
+- Écrit face à Home Assistant 2026.8, avec des variables de thème standard
+
 ## Concept
 
 - CORE (Home) — HUD, radar central, IA Core, metrics
@@ -22,27 +67,6 @@ inspiré Visio Sapiens.
 Les dashboards sont **générés**, pas écrits à la main, et **dynamiques** :
 ils suivent le modèle de la maison en temps réel au lieu d'être un export
 figé.
-
-## Installer le theme via HACS
-
-Le theme `Visio Sapiens` (`themes/visio_sapiens.yaml`) s'installe depuis ce
-depot, mis en miroir sur GitHub :
-[CGA71/visio_sapiens](https://github.com/CGA71/visio_sapiens) — HACS ne lit
-que GitHub.
-
-1. HACS -> les trois points -> **Depots personnalises**
-2. URL `https://github.com/CGA71/visio_sapiens`, categorie **Theme**
-3. Installer, puis redemarrer Home Assistant
-
-Le `configuration.yaml` doit declarer le dossier des themes une fois :
-
-```yaml
-frontend:
-  themes: !include_dir_merge_named themes
-```
-
-Choisissez ensuite **Visio Sapiens** dans votre profil. Les dashboards, eux,
-ne sont pas installes par HACS : ils sont generes (voir plus bas).
 
 ## Stack
 

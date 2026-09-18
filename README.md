@@ -11,6 +11,50 @@ and the whole interface is generated from that description, then kept in
 sync as the home changes. Each room becomes a system module in a
 futuristic HUD inspired by Visio Sapiens.
 
+> **In HACS, this repository installs one thing: the `Visio Sapiens` theme.**
+> The dashboards, the admin console and the generator are the rest of the
+> project, and HACS does not install them — see [What you get](#what-you-get).
+
+## Install the theme
+
+1. HACS → the three dots, top right → **Custom repositories**
+2. Repository `https://github.com/CGA71/visio_sapiens`, category **Theme**
+3. Open the entry, **Download**, then restart Home Assistant
+
+Home Assistant needs the themes directory declared once, in
+`configuration.yaml`:
+
+```yaml
+frontend:
+  themes: !include_dir_merge_named themes
+```
+
+Then pick **Visio Sapiens** in your profile (bottom left → your user → Theme).
+
+## What you get
+
+| | Installed by HACS | Where it lives |
+|---|---|---|
+| The `Visio Sapiens` theme — 54 variables | **yes** | `themes/visio_sapiens.yaml` |
+| Generated dashboards (rooms, CORE, ENERGY, ADMIN) | no | the Jinja generator, `vssp/` |
+| The in-house cards (radar, clock, HUD) | no | `home-assistant/www/vssp/` |
+| The vault add-on | no | `addons/vssp-vault` |
+
+The theme is a plain Home Assistant theme: it dresses the whole interface —
+sidebar, header, cards, dialogs, dropdowns — not only this project's screens,
+and it needs nothing else to work.
+
+## The look
+
+- Deep navy ground (`#050B12`), cyan primary (`#00E5FF`), mint accent (`#00FFD5`)
+- Translucent cards, 18 px corners; the sidebar and the header follow suit
+- No web font to fetch: Roboto/Noto, the ones Home Assistant already ships
+
+## Requirements
+
+- Home Assistant with `frontend: themes:` declared, as above
+- Written against Home Assistant 2026.8, with standard theme variables only
+
 ## Concept
 
 - CORE (Home) — HUD, central radar, AI Core, metrics
@@ -20,27 +64,6 @@ futuristic HUD inspired by Visio Sapiens.
 
 Dashboards are **generated**, not hand-written, and **dynamic**: they
 follow the home model in real time rather than being a one-off export.
-
-## Install the theme through HACS
-
-The `Visio Sapiens` theme (`themes/visio_sapiens.yaml`) installs from this
-repository, mirrored to GitHub at
-[CGA71/visio_sapiens](https://github.com/CGA71/visio_sapiens) — HACS only
-reads GitHub.
-
-1. HACS -> the three dots -> **Custom repositories**
-2. URL `https://github.com/CGA71/visio_sapiens`, category **Theme**
-3. Install, then restart Home Assistant
-
-Your `configuration.yaml` needs the themes directory declared once:
-
-```yaml
-frontend:
-  themes: !include_dir_merge_named themes
-```
-
-Then pick **Visio Sapiens** in your profile. The dashboards themselves are
-not installed by HACS: they are generated (see below).
 
 ## Stack
 
