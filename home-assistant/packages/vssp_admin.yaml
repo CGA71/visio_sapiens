@@ -72,7 +72,7 @@ input_text:
   # FR | resultat, et une carte conditionnelle de l ecran ADMIN l affiche sur
   # FR | place, sur n importe quel navigateur, sans enregistrement ni popup.
   vssp_delete_status:
-    name: "Visio Sapiens — Résultat de la dernière suppression"
+    name: "Visio Sapiens — Résultat de la dernière action dashboards"
     max: 255
   # Jeton longue duree utilise par vssp_discovery.py et
   # vssp_energy_sync.py (Profil > Jetons d'acces longue duree).
@@ -319,6 +319,20 @@ shell_command:
   # FR | francais — confirme en recuperant le lovelace/config brut via le
   # FR | websocket, pas seulement la page rendue, puisqu'un cache navigateur
   # FR | perime etait le premier suspect (le mauvais).
+  # EN | The counterpart the DELETE button never had: it promises "a backup
+  # EN | has been kept in /config/vssp/backups/" and nothing could use one.
+  # EN | Default mode restores only what is MISSING, newest backup first, so
+  # EN | it can never overwrite a regenerated dashboard or a hand-edited HOME.
+  # FR | Le pendant que le bouton SUPPRIMER n a jamais eu : il promet « une
+  # FR | sauvegarde a ete conservee dans /config/vssp/backups/ » et rien ne
+  # FR | savait s en servir. Le mode par defaut ne restaure que ce qui MANQUE,
+  # FR | de la sauvegarde la plus recente a la plus ancienne, donc il ne peut
+  # FR | jamais ecraser un dashboard regenere ni un HOME edite a la main.
+  vssp_restore_dashboards: >-
+    python3 /config/vssp/vssp_restore_dashboards.py
+    --views /config/dashboards/views
+    --backup-dir /config/vssp/backups
+
   vssp_generate_dashboards: >-
     python3 /config/vssp/generate_dashboards.py
     --locale {{ states('input_select.vssp_language') }}
@@ -1185,6 +1199,34 @@ script:
       # dans Home Assistant. Un dashboard en mode YAML est relu tout seul
       # au prochain affichage (HA compare la date du fichier). Seul
       # l'onglet deja ouvert garde l'ancienne version en memoire.
+
+  vssp_restore_dashboards:
+    alias: "Visio Sapiens — Restaurer les dashboards supprimés"
+    sequence:
+      - service: shell_command.vssp_restore_dashboards
+        response_variable: restored
+      # EN | Same screen, same helper as the deletion: whatever the danger
+      # EN | zone does, it says so in the same place.
+      # FR | Meme ecran, meme helper que la suppression : quoi que fasse la
+      # FR | zone dangereuse, elle le dit au meme endroit.
+      - service: input_text.set_value
+        target:
+          entity_id: input_text.vssp_delete_status
+        data:
+          value: >-
+            {{ (restored.stdout | default('') | replace('\n', ' · '))[:250] }}
+      - service: homeassistant.update_entity
+        target:
+          entity_id:
+            - binary_sensor.vssp_dashboard_home_present
+            - binary_sensor.vssp_dashboard_energy_present
+            - binary_sensor.vssp_dashboard_core_present
+      - service: persistent_notification.create
+        data:
+          title: "Visio Sapiens — Dashboards restaurés"
+          message: >
+            {{ restored.stdout | default('') }}
+            Rafraichissez l'onglet (Ctrl+Maj+R) pour voir les pages revenues.
 
   vssp_delete_dashboard:
     alias: "Visio Sapiens — Supprimer tous les dashboards (protégé par code)"

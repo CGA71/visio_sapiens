@@ -441,6 +441,8 @@ admin:
   delete_hint: Zone dangereuse
   delete_all_hint: Supprime tous les dashboards générés, garde la console d'administration — code et confirmation requis
   delete_now: SUPPRIMER
+  restore_dashboards: RESTAURER LES DASHBOARDS SUPPRIMÉS
+  restore_hint: Remet les vues absentes depuis les dernières sauvegardes
   assignment: ASSIGNATION DES APPAREILS
   deployed_locale: Langue déployée
   unrendered_markers: Marqueurs non rendus

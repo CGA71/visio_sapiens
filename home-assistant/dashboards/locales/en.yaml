@@ -584,6 +584,8 @@ admin:
   delete_hint: Danger zone
   delete_all_hint: Deletes every generated dashboard, keeps the admin console — code and confirmation required
   delete_now: DELETE
+  restore_dashboards: RESTORE DELETED DASHBOARDS
+  restore_hint: Brings back every view file missing from the latest backups
   assignment: DEVICE ASSIGNMENT
   deployed_locale: Deployed language
   unrendered_markers: Unrendered markers

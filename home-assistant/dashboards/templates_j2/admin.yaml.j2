@@ -2399,6 +2399,20 @@ views:
                       right_button: "{{ t('admin.delete_now') }}"
                       right_button_action:
                         service: script.vssp_delete_dashboard
+              # EN | UNDELETE, next to the button that deletes. Not behind
+              # EN | the code: it restores only files that are MISSING, so the
+              # EN | worst it can do is bring a page back.
+              # FR | DESUPPRIMER, a cote du bouton qui supprime. Pas derriere
+              # FR | le code : il ne restaure que les fichiers ABSENTS, donc au
+              # FR | pire il fait revenir une page.
+              - type: custom:button-card
+                template: vssp_admin_button
+                icon: mdi:backup-restore
+                name: "{{ t('admin.restore_dashboards') }}"
+                label: "{{ t('admin.restore_hint') }}"
+                tap_action:
+                  action: call-service
+                  service: script.vssp_restore_dashboards
               # EN | THE ANSWER, ON THE SCREEN THAT ASKED. The button's only
               # EN | reply was a persistent_notification, which lives in Home
               # EN | Assistant's sidebar - a sidebar this console is regularly
