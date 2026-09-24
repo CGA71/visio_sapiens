@@ -228,28 +228,38 @@ shell_command:
     --output /config/vssp/report.json" 
   vssp_upgrade: >-
     python3 /config/vssp/vssp_upgrade.py
-  # EN | SUPPRIMER TOUS LES DASHBOARDS — the backup takes the whole views/
-  # EN | directory, not one file: the button deletes every generated
-  # EN | dashboard. It used to copy /config/dashboards/home.yaml, a path the
-  # EN | generator has never written (views/home.yaml), so the backup failed
-  # EN | and the delete below removed nothing.
-  # FR | SUPPRIMER TOUS LES DASHBOARDS — la sauvegarde prend tout le dossier
-  # FR | views/, pas un fichier : le bouton supprime chaque dashboard genere.
-  # FR | Elle copiait /config/dashboards/home.yaml, un chemin que le
-  # FR | generateur n'a jamais ecrit (views/home.yaml), donc la sauvegarde
-  # FR | echouait et la suppression ci-dessous n'enlevait rien.
+  # EN | A timestamped copy of dashboards/views/, kept for the three other
+  # EN | scripts that back up before overwriting (the deletion below carries
+  # EN | its own backup). It used to copy /config/dashboards/home.yaml, a
+  # EN | path the generator has never written.
+  # FR | Une copie horodatee de dashboards/views/, gardee pour les trois
+  # FR | autres scripts qui sauvegardent avant d'ecraser (la suppression
+  # FR | ci-dessous porte la sienne). Elle copiait
+  # FR | /config/dashboards/home.yaml, un chemin que le generateur n'a
+  # FR | jamais ecrit.
   vssp_backup_dashboard: >-
     sh -c "d=/config/vssp/backups/views_$(date +%Y%m%d_%H%M%S) &&
     mkdir -p $d && cp -a /config/dashboards/views/. $d/ 2>/dev/null || true"
-  # EN | Everything in views/ except the admin console itself: deleting
-  # EN | admin.yaml would take away the very screen this button lives on,
-  # EN | and with it every way to regenerate anything.
-  # FR | Tout views/ sauf la console d'administration elle-meme : supprimer
-  # FR | admin.yaml enleverait l'ecran ou vit ce bouton, et avec lui tout
-  # FR | moyen de regenerer quoi que ce soit.
+  # EN | SUPPRIMER TOUS LES DASHBOARDS. This was two shell one-liners, and
+  # EN | the delete one never worked: shell_command splits the command with
+  # EN | shlex before running it, which strips the inner quotes, so the
+  # EN | shell expanded '*.yaml' in its own working directory before find
+  # EN | could see the pattern — find failed and the button deleted nothing,
+  # EN | silently, even with the right code. A Python file has no quotes to
+  # EN | lose; it backs up dashboards/views/ and removes everything in it
+  # EN | but the admin console.
+  # FR | SUPPRIMER TOUS LES DASHBOARDS. C'etaient deux lignes shell, et celle
+  # FR | qui supprime n'a jamais fonctionne : shell_command decoupe la
+  # FR | commande avec shlex avant de l'executer, ce qui retire les
+  # FR | guillemets internes ; le shell developpait donc '*.yaml' dans son
+  # FR | propre repertoire courant avant que find ne voie le motif — find
+  # FR | echouait et le bouton ne supprimait rien, en silence, meme avec le
+  # FR | bon code. Un fichier Python n'a pas de guillemets a perdre ; il
+  # FR | sauvegarde dashboards/views/ puis vide tout sauf la console.
   vssp_delete_dashboard: >-
-    sh -c "find /config/dashboards/views -maxdepth 1 -name '*.yaml'
-    ! -name 'admin*.yaml' -delete"
+    python3 /config/vssp/vssp_delete_dashboards.py
+    --views /config/dashboards/views
+    --backup-dir /config/vssp/backups
   # Generation des dashboards depuis le modele metier (etape 5).
   # Fusionne automatiquement model/house_rooms.yaml (produit par le
   # Discovery Wizard, phase 3) s'il est present, puis rend les
@@ -1174,15 +1184,21 @@ script:
               {{ states('input_text.vssp_pin_entry') not in ['', 'unknown', 'unavailable']
                  and states('input_text.vssp_pin_entry') == states('input_text.vssp_admin_pin') }}
         then:
-          - service: shell_command.vssp_backup_dashboard
+          # EN | Backup and delete in one call: the script copies views/
+          # EN | first and stops on a failed copy, so a half-done deletion
+          # EN | cannot happen between two service calls.
+          # FR | Sauvegarde et suppression en un seul appel : le script copie
+          # FR | views/ d'abord et s'arrete si la copie echoue, donc pas de
+          # FR | suppression a moitie faite entre deux appels de service.
           - service: shell_command.vssp_delete_dashboard
+            response_variable: deleted
           - service: persistent_notification.create
             data:
               title: "Visio Sapiens — Dashboards supprimés"
               message: >
-                Tous les dashboards générés ont été supprimés ; la console
-                d'administration est conservée, sinon plus rien ne
-                permettrait de les régénérer. Une copie complète de
+                {{ deleted.stdout | default('') }}
+                La console d'administration est conservée, sinon plus rien ne
+                permettrait de régénérer. Une copie complète de
                 dashboards/views/ a été gardée dans /config/vssp/backups/.
                 Leurs entrées restent dans le menu latéral de Home
                 Assistant jusqu'au prochain redémarrage — elles viennent de
