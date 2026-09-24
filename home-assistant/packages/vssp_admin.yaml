@@ -228,12 +228,28 @@ shell_command:
     --output /config/vssp/report.json" 
   vssp_upgrade: >-
     python3 /config/vssp/vssp_upgrade.py
+  # EN | SUPPRIMER TOUS LES DASHBOARDS — the backup takes the whole views/
+  # EN | directory, not one file: the button deletes every generated
+  # EN | dashboard. It used to copy /config/dashboards/home.yaml, a path the
+  # EN | generator has never written (views/home.yaml), so the backup failed
+  # EN | and the delete below removed nothing.
+  # FR | SUPPRIMER TOUS LES DASHBOARDS — la sauvegarde prend tout le dossier
+  # FR | views/, pas un fichier : le bouton supprime chaque dashboard genere.
+  # FR | Elle copiait /config/dashboards/home.yaml, un chemin que le
+  # FR | generateur n'a jamais ecrit (views/home.yaml), donc la sauvegarde
+  # FR | echouait et la suppression ci-dessous n'enlevait rien.
   vssp_backup_dashboard: >-
-    sh -c "mkdir -p /config/vssp/backups &&
-    cp /config/dashboards/home.yaml
-    /config/vssp/backups/home_$(date +%Y%m%d_%H%M%S).yaml"
+    sh -c "d=/config/vssp/backups/views_$(date +%Y%m%d_%H%M%S) &&
+    mkdir -p $d && cp -a /config/dashboards/views/. $d/ 2>/dev/null || true"
+  # EN | Everything in views/ except the admin console itself: deleting
+  # EN | admin.yaml would take away the very screen this button lives on,
+  # EN | and with it every way to regenerate anything.
+  # FR | Tout views/ sauf la console d'administration elle-meme : supprimer
+  # FR | admin.yaml enleverait l'ecran ou vit ce bouton, et avec lui tout
+  # FR | moyen de regenerer quoi que ce soit.
   vssp_delete_dashboard: >-
-    rm -f /config/dashboards/home.yaml
+    sh -c "find /config/dashboards/views -maxdepth 1 -name '*.yaml'
+    ! -name 'admin*.yaml' -delete"
   # Generation des dashboards depuis le modele metier (etape 5).
   # Fusionne automatiquement model/house_rooms.yaml (produit par le
   # Discovery Wizard, phase 3) s'il est present, puis rend les
@@ -817,11 +833,13 @@ script:
           title: "Visio Sapiens — Dashboard ENERGY désactivé"
           message: >
             Une sauvegarde a été conservée dans /config/vssp/backups/.
-            Le dashboard ENERGY est immédiatement injoignable, mais son
-            lien reste visible dans le bandeau des autres pages tant
-            qu'elles ne sont pas régénérées : utilisez RÉGÉNÉRER LES
-            DASHBOARDS ci-dessus pour le faire disparaître partout d'un
-            coup.
+            Le dashboard ENERGY est immédiatement injoignable. Son lien
+            disparaît du bandeau des autres pages dès qu’elles ont été
+            régénérées une fois avec la version actuelle des templates :
+            le bandeau suit maintenant l’état réel du fichier. En
+            revanche, son entrée du menu latéral de Home Assistant vient
+            de configuration.yaml, elle reste jusqu’au prochain
+            redémarrage, et y taper ouvre une page en erreur.
 
   # Bouton CREER LE DASHBOARD HOME du panneau ADMIN.
   # Idempotent : generate_dashboards.py protege deja HOME par defaut
@@ -879,11 +897,13 @@ script:
           title: "Visio Sapiens — Dashboard HOME désactivé"
           message: >
             Une sauvegarde a été conservée dans /config/vssp/backups/.
-            Le dashboard HOME est immédiatement injoignable, mais son
-            lien reste visible dans le bandeau des autres pages tant
-            qu'elles ne sont pas régénérées : utilisez RÉGÉNÉRER LES
-            DASHBOARDS ci-dessus pour le faire disparaître partout d'un
-            coup.
+            Le dashboard HOME est immédiatement injoignable. Son lien
+            disparaît du bandeau des autres pages dès qu’elles ont été
+            régénérées une fois avec la version actuelle des templates :
+            le bandeau suit maintenant l’état réel du fichier. En
+            revanche, son entrée du menu latéral de Home Assistant vient
+            de configuration.yaml, elle reste jusqu’au prochain
+            redémarrage, et y taper ouvre une page en erreur.
 
   # Bouton CREER LE DASHBOARD CORE du panneau ADMIN. Idempotent
   # (--if-missing) : CORE n'est jamais destine a une edition manuelle,
@@ -934,11 +954,13 @@ script:
           title: "Visio Sapiens — Dashboard CORE désactivé"
           message: >
             Une sauvegarde a été conservée dans /config/vssp/backups/.
-            Le dashboard CORE est immédiatement injoignable, mais son
-            lien reste visible dans le bandeau des autres pages tant
-            qu'elles ne sont pas régénérées : utilisez RÉGÉNÉRER LES
-            DASHBOARDS ci-dessus pour le faire disparaître partout d'un
-            coup.
+            Le dashboard CORE est immédiatement injoignable. Son lien
+            disparaît du bandeau des autres pages dès qu’elles ont été
+            régénérées une fois avec la version actuelle des templates :
+            le bandeau suit maintenant l’état réel du fichier. En
+            revanche, son entrée du menu latéral de Home Assistant vient
+            de configuration.yaml, elle reste jusqu’au prochain
+            redémarrage, et y taper ouvre une page en erreur.
 
   # Bouton SYNC ENERGY du panneau ADMIN : resynchronise les tableaux
   # « Consommation par appareil » et « Tableau electrique » avec les
@@ -1026,15 +1048,32 @@ script:
           - service: shell_command.vssp_delete_dashboard
           - service: persistent_notification.create
             data:
-              title: "Visio Sapiens — Dashboard supprimé"
+              title: "Visio Sapiens — Dashboards supprimés"
               message: >
-                Une sauvegarde a été conservée dans
-                /config/vssp/backups/ avant suppression.
+                Tous les dashboards générés ont été supprimés ; la console
+                d'administration est conservée, sinon plus rien ne
+                permettrait de les régénérer. Une copie complète de
+                dashboards/views/ a été gardée dans /config/vssp/backups/.
+                Leurs entrées restent dans le menu latéral de Home
+                Assistant jusqu'au prochain redémarrage — elles viennent de
+                configuration.yaml, pas des fichiers supprimés. Pour tout
+                reconstruire : RÉGÉNÉRER TOUT.
         else:
+          # EN | The two failures read the same from the button, so they are
+          # EN | told apart here: nothing typed, or the wrong code.
+          # FR | Les deux echecs se ressemblent depuis le bouton, on les
+          # FR | distingue donc ici : rien de saisi, ou code faux.
           - service: persistent_notification.create
             data:
               title: "Visio Sapiens — Échec de suppression"
-              message: "Code incorrect. Aucune action effectuée."
+              message: >-
+                {% if states('input_text.vssp_pin_entry') in ['', 'unknown', 'unavailable'] %}
+                Aucun code saisi. Tapez le code administrateur dans le champ
+                « {{ 'Saisissez le code PIN' }} » au-dessus du bouton, puis
+                relancez la suppression.
+                {% else %}
+                Code incorrect. Aucune action effectuée.
+                {% endif %}
       # Toujours vider le champ de saisie, succes ou echec (hygiene de securite)
       - service: input_text.set_value
         target:

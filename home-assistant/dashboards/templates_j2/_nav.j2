@@ -110,7 +110,50 @@
               style: |
                 :host { contain: inline-size; }
 
+{# EN | HOME, ENERGY and CORE can be deactivated from the admin console,
+   EN | which deletes their view file. Their entry is therefore wrapped in a
+   EN | conditional on the presence sensor that watches that very file: the
+   EN | link disappears from every rail the moment the file goes, instead of
+   EN | staying until the next regeneration and leading to a broken page.
+   EN | `state_not: off` rather than `state: on` on purpose — an unknown or
+   EN | unavailable sensor (command_line not loaded yet, right after a
+   EN | restart) keeps the link rather than emptying the rail.
+   FR | HOME, ENERGY et CORE peuvent etre desactives depuis la console, ce
+   FR | qui supprime leur fichier de vue. Leur entree est donc enveloppee
+   FR | dans un conditional sur le capteur de presence qui surveille ce
+   FR | fichier : le lien disparait de tous les bandeaux des que le fichier
+   FR | part, au lieu d'attendre la prochaine regeneration et de mener a une
+   FR | page cassee. `state_not: off` plutot que `state: on` a dessein — un
+   FR | capteur inconnu ou indisponible (command_line pas encore charge,
+   FR | juste apres un redemarrage) garde le lien plutot que de vider le
+   FR | bandeau. #}
+{% set presence = {'home': 'binary_sensor.vssp_dashboard_home_present',
+                   'energy': 'binary_sensor.vssp_dashboard_energy_present',
+                   'core': 'binary_sensor.vssp_dashboard_core_present'} %}
 {% for item in nav %}
+{% if item.id in presence %}
+          - type: conditional
+            conditions:
+              - entity: {{ presence[item.id] }}
+                state_not: "off"
+            card:
+              type: custom:button-card
+              template: vssp_nav_button
+              icon: {{ item.icon }}
+              name: {{ item.name }}
+              label: "{{ item.label }}"
+{% if item.id == active_nav %}
+              variables:
+                active: true
+{% endif %}
+              tap_action:
+                action: navigate
+{% if format == 'mobile' %}
+                navigation_path: {{ item.path_mobile }}
+{% else %}
+                navigation_path: {{ item.path }}
+{% endif %}
+{% else %}
           - type: custom:button-card
             template: vssp_nav_button
             icon: {{ item.icon }}
@@ -126,6 +169,7 @@
               navigation_path: {{ item.path_mobile }}
 {% else %}
               navigation_path: {{ item.path }}
+{% endif %}
 {% endif %}
 
 {% endfor %}

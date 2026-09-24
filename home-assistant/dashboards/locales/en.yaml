@@ -563,14 +563,15 @@ admin:
   upgrade: UPGRADE
   generate: GENERATE DASHBOARDS
   regenerate: REGENERATE
-  delete_dashboard: DELETE DASHBOARD
+  delete_dashboard: DELETE ALL DASHBOARDS
   pin_prompt: Enter the PIN code
   backup_created: Backup created
   wizard: DISCOVERY WIZARD
   wizard_hint: Define rooms and assign devices
   discovery_hint: Scan Home Assistant entities (writes report.json)
   upgrade_hint: Compare the dashboard with the discovered entities
-  delete_hint: Danger zone — code and confirmation required
+  delete_hint: Danger zone
+  delete_all_hint: Deletes every generated dashboard, keeps the admin console — code and confirmation required
   assignment: DEVICE ASSIGNMENT
   deployed_locale: Deployed language
   unrendered_markers: Unrendered markers

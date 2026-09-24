@@ -425,14 +425,15 @@ admin:
   upgrade: MISE À NIVEAU
   generate: GÉNÉRER LES DASHBOARDS
   regenerate: REGÉNÉRER
-  delete_dashboard: SUPPRIMER LE DASHBOARD
+  delete_dashboard: SUPPRIMER TOUS LES DASHBOARDS
   pin_prompt: Saisissez le code PIN
   backup_created: Sauvegarde créée
   wizard: ASSISTANT DE DÉCOUVERTE
   wizard_hint: Définir les pièces et assigner les appareils
   discovery_hint: Scanner les entités Home Assistant (génère report.json)
   upgrade_hint: Comparer le dashboard aux entités découvertes
-  delete_hint: Zone dangereuse — code et confirmation requis
+  delete_hint: Zone dangereuse
+  delete_all_hint: Supprime tous les dashboards générés, garde la console d'administration — code et confirmation requis
   assignment: ASSIGNATION DES APPAREILS
   deployed_locale: Langue déployée
   unrendered_markers: Marqueurs non rendus
