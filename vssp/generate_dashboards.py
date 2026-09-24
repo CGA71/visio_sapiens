@@ -728,7 +728,7 @@ def build_rooms(model: dict, ctx_t) -> list:
     return rooms
 
 
-def build_nav(model: dict, rooms: list, out_dir: Path) -> list:
+def build_nav(model: dict, rooms: list, out_dir: Path, pending=frozenset()) -> list:
     """
     EN | Composes the navigation rail: the fixed system entries, with the
     EN | declared rooms inserted between them. This is what makes the rail
@@ -753,9 +753,23 @@ def build_nav(model: dict, rooms: list, out_dir: Path) -> list:
     """
     nav_system = model.get("nav_system") or {}
 
+    # EN | `pending` are the dashboards THIS run is about to write. They
+    # EN | belong in the rail even though their file is not there yet:
+    # EN | core.yaml.j2 reads its own nav entry to know its page path, so
+    # EN | without this a deleted CORE could never be recreated — the entry
+    # EN | was missing because the file was missing, and the render failed
+    # EN | on the missing entry. Deleting CORE made CREATE CORE impossible.
+    # FR | `pending` sont les dashboards que CE passage va ecrire. Ils ont
+    # FR | leur place dans le bandeau meme si leur fichier n'est pas encore
+    # FR | la : core.yaml.j2 lit sa propre entree de nav pour connaitre son
+    # FR | chemin, donc sans cela un CORE supprime ne pouvait plus jamais
+    # FR | etre recree — l'entree manquait parce que le fichier manquait, et
+    # FR | le rendu echouait sur l'entree manquante. Supprimer CORE rendait
+    # FR | CREER CORE impossible.
     def present(entries):
         return [e for e in entries
                 if e.get("id") not in OPTIONAL_SYSTEM_NAV_IDS
+                or e.get("id") in pending
                 or (out_dir / f"{e['id']}.yaml").is_file()]
 
     before = present(nav_system.get("before_rooms") or [])
@@ -1537,7 +1551,11 @@ def main() -> int:
     out_dir = Path(args.out)
     rooms = build_rooms(model, i18n["t"])
     model["rooms_rendered"] = rooms
-    model["nav"] = build_nav(model, rooms, out_dir)
+    # EN | What this run will write, so build_nav() can count it as present.
+    # FR | Ce que ce passage va ecrire, pour que build_nav() le compte present.
+    pending_ids = ({s.strip() for s in args.only.split(",") if s.strip()}
+                   if args.only else set(OPTIONAL_SYSTEM_NAV_IDS))
+    model["nav"] = build_nav(model, rooms, out_dir, pending_ids)
     model["slots"] = SLOTS
     # EN | Cache-busting query param for the ADMIN console's wizard iframes
     # EN | (assign.html, vssp_rooms_floors.html, vssp_theme_editor.html — see
