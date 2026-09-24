@@ -327,7 +327,25 @@ def main() -> int:
             # EN | REGENERATE button in this project.
             # FR | Sauvegarde avant ecriture — meme convention que tous les
             # FR | autres boutons REGENERER de ce projet.
-            backups = model_path.parent / "backups"
+            # EN | SURVIVING DIRECTORY. model_path.parent/"backups" put
+            # EN | every safety copy of the model INSIDE dashboards/ - the one
+            # EN | directory a deployment replaces wholesale (mv), so the
+            # EN | backups were destroyed by the very event they exist for.
+            # EN | /config/vssp/ is copied additively and never rotated.
+            # EN | Falls back to the old place when that directory is not
+            # EN | there, so a local run still works from a checkout.
+            # FR | UN REPERTOIRE QUI SURVIT. model_path.parent/"backups"
+            # FR | deposait chaque copie de securite du modele DANS
+            # FR | dashboards/ - le seul repertoire qu un deploiement remplace
+            # FR | en bloc (mv), donc les sauvegardes etaient detruites par
+            # FR | l evenement meme pour lequel elles existent.
+            # FR | /config/vssp/ est copie en additif et jamais tourne. Repli
+            # FR | sur l ancien emplacement quand ce repertoire n existe pas,
+            # FR | pour qu un lancement local depuis un checkout marche
+            # FR | toujours.
+            survivor = Path("/config/vssp/backups")
+            backups = (survivor if survivor.parent.is_dir()
+                       else model_path.parent / "backups")
             backups.mkdir(parents=True, exist_ok=True)
             stamp = _dt.datetime.now().strftime("%Y%m%d_%H%M%S")
             dest = backups / f"design_system_{stamp}.yaml"
