@@ -68,8 +68,21 @@
 #     python3 vssp_core_stats.py --out /config/www/vssp/core_stats.json
 #     python3 vssp_core_stats.py --dry-run          # no safe, no ssh
 # ---------------------------------------------------------------------------
-"""Visio Sapiens — CORE screen collector: partitions and k3s state."""
+"""Visio Sapiens — CORE screen collector.
+
+EN | Two platforms, one file: a Home Assistant OS box is read through
+EN | its Supervisor (add-ons, Core and OS versions, disk), anything
+EN | else through ssh on the host it was given (partitions, k3s). The
+EN | presence of SUPERVISOR_TOKEN decides, so neither needs configuring.
+FR | Deux plateformes, un seul fichier : une machine Home Assistant OS
+FR | est lue via son Superviseur (add-ons, versions Core et OS, disque),
+FR | le reste via ssh sur l hote fourni (partitions, k3s). La presence
+FR | de SUPERVISOR_TOKEN tranche, aucun des deux ne se configure.
+"""
 import argparse
+import urllib.request
+import urllib.error
+import os
 import datetime as _dt
 import json
 import re
@@ -81,6 +94,8 @@ import vssp_infra_updates as infra  # noqa: E402
 
 MESSAGES = {
     "stats.ok": "Host and cluster read.",
+    "stats.supervisor_ok": "Home Assistant OS read: {addons} add-on(s).",
+    "stats.supervisor_down": "The Supervisor did not answer: {detail}",
     "stats.k3s_down": "Host read; the cluster did not answer: {detail}",
     "stats.dry_run": "Dry run: nothing probed.",
 }
@@ -378,6 +393,148 @@ def read_k3s(host: "infra.Host") -> dict:
 
 
 # ═══════════════════════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════════════════════
+# EN | HOME ASSISTANT OS — the Supervisor / FR | HOME ASSISTANT OS — le Superviseur
+# ═══════════════════════════════════════════════════════════════════════════
+# EN | WHY THIS EXISTS. Everything above reads a REMOTE host over SSH, with
+# EN | credentials taken from the safe, and reports a k3s cluster. That is the
+# EN | development platform, not the product: a Home Assistant OS box has no
+# EN | k3s, no safe and no ssh client — it has a Supervisor, and what runs on
+# EN | it are add-ons (Music Assistant, File editor, Glances, Matter server,
+# EN | ESPHome...). Pointed at a HAOS install, the collector above either
+# EN | failed or — worse, observed live on a tagged deployment — happily
+# EN | described SOMEONE ELSE'S cluster, so the CORE screen showed nodes and
+# EN | pods belonging to a machine on the LAN while claiming to be that house.
+# EN | NO CREDENTIALS, NO CONFIGURATION. Inside the homeassistant container
+# EN | the Supervisor answers on http://supervisor with the token Home
+# EN | Assistant is already given in SUPERVISOR_TOKEN. Its presence is also
+# EN | what says "this is a HAOS box": no token, no Supervisor, and the k3s
+# EN | path below stays in charge. Nothing to configure either way.
+# FR | POURQUOI CECI EXISTE. Tout ce qui precede lit un hote DISTANT en SSH,
+# FR | avec des identifiants tires du coffre, et rend compte d un cluster
+# FR | k3s. C est la plateforme de developpement, pas le produit : une
+# FR | machine Home Assistant OS n a ni k3s, ni coffre, ni client ssh — elle a
+# FR | un Superviseur, et ce qui tourne dessus, ce sont des add-ons (Music
+# FR | Assistant, File editor, Glances, Matter server, ESPHome...). Pointe sur
+# FR | une installation HAOS, le collecteur ci-dessus echouait ou — pire,
+# FR | constate en direct sur un deploiement tague — decrivait tranquillement
+# FR | le cluster DE QUELQU UN D AUTRE : l ecran CORE affichait des noeuds et
+# FR | des pods appartenant a une machine du reseau en pretendant parler de
+# FR | cette maison.
+# FR | AUCUN IDENTIFIANT, AUCUNE CONFIGURATION. Dans le conteneur
+# FR | homeassistant, le Superviseur repond sur http://supervisor avec le
+# FR | jeton que Home Assistant recoit deja dans SUPERVISOR_TOKEN. Sa presence
+# FR | est aussi ce qui dit « cette machine est une HAOS » : pas de jeton, pas
+# FR | de Superviseur, et le chemin k3s ci-dessus reste aux commandes. Rien a
+# FR | configurer dans un sens comme dans l autre.
+SUPERVISOR_URL = "http://supervisor"
+
+
+def supervisor_token() -> str:
+    """EN | The token HAOS hands to the Home Assistant container, or "".
+    FR | Le jeton que HAOS donne au conteneur Home Assistant, ou ""."""
+    return os.environ.get("SUPERVISOR_TOKEN", "")
+
+
+def supervisor_get(path: str, token: str) -> dict:
+    """EN | One Supervisor endpoint. Its answers are wrapped in {result, data}.
+    FR | Un point d acces du Superviseur. Ses reponses sont enveloppees dans
+    FR | {result, data}."""
+    req = urllib.request.Request(
+        f"{SUPERVISOR_URL}/{path.lstrip('/')}",
+        headers={"Authorization": f"Bearer {token}"})
+    with urllib.request.urlopen(req, timeout=10) as resp:
+        body = json.loads(resp.read().decode("utf-8"))
+    if body.get("result") != "ok":
+        raise RuntimeError(f"{path}: {str(body.get('message'))[:120]}")
+    return body.get("data") or {}
+
+
+def read_supervisor(token: str) -> tuple[dict, dict]:
+    """EN | (host, supervisor) as the CORE screen wants them.
+    EN | Deliberately quiet about what the Supervisor does not know: host CPU
+    EN | and memory are NOT in its API, they come from the Glances or System
+    EN | Monitor integration the screen already reads from Home Assistant.
+    FR | (hote, superviseur) tels que l ecran CORE les attend.
+    FR | Volontairement muet sur ce que le Superviseur ignore : le CPU et la
+    FR | memoire de l hote ne sont PAS dans son API, ils viennent de
+    FR | l integration Glances ou System Monitor que l ecran lit deja depuis
+    FR | Home Assistant."""
+    host_info = supervisor_get("host/info", token)
+    sup_info = supervisor_get("supervisor/info", token)
+    core_info = supervisor_get("core/info", token)
+    os_info = supervisor_get("os/info", token)
+
+    addons = []
+    for a in sup_info.get("addons") or []:
+        addons.append({
+            "slug": a.get("slug"),
+            "name": a.get("name"),
+            "version": a.get("version"),
+            "latest": a.get("version_latest"),
+            "state": a.get("state"),
+            "update": bool(a.get("update_available")),
+            "repository": a.get("repository"),
+        })
+    addons.sort(key=lambda x: (x["state"] != "started", (x["name"] or "").lower()))
+
+    running = sum(1 for a in addons if a["state"] == "started")
+    updates = sum(1 for a in addons if a["update"])
+    # EN | Core and OS updates count too: they are what the UPGRADE screen
+    # EN | would install, and CORE should not claim "everything is current"
+    # EN | while the box is a version behind.
+    # FR | Les mises a jour de Core et de l OS comptent aussi : ce sont
+    # FR | celles qu installerait l ecran UPGRADE, et CORE ne doit pas
+    # FR | annoncer « tout est a jour » alors que la machine a une version de
+    # FR | retard.
+    if core_info.get("update_available"):
+        updates += 1
+    if os_info.get("update_available"):
+        updates += 1
+
+    # EN | disk_* are gibibytes in the Supervisor API; the screen speaks bytes.
+    # FR | disk_* sont des gibioctets dans l API du Superviseur ; l ecran
+    # FR | parle en octets.
+    gib = 1024 ** 3
+    total = host_info.get("disk_total")
+    used = host_info.get("disk_used")
+    free = host_info.get("disk_free")
+    partitions = []
+    if total:
+        partitions.append({
+            "mount": "/",
+            "fs": "",
+            "size": int(total * gib),
+            "used": int((used or 0) * gib),
+            "avail": int((free or 0) * gib),
+            "pct": round((used or 0) / total * 100) if total else None,
+            "inodes_pct": None,
+        })
+
+    host = {
+        "hostname": host_info.get("hostname"),
+        "os": host_info.get("operating_system"),
+        "kernel": host_info.get("kernel"),
+        "cpus": "",
+        "partitions": partitions,
+    }
+    supervisor = {
+        "reachable": True,
+        "version": sup_info.get("version"),
+        "channel": sup_info.get("channel"),
+        "core": {"version": core_info.get("version"),
+                 "latest": core_info.get("version_latest"),
+                 "update": bool(core_info.get("update_available"))},
+        "os": {"version": os_info.get("version"),
+               "latest": os_info.get("version_latest"),
+               "update": bool(os_info.get("update_available"))},
+        "addons": addons,
+        "counts": {"addons": len(addons), "running": running,
+                   "stopped": len(addons) - running, "updates": updates},
+    }
+    return host, supervisor
+
+
 def carry_forward(out_path: Path, payload: dict) -> dict:
     """EN | The last measurement, marked stale — see the same function in
     EN | vssp_infra_updates.py: numbers remembered and said so beat numbers
@@ -408,6 +565,36 @@ def main() -> int:
     if args.dry_run:
         infra.write_json(out_path, dict(status("stats.dry_run"), ok=True))
         return 0
+
+    # EN | HAOS FIRST, and without ever opening the safe: on a Home Assistant
+    # EN | OS box there is no remote host to read and no k3s to describe, so
+    # EN | asking the safe for ssh credentials would only produce a sealed-safe
+    # EN | error on a machine that has everything it needs locally.
+    # FR | HAOS D ABORD, et sans jamais ouvrir le coffre : sur une machine
+    # FR | Home Assistant OS il n y a aucun hote distant a lire ni aucun k3s a
+    # FR | decrire, demander au coffre des identifiants ssh ne produirait donc
+    # FR | qu une erreur de coffre scelle sur une machine qui a deja tout ce
+    # FR | qu il lui faut en local.
+    token = supervisor_token()
+    if token:
+        now = _dt.datetime.now().astimezone().isoformat(timespec="seconds")
+        try:
+            host, supervisor = read_supervisor(token)
+            result = status("stats.supervisor_ok",
+                            addons=supervisor["counts"]["addons"])
+            payload = dict(result, ok=True, stale=False, host=host,
+                           supervisor=supervisor, measured=now)
+        except (urllib.error.URLError, RuntimeError, ValueError, OSError) as exc:
+            payload = carry_forward(out_path, dict(
+                status("stats.supervisor_down", detail=str(exc)[:200]),
+                ok=False))
+            infra.write_json(out_path, payload)
+            print(payload["message"], file=sys.stderr)
+            return 1
+        infra.write_json(out_path, payload)
+        print(payload["message"])
+        return 0
+
     try:
         safe = infra.Safe.open(args.vault_addr, Path(args.token_file))
         host = infra.open_host(safe)

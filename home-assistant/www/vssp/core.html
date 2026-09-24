@@ -139,14 +139,17 @@ code.cmd{display:block;margin-top:4px;padding:4px 8px;background:rgba(0,0,0,.35)
       <ul id="adv-k3s-list"><li class="muted" data-t="loading"></li></ul>
       <div class="scan" id="scan-k3s-out" hidden></div>
     </div>
-    <div class="k3s-tables">
+    <div class="k3s-tables" id="k3s-tables">
       <div><div class="sub-title" data-t="nodes"></div><table class="tbl" id="k3s-nodes"></table></div>
       <div><div class="sub-title" data-t="resources"></div><table class="tbl" id="k3s-resources"></table></div>
     </div>
-    <div class="k3s-bottom">
+    <div class="k3s-bottom" id="k3s-bottom">
       <div><div class="sub-title" data-t="top_ns"></div><table class="tbl" id="k3s-namespaces"></table></div>
       <div><div class="sub-title" data-t="workloads"></div><table class="tbl" id="k3s-deployments"></table></div>
       <div><div class="sub-title" data-t="events"></div><table class="tbl" id="k3s-events"></table></div>
+    </div>
+    <div id="sup-tables" hidden>
+      <div class="sub-title" data-t="addons"></div><table class="tbl" id="sup-addons"></table>
     </div>
   </div>
 </div>
@@ -160,7 +163,7 @@ code.cmd{display:block;margin-top:4px;padding:4px 8px;background:rgba(0,0,0,.35)
 // FR | fichiers de statut (message_key) sont traduits ici et nulle part
 // FR | ailleurs.
 var I18N={
-en:{title:'SYSTEM DASHBOARD',hostname:'Hostname',uptime:'Uptime',updated:'Updated',clear_cache:'↻ CLEAR CACHE',clear_cache_tip:'Reload the page without cache',
+en:{title:'SYSTEM DASHBOARD',sup_title:'HOME ASSISTANT OS',addons:'Add-ons',adv_sup:'ADD-ON RECOMMENDATIONS',kpi_addons:'Add-ons',kpi_running:'Running',kpi_updates:'Updates',kpi_core:'Core',kpi_os:'OS',kpi_disk:'Free space',addon_name:'Add-on',addon_state:'State',addon_version:'Version',addon_latest:'Available',started:'started',stopped:'stopped',up_to_date:'up to date',s_updates:'{n} update(s) waiting',s_updates_d:'Settings > Add-ons, or the UPGRADE screen, installs them.',s_stopped:'{n} add-on(s) stopped',s_stopped_d:'Normal if you stopped them on purpose; otherwise read their log.',s_core:'Home Assistant {v} is available',s_core_d:'The current version is {c}.',s_os:'Home Assistant OS {v} is available',s_os_d:'The current version is {c}. An OS update reboots the machine.',s_all_ok:'Everything is current',s_all_ok_d:'Every add-on is running on its latest version.',sup_none:'No add-on installed',hostname:'Hostname',uptime:'Uptime',updated:'Updated',clear_cache:'↻ CLEAR CACHE',clear_cache_tip:'Reload the page without cache',
 load:'Load average',load_note:'Glances in Home Assistant gives the 15-min average only',cpu_temp:'CPU temp',average:'Average',cores:'{n} cores',partitions:'PARTITIONS',history:'HISTORY (LAST 5 DAYS)',chart_cpu:'CPU usage (%)',chart_ram:'RAM usage (%)',chart_net:'Network',chart_disk:'Disk',
 temps:'COMPONENT TEMPERATURES',component:'Component',sensor:'Sensor',temperature:'Temperature',state:'State',no_sensor:'No sensor',loading:'Loading…',
 mount:'Mount',fs:'FS',size:'Size',used:'Used',free:'Free',usage:'Usage',inodes:'Inodes',parts_host:'Read on the host (df) · {t}',parts_glances:'From Glances only (the host collector has no data yet)',parts_none:'No partition data',
@@ -195,7 +198,7 @@ k_cert_soon:'API certificate expires in {n} days',k_cert_soon_d:'k3s renews cert
 k_update:'k3s {a} → {b} available',k_update_d:'Planned on the UPDATES screen of the console (one minor version at a time).',
 k_all_ok:'Cluster healthy',k_all_ok_d:'Nodes ready, no failing pod, no warning in the last 24 h.',
 login:'CONNECTION',login_need:'Home Assistant token required',login_btn:'Connect',error:'Error'},
-fr:{title:'TABLEAU DE BORD SYSTÈME',hostname:'Nom d’hôte',uptime:'Uptime',updated:'Mise à jour',clear_cache:'↻ VIDER LE CACHE',clear_cache_tip:'Recharger la page sans cache',
+fr:{title:'TABLEAU DE BORD SYSTÈME',sup_title:'HOME ASSISTANT OS',addons:'Add-ons',adv_sup:'RECOMMANDATIONS ADD-ONS',kpi_addons:'Add-ons',kpi_running:'Démarrés',kpi_updates:'Mises à jour',kpi_core:'Core',kpi_os:'OS',kpi_disk:'Espace libre',addon_name:'Add-on',addon_state:'État',addon_version:'Version',addon_latest:'Disponible',started:'démarré',stopped:'arrêté',up_to_date:'à jour',s_updates:'{n} mise(s) à jour en attente',s_updates_d:'Paramètres > Modules complémentaires, ou l’écran UPGRADE, les installe.',s_stopped:'{n} add-on(s) arrêté(s)',s_stopped_d:'Normal si vous les avez arrêtés ; sinon lisez leur journal.',s_core:'Home Assistant {v} est disponible',s_core_d:'La version actuelle est {c}.',s_os:'Home Assistant OS {v} est disponible',s_os_d:'La version actuelle est {c}. Une mise à jour de l’OS redémarre la machine.',s_all_ok:'Tout est à jour',s_all_ok_d:'Chaque add-on tourne dans sa dernière version.',sup_none:'Aucun add-on installé',hostname:'Nom d’hôte',uptime:'Uptime',updated:'Mise à jour',clear_cache:'↻ VIDER LE CACHE',clear_cache_tip:'Recharger la page sans cache',
 load:'Charge moyenne',load_note:'Glances dans Home Assistant ne donne que la moyenne 15 min',cpu_temp:'Temp. CPU',average:'Moyenne',cores:'{n} cœurs',partitions:'PARTITIONS',history:'HISTORIQUE (5 DERNIERS JOURS)',chart_cpu:'Utilisation CPU (%)',chart_ram:'Utilisation RAM (%)',chart_net:'Réseau',chart_disk:'Disque',
 temps:'TEMPÉRATURE DES COMPOSANTS',component:'Composant',sensor:'Capteur',temperature:'Température',state:'État',no_sensor:'Aucun capteur',loading:'Chargement…',
 mount:'Montage',fs:'Type',size:'Taille',used:'Utilisé',free:'Libre',usage:'Occupation',inodes:'Inodes',parts_host:'Lu sur l’hôte (df) · {t}',parts_glances:'Glances seulement (le collecteur hôte n’a pas encore de données)',parts_none:'Aucune donnée de partition',
@@ -317,6 +320,62 @@ return out}
 // FR | jamais mesure : le fichier de l ancien minuteur hote donne encore des
 // FR | comptes.
 function fromLegacy(d){if(!d)return null;return{legacy:true,service:'unknown',version:d.version||'',reachable:true,nodes:(d.nodes||[]).map(function(n){return{name:n.name,ready:n.status==='Ready',roles:n.role,cpu:n.cpu_capacity,memory:n.memory_capacity,pods_capacity:parseInt(n.pods_capacity,10)||0,pressure:[]}}),pods:{total:d.pods_total||0,running:d.pods_running||0},problem_pods:[],workloads:{deployments:d.deployments||0,statefulsets:0,daemonsets:0,unavailable:[],top:(d.top_deployments||[]).map(function(x){return{kind:'Deployment',ns:'',name:x.name,ready:x.ready}})},services:d.services,namespaces:d.namespaces,top_namespaces:d.top_namespaces||[],pvc:{total:null,not_bound:[]},events:[],cert_days:null,measured:d.timestamp}}
+// EN | HOME ASSISTANT OS. The same section, filled with what this machine
+// EN | actually runs: add-ons, not pods. The k3s tables are hidden rather
+// EN | than emptied - a table of nodes with nothing in it would suggest a
+// EN | cluster that failed to answer, when there is simply no cluster here.
+// EN | Host CPU and memory are not in the Supervisor API; the gauges above
+// EN | already read them from Glances or System Monitor.
+// FR | HOME ASSISTANT OS. La meme section, remplie de ce que cette machine
+// FR | fait tourner reellement : des add-ons, pas des pods. Les tableaux k3s
+// FR | sont masques plutot que vides - un tableau de noeuds sans rien
+// FR | suggererait un cluster qui n a pas repondu, alors qu il n y a
+// FR | simplement pas de cluster ici. Le CPU et la memoire de l hote ne sont
+// FR | pas dans l API du Superviseur ; les jauges plus haut les lisent deja
+// FR | depuis Glances ou System Monitor.
+function supervisorMode(on){
+  ['k3s-tables','k3s-bottom'].forEach(function(id){var e=document.getElementById(id);if(e)e.hidden=on});
+  var st=document.getElementById('sup-tables');if(st)st.hidden=!on;
+  var sc=document.getElementById('scan-k3s');if(sc)sc.style.display=on?'none':'';
+  var ti=document.querySelector('[data-t="k3s_title"]');if(ti)ti.textContent=t(on?'sup_title':'k3s_title');
+  var at=document.querySelector('[data-t="adv_k3s"]');if(at)at.textContent=t(on?'adv_sup':'adv_k3s');
+}
+function renderSupervisor(sp,srcText){
+  supervisorMode(true);
+  document.getElementById('k3s-src').textContent=srcText||'';
+  var c=sp.counts||{},free=null;
+  try{free=(STATE.supParts&&STATE.supParts[0]&&STATE.supParts[0].avail)||null}catch(e){}
+  var kpis=[
+    {l:t('kpi_addons'),v:c.addons||0,s:'',c:'#00E5FF'},
+    {l:t('kpi_running'),v:(c.running||0)+'/'+(c.addons||0),s:'',c:c.stopped?'#FF9800':'#00FFC3'},
+    {l:t('kpi_updates'),v:c.updates||0,s:'',c:c.updates?'#FF9800':'#00FFC3'},
+    {l:t('kpi_core'),v:(sp.core&&sp.core.version)||'--',s:sp.core&&sp.core.update?(sp.core.latest||''):t('up_to_date'),c:sp.core&&sp.core.update?'#FF9800':'#fff'},
+    {l:t('kpi_os'),v:(sp.os&&sp.os.version)||'--',s:sp.os&&sp.os.update?(sp.os.latest||''):t('up_to_date'),c:sp.os&&sp.os.update?'#FF9800':'#fff'},
+    {l:t('kpi_disk'),v:free===null?'--':fmtBytes(free),s:'',c:'#fff'}
+  ];
+  document.getElementById('k3s-kpis').innerHTML=kpis.map(function(x){return'<div class="k3s-kpi"><div class="k3s-kpi-label">'+esc(x.l)+'</div><div class="k3s-kpi-value" style="color:'+x.c+'">'+esc(x.v)+'</div><div class="k3s-kpi-sub">'+esc(x.s)+'</div></div>'}).join('');
+  var rows=sp.addons||[];
+  var h='<thead><tr><th>'+esc(t('addon_name'))+'</th><th>'+esc(t('addon_state'))+'</th><th>'+esc(t('addon_version'))+'</th><th>'+esc(t('addon_latest'))+'</th></tr></thead><tbody>';
+  if(!rows.length)h+='<tr><td colspan="4" class="muted">'+esc(t('sup_none'))+'</td></tr>';
+  rows.forEach(function(a){
+    var on=a.state==='started';
+    h+='<tr><td style="color:#fff;font-weight:700">'+esc(a.name||a.slug)+'</td>'+
+       '<td><span class="badge '+(on?'badge-ok':'badge-warn')+'">'+esc(on?t('started'):t('stopped'))+'</span></td>'+
+       '<td>'+esc(a.version||'--')+'</td>'+
+       '<td>'+(a.update?'<span class="badge badge-warn">'+esc(a.latest||'')+'</span>':'<span class="muted">'+esc(t('up_to_date'))+'</span>')+'</td></tr>';
+  });
+  document.getElementById('sup-addons').innerHTML=h+'</tbody>';
+}
+function supervisorRecs(sp){
+  var out=[],c=sp.counts||{};
+  if(sp.core&&sp.core.update)out.push(rec('warn',t('s_core',{v:sp.core.latest||''}),t('s_core_d',{c:sp.core.version||''})));
+  if(sp.os&&sp.os.update)out.push(rec('warn',t('s_os',{v:sp.os.latest||''}),t('s_os_d',{c:sp.os.version||''})));
+  var au=(sp.addons||[]).filter(function(a){return a.update});
+  if(au.length)out.push(rec('warn',t('s_updates',{n:au.length}),t('s_updates_d')+' '+au.map(function(a){return a.name||a.slug}).join(', ')));
+  if(c.stopped)out.push(rec('info',t('s_stopped',{n:c.stopped}),t('s_stopped_d')));
+  if(!out.length)out.push(rec('ok',t('s_all_ok'),t('s_all_ok_d')));
+  return out;
+}
 function renderK3s(k,srcText){document.getElementById('k3s-src').textContent=srcText||'';if(!k){document.getElementById('k3s-kpis').innerHTML='<div class="muted" style="padding:20px;text-align:center;grid-column:1/-1">'+esc(t('waiting'))+'</div>';['k3s-nodes','k3s-resources','k3s-namespaces','k3s-deployments','k3s-events'].forEach(function(id){document.getElementById(id).innerHTML=''});return}
 var nodes=k.nodes||[],ready=nodes.filter(function(n){return n.ready}).length,pods=k.pods||{},wl=k.workloads||{},wlTotal=(wl.deployments||0)+(wl.statefulsets||0)+(wl.daemonsets||0),recent=(k.events||[]).filter(function(e){return Date.now()-Date.parse(e.time)<864e5}).length;
 var bad=(k.service&&k.service!=='active'&&k.service!=='unknown')||k.reachable===false,deg=!bad&&(ready<nodes.length||(k.problem_pods||[]).some(function(p){return p.reason})||(wl.unavailable||[]).length||nodes.some(function(n){return(n.pressure||[]).length}));
@@ -396,8 +455,8 @@ renderAdvice('system',systemRecs({hasGlances:!!cpu,cpu:num(cpu),ram:num(ram),swa
 // EN | Cluster / FR | Cluster
 var k=stats&&stats.k3s?stats.k3s:null,ksrc='';if(k&&stats){k.measured=stats.measured;ksrc=stats.stale?t('src_stale',{t:ago(stats.measured)}):t('src_live',{t:ago(stats.measured)})}else{k=fromLegacy(await localJson('/local/osvision_v2/k3s_stats.json'));if(k)ksrc=t('src_legacy')}
 var upd=null,inf=await localJson('/local/vssp/infra_updates.json');if(inf&&inf.components)upd=inf.components.find(function(c){return c.key==='k3s'})||null;
-renderK3s(k,ksrc);var krecs=k3sRecs(k,upd);if(stats&&!stats.ok&&!stats.k3s)krecs.unshift(rec('warn',t('r_sealed'),msgOf(stats)));renderAdvice('k3s',krecs);
-STATE.context={os:host.os||(os?os.state:''),kernel:host.kernel||'',k3s:(k&&k.version)||'',cpus:host.cpus||'',ram:(k&&k.nodes&&k.nodes[0]&&fmtKi(k.nodes[0].memory))||''};
+var sp=stats&&stats.supervisor?stats.supervisor:null;if(sp){STATE.supParts=(host&&host.partitions)||[];renderSupervisor(sp,stats.stale?t('src_stale',{t:ago(stats.measured)}):t('src_live',{t:ago(stats.measured)}));renderAdvice('k3s',supervisorRecs(sp));}else{supervisorMode(false);renderK3s(k,ksrc);var krecs=k3sRecs(k,upd);if(stats&&!stats.ok&&!stats.k3s)krecs.unshift(rec('warn',t('r_sealed'),msgOf(stats)));renderAdvice('k3s',krecs);}
+STATE.context={os:host.os||(os?os.state:''),kernel:host.kernel||'',k3s:sp?'':((k&&k.version)||''),supervisor:sp?(sp.version||''):'',cpus:host.cpus||'',ram:(k&&k.nodes&&k.nodes[0]&&fmtKi(k.nodes[0].memory))||''};
 // EN | History: every 5 min, not every 30 s — Glances itself only refreshes
 // EN | every 60 s, and 4 five-day queries per cycle weigh on the recorder.
 // FR | Historique : toutes les 5 min, pas toutes les 30 s — Glances ne se
