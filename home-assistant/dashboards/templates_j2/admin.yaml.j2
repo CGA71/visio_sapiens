@@ -2400,47 +2400,48 @@ views:
                       right_button_action:
                         service: script.vssp_delete_dashboard
               # EN | THE ANSWER, ON THE SCREEN THAT ASKED. The button's only
-              # EN | reply was a persistent_notification, in a sidebar this
-              # EN | console is regularly used without, so it looked dead
-              # EN | whether it had deleted fifteen files or refused a code.
-              # EN | A backend browser_mod popup does not reach an
-              # EN | unregistered browser either (verified live). This card
-              # EN | does, on any browser.
-              # EN | Hidden by card_mod rather than by a conditional card: a
-              # EN | conditional needs a condition, and "the helper is empty"
-              # EN | is not one HA accepts - `state_not: ""` silently hid the
-              # EN | card even when there WAS something to say, verified on
-              # EN | the instance. :host, not ha-card, so the empty slot
-              # EN | collapses instead of leaving a hole in the grid.
-              # FR | LA REPONSE, SUR L ECRAN QUI A DEMANDE. La seule reponse
-              # FR | du bouton etait une persistent_notification, dans une
-              # FR | barre laterale dont cette console se passe regulierement,
-              # FR | il avait donc l air mort qu il ait supprime quinze
-              # FR | fichiers ou refuse un code. Un popup browser_mod lance
-              # FR | depuis le backend n atteint pas davantage un navigateur
-              # FR | non enregistre (verifie en direct). Cette carte, si, sur
-              # FR | n importe quel navigateur.
-              # FR | Masquee par card_mod plutot que par une carte
-              # FR | conditionnelle : une conditionnelle exige une condition,
-              # FR | et « le helper est vide » n en est pas une que HA
-              # FR | accepte - `state_not: ""` masquait la carte meme quand il
-              # FR | y avait quelque chose a dire, verifie sur l instance.
-              # FR | :host, pas ha-card, pour que la case vide se referme au
-              # FR | lieu de laisser un trou dans la grille.
-              - type: markdown
-                content: >-
-                  {%+ raw %}{{ states('input_text.vssp_delete_status') }}{% endraw +%}
-                card_mod:
-                  style: |
-                    {%+ raw %}{% if states('input_text.vssp_delete_status') in ['', 'unknown', 'unavailable'] %}
-                    :host { display: none !important; }
-                    {% endif %}{% endraw +%}
-                    ha-card {
-                      background: rgba(8,18,28,0.75) !important;
-                      border: 1px solid rgba(255,77,109,0.45) !important;
-                      border-radius: var(--ha-card-border-radius, 20px) !important;
-                      font-size: 13px;
-                    }
+              # EN | reply was a persistent_notification, which lives in Home
+              # EN | Assistant's sidebar - a sidebar this console is regularly
+              # EN | used without, so the button looked equally dead whether it
+              # EN | had deleted fifteen files or refused a code. A popup from
+              # EN | the backend does not fix that: browser_mod can only push
+              # EN | one to a REGISTERED browser, and a tablet that merely
+              # EN | opens the page is not one (verified live - the script ran
+              # EN | the service without error and nothing appeared). A card
+              # EN | reading a helper the script writes needs nothing from the
+              # EN | browser, and takes no room until there is something to
+              # EN | say.
+              # FR | LA REPONSE, SUR L ECRAN QUI A DEMANDE. La seule reponse du
+              # FR | bouton etait une persistent_notification, qui vit dans la
+              # FR | barre laterale de Home Assistant - une barre dont cette
+              # FR | console se passe regulierement, le bouton avait donc l air
+              # FR | tout aussi mort qu il ait supprime quinze fichiers ou
+              # FR | refuse un code. Un popup lance depuis le backend n y
+              # FR | change rien : browser_mod ne peut en pousser un que vers
+              # FR | un navigateur ENREGISTRE, et une tablette qui ouvre
+              # FR | simplement la page n en est pas un (verifie en direct - le
+              # FR | script a appele le service sans erreur et rien n est
+              # FR | apparu). Une carte qui lit un helper ecrit par le script
+              # FR | n a besoin de rien du navigateur, et ne prend aucune place
+              # FR | tant qu il n y a rien a dire.
+              - type: conditional
+                conditions:
+                  - entity: input_text.vssp_delete_status
+                    state_not: ""
+                  - entity: input_text.vssp_delete_status
+                    state_not: "unknown"
+                card:
+                  type: markdown
+                  content: >-
+                    {%+ raw %}{{ states('input_text.vssp_delete_status') }}{% endraw +%}
+                  card_mod:
+                    style: |
+                      ha-card {
+                        background: rgba(8,18,28,0.75) !important;
+                        border: 1px solid rgba(255,77,109,0.45) !important;
+                        border-radius: var(--ha-card-border-radius, 20px) !important;
+                        font-size: 13px;
+                      }
           # EN | HOME, ENERGY and CORE are on-demand dashboards, not
           # EN | attached to any room, so they never go through the room
           # EN | create/modify/delete form above. One row per dashboard
