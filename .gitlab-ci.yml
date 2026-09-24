@@ -1046,13 +1046,53 @@ deploy:staging:
         # FR | modifiable.
         # FR | La version du pod gagne toujours : donnee decouverte ou faite
         # FR | a la main, le depot n a aucune autorite dessus.
-        for f in model/energy_devices.yaml model/house_rooms.yaml model/design_system.yaml views/home.yaml views/home_mobile.yaml views/core.yaml views/core_mobile.yaml views/energy.yaml views/energy_mobile.yaml; do
+        for f in model/energy_devices.yaml model/house_rooms.yaml model/design_system.yaml; do
           if [ -f /config/dashboards.old/$f ]; then
             mkdir -p /config/dashboards/$(dirname $f)
             cp /config/dashboards.old/$f /config/dashboards/$f
             echo "[i] preserved pod-side state: $f"
           fi
         done
+        # EN | EVERY VIEW THE POD STILL HAS AND THE PACKAGE DOES NOT.
+        # EN | Listing view files one by one was wrong twice over: the package
+        # EN | no longer carries the on-demand dashboards at all, and it never
+        # EN | carried the room dashboards, which are generated on the pod from
+        # EN | a model only the pod has. A deployment therefore deleted every
+        # EN | room page and they only came back because the pod-side
+        # EN | regeneration below rebuilt them - which stops the moment the
+        # EN | model no longer declares those rooms, as happened here: four
+        # EN | room dashboards, restored from backup, wiped again by the next
+        # EN | deployment.
+        # EN | The rule is the same for all of them: a view the new package
+        # EN | does not provide but the instance had is INSTANCE state, so it
+        # EN | is copied back. A deactivated dashboard is absent from
+        # EN | dashboards.old and stays absent; a deleted one likewise.
+        # FR | TOUTE VUE QUE LE POD A ENCORE ET QUE LE PAQUET N A PAS.
+        # FR | Lister les vues une par une etait faux deux fois : le paquet ne
+        # FR | transporte plus du tout les dashboards a la demande, et il n a
+        # FR | jamais transporte les dashboards de piece, generes sur le pod
+        # FR | depuis un modele que seul le pod possede. Un deploiement
+        # FR | supprimait donc toutes les pages de piece, et elles ne
+        # FR | revenaient que parce que la regeneration cote pod plus bas les
+        # FR | reconstruisait - ce qui s arrete des que le modele ne declare
+        # FR | plus ces pieces, exactement ce qui est arrive ici : quatre
+        # FR | dashboards de piece, restaures depuis une sauvegarde, effaces a
+        # FR | nouveau par le deploiement suivant.
+        # FR | La regle vaut pour toutes : une vue que le nouveau paquet ne
+        # FR | fournit pas mais que l instance avait est un etat D INSTANCE,
+        # FR | donc on la recopie. Un dashboard desactive est absent de
+        # FR | dashboards.old et reste absent ; un dashboard supprime aussi.
+        if [ -d /config/dashboards.old/views ]; then
+          mkdir -p /config/dashboards/views
+          for v in /config/dashboards.old/views/*.yaml; do
+            [ -e "$v" ] || continue
+            b=$(basename "$v")
+            if [ ! -f /config/dashboards/views/$b ]; then
+              cp "$v" /config/dashboards/views/$b
+              echo "[i] preserved pod-side view: $b"
+            fi
+          done
+        fi
         # EN | www/: ALL package entries, not just vssp/. Previously the rest
         # EN | of www/ was packaged, transferred, then wiped with the staging dir.
         # FR | www/ : TOUTES les entrees du paquet, pas seulement vssp/. Avant,
@@ -1633,13 +1673,53 @@ deploy:production:
         # FR | house_rooms.yaml, design_system.yaml (ecran THEME) et le
         # FR | dashboard HOME edite a la main sont ecrits sur l'instance,
         # FR | jamais livres — voir l'explication complete sur le job staging.
-        for f in model/energy_devices.yaml model/house_rooms.yaml model/design_system.yaml views/home.yaml views/home_mobile.yaml views/core.yaml views/core_mobile.yaml views/energy.yaml views/energy_mobile.yaml; do
+        for f in model/energy_devices.yaml model/house_rooms.yaml model/design_system.yaml; do
           if [ -f $HA_CFG/dashboards.old/\$f ]; then
             mkdir -p $HA_CFG/dashboards/\$(dirname \$f)
             cp $HA_CFG/dashboards.old/\$f $HA_CFG/dashboards/\$f
             echo \"[i] preserved pod-side state: \$f\"
           fi
         done
+        # EN | EVERY VIEW THE POD STILL HAS AND THE PACKAGE DOES NOT.
+        # EN | Listing view files one by one was wrong twice over: the package
+        # EN | no longer carries the on-demand dashboards at all, and it never
+        # EN | carried the room dashboards, which are generated on the pod from
+        # EN | a model only the pod has. A deployment therefore deleted every
+        # EN | room page and they only came back because the pod-side
+        # EN | regeneration below rebuilt them - which stops the moment the
+        # EN | model no longer declares those rooms, as happened here: four
+        # EN | room dashboards, restored from backup, wiped again by the next
+        # EN | deployment.
+        # EN | The rule is the same for all of them: a view the new package
+        # EN | does not provide but the instance had is INSTANCE state, so it
+        # EN | is copied back. A deactivated dashboard is absent from
+        # EN | dashboards.old and stays absent; a deleted one likewise.
+        # FR | TOUTE VUE QUE LE POD A ENCORE ET QUE LE PAQUET N A PAS.
+        # FR | Lister les vues une par une etait faux deux fois : le paquet ne
+        # FR | transporte plus du tout les dashboards a la demande, et il n a
+        # FR | jamais transporte les dashboards de piece, generes sur le pod
+        # FR | depuis un modele que seul le pod possede. Un deploiement
+        # FR | supprimait donc toutes les pages de piece, et elles ne
+        # FR | revenaient que parce que la regeneration cote pod plus bas les
+        # FR | reconstruisait - ce qui s arrete des que le modele ne declare
+        # FR | plus ces pieces, exactement ce qui est arrive ici : quatre
+        # FR | dashboards de piece, restaures depuis une sauvegarde, effaces a
+        # FR | nouveau par le deploiement suivant.
+        # FR | La regle vaut pour toutes : une vue que le nouveau paquet ne
+        # FR | fournit pas mais que l instance avait est un etat D INSTANCE,
+        # FR | donc on la recopie. Un dashboard desactive est absent de
+        # FR | dashboards.old et reste absent ; un dashboard supprime aussi.
+        if [ -d $HA_CFG/dashboards.old/views ]; then
+          mkdir -p $HA_CFG/dashboards/views
+          for v in $HA_CFG/dashboards.old/views/*.yaml; do
+            [ -e \"\$v\" ] || continue
+            b=\$(basename \"\$v\")
+            if [ ! -f $HA_CFG/dashboards/views/\$b ]; then
+              cp \"\$v\" $HA_CFG/dashboards/views/\$b
+              echo \"[i] preserved pod-side view: \$b\"
+            fi
+          done
+        fi
         # EN | www/: ALL package entries, not just vssp/
         # FR | www/ : TOUTES les entrees du paquet, pas seulement vssp/
         mkdir -p $HA_CFG/www
