@@ -1150,8 +1150,24 @@ script:
       # l'onglet deja ouvert garde l'ancienne version en memoire.
 
   vssp_delete_dashboard:
-    alias: "Visio Sapiens — Supprimer le dashboard (protégé par code)"
+    alias: "Visio Sapiens — Supprimer tous les dashboards (protégé par code)"
     sequence:
+      # EN | THE FIELD IS COMMITTED ON BLUR, THE BUTTON FIRES ON CLICK — and
+      # EN | the click wins. Typing the code then pressing DELETE ran this
+      # EN | script against the PREVIOUS value of the helper (empty), so a
+      # EN | correct code was rejected; the trace of the failed run showed the
+      # EN | condition reading an empty field. This waits for the value to
+      # EN | land, at most two seconds, instead of racing it.
+      # FR | LE CHAMP SE VALIDE EN PERDANT LE FOCUS, LE BOUTON PART AU CLIC —
+      # FR | et le clic gagne. Taper le code puis appuyer sur SUPPRIMER
+      # FR | lançait ce script sur la valeur PRECEDENTE du helper (vide), donc
+      # FR | un code correct etait refuse ; la trace de l'essai rate montrait
+      # FR | la condition lisant un champ vide. On attend que la valeur
+      # FR | arrive, deux secondes au plus, au lieu de lui courir apres.
+      - wait_template: >-
+          {{ states('input_text.vssp_pin_entry') not in ['', 'unknown', 'unavailable'] }}
+        timeout: "00:00:02"
+        continue_on_timeout: true
       - if:
           - condition: template
             value_template: >-
