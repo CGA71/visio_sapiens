@@ -2301,6 +2301,28 @@ views:
                             content: >-
                               {{ t('home.delete_confirm') }}
                           - type: entities
+                            # EN | An input_text row is Web Awesome: only
+                            # EN | --ha-color-form-background paints it, and the
+                            # EN | theme's value does not reach inside a popup —
+                            # EN | the field showed up as a white block. The
+                            # EN | label token is set here and nowhere else:
+                            # EN | --secondary-text-color is global.
+                            # FR | Une ligne input_text est en Web Awesome : seul
+                            # FR | --ha-color-form-background la peint, et la
+                            # FR | valeur du theme n'entre pas dans un popup — le
+                            # FR | champ s'affichait en bloc blanc. Le jeton du
+                            # FR | libelle est pose ici et nulle part ailleurs :
+                            # FR | --secondary-text-color est global.
+                            card_mod:
+                              style: |
+                                ha-card {
+                                  --ha-color-form-background: rgba(16,27,39,0.85);
+                                  --wa-form-control-value-color: #FFFFFF;
+                                  --secondary-text-color: #B8E8F5;
+                                  background: transparent !important;
+                                  border: none !important;
+                                  box-shadow: none !important;
+                                }
                             entities:
                               - entity: input_text.vssp_pin_entry
                                 name: "{{ t('admin.pin_prompt') }}"
