@@ -2399,33 +2399,48 @@ views:
                       right_button: "{{ t('admin.delete_now') }}"
                       right_button_action:
                         service: script.vssp_delete_dashboard
-              # EN | THE ANSWER, ON THE SCREEN THAT ASKED. Conditional, so it
-              # EN | takes no room until there is something to say, and it
-              # EN | says the same thing to every browser — see the comment on
-              # EN | input_text.vssp_delete_status in vssp_admin.yaml.
-              # FR | LA REPONSE, SUR L ECRAN QUI A DEMANDE. Conditionnelle,
-              # FR | donc elle ne prend aucune place tant qu il n y a rien a
-              # FR | dire, et elle dit la meme chose a tous les navigateurs —
-              # FR | voir le commentaire sur input_text.vssp_delete_status
-              # FR | dans vssp_admin.yaml.
-              - type: conditional
-                conditions:
-                  - entity: input_text.vssp_delete_status
-                    state_not: ""
-                  - entity: input_text.vssp_delete_status
-                    state_not: "unknown"
-                card:
-                  type: markdown
-                  content: >-
-                    {%+ raw %}{{ states('input_text.vssp_delete_status') }}{% endraw +%}
-                  card_mod:
-                    style: |
-                      ha-card {
-                        background: rgba(8,18,28,0.75) !important;
-                        border: 1px solid rgba(255,77,109,0.45) !important;
-                        border-radius: var(--ha-card-border-radius, 20px) !important;
-                        font-size: 13px;
-                      }
+              # EN | THE ANSWER, ON THE SCREEN THAT ASKED. The button's only
+              # EN | reply was a persistent_notification, in a sidebar this
+              # EN | console is regularly used without, so it looked dead
+              # EN | whether it had deleted fifteen files or refused a code.
+              # EN | A backend browser_mod popup does not reach an
+              # EN | unregistered browser either (verified live). This card
+              # EN | does, on any browser.
+              # EN | Hidden by card_mod rather than by a conditional card: a
+              # EN | conditional needs a condition, and "the helper is empty"
+              # EN | is not one HA accepts - `state_not: ""` silently hid the
+              # EN | card even when there WAS something to say, verified on
+              # EN | the instance. :host, not ha-card, so the empty slot
+              # EN | collapses instead of leaving a hole in the grid.
+              # FR | LA REPONSE, SUR L ECRAN QUI A DEMANDE. La seule reponse
+              # FR | du bouton etait une persistent_notification, dans une
+              # FR | barre laterale dont cette console se passe regulierement,
+              # FR | il avait donc l air mort qu il ait supprime quinze
+              # FR | fichiers ou refuse un code. Un popup browser_mod lance
+              # FR | depuis le backend n atteint pas davantage un navigateur
+              # FR | non enregistre (verifie en direct). Cette carte, si, sur
+              # FR | n importe quel navigateur.
+              # FR | Masquee par card_mod plutot que par une carte
+              # FR | conditionnelle : une conditionnelle exige une condition,
+              # FR | et « le helper est vide » n en est pas une que HA
+              # FR | accepte - `state_not: ""` masquait la carte meme quand il
+              # FR | y avait quelque chose a dire, verifie sur l instance.
+              # FR | :host, pas ha-card, pour que la case vide se referme au
+              # FR | lieu de laisser un trou dans la grille.
+              - type: markdown
+                content: >-
+                  {%+ raw %}{{ states('input_text.vssp_delete_status') }}{% endraw +%}
+                card_mod:
+                  style: |
+                    {%+ raw %}{% if states('input_text.vssp_delete_status') in ['', 'unknown', 'unavailable'] %}
+                    :host { display: none !important; }
+                    {% endif %}{% endraw +%}
+                    ha-card {
+                      background: rgba(8,18,28,0.75) !important;
+                      border: 1px solid rgba(255,77,109,0.45) !important;
+                      border-radius: var(--ha-card-border-radius, 20px) !important;
+                      font-size: 13px;
+                    }
           # EN | HOME, ENERGY and CORE are on-demand dashboards, not
           # EN | attached to any room, so they never go through the room
           # EN | create/modify/delete form above. One row per dashboard
