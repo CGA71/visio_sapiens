@@ -41,3 +41,11 @@ home-assistant/config-fragment-rooms.yaml
 # YouTube series: plan, scripts, narration, subtitles, rendered videos and
 # third-party captures. Kept out of the repository on purpose.
 youtube/
+
+# EN | Generated dashboards: the build is the single source (see the
+# EN | generation step in .gitlab-ci.yml). A committed view carries the
+# EN | language and the model of whoever last ran the generator.
+# FR | Dashboards generes : le build est la source unique (voir l etape de
+# FR | generation dans .gitlab-ci.yml). Une vue committee porte la langue et
+# FR | le modele de qui a lance le generateur en dernier.
+home-assistant/dashboards/views/*.yaml

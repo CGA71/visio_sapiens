@@ -972,6 +972,24 @@ deploy:staging:
         # EN |   views/home_mobile.yaml     for manual Lovelace editing after
         # EN |                              creation (see --protect-existing
         # EN |                              in generate_dashboards.py)
+        # EN |   views/core.yaml,           the on-demand dashboards. The
+        # EN |   views/core_mobile.yaml,    package no longer carries them:
+        # EN |   views/energy.yaml,         the build generates into an empty
+        # EN |   views/energy_mobile.yaml   directory, where they count as
+        # EN |                              "not created" and are skipped. So
+        # EN |                              whether they exist is decided on
+        # EN |                              the INSTANCE — by the CREATE and
+        # EN |                              DEACTIVATE buttons — and a
+        # EN |                              deployment must carry that
+        # EN |                              decision across, in both
+        # EN |                              directions: an active one is
+        # EN |                              copied back here (then refreshed
+        # EN |                              by the pod-side regeneration
+        # EN |                              below), a deactivated one is
+        # EN |                              absent from dashboards.old and
+        # EN |                              simply stays absent. Without this
+        # EN |                              line the wholesale mv deleted an
+        # EN |                              active CORE at every deployment.
         # EN | Replacing the directory destroyed all of them at every
         # EN | deployment. The ENERGY dashboard then regenerated from an
         # EN | empty model and the panels came back blank — with a message
@@ -1002,6 +1020,23 @@ deploy:staging:
         # FR |                              apres creation (voir
         # FR |                              --protect-existing dans
         # FR |                              generate_dashboards.py)
+        # FR |   views/core.yaml,           les dashboards a la demande. Le
+        # FR |   views/core_mobile.yaml,    paquet ne les transporte plus :
+        # FR |   views/energy.yaml,         le build genere dans un repertoire
+        # FR |   views/energy_mobile.yaml   vide, ou ils comptent comme « non
+        # FR |                              crees » et sont sautes. Leur
+        # FR |                              existence se decide donc sur
+        # FR |                              l INSTANCE — par les boutons CREER
+        # FR |                              et DESACTIVER — et un deploiement
+        # FR |                              doit reporter cette decision, dans
+        # FR |                              les deux sens : un dashboard actif
+        # FR |                              est recopie ici (puis rafraichi
+        # FR |                              par la regeneration cote pod plus
+        # FR |                              bas), un dashboard desactive est
+        # FR |                              absent de dashboards.old et reste
+        # FR |                              simplement absent. Sans cette
+        # FR |                              ligne, le mv en bloc supprimait un
+        # FR |                              CORE actif a chaque deploiement.
         # FR | Remplacer le repertoire les detruisait tous a chaque
         # FR | deploiement. Le dashboard ENERGY se regenerait alors depuis un
         # FR | modele vide et les tableaux revenaient blancs — avec un message
@@ -1011,7 +1046,7 @@ deploy:staging:
         # FR | modifiable.
         # FR | La version du pod gagne toujours : donnee decouverte ou faite
         # FR | a la main, le depot n a aucune autorite dessus.
-        for f in model/energy_devices.yaml model/house_rooms.yaml model/design_system.yaml views/home.yaml views/home_mobile.yaml; do
+        for f in model/energy_devices.yaml model/house_rooms.yaml model/design_system.yaml views/home.yaml views/home_mobile.yaml views/core.yaml views/core_mobile.yaml views/energy.yaml views/energy_mobile.yaml; do
           if [ -f /config/dashboards.old/$f ]; then
             mkdir -p /config/dashboards/$(dirname $f)
             cp /config/dashboards.old/$f /config/dashboards/$f
@@ -1598,7 +1633,7 @@ deploy:production:
         # FR | house_rooms.yaml, design_system.yaml (ecran THEME) et le
         # FR | dashboard HOME edite a la main sont ecrits sur l'instance,
         # FR | jamais livres — voir l'explication complete sur le job staging.
-        for f in model/energy_devices.yaml model/house_rooms.yaml model/design_system.yaml views/home.yaml views/home_mobile.yaml; do
+        for f in model/energy_devices.yaml model/house_rooms.yaml model/design_system.yaml views/home.yaml views/home_mobile.yaml views/core.yaml views/core_mobile.yaml views/energy.yaml views/energy_mobile.yaml; do
           if [ -f $HA_CFG/dashboards.old/\$f ]; then
             mkdir -p $HA_CFG/dashboards/\$(dirname \$f)
             cp $HA_CFG/dashboards.old/\$f $HA_CFG/dashboards/\$f

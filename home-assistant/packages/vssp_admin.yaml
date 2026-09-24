@@ -880,14 +880,15 @@ script:
         data:
           title: "Visio Sapiens — Dashboard ENERGY désactivé"
           message: >
-            Une sauvegarde a été conservée dans /config/vssp/backups/.
-            Le dashboard ENERGY est immédiatement injoignable. Son lien
-            disparaît du bandeau des autres pages dès qu’elles ont été
-            régénérées une fois avec la version actuelle des templates :
-            le bandeau suit maintenant l’état réel du fichier. En
-            revanche, son entrée du menu latéral de Home Assistant vient
-            de configuration.yaml, elle reste jusqu’au prochain
-            redémarrage, et y taper ouvre une page en erreur.
+            Une sauvegarde a été conservée dans /config/vssp/backups/. Le
+            dashboard ENERGY est immédiatement injoignable et son lien
+            disparaît du bandeau de toutes les pages sur-le-champ. La
+            désactivation est définitive : ni une régénération, ni une sync
+            ROOMS, ni un déploiement ne le recréeront — seul le bouton
+            CRÉER ENERGY le fait revenir. Son entrée du menu latéral de
+            Home Assistant vient de configuration.yaml : elle reste
+            jusqu'au prochain redémarrage (bouton REDÉMARRER HOME ASSISTANT
+            de l'écran MAINTENANCE), et y taper ouvre une page en erreur.
 
   # Bouton CREER LE DASHBOARD HOME du panneau ADMIN.
   # Idempotent : generate_dashboards.py protege deja HOME par defaut
@@ -982,14 +983,15 @@ script:
         data:
           title: "Visio Sapiens — Dashboard HOME désactivé"
           message: >
-            Une sauvegarde a été conservée dans /config/vssp/backups/.
-            Le dashboard HOME est immédiatement injoignable. Son lien
-            disparaît du bandeau des autres pages dès qu’elles ont été
-            régénérées une fois avec la version actuelle des templates :
-            le bandeau suit maintenant l’état réel du fichier. En
-            revanche, son entrée du menu latéral de Home Assistant vient
-            de configuration.yaml, elle reste jusqu’au prochain
-            redémarrage, et y taper ouvre une page en erreur.
+            Une sauvegarde a été conservée dans /config/vssp/backups/. Le
+            dashboard HOME est immédiatement injoignable et son lien
+            disparaît du bandeau de toutes les pages sur-le-champ. La
+            désactivation est définitive : ni une régénération, ni une sync
+            ROOMS, ni un déploiement ne le recréeront — seul le bouton
+            CRÉER HOME le fait revenir. Son entrée du menu latéral de Home
+            Assistant vient de configuration.yaml : elle reste jusqu'au
+            prochain redémarrage (bouton REDÉMARRER HOME ASSISTANT de
+            l'écran MAINTENANCE), et y taper ouvre une page en erreur.
 
   # Bouton CREER LE DASHBOARD CORE du panneau ADMIN. Idempotent
   # (--if-missing) : CORE n'est jamais destine a une edition manuelle,
@@ -1077,14 +1079,15 @@ script:
         data:
           title: "Visio Sapiens — Dashboard CORE désactivé"
           message: >
-            Une sauvegarde a été conservée dans /config/vssp/backups/.
-            Le dashboard CORE est immédiatement injoignable. Son lien
-            disparaît du bandeau des autres pages dès qu’elles ont été
-            régénérées une fois avec la version actuelle des templates :
-            le bandeau suit maintenant l’état réel du fichier. En
-            revanche, son entrée du menu latéral de Home Assistant vient
-            de configuration.yaml, elle reste jusqu’au prochain
-            redémarrage, et y taper ouvre une page en erreur.
+            Une sauvegarde a été conservée dans /config/vssp/backups/. Le
+            dashboard CORE est immédiatement injoignable et son lien
+            disparaît du bandeau de toutes les pages sur-le-champ. La
+            désactivation est définitive : ni une régénération, ni une sync
+            ROOMS, ni un déploiement ne le recréeront — seul le bouton
+            CRÉER CORE le fait revenir. Son entrée du menu latéral de Home
+            Assistant vient de configuration.yaml : elle reste jusqu'au
+            prochain redémarrage (bouton REDÉMARRER HOME ASSISTANT de
+            l'écran MAINTENANCE), et y taper ouvre une page en erreur.
 
   # Bouton SYNC ENERGY du panneau ADMIN : resynchronise les tableaux
   # « Consommation par appareil » et « Tableau electrique » avec les
@@ -1202,8 +1205,13 @@ script:
                 dashboards/views/ a été gardée dans /config/vssp/backups/.
                 Leurs entrées restent dans le menu latéral de Home
                 Assistant jusqu'au prochain redémarrage — elles viennent de
-                configuration.yaml, pas des fichiers supprimés. Pour tout
-                reconstruire : RÉGÉNÉRER TOUT.
+                configuration.yaml, pas des fichiers supprimés : le bouton
+                REDÉMARRER HOME ASSISTANT de l'écran MAINTENANCE les enlève.
+                Pour reconstruire : RÉGÉNÉRER TOUT ramène les pièces et la
+                console. HOME, CORE et ENERGY sont des dashboards à la
+                demande : ils restent éteints tant que vous ne les recréez
+                pas avec leur bouton CRÉER, et aucune régénération ne les
+                fera revenir dans votre dos.
         else:
           # EN | The two failures read the same from the button, so they are
           # EN | told apart here: nothing typed, or the wrong code.
