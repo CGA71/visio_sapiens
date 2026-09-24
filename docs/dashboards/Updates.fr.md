@@ -827,6 +827,30 @@ télécharge une carte en mode storage : le bouton n'y touche donc jamais.
 Il enregistre les cinq `/local/vssp/…`, qui n'appartiennent à personne
 d'autre.
 
+### Comment il prouve qui il est
+
+Le registre des ressources n'existe que sur le websocket, et le websocket
+de Home Assistant réclame un identifiant. Deux sont essayés, dans cet
+ordre :
+
+1. **`SUPERVISOR_TOKEN`**, contre `http://supervisor/core/websocket`. Sur
+   une machine Home Assistant OS, le Superviseur l'injecte dans le
+   conteneur qu'il gère et relaie le websocket de Home Assistant —
+   personne ne le crée, personne ne peut oublier de le coller. C'est le
+   jeton qu'utilise déjà l'écran CORE pour lire la liste des add-ons.
+2. **Le jeton longue durée** de `input_text.vssp_ha_token`, écrit dans
+   `/config/vssp/.ha_token` par ENREGISTRER LE JETON, contre
+   `localhost:8123`.
+
+La première version ne connaissait que le second, et c'est ainsi que le
+bouton écrit pour réparer une première installation répondait *« jeton
+absent »* sur exactement le type d'installation pour lequel il existe :
+un appareil neuf n'a pas de jeton longue durée, aucun écran de la console
+n'en demande un, et le champ vit dans la page Helpers de Home Assistant.
+
+La route qui a authentifié est inscrite dans le rapport sous `auth` : un
+écran qui se comporte mal peut donc dire par où il est entré.
+
 ### Le tampon de cache
 
 `/local` est mis en cache 31 jours par les navigateurs. Un fichier

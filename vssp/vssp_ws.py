@@ -82,7 +82,8 @@ class MiniWS:
     FR | connexion, auth, envoi d'une commande, lecture du resultat. Trames
     FR | texte uniquement."""
 
-    def __init__(self, base_url: str, timeout: float = 20.0):
+    def __init__(self, base_url: str, timeout: float = 20.0,
+                 path: str = "/api/websocket"):
         parsed = urllib.parse.urlsplit(base_url)
         self.secure = parsed.scheme == "https"
         self.host = parsed.hostname or "localhost"
@@ -92,7 +93,17 @@ class MiniWS:
         # FR | HA sert son websocket sur /api/websocket quel que soit le
         # FR | prefixe de chemin de l'url de base (le pod est toujours la
         # FR | racine).
-        self.path = "/api/websocket"
+        # EN | Almost always /api/websocket. The exception is the
+        # EN | Supervisor's proxy, which serves Home Assistant's own
+        # EN | websocket at /core/websocket and lets a container inside the
+        # EN | appliance authenticate with SUPERVISOR_TOKEN instead of a
+        # EN | long-lived token somebody had to create by hand.
+        # FR | Presque toujours /api/websocket. L exception est le proxy du
+        # FR | Superviseur, qui sert le websocket de Home Assistant sur
+        # FR | /core/websocket et permet a un conteneur de l appareil de
+        # FR | s authentifier avec SUPERVISOR_TOKEN plutot qu avec un jeton
+        # FR | longue duree que quelqu un a du creer a la main.
+        self.path = path or "/api/websocket"
         self.timeout = timeout
         self.sock: socket.socket | None = None
         self._buf = b""
@@ -266,10 +277,11 @@ def resolve_token(token: str | None = None,
     return text if text and text not in PLACEHOLDERS else None
 
 
-def connected(url: str, token: str, timeout: float = 20.0) -> MiniWS:
+def connected(url: str, token: str, timeout: float = 20.0,
+              path: str = "/api/websocket") -> MiniWS:
     """EN | Open and authenticate in one call — the caller closes it.
     FR | Ouvre et authentifie en un appel — l'appelant referme."""
-    ws = MiniWS(url, timeout=timeout)
+    ws = MiniWS(url, timeout=timeout, path=path)
     ws.connect()
     ws.authenticate(token)
     return ws

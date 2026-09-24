@@ -786,6 +786,28 @@ HACS registers its own `/hacsfiles/…` resources when it downloads a card
 in storage mode, so the button never touches those. It registers the five
 `/local/vssp/…` ones, which belong to nobody else.
 
+### How it proves who it is
+
+The resource registry is websocket-only, and Home Assistant's websocket
+wants a credential. Two are tried, in this order:
+
+1. **`SUPERVISOR_TOKEN`**, against `http://supervisor/core/websocket`. On a
+   Home Assistant OS box the Supervisor injects this into the container it
+   manages and proxies Home Assistant's own websocket — nobody creates it,
+   nobody can forget to paste it. It is the same token the CORE screen
+   already uses to read the add-on list.
+2. **The long-lived token** in `input_text.vssp_ha_token`, written to
+   `/config/vssp/.ha_token` by SAVE TOKEN, against `localhost:8123`.
+
+The first version knew only the second, which is how the button written to
+repair a first install answered *"token missing"* on exactly the kind of
+installation it exists for: a fresh appliance has no long-lived token, no
+screen in the console asks for one, and the field lives in Home
+Assistant's own Helpers page.
+
+Whichever route authenticated is written into the report as `auth`, so a
+screen that misbehaves can say how it got in.
+
 ### The cache stamp
 
 `/local` is cached by browsers for 31 days. A file replaced by a

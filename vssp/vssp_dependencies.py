@@ -130,6 +130,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import sys
 import urllib.error
 import urllib.request
@@ -235,11 +236,15 @@ FALLBACK_RESOURCES = [
 
 MESSAGES = {
     "no_token": {
-        "en": "Home Assistant token missing - fill input_text.vssp_ha_token "
-              "in the ADMIN console, then press SAVE TOKEN.",
-        "fr": "Jeton Home Assistant absent - renseignez "
-              "input_text.vssp_ha_token dans la console ADMIN puis lancez "
-              "ENREGISTRER LE JETON.",
+        "en": "No credential on this instance. A Home Assistant OS box "
+              "normally provides one by itself; this one did not, so fill "
+              "input_text.vssp_ha_token with a long-lived token (Home "
+              "Assistant > your profile > Security) and run SAVE TOKEN.",
+        "fr": "Aucun identifiant sur cette instance. Une machine Home "
+              "Assistant OS en fournit normalement un d'elle-meme ; celle-ci "
+              "ne l'a pas fait, renseignez donc input_text.vssp_ha_token avec "
+              "un jeton longue duree (Home Assistant > votre profil > "
+              "Securite) puis lancez ENREGISTRER LE JETON.",
     },
     "ws_down": {
         "en": "Home Assistant did not answer on its websocket API: {err}",
@@ -369,6 +374,63 @@ def write_json(path: str, payload: dict) -> None:
         print(f"[warn] {path} not written: {exc}", file=sys.stderr)
 
 
+# EN | HOW THIS SCRIPT PROVES WHO IT IS, in order of preference.
+# EN | Home Assistant's websocket needs a credential, and the first version
+# EN | of this script knew exactly one: a long-lived token somebody had
+# EN | pasted into input_text.vssp_ha_token. On the development pod that
+# EN | token has existed for a year. On a freshly deployed Home Assistant OS
+# EN | box it does not, there is no form in the console that asks for one,
+# EN | and the field lives in Home Assistant's own Helpers page - so the
+# EN | button meant to repair a first install answered "token missing" on
+# EN | exactly the installation it was written for. Seen on the production
+# EN | box, in those words: "le check dependance ne fonctionne pas".
+# EN | An appliance already holds a credential: the Supervisor injects
+# EN | SUPERVISOR_TOKEN into the container it manages, and serves Home
+# EN | Assistant's own websocket at http://supervisor/core/websocket. Nobody
+# EN | has to create it, nobody can forget to paste it, and it is the same
+# EN | token vssp_core_stats.py already uses to read the add-on list.
+# EN | So: the Supervisor first, the long-lived token second, and whichever
+# EN | answered is written into the report - a screen that says how it
+# EN | authenticated is a screen you can debug.
+# FR | COMMENT CE SCRIPT PROUVE QUI IL EST, par ordre de preference.
+# FR | Le websocket de Home Assistant reclame un identifiant, et la premiere
+# FR | version de ce script n en connaissait qu un : un jeton longue duree
+# FR | colle dans input_text.vssp_ha_token. Sur le pod de developpement ce
+# FR | jeton existe depuis un an. Sur une machine Home Assistant OS
+# FR | fraichement deployee, non : aucun formulaire de la console ne le
+# FR | demande, et le champ vit dans la page Helpers de Home Assistant - le
+# FR | bouton cense reparer une premiere installation repondait donc
+# FR | « jeton absent » sur precisement l installation pour laquelle il a
+# FR | ete ecrit. Constate sur la machine de production, mot pour mot :
+# FR | « le check dependance ne fonctionne pas ».
+# FR | Un appareil detient deja un identifiant : le Superviseur injecte
+# FR | SUPERVISOR_TOKEN dans le conteneur qu il gere, et sert le websocket
+# FR | de Home Assistant sur http://supervisor/core/websocket. Personne n a
+# FR | a le creer, personne ne peut oublier de le coller, et c est le jeton
+# FR | qu utilise deja vssp_core_stats.py pour lire la liste des add-ons.
+# FR | Donc : le Superviseur d abord, le jeton longue duree ensuite, et
+# FR | celui qui a repondu est inscrit dans le rapport - un ecran qui dit
+# FR | comment il s est authentifie est un ecran qu on peut depanner.
+SUPERVISOR_URL = "http://supervisor"
+SUPERVISOR_WS = "/core/websocket"
+SUPERVISOR_API = "/core/api"
+
+
+def auth_routes(url: str, token: str | None) -> list:
+    """EN | [(label, base url, websocket path, REST prefix, token)], best
+    EN | first. Empty when this instance offers neither credential.
+    FR | [(etiquette, url de base, chemin websocket, prefixe REST, jeton)],
+    FR | le meilleur d abord. Vide quand l instance n offre aucun des deux."""
+    routes = []
+    supervisor = os.environ.get("SUPERVISOR_TOKEN", "").strip()
+    if supervisor:
+        routes.append(("supervisor", SUPERVISOR_URL, SUPERVISOR_WS,
+                       SUPERVISOR_API, supervisor))
+    if token:
+        routes.append(("token", url, "/api/websocket", "/api", token))
+    return routes
+
+
 def rest_get(url: str, token: str, path: str):
     req = urllib.request.Request(
         url.rstrip("/") + path,
@@ -381,7 +443,8 @@ def rest_get(url: str, token: str, path: str):
         return None
 
 
-def detect_locale(explicit: str, url: str, token: str) -> str:
+def detect_locale(explicit: str, url: str, token: str,
+                  api: str = "/api") -> str:
     """EN | The selector first, because it is what the console shows; then
     EN | the file the deployment leaves behind, because a fresh instance may
     EN | not have the selector yet; then English.
@@ -390,7 +453,7 @@ def detect_locale(explicit: str, url: str, token: str) -> str:
     FR | neuve peut ne pas encore avoir le selecteur ; puis l'anglais."""
     if explicit and explicit.strip().lower() not in ("", "auto", "unknown"):
         return pick_locale(explicit)
-    state = rest_get(url, token, "/api/states/input_select.vssp_language")
+    state = rest_get(url, token, f"{api}/states/input_select.vssp_language")
     if isinstance(state, dict) and state.get("state"):
         return pick_locale(state["state"])
     try:
@@ -512,12 +575,25 @@ def download(ws, repo: dict) -> str:
 def run(args) -> int:
     install = args.action == "install"
     token = resolve_token(args.token, args.token_file)
-    locale = detect_locale(args.locale, args.url, token or "")
+    routes = auth_routes(args.url, token)
+    # EN | The language is read through the same route that will carry
+    # EN | everything else, so a box with no long-lived token still gets its
+    # EN | sentences in the language its console is set to.
+    # FR | La langue est lue par la route meme qui portera tout le reste,
+    # FR | pour qu une machine sans jeton longue duree recoive tout de meme
+    # FR | ses phrases dans la langue de sa console.
+    if routes:
+        _, _first_url, _, _first_api, _first_token = routes[0]
+        locale = detect_locale(args.locale, _first_url, _first_token,
+                               _first_api)
+    else:
+        locale = detect_locale(args.locale, args.url, "")
 
     report = {"action": args.action, "running": install, "items": [],
               "counts": {"total": 0, "ok": 0, "missing": 0, "failed": 0,
                          "installed": 0},
               "hacs": {"available": False, "error": ""},
+              "auth": "",
               "resources_mode": "unknown",
               "restart_required": False, "reload_required": False}
 
@@ -541,19 +617,43 @@ def run(args) -> int:
         write_json(args.out, report)
         write_json(args.status, {"ok": ok, **say(key, locale, **fields)})
 
-    if not token:
+    if not routes:
         publish(False, "no_token")
-        print("[ERR] no Home Assistant token", file=sys.stderr)
+        print("[ERR] neither a Supervisor token nor a long-lived token",
+              file=sys.stderr)
         return 1
 
     if install:
         publish(True, "running")
 
-    try:
-        ws = connected(args.url, token, timeout=args.timeout)
-    except (WSError, OSError) as exc:
-        publish(False, "ws_down", err=str(exc) or exc.__class__.__name__)
-        print(f"[ERR] websocket: {exc}", file=sys.stderr)
+    # EN | Try each route and keep the first that authenticates. A refusal
+    # EN | is not fatal while another route is left: an appliance whose
+    # EN | Supervisor proxy declines still has the long-lived token to fall
+    # EN | back on, and a pod that has no Supervisor at all never enters
+    # EN | that branch. Only the last failure is reported, with the label of
+    # EN | the route that produced it, so the message names something real.
+    # FR | Essayer chaque route et garder la premiere qui authentifie. Un
+    # FR | refus n est pas fatal tant qu il reste une route : un appareil
+    # FR | dont le proxy Superviseur decline garde le jeton longue duree en
+    # FR | repli, et un pod sans Superviseur n entre jamais dans cette
+    # FR | branche. Seul le dernier echec est rapporte, avec l etiquette de
+    # FR | la route qui l a produit, pour que le message nomme une chose
+    # FR | reelle.
+    ws = None
+    last = ""
+    for label, base, ws_path, _api, route_token in routes:
+        try:
+            ws = connected(base, route_token, timeout=args.timeout,
+                           path=ws_path)
+            report["auth"] = label
+            print(f"[i] authenticated through {label}")
+            break
+        except (WSError, OSError) as exc:
+            last = f"{label}: {exc or exc.__class__.__name__}"
+            print(f"[warn] {last}", file=sys.stderr)
+    if ws is None:
+        publish(False, "ws_down", err=last)
+        print(f"[ERR] websocket: {last}", file=sys.stderr)
         return 1
 
     try:
