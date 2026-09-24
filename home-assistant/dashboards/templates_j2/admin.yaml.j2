@@ -2063,6 +2063,49 @@ views:
                   border: 1px solid rgba(0, 229, 255, 0.28) !important;
                   border-radius: var(--ha-card-border-radius, 20px) !important;
                 }
+          # EN | RELOAD and RESTART — neither existed anywhere in the
+          # EN | project, and both are needed by what this console does.
+          # EN | A deploy writes packages and scripts; Home Assistant keeps
+          # EN | running the versions it loaded at boot until something
+          # EN | reloads them (homeassistant.reload_all covers every YAML
+          # EN | domain: scripts, shell commands, packages, templates).
+          # EN | A restart is the heavier one, and the only way to re-read
+          # EN | configuration.yaml itself — the dashboards declared there,
+          # EN | integrations, the http block.
+          # FR | RECHARGER et REDEMARRER — ni l un ni l autre n existait dans
+          # FR | le projet, et les deux servent a ce que fait cette console.
+          # FR | Un deploiement ecrit des packages et des scripts ; Home
+          # FR | Assistant continue d executer les versions chargees au
+          # FR | demarrage tant que rien ne les recharge
+          # FR | (homeassistant.reload_all couvre tous les domaines YAML :
+          # FR | scripts, shell_command, packages, templates). Le redemarrage
+          # FR | est le geste lourd, et le seul qui relise configuration.yaml
+          # FR | lui-meme — les dashboards qui y sont declares, les
+          # FR | integrations, le bloc http.
+          - type: grid
+            columns: 2
+            square: false
+            cards:
+              - type: custom:button-card
+                template: vssp_admin_button
+                icon: mdi:reload
+                name: "{{ t('admin.reload_config') }}"
+                label: "{{ t('admin.reload_config_hint') }}"
+                tap_action:
+                  action: call-service
+                  service: homeassistant.reload_all
+              - type: custom:button-card
+                template: vssp_admin_button
+                icon: mdi:restart
+                name: "{{ t('admin.restart_ha') }}"
+                label: "{{ t('admin.restart_ha_hint') }}"
+                variables:
+                  danger: true
+                tap_action:
+                  action: call-service
+                  service: homeassistant.restart
+                  confirmation:
+                    text: "{{ t('admin.restart_ha_confirm') }}"
 
 {% elif screen == 'dashboards' %}
           # EN | Generation controls, moved here from the old HOME view.

@@ -422,6 +422,16 @@ admin:
   updates_maintenance: MAINTENANCE
   updates_check: CHECK NOW
   updates_install_hacs: INSTALL EVERY INTEGRATION & CARD
+  reload_config: RELOAD CONFIGURATION
+  reload_config_hint: Re-reads scripts, packages and templates without downtime
+  restart_ha: RESTART HOME ASSISTANT
+  restart_ha_hint: The only way to re-read configuration.yaml — a minute of downtime
+  restart_ha_confirm: "Home Assistant restarts: every screen goes dark for about a minute, and automations stop meanwhile. Continue?"
+  reload_config: RELOAD CONFIGURATION
+  reload_config_hint: Re-reads scripts, packages and templates without downtime
+  restart_ha: RESTART HOME ASSISTANT
+  restart_ha_hint: The only way to re-read configuration.yaml — a minute of downtime
+  restart_ha_confirm: "Home Assistant restarts: every screen goes dark for about a minute, and automations stop meanwhile. Continue?"
   updates_auto: AUTOMATIC UPDATES
   updates_auto_enabled: Install automatically
   updates_auto_time: Every night at
