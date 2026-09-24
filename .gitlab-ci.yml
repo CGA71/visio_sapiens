@@ -1857,7 +1857,7 @@ deploy:production:
     - |
       if ssh ha "test -d /addons"; then
         ssh ha "mkdir -p /addons/vssp-vault"
-        scp addons/vssp-vault/config.yaml             addons/vssp-vault/Dockerfile             addons/vssp-vault/run.sh             ha:/addons/vssp-vault/
+        tar -C addons -czf - vssp-vault | ssh ha "tar xzf - -C /addons"
         echo "[OK] add-on vssp-vault copied to /addons"
         echo "     To pick it up: Settings > Add-ons > Add-on store >"
         echo "     three dots > Check for updates, then install it."
@@ -1867,12 +1867,12 @@ deploy:production:
         echo "       then Settings > Add-ons > Store > Check for updates."
       fi
     # --- EN | configuration.yaml patch: run inside the RUNNER (ruamel is
-    # ---      available there), then sent back over scp. More reliable than
+    # ---      available there), then sent back over ssh. More reliable than
     # ---      installing ruamel inside HAOS. The `ha backups new
     # ---      pre-$CI_COMMIT_TAG` above already covers a full rollback; the
     # ---      patcher additionally creates a .bak on the runner.
     # --- FR | PATCH configuration.yaml : execute dans le RUNNER (ruamel
-    # ---      dispo), puis renvoye par scp. Plus fiable que d'installer ruamel
+    # ---      dispo), puis renvoye par ssh. Plus fiable que d'installer ruamel
     # ---      dans HAOS. Le "ha backups new pre-$CI_COMMIT_TAG" ci-dessus
     # ---      couvre deja le rollback complet ; le patcher cree en plus un
     # ---      .bak cote runner.
@@ -1888,8 +1888,8 @@ deploy:production:
     # EN | live by vssp_rooms_apply.py) back to whatever placeholder rooms
     # EN | the repo declares. Merged here on the runner (ruamel available,
     # EN | same reasoning as the configuration.yaml patch below) rather than
-    # EN | inside HAOS: scp the two house.yaml copies down, merge just the
-    # EN | rooms: key locally, scp the result back up. Every other key
+    # EN | inside HAOS: read the two house.yaml copies down, merge just the
+    # EN | rooms: key locally, write the result back up. Every other key
     # EN | (theme, nav_system, room_icons, locale/format...) still comes
     # EN | from this fresh build. Missing old copy (first-ever deploy) is
     # EN | fine: the script leaves the fresh rooms: alone in that case.
@@ -1898,22 +1898,50 @@ deploy:production:
     # FR | au pod, ecrit en direct par vssp_rooms_apply.py) aux pieces
     # FR | placeholder que le depot declare. Fusionne ici sur le runner
     # FR | (ruamel disponible, meme raisonnement que le patch de
-    # FR | configuration.yaml plus bas) plutot que dans HAOS : scp des deux
-    # FR | copies de house.yaml, fusion de la seule cle rooms: en local, scp
+    # FR | configuration.yaml plus bas) plutot que dans HAOS : lecture des deux
+    # FR | copies de house.yaml, fusion de la seule cle rooms: en local, puis
     # FR | du resultat en retour. Toutes les autres cles (theme, nav_system,
     # FR | room_icons, locale/format...) continuent de venir de ce build
     # FR | frais. Copie ancienne absente (tout premier deploiement) : sans
     # FR | probleme, le script laisse alors le rooms: frais tel quel.
+    # EN | NO scp ANYWHERE IN THIS JOB. HAOS's ssh does not offer the sftp
+    # EN | subsystem, and OpenSSH 9 scp speaks sftp by default, so every
+    # EN | transfer died with "subsystem request failed on channel 0 / scp:
+    # EN | Connection closed" - the v1.0.0 deployment failed on the very
+    # EN | first one. `cat | ssh` and `tar | ssh` need nothing but a shell on
+    # EN | the far side, which is exactly how the package itself is already
+    # EN | sent a few lines above.
+    # EN | A download redirects into a local file, so a failed ssh would
+    # EN | leave an EMPTY one that looks like a valid answer: every download
+    # EN | is therefore checked, and the optional ones are deleted when empty
+    # EN | so that "absent" stays distinguishable from "empty".
+    # FR | AUCUN scp DANS CE JOB. Le ssh de HAOS n offre pas le sous-systeme
+    # FR | sftp, et le scp d OpenSSH 9 parle sftp par defaut : chaque
+    # FR | transfert mourait sur « subsystem request failed on channel 0 /
+    # FR | scp: Connection closed » - le deploiement de la v1.0.0 a echoue
+    # FR | des le premier. `cat | ssh` et `tar | ssh` n exigent rien d autre
+    # FR | qu un shell en face, ce qui est deja exactement la maniere dont le
+    # FR | paquet lui-meme est envoye quelques lignes plus haut.
+    # FR | Un telechargement redirige vers un fichier local, donc un ssh rate
+    # FR | laisserait un fichier VIDE qui a l air d une reponse valable :
+    # FR | chaque telechargement est donc verifie, et les facultatifs sont
+    # FR | supprimes s ils sont vides pour que « absent » reste distinct de
+    # FR | « vide ».
     - |
-      scp ha:$HA_CFG/dashboards/model/house.yaml /tmp/prod_house.yaml
-      scp ha:$HA_CFG/dashboards.old/model/house.yaml /tmp/prod_house.yaml.old 2>/dev/null || true
-      scp ha:$HA_CFG/vssp/house.yaml.live /tmp/prod_house.yaml.live 2>/dev/null || true
+      ssh ha "cat $HA_CFG/dashboards/model/house.yaml" > /tmp/prod_house.yaml         || { echo "[ERR] cannot read the production house.yaml"; exit 1; }
+      [ -s /tmp/prod_house.yaml ] || { echo "[ERR] production house.yaml is empty"; exit 1; }
+      ssh ha "cat $HA_CFG/dashboards.old/model/house.yaml 2>/dev/null" > /tmp/prod_house.yaml.old || true
+      [ -s /tmp/prod_house.yaml.old ] || rm -f /tmp/prod_house.yaml.old
+      ssh ha "cat $HA_CFG/vssp/house.yaml.live 2>/dev/null" > /tmp/prod_house.yaml.live || true
+      [ -s /tmp/prod_house.yaml.live ] || rm -f /tmp/prod_house.yaml.live
       python3 /tmp/vssp_pkg/vssp/vssp_preserve_rooms.py \
         --old /tmp/prod_house.yaml.old \
         --fallback /tmp/prod_house.yaml.live \
         --new /tmp/prod_house.yaml
-      scp /tmp/prod_house.yaml ha:$HA_CFG/dashboards/model/house.yaml
-    - scp ha:$HA_CFG/configuration.yaml /tmp/prod_configuration.yaml
+      cat /tmp/prod_house.yaml | ssh ha "cat > $HA_CFG/dashboards/model/house.yaml"
+    - |
+      ssh ha "cat $HA_CFG/configuration.yaml" > /tmp/prod_configuration.yaml         || { echo "[ERR] cannot read the production configuration.yaml"; exit 1; }
+      [ -s /tmp/prod_configuration.yaml ] || { echo "[ERR] production configuration.yaml is empty"; exit 1; }
     # EN | local safety net / FR | filet local
     - cp /tmp/prod_configuration.yaml /tmp/prod_configuration.yaml.pre
     # EN | Same guard as staging: refuse to patch production from a fragment
@@ -1960,7 +1988,7 @@ deploy:production:
     - |
       python3 /tmp/vssp_pkg/vssp/vssp_sanitize_resources.py \
         --config /tmp/prod_configuration.yaml || { echo "[ERR] sanitize resources failed"; exit 1; }
-    - scp /tmp/prod_configuration.yaml ha:$HA_CFG/configuration.yaml
+    - cat /tmp/prod_configuration.yaml | ssh ha "cat > $HA_CFG/configuration.yaml"
     - |
       if ! ssh ha "ha core check"; then
         echo "[ERR] Invalid config - rolling back production"
@@ -1969,7 +1997,7 @@ deploy:production:
         done"
         # EN | Restore the pre-patch configuration.yaml
         # FR | Restaurer le configuration.yaml d'avant patch
-        scp /tmp/prod_configuration.yaml.pre ha:$HA_CFG/configuration.yaml && echo "[rollback] configuration.yaml restored (pre-patch)"
+        cat /tmp/prod_configuration.yaml.pre | ssh ha "cat > $HA_CFG/configuration.yaml" && echo "[rollback] configuration.yaml restored (pre-patch)"
         exit 1
       fi
     - |
