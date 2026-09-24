@@ -149,7 +149,7 @@ command_line:
       payload_off: "OFF"
       # Pas de device_class : « on » signifie ici « present », pas
       # « probleme ». Un device_class: problem inverserait le sens.
-      scan_interval: 60
+      scan_interval: 30
 
   - binary_sensor:
       name: "VSSP Dashboard Energy Present"
@@ -161,7 +161,7 @@ command_line:
       payload_off: "OFF"
       # Pas de device_class : « on » signifie ici « present », pas
       # « probleme ». Un device_class: problem inverserait le sens.
-      scan_interval: 60
+      scan_interval: 30
 
   - binary_sensor:
       name: "VSSP Dashboard Core Present"
@@ -173,7 +173,7 @@ command_line:
       payload_off: "OFF"
       # Pas de device_class : « on » signifie ici « present », pas
       # « probleme ». Un device_class: problem inverserait le sens.
-      scan_interval: 60
+      scan_interval: 30
 
   # Nombre d'appareils REELLEMENT ecrits dans le modele. A comparer a
   # sensor.vssp_appareils_mesures (ce que HA expose) : un ecart entre
@@ -757,7 +757,19 @@ script:
       # au prochain affichage (HA compare la date du fichier). Seul
       # l'onglet deja ouvert garde l'ancienne version en memoire.
       # 3. Laisser le capteur d'existence se rafraichir avant le message
-      - delay: "00:00:05"
+      # EN | The screen reads this sensor, and it polls the disk every 30 s:
+      # EN | without this, the row's toggle and the navigation rail kept the
+      # EN | old state for up to half a minute after the file had moved. The
+      # EN | shell_command above is awaited, so the file is in its final
+      # EN | state here and one poll tells the truth.
+      # FR | L'ecran lit ce capteur, qui interroge le disque toutes les 30 s :
+      # FR | sans ceci, l'interrupteur de la ligne et le bandeau de navigation
+      # FR | gardaient l'ancien etat pendant une demi-minute apres le
+      # FR | deplacement du fichier. Le shell_command ci-dessus est attendu,
+      # FR | le fichier est donc dans son etat final ici et une lecture suffit.
+      - service: homeassistant.update_entity
+        target:
+          entity_id: binary_sensor.vssp_dashboard_energy_present
       - service: persistent_notification.create
         data:
           title: "Visio Sapiens — Dashboard ENERGY"
@@ -788,6 +800,19 @@ script:
       # dans Home Assistant. Un dashboard en mode YAML est relu tout seul
       # au prochain affichage (HA compare la date du fichier). Seul
       # l'onglet deja ouvert garde l'ancienne version en memoire.
+      # EN | The screen reads this sensor, and it polls the disk every 30 s:
+      # EN | without this, the row's toggle and the navigation rail kept the
+      # EN | old state for up to half a minute after the file had moved. The
+      # EN | shell_command above is awaited, so the file is in its final
+      # EN | state here and one poll tells the truth.
+      # FR | L'ecran lit ce capteur, qui interroge le disque toutes les 30 s :
+      # FR | sans ceci, l'interrupteur de la ligne et le bandeau de navigation
+      # FR | gardaient l'ancien etat pendant une demi-minute apres le
+      # FR | deplacement du fichier. Le shell_command ci-dessus est attendu,
+      # FR | le fichier est donc dans son etat final ici et une lecture suffit.
+      - service: homeassistant.update_entity
+        target:
+          entity_id: binary_sensor.vssp_dashboard_energy_present
       - service: persistent_notification.create
         data:
           title: "Visio Sapiens — Dashboard ENERGY régénéré"
@@ -828,6 +853,19 @@ script:
     sequence:
       - service: shell_command.vssp_backup_energy
       - service: shell_command.vssp_delete_energy
+      # EN | The screen reads this sensor, and it polls the disk every 30 s:
+      # EN | without this, the row's toggle and the navigation rail kept the
+      # EN | old state for up to half a minute after the file had moved. The
+      # EN | shell_command above is awaited, so the file is in its final
+      # EN | state here and one poll tells the truth.
+      # FR | L'ecran lit ce capteur, qui interroge le disque toutes les 30 s :
+      # FR | sans ceci, l'interrupteur de la ligne et le bandeau de navigation
+      # FR | gardaient l'ancien etat pendant une demi-minute apres le
+      # FR | deplacement du fichier. Le shell_command ci-dessus est attendu,
+      # FR | le fichier est donc dans son etat final ici et une lecture suffit.
+      - service: homeassistant.update_entity
+        target:
+          entity_id: binary_sensor.vssp_dashboard_energy_present
       - service: persistent_notification.create
         data:
           title: "Visio Sapiens — Dashboard ENERGY désactivé"
@@ -852,7 +890,19 @@ script:
       # Pas de service de rechargement : `lovelace.reload` n'existe pas
       # dans Home Assistant. Un dashboard en mode YAML est relu tout seul
       # au prochain affichage (HA compare la date du fichier).
-      - delay: "00:00:05"
+      # EN | The screen reads this sensor, and it polls the disk every 30 s:
+      # EN | without this, the row's toggle and the navigation rail kept the
+      # EN | old state for up to half a minute after the file had moved. The
+      # EN | shell_command above is awaited, so the file is in its final
+      # EN | state here and one poll tells the truth.
+      # FR | L'ecran lit ce capteur, qui interroge le disque toutes les 30 s :
+      # FR | sans ceci, l'interrupteur de la ligne et le bandeau de navigation
+      # FR | gardaient l'ancien etat pendant une demi-minute apres le
+      # FR | deplacement du fichier. Le shell_command ci-dessus est attendu,
+      # FR | le fichier est donc dans son etat final ici et une lecture suffit.
+      - service: homeassistant.update_entity
+        target:
+          entity_id: binary_sensor.vssp_dashboard_home_present
       - service: persistent_notification.create
         data:
           title: "Visio Sapiens — Dashboard HOME"
@@ -874,6 +924,19 @@ script:
     sequence:
       - service: shell_command.vssp_backup_home
       - service: shell_command.vssp_regenerate_home
+      # EN | The screen reads this sensor, and it polls the disk every 30 s:
+      # EN | without this, the row's toggle and the navigation rail kept the
+      # EN | old state for up to half a minute after the file had moved. The
+      # EN | shell_command above is awaited, so the file is in its final
+      # EN | state here and one poll tells the truth.
+      # FR | L'ecran lit ce capteur, qui interroge le disque toutes les 30 s :
+      # FR | sans ceci, l'interrupteur de la ligne et le bandeau de navigation
+      # FR | gardaient l'ancien etat pendant une demi-minute apres le
+      # FR | deplacement du fichier. Le shell_command ci-dessus est attendu,
+      # FR | le fichier est donc dans son etat final ici et une lecture suffit.
+      - service: homeassistant.update_entity
+        target:
+          entity_id: binary_sensor.vssp_dashboard_home_present
       - service: persistent_notification.create
         data:
           title: "Visio Sapiens — Dashboard HOME régénéré"
@@ -892,6 +955,19 @@ script:
     sequence:
       - service: shell_command.vssp_backup_home
       - service: shell_command.vssp_delete_home
+      # EN | The screen reads this sensor, and it polls the disk every 30 s:
+      # EN | without this, the row's toggle and the navigation rail kept the
+      # EN | old state for up to half a minute after the file had moved. The
+      # EN | shell_command above is awaited, so the file is in its final
+      # EN | state here and one poll tells the truth.
+      # FR | L'ecran lit ce capteur, qui interroge le disque toutes les 30 s :
+      # FR | sans ceci, l'interrupteur de la ligne et le bandeau de navigation
+      # FR | gardaient l'ancien etat pendant une demi-minute apres le
+      # FR | deplacement du fichier. Le shell_command ci-dessus est attendu,
+      # FR | le fichier est donc dans son etat final ici et une lecture suffit.
+      - service: homeassistant.update_entity
+        target:
+          entity_id: binary_sensor.vssp_dashboard_home_present
       - service: persistent_notification.create
         data:
           title: "Visio Sapiens — Dashboard HOME désactivé"
@@ -912,7 +988,19 @@ script:
     alias: "Visio Sapiens — Créer le dashboard CORE"
     sequence:
       - service: shell_command.vssp_create_core
-      - delay: "00:00:05"
+      # EN | The screen reads this sensor, and it polls the disk every 30 s:
+      # EN | without this, the row's toggle and the navigation rail kept the
+      # EN | old state for up to half a minute after the file had moved. The
+      # EN | shell_command above is awaited, so the file is in its final
+      # EN | state here and one poll tells the truth.
+      # FR | L'ecran lit ce capteur, qui interroge le disque toutes les 30 s :
+      # FR | sans ceci, l'interrupteur de la ligne et le bandeau de navigation
+      # FR | gardaient l'ancien etat pendant une demi-minute apres le
+      # FR | deplacement du fichier. Le shell_command ci-dessus est attendu,
+      # FR | le fichier est donc dans son etat final ici et une lecture suffit.
+      - service: homeassistant.update_entity
+        target:
+          entity_id: binary_sensor.vssp_dashboard_core_present
       - service: persistent_notification.create
         data:
           title: "Visio Sapiens — Dashboard CORE"
@@ -932,6 +1020,19 @@ script:
     sequence:
       - service: shell_command.vssp_backup_core
       - service: shell_command.vssp_regenerate_core
+      # EN | The screen reads this sensor, and it polls the disk every 30 s:
+      # EN | without this, the row's toggle and the navigation rail kept the
+      # EN | old state for up to half a minute after the file had moved. The
+      # EN | shell_command above is awaited, so the file is in its final
+      # EN | state here and one poll tells the truth.
+      # FR | L'ecran lit ce capteur, qui interroge le disque toutes les 30 s :
+      # FR | sans ceci, l'interrupteur de la ligne et le bandeau de navigation
+      # FR | gardaient l'ancien etat pendant une demi-minute apres le
+      # FR | deplacement du fichier. Le shell_command ci-dessus est attendu,
+      # FR | le fichier est donc dans son etat final ici et une lecture suffit.
+      - service: homeassistant.update_entity
+        target:
+          entity_id: binary_sensor.vssp_dashboard_core_present
       - service: persistent_notification.create
         data:
           title: "Visio Sapiens — Dashboard CORE régénéré"
@@ -949,6 +1050,19 @@ script:
     sequence:
       - service: shell_command.vssp_backup_core
       - service: shell_command.vssp_delete_core
+      # EN | The screen reads this sensor, and it polls the disk every 30 s:
+      # EN | without this, the row's toggle and the navigation rail kept the
+      # EN | old state for up to half a minute after the file had moved. The
+      # EN | shell_command above is awaited, so the file is in its final
+      # EN | state here and one poll tells the truth.
+      # FR | L'ecran lit ce capteur, qui interroge le disque toutes les 30 s :
+      # FR | sans ceci, l'interrupteur de la ligne et le bandeau de navigation
+      # FR | gardaient l'ancien etat pendant une demi-minute apres le
+      # FR | deplacement du fichier. Le shell_command ci-dessus est attendu,
+      # FR | le fichier est donc dans son etat final ici et une lecture suffit.
+      - service: homeassistant.update_entity
+        target:
+          entity_id: binary_sensor.vssp_dashboard_core_present
       - service: persistent_notification.create
         data:
           title: "Visio Sapiens — Dashboard CORE désactivé"
