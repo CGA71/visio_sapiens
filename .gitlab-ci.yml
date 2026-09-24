@@ -1983,6 +1983,41 @@ deploy:production:
           --locale \"\$LOCALE\" \
           --out /config/dashboards/views
       '" || { echo "[ERR] regeneration on the instance failed"; exit 1; }
+    # --- EN | THE THEME, REBUILT FROM THE INSTANCE'S OWN DESIGN MODEL ----
+    # --- FR | LE THEME, RECONSTRUIT DEPUIS LE MODELE DE L INSTANCE -------
+    # EN | themes/ is rotated wholesale a few steps above, exactly like
+    # EN | dashboards/, and the package puts the repository's default theme in
+    # EN | its place. But themes/visio_sapiens.yaml is not repository content
+    # EN | on a live instance: it is what the graphical THEME editor writes,
+    # EN | so a tag repainted the house in the project's colours and threw
+    # EN | away whatever the owner had designed. Staging has regenerated it
+    # EN | from design_system.yaml since the beginning; production never did.
+    # EN | design_system.yaml itself is preserved by the step above, so this
+    # EN | rebuild has the owner's design to work from - the editor's own
+    # EN | APPLY button runs this very command.
+    # FR | themes/ est remplace en bloc quelques etapes plus haut, exactement
+    # FR | comme dashboards/, et le paquet y depose le theme par defaut du
+    # FR | depot. Or themes/visio_sapiens.yaml n est pas du contenu de depot
+    # FR | sur une instance vivante : c est ce qu ecrit l editeur graphique de
+    # FR | THEME, donc un tag repeignait la maison aux couleurs du projet et
+    # FR | jetait ce que le proprietaire avait dessine. Le staging le
+    # FR | regenere depuis design_system.yaml depuis le debut ; la production
+    # FR | ne l a jamais fait. design_system.yaml lui-meme est preserve par
+    # FR | l etape ci-dessus, cette reconstruction a donc le dessin du
+    # FR | proprietaire sous la main - le bouton APPLIQUER de l editeur lance
+    # FR | exactement cette commande.
+    - |
+      ssh ha "docker exec homeassistant sh -c '
+        LOCALE=\$(cat /config/VSSP_LOCALE 2>/dev/null || echo en)
+        python3 /config/vssp/generate_dashboards.py --only theme \
+          --model /config/dashboards/model/house.yaml \
+          --design-model /config/dashboards/model/design_system.yaml \
+          --templates /config/dashboards/templates_j2 \
+          --locales-dir /config/dashboards/locales \
+          --locale \"\$LOCALE\" \
+          --themes-out /config/themes \
+          --design-status-file /config/www/vssp/design_system_status.json
+      '" || { echo "[ERR] theme rebuild on the instance failed"; exit 1; }
     - |
       ssh ha "cat $HA_CFG/configuration.yaml" > /tmp/prod_configuration.yaml         || { echo "[ERR] cannot read the production configuration.yaml"; exit 1; }
       [ -s /tmp/prod_configuration.yaml ] || { echo "[ERR] production configuration.yaml is empty"; exit 1; }
