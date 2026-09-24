@@ -643,8 +643,16 @@ def run(args) -> int:
     last = ""
     for label, base, ws_path, _api, route_token in routes:
         try:
+            # EN | The Supervisor's proxy gate is HTTP-level and separate
+            # EN | from Home Assistant's own auth message - see vssp_ws.py.
+            # EN | The long-lived-token route has no such gate.
+            # FR | La porte du proxy du Superviseur est de niveau HTTP et
+            # FR | separee du message d authentification de Home Assistant
+            # FR | - voir vssp_ws.py. La route au jeton longue duree n a
+            # FR | pas cette porte.
+            bearer = route_token if label == "supervisor" else None
             ws = connected(base, route_token, timeout=args.timeout,
-                           path=ws_path)
+                           path=ws_path, bearer=bearer)
             report["auth"] = label
             print(f"[i] authenticated through {label}")
             break

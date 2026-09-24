@@ -83,7 +83,8 @@ class MiniWS:
     FR | texte uniquement."""
 
     def __init__(self, base_url: str, timeout: float = 20.0,
-                 path: str = "/api/websocket"):
+                 path: str = "/api/websocket",
+                 bearer: str | None = None):
         parsed = urllib.parse.urlsplit(base_url)
         self.secure = parsed.scheme == "https"
         self.host = parsed.hostname or "localhost"
@@ -104,6 +105,38 @@ class MiniWS:
         # FR | s authentifier avec SUPERVISOR_TOKEN plutot qu avec un jeton
         # FR | longue duree que quelqu un a du creer a la main.
         self.path = path or "/api/websocket"
+        # EN | THE PROXY'S OWN GATE, SEPARATE FROM HOME ASSISTANT'S.
+        # EN | Wrong the first time this was written: SUPERVISOR_TOKEN was
+        # EN | sent only inside the post-handshake `auth` message, the same
+        # EN | way a long-lived token is. Home Assistant Core's own auth
+        # EN | handler does not recognise it there and answered "Invalid
+        # EN | access" - confirmed live, on the production box. The
+        # EN | Supervisor's documentation says plainly that every endpoint
+        # EN | it marks locked, GET /core/websocket included, wants its
+        # EN | token "with an authorization header with a Bearer token" -
+        # EN | an HTTP header on the upgrade request itself, a layer below
+        # EN | anything Home Assistant's own websocket protocol carries.
+        # EN | Once the Supervisor's proxy has let the request through on
+        # EN | that header, Home Assistant's own `auth_required` /
+        # EN | `auth` exchange still happens exactly as before - this
+        # EN | header adds a gate, it does not replace one.
+        # FR | LA PORTE DU PROXY, SEPAREE DE CELLE DE HOME ASSISTANT.
+        # FR | Faux la premiere fois que ceci a ete ecrit : SUPERVISOR_TOKEN
+        # FR | n etait envoye que dans le message `auth` d apres la
+        # FR | poignee de main, comme un jeton longue duree. Le gestionnaire
+        # FR | d authentification de Home Assistant Core ne le reconnait
+        # FR | pas la et a repondu « Invalid access » - confirme en direct,
+        # FR | sur la machine de production. La documentation du
+        # FR | Superviseur dit clairement que chaque point d acces qu il
+        # FR | marque verrouille, GET /core/websocket compris, veut son
+        # FR | jeton « avec un en-tete d autorisation Bearer » - un en-tete
+        # FR | HTTP sur la requete de mise a niveau elle-meme, une couche en
+        # FR | dessous de tout ce que porte le protocole websocket de Home
+        # FR | Assistant. Une fois le proxy du Superviseur franchi grace a
+        # FR | cet en-tete, l echange `auth_required` / `auth` de Home
+        # FR | Assistant a lieu exactement comme avant - cet en-tete ajoute
+        # FR | une porte, il n en remplace aucune.
+        self.bearer = bearer
         self.timeout = timeout
         self.sock: socket.socket | None = None
         self._buf = b""
@@ -126,6 +159,8 @@ class MiniWS:
             f"Sec-WebSocket-Key: {key}\r\n"
             "Sec-WebSocket-Version: 13\r\n\r\n"
         )
+        if self.bearer:
+            handshake = handshake[:-2] + f"Authorization: Bearer {self.bearer}\r\n\r\n"
         raw.sendall(handshake.encode())
         # EN | Read response headers only; anything after the blank line is
         # EN | already frame data and must stay in the buffer.
@@ -278,10 +313,17 @@ def resolve_token(token: str | None = None,
 
 
 def connected(url: str, token: str, timeout: float = 20.0,
-              path: str = "/api/websocket") -> MiniWS:
+              path: str = "/api/websocket",
+              bearer: str | None = None) -> MiniWS:
     """EN | Open and authenticate in one call — the caller closes it.
-    FR | Ouvre et authentifie en un appel — l'appelant referme."""
-    ws = MiniWS(url, timeout=timeout, path=path)
+    EN | `bearer` is the Supervisor proxy's own HTTP-level gate; omit it
+    EN | for a direct connection to Home Assistant's own /api/websocket,
+    EN | which has no such gate.
+    FR | Ouvre et authentifie en un appel — l'appelant referme.
+    FR | `bearer` est la porte HTTP propre au proxy du Superviseur ; on
+    FR | l'omet pour une connexion directe a /api/websocket de Home
+    FR | Assistant, qui n'a pas cette porte."""
+    ws = MiniWS(url, timeout=timeout, path=path, bearer=bearer)
     ws.connect()
     ws.authenticate(token)
     return ws
