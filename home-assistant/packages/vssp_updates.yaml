@@ -933,6 +933,58 @@ script:
             l'écran MISES À JOUR.
             {% endif %}
 
+  # EN | LOOK — read-only, and the answer is on screen in a second.
+  # FR | REGARDER — lecture seule, et la reponse est a l ecran en une
+  # FR | seconde.
+  vssp_deps_check:
+    alias: "Visio Sapiens — Dépendances : vérifier"
+    icon: mdi:magnify-scan
+    mode: single
+    sequence:
+      - action: shell_command.vssp_deps_check
+      - action: homeassistant.update_entity
+        target:
+          entity_id:
+            - sensor.vssp_dependencies
+            - sensor.vssp_dependencies_status
+
+  # EN | INSTALL — and then watch, because the command came back before the
+  # EN | work did. The report file is rewritten after every item, so
+  # EN | re-reading it every ten seconds turns a detached background run
+  # EN | into a list that fills in under your eyes. Three minutes is what a
+  # EN | first install takes on an ordinary connection; after that the
+  # EN | sensor's own five-minute cycle carries on, and the screen is never
+  # EN | more than that behind.
+  # EN | `mode: single` so a second press while it works does nothing: two
+  # EN | HACS downloads of the same repository at the same time is how you
+  # EN | get half a card on disk.
+  # FR | INSTALLER — puis regarder, parce que la commande est revenue avant
+  # FR | le travail. Le fichier de rapport est reecrit apres chaque element,
+  # FR | donc le relire toutes les dix secondes transforme une execution
+  # FR | detachee en une liste qui se remplit sous les yeux. Trois minutes,
+  # FR | c est ce que prend une premiere installation sur une connexion
+  # FR | ordinaire ; ensuite le cycle de cinq minutes du capteur prend le
+  # FR | relais, et l ecran n est jamais en retard de plus que cela.
+  # FR | `mode: single` pour qu une seconde pression pendant le travail ne
+  # FR | fasse rien : deux telechargements HACS du meme depot en meme temps,
+  # FR | c est ainsi qu on obtient une demi-carte sur le disque.
+  vssp_deps_install:
+    alias: "Visio Sapiens — Dépendances : installer"
+    icon: mdi:download-network-outline
+    mode: single
+    sequence:
+      - action: shell_command.vssp_deps_install
+      - repeat:
+          count: 18
+          sequence:
+            - delay:
+                seconds: 10
+            - action: homeassistant.update_entity
+              target:
+                entity_id:
+                  - sensor.vssp_dependencies
+                  - sensor.vssp_dependencies_status
+
 # ═══════════════════════════════════════════════════════════════════════
 # EN | AUTOMATION — the nightly pass
 # FR | AUTOMATISATION — la passe nocturne
@@ -1111,6 +1163,60 @@ command_line:
         - generated
         - generated
 
+  # EN | THE DEPENDENCY REPORT. Same two-file shape as the infra probe
+  # EN | above, for the same reason: this one says what each dependency is
+  # EN | and where it stands, the next one says whether the last run was
+  # EN | able to look at all. The state is what is WRONG — missing plus
+  # EN | failed — because that is the number a badge shows and the number a
+  # EN | press is supposed to bring to zero.
+  # EN | `|| echo {}` is not defensive noise: before the first run the file
+  # EN | does not exist, and a sensor that logs an error every five minutes
+  # EN | on a perfectly normal fresh install trains you to ignore the log.
+  # FR | LE RAPPORT DE DEPENDANCES. Meme forme a deux fichiers que la sonde
+  # FR | d infrastructure ci-dessus, pour la meme raison : celui-ci dit ce
+  # FR | qu est chaque dependance et ou elle en est, le suivant dit si la
+  # FR | derniere execution a pu regarder quoi que ce soit. L etat est ce
+  # FR | qui NE VA PAS — manquantes plus echecs — parce que c est le nombre
+  # FR | qu affiche une pastille et le nombre qu une pression est censee
+  # FR | ramener a zero.
+  # FR | `|| echo {}` n est pas du bruit defensif : avant la premiere
+  # FR | execution le fichier n existe pas, et un capteur qui journalise une
+  # FR | erreur toutes les cinq minutes sur une installation neuve
+  # FR | parfaitement normale apprend a ignorer le journal.
+  - sensor:
+      name: "VSSP Dependencies"
+      unique_id: vssp_dependencies
+      command: "cat /config/www/vssp/dependencies.json 2>/dev/null || echo '{}'"
+      command_timeout: 15
+      scan_interval: 300
+      value_template: >-
+        {{ (value_json.counts | default({})).missing | default(0) | int(0)
+           + (value_json.counts | default({})).failed | default(0) | int(0) }}
+      json_attributes:
+        - items
+        - counts
+        - hacs
+        - resources_mode
+        - restart_required
+        - reload_required
+        - running
+        - action
+
+  - sensor:
+      name: "VSSP Dependencies status"
+      unique_id: vssp_dependencies_status
+      command: "cat /config/www/vssp/dependencies_status.json 2>/dev/null || echo '{}'"
+      command_timeout: 15
+      scan_interval: 60
+      value_template: >-
+        {% if value_json.ok is not defined %}unknown
+        {%- elif value_json.ok %}ok
+        {%- else %}error{% endif %}
+      json_attributes:
+        - message
+        - message_key
+        - generated
+
 shell_command:
   # EN | THREE COMMANDS, and none of them takes anything a user typed.
   # EN | `--install` receives `component`, and the only caller that sets it
@@ -1138,3 +1244,59 @@ shell_command:
     python3 /config/vssp/vssp_infra_updates.py --install-auto
     --out /config/www/vssp/infra_updates.json
     --status /config/www/vssp/infra_updates_status.json
+
+  # EN | THE DEPENDENCIES — the cards a Visio Sapiens dashboard is drawn
+  # EN | with, and the five files of its own that Home Assistant only loads
+  # EN | once they are registered as Lovelace resources. See the header of
+  # EN | vssp_dependencies.py for why this is a press rather than a step of
+  # EN | the release pipeline.
+  # FR | LES DEPENDANCES — les cartes avec lesquelles un dashboard Visio
+  # FR | Sapiens est dessine, et les cinq fichiers qui lui appartiennent que
+  # FR | Home Assistant ne charge qu une fois enregistres comme ressources
+  # FR | Lovelace. Voir l en-tete de vssp_dependencies.py pour la raison
+  # FR | d une pression plutot que d une etape du pipeline de livraison.
+  #
+  # EN | READ-ONLY, and fast: it lists, it compares, it writes two files.
+  # FR | LECTURE SEULE, et rapide : il liste, il compare, il ecrit deux
+  # FR | fichiers.
+  vssp_deps_check: >-
+    python3 /config/vssp/vssp_dependencies.py --action check
+    --out /config/www/vssp/dependencies.json
+    --status /config/www/vssp/dependencies_status.json
+
+  # EN | THE INSTALL, DETACHED ON PURPOSE. A shell_command is killed after
+  # EN | 60 seconds — that is Home Assistant's limit and it is not
+  # EN | configurable. Downloading a dozen repositories from GitHub goes
+  # EN | past it on any ordinary connection, and a run killed halfway is the
+  # EN | worst outcome: half the cards installed and a screen that says
+  # EN | nothing. So this returns immediately and the work continues in the
+  # EN | background, writing its progress into dependencies.json after every
+  # EN | item; the script below refreshes the screen while it runs.
+  # EN | THE ABSENCE OF A TEMPLATE IN THIS COMMAND IS LOAD-BEARING: Home
+  # EN | Assistant runs a shell_command through a real shell only when it
+  # EN | contains no Jinja. Add a `{{ … }}` here and the command is handed to
+  # EN | exec instead, where `&` is not an operator but an argument, and the
+  # EN | detachment silently stops working. The language is resolved by the
+  # EN | script itself (it reads input_select.vssp_language over the API)
+  # EN | precisely so that no template is needed here.
+  # FR | L INSTALLATION, DETACHEE A DESSEIN. Un shell_command est tue au
+  # FR | bout de 60 secondes — c est la limite de Home Assistant et elle
+  # FR | n est pas reglable. Telecharger une douzaine de depots depuis
+  # FR | GitHub la depasse sur toute connexion ordinaire, et une execution
+  # FR | tuee en cours de route est le pire resultat : la moitie des cartes
+  # FR | installees et un ecran qui ne dit rien. Celle-ci rend donc la main
+  # FR | immediatement et le travail continue en arriere-plan, ecrivant sa
+  # FR | progression dans dependencies.json apres chaque element ; le script
+  # FR | ci-dessous rafraichit l ecran pendant ce temps.
+  # FR | L ABSENCE DE TEMPLATE DANS CETTE COMMANDE EST PORTEUSE : Home
+  # FR | Assistant ne passe un shell_command par un vrai shell que s il ne
+  # FR | contient aucun Jinja. Ajoutez un `{{ … }}` ici et la commande part
+  # FR | vers exec, ou `&` n est plus un operateur mais un argument, et le
+  # FR | detachement cesse de fonctionner en silence. La langue est resolue
+  # FR | par le script lui-meme (il lit input_select.vssp_language via
+  # FR | l API) precisement pour qu aucun template ne soit necessaire ici.
+  vssp_deps_install: >-
+    sh -c "nohup python3 /config/vssp/vssp_dependencies.py --action install
+    --out /config/www/vssp/dependencies.json
+    --status /config/www/vssp/dependencies_status.json
+    >> /config/vssp/dependencies.log 2>&1 &"

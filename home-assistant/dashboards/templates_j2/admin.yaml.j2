@@ -2028,6 +2028,111 @@ views:
                   --ha-color-form-background: rgba(0, 30, 45, 0.55);
                 }
 
+          # EN | DEPENDENCIES — what this interface is actually made of.
+          # EN | A Visio Sapiens dashboard is drawn with a dozen community
+          # EN | cards and with five files of its own, and none of them
+          # EN | arrives with a deployment: HACS downloads the cards, and
+          # EN | Home Assistant loads the five files only once they are
+          # EN | registered as Lovelace resources. Until then the console is
+          # EN | a column of "Custom element doesn't exist" cards with no
+          # EN | styling, which reads as a broken release rather than as
+          # EN | missing parts.
+          # EN | So the list names each one and says WHAT NEEDS IT. The
+          # EN | sentence beside apexcharts-card is the difference between a
+          # EN | screen asking you to trust twelve repository names and a
+          # EN | screen you can check.
+          # EN | The state labels are not translated here: the script
+          # EN | publishes them already rendered in the interface language,
+          # EN | so the row and the heading above it cannot drift apart.
+          # FR | DEPENDANCES — ce dont cette interface est reellement faite.
+          # FR | Un dashboard Visio Sapiens est dessine avec une douzaine de
+          # FR | cartes communautaires et avec cinq fichiers qui lui
+          # FR | appartiennent, et aucun n arrive avec un deploiement : HACS
+          # FR | telecharge les cartes, et Home Assistant ne charge les cinq
+          # FR | fichiers qu une fois enregistres comme ressources Lovelace.
+          # FR | D ici la, la console est une colonne de cartes « Custom
+          # FR | element doesn t exist » sans aucun style, ce qui se lit
+          # FR | comme une livraison cassee plutot que comme des pieces
+          # FR | manquantes.
+          # FR | La liste nomme donc chacune et dit CE QUI EN A BESOIN. La
+          # FR | phrase a cote d apexcharts-card est la difference entre un
+          # FR | ecran qui demande de faire confiance a douze noms de depots
+          # FR | et un ecran qu on peut verifier.
+          # FR | Les libelles d etat ne sont pas traduits ici : le script
+          # FR | les publie deja rendus dans la langue de l interface, de
+          # FR | sorte que la ligne et le titre au-dessus d elle ne peuvent
+          # FR | pas diverger.
+          - type: markdown
+            title: "{{ t('admin.deps_title') }}"
+            content: |
+              {{ '{%' }} set kinds = {
+                'card':        '{{ t('admin.deps_cards') | js }}',
+                'integration': '{{ t('admin.deps_integrations') | js }}',
+                'resource':    '{{ t('admin.deps_resources') | js }}' } {{ '%}' }}
+              {%+ raw %}{% set items = state_attr('sensor.vssp_dependencies', 'items') or [] %}
+              {% set note = state_attr('sensor.vssp_dependencies_status', 'message') %}
+              {% if not items %}
+              _{% endraw +%}{{ t('admin.deps_never_checked') }}{%+ raw %}_
+              {% else %}
+              {% if note %}**{{ note }}**
+              {% endif %}
+              {% for kind in ['card', 'integration', 'resource'] %}
+              {% set group = items | selectattr('kind', 'eq', kind) | list %}
+              {% if group %}
+              **{{ kinds.get(kind, kind) }}**
+              {% for r in group %}
+              - {% if r.state in ['ok', 'added'] %}○{% elif r.state in ['missing', 'unknown', 'stale', 'restart'] %}⬤{% elif r.state == 'legacy' %}·{% else %}⚠{% endif %} {{ r.name }} · _{{ r.state_label }}_
+                {%- if r.why %} — {{ r.why }}{% endif %}
+              {% endfor %}
+              {% endif %}
+              {% endfor %}
+              {% endif %}{% endraw +%}
+            card_mod:
+              style: |
+                ha-card {
+                  background: var(--card-background-color, rgba(8,18,28,0.75)) !important;
+                  border: 1px solid rgba(0, 229, 255, 0.28) !important;
+                  border-radius: var(--ha-card-border-radius, 20px) !important;
+                }
+
+          # EN | Two presses, and the read-only one first. CHECK writes the
+          # EN | list above and changes nothing on the instance, so it is
+          # EN | the one to reach for when you are trying to understand a
+          # EN | screen rather than repair it. INSTALL downloads through
+          # EN | HACS and registers the resources; it returns at once and
+          # EN | the list above fills in over the next minutes, because a
+          # EN | dozen downloads from GitHub outlast the sixty seconds Home
+          # EN | Assistant gives a shell command.
+          # FR | Deux pressions, et celle en lecture seule d abord. VERIFIER
+          # FR | ecrit la liste ci-dessus et ne change rien sur l instance,
+          # FR | c est donc celle a choisir quand on cherche a comprendre un
+          # FR | ecran plutot qu a le reparer. INSTALLER telecharge via HACS
+          # FR | et enregistre les ressources ; elle rend la main aussitot
+          # FR | et la liste ci-dessus se remplit dans les minutes qui
+          # FR | suivent, une douzaine de telechargements GitHub depassant
+          # FR | les soixante secondes que Home Assistant accorde a une
+          # FR | commande shell.
+          - type: grid
+            columns: 2
+            square: false
+            cards:
+              - type: custom:button-card
+                template: vssp_admin_button
+                icon: mdi:magnify-scan
+                name: "{{ t('admin.deps_check') }}"
+                label: "{{ t('admin.deps_check_hint') }}"
+                tap_action:
+                  action: call-service
+                  service: script.vssp_deps_check
+              - type: custom:button-card
+                template: vssp_admin_button
+                icon: mdi:download-network-outline
+                name: "{{ t('admin.deps_install') }}"
+                label: "{{ t('admin.deps_install_hint') }}"
+                tap_action:
+                  action: call-service
+                  service: script.vssp_deps_install
+
           # EN | MAINTENANCE. CHECK NOW matters more than it looks:
           # EN | integrations poll on their own schedule, so an empty screen
           # EN | means "nothing found last time we asked", and only this

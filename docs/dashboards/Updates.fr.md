@@ -729,6 +729,149 @@ Le verdict est calculé une seule fois, dans `variables`, que button-card
 s'accordent donc au lieu de le recalculer chacun et de diverger sur une
 frame lente.
 
+## Les dépendances
+
+Les trois familles ci-dessus répondent à *qu'est-ce qui est périmé ?*.
+Celle-ci répond à une autre question, et sur une instance neuve c'est la
+plus urgente des deux : **ce dont cette interface est faite est-il
+seulement là ?**
+
+Un dashboard Visio Sapiens n'est pas dessiné avec les cartes natives de
+Home Assistant. Il lui faut une douzaine de cartes communautaires
+installées via HACS, une intégration HACS, et cinq fichiers qui lui
+appartiennent — `vssp.css`, `vssp.js` et trois composants web — qu'un
+déploiement copie dans `/config/www/vssp/` et que Home Assistant ignore
+ensuite tant qu'ils ne sont pas **enregistrés comme ressources
+Lovelace**.
+
+Aucune des deux moitiés n'arrive toute seule. D'ici là, la console est
+une colonne de cartes d'erreur `Custom element doesn't exist` sans aucun
+style, ce qui se lit comme une livraison cassée plutôt que comme des
+pièces manquantes.
+
+### Pourquoi un bouton et non une étape du pipeline
+
+Le pipeline de livraison ne peut pas atteindre le HACS de quelqu'un qui a
+installé Visio Sapiens depuis le magasin HACS — il n'existe aucun pipeline
+dans ce sens-là. Et un déploiement qui télécharge en silence une douzaine
+de dépôts tiers sur le serveur d'une maison n'est pas une chose que son
+propriétaire a demandée.
+
+C'est donc une pression, sur l'écran où vivent déjà les autres choses qui
+installent : on voit ce qui manque, on voit ce qui en a besoin, et on
+décide.
+
+### Ce que montre l'écran
+
+`sensor.vssp_dependencies` porte une ligne par dépendance, et chaque
+ligne dit **ce qui en a besoin**. Cette phrase est tout l'intérêt de la
+liste : douze noms de dépôts demandent qu'on leur fasse confiance, tandis
+que « les graphiques d'énergie » à côté d'`apexcharts-card` permet de
+vérifier.
+
+| État | Signification |
+|---|---|
+| installée | présente, rien à faire |
+| manquante | HACS connaît ce dépôt et ne l'a pas téléchargé |
+| absente de HACS | HACS est absent, ou ce dépôt n'est pas dans son magasin |
+| redémarrage requis | une intégration a été téléchargée ; Home Assistant ne charge les composants personnalisés qu'au démarrage |
+| tampon de cache périmé | la ressource est enregistrée, mais pour une autre version du fichier |
+| fichier absent | le fichier n'est pas sur l'instance — un déploiement qui n'est pas allé au bout |
+| obsolète | une ressource enregistrée par une version précédente du projet, dont le fichier n'existe plus |
+
+Les libellés d'état sortent du script déjà rendus dans la langue de
+l'interface : une ligne et le titre au-dessus d'elle ne peuvent donc pas
+diverger.
+
+### Mode storage et mode YAML
+
+Lovelace garde sa liste de ressources dans l'un de deux endroits, et ils
+ne sont pas interchangeables.
+
+- **Mode YAML** — la liste est le bloc `lovelace: resources:` de
+  `configuration.yaml`, que ce projet écrit déjà, et le registre
+  websocket refuse d'être écrit. Rien à faire ici, et l'écran le dit.
+- **Mode storage** — le défaut, et ce que fait tourner toute installation
+  ordinaire. Ce bloc est entièrement ignoré et seul le registre compte.
+  C'est le cas pour lequel le bouton existe.
+
+HACS enregistre lui-même ses ressources `/hacsfiles/…` quand il
+télécharge une carte en mode storage : le bouton n'y touche donc jamais.
+Il enregistre les cinq `/local/vssp/…`, qui n'appartiennent à personne
+d'autre.
+
+### Le tampon de cache
+
+`/local` est mis en cache 31 jours par les navigateurs. Un fichier
+remplacé par un déploiement continue donc de s'afficher tel qu'il était
+jusqu'à ce que l'*URL* de la ressource change — d'où l'enregistrement en
+`?v=<sha1 de son contenu>` :
+
+- une livraison qui n'a pas changé `vssp.css` garde le même tampon, et
+  aucun navigateur de la maison ne retélécharge quoi que ce soit ;
+- un build qui l'a changé en reçoit un nouveau, et chaque navigateur
+  récupère le nouveau fichier à son prochain chargement.
+
+Une empreinte du contenu plutôt qu'un numéro de build, pour qu'une
+retouche à la main que le pipeline n'a jamais vue ne soit pas servie,
+elle non plus, depuis un cache vieux d'un mois.
+
+### Les deux pressions
+
+| Bouton | Ce qu'il fait |
+|---|---|
+| **VÉRIFIER LES DÉPENDANCES** | liste, compare, écrit le rapport. Ne change rien sur l'instance. |
+| **INSTALLER LES DÉPENDANCES** | télécharge les dépôts manquants via l'API websocket de HACS, puis enregistre ou re-tamponne les ressources. |
+
+**INSTALLER rend la main avant que le travail ne soit fini, à dessein.**
+Un `shell_command` est tué au bout de 60 secondes — c'est la limite de
+Home Assistant, et elle n'est pas réglable — et une douzaine de
+téléchargements depuis GitHub la dépasse sur toute connexion ordinaire.
+Une exécution tuée en cours de route est le pire résultat disponible : la
+moitié des cartes sur le disque et un écran qui ne dit rien. La commande
+se détache donc, le script réécrit son rapport après **chaque élément**,
+et le script derrière le bouton le relit toutes les dix secondes pendant
+trois minutes. La liste se remplit sous les yeux.
+
+Ce détachement repose sur un détail qu'il vaut mieux connaître avant de
+modifier le package : Home Assistant ne passe un `shell_command` par un
+vrai shell que s'il ne contient aucun Jinja. Ajoutez-y un `{{ … }}` et la
+commande part vers `exec`, où `&` cesse d'être un opérateur pour devenir
+un argument — et le détachement cesse de fonctionner en silence. La
+langue de l'interface est résolue par le script lui-même, via l'API,
+précisément pour qu'aucun template ne soit nécessaire là.
+
+### Ce qu'il ne fait jamais
+
+- Il ne supprime jamais une carte, et n'en rétrograde jamais aucune.
+  Mettre à jour une carte déjà installée, c'est la famille HACS
+  ci-dessus.
+- Il ne touche jamais à une ressource hors des préfixes sous lesquels ce
+  projet a livré (`/local/vssp/`, et les plus anciens `/local/osvision*`).
+  Une ressource d'apparence cassée appartenant au propriétaire reste
+  exactement telle quelle.
+- Il ne redémarre jamais Home Assistant. Quand une intégration est
+  téléchargée, il dit qu'un redémarrage est nécessaire et laisse la
+  décision là où elle doit être.
+
+### Où vit chaque morceau
+
+```
+vssp/vssp_dependencies.py        le manifeste, les contrôles, les
+        │                        installations
+vssp/vssp_ws.py                  le client websocket (partagé avec la
+        │                        configuration Google Calendar)
+        ▼
+/config/www/vssp/dependencies.json         une ligne par dépendance
+/config/www/vssp/dependencies_status.json  si l'exécution a pu regarder
+        │
+        ▼
+packages/vssp_updates.yaml       2 capteurs command_line, 2 commandes
+        │                        shell, 2 scripts
+        ▼
+templates_j2/admin.yaml.j2       la liste et les deux boutons
+```
+
 ## Voir aussi
 
 - [Dashboard_Generator.fr.md](Dashboard_Generator.fr.md) — le générateur,

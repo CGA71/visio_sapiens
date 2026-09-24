@@ -294,6 +294,15 @@ admin:
   updates_maintenance: MAINTENANCE
   updates_check: VÉRIFIER MAINTENANT
   updates_install_hacs: INSTALLER TOUTES LES INTÉGRATIONS & CARTES
+  deps_title: DÉPENDANCES
+  deps_cards: Cartes Lovelace (HACS)
+  deps_integrations: Intégrations (HACS)
+  deps_resources: Ressources Visio Sapiens
+  deps_never_checked: Jamais vérifié — pressez VÉRIFIER LES DÉPENDANCES.
+  deps_check: VÉRIFIER LES DÉPENDANCES
+  deps_check_hint: Liste ce qui manque, n'installe rien
+  deps_install: INSTALLER LES DÉPENDANCES
+  deps_install_hint: Télécharge les cartes via HACS et enregistre les ressources
   reload_config: RECHARGER LA CONFIGURATION
   reload_config_hint: Relit scripts, packages et templates sans coupure
   restart_ha: REDÉMARRER HOME ASSISTANT

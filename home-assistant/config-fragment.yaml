@@ -225,6 +225,16 @@ lovelace:
       type: module
     - url: /hacsfiles/dynamic-weather-card/dynamic-weather-card.js
       type: module
+    # EN | The agenda panel's card. Used by admin.yaml.j2 since the
+    # EN | console grew its calendar, and never declared here - which on a
+    # EN | YAML-mode instance is an error card reading "Custom element
+    # EN | doesn't exist: calendar-card-pro".
+    # FR | La carte du panneau agenda. Utilisee par admin.yaml.j2 depuis que
+    # FR | la console a gagne son calendrier, et jamais declaree ici - ce qui
+    # FR | sur une instance en mode YAML donne une carte d'erreur « Custom
+    # FR | element doesn't exist: calendar-card-pro ».
+    - url: /hacsfiles/calendar-card-pro/calendar-card-pro.js
+      type: module
     # EN | Visio Sapiens engine — ?v=__VTOKEN__ is replaced at apply time so
     # EN | browsers pick up a new build instead of serving a stale cache.
     # FR | Moteur Visio Sapiens — ?v=__VTOKEN__ est remplace au moment du apply

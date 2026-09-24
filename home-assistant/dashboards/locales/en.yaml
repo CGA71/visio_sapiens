@@ -422,6 +422,15 @@ admin:
   updates_maintenance: MAINTENANCE
   updates_check: CHECK NOW
   updates_install_hacs: INSTALL EVERY INTEGRATION & CARD
+  deps_title: DEPENDENCIES
+  deps_cards: Lovelace cards (HACS)
+  deps_integrations: Integrations (HACS)
+  deps_resources: Visio Sapiens resources
+  deps_never_checked: Never checked — press CHECK DEPENDENCIES.
+  deps_check: CHECK DEPENDENCIES
+  deps_check_hint: Lists what is missing, installs nothing
+  deps_install: INSTALL DEPENDENCIES
+  deps_install_hint: Downloads the cards through HACS and registers the resources
   reload_config: RELOAD CONFIGURATION
   reload_config_hint: Re-reads scripts, packages and templates without downtime
   restart_ha: RESTART HOME ASSISTANT

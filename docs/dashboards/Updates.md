@@ -696,6 +696,137 @@ The verdict is computed once, in `variables`, which button-card evaluates
 before the fields that read them; icon, colour, state and label therefore
 all agree instead of each recomputing it and diverging on a slow frame.
 
+## The dependencies
+
+The three families above answer *what is out of date*. This one answers a
+different question, and on a fresh instance it is the more urgent of the
+two: **is what this interface is made of actually here?**
+
+A Visio Sapiens dashboard is not drawn with Home Assistant's built-in
+cards. It needs a dozen community cards installed through HACS, one HACS
+integration, and five files of its own — `vssp.css`, `vssp.js` and three
+web components — which a deployment copies into `/config/www/vssp/` and
+which Home Assistant then ignores until they are **registered as Lovelace
+resources**.
+
+Neither half arrives on its own. Until they do, the console is a column
+of `Custom element doesn't exist` error cards with no styling at all,
+which reads as a broken release rather than as missing parts.
+
+### Why a button and not a step of the pipeline
+
+The release pipeline cannot reach the HACS of someone who installed Visio
+Sapiens from the HACS store — there is no pipeline in that direction at
+all. And a deployment that silently downloads a dozen third-party
+repositories onto a house's server is not something its owner asked for.
+
+So it is a press, on the screen where the other things that install
+already live: you see what is missing, you see what needs it, and then
+you decide.
+
+### What the screen shows
+
+`sensor.vssp_dependencies` carries one row per dependency, and each row
+says **what needs it**. That sentence is the point of the list: twelve
+repository names ask you to trust them, while "the energy graphs" beside
+`apexcharts-card` lets you check.
+
+| State | Meaning |
+|---|---|
+| installed | present, nothing to do |
+| missing | HACS knows this repository and has not downloaded it |
+| not in HACS | HACS is absent, or this repository is not in its store |
+| restart needed | an integration was downloaded; Home Assistant loads custom components only at startup |
+| cache stamp outdated | the resource is registered, but for a different version of the file |
+| file absent | the file is not on the instance — a deployment that did not finish |
+| obsolete | a resource an earlier version of this project registered, whose file is gone |
+
+The state labels come out of the script already rendered in the interface
+language, so a row and the heading above it cannot drift apart.
+
+### Storage mode and YAML mode
+
+Lovelace keeps its resource list in one of two places, and they are not
+interchangeable.
+
+- **YAML mode** — the list is the `lovelace: resources:` block of
+  `configuration.yaml`, which this project already writes, and the
+  websocket registry refuses to be written at all. Nothing to do here,
+  and the screen says so.
+- **Storage mode** — the default, and what every ordinary install runs.
+  That block is ignored entirely and only the registry counts. This is
+  the case the button exists for.
+
+HACS registers its own `/hacsfiles/…` resources when it downloads a card
+in storage mode, so the button never touches those. It registers the five
+`/local/vssp/…` ones, which belong to nobody else.
+
+### The cache stamp
+
+`/local` is cached by browsers for 31 days. A file replaced by a
+deployment therefore keeps rendering as its old self until the resource
+*URL* changes, which is why each one is registered as
+`?v=<sha1 of its content>`:
+
+- a release that did not change `vssp.css` keeps the same stamp, and no
+  browser in the house re-downloads anything;
+- a build that did change it gets a new stamp, and every browser fetches
+  the new file on its next load.
+
+A hash of the content rather than a build number, so a hand-edit the
+pipeline never saw is not served from a month-old cache either.
+
+### The two presses
+
+| Button | What it does |
+|---|---|
+| **CHECK DEPENDENCIES** | lists, compares, writes the report. Changes nothing on the instance. |
+| **INSTALL DEPENDENCIES** | downloads the missing repositories through HACS's own websocket API, then registers or re-stamps the resources. |
+
+**INSTALL returns before the work does, on purpose.** A `shell_command`
+is killed after 60 seconds — Home Assistant's limit, not configurable —
+and a dozen downloads from GitHub outlast that on any ordinary
+connection. A run killed halfway is the worst outcome available: half the
+cards on disk and a screen that says nothing. So the command detaches,
+the script rewrites its report after **every item**, and the script
+behind the button re-reads it every ten seconds for three minutes. The
+list fills in under your eyes.
+
+That detachment rests on a detail worth knowing before editing the
+package: Home Assistant runs a `shell_command` through a real shell only
+when it contains no Jinja. Add a `{{ … }}` to that command and it is
+handed to `exec` instead, where `&` stops being an operator and becomes
+an argument — and the detachment quietly stops working. The interface
+language is resolved by the script itself, over the API, precisely so
+that no template is needed there.
+
+### What it never does
+
+- It never removes a card, and never downgrades one. Updating an already
+  installed card is the HACS family above.
+- It never touches a resource outside the prefixes this project has
+  shipped under (`/local/vssp/`, and the older `/local/osvision*`). A
+  broken-looking resource belonging to the owner stays exactly as it is.
+- It never restarts Home Assistant. When an integration is downloaded it
+  says a restart is needed and leaves the decision where it belongs.
+
+### Where each piece lives
+
+```
+vssp/vssp_dependencies.py        the manifest, the checks, the installs
+vssp/vssp_ws.py                  the websocket client (shared with the
+        │                        Google Calendar setup)
+        ▼
+/config/www/vssp/dependencies.json         one row per dependency
+/config/www/vssp/dependencies_status.json  whether the run could look
+        │
+        ▼
+packages/vssp_updates.yaml       2 command_line sensors, 2 shell
+        │                        commands, 2 scripts
+        ▼
+templates_j2/admin.yaml.j2       the list and the two buttons
+```
+
 ## Related
 
 - [Dashboard_Generator.md](Dashboard_Generator.md) — the generator, slots
