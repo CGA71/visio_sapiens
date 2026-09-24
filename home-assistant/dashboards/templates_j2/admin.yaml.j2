@@ -2369,6 +2369,30 @@ views:
                             entities:
                               - entity: input_text.vssp_pin_entry
                                 name: "{{ t('admin.pin_prompt') }}"
+                              # EN | THE ADMIN CODE ITSELF, right here. It is
+                              # EN | compared with what is typed above, and
+                              # EN | until now it could only be set by editing
+                              # EN | script.vssp_set_admin_pin by hand — a
+                              # EN | value hardcoded in YAML, committed to a
+                              # EN | public repository, and unknowable from the
+                              # EN | console. An empty one can never match, so
+                              # EN | the delete button was unusable. Both rows
+                              # EN | are mode: password; the screen behind is
+                              # EN | already admin-only (require_admin).
+                              # FR | LE CODE ADMIN LUI-MEME, ici. Il est compare
+                              # FR | a ce qui est saisi au-dessus, et jusqu'ici
+                              # FR | il ne pouvait etre defini qu'en editant a la
+                              # FR | main script.vssp_set_admin_pin — une valeur
+                              # FR | ecrite en dur dans du YAML, publiee dans un
+                              # FR | depot public, et impossible a connaitre
+                              # FR | depuis la console. Un code vide ne peut
+                              # FR | jamais correspondre, donc le bouton de
+                              # FR | suppression etait inutilisable. Les deux
+                              # FR | lignes sont en mode: password ; l'ecran
+                              # FR | derriere est deja reserve aux
+                              # FR | administrateurs (require_admin).
+                              - entity: input_text.vssp_admin_pin
+                                name: "{{ t('admin.pin_set') }}"
                       left_button: "{{ t('common.cancel') }}"
                       left_button_action:
                         service: browser_mod.close_popup

@@ -575,6 +575,7 @@ admin:
   regenerate: REGENERATE
   delete_dashboard: DELETE ALL DASHBOARDS
   pin_prompt: Enter the PIN code
+  pin_set: Administrator code (set or change)
   backup_created: Backup created
   wizard: DISCOVERY WIZARD
   wizard_hint: Define rooms and assign devices

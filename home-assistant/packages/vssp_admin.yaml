@@ -1197,12 +1197,19 @@ script:
             data:
               title: "Visio Sapiens — Échec de suppression"
               message: >-
-                {% if states('input_text.vssp_pin_entry') in ['', 'unknown', 'unavailable'] %}
+                {% if states('input_text.vssp_admin_pin') in ['', 'unknown', 'unavailable'] %}
+                Aucun code administrateur n'est défini sur cette instance, donc
+                aucune saisie ne peut correspondre. Renseignez-en un dans le
+                champ « Code administrateur » du même popup, puis retapez-le
+                au-dessus pour confirmer la suppression.
+                {% elif states('input_text.vssp_pin_entry') in ['', 'unknown', 'unavailable'] %}
                 Aucun code saisi. Tapez le code administrateur dans le champ
-                « {{ 'Saisissez le code PIN' }} » au-dessus du bouton, puis
-                relancez la suppression.
+                « Saisissez le code PIN » du popup, puis relancez la
+                suppression.
                 {% else %}
-                Code incorrect. Aucune action effectuée.
+                Code incorrect. Aucune action effectuée. Si vous ne connaissez
+                plus le code, redéfinissez-le dans le champ « Code
+                administrateur » du même popup.
                 {% endif %}
       # Toujours vider le champ de saisie, succes ou echec (hygiene de securite)
       - service: input_text.set_value

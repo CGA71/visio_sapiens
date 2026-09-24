@@ -432,6 +432,7 @@ admin:
   regenerate: REGÉNÉRER
   delete_dashboard: SUPPRIMER TOUS LES DASHBOARDS
   pin_prompt: Saisissez le code PIN
+  pin_set: Code administrateur (définir ou changer)
   backup_created: Sauvegarde créée
   wizard: ASSISTANT DE DÉCOUVERTE
   wizard_hint: Définir les pièces et assigner les appareils
