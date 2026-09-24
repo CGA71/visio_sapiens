@@ -1939,6 +1939,50 @@ deploy:production:
         --fallback /tmp/prod_house.yaml.live \
         --new /tmp/prod_house.yaml
       cat /tmp/prod_house.yaml | ssh ha "cat > $HA_CFG/dashboards/model/house.yaml"
+    # --- EN | REGENERATE ON THE INSTANCE, exactly as staging does --------
+    # --- FR | REGENERER SUR L INSTANCE, exactement comme le staging -------
+    # EN | The package carries dashboards generated in the RUNNER, from the
+    # EN | repository's own model - which declares no room and, since the
+    # EN | on-demand dashboards were taken out of the package, no HOME, CORE
+    # EN | or ENERGY either. Production had no regeneration step at all, so
+    # EN | those pages were whatever files the instance happened to hold,
+    # EN | frozen at their creation date: a tag could not refresh them, and a
+    # EN | fresh install could not obtain them. Confirmed on the v1.0.1
+    # EN | deployment - the instance kept a core.yaml and an energy.yaml no
+    # EN | release had produced, and its CORE screen still showed figures
+    # EN | rendered long before.
+    # EN | Inside the container the configuration directory is /config, never
+    # EN | $HA_CFG: that variable holds the HOST path (/homeassistant), which
+    # EN | does not exist on the other side of `docker exec`.
+    # FR | Le paquet transporte des dashboards generes dans LE RUNNER, depuis
+    # FR | le modele du depot - qui ne declare aucune piece et, depuis que les
+    # FR | dashboards a la demande sont sortis du paquet, ni HOME, ni CORE, ni
+    # FR | ENERGY. La production n avait aucune etape de regeneration, donc
+    # FR | ces pages etaient les fichiers que l instance possedait par
+    # FR | hasard, figes a leur date de creation : un tag ne pouvait pas les
+    # FR | rafraichir, et une installation neuve ne pouvait pas les obtenir.
+    # FR | Confirme sur le deploiement de la v1.0.1 - l instance a garde un
+    # FR | core.yaml et un energy.yaml qu aucune release n avait produits, et
+    # FR | son ecran CORE affichait encore un rendu bien anterieur.
+    # FR | Dans le conteneur, le repertoire de configuration est /config,
+    # FR | jamais $HA_CFG : cette variable porte le chemin de L HOTE
+    # FR | (/homeassistant), qui n existe pas de l autre cote de
+    # FR | `docker exec`.
+    - |
+      ssh ha "docker exec homeassistant sh -c '
+        LOCALE=\$(cat /config/VSSP_LOCALE 2>/dev/null || echo en)
+        echo \"[i] regenerating on the instance, locale \$LOCALE\"
+        python3 /config/vssp/generate_dashboards.py \
+          --model       /config/dashboards/model/house.yaml \
+          --rooms       /config/dashboards/model/house_rooms.yaml \
+          --devices     /config/dashboards/model/energy_devices.yaml \
+          --templates   /config/dashboards/templates_j2 \
+          --locales-dir /config/dashboards/locales \
+          --static-fragment /config/config-fragment.yaml \
+          --rooms-fragment  /config/config-fragment-rooms.yaml \
+          --locale \"\$LOCALE\" \
+          --out /config/dashboards/views
+      '" || { echo "[ERR] regeneration on the instance failed"; exit 1; }
     - |
       ssh ha "cat $HA_CFG/configuration.yaml" > /tmp/prod_configuration.yaml         || { echo "[ERR] cannot read the production configuration.yaml"; exit 1; }
       [ -s /tmp/prod_configuration.yaml ] || { echo "[ERR] production configuration.yaml is empty"; exit 1; }
@@ -1949,19 +1993,32 @@ deploy:production:
     # FR | Meme garde-fou qu en staging : refuser de patcher la production
     # FR | depuis un fragment contenant encore des marqueurs __T: bruts.
     - |
-      if grep -En '__T:[A-Za-z0-9_.]+__' /tmp/vssp_pkg/config-fragment.yaml /tmp/vssp_pkg/config-fragment-rooms.yaml; then
+      ssh ha "cat $HA_CFG/config-fragment-rooms.yaml" > /tmp/prod_fragment_rooms.yaml || { echo "[ERR] cannot read the rooms fragment the instance just wrote"; exit 1; }
+      [ -s /tmp/prod_fragment_rooms.yaml ] || { echo "[ERR] the instance rooms fragment is empty"; exit 1; }
+      if grep -En '__T:[A-Za-z0-9_.]+__' /tmp/vssp_pkg/config-fragment.yaml /tmp/prod_fragment_rooms.yaml; then
         echo "[ERR] The packaged fragment still holds translation placeholders."
         echo "      Rebuild: the locale rendering step did not run."
         exit 1
       fi
     # EN | The fragment inside the package is ALREADY rendered in the target
     # EN | language by the build job - nothing language-related happens here.
+    # EN | The ROOMS fragment, on the other hand, is taken from the INSTANCE:
+    # EN | the packaged one is built from the repository model and declares no
+    # EN | room at all, so merging it would tell Home Assistant this house has
+    # EN | no room dashboards. The instance's copy is the one the
+    # EN | regeneration step above just wrote, from the instance's own model.
+    # FR | Le fragment des PIECES, lui, est pris sur L INSTANCE : celui du
+    # FR | paquet est construit depuis le modele du depot et ne declare aucune
+    # FR | piece, le fusionner reviendrait donc a dire a Home Assistant que
+    # FR | cette maison n a aucun dashboard de piece. La copie de l instance
+    # FR | est celle que l etape de regeneration ci-dessus vient d ecrire,
+    # FR | depuis le modele de l instance.
     # FR | Le fragment contenu dans le paquet est DEJA rendu dans la langue
     # FR | cible par le job build - rien de linguistique ne se passe ici.
     - |
       python3 /tmp/vssp_pkg/vssp/vssp_apply_config.py \
         --config   /tmp/prod_configuration.yaml \
-        --fragment /tmp/vssp_pkg/config-fragment.yaml /tmp/vssp_pkg/config-fragment-rooms.yaml \
+        --fragment /tmp/vssp_pkg/config-fragment.yaml /tmp/prod_fragment_rooms.yaml \
         --prune-dashboards \
         --prune-resources \
         --vtoken   "$CI_COMMIT_TAG" || { echo "[ERR] configuration.yaml patch failed"; exit 1; }
