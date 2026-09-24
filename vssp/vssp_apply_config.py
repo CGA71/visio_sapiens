@@ -90,7 +90,8 @@ VSSP_RESOURCE_MARK = "/local/vssp/"
 # EN | is ignored (safety rail: the patcher only ever touches this perimeter).
 # FR | Cles de premier niveau que le fragment peut fusionner. Toute autre cle du
 # FR | fragment est ignoree (garde-fou : le patcher ne touche que ce perimetre).
-MERGEABLE_TOP_KEYS = ("lovelace", "input_text", "shell_command", "template")
+MERGEABLE_TOP_KEYS = ("lovelace", "input_text", "shell_command", "template",
+                      "frontend")
 
 # EN | Translation placeholder, substituted upstream by vssp_i18n.py. Reaching
 # EN | this script means the rendering step never ran.
@@ -337,6 +338,59 @@ def merge(config, fragment, prune_resources=False):
                 if dst.get(k) != v:
                     dst[k] = v
                     changed = True
+
+        elif top == "frontend":
+            # EN | THE THEME, DECLARED ONCE AND NEVER TAKEN OVER. themes/ is
+            # EN | copied to the instance by every deployment and every
+            # EN | generated dashboard asks for "Visio Sapiens", but Home
+            # EN | Assistant only reads a themes directory configuration.yaml
+            # EN | points at. Nothing declared it, so a fresh instance showed
+            # EN | white cards while the development one - where the line had
+            # EN | been added by hand years ago - was dark: same files, same
+            # EN | dashboards, and a theme name Home Assistant had never heard
+            # EN | of, silently falling back to the default.
+            # EN | Only ever ADDED, never replaced: `themes:` already present
+            # EN | is the user's own arrangement (their own directory, a
+            # EN | different include mode), and this script has no business
+            # EN | rewriting it. It says so instead, because in that case the
+            # EN | Visio Sapiens theme must be reachable from THEIR directory
+            # EN | or the interface stays unstyled - which looks exactly like
+            # EN | a broken deployment.
+            # FR | LE THEME, DECLARE UNE FOIS ET JAMAIS CONFISQUE. themes/ est
+            # FR | copie sur l instance a chaque deploiement et chaque
+            # FR | dashboard genere reclame « Visio Sapiens », mais Home
+            # FR | Assistant ne lit un repertoire de themes que si
+            # FR | configuration.yaml le lui designe. Rien ne le declarait,
+            # FR | donc une instance neuve affichait des cartes blanches
+            # FR | pendant que celle de developpement - ou la ligne avait ete
+            # FR | ajoutee a la main il y a longtemps - etait sombre : memes
+            # FR | fichiers, memes dashboards, et un nom de theme dont Home
+            # FR | Assistant n avait jamais entendu parler, qui retombait en
+            # FR | silence sur le theme par defaut.
+            # FR | Uniquement AJOUTE, jamais remplace : un `themes:` deja
+            # FR | present est l arrangement de l utilisateur (son propre
+            # FR | repertoire, un autre mode d inclusion), et ce script n a
+            # FR | pas a le reecrire. Il le dit a la place, car dans ce cas le
+            # FR | theme Visio Sapiens doit etre atteignable depuis SON
+            # FR | repertoire, faute de quoi l interface reste sans style - ce
+            # FR | qui ressemble trait pour trait a un deploiement rate.
+            dst = config.get("frontend")
+            if dst is None or not isinstance(dst, CommentedMap):
+                if dst is not None and dst != "":
+                    sys.stderr.write(
+                        "[warn] 'frontend' is not a mapping - the Visio "
+                        "Sapiens theme was not declared.\n")
+                    continue
+                dst = CommentedMap()
+                config["frontend"] = dst
+            if "themes" in dst:
+                if dst["themes"] != src.get("themes"):
+                    print("[i] frontend.themes already set - left untouched. "
+                          "Make sure themes/visio_sapiens.yaml is reachable "
+                          "from that directory, or dashboards render unstyled.")
+            elif "themes" in src:
+                dst["themes"] = src["themes"]
+                changed = True
 
         else:
             # EN | input_text / shell_command / template: merge per vssp_* key

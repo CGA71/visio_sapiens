@@ -64,6 +64,41 @@ homeassistant:
   # FR | qui alimente le panneau « Consommation totale » du dashboard Energy).
   packages: !include_dir_named packages
 
+# EN | THE THEME HAS TO BE DECLARED, not merely delivered. themes/ is copied
+# EN | to the instance by every deployment and house.yaml names "Visio
+# EN | Sapiens" on every generated dashboard, but Home Assistant only reads a
+# EN | themes directory that configuration.yaml points at - and nothing in
+# EN | this project pointed at it. On the development instance the line had
+# EN | been added by hand long ago, so the whole interface was dark there and
+# EN | white on a freshly deployed Home Assistant OS box: identical files,
+# EN | identical dashboards, and a theme Home Assistant had never heard of,
+# EN | so `theme: Visio Sapiens` silently fell back to the default. Seen on
+# EN | the v1.0.3 production instance, where the admin console rendered in
+# EN | white cards while the navigation rail - styled by card_mod rather than
+# EN | by the theme - stayed dark.
+# EN | !include_dir_merge_named rather than !include_dir_named: the key of
+# EN | each theme is the name INSIDE its file, not its filename, and a second
+# EN | theme file must be able to join without either replacing the other.
+# FR | LE THEME DOIT ETRE DECLARE, pas seulement livre. themes/ est copie sur
+# FR | l instance a chaque deploiement et house.yaml nomme « Visio Sapiens »
+# FR | sur chaque dashboard genere, mais Home Assistant ne lit un repertoire
+# FR | de themes que si configuration.yaml le lui designe - et rien dans ce
+# FR | projet ne le lui designait. Sur l instance de developpement la ligne
+# FR | avait ete ajoutee a la main il y a longtemps, d ou une interface sombre
+# FR | la-bas et blanche sur une machine Home Assistant OS fraichement
+# FR | deployee : memes fichiers, memes dashboards, et un theme dont Home
+# FR | Assistant n avait jamais entendu parler, donc `theme: Visio Sapiens`
+# FR | retombait en silence sur le theme par defaut. Constate sur l instance
+# FR | de production en v1.0.3, ou la console d administration s affichait en
+# FR | cartes blanches tandis que le bandeau de navigation - habille par
+# FR | card_mod et non par le theme - restait sombre.
+# FR | !include_dir_merge_named plutot que !include_dir_named : la cle de
+# FR | chaque theme est le nom INSCRIT DANS son fichier, pas son nom de
+# FR | fichier, et un second fichier de theme doit pouvoir s ajouter sans que
+# FR | l un remplace l autre.
+frontend:
+  themes: !include_dir_merge_named themes
+
 lovelace:
   dashboards:
     visio-sapiens:
