@@ -1195,6 +1195,32 @@ script:
           # FR | suppression a moitie faite entre deux appels de service.
           - service: shell_command.vssp_delete_dashboard
             response_variable: deleted
+          # EN | ANSWER WHERE THE EYES ARE. This script only ever replied
+          # EN | with a persistent_notification, which lives in Home
+          # EN | Assistant's sidebar — and the console is used on a tablet
+          # EN | with that sidebar permanently hidden. The button therefore
+          # EN | looked dead: it deleted, or refused a code, in complete
+          # EN | silence. A popup answers on the screen that asked.
+          # EN | continue_on_error: browser_mod is a HACS integration; if it
+          # EN | is missing, the deletion must not be reported as failed.
+          # FR | REPONDRE LA OU SONT LES YEUX. Ce script ne repondait que par
+          # FR | une persistent_notification, qui vit dans la barre laterale
+          # FR | de Home Assistant — et la console s utilise sur une tablette
+          # FR | dont cette barre est masquee en permanence. Le bouton avait
+          # FR | donc l air mort : il supprimait, ou refusait un code, dans
+          # FR | le silence complet. Un popup repond sur l ecran qui a
+          # FR | demande. continue_on_error : browser_mod est une
+          # FR | integration HACS ; si elle manque, la suppression ne doit
+          # FR | pas etre signalee en echec.
+          - service: browser_mod.popup
+            continue_on_error: true
+            data:
+              title: "Visio Sapiens"
+              content: >-
+                {{ deleted.stdout | default('') }}
+              right_button: OK
+              right_button_action:
+                service: browser_mod.close_popup
           - service: persistent_notification.create
             data:
               title: "Visio Sapiens — Dashboards supprimés"
@@ -1217,6 +1243,28 @@ script:
           # EN | told apart here: nothing typed, or the wrong code.
           # FR | Les deux echecs se ressemblent depuis le bouton, on les
           # FR | distingue donc ici : rien de saisi, ou code faux.
+          - service: browser_mod.popup
+            continue_on_error: true
+            data:
+              title: "Visio Sapiens — Échec de suppression"
+              content: >-
+                {% if states('input_text.vssp_admin_pin') in ['', 'unknown', 'unavailable'] %}
+                Aucun code administrateur n'est défini sur cette instance,
+                donc aucune saisie ne peut correspondre. Renseignez-en un
+                dans le champ « Code administrateur » du même popup, puis
+                retapez-le au-dessus pour confirmer la suppression.
+                {% elif states('input_text.vssp_pin_entry') in ['', 'unknown', 'unavailable'] %}
+                Aucun code saisi. Tapez le code administrateur dans le champ
+                « Saisissez le code PIN » du popup, puis relancez la
+                suppression.
+                {% else %}
+                Code incorrect. Aucune action effectuée. Si vous ne
+                connaissez plus le code, redéfinissez-le dans le champ
+                « Code administrateur » du même popup.
+                {% endif %}
+              right_button: OK
+              right_button_action:
+                service: browser_mod.close_popup
           - service: persistent_notification.create
             data:
               title: "Visio Sapiens — Échec de suppression"
