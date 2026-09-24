@@ -2399,6 +2399,33 @@ views:
                       right_button: "{{ t('admin.delete_now') }}"
                       right_button_action:
                         service: script.vssp_delete_dashboard
+              # EN | THE ANSWER, ON THE SCREEN THAT ASKED. Conditional, so it
+              # EN | takes no room until there is something to say, and it
+              # EN | says the same thing to every browser — see the comment on
+              # EN | input_text.vssp_delete_status in vssp_admin.yaml.
+              # FR | LA REPONSE, SUR L ECRAN QUI A DEMANDE. Conditionnelle,
+              # FR | donc elle ne prend aucune place tant qu il n y a rien a
+              # FR | dire, et elle dit la meme chose a tous les navigateurs —
+              # FR | voir le commentaire sur input_text.vssp_delete_status
+              # FR | dans vssp_admin.yaml.
+              - type: conditional
+                conditions:
+                  - entity: input_text.vssp_delete_status
+                    state_not: ""
+                  - entity: input_text.vssp_delete_status
+                    state_not: "unknown"
+                card:
+                  type: markdown
+                  content: >-
+                    {%+ raw %}{{ states('input_text.vssp_delete_status') }}{% endraw +%}
+                  card_mod:
+                    style: |
+                      ha-card {
+                        background: rgba(8,18,28,0.75) !important;
+                        border: 1px solid rgba(255,77,109,0.45) !important;
+                        border-radius: var(--ha-card-border-radius, 20px) !important;
+                        font-size: 13px;
+                      }
           # EN | HOME, ENERGY and CORE are on-demand dashboards, not
           # EN | attached to any room, so they never go through the room
           # EN | create/modify/delete form above. One row per dashboard

@@ -50,6 +50,30 @@ input_text:
     name: "Visio Sapiens — Saisie du code"
     mode: password
     max: 20
+  # EN | WHAT THE DELETE BUTTON ANSWERED, kept where the button is.
+  # EN | Its only reply used to be a persistent_notification, which lives in
+  # EN | Home Assistant's sidebar — a sidebar this console is regularly used
+  # EN | without. The button then looked dead whether it had deleted fifteen
+  # EN | files or refused a code, which is exactly how it was reported. A
+  # EN | backend browser_mod.popup does not fix it either: the server can
+  # EN | only push a popup to a REGISTERED browser, and a tablet that simply
+  # EN | opens the page is not one. A plain helper is: the script writes its
+  # EN | outcome here, and a conditional card on the ADMIN screen shows it
+  # EN | in place, on any browser, with no registration and no popup.
+  # FR | CE QU A REPONDU LE BOUTON SUPPRIMER, garde la ou est le bouton.
+  # FR | Sa seule reponse etait une persistent_notification, qui vit dans la
+  # FR | barre laterale de Home Assistant — une barre dont cette console se
+  # FR | passe regulierement. Le bouton avait donc l air mort qu il ait
+  # FR | supprime quinze fichiers ou refuse un code, ce qui est exactement ce
+  # FR | qui a ete rapporte. Un browser_mod.popup depuis le backend n y
+  # FR | change rien : le serveur ne peut pousser un popup que vers un
+  # FR | navigateur ENREGISTRE, et une tablette qui ouvre simplement la page
+  # FR | n en est pas un. Un simple helper, si : le script y ecrit son
+  # FR | resultat, et une carte conditionnelle de l ecran ADMIN l affiche sur
+  # FR | place, sur n importe quel navigateur, sans enregistrement ni popup.
+  vssp_delete_status:
+    name: "Visio Sapiens — Résultat de la dernière suppression"
+    max: 255
   # Jeton longue duree utilise par vssp_discovery.py et
   # vssp_energy_sync.py (Profil > Jetons d'acces longue duree).
   # Sans ce helper, les shell_command correspondants s'executent avec un
@@ -1212,6 +1236,12 @@ script:
           # FR | demande. continue_on_error : browser_mod est une
           # FR | integration HACS ; si elle manque, la suppression ne doit
           # FR | pas etre signalee en echec.
+          - service: input_text.set_value
+            target:
+              entity_id: input_text.vssp_delete_status
+            data:
+              value: >-
+                {{ (deleted.stdout | default('') | replace('\n', ' · '))[:250] }}
           - service: browser_mod.popup
             continue_on_error: true
             data:
@@ -1243,6 +1273,18 @@ script:
           # EN | told apart here: nothing typed, or the wrong code.
           # FR | Les deux echecs se ressemblent depuis le bouton, on les
           # FR | distingue donc ici : rien de saisi, ou code faux.
+          - service: input_text.set_value
+            target:
+              entity_id: input_text.vssp_delete_status
+            data:
+              value: >-
+                {% if states('input_text.vssp_admin_pin') in ['', 'unknown', 'unavailable'] %}
+                Aucun code administrateur n'est defini : renseignez-le dans le popup.
+                {% elif states('input_text.vssp_pin_entry') in ['', 'unknown', 'unavailable'] %}
+                Aucun code saisi : tapez le code dans le popup avant de valider.
+                {% else %}
+                Code incorrect. Aucun dashboard n'a ete supprime.
+                {% endif %}
           - service: browser_mod.popup
             continue_on_error: true
             data:
