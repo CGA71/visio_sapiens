@@ -572,6 +572,7 @@ admin:
   upgrade_hint: Compare the dashboard with the discovered entities
   delete_hint: Danger zone
   delete_all_hint: Deletes every generated dashboard, keeps the admin console — code and confirmation required
+  delete_now: DELETE
   assignment: DEVICE ASSIGNMENT
   deployed_locale: Deployed language
   unrendered_markers: Unrendered markers

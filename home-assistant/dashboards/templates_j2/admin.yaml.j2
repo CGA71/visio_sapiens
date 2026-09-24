@@ -2258,46 +2258,58 @@ views:
                 tap_action:
                   action: call-service
                   service: script.vssp_run_upgrade
-          # EN | THE DANGER ZONE, out of the grid above and given its own
-          # EN | block — because it needs the PIN field right next to it.
-          # EN | script.vssp_delete_dashboard compares input_text.vssp_pin_entry
-          # EN | with the admin code, and that helper was displayed on NO
-          # EN | screen: the button could only ever answer "wrong code", with
-          # EN | nowhere to type the right one. The field is the fix; the
-          # EN | script tells the two failures apart now.
-          # FR | LA ZONE DANGEREUSE, sortie de la grille ci-dessus et mise
-          # FR | dans son propre bloc — parce qu'elle a besoin du champ de
-          # FR | code juste a cote. script.vssp_delete_dashboard compare
-          # FR | input_text.vssp_pin_entry au code admin, et ce helper
-          # FR | n'etait affiche sur AUCUN ecran : le bouton ne pouvait que
-          # FR | repondre « code incorrect », sans nulle part ou taper le
-          # FR | bon. Le champ est le correctif ; le script distingue
-          # FR | desormais les deux echecs.
-          - type: entities
-            title: "{{ t('admin.delete_hint') }}"
-            entities:
-              - entity: input_text.vssp_pin_entry
-                name: "{{ t('admin.pin_prompt') }}"
-            card_mod:
-              style: |
-                ha-card {
-                  background: var(--card-background-color, rgba(8,18,28,0.75)) !important;
-                  border: 1px solid rgba(255,77,109,0.45) !important;
-                  border-radius: var(--ha-card-border-radius, 20px) !important;
-                  margin-top: 14px;
-                }
-          - type: custom:button-card
-            template: vssp_admin_button
-            icon: mdi:delete
-            name: "{{ t('admin.delete_dashboard') }}"
-            label: "{{ t('admin.delete_all_hint') }}"
-            variables:
-              danger: true
-            tap_action:
-              action: call-service
-              service: script.vssp_delete_dashboard
-              confirmation:
-                text: "{{ t('home.delete_confirm') }}"
+              # EN | THE DANGER ZONE, in a popup rather than on the screen.
+              # EN | script.vssp_delete_dashboard compares input_text.vssp_pin_entry
+              # EN | with the admin code, and that helper was rendered on NO screen:
+              # EN | the button could only ever answer "wrong code", with nowhere to
+              # EN | type the right one. It now lives in the popup the button opens —
+              # EN | the field exists exactly while it is being asked for, and the
+              # EN | screen keeps its room. The popup IS the confirmation (it names
+              # EN | what goes and what stays), so no confirm dialog in front of it.
+              # EN | fire-dom-event, not perform-action: browser_mod resolves
+              # EN | "this browser" in the frontend only.
+              # FR | LA ZONE DANGEREUSE, dans un popup plutot que sur l'ecran.
+              # FR | script.vssp_delete_dashboard compare input_text.vssp_pin_entry
+              # FR | au code admin, et ce helper n'etait affiche sur AUCUN ecran :
+              # FR | le bouton ne pouvait que repondre « code incorrect », sans
+              # FR | nulle part ou taper le bon. Il vit desormais dans le popup
+              # FR | qu'ouvre le bouton — le champ existe exactement le temps qu'on
+              # FR | le demande, et l'ecran garde sa place. Le popup EST la
+              # FR | confirmation (il nomme ce qui part et ce qui reste), donc pas
+              # FR | de boite de confirmation devant. fire-dom-event, pas
+              # FR | perform-action : browser_mod ne resout « ce navigateur » que
+              # FR | dans le frontend.
+              - type: custom:button-card
+                template: vssp_admin_button
+                icon: mdi:delete
+                name: "{{ t('admin.delete_dashboard') }}"
+                label: "{{ t('admin.delete_all_hint') }}"
+                variables:
+                  danger: true
+                tap_action:
+                  action: fire-dom-event
+                  browser_mod:
+                    service: browser_mod.popup
+                    data:
+                      title: "{{ t('admin.delete_dashboard') }}"
+                      size: normal
+                      dismissable: true
+                      content:
+                        type: vertical-stack
+                        cards:
+                          - type: markdown
+                            content: >-
+                              {{ t('home.delete_confirm') }}
+                          - type: entities
+                            entities:
+                              - entity: input_text.vssp_pin_entry
+                                name: "{{ t('admin.pin_prompt') }}"
+                      left_button: "{{ t('common.cancel') }}"
+                      left_button_action:
+                        service: browser_mod.close_popup
+                      right_button: "{{ t('admin.delete_now') }}"
+                      right_button_action:
+                        service: script.vssp_delete_dashboard
           # EN | HOME, ENERGY and CORE are on-demand dashboards, not
           # EN | attached to any room, so they never go through the room
           # EN | create/modify/delete form above. One row per dashboard
