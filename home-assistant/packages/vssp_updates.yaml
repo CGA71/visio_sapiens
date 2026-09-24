@@ -1121,10 +1121,36 @@ command_line:
       command: "cat /config/www/vssp/infra_updates.json"
       command_timeout: 15
       scan_interval: 300
-      value_template: "{{ value_json.counts.total }}"
+      # EN | `n/a` IS A STATE, and it is what a Home Assistant OS box gets.
+      # EN | Every row this probe knows how to measure belongs to the
+      # EN | development platform - an Ubuntu host over SSH, k3s, GitLab, a
+      # EN | Vault container - and an appliance has none of them: its Core,
+      # EN | its operating system and its add-ons are `update.*` entities,
+      # EN | already counted by the System family two cards above.
+      # EN | The probe says so with `applicable: false`, and the state is
+      # EN | where that has to land, because the state is the only thing a
+      # EN | conditional card can test. Everything downstream reads this as
+      # EN | a number through `| int(0)`, which turns `n/a` into 0 - the
+      # EN | right answer for a machine with nothing to install here.
+      # FR | `n/a` EST UN ETAT, et c est celui que recoit une machine Home
+      # FR | Assistant OS. Chaque ligne que cette sonde sait mesurer
+      # FR | appartient a la plateforme de developpement - un hote Ubuntu en
+      # FR | SSH, k3s, GitLab, un conteneur Vault - et un appareil n en a
+      # FR | aucune : son Core, son systeme d exploitation et ses add-ons
+      # FR | sont des entites `update.*`, deja comptees par la famille
+      # FR | Systeme deux cartes plus haut.
+      # FR | La sonde le dit avec `applicable: false`, et l etat est la ou
+      # FR | cela doit atterrir, parce que l etat est la seule chose qu une
+      # FR | carte conditionnelle sait tester. Tout ce qui est en aval le lit
+      # FR | comme un nombre via `| int(0)`, ce qui transforme `n/a` en 0 -
+      # FR | la bonne reponse pour une machine qui n a rien a installer ici.
+      value_template: >-
+        {% if value_json.applicable is defined and not value_json.applicable %}n/a
+        {%- else %}{{ value_json.counts.total }}{% endif %}
       json_attributes:
         - components
         - counts
+        - applicable
 
   # EN | THE STATUS FILE, beside the report. The report says what each row is;
   # EN | this says whether the last run was able to look at all. They are two

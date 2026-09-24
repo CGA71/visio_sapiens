@@ -279,7 +279,72 @@ MESSAGES = {
     "error.no_transport": "No SSH transport available in this container (neither the ssh binary nor paramiko).",
     "error.tier": "{name} is a {tier} component: it is never installed unattended.",
     "error.unknown": "Unknown component: {name}.",
+    "probe.not_applicable":
+        "This instance runs on Home Assistant OS: its add-ons, its Core and "
+        "its operating system are updated from the families above, and there "
+        "is no host, cluster or safe behind it for this probe to reach.",
 }
+
+
+# EN | IS THERE AN INFRASTRUCTURE BEHIND THIS INSTANCE AT ALL?
+# EN | Every row of this probe describes the development platform: an Ubuntu
+# EN | host reached over SSH, a k3s cluster, GitLab, its runner, a Vault
+# EN | container. A Home Assistant OS box has none of them. It is a single
+# EN | appliance that updates itself through its Supervisor, and every one of
+# EN | those updates - Core, the operating system, each add-on - already has
+# EN | an `update.*` entity, which means it is already counted by the System
+# EN | family of this same screen.
+# EN | Run there unchanged, this probe offered a row proposing to upgrade k3s
+# EN | on a machine that has never run k3s, and a safe error underneath it to
+# EN | explain why the rest was blank. Reported, in those words: "sur haos il
+# EN | n'y a pas de K3S donc de me demander de passer d'une version k3s sous
+# EN | haos est hors sujet".
+# EN | SUPERVISOR_TOKEN is the signal, and it is the same one vssp_core_stats
+# EN | uses to decide that the CORE screen describes add-ons rather than pods:
+# EN | the Supervisor injects it into the container it manages, and nothing
+# EN | else does. One fact, read the same way in both places.
+# FR | Y A-T-IL SEULEMENT UNE INFRASTRUCTURE DERRIERE CETTE INSTANCE ?
+# FR | Chaque ligne de cette sonde decrit la plateforme de developpement : un
+# FR | hote Ubuntu joint en SSH, un cluster k3s, GitLab, son runner, un
+# FR | conteneur Vault. Une machine Home Assistant OS n en a aucun. C est un
+# FR | appareil unique qui se met a jour via son Superviseur, et chacune de
+# FR | ces mises a jour - Core, le systeme d exploitation, chaque add-on - a
+# FR | deja une entite `update.*`, donc est deja comptee par la famille
+# FR | Systeme de ce meme ecran.
+# FR | Executee la-bas telle quelle, cette sonde proposait une ligne pour
+# FR | passer k3s a la version suivante sur une machine qui n a jamais fait
+# FR | tourner k3s, et une erreur de coffre en dessous pour expliquer pourquoi
+# FR | le reste etait vide. Signale, mot pour mot : « sur haos il n y a pas de
+# FR | K3S donc de me demander de passer d une version k3s sous haos est hors
+# FR | sujet ».
+# FR | SUPERVISOR_TOKEN est le signal, et c est celui-la meme qu utilise
+# FR | vssp_core_stats pour decider que l ecran CORE decrit des add-ons
+# FR | plutot que des pods : le Superviseur l injecte dans le conteneur qu il
+# FR | gere, et rien d autre ne le fait. Un seul fait, lu de la meme facon aux
+# FR | deux endroits.
+def supervised_appliance() -> bool:
+    return bool(os.environ.get("SUPERVISOR_TOKEN", "").strip())
+
+
+def not_applicable_report() -> dict:
+    """EN | A report with no rows, and an `applicable` flag the screen reads
+    EN | to hide the section entirely. Zero counts rather than no counts: the
+    EN | verdict sensor and the summary card both do arithmetic on them, and
+    EN | a missing key there is an error message on a dashboard.
+    FR | Un rapport sans lignes, et un drapeau `applicable` que l ecran lit
+    FR | pour masquer entierement la section. Des comptes a zero plutot que
+    FR | pas de comptes : le capteur de verdict et la carte de resume font
+    FR | tous deux de l arithmetique dessus, et une cle absente la-bas est un
+    FR | message d erreur sur un tableau de bord."""
+    return {
+        "ok": True,
+        "applicable": False,
+        "components": [],
+        "counts": {"total": 0, "auto": 0, "manual": 0, "locked": 0,
+                   "failed": 0, "stale": 0,
+                   "layers": {w: 0 for w in WHERE_ORDER},
+                   "steps": 0},
+    }
 
 
 def status(key: str, **vars_) -> dict:
@@ -2333,6 +2398,14 @@ def run_probe(safe: Safe | None, out_path: Path) -> dict:
     total = sum(r["count"] for r in rows)
     payload = {
         "ok": True,
+        # EN | Declared on every report, not only on the one that says no:
+        # EN | a screen that reads this key must find it here too, or it
+        # EN | falls back to a default and the flag means nothing.
+        # FR | Declare sur chaque rapport, pas seulement sur celui qui dit
+        # FR | non : un ecran qui lit cette cle doit la trouver ici aussi,
+        # FR | faute de quoi il retombe sur un defaut et le drapeau ne veut
+        # FR | plus rien dire.
+        "applicable": True,
         "components": rows,
         "counts": {
             "total": total,
@@ -2500,6 +2573,20 @@ def main() -> int:
 
     if not (args.probe or args.install or args.install_auto):
         args.probe = True
+
+    # EN | Before the safe is even opened, because on such a box there is no
+    # EN | safe to open and the failure to open one is not the thing worth
+    # EN | telling anyone about.
+    # FR | Avant meme d ouvrir le coffre, parce que sur une telle machine il
+    # FR | n y a pas de coffre a ouvrir et que l echec a en ouvrir un n est
+    # FR | pas ce qu il y a d interessant a dire.
+    if supervised_appliance():
+        write_json(out_path, not_applicable_report())
+        payload = dict(status("probe.not_applicable"))
+        payload["ok"] = True
+        write_json(status_path, payload)
+        print(payload["message"])
+        return 0
 
     safe: Safe | None = None
     if not args.dry_run:

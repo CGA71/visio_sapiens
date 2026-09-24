@@ -266,6 +266,33 @@ frontière du conteneur et aucune entité `update.*` ne les porte — donc
 l'écran qui prétendait réunir *toutes* les mises à jour en attente était,
 jusqu'ici, aveugle à la machine sous lui.
 
+### Pas sur toutes les instances
+
+Cette famille décrit **un type d'installation** : Home Assistant dans un
+conteneur, sur un hôte que quelqu'un administre. Une machine Home
+Assistant OS n'est pas cela. C'est un appareil : son Core, son système
+d'exploitation et chaque add-on se mettent à jour via son Superviseur,
+chacun porte déjà une entité `update.*`, et chacun est donc déjà compté
+par la famille **Système** ci-dessus. Il n'y a pas d'hôte Ubuntu à
+joindre en SSH, pas de cluster, pas de GitLab, pas de coffre.
+
+Exécutée là-bas telle quelle, cette sonde proposait une ligne pour passer
+k3s à la version suivante sur une machine qui n'a jamais fait tourner
+k3s, avec une erreur de coffre en dessous pour expliquer pourquoi tout le
+reste était vide.
+
+La sonde demande donc d'abord. `SUPERVISOR_TOKEN` est présent dans le
+conteneur que gère le Superviseur et nulle part ailleurs — le signal même
+qu'utilise l'écran CORE pour décrire des add-ons plutôt que des pods — et
+lorsqu'il est là, la sonde écrit un rapport qui dit `applicable: false`
+et s'arrête. L'état du capteur devient `n/a`, et les trois endroits qui
+montrent cette famille (le compte du résumé, la carte d'état, les lignes
+d'installation) disparaissent au lieu d'afficher un zéro, un « non
+sondé » ou une proposition.
+
+`n/a` se lit `0` partout où un nombre est attendu, ce qui est la bonne
+réponse pour une machine qui n'a rien à installer d'ici.
+
 ### Trois couches, pas une liste plate
 
 La première question devant une mise à jour d'infrastructure n'est pas

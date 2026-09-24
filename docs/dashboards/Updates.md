@@ -248,6 +248,31 @@ container boundary and no `update.*` entity carries them — so the screen
 that claimed to hold *every* pending update was, until now, blind to the
 machine underneath it.
 
+### Not on every instance
+
+This family describes **one kind of installation**: Home Assistant in a
+container, on a host somebody administers. A Home Assistant OS box is not
+that. It is an appliance: its Core, its operating system and every add-on
+are updated through its Supervisor, each already carries an `update.*`
+entity, and each is therefore already counted by the **System** family
+above. There is no Ubuntu host to reach over SSH, no cluster, no GitLab,
+no safe.
+
+Run there unchanged, this probe offered a row proposing to move k3s to
+its next version on a machine that has never run k3s, with a safe error
+underneath explaining why everything else was blank.
+
+So the probe asks first. `SUPERVISOR_TOKEN` is present in the container
+the Supervisor manages and nowhere else — the same signal the CORE screen
+uses to describe add-ons instead of pods — and when it is there the probe
+writes a report saying `applicable: false` and stops. The sensor's state
+becomes `n/a`, and the three places that show this family (the count in
+the summary, the state card, the install rows) each disappear rather than
+showing a zero, a "not probed", or an offer.
+
+`n/a` reads as `0` everywhere a number is expected, which is the right
+answer for a machine with nothing to install from here.
+
 ### Three layers, not one flat list
 
 The first question anyone asks of an infrastructure update is not "which

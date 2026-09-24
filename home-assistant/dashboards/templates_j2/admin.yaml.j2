@@ -917,8 +917,23 @@ views:
                   # FR | parce que c est ainsi qu on la lit — « qu est-ce qui
                   # FR | attend ? » — meme si elle est la seule sans entite
                   # FR | derriere elle.
-                  - entity: sensor.vssp_updates_infra
-                    name: "{{ t('admin.updates_infra') }}"
+                  # EN | And it disappears entirely on a box that has no
+                  # EN | infrastructure behind it: a line reading
+                  # EN | "Infrastructure: 0" on a Home Assistant OS
+                  # EN | appliance is not reassuring, it is a claim about
+                  # EN | something that is not there.
+                  # FR | Et elle disparait entierement sur une machine qui
+                  # FR | n a pas d infrastructure derriere elle : une ligne
+                  # FR | « Infrastructure : 0 » sur un appareil Home
+                  # FR | Assistant OS n est pas rassurante, c est une
+                  # FR | affirmation sur quelque chose qui n existe pas.
+                  - type: conditional
+                    conditions:
+                      - entity: sensor.vssp_updates_infra
+                        state_not: "n/a"
+                    row:
+                      entity: sensor.vssp_updates_infra
+                      name: "{{ t('admin.updates_infra') }}"
                 card_mod:
                   style: |
                     ha-card {
@@ -1191,6 +1206,15 @@ views:
                 state_not: "unavailable"
               - entity: sensor.vssp_updates_infra
                 state_not: "unknown"
+              # EN | See the sensor in packages/vssp_updates.yaml: `n/a`
+              # EN | means there is no host, no cluster and no safe behind
+              # EN | this instance, and the whole section is about them.
+              # FR | Voir le capteur dans packages/vssp_updates.yaml : `n/a`
+              # FR | signifie qu il n y a ni hote, ni cluster, ni coffre
+              # FR | derriere cette instance, et toute la section parle
+              # FR | d eux.
+              - entity: sensor.vssp_updates_infra
+                state_not: "n/a"
             card:
               type: markdown
               title: "{{ t('admin.updates_infra_state') }}"
@@ -1390,6 +1414,17 @@ views:
                   // FR | l icone etait poussee au milieu d une carte de
                   // FR | 1663px et le libelle a l extreme droite. Mesure :
                   // FR | margin-left: 768px.
+                  // EN | Nothing at all, not even a sentence, when this
+                  // EN | instance has no infrastructure: the card above is
+                  // EN | already hidden, and "not probed" would be the one
+                  // EN | line left on screen implying that something here
+                  // EN | failed to answer.
+                  // FR | Rien du tout, pas meme une phrase, quand cette
+                  // FR | instance n a pas d infrastructure : la carte
+                  // FR | ci-dessus est deja masquee, et « non sonde »
+                  // FR | serait la seule ligne restant a l ecran a laisser
+                  // FR | croire que quelque chose ici n a pas repondu.
+                  if (entity && entity.state === 'n/a') return '';
                   const rows = (entity && entity.attributes.components) || [];
                   if (!rows.length) {
                     return `<div style="color:#56707E;font-size:calc(12px * var(--vssp-scale-label, 1));
