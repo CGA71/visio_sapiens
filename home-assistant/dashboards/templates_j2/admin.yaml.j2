@@ -1037,6 +1037,7 @@ views:
                   _—_
                   {% endif %}
                   {% endfor %}
+                  {% if states('sensor.vssp_updates_infra') != 'n/a' %}
                   **{{ infra_label }}**
                   {% set rows = state_attr('sensor.vssp_updates_infra', 'components') or [] %}
                   {% set waiting = rows | selectattr('pending') | list %}
@@ -1050,6 +1051,7 @@ views:
                   _{{ unprobed }}_
                   {% else %}
                   _—_
+                  {% endif %}
                   {% endif %}{% endraw +%}
                 card_mod:
                   style: |
@@ -1977,6 +1979,20 @@ views:
                 - grid-template-areas: '"head" "rows" "foot"'
                 - grid-template-rows: min-content 1fr min-content
               card:
+                # EN | `n/a` is what the probe writes on an instance with no
+                # EN | host, cluster or safe behind it - see the sensor in
+                # EN | packages/vssp_updates.yaml. Emptying the fields left
+                # EN | the frame, the legend and a PROBE THE SERVER button
+                # EN | pointing at nothing, so the card removes itself.
+                # FR | `n/a` est ce qu ecrit la sonde sur une instance sans
+                # FR | hote, cluster ni coffre derriere elle - voir le
+                # FR | capteur dans packages/vssp_updates.yaml. Vider les
+                # FR | champs laissait le cadre, la legende et un bouton
+                # FR | SONDER LE SERVEUR qui ne pointe sur rien : la carte
+                # FR | se retire donc elle-meme.
+                - display: >
+                    [[[ return entity && entity.state === 'n/a'
+                        ? 'none' : 'grid'; ]]]
                 - background: var(--card-background-color, rgba(8,18,28,0.75))
                 - border: 1px solid rgba(0, 229, 255, 0.28)
                 - border-radius: var(--ha-card-border-radius, 20px)
@@ -2011,12 +2027,31 @@ views:
               # FR | premier pour que la difference se voie : l un installe des
               # FR | cartes, l autre lance apt-get sur le serveur. Voir
               # FR | vssp_updates.yaml.
-              - entity: input_boolean.vssp_updates_infra_auto
-                name: "{{ t('admin.updates_infra_auto_enabled') }}"
-                icon: mdi:server-network
-              - entity: sensor.vssp_infra_auto
-                name: "{{ t('admin.updates_infra_auto') }}"
-                icon: mdi:autorenew
+              # EN | And both disappear where there is no server to run
+              # EN | apt-get on: a switch offering to update an
+              # EN | infrastructure nightly, on an appliance that has none,
+              # EN | is an offer that can only ever do nothing.
+              # FR | Et les deux disparaissent la ou il n y a pas de serveur
+              # FR | sur lequel lancer apt-get : un interrupteur proposant
+              # FR | de mettre a jour une infrastructure chaque nuit, sur un
+              # FR | appareil qui n en a pas, est une proposition qui ne
+              # FR | peut que ne rien faire.
+              - type: conditional
+                conditions:
+                  - entity: sensor.vssp_updates_infra
+                    state_not: "n/a"
+                row:
+                  entity: input_boolean.vssp_updates_infra_auto
+                  name: "{{ t('admin.updates_infra_auto_enabled') }}"
+                  icon: mdi:server-network
+              - type: conditional
+                conditions:
+                  - entity: sensor.vssp_updates_infra
+                    state_not: "n/a"
+                row:
+                  entity: sensor.vssp_infra_auto
+                  name: "{{ t('admin.updates_infra_auto') }}"
+                  icon: mdi:autorenew
               - type: section
                 label: "{{ t('admin.updates_auto_protected') }}"
             # EN | --ha-color-form-background is the ONE token that darkens
