@@ -309,6 +309,29 @@ where `sh` passes the literal through. `.deploy_appliance` relies on that
 behaviour (`for pth in $HA_CFG/www/vssp/*.json …; do [ -e "$pth" ] || continue`),
 so under zsh the deploy dies on `no matches found` before it has done anything.
 
+**A first deploy onto a virgin appliance does not finish the job**, and this is
+by design rather than a defect:
+
+- HOME, CORE and ENERGY are *on demand*. The generator leaves them absent and
+  says so; the ADMIN console has a CREATE button for each. Until then
+  `config-fragment.yaml` declares six dashboards with no file behind them, and
+  opening one shows an error page. Creating them by hand is one generator run
+  with `--only home,core,energy`.
+- The deploy ends on `ha core reload`, which re-reads YAML but does not load
+  the `homeassistant.packages` block it has just written for the first time.
+  A **restart** is needed once, after which the entities appear — 103 of them,
+  none unavailable, measured on this appliance.
+- **HACS is not deployed and cannot be.** The dashboards reference twelve
+  `/hacsfiles/...` resources — button-card, mushroom, layout-card,
+  apexcharts and the rest — which HACS serves. `sensor.vssp_dependencies`
+  reports `hacs: {available: false}` on an appliance without it, and no
+  dashboard can render. HACS is installed once, by hand, and its GitHub
+  authorization cannot be automated.
+- The two add-ons the deploy copies into `/addons` are **copied, not
+  installed**. After a store reload they appear as `local_vssp_mcp` and
+  `local_vssp_vault`; the four `sensor.vssp_vault_*` entities the pod staging
+  has are missing until the vault one is installed and unsealed.
+
 The appliance is named **`vssp-staging`** (`ha host options --hostname`). Out
 of the box it was `homeassistant`, the same mDNS name as the production
 appliance on the same LAN; two `homeassistant.local` on one network is the

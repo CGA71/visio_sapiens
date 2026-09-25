@@ -314,6 +314,31 @@ comportement (`for pth in $HA_CFG/www/vssp/*.json …; do [ -e "$pth" ] || conti
 si bien que sous zsh le déploiement meurt sur `no matches found` avant d'avoir
 rien fait.
 
+**Un premier déploiement sur un appareil vierge ne termine pas le travail**, et
+c'est voulu plutôt que défectueux :
+
+- HOME, CORE et ENERGY sont *à la demande*. Le générateur les laisse absents et
+  le dit ; la console ADMIN a un bouton CRÉER pour chacun. D'ici là,
+  `config-fragment.yaml` déclare six tableaux de bord sans fichier derrière, et
+  en ouvrir un affiche une page d'erreur. Les créer tient en une exécution du
+  générateur avec `--only home,core,energy`.
+- Le déploiement finit sur `ha core reload`, qui relit le YAML mais ne charge
+  pas le bloc `homeassistant.packages` qu'il vient d'écrire pour la première
+  fois. Un **redémarrage** est nécessaire une fois ; les entités apparaissent
+  alors — 103 ici, aucune indisponible.
+- **HACS n'est pas déployé et ne peut pas l'être.** Les tableaux de bord
+  référencent douze ressources `/hacsfiles/...` — button-card, mushroom,
+  layout-card, apexcharts et les autres — que HACS sert.
+  `sensor.vssp_dependencies` rapporte `hacs: {available: false}` sur un
+  appareil qui en est dépourvu, et aucun tableau de bord ne peut s'afficher.
+  HACS s'installe une fois, à la main, et son autorisation GitHub ne
+  s'automatise pas.
+- Les deux add-ons que le déploiement copie dans `/addons` sont **copiés, pas
+  installés**. Après un rechargement du magasin ils apparaissent sous
+  `local_vssp_mcp` et `local_vssp_vault` ; les quatre entités
+  `sensor.vssp_vault_*` que possède la préproduction en pod manquent jusqu'à
+  l'installation et le descellement du coffre.
+
 L'appareil s'appelle **`vssp-staging`** (`ha host options --hostname`). Il
 sortait d'usine sous le nom `homeassistant`, le même nom mDNS que l'appareil de
 production sur le même réseau ; deux `homeassistant.local` sur un LAN, c'est le
