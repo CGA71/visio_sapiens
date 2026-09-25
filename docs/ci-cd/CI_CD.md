@@ -301,6 +301,11 @@ variable outranks anything a job writes under `variables:`, so redefining
 production key. The failure is quiet — `[OK] Private key is valid`, then
 `Permission denied (publickey)`.
 
+`.ssh_bootstrap` copies the key with `tr -d`, not `cp`, and appends a newline
+if the file lacks one: a key pasted from a Windows clipboard arrives with CRLF
+line endings and openssh refuses it outright, with an error that names three
+possible causes and picks none.
+
 ---
 
 ## 6. Smoke tests

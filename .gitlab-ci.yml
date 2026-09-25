@@ -179,18 +179,36 @@ workflow:
         echo "      Settings > CI/CD > Variables: create it with the File type."
         exit 1
       fi
+      # EN | tr, not cp. A key pasted into the GitLab form from a Windows
+      # EN | clipboard arrives with CRLF line endings, and openssh rejects
+      # EN | it outright - "Private key is unreadable", with nothing to say
+      # EN | which of the usual causes it was. A missing trailing newline
+      # EN | fails the same way, so both are repaired here rather than
+      # EN | diagnosed. Harmless to a key that had neither problem.
+      # FR | tr, et non cp. Une cle collee dans le formulaire GitLab depuis
+      # FR | un presse-papiers Windows arrive avec des fins de ligne CRLF, et
+      # FR | openssh la rejette sans appel - "Private key is unreadable",
+      # FR | sans dire laquelle des causes habituelles. Un saut de ligne
+      # FR | final manquant echoue de la meme facon : les deux sont donc
+      # FR | reparees ici plutot que diagnostiquees. Sans effet sur une cle
+      # FR | qui n avait ni l un ni l autre.
       if [ -f "$SSH_KEY_REF" ]; then
         # EN | File-type variable / FR | variable de type File
-        cp "$SSH_KEY_REF" ~/.ssh/id_ed25519
+        tr -d '\r' < "$SSH_KEY_REF" > ~/.ssh/id_ed25519
       else
         printf '%s\n' "$SSH_KEY_REF" > ~/.ssh/id_ed25519
         echo "[warn] the key is not a File-type variable - falling back to raw content."
       fi
+      if [ -n "$(tail -c 1 ~/.ssh/id_ed25519)" ]; then
+        echo >> ~/.ssh/id_ed25519
+      fi
       chmod 600 ~/.ssh/id_ed25519
       if ! ssh-keygen -y -f ~/.ssh/id_ed25519 </dev/null >/dev/null 2>&1; then
         echo "[ERR] Private key is unreadable."
-        echo "      Common causes - Variable type instead of File,"
-        echo "      missing trailing newline, or a passphrase on the key."
+        echo "      First line: $(head -1 ~/.ssh/id_ed25519)"
+        echo "      Lines: $(wc -l < ~/.ssh/id_ed25519). CRLF and the missing"
+        echo "      trailing newline are repaired above, so what is left is a"
+        echo "      passphrase, a truncated paste, or a public key."
         exit 1
       fi
       echo "[OK] Private key is valid"

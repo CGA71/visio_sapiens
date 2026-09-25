@@ -305,6 +305,11 @@ une variable de projet l'emporte sur tout ce qu'un job écrit sous
 rien et que l'appareil recevait la clé de production. L'échec est discret —
 `[OK] Private key is valid`, puis `Permission denied (publickey)`.
 
+`.ssh_bootstrap` recopie la clé avec `tr -d`, et non `cp`, puis ajoute un saut
+de ligne s'il manque : une clé collée depuis un presse-papiers Windows arrive
+avec des fins de ligne CRLF et openssh la refuse sans appel, avec une erreur qui
+cite trois causes possibles et n'en désigne aucune.
+
 ---
 
 ## 6. Tests de fumée
