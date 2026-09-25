@@ -305,6 +305,15 @@ de l'hôte. Il est désactivé sciemment ici, parce que la production se déploi
 la même façon, et qu'une préproduction sur appareil incapable d'exécuter le
 script de production n'est pas une préproduction.
 
+Deux détails ont coûté une exécution chacun. Désactiver le mode protection ne
+suffit pas : il faut **redémarrer** le conteneur de l'add-on ensuite, la socket
+Docker étant montée au démarrage. Et l'add-on doit tourner avec **`zsh: false`**
+— son shell par défaut est zsh, qui échoue sur un motif ne correspondant à rien,
+là où `sh` laisse passer le littéral. `.deploy_appliance` compte sur ce
+comportement (`for pth in $HA_CFG/www/vssp/*.json …; do [ -e "$pth" ] || continue`),
+si bien que sous zsh le déploiement meurt sur `no matches found` avant d'avoir
+rien fait.
+
 L'appareil s'appelle **`vssp-staging`** (`ha host options --hostname`). Il
 sortait d'usine sous le nom `homeassistant`, le même nom mDNS que l'appareil de
 production sur le même réseau ; deux `homeassistant.local` sur un LAN, c'est le

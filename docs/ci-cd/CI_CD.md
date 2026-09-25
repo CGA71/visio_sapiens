@@ -301,6 +301,14 @@ socket. It is disabled deliberately here, because production deploys the same
 way, and an appliance staging that cannot run the production script is not
 staging.
 
+Two details cost a pipeline run each. Turning protection mode off is not enough
+on its own: the add-on container has to be **restarted** afterwards, because the
+Docker socket is mounted at start. And the add-on must run with **`zsh: false`**
+— its default shell is zsh, which aborts on a pattern that matches nothing,
+where `sh` passes the literal through. `.deploy_appliance` relies on that
+behaviour (`for pth in $HA_CFG/www/vssp/*.json …; do [ -e "$pth" ] || continue`),
+so under zsh the deploy dies on `no matches found` before it has done anything.
+
 The appliance is named **`vssp-staging`** (`ha host options --hostname`). Out
 of the box it was `homeassistant`, the same mDNS name as the production
 appliance on the same LAN; two `homeassistant.local` on one network is the
