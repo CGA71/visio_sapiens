@@ -202,13 +202,45 @@ workflow:
       if [ -n "$(tail -c 1 ~/.ssh/id_ed25519)" ]; then
         echo >> ~/.ssh/id_ed25519
       fi
+      # EN | A value pasted into the GitLab variable form can arrive with
+      # EN | its line breaks gone - header, base64 body and footer welded
+      # EN | into one line. openssh refuses that, so fold it back: the
+      # EN | markers are fixed strings and the body is base64, which means
+      # EN | the reconstruction is exact, not a guess.
+      # FR | Une valeur collee dans le formulaire de variable GitLab peut
+      # FR | arriver sans ses sauts de ligne - en-tete, corps base64 et pied
+      # FR | soudes en une seule ligne. openssh refuse cela : on replie donc.
+      # FR | Les marqueurs sont des chaines fixes et le corps est du base64,
+      # FR | la reconstruction est donc exacte et non devinee.
+      if [ "$(wc -l < ~/.ssh/id_ed25519)" -le 1 ] && grep -q "BEGIN OPENSSH PRIVATE KEY" ~/.ssh/id_ed25519; then
+        BODY=$(sed -e "s/.*BEGIN OPENSSH PRIVATE KEY-----//" -e "s/-----END OPENSSH PRIVATE KEY.*//" ~/.ssh/id_ed25519 | tr -d " ")
+        {
+          echo "-----BEGIN OPENSSH PRIVATE KEY-----"
+          printf "%s" "$BODY" | fold -w 70
+          # EN | fold does not end its output with a newline, so without
+          # EN | this echo the footer is welded onto the last base64 line.
+          # FR | fold ne termine pas sa sortie par un saut de ligne : sans
+          # FR | cet echo, le pied est soude a la derniere ligne base64.
+          echo
+          echo "-----END OPENSSH PRIVATE KEY-----"
+        } > ~/.ssh/id_ed25519.folded
+        mv ~/.ssh/id_ed25519.folded ~/.ssh/id_ed25519
+        echo "[warn] the key arrived on a single line - line breaks restored."
+      fi
       chmod 600 ~/.ssh/id_ed25519
       if ! ssh-keygen -y -f ~/.ssh/id_ed25519 </dev/null >/dev/null 2>&1; then
         echo "[ERR] Private key is unreadable."
-        echo "      First line: $(head -1 ~/.ssh/id_ed25519)"
-        echo "      Lines: $(wc -l < ~/.ssh/id_ed25519). CRLF and the missing"
-        echo "      trailing newline are repaired above, so what is left is a"
-        echo "      passphrase, a truncated paste, or a public key."
+        echo "      Lines: $(wc -l < ~/.ssh/id_ed25519) - header present:"
+        echo "      $(head -c 36 ~/.ssh/id_ed25519 | grep -c BEGIN)"
+        echo "      CRLF, a missing trailing newline and a single-line paste"
+        echo "      are all repaired above, so what is left is a passphrase,"
+        echo "      a truncated paste, or a public key."
+        # EN | Never print the file. On a single-line value, head -1 IS the
+        # EN | whole private key, and it lands in a job log that anyone with
+        # EN | access to the project can read.
+        # FR | Ne jamais afficher le fichier. Sur une valeur d une seule
+        # FR | ligne, head -1 EST la cle privee entiere, et elle atterrit
+        # FR | dans un log de job lisible par tout membre du projet.
         exit 1
       fi
       echo "[OK] Private key is valid"

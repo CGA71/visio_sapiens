@@ -306,6 +306,11 @@ if the file lacks one: a key pasted from a Windows clipboard arrives with CRLF
 line endings and openssh refuses it outright, with an error that names three
 possible causes and picks none.
 
+The same block also folds a key back into lines when the pasted value arrived
+as one, and it never prints the file: on a single-line value, `head -1` is the
+entire private key, and a job log is readable by every project member. The key
+that was printed that way has been replaced on the appliance and the log erased.
+
 ---
 
 ## 6. Smoke tests

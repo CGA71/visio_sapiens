@@ -310,6 +310,11 @@ de ligne s'il manque : une clé collée depuis un presse-papiers Windows arrive
 avec des fins de ligne CRLF et openssh la refuse sans appel, avec une erreur qui
 cite trois causes possibles et n'en désigne aucune.
 
+Le même bloc replie aussi la clé en lignes quand la valeur collée est arrivée
+sur une seule, et il n'affiche jamais le fichier : sur une valeur d'une ligne,
+`head -1` est la clé privée entière, et un log de job est lisible par tout membre
+du projet. La clé ainsi affichée a été remplacée sur l'appareil et le log effacé.
+
 ---
 
 ## 6. Tests de fumée
