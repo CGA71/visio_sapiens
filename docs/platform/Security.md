@@ -21,6 +21,14 @@ plainly rather than let it go unstated:
   `local_only: true` — a network-level restriction, not an identity
   check. Anyone on the LAN who knows (or guesses) the webhook id can
   call it.
+- The **MCP server** (`addons/vssp-mcp`, `kubernetes/mcp`) listens on
+  port 8099 and, unlike everything above, does **not** sit behind Home
+  Assistant's authentication: it is its own HTTP service. Its own
+  `api_token` option is the only gate, it is empty by default, and the
+  server prints a warning at every start when it is. Left empty, that
+  port is an unauthenticated read of every entity state in the house —
+  the tools are read-only, but reading is exactly what leaks. Set it.
+  See [MCP_Server](MCP_Server.md).
 
 None of this is a login system. This is the gap the design below is
 meant to close.

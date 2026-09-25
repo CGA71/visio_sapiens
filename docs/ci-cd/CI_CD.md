@@ -131,26 +131,29 @@ Points worth knowing:
 `themes/`, `hacs.json`, `repository.yaml`, `README.md`, `CHANGELOG.md`,
 `VERSION`.
 
-### `mcp-server/` is deliberately not in this list
+### `vssp_mcp/` — deployed, but not run by Home Assistant
 
-The [MCP server](../../mcp-server/README.md) is desktop-side tooling: an MCP
-client on a workstation starts it, and it reads an instance over the network.
-It is **not** deployed, and its absence from `dist/` is not an oversight.
+`dist/vssp_mcp/` carries the [MCP server](../platform/MCP_Server.md)'s Python
+package, and both deploy jobs copy it to `/config/vssp_mcp`. It is the only
+thing in the package that Home Assistant itself never imports: it is *stored*
+on the instance and *read* by whichever container serves it — the `vssp-mcp`
+add-on on Home Assistant OS, or the k3s pod in `kubernetes/mcp/`.
 
-Two reasons, both of which would break if someone "fixed" it:
+That is why it sits beside `vssp/` rather than inside it. Everything under
+`vssp/` is executed by Home Assistant, through `command_line` sensors and
+`shell_command`s, so it must stay **stdlib + pyyaml** — a Home Assistant OS
+appliance is not somewhere you ask a user to run `pip install`. The MCP server
+needs the MCP SDK, and gets it from its container. The rule was never "no
+dependencies"; it was "nothing the appliance has to install for you", and this
+separation is what keeps it absolute instead of becoming "stdlib, except when".
 
-- Everything under `vssp/` lands in `/config/vssp` on every instance and is
-  therefore restricted to **stdlib + pyyaml** — a Home Assistant OS appliance
-  is not somewhere you ask a user to run `pip install`. The MCP server depends
-  on the MCP SDK. Keeping it out of the deployed tree is what lets that rule
-  stay absolute rather than becoming "stdlib, except when".
-- It needs no deployment to do its job. It talks to Home Assistant over the
-  REST and websocket APIs, from wherever it runs.
+Shipping the code this way means a new version of the server arrives with an
+ordinary deploy — no add-on rebuild, no image to push, and nothing that needs a
+container registry (this GitLab has none enabled).
 
-Installation is a workstation concern and is documented in the server's own
-README. The directory is named `mcp-server`, with a hyphen, so that it cannot
-shadow the `mcp` package on `sys.path` when Python starts from the repository
-root.
+Unlike `vssp/`, the copy is **wholesale, not additive**: `/config/vssp_mcp` is
+removed and rewritten on every deploy. Nothing local belongs in it, so a file
+deleted from the repository has to disappear from the instance too.
 
 ---
 

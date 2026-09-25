@@ -129,28 +129,32 @@ Points à connaître :
 `package:hacs` (tags seulement) construit un paquet distinct, purement thème :
 `themes/`, `hacs.json`, `repository.yaml`, `README.md`, `CHANGELOG.md`, `VERSION`.
 
-### `mcp-server/` n'est volontairement pas dans cette liste
+### `vssp_mcp/` — déployé, mais pas exécuté par Home Assistant
 
-Le [serveur MCP](../../mcp-server/README.fr.md) est un outil de poste de
-travail : un client MCP le démarre sur la machine de l'utilisateur, et il lit
-une instance par le réseau. Il n'est **pas** déployé, et son absence de
-`dist/` n'est pas un oubli.
+`dist/vssp_mcp/` porte le paquet Python du [serveur MCP](../platform/MCP_Server.fr.md),
+et les deux jobs de déploiement le copient dans `/config/vssp_mcp`. C'est la
+seule chose du paquet que Home Assistant lui-même n'importe jamais : elle est
+*stockée* sur l'instance et *lue* par le conteneur qui la sert — l'add-on
+`vssp-mcp` sur Home Assistant OS, ou le pod k3s de `kubernetes/mcp/`.
 
-Deux raisons, que « corriger » cette absence casserait toutes les deux :
+C'est pourquoi il siège à côté de `vssp/` et non dedans. Tout ce qui est sous
+`vssp/` est exécuté par Home Assistant, via des capteurs `command_line` et des
+`shell_command`, et doit donc rester **stdlib + pyyaml** — une machine Home
+Assistant OS n'est pas un endroit où l'on demande à un utilisateur de lancer
+`pip install`. Le serveur MCP a besoin du SDK MCP, et l'obtient de son
+conteneur. La règle n'a jamais été « aucune dépendance » mais « rien que
+l'appareil doive installer pour toi », et cette séparation est ce qui la garde
+absolue au lieu de la laisser devenir « stdlib, sauf quand ».
 
-- Tout ce qui est sous `vssp/` atterrit dans `/config/vssp` sur chaque
-  instance, et se limite donc à **stdlib + pyyaml** — une machine Home
-  Assistant OS n'est pas un endroit où l'on demande à un utilisateur de lancer
-  `pip install`. Le serveur MCP dépend du SDK MCP. Le garder hors de l'arbre
-  déployé est ce qui permet à cette règle de rester absolue plutôt que de
-  devenir « stdlib, sauf quand ».
-- Il n'a besoin d'aucun déploiement pour faire son travail. Il parle à Home
-  Assistant par les API REST et websocket, depuis là où il tourne.
+Livrer le code ainsi fait qu'une nouvelle version du serveur arrive par un
+déploiement ordinaire — sans reconstruction d'add-on, sans image à pousser, et
+sans rien qui exige un registre de conteneurs (ce GitLab n'en a aucun
+d'activé).
 
-L'installation est une affaire de poste de travail, documentée dans le README
-du serveur. Le répertoire s'appelle `mcp-server`, avec un trait d'union, pour
-qu'il ne puisse pas masquer le paquet `mcp` dans `sys.path` quand Python
-démarre depuis la racine du dépôt.
+Contrairement à `vssp/`, la copie est **en bloc, pas additive** :
+`/config/vssp_mcp` est supprimé puis réécrit à chaque déploiement. Rien de
+local n'y a sa place, donc un fichier supprimé du dépôt doit disparaître de
+l'instance aussi.
 
 ---
 

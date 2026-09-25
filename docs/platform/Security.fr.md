@@ -21,6 +21,15 @@ pour le dire clairement plutôt que de le laisser tacite :
   `local_only: true` — une restriction réseau, pas une vérification
   d'identité. Quiconque sur le réseau local connaît (ou devine)
   l'identifiant du webhook peut l'appeler.
+- Le **serveur MCP** (`addons/vssp-mcp`, `kubernetes/mcp`) écoute sur le
+  port 8099 et, contrairement à tout ce qui précède, ne se trouve **pas**
+  derrière l'authentification de Home Assistant : c'est son propre
+  service HTTP. Son option `api_token` est la seule barrière, elle est
+  vide par défaut, et le serveur affiche un avertissement à chaque
+  démarrage quand c'est le cas. Laissé vide, ce port est une lecture non
+  authentifiée de l'état de chaque entité de la maison — les outils sont
+  en lecture seule, mais c'est précisément la lecture qui fuit.
+  Posez-le. Voir [MCP_Server](MCP_Server.fr.md).
 
 Rien de tout cela n'est un système de connexion. C'est précisément
 l'écart que la conception ci-dessous vise à combler.

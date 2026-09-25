@@ -1,0 +1,173 @@
+########################################################################
+# EN | Visio Sapiens MCP on k3s — the staging counterpart of the HAOS
+# FR | Visio Sapiens MCP sur k3s — le pendant preproduction de l add-on
+# EN | add-on in addons/vssp-mcp. Same Python package, different wrapper.
+# FR | HAOS dans addons/vssp-mcp. Meme paquet Python, enveloppe differente.
+#
+# EN | Applied by apply-mcp.sh beside this file, which fills __HA_URL__ and
+# EN | builds the ConfigMap from the repository. Do not apply this file
+# EN | directly: the placeholder is not valid YAML content for a URL, and
+# EN | the code ConfigMap will not exist.
+# FR | Applique par apply-mcp.sh a cote de ce fichier, qui remplit
+# FR | __HA_URL__ et construit la ConfigMap depuis le depot. Ne pas
+# FR | appliquer ce fichier directement : le marqueur n est pas une URL
+# FR | valide, et la ConfigMap du code n existera pas.
+#
+# EN | NO PRIVATE IMAGE, ON PURPOSE. This GitLab has no container registry
+# EN | enabled, so there is nothing for the cluster to pull. Rather than ask
+# EN | for one, the runtime is the public python image and the two
+# EN | dependencies are installed into an emptyDir by an init container.
+# EN | That costs a few seconds at pod start and removes an entire piece of
+# EN | infrastructure from the critical path.
+# FR | PAS D IMAGE PRIVEE, VOLONTAIREMENT. Ce GitLab n a pas de registre de
+# FR | conteneurs active, il n y a donc rien a tirer pour le cluster. Plutot
+# FR | que d en exiger un, l execution utilise l image python publique et
+# FR | les deux dependances sont installees dans un emptyDir par un
+# FR | conteneur d initialisation. Cela coute quelques secondes au demarrage
+# FR | du pod et retire toute une piece d infrastructure du chemin critique.
+########################################################################
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: vssp-mcp
+  namespace: homeassistant
+  labels:
+    app: vssp-mcp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: vssp-mcp
+  template:
+    metadata:
+      labels:
+        app: vssp-mcp
+    spec:
+      initContainers:
+        - name: deps
+          image: python:3.12-alpine
+          command:
+            - sh
+            - -c
+            - pip install --no-cache-dir --target /deps "mcp>=2.2.0" "uvicorn>=0.30"
+          volumeMounts:
+            - name: deps
+              mountPath: /deps
+      containers:
+        - name: server
+          image: python:3.12-alpine
+          command: ["python", "-m", "vssp_mcp.server"]
+          env:
+            # EN | PYTHONPATH carries both: the pip target and /app, where
+            # EN | the ConfigMap puts the package.
+            # FR | PYTHONPATH porte les deux : la cible de pip et /app, ou
+            # FR | la ConfigMap place le paquet.
+            - name: PYTHONPATH
+              value: /deps:/app
+            # EN | vssp_ws.py comes from the same ConfigMap rather than from
+            # EN | Home Assistant's config volume: mounting that volume
+            # EN | would mean knowing its PVC name and sharing a
+            # EN | ReadWriteOnce claim with the running instance. The
+            # EN | ConfigMap is built from the repository, so it is the same
+            # EN | file either way.
+            # FR | vssp_ws.py vient de la meme ConfigMap plutot que du
+            # FR | volume de configuration de Home Assistant : monter ce
+            # FR | volume supposerait de connaitre le nom de son PVC et de
+            # FR | partager une revendication ReadWriteOnce avec l instance
+            # FR | en cours. La ConfigMap est construite depuis le depot,
+            # FR | c est donc le meme fichier dans les deux cas.
+            - name: VSSP_DIR
+              value: /app/vssp
+            - name: VSSP_HA_URL
+              value: __HA_URL__
+            - name: VSSP_MCP_HOST
+              value: 0.0.0.0
+            - name: VSSP_MCP_PORT
+              value: "8099"
+            # EN | There is no Supervisor on k3s, so a long-lived token is
+            # EN | the only route in. It lives in a Secret, never in this
+            # EN | manifest.
+            # FR | Il n y a pas de Superviseur sur k3s, un jeton longue
+            # FR | duree est donc la seule voie d entree. Il vit dans un
+            # FR | Secret, jamais dans ce manifeste.
+            - name: HA_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: vssp-mcp
+                  key: ha_token
+            - name: VSSP_MCP_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: vssp-mcp
+                  key: api_token
+          ports:
+            - containerPort: 8099
+              name: mcp
+          volumeMounts:
+            - name: deps
+              mountPath: /deps
+            - name: code
+              mountPath: /app/vssp_mcp
+            - name: shared
+              mountPath: /app/vssp
+          readinessProbe:
+            # EN | A GET on the MCP endpoint answers 4xx without a session,
+            # EN | never 5xx, so any answer at all means the process is up
+            # EN | and serving. Checking for 200 would fail a healthy
+            # EN | server.
+            # FR | Un GET sur le point d acces MCP repond 4xx sans session,
+            # FR | jamais 5xx, donc n importe quelle reponse signifie que le
+            # FR | processus est la et sert. Exiger 200 ferait echouer un
+            # FR | serveur en bonne sante.
+            tcpSocket:
+              port: 8099
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 20m
+              memory: 96Mi
+            limits:
+              memory: 256Mi
+      volumes:
+        - name: deps
+          emptyDir: {}
+        - name: code
+          configMap:
+            name: vssp-mcp-code
+            items:
+              - key: __init__.py
+                path: __init__.py
+              - key: ha.py
+                path: ha.py
+              - key: server.py
+                path: server.py
+        - name: shared
+          configMap:
+            name: vssp-mcp-code
+            items:
+              - key: vssp_ws.py
+                path: vssp_ws.py
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: vssp-mcp
+  namespace: homeassistant
+  labels:
+    app: vssp-mcp
+spec:
+  # EN | NodePort, because the client that talks to this is on the LAN, not
+  # EN | in the cluster. Same reasoning as the Vault add-on's exposed 8200:
+  # EN | the thing consuming it is a person's machine.
+  # FR | NodePort, parce que le client qui parle a ceci est sur le LAN, pas
+  # FR | dans le cluster. Meme raisonnement que le 8200 expose de l add-on
+  # FR | Vault : ce qui le consomme est la machine d une personne.
+  type: NodePort
+  selector:
+    app: vssp-mcp
+  ports:
+    - name: mcp
+      port: 8099
+      targetPort: 8099
+      nodePort: 30099

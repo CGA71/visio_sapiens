@@ -38,7 +38,7 @@ moment de monter l'instance, ou quand quelque chose cloche sous l'interface.
 | [Security](platform/Security.fr.md) | la posture honnête : ce qui est protégé, ce qui ne l'est pas |
 | [Backup_Retention](platform/Backup_Retention.fr.md) | qui écrit des sauvegardes, et qui les élague |
 | [mosquitto-k3s](platform/mosquitto-k3s.md) | installer le broker MQTT sur k3s *(français uniquement)* |
-| [Serveur MCP](../mcp-server/README.fr.md) | lire une instance vivante depuis un client IA — côté poste, jamais déployé |
+| [MCP_Server](platform/MCP_Server.fr.md) | lire une instance vivante depuis un client IA — un add-on sur HAOS, un pod sur k3s |
 
 ## `ci-cd/` — le pipeline
 

@@ -67,6 +67,7 @@
 # ============================================================================
 from __future__ import annotations
 
+import os
 from typing import Any
 
 from mcp.server import MCPServer
@@ -143,7 +144,7 @@ def vssp_instance() -> dict:
     supervised = "hassio" in components
     by_id = _by_id(ha.states())
     return {
-        "url": ha.base_url(),
+        "route": ha.route_label(),
         "location": config.get("location_name"),
         "core_version": config.get("version"),
         "installation": "Home Assistant OS / Supervised" if supervised else "Core (container / k3s pod)",
@@ -394,15 +395,86 @@ def find_entities(pattern: str, limit: int = 50) -> dict:
             "entities": hits[:limit]}
 
 
+# -- EN | Serving it / FR | Le servir -------------------------------------
+# EN | streamable-http, not stdio. stdio only works when the MCP client
+# EN | starts the server process itself, which means the server lives on
+# EN | the client's machine. This one runs ON THE INSTANCE - an add-on on
+# EN | Home Assistant OS, a container beside the pod on k3s - so the client
+# EN | reaches it over the network, and HTTP is the transport for that.
+# FR | streamable-http, pas stdio. stdio ne fonctionne que si le client MCP
+# FR | demarre lui-meme le processus, ce qui veut dire que le serveur vit
+# FR | sur la machine du client. Celui-ci tourne SUR L'INSTANCE - un add-on
+# FR | sur Home Assistant OS, un conteneur a cote du pod sur k3s - donc le
+# FR | client le joint par le reseau, et HTTP est le transport pour cela.
+def _guard(app, secret: str):
+    """EN | A shared secret in front of the whole app.
+
+    EN | Without this, a port on the home LAN is an unauthenticated window
+    EN | onto every entity state in the house: the tools are read-only, but
+    EN | read is exactly what leaks. The MCP SDK's own auth is OAuth-shaped
+    EN | and wants an authorization server, which is a great deal of moving
+    EN | parts for one household; a bearer compared in constant time is the
+    EN | proportionate answer, and it is skipped entirely when no secret is
+    EN | configured, so the simple case stays simple.
+    FR | Un secret partage devant toute l'application.
+
+    FR | Sans lui, un port sur le reseau domestique est une fenetre non
+    FR | authentifiee sur l'etat de chaque entite de la maison : les outils
+    FR | sont en lecture seule, mais c'est precisement la lecture qui fuit.
+    FR | L'authentification propre au SDK MCP a la forme d'OAuth et veut un
+    FR | serveur d'autorisation, ce qui fait beaucoup de pieces mobiles
+    FR | pour un foyer ; un bearer compare en temps constant est la reponse
+    FR | proportionnee, et il est entierement saute quand aucun secret
+    FR | n'est configure, pour que le cas simple reste simple."""
+    import hmac
+
+    expected = f"Bearer {secret}"
+
+    async def guarded(scope, receive, send):
+        if scope["type"] == "http":
+            headers = dict(scope.get("headers") or [])
+            offered = headers.get(b"authorization", b"").decode("latin-1")
+            if not hmac.compare_digest(offered, expected):
+                await send({"type": "http.response.start", "status": 401,
+                            "headers": [(b"content-type", b"text/plain")]})
+                await send({"type": "http.response.body",
+                            "body": b"unauthorized\n"})
+                return
+        await app(scope, receive, send)
+
+    return guarded
+
+
 def main() -> None:
-    # EN | stdio: the transport every desktop MCP client speaks, and the
-    # EN | only one that needs no port, no certificate and no listener on
-    # EN | the home network. The client starts this process itself.
-    # FR | stdio : le transport que parle tout client MCP de bureau, et le
-    # FR | seul qui ne demande ni port, ni certificat, ni service a
-    # FR | l'ecoute sur le reseau domestique. Le client demarre lui-meme ce
-    # FR | processus.
-    mcp.run()
+    import uvicorn
+
+    host = os.environ.get("VSSP_MCP_HOST", "0.0.0.0")
+    port = int(os.environ.get("VSSP_MCP_PORT", "8099"))
+    secret = os.environ.get("VSSP_MCP_TOKEN", "").strip()
+
+    # EN | Reported once at start, because "which credential did it end up
+    # EN | using" is the first question when an add-on misbehaves, and the
+    # EN | answer is decided by probing rather than by configuration.
+    # FR | Rapporte une fois au demarrage, parce que « quel identifiant a-t-
+    # FR | il finalement utilise » est la premiere question quand un add-on
+    # FR | se comporte mal, et la reponse est decidee par sondage plutot que
+    # FR | par configuration.
+    try:
+        print(f"[vssp-mcp] home assistant route: {ha.route_label()}", flush=True)
+    except ha.HAError as exc:
+        print(f"[vssp-mcp] NO ROUTE TO HOME ASSISTANT\n{exc}", flush=True)
+
+    app = mcp.streamable_http_app()
+    if secret:
+        app = _guard(app, secret)
+        print("[vssp-mcp] a shared secret is required on every request",
+              flush=True)
+    else:
+        print("[vssp-mcp] WARNING: no token set - anyone on the network who "
+              "can reach this port can read this instance", flush=True)
+
+    print(f"[vssp-mcp] listening on http://{host}:{port}/mcp", flush=True)
+    uvicorn.run(app, host=host, port=port, log_level="info")
 
 
 if __name__ == "__main__":

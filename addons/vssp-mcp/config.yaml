@@ -1,0 +1,106 @@
+########################################################################
+# EN | Visio Sapiens MCP — LOCAL ADD-ON for Home Assistant OS.
+# FR | Visio Sapiens MCP — ADD-ON LOCAL pour Home Assistant OS.
+#
+# EN | An AI client (Claude Desktop, Claude Code, any MCP client) reads
+# EN | this instance through this add-on: rooms, entities, dashboards,
+# EN | dependencies, pending updates. The client stays on whatever machine
+# EN | you use it from - only the SERVER lives here, which is the point:
+# EN | nothing to install on a workstation, and the server is beside the
+# EN | data it reads.
+# EN | Install: copy this directory to /addons/vssp-mcp on the instance,
+# EN | then Settings > Add-ons > Add-on store > (three dots) Check for
+# EN | updates. It appears under "Local add-ons". Same procedure as
+# EN | vssp-vault next to it.
+# FR | Un client IA (Claude Desktop, Claude Code, n'importe quel client
+# FR | MCP) lit cette instance a travers cet add-on : pieces, entites,
+# FR | dashboards, dependances, mises a jour en attente. Le client reste
+# FR | sur la machine d'ou vous l'utilisez - seul le SERVEUR vit ici, et
+# FR | c'est tout l'interet : rien a installer sur un poste de travail, et
+# FR | le serveur est a cote des donnees qu'il lit.
+# FR | Installation : copier ce repertoire vers /addons/vssp-mcp sur
+# FR | l'instance, puis Parametres > Modules complementaires > Boutique >
+# FR | (trois points) Verifier les mises a jour. Il apparait sous
+# FR | « Modules complementaires locaux ». Meme procedure que vssp-vault a
+# FR | cote.
+########################################################################
+name: Visio Sapiens MCP
+version: "1.0.0"
+slug: vssp_mcp
+description: >-
+  Model Context Protocol server for Visio Sapiens — lets an AI client read
+  this instance's rooms, dashboards, dependencies and pending updates.
+url: https://github.com/neo/visio-sapiens
+arch:
+  - amd64
+  - aarch64
+
+startup: services
+boot: auto
+
+# EN | THE WHOLE REASON THIS IS AN ADD-ON AND NOT A SCRIPT IN /config.
+# EN | `homeassistant_api: true` is what makes the Supervisor accept this
+# EN | container at http://supervisor/core with SUPERVISOR_TOKEN - no
+# EN | long-lived token to create, paste or revoke. That route failed twice
+# EN | for vssp_dependencies.py (v1.0.8, v1.0.9) for a structural reason:
+# EN | /core/websocket authenticates ADD-ONS, and that script runs inside
+# EN | Core's own container, which is not one. This add-on is one.
+# EN | The server still probes the route at start rather than trusting it,
+# EN | and falls back to the token below if the proxy refuses - see
+# EN | routes() in vssp_mcp/ha.py.
+# FR | TOUTE LA RAISON POUR LAQUELLE CECI EST UN ADD-ON ET PAS UN SCRIPT
+# FR | DANS /config. `homeassistant_api: true` est ce qui fait accepter ce
+# FR | conteneur par le Superviseur sur http://supervisor/core avec
+# FR | SUPERVISOR_TOKEN - aucun jeton longue duree a creer, coller ou
+# FR | revoquer. Cette route a echoue deux fois pour vssp_dependencies.py
+# FR | (v1.0.8, v1.0.9) pour une raison structurelle : /core/websocket
+# FR | authentifie les ADD-ONS, et ce script tourne dans le conteneur de
+# FR | Core, qui n'en est pas un. Cet add-on en est un.
+# FR | Le serveur sonde quand meme la route au demarrage plutot que de lui
+# FR | faire confiance, et bascule sur le jeton ci-dessous si le proxy
+# FR | refuse - voir routes() dans vssp_mcp/ha.py.
+homeassistant_api: true
+
+# EN | Read-only on the configuration directory, for two things: the
+# EN | vssp_mcp package itself (deployed to /config/vssp_mcp by the
+# EN | pipeline) and vssp/vssp_ws.py, the websocket client the whole
+# EN | project shares. Nothing is written there - this add-on only reads.
+# FR | Lecture seule sur le repertoire de configuration, pour deux choses :
+# FR | le paquet vssp_mcp lui-meme (deploye dans /config/vssp_mcp par le
+# FR | pipeline) et vssp/vssp_ws.py, le client websocket que tout le projet
+# FR | partage. Rien n'y est ecrit - cet add-on ne fait que lire.
+map:
+  - homeassistant_config:ro
+
+ports:
+  8099/tcp: 8099
+ports_description:
+  8099/tcp: >-
+    The MCP endpoint, at /mcp. Your AI client connects here over the LAN.
+    Set api_token below unless you are content for anyone who can reach
+    this port to read your instance.
+
+host_network: false
+
+options:
+  # EN | Empty means no authentication at all. That is a deliberate default
+  # EN | only in the sense that it is honest: the add-on says so loudly in
+  # EN | its log at every start rather than pretending a read-only server
+  # EN | is harmless. Set any long random string here and give the same one
+  # EN | to the client as a bearer token.
+  # FR | Vide signifie aucune authentification. Ce defaut n'est deliberé
+  # FR | qu'au sens ou il est honnete : l'add-on le dit haut et fort dans
+  # FR | son journal a chaque demarrage plutot que de pretendre qu'un
+  # FR | serveur en lecture seule est inoffensif. Mettre ici une longue
+  # FR | chaine aleatoire et donner la meme au client comme jeton bearer.
+  api_token: ""
+  # EN | Only used if the Supervisor route is refused. Normally left empty.
+  # FR | Utilise seulement si la route Superviseur est refusee. Normalement
+  # FR | laisse vide.
+  ha_token: ""
+  log_level: info
+
+schema:
+  api_token: str?
+  ha_token: str?
+  log_level: list(debug|info|warning|error)

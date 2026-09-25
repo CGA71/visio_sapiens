@@ -573,6 +573,35 @@ build:
     - rm -f  dist/vssp/.gitkeep
     - chmod +x dist/vssp/*.py
     - echo "[i] Bundled scripts:" && ls -1 dist/vssp/
+    # --- EN | The MCP server's Python package ------------------------------
+    # --- FR | Le paquet Python du serveur MCP ------------------------------
+    # EN | vssp_mcp/ is NOT under vssp/, and that separation is the point.
+    # EN | Everything in vssp/ is run by Home Assistant itself, through
+    # EN | command_line sensors and shell_commands, so it must stay stdlib +
+    # EN | pyyaml: `pip install` is not something you ask of a Home Assistant
+    # EN | OS box. The MCP server needs the MCP SDK, and gets it from the
+    # EN | container that runs it - the HAOS add-on in addons/vssp-mcp, or
+    # EN | the k3s pod in kubernetes/mcp. Home Assistant never imports this
+    # EN | package; it only stores it.
+    # EN | It ships in the package so that a new version of the server
+    # EN | arrives by deploying, exactly like everything else, with no
+    # EN | add-on rebuild and no image to push.
+    # FR | vssp_mcp/ n est PAS sous vssp/, et cette separation est tout
+    # FR | l interet. Tout ce qui est dans vssp/ est execute par Home
+    # FR | Assistant lui-meme, via des capteurs command_line et des
+    # FR | shell_commands, et doit donc rester stdlib + pyyaml : `pip
+    # FR | install` n est pas une chose qu on demande a une machine Home
+    # FR | Assistant OS. Le serveur MCP a besoin du SDK MCP, et l obtient du
+    # FR | conteneur qui l execute - l add-on HAOS dans addons/vssp-mcp, ou
+    # FR | le pod k3s dans kubernetes/mcp. Home Assistant n importe jamais ce
+    # FR | paquet ; il ne fait que le stocker.
+    # FR | Il part dans le paquet pour qu une nouvelle version du serveur
+    # FR | arrive par un deploiement, exactement comme tout le reste, sans
+    # FR | reconstruction d add-on ni image a pousser.
+    - mkdir -p dist/vssp_mcp
+    - cp -r vssp_mcp/. dist/vssp_mcp/
+    - rm -rf dist/vssp_mcp/__pycache__
+    - echo "[i] MCP server package:" && ls -1 dist/vssp_mcp/
     # --- EN | DASHBOARD GENERATION — the build is the single source --------
     # --- FR | GENERATION DES DASHBOARDS — le build est la source unique -----
     # EN | Generating here rather than relying on committed views guarantees
@@ -1186,6 +1215,24 @@ deploy:staging:
         cp -r /config/.vssp_stage/vssp/. /config/vssp/
         rm -rf /config/.vssp_stage/vssp
         chmod +x /config/vssp/*.py
+        # EN | The MCP server's package. Home Assistant never imports it -
+        # EN | the container that serves it does, over the mapped config
+        # EN | directory. Deployed here so a new version arrives with a
+        # EN | deploy rather than an add-on rebuild. Replaced wholesale
+        # EN | rather than merged: unlike vssp/, nothing local belongs in
+        # EN | it, so a file that vanished from the repository must vanish
+        # EN | here too.
+        # FR | Le paquet du serveur MCP. Home Assistant ne l importe jamais -
+        # FR | c est le conteneur qui le sert qui le fait, via le repertoire
+        # FR | de configuration mappe. Deploye ici pour qu une nouvelle
+        # FR | version arrive par un deploiement plutot que par une
+        # FR | reconstruction d add-on. Remplace en bloc plutot que fusionne :
+        # FR | contrairement a vssp/, rien de local n y a sa place, donc un
+        # FR | fichier disparu du depot doit disparaitre ici aussi.
+        rm -rf /config/vssp_mcp
+        mkdir -p /config/vssp_mcp
+        cp -r /config/.vssp_stage/vssp_mcp/. /config/vssp_mcp/
+        rm -rf /config/.vssp_stage/vssp_mcp
         mv /config/.vssp_stage/config-fragment.yaml /config/config-fragment.yaml
         mv /config/.vssp_stage/config-fragment-rooms.yaml /config/config-fragment-rooms.yaml
         # EN | Packages (additive: does not overwrite non-vssp packages)
@@ -1771,6 +1818,16 @@ deploy:production:
         cp -r $HA_CFG/.vssp_stage/vssp/. $HA_CFG/vssp/
         rm -rf $HA_CFG/.vssp_stage/vssp
         chmod +x $HA_CFG/vssp/*.py
+        # EN | The MCP server's package (identical to staging). Read by the
+        # EN | vssp-mcp add-on through its read-only config mapping; Home
+        # EN | Assistant itself never imports it.
+        # FR | Le paquet du serveur MCP (identique au staging). Lu par
+        # FR | l add-on vssp-mcp via son mappage de configuration en lecture
+        # FR | seule ; Home Assistant lui-meme ne l importe jamais.
+        rm -rf $HA_CFG/vssp_mcp
+        mkdir -p $HA_CFG/vssp_mcp
+        cp -r $HA_CFG/.vssp_stage/vssp_mcp/. $HA_CFG/vssp_mcp/
+        rm -rf $HA_CFG/.vssp_stage/vssp_mcp
         mv $HA_CFG/.vssp_stage/config-fragment.yaml $HA_CFG/config-fragment.yaml
         mv $HA_CFG/.vssp_stage/config-fragment-rooms.yaml $HA_CFG/config-fragment-rooms.yaml
         # EN | Packages (additive: does not overwrite non-vssp packages)

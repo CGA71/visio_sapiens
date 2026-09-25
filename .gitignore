@@ -50,14 +50,14 @@ youtube/
 # FR | le modele de qui a lance le generateur en dernier.
 home-assistant/dashboards/views/*.yaml
 
-# EN | The MCP server's virtualenv. mcp-server/ is the one part of this
-# EN | project allowed a third-party dependency (the MCP SDK), because it
-# EN | runs on a desktop and is never deployed to an instance - but the
-# EN | installed packages themselves have no business in the repository.
-# FR | L'environnement virtuel du serveur MCP. mcp-server/ est la seule
-# FR | partie de ce projet autorisee a avoir une dependance tierce (le SDK
-# FR | MCP), parce qu'elle tourne sur un poste de travail et n'est jamais
-# FR | deployee sur une instance - mais les paquets installes eux-memes
-# FR | n'ont rien a faire dans le depot.
-mcp-server/.venv/
-mcp-server/*.egg-info/
+# EN | Any virtualenv made while poking at the MCP server locally. The
+# EN | server itself does not need one: it runs on the instance, inside the
+# EN | vssp-mcp add-on or the k3s pod, and those install the MCP SDK
+# EN | themselves. Nothing in the repository should depend on a local venv.
+# FR | Tout environnement virtuel cree en bidouillant le serveur MCP en
+# FR | local. Le serveur lui-meme n en a pas besoin : il tourne sur
+# FR | l instance, dans l add-on vssp-mcp ou le pod k3s, et ceux-la
+# FR | installent le SDK MCP eux-memes. Rien dans le depot ne doit dependre
+# FR | d un venv local.
+/.venv/
+*.egg-info/
