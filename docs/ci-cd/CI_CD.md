@@ -286,6 +286,21 @@ A VM that has no ssh yet is still reachable on its serial console —
 `virtctl console haos -n haos` on the k3s host — which is where those two
 commands were typed.
 
+Terminal & SSH gets a session, but not a deployment. `.deploy_appliance`
+regenerates the dashboards with `docker exec homeassistant ...`, and that add-on
+has no Docker access at all — the job reaches step 9 and stops on
+`docker: command not found`. The appliance therefore runs **Advanced SSH & Web
+Terminal** (`a0d7b954_ssh`) instead, on the same port 22222, with **protection
+mode disabled** — which is what grants Docker. Its session already carries
+`/config`, `/homeassistant` and `/addons`, so the add-on copy step stops warning
+too. Terminal & SSH is left installed and stopped; two add-ons cannot hold the
+same host port.
+
+Protection mode is a real privilege: it hands the add-on the host's Docker
+socket. It is disabled deliberately here, because production deploys the same
+way, and an appliance staging that cannot run the production script is not
+staging.
+
 The appliance is named **`vssp-staging`** (`ha host options --hostname`). Out
 of the box it was `homeassistant`, the same mDNS name as the production
 appliance on the same LAN; two `homeassistant.local` on one network is the
