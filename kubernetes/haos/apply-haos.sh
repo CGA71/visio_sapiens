@@ -25,9 +25,11 @@
 # EN | machine as production, Supervisor and add-ons included.
 # EN |
 # EN | Run on the k3s host, from a checkout:
-# EN |     sudo sh kubernetes/haos/apply-haos.sh
-# EN |     sudo sh kubernetes/haos/apply-haos.sh --dry-run
-# EN |     HAOS_VERSION=18.3 sudo sh kubernetes/haos/apply-haos.sh
+# EN |     sh kubernetes/haos/apply-haos.sh
+# EN |     sh kubernetes/haos/apply-haos.sh --dry-run
+# EN |     HAOS_VERSION=18.3 sh kubernetes/haos/apply-haos.sh
+# EN | No root needed: everything here is a Kubernetes API call. It only
+# EN | wants a kubeconfig the running account can read.
 # EN |
 # EN | It does NOT install the KubeVirt and CDI operators. Those are a
 # EN | cluster-wide change with their own release cadence, and a script
@@ -38,9 +40,11 @@
 # FR | que la production, Superviseur et add-ons compris.
 # FR |
 # FR | A lancer sur l hote k3s, depuis un clone :
-# FR |     sudo sh kubernetes/haos/apply-haos.sh
-# FR |     sudo sh kubernetes/haos/apply-haos.sh --dry-run
-# FR |     HAOS_VERSION=18.3 sudo sh kubernetes/haos/apply-haos.sh
+# FR |     sh kubernetes/haos/apply-haos.sh
+# FR |     sh kubernetes/haos/apply-haos.sh --dry-run
+# FR |     HAOS_VERSION=18.3 sh kubernetes/haos/apply-haos.sh
+# FR | Aucun root necessaire : tout ici est un appel a l API Kubernetes. Il
+# FR | ne demande qu un kubeconfig lisible par le compte qui l execute.
 # FR |
 # FR | Il n installe PAS les operateurs KubeVirt et CDI. Ce sont des
 # FR | changements a l echelle du cluster avec leur propre rythme de
@@ -72,7 +76,33 @@ say() { echo "[vssp-haos] $*"; }
 die() { echo "[ERR] $*" >&2; exit 1; }
 
 command -v kubectl >/dev/null 2>&1 || die "kubectl not found"
-kubectl version >/dev/null 2>&1 || die "kubectl cannot reach the cluster (try sudo)"
+
+# EN | k3s ships its own kubectl, and that wrapper reads
+# EN | /etc/rancher/k3s/k3s.yaml before anything else - a file only root can
+# EN | read. So an ordinary account with a perfectly good ~/.kube/config
+# EN | still gets "permission denied" on a file it never asked for, which
+# EN | reads like a broken cluster rather than a missing variable. Pointing
+# EN | KUBECONFIG at the personal copy is what makes this script runnable
+# EN | without root at all: creating the VM is an API call, not a host
+# EN | operation.
+# FR | k3s embarque son propre kubectl, et ce wrapper lit
+# FR | /etc/rancher/k3s/k3s.yaml avant tout le reste - un fichier que seul
+# FR | root peut lire. Un compte ordinaire avec un ~/.kube/config
+# FR | parfaitement valide obtient donc « permission denied » sur un fichier
+# FR | qu il n a jamais demande, ce qui se lit comme un cluster casse plutot
+# FR | que comme une variable absente. Pointer KUBECONFIG sur la copie
+# FR | personnelle est ce qui rend ce script executable sans root du tout :
+# FR | creer la VM est un appel d API, pas une operation sur l hote.
+if [ -z "$KUBECONFIG" ] && [ -r "$HOME/.kube/config" ]; then
+  export KUBECONFIG="$HOME/.kube/config"
+  say "using $KUBECONFIG"
+fi
+
+kubectl version >/dev/null 2>&1 || die "kubectl cannot reach the cluster.
+      As an ordinary account, give yourself a readable copy of the k3s
+      kubeconfig once:
+        sudo install -D -o \$USER -g \$USER -m 600 \
+          /etc/rancher/k3s/k3s.yaml \$HOME/.kube/config"
 
 # ---------------------------------------------------------------------------
 # EN | HARDWARE FIRST. Without /dev/kvm the VM still starts - under software
