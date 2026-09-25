@@ -1,0 +1,100 @@
+#!/bin/sh
+# Visio Sapiens - Neural Home Interface for Home Assistant
+# Copyright (C) 2026 Expanse IT <expanse-it@outlook.fr>
+#
+# SPDX-License-Identifier: GPL-2.0-or-later
+#
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 2 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program; if not, write to the Free Software
+# Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+# MA 02110-1301 USA.
+
+########################################################################
+# EN | Lets IPv4 reach the Home Assistant OS VM across br0.
+# FR | Laisse l IPv4 atteindre la VM Home Assistant OS a travers br0.
+#
+# EN | Install on the k3s host:
+# EN |   sudo install -m 755 kubernetes/haos/50-br0-forward \
+# EN |        /etc/NetworkManager/dispatcher.d/50-br0-forward
+# FR | Installation sur l hote k3s :
+# FR |   sudo install -m 755 kubernetes/haos/50-br0-forward \
+# FR |        /etc/NetworkManager/dispatcher.d/50-br0-forward
+#
+# EN | WHY THIS EXISTS. k3s sets the FORWARD chain policy to DROP, and
+# EN | net.bridge.bridge-nf-call-iptables is 1 - which Kubernetes requires,
+# EN | so it cannot simply be turned off. Consequence: every bridged IPv4
+# EN | frame crossing br0 is walked through iptables and dropped, while
+# EN | IPv6 sails past untouched because this cluster is IPv4-only and k3s
+# EN | never programs ip6tables.
+# EN | That asymmetry is exactly how it presented: the VM autoconfigured a
+# EN | global IPv6 address from the router and answered ping6 in 0.7 ms,
+# EN | while its IPv4 DHCP never completed and, once given a static
+# EN | address, it could not even reach its own gateway. Same interface,
+# EN | same cable, same instant.
+# EN | The per-bridge knobs (/sys/class/net/br0/bridge/nf_call_*) look like
+# EN | the answer and are not: they already read 0 by default, the global
+# EN | sysctl is what governs, and setting them changed nothing.
+# EN | So br0 is allowed explicitly instead. Nothing else is touched - the
+# EN | global sysctl stays at 1 and Kubernetes keeps the behaviour it asks
+# EN | for.
+# FR | POURQUOI CECI EXISTE. k3s met la politique de la chaine FORWARD a
+# FR | DROP, et net.bridge.bridge-nf-call-iptables vaut 1 - ce que
+# FR | Kubernetes exige, on ne peut donc pas simplement l eteindre.
+# FR | Consequence : chaque trame IPv4 pontee qui traverse br0 est passee
+# FR | par iptables et jetee, tandis que l IPv6 file sans encombre parce que
+# FR | ce cluster est IPv4 et que k3s ne programme jamais ip6tables.
+# FR | Cette asymetrie est exactement ainsi que le probleme s est presente :
+# FR | la VM s autoconfigurait une IPv6 globale depuis le routeur et
+# FR | repondait au ping6 en 0,7 ms, pendant que son DHCP IPv4 n aboutissait
+# FR | jamais et qu une fois dotee d une adresse statique elle ne joignait
+# FR | meme pas sa propre passerelle. Meme interface, meme cable, meme
+# FR | instant.
+# FR | Les reglages par pont (/sys/class/net/br0/bridge/nf_call_*) semblent
+# FR | etre la reponse et ne le sont pas : ils valent deja 0 par defaut,
+# FR | c est le sysctl global qui gouverne, et les regler n a rien change.
+# FR | br0 est donc autorise explicitement. Rien d autre n est touche - le
+# FR | sysctl global reste a 1 et Kubernetes garde le comportement qu il
+# FR | demande.
+#
+# EN | NOTE: k3s rebuilds its iptables chains on restart. The policy is
+# EN | DROP again then, and these rules sit above it, so they survive - but
+# EN | if the VM ever goes unreachable on IPv4 after a k3s restart, run the
+# EN | two commands below by hand and say so, because that would mean the
+# EN | rules were flushed rather than merely reordered.
+# FR | NB : k3s reconstruit ses chaines iptables au redemarrage. La
+# FR | politique repasse a DROP et ces regles sont au-dessus, elles
+# FR | survivent donc - mais si la VM devient injoignable en IPv4 apres un
+# FR | redemarrage de k3s, passer les deux commandes ci-dessous a la main et
+# FR | le signaler, car cela voudrait dire que les regles ont ete vidangees
+# FR | et pas seulement reordonnees.
+########################################################################
+IFACE="$1"
+ACTION="$2"
+
+[ "$IFACE" = "br0" ] || exit 0
+case "$ACTION" in
+  up|dhcp4-change|dhcp6-change) ;;
+  *) exit 0 ;;
+esac
+
+# EN | -C tests for the rule first, so a second dispatcher run does not
+# EN | stack duplicates in the chain.
+# FR | -C teste d abord la presence de la regle, pour qu un second passage
+# FR | du dispatcher n empile pas de doublons dans la chaine.
+for dir in "-i" "-o"; do
+  iptables -C FORWARD $dir br0 -j ACCEPT 2>/dev/null \
+    || iptables -I FORWARD 1 $dir br0 -j ACCEPT
+done
+
+logger -t vssp-haos "br0 forwarding rules ensured (FORWARD policy is DROP under k3s)"
+exit 0

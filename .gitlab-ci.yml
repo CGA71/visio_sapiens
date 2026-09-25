@@ -2314,15 +2314,24 @@ deploy:staging-haos:
     name: staging-haos
     url: $HAOS_URL
   variables:
-    # EN | The VM is reached at the k3s node, on the NodePort the Service in
-    # EN | kubernetes/haos/haos-vm.yaml publishes for the Terminal & SSH
-    # EN | add-on. Not the pod address: nothing outside the cluster can
-    # EN | route to that.
-    # FR | La VM se joint sur le noeud k3s, au NodePort que le Service de
-    # FR | kubernetes/haos/haos-vm.yaml publie pour l'add-on Terminal & SSH.
-    # FR | Pas l'adresse du pod : rien hors du cluster ne sait l'atteindre.
-    HA_HOST: "192.168.1.11"
-    HA_SSH_PORT: "30222"
+    # EN | The VM's own LAN address, not a NodePort on the node. It sits on
+    # EN | a host bridge now, so it answers on the network like the
+    # EN | production appliance does - and the Terminal & SSH add-on is
+    # EN | reached on its real port, with no translation in between.
+    # EN | Static, because DHCP does not work on that switch port: the
+    # EN | interface only ever got an IPv4 link-local address, while IPv6
+    # EN | autoconfigured perfectly. Set inside the appliance with
+    # EN |   ha network update enp1s0 --ipv4-method static     # EN |     --ipv4-address 192.168.1.200/24 --ipv4-gateway 192.168.1.1     # EN |     --ipv4-nameserver 192.168.1.1
+    # FR | L'adresse LAN de la VM, pas un NodePort sur le noeud. Elle est
+    # FR | desormais sur un pont hote, elle repond donc sur le reseau comme
+    # FR | l'appareil de production - et l'add-on Terminal & SSH se joint sur
+    # FR | son vrai port, sans traduction.
+    # FR | Statique, parce que le DHCP ne fonctionne pas sur ce port de
+    # FR | switch : l'interface n'a jamais obtenu qu'une adresse IPv4
+    # FR | lien-local, alors que l'IPv6 s'autoconfigurait parfaitement.
+    # FR | Posee dans l'appareil avec la commande ci-dessus.
+    HA_HOST: "192.168.1.200"
+    HA_SSH_PORT: "22222"
     HA_SSH_KEY: $HAOS_SSH_KEY
     # EN | No tag on master, so the reference is the branch build - the same
     # EN | string the pod staging writes into VSSP_VERSION, which is what

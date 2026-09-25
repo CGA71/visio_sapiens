@@ -31,6 +31,26 @@
 # FR | conception. Remplacer le pod laisserait cette fonctionnalite sans
 # FR | aucun endroit ou etre exercee.
 #
+# EN | TWO HOST-SIDE PREREQUISITES, both outside Kubernetes and both
+# EN | needing root once:
+# EN |   1. a bridge over the spare NIC, which the VM taps into
+# EN |        nmcli connection add type bridge ifname br0 con-name br0 # EN |             stp no ipv4.method disabled ipv6.method ignore
+# EN |        nmcli connection add type ethernet ifname enp11s0 master br0 # EN |             con-name br0-port-enp11s0
+# EN |        nmcli connection up br0
+# EN |   2. the dispatcher script beside this file, because k3s sets the
+# EN |      FORWARD policy to DROP and bridged IPv4 is walked through it
+# EN |        install -m 755 50-br0-forward # EN |             /etc/NetworkManager/dispatcher.d/50-br0-forward
+# EN | Without (2) the VM gets a working IPv6 and no IPv4 at all, which
+# EN | looks like a DHCP problem and is not.
+# FR | DEUX PREREQUIS COTE HOTE, tous deux hors de Kubernetes et demandant
+# FR | root une fois :
+# FR |   1. un pont sur la carte inutilisee, ou la VM vient se brancher
+# FR |      (les trois commandes nmcli ci-dessus) ;
+# FR |   2. le script dispatcher a cote de ce fichier, parce que k3s met la
+# FR |      politique FORWARD a DROP et que l IPv4 pontee y passe.
+# FR | Sans (2), la VM obtient une IPv6 qui marche et aucune IPv4, ce qui
+# FR | ressemble a un probleme de DHCP et n en est pas un.
+#
 # EN | Applied by apply-haos.sh beside this file, which substitutes
 # EN | __HAOS_VERSION__ and checks the prerequisites first. Do not apply
 # EN | this directly: the placeholder is not a valid version.
@@ -216,52 +236,20 @@ spec:
           dataVolume:
             name: haos-disk
 ---
-apiVersion: v1
-kind: Service
-metadata:
-  name: haos
-  namespace: haos
-  labels:
-    app: haos
-spec:
-  # EN | NodePort, like the MCP server's: what consumes this is a browser
-  # EN | on the LAN and a CI job, neither of which is inside the cluster.
-  # FR | NodePort, comme celui du serveur MCP : ce qui le consomme est un
-  # FR | navigateur sur le LAN et un job CI, ni l'un ni l'autre dans le
-  # FR | cluster.
-  type: NodePort
-  selector:
-    app: haos
-  ports:
-    # EN | The landing page, served on 80 while Core installs. Reaching
-    # EN | it through a translated port still leaves its 307 pointing at
-    # EN | the node's own port 80, so this is for reading the appliance's
-    # EN | state during a first boot rather than for onboarding through.
-    # EN | Onboarding through a browser wants the VM on its own LAN address
-    # EN | - see the note on the interface above.
-    # FR | La page d'accueil, servie sur 80 pendant l'installation de Core.
-    # FR | L'atteindre par un port traduit laisse quand meme son 307 pointer
-    # FR | sur le port 80 du noeud, donc ceci sert a lire l'etat de
-    # FR | l'appareil pendant un premier demarrage, pas a l'initialiser au
-    # FR | travers. Initialiser depuis un navigateur veut la VM sur sa
-    # FR | propre adresse LAN - voir la note sur l'interface ci-dessus.
-    - name: landing
-      port: 80
-      targetPort: 80
-      nodePort: 30080
-    - name: http
-      port: 8123
-      targetPort: 8123
-      nodePort: 30123
-    # EN | The Terminal & SSH add-on listens here once installed. It is what
-    # EN | deploy:staging will use when it switches from `kubectl exec` to
-    # EN | the ssh transport the production job already uses - a VM has no
-    # EN | container to exec into.
-    # FR | L'add-on Terminal & SSH ecoute ici une fois installe. C'est ce
-    # FR | qu'utilisera deploy:staging quand il passera de `kubectl exec` au
-    # FR | transport ssh que le job de production emploie deja - une VM n'a
-    # FR | pas de conteneur ou entrer.
-    - name: ssh
-      port: 22222
-      targetPort: 22222
-      nodePort: 30222
+# EN | NO SERVICE. There was one, publishing NodePorts, and it stopped
+# EN | meaning anything the moment the VM left the pod network for the
+# EN | bridge: a Service selects the virt-launcher pod, and the VM no
+# EN | longer has an interface on that pod's network. It answered nothing
+# EN | while looking perfectly configured, which is worse than absent.
+# EN | The appliance is reached at its own LAN address, like the production
+# EN | one: http://192.168.1.200:8123, ssh on 22222 once the Terminal & SSH
+# EN | add-on is installed.
+# FR | PAS DE SERVICE. Il y en avait un, publiant des NodePorts, et il a
+# FR | cesse de signifier quoi que ce soit des que la VM a quitte le reseau
+# FR | des pods pour le pont : un Service selectionne le pod virt-launcher,
+# FR | et la VM n'a plus d'interface sur le reseau de ce pod. Il ne
+# FR | repondait rien tout en paraissant parfaitement configure, ce qui est
+# FR | pire qu'absent.
+# FR | L'appareil se joint a sa propre adresse LAN, comme celui de
+# FR | production : http://192.168.1.200:8123, ssh sur 22222 une fois
+# FR | l'add-on Terminal & SSH installe.
