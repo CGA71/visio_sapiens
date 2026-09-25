@@ -45,6 +45,60 @@ metadata:
   labels:
     vssp-role: staging-iso-prod
 ---
+# EN | THE LAN, THROUGH A HOST BRIDGE. This is what makes the appliance
+# EN | behave like the production one instead of like a service behind a
+# EN | translated port.
+# EN | The first attempt used masquerade on the pod network, published with
+# EN | a NodePort. It fails for a reason that is nobody's bug: while Home
+# EN | Assistant OS installs Core it serves a landing page on port 80 and
+# EN | redirects :8123 there with a 307 that DROPS THE PORT. Behind a
+# EN | NodePort that redirect points at the node's own port 80, which
+# EN | belongs to Traefik. No amount of port publishing fixes an absolute
+# EN | redirect that discards the port - the appliance has to be reachable
+# EN | at its own address.
+# EN | br0 is a host bridge over enp11s0, a second NIC that carries no host
+# EN | address. That matters: bridging the interface the host actually uses
+# EN | would mean moving 192.168.1.11 onto the bridge, on a remote machine,
+# EN | which is the classic way to lock yourself out. This one enslaves an
+# EN | interface that was doing nothing, so the management link is never
+# EN | touched.
+# EN | No `ipam` block on purpose: the CNI assigns nothing and Home
+# EN | Assistant OS does its own DHCP, exactly as it would on bare metal.
+# FR | LE LAN, PAR UN PONT SUR L'HOTE. C'est ce qui fait que l'appareil se
+# FR | comporte comme celui de production plutot que comme un service
+# FR | derriere un port traduit.
+# FR | La premiere tentative utilisait masquerade sur le reseau des pods,
+# FR | publie par NodePort. Elle echoue pour une raison qui n'est le bug de
+# FR | personne : pendant qu'il installe Core, Home Assistant OS sert une
+# FR | page d'accueil sur le port 80 et y redirige :8123 par un 307 qui
+# FR | SUPPRIME LE PORT. Derriere un NodePort, cette redirection pointe sur
+# FR | le port 80 du noeud, qui appartient a Traefik. Aucune publication de
+# FR | port ne repare une redirection absolue qui jette le port -
+# FR | l'appareil doit etre joignable a sa propre adresse.
+# FR | br0 est un pont hote sur enp11s0, une seconde carte qui ne porte
+# FR | aucune adresse de l'hote. C'est important : ponter l'interface que
+# FR | l'hote utilise reellement obligerait a deplacer 192.168.1.11 sur le
+# FR | pont, sur une machine distante, ce qui est la facon classique de
+# FR | s'enfermer dehors. Celui-ci enrole une interface qui ne faisait
+# FR | rien, le lien de gestion n'est donc jamais touche.
+# FR | Pas de bloc `ipam` volontairement : le CNI n'attribue rien et Home
+# FR | Assistant OS fait son propre DHCP, exactement comme sur du metal.
+apiVersion: k8s.cni.cncf.io/v1
+kind: NetworkAttachmentDefinition
+metadata:
+  name: lan
+  namespace: haos
+spec:
+  config: |
+    {
+      "cniVersion": "0.3.1",
+      "name": "lan",
+      "type": "bridge",
+      "bridge": "br0",
+      "macspoofchk": false,
+      "ipam": {}
+    }
+---
 # EN | CDI imports the official QCOW2 straight from the Home Assistant
 # EN | release, decompressing the .xz on the way in. No image to build, no
 # EN | registry to host - which matters here, because this GitLab has no
@@ -128,68 +182,35 @@ spec:
               disk:
                 bus: virtio
           interfaces:
-            - name: default
-              # EN | masquerade: the VM sits behind the pod's own address
-              # EN | and is reached through the Service below. It is the
-              # EN | binding that needs no extra CNI, which is why it comes
-              # EN | first.
-              # EN | WHAT IT COSTS: no LAN presence, so no mDNS and no
-              # EN | broadcast discovery - Home Assistant will not find
-              # EN | devices by itself here. Everything this staging exists
-              # EN | for (the Supervisor, add-ons, the CI deploy path) works
-              # EN | regardless. When discovery is genuinely needed, swap
-              # EN | this for a bridge or macvlan attachment via multus and
-              # EN | the VM gets a real LAN address.
-              # FR | masquerade : la VM se place derriere l'adresse du pod
-              # FR | et se joint par le Service ci-dessous. C'est le binding
-              # FR | qui ne demande aucun CNI supplementaire, d'ou son
-              # FR | choix en premier.
-              # FR | CE QU'IL COUTE : aucune presence LAN, donc ni mDNS ni
-              # FR | decouverte par diffusion - Home Assistant ne trouvera
-              # FR | pas d'appareils tout seul ici. Tout ce pour quoi cette
-              # FR | preproduction existe (le Superviseur, les add-ons, le
-              # FR | chemin de deploiement CI) fonctionne malgre tout. Quand
-              # FR | la decouverte devient vraiment necessaire, remplacer
-              # FR | ceci par un attachement bridge ou macvlan via multus et
-              # FR | la VM recoit une vraie adresse LAN.
-              # EN | NO `ports:` LIST, AND THAT IS THE POINT. KubeVirt's
-              # EN | documentation is explicit: "If the ports section is
-              # EN | missing, all ports forwarded into the VM" - and listing
-              # EN | ports forwards ONLY those. This manifest listed 8123 and
-              # EN | 22222, which looked tidy and broke onboarding.
-              # EN | Home Assistant OS serves its "preparing" landing page on
-              # EN | port 80 while it downloads Core, and redirects :8123
-              # EN | there with a 307 that drops the port entirely
-              # EN |   GET :8123/  ->  Location: http://<host>/
-              # EN | With 80 unforwarded, every call that page makes for its
-              # EN | own status died, so a machine that was working perfectly
-              # EN | showed "Impossible d'obtenir les informations sur le
-              # EN | reseau" and a wall of CORS errors. Confirmed with curl
-              # EN | straight at the VM address, where there is no port
-              # EN | translation at all and the 307 appeared just the same -
-              # EN | which is what ruled out the NodePort as the cause.
-              # FR | PAS DE LISTE `ports:`, ET C'EST VOULU. La documentation
-              # FR | de KubeVirt est explicite : « If the ports section is
-              # FR | missing, all ports forwarded into the VM » - et en
-              # FR | lister ne fait suivre QUE ceux-la. Ce manifeste listait
-              # FR | 8123 et 22222, ce qui paraissait propre et cassait
-              # FR | l'initialisation.
-              # FR | Home Assistant OS sert sa page « preparation » sur le
-              # FR | port 80 pendant qu'il telecharge Core, et y redirige
-              # FR | :8123 par un 307 qui supprime le port
-              # FR |   GET :8123/  ->  Location: http://<hote>/
-              # FR | Le port 80 n'etant pas transmis, chaque appel de cette
-              # FR | page pour son propre etat mourait, et une machine qui
-              # FR | fonctionnait parfaitement affichait « Impossible
-              # FR | d'obtenir les informations sur le reseau » et un mur
-              # FR | d'erreurs CORS. Confirme au curl directement sur
-              # FR | l'adresse de la VM, ou il n'y a aucune traduction de
-              # FR | port et ou le 307 apparaissait pareil - ce qui a
-              # FR | disculpe le NodePort.
-              masquerade: {}
+            # EN | `bridge` binding, not masquerade: the VM gets a tap on
+            # EN | br0 and speaks on the LAN with its own MAC, so the router
+            # EN | leases it an address like any other machine in the house.
+            # EN | mDNS and broadcast discovery work, which masquerade could
+            # EN | never offer.
+            # FR | Binding `bridge`, pas masquerade : la VM recoit un tap sur
+            # FR | br0 et parle sur le LAN avec sa propre MAC, donc le
+            # FR | routeur lui donne un bail comme a n'importe quelle machine
+            # FR | de la maison. Le mDNS et la decouverte par diffusion
+            # FR | fonctionnent, ce que masquerade ne pouvait pas offrir.
+            - name: lan
+              bridge: {}
+      # EN | ONE interface, like production. The pod network is gone on
+      # EN | purpose: two NICs would have Home Assistant OS running DHCP on
+      # EN | both and choosing a default route on its own, and an appliance
+      # EN | that is only sometimes on the LAN is worse than one that always
+      # EN | is. Recovery if the LAN has no DHCP server is a manifest revert
+      # EN | and a restart - the disk persists.
+      # FR | UNE interface, comme la production. Le reseau des pods est
+      # FR | retire volontairement : deux cartes feraient faire du DHCP sur
+      # FR | les deux a Home Assistant OS, qui choisirait seul sa route par
+      # FR | defaut, et un appareil parfois sur le LAN est pire qu'un
+      # FR | appareil toujours dessus. En cas d'absence de serveur DHCP sur
+      # FR | le LAN, la sortie de secours est un retour du manifeste et un
+      # FR | redemarrage - le disque persiste.
       networks:
-        - name: default
-          pod: {}
+        - name: lan
+          multus:
+            networkName: lan
       volumes:
         - name: rootdisk
           dataVolume:
