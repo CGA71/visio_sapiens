@@ -138,7 +138,26 @@ lovelace:
       mode: yaml
       title: __T:adminmenu.title__
       icon: mdi:shield-crown
-      show_in_sidebar: false
+      # EN | VISIBLE IN THE SIDEBAR, and it has to be. The Visio Sapiens
+      # EN | navigation rail is built from custom:button-card, which HACS
+      # EN | installs and no deploy can: on a fresh instance nothing renders,
+      # EN | and the one screen that installs the missing dependencies was
+      # EN | reachable only through the rail that needed them. Measured on the
+      # EN | appliance staging, first deploy onto a virgin Home Assistant OS.
+      # EN | Home Assistant's own sidebar needs no card at all, so this entry
+      # EN | survives an instance where nothing else does. require_admin still
+      # EN | guards it.
+      # FR | VISIBLE DANS LA BARRE LATERALE, et il le faut. Le bandeau de
+      # FR | navigation de Visio Sapiens est fait de custom:button-card, que
+      # FR | HACS installe et qu aucun deploiement ne peut installer : sur une
+      # FR | instance neuve rien ne s affiche, et le seul ecran qui installe
+      # FR | les dependances manquantes n etait accessible que par le bandeau
+      # FR | qui en dependait. Mesure sur la preproduction appareil, premier
+      # FR | deploiement sur un Home Assistant OS vierge.
+      # FR | La barre laterale de Home Assistant ne demande aucune carte :
+      # FR | cette entree survit donc a une instance ou rien d autre ne tient.
+      # FR | require_admin continue de la proteger.
+      show_in_sidebar: true
       require_admin: true
       filename: dashboards/views/admin.yaml
     visio-sapiens-energy:

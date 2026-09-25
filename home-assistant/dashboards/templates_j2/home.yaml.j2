@@ -957,6 +957,26 @@ views:
               min-height: 0;
               overflow-y: auto;
             }
+{% else %}
+      # EN | Home Assistant rejects a logbook whose target resolves to no
+      # EN | entity, so before the first room exists the card cannot be
+      # EN | rendered at all. It used to be dropped, which left a hole in
+      # EN | the grid and read as a broken column. A markdown card says
+      # EN | what is waited for instead - core card, no HACS needed, so it
+      # EN | shows on an instance that has nothing installed yet.
+      # FR | Home Assistant refuse une carte logbook dont la cible ne
+      # FR | resout aucune entite : avant la premiere piece, elle ne peut
+      # FR | pas etre rendue. Elle etait supprimee, ce qui laissait un trou
+      # FR | dans la grille et se lisait comme une colonne cassee. Une
+      # FR | carte markdown dit ce qui est attendu - carte native, sans
+      # FR | HACS, elle s affiche donc sur une instance ou rien n est
+      # FR | encore installe.
+      - type: markdown
+        title: "{{ t('home.events_recent') }}"
+        view_layout:
+          grid-area: events
+        content: >-
+          {{ t('home.events_need_rooms') }}
 {% endif %}
 
       # --- Météo et prévisions (alignée avec le bas de la sidebar) ------

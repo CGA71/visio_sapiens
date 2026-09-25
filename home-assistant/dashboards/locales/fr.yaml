@@ -591,6 +591,9 @@ home:
     intrusion: Intrusion détectée
     no_alert: Aucune alerte
   events_recent: Événements récents
+  events_need_rooms: >-
+    Le journal d'événements suit vos pièces. Il se remplit dès que PIÈCES &
+    ÉTAGES en a déclaré une première.
   discovery_confirm: "Lancer une découverte des capteurs dans toutes les zones ?"
   upgrade_confirm: "Analyser les écarts entre le dashboard actuel et les dernières entités découvertes ? Une sauvegarde sera créée par précaution."
   delete_confirm: "Action IRRÉVERSIBLE sans restauration manuelle de la sauvegarde. Le code doit être correct. Continuer ?"

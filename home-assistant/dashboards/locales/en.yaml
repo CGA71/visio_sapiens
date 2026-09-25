@@ -755,6 +755,9 @@ home:
     intrusion: Intrusion detected
     no_alert: No alert
   events_recent: Recent events
+  events_need_rooms: >-
+    The event log follows your rooms. It fills in as soon as ROOMS & FLOORS
+    has declared the first one.
   discovery_confirm: "Run a sensor discovery across every area?"
   upgrade_confirm: "Compare the current dashboard with the latest discovered entities? A backup will be created as a precaution."
   delete_confirm: "IRREVERSIBLE action without a manual restore from the backup. The code must be correct. Continue?"
