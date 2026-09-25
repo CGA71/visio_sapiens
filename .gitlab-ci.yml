@@ -1679,22 +1679,52 @@ deploy:staging:
 # EN | 3b. DEPLOY PRODUCTION — HAOS 18.1, tags only, manual gate
 # FR | 3b. DEPLOY PRODUCTION — HAOS 18.1, tags uniquement, gate manuelle
 # ============================================================================
-deploy:production:
-  extends: .ssh_bootstrap
-  stage: deploy
-  needs: ["build"]
-  rules:
-    - if: $CI_COMMIT_TAG
-      when: manual
-  allow_failure: false
-  environment:
-    name: production
-    url: $PROD_URL
+# ============================================================================
+# EN | THE APPLIANCE DEPLOY, ONCE, FOR EVERY APPLIANCE.
+# FR | LE DEPLOIEMENT APPAREIL, UNE FOIS, POUR CHAQUE APPAREIL.
+#
+# EN | This was deploy:production's script and nothing about it changed when
+# EN | it moved here. It is lifted out because there is now more than one
+# EN | Home Assistant OS appliance to deploy to: the production mini PC, and
+# EN | the KubeVirt VM in the `haos` namespace that gives staging a real
+# EN | Supervisor (see kubernetes/haos/). Both are reached the same way -
+# EN | over ssh, through the `ha` alias that .ssh_bootstrap writes from
+# EN | $HA_HOST / $HA_SSH_PORT / $HA_SSH_KEY - so both run exactly these
+# EN | steps and differ only in variables.
+# EN | The alternative was a second 500-line copy. This project already
+# EN | carries two near-duplicate deploy jobs, and that duplication has cost
+# EN | real time: vssp_mcp had to be added to both, and an apostrophe bug hit
+# EN | only one of them because the two are quoted differently. One more copy
+# EN | was not the answer.
+# EN | $VSSP_DEPLOY_REF replaces the four functional uses of $CI_COMMIT_TAG:
+# EN | the log line, the pre-deploy backup name, the resource cache-busting
+# EN | token and the closing message. On production it IS $CI_COMMIT_TAG, so
+# EN | nothing about a tagged release changes.
+# FR | C'etait le script de deploy:production et rien n'y a change en
+# FR | demenageant. Il est extrait parce qu'il y a desormais plus d'un
+# FR | appareil Home Assistant OS ou deployer : le mini PC de production, et
+# FR | la VM KubeVirt du namespace `haos` qui donne a la preproduction un
+# FR | vrai Superviseur (voir kubernetes/haos/). Les deux se joignent de la
+# FR | meme facon - en ssh, via l'alias `ha` que .ssh_bootstrap ecrit depuis
+# FR | $HA_HOST / $HA_SSH_PORT / $HA_SSH_KEY - donc les deux executent
+# FR | exactement ces etapes et ne different que par des variables.
+# FR | L'alternative etait une seconde copie de 500 lignes. Ce projet porte
+# FR | deja deux jobs de deploiement quasi jumeaux, et cette duplication a
+# FR | coute du temps reel : vssp_mcp a du etre ajoute aux deux, et un bug
+# FR | d'apostrophe n'a frappe que l'un des deux parce qu'ils ne sont pas
+# FR | cites pareil. Une copie de plus n'etait pas la reponse.
+# FR | $VSSP_DEPLOY_REF remplace les quatre usages fonctionnels de
+# FR | $CI_COMMIT_TAG : la ligne de log, le nom de la sauvegarde d'avant
+# FR | deploiement, le jeton de cache-busting des ressources et le message
+# FR | final. En production il VAUT $CI_COMMIT_TAG, donc rien ne change pour
+# FR | une release taguee.
+# ============================================================================
+.deploy_appliance:
   script:
-    - echo "PRODUCTION deployment (HAOS) - $CI_COMMIT_TAG"
+    - echo "APPLIANCE deployment (HAOS) - $VSSP_DEPLOY_REF -> $HA_HOST"
     - export HA_CFG=$(ssh ha '[ -d /homeassistant ] && echo /homeassistant || echo /config')
     - echo "HAOS config ->" "$HA_CFG"
-    - ssh ha "ha backups new --name 'pre-$CI_COMMIT_TAG' --no-progress" || echo "[warn] backup not created"
+    - ssh ha "ha backups new --name 'pre-$VSSP_DEPLOY_REF' --no-progress" || echo "[warn] backup not created"
     - cat $PACKAGE_NAME.tar.gz | ssh ha "rm -rf $HA_CFG/.vssp_stage && mkdir -p $HA_CFG/.vssp_stage && tar xzf - -C $HA_CFG/.vssp_stage"
     - |
       ssh ha "set -e
@@ -2122,7 +2152,7 @@ deploy:production:
         --fragment /tmp/vssp_pkg/config-fragment.yaml /tmp/prod_fragment_rooms.yaml \
         --prune-dashboards \
         --prune-resources \
-        --vtoken   "$CI_COMMIT_TAG" || { echo "[ERR] configuration.yaml patch failed"; exit 1; }
+        --vtoken   "$VSSP_DEPLOY_REF" || { echo "[ERR] configuration.yaml patch failed"; exit 1; }
     # EN | The patcher does not handle the homeassistant domain: set packages key
     # FR | Le patcher ne gere pas le domaine homeassistant : poser la cle packages
     - |
@@ -2209,11 +2239,99 @@ deploy:production:
         fi
       "
     - ssh ha "rm -rf $HA_CFG/dashboards.old $HA_CFG/themes.old"
-    - echo "[OK] $CI_COMMIT_TAG live in production"
+    - echo "[OK] $VSSP_DEPLOY_REF live on $HA_HOST"
 
 # ============================================================================
 # EN | 4. SMOKE TESTS / FR | 4. TESTS DE FUMEE
 # ============================================================================
+
+
+deploy:production:
+  extends: [.ssh_bootstrap, .deploy_appliance]
+  stage: deploy
+  variables:
+    # EN | On production the deploy reference IS the tag - the job only runs
+    # EN | on one, so nothing about a tagged release behaves differently
+    # EN | than before this was parameterised.
+    # FR | En production la reference de deploiement EST le tag - le job ne
+    # FR | tourne que sur un tag, donc rien d'une release taguee ne se
+    # FR | comporte autrement qu'avant ce parametrage.
+    VSSP_DEPLOY_REF: $CI_COMMIT_TAG
+  needs: ["build"]
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: manual
+  allow_failure: false
+  environment:
+    name: production
+    url: $PROD_URL
+    # EN | script: comes from .deploy_appliance above.
+    # FR | script: vient de .deploy_appliance ci-dessus.
+
+# ============================================================================
+# EN | SECOND STAGING — the same appliance, in a KubeVirt VM.
+# FR | SECONDE PREPRODUCTION — le meme appareil, en VM KubeVirt.
+#
+# EN | Deploys to the Home Assistant OS VM in the `haos` namespace, defined
+# EN | by kubernetes/haos/haos-vm.yaml. Same script as production, because
+# EN | it is the same kind of machine - that is the entire point of it
+# EN | existing. The `homeassistant` pod staging is NOT replaced: it is the
+# EN | only instance where the INFRASTRUCTURE update family applies, since
+# EN | an appliance reports n/a for it by design.
+# EN | MANUAL, and invisible until $HAOS_SSH_KEY exists. The VM has to be
+# EN | created, onboarded and given the Terminal & SSH add-on before
+# EN | anything here can work, and a job that fails every pipeline while
+# EN | waiting for that would just teach everyone to ignore a red icon.
+# FR | Deploie vers la VM Home Assistant OS du namespace `haos`, definie par
+# FR | kubernetes/haos/haos-vm.yaml. Meme script que la production, parce que
+# FR | c'est le meme type de machine - c'est toute la raison de son
+# FR | existence. La preproduction en pod `homeassistant` n'est PAS
+# FR | remplacee : c'est la seule instance ou la famille de mises a jour
+# FR | INFRASTRUCTURE s'applique, un appareil rapportant n/a par conception.
+# FR | MANUEL, et invisible tant que $HAOS_SSH_KEY n'existe pas. La VM doit
+# FR | etre creee, initialisee et dotee de l'add-on Terminal & SSH avant que
+# FR | quoi que ce soit ici puisse fonctionner, et un job qui echouerait a
+# FR | chaque pipeline en attendant n'apprendrait qu'a ignorer une icone
+# FR | rouge.
+#
+# EN | REQUIRED CI/CD VARIABLE
+# FR | VARIABLE CI/CD REQUISE
+#   HAOS_SSH_KEY   File type - private key whose public half is in the
+#                  Terminal & SSH add-on's authorized_keys on the VM.
+#                  Absent = this job does not appear at all.
+# ============================================================================
+deploy:staging-haos:
+  extends: [.ssh_bootstrap, .deploy_appliance]
+  stage: deploy
+  needs: ["build"]
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: never
+    - if: $CI_COMMIT_BRANCH == "master" && $HAOS_SSH_KEY
+      when: manual
+  allow_failure: true
+  environment:
+    name: staging-haos
+    url: $HAOS_URL
+  variables:
+    # EN | The VM is reached at the k3s node, on the NodePort the Service in
+    # EN | kubernetes/haos/haos-vm.yaml publishes for the Terminal & SSH
+    # EN | add-on. Not the pod address: nothing outside the cluster can
+    # EN | route to that.
+    # FR | La VM se joint sur le noeud k3s, au NodePort que le Service de
+    # FR | kubernetes/haos/haos-vm.yaml publie pour l'add-on Terminal & SSH.
+    # FR | Pas l'adresse du pod : rien hors du cluster ne sait l'atteindre.
+    HA_HOST: "192.168.1.11"
+    HA_SSH_PORT: "30222"
+    HA_SSH_KEY: $HAOS_SSH_KEY
+    # EN | No tag on master, so the reference is the branch build - the same
+    # EN | string the pod staging writes into VSSP_VERSION, which is what
+    # EN | sensor.vssp_deployed_version shows in the navigation rail.
+    # FR | Pas de tag sur master, la reference est donc la build de branche -
+    # FR | la meme chaine que la preproduction en pod ecrit dans
+    # FR | VSSP_VERSION, celle qu'affiche sensor.vssp_deployed_version dans
+    # FR | le bandeau de navigation.
+    VSSP_DEPLOY_REF: dev-$CI_COMMIT_SHORT_SHA
 test:staging:
   extends:
     - .smoke_test

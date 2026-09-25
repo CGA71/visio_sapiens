@@ -1,0 +1,201 @@
+########################################################################
+# EN | Home Assistant OS as a KubeVirt VM — the ISO-PROD staging instance.
+# FR | Home Assistant OS en VM KubeVirt — la preproduction ISO-PROD.
+#
+# EN | WHY A VM AND NOT A POD. The existing staging is a Home Assistant
+# EN | CORE container in the `homeassistant` namespace. It has no
+# EN | Supervisor, no /addons, no `ha` CLI - so a whole half of this
+# EN | project could never be tested before production: the add-on copy
+# EN | step, `ha backups new`, the add-on store, and the Supervisor
+# EN | authentication route the vssp-mcp add-on depends on, which shipped
+# EN | with "not verified, and it cannot be" written in its own
+# EN | documentation. A real HAOS appliance closes that gap.
+# EN | This is ADDITIVE. The `homeassistant` namespace stays exactly as it
+# EN | is, and it has to: it is a k3s pod, so it is the only instance where
+# EN | the INFRASTRUCTURE update family (host, k3s, GitLab, runner) is
+# EN | applicable at all. On an appliance that family reports n/a by
+# EN | design. Replacing the pod would leave that feature with nowhere to
+# EN | be exercised.
+# FR | POURQUOI UNE VM ET PAS UN POD. La preproduction actuelle est un
+# FR | conteneur Home Assistant CORE dans le namespace `homeassistant`.
+# FR | Elle n'a ni Superviseur, ni /addons, ni CLI `ha` - donc toute une
+# FR | moitie de ce projet ne pouvait jamais etre testee avant la
+# FR | production : l'etape de copie des add-ons, `ha backups new`, la
+# FR | boutique, et la route d'authentification Superviseur dont depend
+# FR | l'add-on vssp-mcp, livre avec « pas verifie, et invérifiable » ecrit
+# FR | dans sa propre documentation. Une vraie machine HAOS comble ce trou.
+# FR | C'est ADDITIF. Le namespace `homeassistant` reste exactement tel
+# FR | quel, et il le faut : c'est un pod k3s, donc la seule instance ou la
+# FR | famille de mises a jour INFRASTRUCTURE (hote, k3s, GitLab, runner)
+# FR | s'applique. Sur un appareil, cette famille rapporte n/a par
+# FR | conception. Remplacer le pod laisserait cette fonctionnalite sans
+# FR | aucun endroit ou etre exercee.
+#
+# EN | Applied by apply-haos.sh beside this file, which substitutes
+# EN | __HAOS_VERSION__ and checks the prerequisites first. Do not apply
+# EN | this directly: the placeholder is not a valid version.
+# FR | Applique par apply-haos.sh a cote, qui substitue __HAOS_VERSION__ et
+# FR | verifie d'abord les prerequis. Ne pas appliquer directement : le
+# FR | marqueur n'est pas une version valide.
+########################################################################
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: haos
+  labels:
+    vssp-role: staging-iso-prod
+---
+# EN | CDI imports the official QCOW2 straight from the Home Assistant
+# EN | release, decompressing the .xz on the way in. No image to build, no
+# EN | registry to host - which matters here, because this GitLab has no
+# EN | container registry enabled.
+# EN | The disk is a standalone DataVolume rather than a dataVolumeTemplate
+# EN | so that redefining the VM does not throw away a staging instance
+# EN | somebody has configured. Deleting the disk has to be deliberate.
+# FR | CDI importe le QCOW2 officiel directement depuis la release Home
+# FR | Assistant, en decompressant le .xz au passage. Aucune image a
+# FR | construire, aucun registre a heberger - ce qui compte ici, car ce
+# FR | GitLab n'a pas de registre de conteneurs active.
+# FR | Le disque est une DataVolume autonome plutot qu'une
+# FR | dataVolumeTemplate, pour que redefinir la VM ne jette pas une
+# FR | preproduction que quelqu'un a configuree. Supprimer le disque doit
+# FR | etre un geste volontaire.
+apiVersion: cdi.kubevirt.io/v1beta1
+kind: DataVolume
+metadata:
+  name: haos-disk
+  namespace: haos
+spec:
+  source:
+    http:
+      url: https://github.com/home-assistant/operating-system/releases/download/__HAOS_VERSION__/haos_ova-__HAOS_VERSION__.qcow2.xz
+  storage:
+    accessModes:
+      - ReadWriteOnce
+    resources:
+      requests:
+        storage: 64Gi
+---
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: haos
+  namespace: haos
+  labels:
+    app: haos
+spec:
+  runStrategy: Always
+  template:
+    metadata:
+      labels:
+        app: haos
+    spec:
+      domain:
+        cpu:
+          cores: 2
+          # EN | host-passthrough rather than an emulated model: the
+          # EN | appliance runs its own container engine inside, and every
+          # EN | layer of emulation is paid for twice.
+          # FR | host-passthrough plutot qu'un modele emule : l'appareil
+          # FR | fait tourner son propre moteur de conteneurs dedans, et
+          # FR | chaque couche d'emulation se paie deux fois.
+          model: host-passthrough
+        memory:
+          guest: 4Gi
+        # EN | UEFI IS MANDATORY. Home Assistant OS does not boot on legacy
+        # EN | BIOS - the documentation says so in those words - and the
+        # EN | OVMF build must be a NON-secureboot one. Getting this wrong
+        # EN | produces a VM that starts, consumes a core, and never shows
+        # EN | a login. It is the single most common reason a HAOS VM
+        # EN | appears to do nothing.
+        # EN | secureBoot: false also means SMM is not needed; smm is only
+        # EN | required when secure boot is on.
+        # FR | L'UEFI EST OBLIGATOIRE. Home Assistant OS ne demarre pas en
+        # FR | BIOS legacy - la documentation le dit en ces termes - et la
+        # FR | build OVMF doit etre SANS secure boot. Se tromper ici produit
+        # FR | une VM qui demarre, consomme un coeur, et n'affiche jamais de
+        # FR | connexion. C'est la premiere cause d'une VM HAOS qui semble
+        # FR | ne rien faire.
+        # FR | secureBoot: false signifie aussi que SMM est inutile ; smm
+        # FR | n'est requis que si le secure boot est actif.
+        firmware:
+          bootloader:
+            efi:
+              secureBoot: false
+        devices:
+          disks:
+            - name: rootdisk
+              disk:
+                bus: virtio
+          interfaces:
+            - name: default
+              # EN | masquerade: the VM sits behind the pod's own address
+              # EN | and is reached through the Service below. It is the
+              # EN | binding that needs no extra CNI, which is why it comes
+              # EN | first.
+              # EN | WHAT IT COSTS: no LAN presence, so no mDNS and no
+              # EN | broadcast discovery - Home Assistant will not find
+              # EN | devices by itself here. Everything this staging exists
+              # EN | for (the Supervisor, add-ons, the CI deploy path) works
+              # EN | regardless. When discovery is genuinely needed, swap
+              # EN | this for a bridge or macvlan attachment via multus and
+              # EN | the VM gets a real LAN address.
+              # FR | masquerade : la VM se place derriere l'adresse du pod
+              # FR | et se joint par le Service ci-dessous. C'est le binding
+              # FR | qui ne demande aucun CNI supplementaire, d'ou son
+              # FR | choix en premier.
+              # FR | CE QU'IL COUTE : aucune presence LAN, donc ni mDNS ni
+              # FR | decouverte par diffusion - Home Assistant ne trouvera
+              # FR | pas d'appareils tout seul ici. Tout ce pour quoi cette
+              # FR | preproduction existe (le Superviseur, les add-ons, le
+              # FR | chemin de deploiement CI) fonctionne malgre tout. Quand
+              # FR | la decouverte devient vraiment necessaire, remplacer
+              # FR | ceci par un attachement bridge ou macvlan via multus et
+              # FR | la VM recoit une vraie adresse LAN.
+              masquerade: {}
+              ports:
+                - name: http
+                  port: 8123
+                - name: ssh
+                  port: 22222
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - name: rootdisk
+          dataVolume:
+            name: haos-disk
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: haos
+  namespace: haos
+  labels:
+    app: haos
+spec:
+  # EN | NodePort, like the MCP server's: what consumes this is a browser
+  # EN | on the LAN and a CI job, neither of which is inside the cluster.
+  # FR | NodePort, comme celui du serveur MCP : ce qui le consomme est un
+  # FR | navigateur sur le LAN et un job CI, ni l'un ni l'autre dans le
+  # FR | cluster.
+  type: NodePort
+  selector:
+    app: haos
+  ports:
+    - name: http
+      port: 8123
+      targetPort: 8123
+      nodePort: 30123
+    # EN | The Terminal & SSH add-on listens here once installed. It is what
+    # EN | deploy:staging will use when it switches from `kubectl exec` to
+    # EN | the ssh transport the production job already uses - a VM has no
+    # EN | container to exec into.
+    # FR | L'add-on Terminal & SSH ecoute ici une fois installe. C'est ce
+    # FR | qu'utilisera deploy:staging quand il passera de `kubectl exec` au
+    # FR | transport ssh que le job de production emploie deja - une VM n'a
+    # FR | pas de conteneur ou entrer.
+    - name: ssh
+      port: 22222
+      targetPort: 22222
+      nodePort: 30222
