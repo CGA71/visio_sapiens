@@ -131,6 +131,27 @@ Points worth knowing:
 `themes/`, `hacs.json`, `repository.yaml`, `README.md`, `CHANGELOG.md`,
 `VERSION`.
 
+### `mcp-server/` is deliberately not in this list
+
+The [MCP server](../../mcp-server/README.md) is desktop-side tooling: an MCP
+client on a workstation starts it, and it reads an instance over the network.
+It is **not** deployed, and its absence from `dist/` is not an oversight.
+
+Two reasons, both of which would break if someone "fixed" it:
+
+- Everything under `vssp/` lands in `/config/vssp` on every instance and is
+  therefore restricted to **stdlib + pyyaml** — a Home Assistant OS appliance
+  is not somewhere you ask a user to run `pip install`. The MCP server depends
+  on the MCP SDK. Keeping it out of the deployed tree is what lets that rule
+  stay absolute rather than becoming "stdlib, except when".
+- It needs no deployment to do its job. It talks to Home Assistant over the
+  REST and websocket APIs, from wherever it runs.
+
+Installation is a workstation concern and is documented in the server's own
+README. The directory is named `mcp-server`, with a hyphen, so that it cannot
+shadow the `mcp` package on `sys.path` when Python starts from the repository
+root.
+
 ---
 
 ## 4. Job `deploy:staging` (k3s)
