@@ -138,16 +138,23 @@ lise au lieu d'inquiéter.
   (`input_boolean`, `input_datetime`, trois `script.*`) mêlées à ses comptes,
   et `vssp_room` répondait « Known rooms: » suivi de rien sur une maison sans
   zone.
-- `vssp_instance` rapporte `infrastructure_layers_apply: false` sur la machine
-  Home Assistant OS — la famille infrastructure y vaut bien `n/a`, et une
-  machine OS ne doit jamais se voir proposer une version k3s.
-- Les deux transports atteignent une instance vivante et échouent avec une
-  phrase lisible quand le jeton est faux (HTTP 401 en REST, `Invalid access
-  token` sur le websocket).
+- Les deux transports échouent avec une phrase lisible quand le jeton est faux
+  (HTTP 401 en REST, `Invalid access token` sur le websocket).
+- **Chaque outil a tourné de bout en bout contre les deux instances vivantes**,
+  authentifié, et les deux ont été correctement distinguées :
 
-Pas encore vérifié : un aller-retour authentifié **réussi**, qui demande un
-vrai jeton. Le websocket en dessous est `vssp/vssp_ws.py`, déjà éprouvé en
-production par la vérification des dépendances.
+  | | préproduction (pod k3s) | production (HAOS) |
+  |---|---|---|
+  | `installation` | Core (container / k3s pod) | Home Assistant OS / Supervised |
+  | `infrastructure_layers_apply` | `true` | `false` |
+  | entités | 2732 | 702 |
+  | dashboards présents | aucun | les trois |
+  | dépendances manquantes | 5 | 0 |
+  | mises à jour en attente | 55 | 10 |
+
+  Cette dernière distinction est tout l'enjeu : une machine OS n'a pas de k3s
+  sous elle, et un client qui appelle `vssp_instance` en premier ne peut pas
+  lui proposer une version k3s.
 
 ## Lecture seule, volontairement
 

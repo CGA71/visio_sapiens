@@ -130,16 +130,22 @@ list precisely so that an empty answer is readable rather than alarming.
   returning the UPDATES screen's *controls* (`input_boolean`, `input_datetime`,
   three `script.*`) mixed in with its counts, and `vssp_room` answered "Known
   rooms:" followed by nothing on a house with no areas.
-- `vssp_instance` reports `infrastructure_layers_apply: false` on the Home
-  Assistant OS box — the infrastructure family is correctly `n/a` there, and an
-  OS appliance must never be offered a k3s version.
-- Both transports reach a live instance and fail with a readable sentence when
-  the token is wrong (HTTP 401 on REST, `Invalid access token` on the
-  websocket).
+- Both transports fail with a readable sentence when the token is wrong
+  (HTTP 401 on REST, `Invalid access token` on the websocket).
+- **Every tool ran end to end against both live instances**, authenticated, and
+  the two were told apart correctly:
 
-Not yet verified: a **successful** authenticated round trip, which needs a real
-token. The websocket underneath is `vssp/vssp_ws.py`, already exercised in
-production by the dependency check.
+  | | staging (k3s pod) | production (HAOS) |
+  |---|---|---|
+  | `installation` | Core (container / k3s pod) | Home Assistant OS / Supervised |
+  | `infrastructure_layers_apply` | `true` | `false` |
+  | entities | 2732 | 702 |
+  | dashboards present | none | all three |
+  | dependencies missing | 5 | 0 |
+  | updates pending | 55 | 10 |
+
+  That last distinction is the point: an OS appliance has no k3s under it, and
+  a client calling `vssp_instance` first cannot offer it a k3s version.
 
 ## Read-only, on purpose
 
