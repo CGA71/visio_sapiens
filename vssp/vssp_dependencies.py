@@ -220,6 +220,49 @@ INTEGRATIONS = [
      "Les fenetres de la console ADMIN (configuration IA, confirmations)."),
 ]
 
+# EN | CORE INTEGRATIONS, the blind spot this list closes. Everything above
+# EN | is a HACS repository, and the probe used to ask HACS and nothing
+# EN | else - so an integration Home Assistant ships itself could be absent
+# EN | without the ADMIN console ever mentioning it. Measured on the
+# EN | appliance staging: the header band was blank because
+# EN | house.weather_entity pointed at weather.maison, which only Open-Meteo
+# EN | creates, and CHECK DEPENDENCIES reported everything in place.
+# EN | These cannot be installed from here - a config flow needs its own
+# EN | answers, a zone for Open-Meteo, a city for Meteo-France - so they are
+# EN | reported, never downloaded, and the row says where to add them.
+# FR | INTEGRATIONS NATIVES, l angle mort que cette liste comble. Tout ce
+# FR | qui precede est un depot HACS, et la sonde n interrogeait que HACS -
+# FR | une integration livree par Home Assistant lui-meme pouvait donc
+# FR | manquer sans que la console ADMIN en dise un mot. Mesure sur la
+# FR | preproduction appareil : le bandeau etait vide parce que
+# FR | house.weather_entity visait weather.maison, que seul Open-Meteo cree,
+# FR | et VERIFIER LES DEPENDANCES annoncait tout en place.
+# FR | Elles ne s installent pas d ici - un assistant reclame ses propres
+# FR | reponses, une zone pour Open-Meteo, une ville pour Meteo-France - on
+# FR | les signale donc sans jamais les telecharger, en disant ou les
+# FR | ajouter.
+CORE_INTEGRATIONS = [
+    ("open_meteo", "Open-Meteo",
+     "The weather tile of the header band. Its config flow takes a zone, "
+     "and the entity it creates is the one house.weather_entity names.",
+     "La tuile meteo du bandeau. Son assistant prend une zone, et l entite "
+     "qu il cree est celle que nomme house.weather_entity."),
+    ("meteo_france", "Meteo-France",
+     "The forecast card at the bottom of HOME.",
+     "La carte de previsions en bas de HOME."),
+    ("systemmonitor", "System Monitor",
+     "The processor and memory tiles. Its entities arrive disabled - the "
+     "two the dashboard uses have to be enabled by hand.",
+     "Les tuiles processeur et memoire. Ses entites arrivent desactivees - "
+     "les deux qu utilise le tableau de bord sont a activer a la main."),
+    ("time_date", "Time & Date",
+     "The clock of the header band (sensor.time).",
+     "L horloge du bandeau (sensor.time)."),
+    ("local_calendar", "Local Calendar",
+     "The calendar the header band reads.",
+     "Le calendrier que lit le bandeau."),
+]
+
 # EN | The fallback list, used only when config-fragment.yaml cannot be read
 # EN | on the instance. The fragment is the real source: an asset added
 # EN | there is picked up here without touching this file.
@@ -739,6 +782,27 @@ def run(args) -> int:
                     str(repo.get("available_version") or ""))
             if install:
                 publish(True, "running")
+
+        # ── EN | The integrations Home Assistant ships itself ──────────
+        # ── FR | Les integrations livrees par Home Assistant ───────────
+        try:
+            entries = ws.command({"type": "config_entries/get"}) or []
+            domains = {e.get("domain") for e in entries if isinstance(e, dict)}
+        except (WSError, OSError) as exc:
+            domains = None
+            print(f"[warn] config entries unreadable: {exc}", file=sys.stderr)
+
+        where = ("Parametres > Appareils et services > Ajouter une integration"
+                 if locale == "fr" else
+                 "Settings > Devices and services > Add integration")
+        for domain, name, why_en, why_fr in CORE_INTEGRATIONS:
+            why = why_fr if locale == "fr" else why_en
+            if domains is None:
+                row("integration", domain, name, "unknown", why)
+            elif domain in domains:
+                row("integration", domain, name, "ok", why)
+            else:
+                row("integration", domain, name, "missing", why, where)
 
         # ── EN | The Visio Sapiens resources ────────────────────────────
         # FR | Les ressources Visio Sapiens
