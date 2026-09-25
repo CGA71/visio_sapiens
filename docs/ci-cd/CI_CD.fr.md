@@ -338,6 +338,21 @@ c'est voulu plutôt que défectueux :
   `local_vssp_mcp` et `local_vssp_vault` ; les quatre entités
   `sensor.vssp_vault_*` que possède la préproduction en pod manquent jusqu'à
   l'installation et le descellement du coffre.
+- **Le thème est généré mais non sélectionné** — corrigé depuis : une
+  automatisation de `vssp_theme.yaml` appelle `frontend.set_theme` au démarrage.
+  Avant elle, une instance vierge restait sur `default_theme: default` et tous
+  les tableaux de bord s'affichaient sans style, ce qui ressemble trait pour
+  trait à un déploiement raté.
+- **La carte météo du bandeau réclame Open-Meteo sur la zone du domicile.**
+  `house.yaml` déclare `weather_entity: weather.maison`, et c'est l'entité que
+  crée Open-Meteo quand on donne `zone.home` à son assistant — qui prend une
+  zone, pas une ville. Met.no, installé par défaut à l'onboarding, produit
+  `weather.forecast_maison`, et le bandeau reste vide. La production a le même
+  manque aujourd'hui : elle ne porte que `weather.forecast_maison`.
+  La seconde carte, `dynamic-weather-card`, vise une entité Météo-France dont le
+  nom est codé en dur dans `home.yaml.j2` et qui appartient à une installation
+  précise ; toute autre instance doit ajouter cette intégration avec la même
+  ville, ou bien le gabarit doit lire le modèle.
 
 L'appareil s'appelle **`vssp-staging`** (`ha host options --hostname`). Il
 sortait d'usine sous le nom `homeassistant`, le même nom mDNS que l'appareil de

@@ -331,6 +331,20 @@ by design rather than a defect:
   installed**. After a store reload they appear as `local_vssp_mcp` and
   `local_vssp_vault`; the four `sensor.vssp_vault_*` entities the pod staging
   has are missing until the vault one is installed and unsealed.
+- **The theme is generated but not selected** — fixed since: an automation in
+  `vssp_theme.yaml` calls `frontend.set_theme` on start. Before it, a virgin
+  instance stayed on `default_theme: default` and every dashboard rendered
+  unstyled, which looks exactly like a broken deployment.
+- **The header's weather card needs Open-Meteo on the home zone.** `house.yaml`
+  declares `weather_entity: weather.maison`, and that entity is what Open-Meteo
+  creates when its config flow is given `zone.home` — the flow takes a zone, not
+  a city. Met.no, which onboarding installs by default, produces
+  `weather.forecast_maison` instead, so the band stays empty. Production has the
+  same gap today: it carries only `weather.forecast_maison`.
+  The second card, `dynamic-weather-card`, points at a Météo-France entity whose
+  name is hardcoded in `home.yaml.j2` and belongs to one specific installation;
+  any other instance needs that integration added with the same city, or the
+  template made model-driven.
 
 The appliance is named **`vssp-staging`** (`ha host options --hostname`). Out
 of the box it was `homeassistant`, the same mDNS name as the production
