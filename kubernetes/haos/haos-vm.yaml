@@ -152,12 +152,41 @@ spec:
               # FR | la decouverte devient vraiment necessaire, remplacer
               # FR | ceci par un attachement bridge ou macvlan via multus et
               # FR | la VM recoit une vraie adresse LAN.
+              # EN | NO `ports:` LIST, AND THAT IS THE POINT. KubeVirt's
+              # EN | documentation is explicit: "If the ports section is
+              # EN | missing, all ports forwarded into the VM" - and listing
+              # EN | ports forwards ONLY those. This manifest listed 8123 and
+              # EN | 22222, which looked tidy and broke onboarding.
+              # EN | Home Assistant OS serves its "preparing" landing page on
+              # EN | port 80 while it downloads Core, and redirects :8123
+              # EN | there with a 307 that drops the port entirely
+              # EN |   GET :8123/  ->  Location: http://<host>/
+              # EN | With 80 unforwarded, every call that page makes for its
+              # EN | own status died, so a machine that was working perfectly
+              # EN | showed "Impossible d'obtenir les informations sur le
+              # EN | reseau" and a wall of CORS errors. Confirmed with curl
+              # EN | straight at the VM address, where there is no port
+              # EN | translation at all and the 307 appeared just the same -
+              # EN | which is what ruled out the NodePort as the cause.
+              # FR | PAS DE LISTE `ports:`, ET C'EST VOULU. La documentation
+              # FR | de KubeVirt est explicite : « If the ports section is
+              # FR | missing, all ports forwarded into the VM » - et en
+              # FR | lister ne fait suivre QUE ceux-la. Ce manifeste listait
+              # FR | 8123 et 22222, ce qui paraissait propre et cassait
+              # FR | l'initialisation.
+              # FR | Home Assistant OS sert sa page « preparation » sur le
+              # FR | port 80 pendant qu'il telecharge Core, et y redirige
+              # FR | :8123 par un 307 qui supprime le port
+              # FR |   GET :8123/  ->  Location: http://<hote>/
+              # FR | Le port 80 n'etant pas transmis, chaque appel de cette
+              # FR | page pour son propre etat mourait, et une machine qui
+              # FR | fonctionnait parfaitement affichait « Impossible
+              # FR | d'obtenir les informations sur le reseau » et un mur
+              # FR | d'erreurs CORS. Confirme au curl directement sur
+              # FR | l'adresse de la VM, ou il n'y a aucune traduction de
+              # FR | port et ou le 307 apparaissait pareil - ce qui a
+              # FR | disculpe le NodePort.
               masquerade: {}
-              ports:
-                - name: http
-                  port: 8123
-                - name: ssh
-                  port: 22222
       networks:
         - name: default
           pod: {}
@@ -183,6 +212,22 @@ spec:
   selector:
     app: haos
   ports:
+    # EN | The landing page, served on 80 while Core installs. Reaching
+    # EN | it through a translated port still leaves its 307 pointing at
+    # EN | the node's own port 80, so this is for reading the appliance's
+    # EN | state during a first boot rather than for onboarding through.
+    # EN | Onboarding through a browser wants the VM on its own LAN address
+    # EN | - see the note on the interface above.
+    # FR | La page d'accueil, servie sur 80 pendant l'installation de Core.
+    # FR | L'atteindre par un port traduit laisse quand meme son 307 pointer
+    # FR | sur le port 80 du noeud, donc ceci sert a lire l'etat de
+    # FR | l'appareil pendant un premier demarrage, pas a l'initialiser au
+    # FR | travers. Initialiser depuis un navigateur veut la VM sur sa
+    # FR | propre adresse LAN - voir la note sur l'interface ci-dessus.
+    - name: landing
+      port: 80
+      targetPort: 80
+      nodePort: 30080
     - name: http
       port: 8123
       targetPort: 8123
