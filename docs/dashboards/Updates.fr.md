@@ -830,26 +830,35 @@ d'autre.
 ### Comment il prouve qui il est
 
 Le registre des ressources n'existe que sur le websocket, et le websocket
-de Home Assistant réclame un identifiant. Deux sont essayés, dans cet
-ordre :
+de Home Assistant réclame un identifiant : le jeton longue durée de
+`input_text.vssp_ha_token`, écrit dans `/config/vssp/.ha_token` par
+ENREGISTRER LE JETON, contre `localhost:8123`.
 
-1. **`SUPERVISOR_TOKEN`**, contre `http://supervisor/core/websocket`. Sur
-   une machine Home Assistant OS, le Superviseur l'injecte dans le
-   conteneur qu'il gère et relaie le websocket de Home Assistant —
-   personne ne le crée, personne ne peut oublier de le coller. C'est le
-   jeton qu'utilise déjà l'écran CORE pour lire la liste des add-ons.
-2. **Le jeton longue durée** de `input_text.vssp_ha_token`, écrit dans
-   `/config/vssp/.ha_token` par ENREGISTRER LE JETON, contre
-   `localhost:8123`.
+**Une route par le jeton du Superviseur a été tentée (v1.0.8, v1.0.9) puis
+retirée (v1.0.10) — elle ne pouvait pas fonctionner.**
+`http://supervisor/core/websocket` est le proxy du Superviseur pour les
+*add-ons* qui atteignent Core : il authentifie l'appelant contre son
+propre registre d'add-ons (`supervisor/api/proxy.py`,
+`sys_apps.from_token()`), puis relaie vers Core avec *son propre*
+identifiant interne, jamais celui de l'appelant. Ce script tourne dans le
+conteneur de Home Assistant Core lui-même — ce que le Superviseur
+supervise, pas un add-on inscrit dans cette table — donc
+`SUPERVISOR_TOKEN` n'allait jamais y être reconnu, quelle que soit la
+manière de l'envoyer. Confirmé en direct, deux fois, avec la même erreur
+`Invalid access`, avant que le code source du Superviseur n'en éclaircisse
+la raison. Laissé ici pour que personne ne reparte à la redécouvrir dans
+une troisième version.
 
-La première version ne connaissait que le second, et c'est ainsi que le
-bouton écrit pour réparer une première installation répondait *« jeton
-absent »* sur exactement le type d'installation pour lequel il existe :
-un appareil neuf n'a pas de jeton longue durée, aucun écran de la console
-n'en demande un, et le champ vit dans la page Helpers de Home Assistant.
-
-La route qui a authentifié est inscrite dans le rapport sous `auth` : un
-écran qui se comporte mal peut donc dire par où il est entré.
+Le jeton longue durée reste donc une étape humaine, comme le clic de
+consentement Google Calendar ailleurs dans cette console : rien ne peut en
+émettre un sauf une personne connectée qui presse **CRÉER UN JETON** sur
+sa propre page de profil (avatar en bas à gauche > Sécurité > Jetons
+d'accès longue durée). Ce qu'ajoute v1.0.10, c'est un endroit pour agir :
+une carte **JETON API HOME ASSISTANT REQUIS**, visible seulement tant que
+le `message_key` de `sensor.vssp_dependencies_status` vaut `no_token` ou
+`ws_down`, posée sur la même ligne que VÉRIFIER et INSTALLER
+(`grid, columns: 3` — une quatrième colonne aurait comprimé le champ mot
+de passe pour rien, la ligne existant déjà).
 
 ### Le tampon de cache
 

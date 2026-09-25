@@ -789,24 +789,31 @@ in storage mode, so the button never touches those. It registers the five
 ### How it proves who it is
 
 The resource registry is websocket-only, and Home Assistant's websocket
-wants a credential. Two are tried, in this order:
+wants a credential: the long-lived token in `input_text.vssp_ha_token`,
+written to `/config/vssp/.ha_token` by SAVE TOKEN, against `localhost:8123`.
 
-1. **`SUPERVISOR_TOKEN`**, against `http://supervisor/core/websocket`. On a
-   Home Assistant OS box the Supervisor injects this into the container it
-   manages and proxies Home Assistant's own websocket — nobody creates it,
-   nobody can forget to paste it. It is the same token the CORE screen
-   already uses to read the add-on list.
-2. **The long-lived token** in `input_text.vssp_ha_token`, written to
-   `/config/vssp/.ha_token` by SAVE TOKEN, against `localhost:8123`.
+**A Supervisor-token route was attempted (v1.0.8, v1.0.9) and removed
+(v1.0.10) — it could never have worked.** `http://supervisor/core/websocket`
+is the Supervisor's proxy for *add-ons* reaching Core: it authenticates the
+caller against its own registry of add-ons
+(`supervisor/api/proxy.py`, `sys_apps.from_token()`), then relays to Core
+using the Supervisor's *own* internal credential, never the caller's. This
+script runs inside Home Assistant Core's own container — the thing the
+Supervisor supervises, not an add-on registered in that table — so
+`SUPERVISOR_TOKEN` was never going to be recognised there, no matter how it
+was sent. Confirmed live, twice, with the identical `Invalid access` error,
+before the Supervisor's own source made the reason clear. Left here so
+nobody spends a third release re-discovering it.
 
-The first version knew only the second, which is how the button written to
-repair a first install answered *"token missing"* on exactly the kind of
-installation it exists for: a fresh appliance has no long-lived token, no
-screen in the console asks for one, and the field lives in Home
-Assistant's own Helpers page.
-
-Whichever route authenticated is written into the report as `auth`, so a
-screen that misbehaves can say how it got in.
+So the long-lived token stays a human step, same as the Google Calendar
+consent click elsewhere in this console: nothing can mint one except a
+signed-in person pressing **CREATE TOKEN** on their own profile page
+(bottom-left avatar > Security > Long-lived access tokens). What v1.0.10
+added is a place to act on that: a **HOME ASSISTANT TOKEN REQUIRED** card,
+visible only while `sensor.vssp_dependencies_status`'s `message_key` is
+`no_token` or `ws_down`, sitting on the same row as CHECK and INSTALL
+(a `grid, columns: 3` — a fourth column would have squeezed the password
+field for no reason once the row already existed).
 
 ### The cache stamp
 
