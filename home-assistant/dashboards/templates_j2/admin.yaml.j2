@@ -2286,61 +2286,79 @@ views:
                   service: script.vssp_deps_check
                 card_mod:
                   style: |
-                    ha-card { min-height: 84px; }
+                    ha-card { min-height: 92px; }
 
+              # EN | NO CARD TITLE. An entities card renders its title as
+              # EN | an H1 header of its own - measured on the live box at
+              # EN | 76px, on a card whose neighbours are 84px tall in
+              # EN | total. The title is therefore the ROW's name instead:
+              # EN | an entity row already puts its label left and its
+              # EN | control right, which is exactly "token required et
+              # EN | input tout sur la meme ligne" as asked, for free.
+              # EN | `zoom` on the rows rather than font-size: the field is
+              # EN | an ha-textfield with a fixed 56px height that no font
+              # EN | size reaches - measured, not assumed. 0.85 brings the
+              # EN | two rows to 54+34 and the card to 92px, the same
+              # EN | height as the two buttons beside it.
+              # FR | PAS DE TITRE DE CARTE. Une carte d'entites rend son
+              # FR | titre en un en-tete H1 a elle - mesure sur la machine
+              # FR | en direct a 76px, sur une carte dont les voisines font
+              # FR | 84px en tout. Le titre est donc le nom de la LIGNE :
+              # FR | une ligne d'entite pose deja son libelle a gauche et
+              # FR | son controle a droite, soit exactement « token
+              # FR | required et input tout sur la meme ligne », gratuit.
+              # FR | `zoom` sur les lignes plutot que font-size : le champ
+              # FR | est un ha-textfield d'une hauteur fixe de 56px
+              # FR | qu'aucune taille de police n'atteint - mesure, pas
+              # FR | suppose. 0.85 amene les deux lignes a 54+34 et la
+              # FR | carte a 92px, la hauteur des deux boutons a cote.
               - type: entities
-                title: "{{ t('admin.deps_token_title') }}"
                 card_mod:
                   style: |
                     ha-card {
-                      // EN | Shown only when the last check failed for lack
-                      // EN | of a credential - not for "5 missing", a
-                      // EN | different problem this field cannot fix. Same
-                      // EN | states[...] card_mod lookup already proven on
-                      // EN | the INFRASTRUCTURE card.
-                      // FR | Affichee seulement quand la derniere
-                      // FR | verification a echoue faute d'identifiant -
-                      // FR | pas pour « 5 manquantes », un probleme
-                      // FR | different. Meme lookup card_mod states[...]
-                      // FR | deja prouve sur la carte INFRASTRUCTURE.
                       display: >
                         [[[
                           var st = states['sensor.vssp_dependencies_status'];
                           var key = st && st.attributes && st.attributes.message_key;
-                          return (key === 'no_token' || key === 'ws_down') ? 'block' : 'none';
+                          return (key === 'no_token' || key === 'ws_down') ? 'flex' : 'none';
                         ]]]
-                      min-height: 84px;
+                      flex-direction: column;
+                      justify-content: center;
+                      min-height: 92px;
+                      max-height: 92px;
+                      padding: 2px 8px;
+                      position: relative;
+                      cursor: help;
                       --ha-color-form-background: rgba(16,27,39,0.85);
                       background: var(--card-background-color, rgba(8,18,28,0.75)) !important;
                       border: 1px solid rgba(255, 152, 0, 0.45) !important;
                       border-radius: var(--ha-card-border-radius, 20px) !important;
                     }
-                    // EN | The hint paragraph, as a hover bubble instead of
-                    // EN | a visible row. cursor:help signals it without
-                    // EN | needing a second marker icon.
-                    // FR | Le paragraphe d'aide, en bulle au survol plutot
-                    // FR | qu'en ligne visible. cursor:help le signale sans
-                    // FR | avoir besoin d'une seconde icone de marqueur.
-                    .card-header {
-                      cursor: help;
-                      position: relative;
+                    #states {
+                      padding: 0 !important;
+                      zoom: 0.85;
+                      overflow: visible !important;
                     }
-                    .card-header::after {
+                    #states > div { margin: 0 !important; }
+                    // EN | The hint, as a hover bubble on the card - there
+                    // EN | is no title left to hang it on.
+                    // FR | L'aide, en bulle au survol de la carte - il n'y
+                    // FR | a plus de titre pour la porter.
+                    ha-card::after {
                       content: '{{ t('admin.deps_token_hint') | js }}';
                       position: absolute;
                       top: 100%;
                       left: 0;
                       z-index: 20;
-                      width: 260px;
-                      max-width: 70vw;
+                      width: 280px;
+                      max-width: 80vw;
                       margin-top: 6px;
                       padding: 10px 12px;
                       background: rgba(8,18,28,0.97);
                       color: #B8E8F5;
                       border: 1px solid rgba(255,152,0,0.5);
                       border-radius: 8px;
-                      font-size: calc(11px * var(--vssp-scale-label, 1));
-                      font-weight: 400;
+                      font-size: 11px;
                       line-height: 1.4;
                       white-space: normal;
                       box-shadow: 0 4px 16px rgba(0,0,0,.4);
@@ -2348,20 +2366,7 @@ views:
                       pointer-events: none;
                       transition: opacity .15s ease;
                     }
-                    .card-header:hover::after {
-                      opacity: 1;
-                    }
-                    // EN | The save row, deliberately smaller than the
-                    // EN | field above it - font-size is inherited, so
-                    // EN | setting it here reaches the row's own text even
-                    // EN | across its internal shadow root.
-                    // FR | La ligne d'enregistrement, volontairement plus
-                    // FR | petite que le champ au-dessus - font-size
-                    // FR | s'herite, donc le regler ici atteint le texte de
-                    // FR | la ligne meme a travers son shadow root interne.
-                    hui-call-service-row {
-                      font-size: calc(11px * var(--vssp-scale-label, 1));
-                    }
+                    ha-card:hover::after { opacity: 1; }
                 entities:
                   - entity: input_text.vssp_ha_token
                     name: "{{ t('admin.deps_token_field') }}"
@@ -2381,7 +2386,7 @@ views:
                   service: script.vssp_deps_install
                 card_mod:
                   style: |
-                    ha-card { min-height: 84px; }
+                    ha-card { min-height: 92px; }
 
           # EN | MAINTENANCE. CHECK NOW matters more than it looks:
           # EN | integrations poll on their own schedule, so an empty screen
