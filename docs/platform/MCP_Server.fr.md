@@ -183,6 +183,15 @@ est une étape distincte.
   *commandes* de l'écran MISES À JOUR mêlées à ses comptes, et `vssp_room`
   répondait « Known rooms: » suivi de rien sur une maison sans zone.
 
-Pas vérifié, et invérifiable depuis un poste de travail : la **route
-Superviseur** sur un vrai add-on Home Assistant OS. C'est pour cela que le
-serveur sonde au lieu de supposer, et que `ha_token` existe en secours.
+### Pas vérifié
+
+- La **route Superviseur** sur un vrai add-on Home Assistant OS. C'est
+  invérifiable depuis un poste de travail. C'est pour cela que le serveur sonde
+  au lieu de supposer, et que `ha_token` existe en secours.
+- **Aucune des deux enveloppes n'a encore été démarrée.** Le paquet se déploie
+  correctement — `/config/vssp_mcp` arrive sur la préproduction, prouvé par le
+  passage du garde-fou « packagé mais jamais déployé » du pipeline — mais
+  l'add-on reste à installer depuis la boutique, et `apply-mcp.sh` reste à
+  lancer sur l'hôte k3s, ce qui y demande `sudo`. Tout ce qui est vérifié
+  ci-dessus l'a été en exécutant le même paquet directement contre les deux
+  instances.

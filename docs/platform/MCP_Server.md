@@ -175,6 +175,14 @@ its confirmation and its status sensor. Wiring those in is a separate step.
   *controls* mixed in with its counts, and `vssp_room` answered "Known rooms:"
   followed by nothing on a house with no areas.
 
-Not verified, and it cannot be from a workstation: the **Supervisor route** on
-a real Home Assistant OS add-on. That is why the server probes instead of
-assuming, and why `ha_token` exists as a fallback.
+### Not verified
+
+- The **Supervisor route** on a real Home Assistant OS add-on. It cannot be,
+  from a workstation. That is why the server probes instead of assuming, and
+  why `ha_token` exists as a fallback.
+- **Neither wrapper has been started yet.** The package deploys correctly —
+  `/config/vssp_mcp` lands on staging, proven by the pipeline's own
+  "packaged but never deployed" guard passing — but the add-on still has to be
+  installed from the Add-on store, and `apply-mcp.sh` still has to be run on
+  the k3s host, which needs `sudo` there. Everything verified above was
+  verified by running the same package directly against both instances.
