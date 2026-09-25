@@ -235,6 +235,45 @@ via `ha backups --raw-json` + `jq` et le restaure.
 
 ---
 
+### La seconde préproduction : Home Assistant OS en VM KubeVirt
+
+`deploy:staging` vise un **conteneur Home Assistant Core** dans le namespace
+`homeassistant`. Il n'a ni Superviseur, ni `/addons`, ni CLI `ha`, donc la
+moitié de ce projet ne pouvait jamais être éprouvée avant la production —
+l'étape de copie des add-ons, `ha backups new`, la boutique, et la route
+d'authentification Superviseur dont dépend l'add-on `vssp-mcp`.
+
+`deploy:staging-haos` vise un véritable appareil : Home Assistant OS en VM
+KubeVirt dans le namespace `haos` (voir [kubernetes/haos/](../../kubernetes/haos/)).
+Même script que la production — `.deploy_appliance`, joint en ssh — parce que
+c'est le même type de machine.
+
+| | préprod (pod) | staging-haos (VM) | production |
+|---|---|---|---|
+| nature | conteneur Core | appareil HAOS | appareil HAOS |
+| Superviseur | non | oui | oui |
+| transport | `kubectl exec` | ssh | ssh |
+| déclenchement | master, automatique | master, **manuel** | tag, **manuel** |
+| adresse | `192.168.1.11:8123` | `192.168.1.200:8123` | `homeassistant.local:8123` |
+
+**La préproduction en pod n'est pas remplacée, et ne doit pas l'être.** C'est
+un pod k3s, donc la seule instance où la famille de mises à jour
+INFRASTRUCTURE (hôte, k3s, GitLab, runner) s'applique — un appareil y répond
+`n/a` par conception.
+
+`deploy:staging-haos` est manuel et sa règle exige `$HAOS_SSH_KEY`, il
+n'apparaît donc qu'une fois la VM dotée d'une clé. Un job qui rougirait à
+chaque pipeline en attendant n'apprendrait qu'à l'ignorer.
+
+**Prérequis côté hôte**, hors de Kubernetes et demandant root une fois : un
+pont sur la carte réseau inutilisée, et le script dispatcher de
+`kubernetes/haos/` qui y autorise l'IPv4 — k3s met la politique FORWARD à
+`DROP`, et sans cette règle la VM obtient une IPv6 qui marche et aucune IPv4,
+ce qui ressemble à un problème de DHCP et n'en est pas un. Les deux sont
+documentés dans `kubernetes/haos/haos-vm.yaml`.
+
+---
+
 ## 6. Tests de fumée
 
 `.smoke_test` boucle jusqu'à 12 × 5 s sur `$TARGET_URL/api/` avec le jeton

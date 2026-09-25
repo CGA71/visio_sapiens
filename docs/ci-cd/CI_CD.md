@@ -233,6 +233,43 @@ via `ha backups --raw-json` + `jq` and restores it.
 
 ---
 
+### The second staging: Home Assistant OS in a KubeVirt VM
+
+`deploy:staging` targets a Home Assistant **Core container** in the
+`homeassistant` namespace. It has no Supervisor, no `/addons`, no `ha` CLI, so
+half of this project could never be exercised before production — the add-on
+copy step, `ha backups new`, the add-on store, and the Supervisor
+authentication route the `vssp-mcp` add-on depends on.
+
+`deploy:staging-haos` targets a real appliance: Home Assistant OS running as a
+KubeVirt VM in the `haos` namespace (see [kubernetes/haos/](../../kubernetes/haos/)).
+Same script as production — `.deploy_appliance`, reached over ssh — because it
+is the same kind of machine.
+
+| | staging (pod) | staging-haos (VM) | production |
+|---|---|---|---|
+| kind | Core container | HAOS appliance | HAOS appliance |
+| Supervisor | no | yes | yes |
+| transport | `kubectl exec` | ssh | ssh |
+| trigger | master, automatic | master, **manual** | tag, **manual** |
+| address | `192.168.1.11:8123` | `192.168.1.200:8123` | `homeassistant.local:8123` |
+
+**The pod staging is not replaced, and must not be.** It is a k3s pod, so it is
+the only instance where the INFRASTRUCTURE update family (host, k3s, GitLab,
+runner) applies at all — an appliance reports `n/a` for it by design.
+
+`deploy:staging-haos` is manual and its rule requires `$HAOS_SSH_KEY`, so it
+does not appear until the VM has been given a key. A job that went red on every
+pipeline while waiting would only teach everyone to ignore it.
+
+**Host prerequisites**, both outside Kubernetes and needing root once: a bridge
+over the spare NIC, and the dispatcher script in `kubernetes/haos/` that allows
+IPv4 across it — k3s sets the FORWARD policy to `DROP`, and without that rule
+the VM gets a working IPv6 and no IPv4 at all, which looks like a DHCP problem
+and is not. Both are documented in `kubernetes/haos/haos-vm.yaml`.
+
+---
+
 ## 6. Smoke tests
 
 `.smoke_test` loops up to 12 × 5 s on `$TARGET_URL/api/` with the matching
