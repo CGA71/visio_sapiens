@@ -268,6 +268,33 @@ IPv4 across it — k3s sets the FORWARD policy to `DROP`, and without that rule
 the VM gets a working IPv6 and no IPv4 at all, which looks like a DHCP problem
 and is not. Both are documented in `kubernetes/haos/haos-vm.yaml`.
 
+**Appliance prerequisites**, inside the VM and done once. Installing the
+Terminal & SSH add-on is not enough to make ssh reachable: it ships with
+`"network": {"22/tcp": null}`, that is, no host port at all. And the `ha` CLI
+has no `options` command, so both the authorized key and the port mapping go
+through the Supervisor API, from the appliance itself:
+
+```sh
+ha addons install core_ssh
+docker exec hassio_cli sh -c 'curl -s -X POST   -H "Authorization: Bearer $SUPERVISOR_TOKEN"   -H "Content-Type: application/json" -d @/tmp/o.json   http://supervisor/addons/core_ssh/options'
+ha addons start core_ssh
+```
+
+with `/tmp/o.json` holding
+`{"options":{"authorized_keys":["ssh-ed25519 ..."],"password":"","apks":[],"server":{"tcp_forwarding":false}},"network":{"22/tcp":22222}}`.
+A VM that has no ssh yet is still reachable on its serial console —
+`virtctl console haos -n haos` on the k3s host — which is where those two
+commands were typed.
+
+The appliance is named **`vssp-staging`** (`ha host options --hostname`). Out
+of the box it was `homeassistant`, the same mDNS name as the production
+appliance on the same LAN; two `homeassistant.local` on one network is the
+kind of trap that only bites weeks later.
+
+The matching private key goes into GitLab as `HAOS_SSH_KEY`, **File** type and
+**protected** — `master` is a protected branch, so an unprotected variable
+would never reach the job, and the rule would keep hiding it.
+
 ---
 
 ## 6. Smoke tests

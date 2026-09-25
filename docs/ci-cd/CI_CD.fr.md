@@ -272,6 +272,33 @@ pont sur la carte réseau inutilisée, et le script dispatcher de
 ce qui ressemble à un problème de DHCP et n'en est pas un. Les deux sont
 documentés dans `kubernetes/haos/haos-vm.yaml`.
 
+**Prérequis côté appareil**, dans la VM et une seule fois. Installer l'add-on
+Terminal & SSH ne suffit pas à rendre ssh joignable : il arrive avec
+`"network": {"22/tcp": null}`, c'est-à-dire aucun port hôte. Et la CLI `ha` n'a
+pas de commande `options` : la clé autorisée comme la correspondance de port
+passent donc par l'API du Superviseur, depuis l'appareil lui-même :
+
+```sh
+ha addons install core_ssh
+docker exec hassio_cli sh -c 'curl -s -X POST   -H "Authorization: Bearer $SUPERVISOR_TOKEN"   -H "Content-Type: application/json" -d @/tmp/o.json   http://supervisor/addons/core_ssh/options'
+ha addons start core_ssh
+```
+
+avec dans `/tmp/o.json`
+`{"options":{"authorized_keys":["ssh-ed25519 ..."],"password":"","apks":[],"server":{"tcp_forwarding":false}},"network":{"22/tcp":22222}}`.
+Une VM sans ssh reste joignable par sa console série —
+`virtctl console haos -n haos` sur l'hôte k3s — et c'est là que ces deux
+commandes ont été tapées.
+
+L'appareil s'appelle **`vssp-staging`** (`ha host options --hostname`). Il
+sortait d'usine sous le nom `homeassistant`, le même nom mDNS que l'appareil de
+production sur le même réseau ; deux `homeassistant.local` sur un LAN, c'est le
+genre de piège qui ne mord que des semaines plus tard.
+
+La clé privée correspondante va dans GitLab sous `HAOS_SSH_KEY`, de type
+**File** et **protégée** — `master` est une branche protégée, une variable non
+protégée n'atteindrait jamais le job et la règle continuerait de le cacher.
+
 ---
 
 ## 6. Tests de fumée

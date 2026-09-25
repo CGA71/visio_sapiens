@@ -179,32 +179,28 @@ say "waiting for the VM to be ready"
 kubectl wait --for=condition=Ready vmi/haos -n "$NS" --timeout=600s \
   || say "[warn] the VM is not Ready yet - kubectl get vmi -n $NS"
 
-# EN | A node can carry more than one InternalIP - this one has an IPv4 and
-# EN | an IPv6 - and that jsonpath returns every match, space separated. The
-# EN | url printed at the end came out as
-# EN |   http://192.168.1.11 2a01:cb1c:...:1953:30123
-# EN | which is not an address anyone can paste. Take the first, and prefer
-# EN | the IPv4: it is what a browser on this LAN and the CI job both use.
-# FR | Un noeud peut porter plusieurs InternalIP - celui-ci a une IPv4 et une
-# FR | IPv6 - et ce jsonpath renvoie toutes les correspondances, separees par
-# FR | des espaces. L url affichee a la fin sortait sous la forme
-# FR |   http://192.168.1.11 2a01:cb1c:...:1953:30123
-# FR | qui n est une adresse collable par personne. Prendre la premiere, et
-# FR | preferer l IPv4 : c est celle qu utilisent le navigateur du LAN et le
-# FR | job CI.
-NODE=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}'        | tr ' ' '
-' | grep -m1 -E '^[0-9]+(\.[0-9]+){3}$'        || kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}' | awk '{print $1}')
+# EN | The VM sits on a host bridge, so it carries its own LAN address -
+# EN | there is no NodePort in front of it any more. The VMI knows it, and
+# EN | that is the only place that stays true if the address ever changes.
+# FR | La VM est sur un pont hote, elle porte donc sa propre adresse LAN - il
+# FR | n y a plus de NodePort devant elle. La VMI la connait, et c est le seul
+# FR | endroit qui reste vrai si l adresse change un jour.
+VMIP=$(kubectl get vmi haos -n "$NS" -o jsonpath='{.status.interfaces[0].ipAddress}' 2>/dev/null)
 echo
-say "Home Assistant OS is at  http://${NODE:-<node-ip>}:30123"
+say "Home Assistant OS is at  http://${VMIP:-<vm-ip>}:8123"
+say "A brand new appliance answers on port 80 instead - this staging was"
+say "moved onto 8123 on purpose, because that is where production answers."
 say "First boot takes several minutes while the appliance unpacks itself."
 echo
 say "NEXT, BY HAND, IN THAT ORDER:"
 say "  1. open the URL and complete onboarding - this creates the first user"
-say "  2. Settings > Add-ons > Terminal & SSH: install it, put a public key"
-say "     in its authorized_keys option, and set its port to 22222"
-say "  3. GitLab > Settings > CI/CD > Variables: HAOS_SSH_KEY (File type),"
-say "     the matching private key. deploy:staging-haos appears only once"
-say "     that variable exists."
+say "  2. install the Terminal & SSH add-on, give it an authorized key and"
+say "     map 22/tcp to 22222 - it ships with no host port, and the ha CLI"
+say "     has no options command, so this goes through the Supervisor API:"
+say "     see docs/ci-cd/CI_CD.md, section 5"
+say "  3. GitLab > Settings > CI/CD > Variables: HAOS_SSH_KEY (File type,"
+say "     protected), the matching private key. deploy:staging-haos appears"
+say "     only once that variable exists."
 echo
-say "console:  kubectl virt console haos -n $NS"
+say "console:  virtctl console haos -n $NS"
 say "logs:     kubectl logs -n $NS virt-launcher-haos-<suffix>"
