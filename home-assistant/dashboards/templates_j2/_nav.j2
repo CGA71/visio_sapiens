@@ -110,6 +110,71 @@
               style: |
                 :host { contain: inline-size; }
 
+{# ==================================================================
+   EN | THE DEPLOYED VERSION, under the title, between two rules.
+   EN | sensor.vssp_deployed_version reads /config/VSSP_VERSION, which the
+   EN | build writes: the tag on production ("v1.0.14"), the branch build on
+   EN | staging ("dev-a3ec8c0d"). So this line does two jobs at once - it
+   EN | says what is installed, and it says WHICH INSTANCE you are looking
+   EN | at. Until now the only way to tell staging from production at a
+   EN | glance was to read the URL.
+   EN | It sits in the shared rail rather than in home.yaml.j2, so every
+   EN | desktop screen carries it. The version belongs to the instance, not
+   EN | to one screen, and a screen-specific conditional here would mean the
+   EN | answer disappears exactly when someone navigates away to check
+   EN | something.
+   EN | The mobile rail does not get it: that one is a horizontal strip of
+   EN | chips with no title block, and there is nothing for this to sit
+   EN | under.
+   EN | A raw button-card rather than one of the rail's templates
+   EN | (vssp_nav_button, vssp_sidebar_logo) because both of those are built
+   EN | to look pressable, and this is not - it has no tap_action and must
+   EN | not invite one.
+   FR | LA VERSION DEPLOYEE, sous le titre, entre deux traits.
+   FR | sensor.vssp_deployed_version lit /config/VSSP_VERSION, que le build
+   FR | ecrit : le tag en production (« v1.0.14 »), le build de branche en
+   FR | preproduction (« dev-a3ec8c0d »). Cette ligne fait donc deux choses a
+   FR | la fois - elle dit ce qui est installe, et elle dit QUELLE INSTANCE
+   FR | on regarde. Jusqu'ici, distinguer la preproduction de la production
+   FR | d'un coup d'oeil demandait de lire l'URL.
+   FR | Elle est dans le bandeau partage plutot que dans home.yaml.j2, donc
+   FR | chaque ecran de bureau la porte. La version appartient a l'instance,
+   FR | pas a un ecran, et un conditional par ecran ferait disparaitre la
+   FR | reponse precisement quand on navigue ailleurs pour verifier quelque
+   FR | chose.
+   FR | Le bandeau mobile ne l'a pas : c'est une bande horizontale de
+   FR | pastilles sans bloc titre, il n'y a rien sous quoi la placer.
+   FR | Un button-card brut plutot qu'un des templates du bandeau
+   FR | (vssp_nav_button, vssp_sidebar_logo) parce que tous deux sont faits
+   FR | pour avoir l'air cliquables, et ceci ne l'est pas - il n'a pas de
+   FR | tap_action et ne doit pas en appeler un.
+   ================================================================== #}
+          - type: custom:button-card
+            entity: sensor.vssp_deployed_version
+            show_icon: false
+            show_name: false
+            show_state: true
+            tap_action:
+              action: none
+            styles:
+              card:
+                - background: none
+                - box-shadow: none
+                - border: none
+                - border-top: 1px solid rgba(0, 229, 255, 0.22)
+                - border-bottom: 1px solid rgba(0, 229, 255, 0.22)
+                - border-radius: 0
+                - padding: 5px 0
+                - margin: 6px 4px 8px 4px
+                - cursor: default
+              state:
+                - font-size: calc(11px * var(--vssp-scale-label, 1))
+                - font-weight: 500
+                - letter-spacing: 0.08em
+                - color: rgba(0, 229, 255, 0.70)
+                - white-space: normal
+                - overflow-wrap: anywhere
+
 {# EN | HOME, ENERGY and CORE can be deactivated from the admin console,
    EN | which deletes their view file. Their entry is therefore wrapped in a
    EN | conditional on the presence sensor that watches that very file: the

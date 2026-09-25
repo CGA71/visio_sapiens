@@ -186,6 +186,34 @@ command_line:
         cat /config/VSSP_LOCALE 2>/dev/null || echo "unknown"
       scan_interval: 300
 
+  # EN | The version actually deployed, from /config/VSSP_VERSION which the
+  # EN | build writes. It reads "v1.0.14" on production (the tag) and
+  # EN | "dev-a3ec8c0d" on staging (the branch build), so the rail that shows
+  # EN | it also says which of the two instances you are looking at - a
+  # EN | question this project asks constantly and answered until now only by
+  # EN | reading the URL.
+  # EN | `grep .` is what turns an empty result into "unknown": sed prints
+  # EN | nothing and still exits 0 when the file is missing, so `|| echo`
+  # EN | alone would never fire and the sensor would sit unavailable with no
+  # EN | explanation.
+  # FR | La version reellement deployee, depuis /config/VSSP_VERSION que le
+  # FR | build ecrit. Elle vaut « v1.0.14 » en production (le tag) et
+  # FR | « dev-a3ec8c0d » en preproduction (le build de branche), donc le
+  # FR | bandeau qui l'affiche dit aussi laquelle des deux instances on
+  # FR | regarde - une question que ce projet se pose sans cesse et a
+  # FR | laquelle on ne repondait jusqu'ici qu'en lisant l'URL.
+  # FR | `grep .` est ce qui transforme un resultat vide en « unknown » : sed
+  # FR | n'affiche rien et sort quand meme en 0 quand le fichier manque, donc
+  # FR | `|| echo` seul ne se declencherait jamais et le capteur resterait
+  # FR | indisponible sans explication.
+  - sensor:
+      name: "VSSP Deployed Version"
+      unique_id: vssp_deployed_version
+      command: >-
+        sed -n 's/^version=//p' /config/VSSP_VERSION 2>/dev/null
+        | head -1 | grep . || echo "unknown"
+      scan_interval: 300
+
   # EN | Counts unrendered translation markers left in the deployed fragment.
   # EN | Anything above 0 means the fragment reached /config without passing
   # EN | through vssp_i18n.py, and vssp_apply_config.py will refuse it.
