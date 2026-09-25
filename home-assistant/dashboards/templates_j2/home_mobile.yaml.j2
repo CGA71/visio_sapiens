@@ -789,8 +789,25 @@ views:
       # ═══════════════════════════════════════════════════════════════
       # ÉVÉNEMENTS RÉCENTS (logbook, hauteur fixe défilante)
       # ═══════════════════════════════════════════════════════════════
+{# EN | Same guard as the tablet view, which this one never had: it
+   EN | always emitted `target: area_id:` and an empty room list renders
+   EN | that as a null target, which Home Assistant rejects outright. See
+   EN | the long comment on the logbook card in home.yaml.j2.
+   FR | Meme garde que la vue tablette, que celle-ci n'a jamais eu : elle
+   FR | emettait toujours `target: area_id:` et une liste de pieces vide se
+   FR | rend en cible nulle, que Home Assistant rejette net. Voir le long
+   FR | commentaire sur la carte logbook dans home.yaml.j2. #}
+{% if rooms_rendered %}
       - type: logbook
-        title: "Événements récents"
+        # EN | Was hardcoded French: this view rendered "Evenements
+        # EN | recents" on an English build while the tablet view beside it
+        # EN | showed "Recent events" from the catalogue. Same key, same
+        # EN | catalogue, one language per build.
+        # FR | Etait en francais dans le code : cette vue affichait
+        # FR | « Evenements recents » sur une build anglaise pendant que la
+        # FR | vue tablette a cote montrait « Recent events » depuis le
+        # FR | catalogue. Meme cle, meme catalogue, une langue par build.
+        title: "{{ t('home.events_recent') }}"
         hours_to_show: 24
         view_layout:
           grid-area: events
@@ -829,6 +846,7 @@ views:
               overflow-y: auto;
               -webkit-overflow-scrolling: touch;
             }
+{% endif %}
 
       # ═══════════════════════════════════════════════════════════════
       # MÉTÉO ET PRÉVISIONS

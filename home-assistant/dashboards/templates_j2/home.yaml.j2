@@ -855,12 +855,41 @@ views:
       # FR | deplace vers la zone de grille "right" ci-dessus (voir le
       # FR | commentaire la-bas), et les deux colonnes liberees ont ete
       # FR | ajoutees a ce tableau plutot que laissees vides.
+{# ==================================================================
+   EN | THE WHOLE CARD, OR NOTHING. Home Assistant 2026.8.x rejects a
+   EN | logbook card whose target resolves to no entities - including a card
+   EN | with NO target at all:
+   EN |   "The provided target in the logbook card has no entities."
+   EN | This used to be guarded from the inside: with no room declared the
+   EN | template omitted `target:` and the comment here said that fell back
+   EN | to every event. That was true when it was written and is not any
+   EN | more, so the guard protected nothing and HOME rendered a
+   EN | "Configuration error" card - seen on the staging instance, which has
+   EN | no rooms, and therefore on every fresh install.
+   EN | A room-scoped event log has nothing to show before rooms exist, so
+   EN | the card is now omitted entirely rather than rendered broken. Its
+   EN | grid area simply stays empty until ROOMS has run.
+   FR | LA CARTE ENTIERE, OU RIEN. Home Assistant 2026.8.x rejette une carte
+   FR | logbook dont la cible ne resout aucune entite - y compris une carte
+   FR | SANS cible du tout :
+   FR |   « The provided target in the logbook card has no entities. »
+   FR | C'etait garde de l'interieur : sans piece declaree le template
+   FR | omettait `target:` et le commentaire disait que cela retombait sur
+   FR | tous les evenements. C'etait vrai a l'ecriture et ne l'est plus, donc
+   FR | le garde ne protegeait rien et HOME affichait une carte « Erreur de
+   FR | configuration » - constate sur la preproduction, qui n'a aucune
+   FR | piece, et donc sur toute installation neuve.
+   FR | Un journal d'evenements limite aux pieces n'a rien a montrer avant
+   FR | qu'elles existent, la carte est donc desormais omise entierement
+   FR | plutot que rendue cassee. Sa zone de grille reste simplement vide
+   FR | jusqu'au premier passage de PIECES.
+   ================================================================== #}
+{% if rooms_rendered %}
       - type: logbook
         title: "{{ t('home.events_recent') }}"
         hours_to_show: 24
         view_layout:
           grid-area: events
-{% if rooms_rendered %}
         target:
           # EN | Generated from the declared rooms rather than hardcoded. The
           # EN | hand-written list already named areas that no longer match
@@ -880,19 +909,6 @@ views:
 {% for r in rooms_rendered %}
             - {{ r.area_id }}
 {% endfor %}
-{% else %}
-        # EN | No room declared yet: an empty `area_id:` list renders as a
-        # EN | null target, which Home Assistant's logbook card rejects as
-        # EN | an invalid config ("Erreur de configuration") instead of
-        # EN | showing anything. Omitting `target` entirely falls back to
-        # EN | every event, which is the sane behaviour before ROOMS has run.
-        # FR | Aucune piece declaree pour l'instant : une liste `area_id:`
-        # FR | vide se rend en cible null, que la carte logbook de Home
-        # FR | Assistant rejette comme configuration invalide (« Erreur de
-        # FR | configuration ») plutot que d'afficher quoi que ce soit. Omettre
-        # FR | `target` bascule sur tous les evenements, comportement sense
-        # FR | avant le premier passage de ROOMS.
-{% endif %}
         card_mod:
           style: |
             # EN | height:100% alone left this card shorter than its 400px
@@ -941,6 +957,7 @@ views:
               min-height: 0;
               overflow-y: auto;
             }
+{% endif %}
 
       # --- Météo et prévisions (alignée avec le bas de la sidebar) ------
       - type: custom:dynamic-weather-card
