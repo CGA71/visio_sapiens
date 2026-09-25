@@ -417,15 +417,38 @@ SUPERVISOR_API = "/core/api"
 
 
 def auth_routes(url: str, token: str | None) -> list:
-    """EN | [(label, base url, websocket path, REST prefix, token)], best
-    EN | first. Empty when this instance offers neither credential.
-    FR | [(etiquette, url de base, chemin websocket, prefixe REST, jeton)],
-    FR | le meilleur d abord. Vide quand l instance n offre aucun des deux."""
+    """EN | [(label, base url, websocket path, REST prefix, token)].
+    EN | THE SUPERVISOR ROUTE DOES NOT EXIST HERE ANYMORE, and it never
+    EN | could have worked. /core/websocket is the Supervisor's proxy FOR
+    EN | ADD-ONS: it authenticates the caller against its own registry of
+    EN | add-ons (supervisor/api/proxy.py, `sys_apps.from_token()`), and
+    EN | only then relays to Core using ITS OWN internal credential, never
+    EN | the caller's. This script runs inside Home Assistant Core's own
+    EN | container - the thing the Supervisor supervises, not an add-on
+    EN | registered in that table - so SUPERVISOR_TOKEN was never going to
+    EN | be recognised there, however it was sent. Confirmed live, twice:
+    EN | an HTTP Authorization header (v1.0.9) changed nothing, because the
+    EN | header was never the problem.
+    EN | Left in v1.0.8/v1.0.9 on a wrong theory; removed here rather than
+    EN | kept as a route that always fails first and only wastes a round
+    EN | trip before falling back.
+    FR | [(etiquette, url de base, chemin websocket, prefixe REST, jeton)].
+    FR | LA ROUTE SUPERVISEUR N EXISTE PLUS ICI, et elle n a jamais pu
+    FR | fonctionner. /core/websocket est le proxy du Superviseur POUR LES
+    FR | ADD-ONS : il authentifie l appelant contre son propre registre
+    FR | d add-ons (supervisor/api/proxy.py, `sys_apps.from_token()`), et
+    FR | c est seulement ensuite qu il relaie vers Core avec SON PROPRE
+    FR | identifiant interne, jamais celui de l appelant. Ce script tourne
+    FR | dans le conteneur de Home Assistant Core lui-meme - ce que le
+    FR | Superviseur supervise, pas un add-on inscrit dans cette table -
+    FR | donc SUPERVISOR_TOKEN n allait jamais y etre reconnu, quelle que
+    FR | soit la maniere de l envoyer. Confirme en direct, deux fois : un
+    FR | en-tete HTTP Authorization (v1.0.9) n a rien change, parce que
+    FR | l en-tete n etait jamais le probleme.
+    FR | Laisse dans v1.0.8/v1.0.9 sur une theorie fausse ; retire ici
+    FR | plutot que garde comme une route qui echoue toujours en premier
+    FR | et ne fait que gaspiller un aller-retour avant le repli."""
     routes = []
-    supervisor = os.environ.get("SUPERVISOR_TOKEN", "").strip()
-    if supervisor:
-        routes.append(("supervisor", SUPERVISOR_URL, SUPERVISOR_WS,
-                       SUPERVISOR_API, supervisor))
     if token:
         routes.append(("token", url, "/api/websocket", "/api", token))
     return routes

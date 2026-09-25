@@ -2098,6 +2098,92 @@ views:
                   --ha-color-form-background: rgba(0, 30, 45, 0.55);
                 }
 
+          # EN | THE TOKEN ITSELF — without it, nothing below can ask Home
+          # EN | Assistant anything, and until now nowhere in this console
+          # EN | said so with a place to fix it. The helper and the script
+          # EN | that writes it (input_text.vssp_ha_token,
+          # EN | script.vssp_save_token) existed since the discovery wizard
+          # EN | was built; only Settings > Helpers ever showed the field.
+          # EN | A Home Assistant OS box that never had a reason to visit
+          # EN | that page pressed CHECK DEPENDENCIES and read "token
+          # EN | missing" with no way to act from where it was standing.
+          # EN | Two attempts were made to avoid asking for this token at
+          # EN | all, by authenticating through the Supervisor instead
+          # EN | (v1.0.8, v1.0.9) — both wrong: /core/websocket is the
+          # EN | Supervisor's proxy for ADD-ONS reaching Core, and this
+          # EN | script runs inside Core's own container, which is not one.
+          # EN | See the comment on auth_routes() in vssp_dependencies.py.
+          # EN | So the human step stays, same as the Google Calendar
+          # EN | consent click elsewhere in this console: nothing can mint
+          # EN | a long-lived token except a signed-in person pressing
+          # EN | CREATE TOKEN on their own profile page. What changes here
+          # EN | is that the console now says so, with the field, in the
+          # EN | one place that needs it.
+          # FR | LE JETON LUI-MEME — sans lui, rien ci-dessous ne peut rien
+          # FR | demander a Home Assistant, et jusqu'ici rien dans cette
+          # FR | console ne le disait avec un endroit pour le corriger. Le
+          # FR | helper et le script qui l'ecrit (input_text.vssp_ha_token,
+          # FR | script.vssp_save_token) existent depuis la construction de
+          # FR | l'assistant de decouverte ; seul Parametres > Auxiliaires
+          # FR | a jamais montre le champ. Une machine Home Assistant OS
+          # FR | qui n'avait jamais eu de raison de visiter cette page
+          # FR | pressait VERIFIER LES DEPENDANCES et lisait « jeton absent »
+          # FR | sans moyen d'agir depuis la ou elle se trouvait.
+          # FR | Deux tentatives ont cherche a eviter completement de
+          # FR | demander ce jeton, en authentifiant via le Superviseur a
+          # FR | la place (v1.0.8, v1.0.9) — toutes deux fausses :
+          # FR | /core/websocket est le proxy du Superviseur pour les
+          # FR | ADD-ONS qui atteignent Core, et ce script tourne dans le
+          # FR | conteneur de Core lui-meme, qui n'en est pas un. Voir le
+          # FR | commentaire sur auth_routes() dans vssp_dependencies.py.
+          # FR | L'etape humaine reste donc, comme le clic de consentement
+          # FR | Google Calendar ailleurs dans cette console : rien ne peut
+          # FR | emettre un jeton longue duree sauf une personne connectee
+          # FR | qui presse CREER UN JETON sur sa propre page de profil. Ce
+          # FR | qui change ici, c'est que la console le dit desormais, avec
+          # FR | le champ, au seul endroit qui en a besoin.
+          - type: entities
+            title: "{{ t('admin.deps_token_title') }}"
+            card_mod:
+              style: |
+                ha-card {
+                  // EN | Shown only when the last check failed for lack of
+                  // EN | a credential - not for "5 missing", which is a
+                  // EN | different problem this field cannot fix. The same
+                  // EN | states[...] card_mod lookup already proven on the
+                  // EN | INFRASTRUCTURE card above, rather than an
+                  // EN | attribute-testing form of `type: conditional`
+                  // EN | this project has never used and could not verify
+                  // EN | here.
+                  // FR | Affichee seulement quand la derniere verification
+                  // FR | a echoue faute d'identifiant - pas pour « 5
+                  // FR | manquantes », un probleme different que ce champ
+                  // FR | ne peut pas corriger. Le meme lookup card_mod
+                  // FR | states[...] deja prouve sur la carte
+                  // FR | INFRASTRUCTURE ci-dessus, plutot qu'une forme de
+                  // FR | `type: conditional` testant un attribut, jamais
+                  // FR | utilisee dans ce projet et inverifiable d'ici.
+                  display: >
+                    [[[
+                      var st = states['sensor.vssp_dependencies_status'];
+                      var key = st && st.attributes && st.attributes.message_key;
+                      return (key === 'no_token' || key === 'ws_down') ? 'block' : 'none';
+                    ]]]
+                  --ha-color-form-background: rgba(16,27,39,0.85);
+                  background: var(--card-background-color, rgba(8,18,28,0.75)) !important;
+                  border: 1px solid rgba(255, 152, 0, 0.45) !important;
+                  border-radius: var(--ha-card-border-radius, 20px) !important;
+                }
+            entities:
+              - type: section
+                label: "{{ t('admin.deps_token_hint') }}"
+              - entity: input_text.vssp_ha_token
+                name: "{{ t('admin.deps_token_field') }}"
+              - type: call-service
+                name: "{{ t('admin.deps_token_save') }}"
+                icon: mdi:content-save-key-outline
+                service: script.vssp_save_token
+
           # EN | DEPENDENCIES — what this interface is actually made of.
           # EN | A Visio Sapiens dashboard is drawn with a dozen community
           # EN | cards and with five files of its own, and none of them
