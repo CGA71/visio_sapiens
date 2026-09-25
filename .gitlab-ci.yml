@@ -154,17 +154,37 @@ workflow:
     - apk add --no-cache openssh-client curl tar jq >/dev/null
     - mkdir -p ~/.ssh && chmod 700 ~/.ssh
     - |
-      if [ -z "$HA_SSH_KEY" ]; then
+      # EN | A job cannot override a project variable by redefining it
+      # EN | under variables:. GitLab ranks project settings ABOVE anything
+      # EN | written in .gitlab-ci.yml, so deploy:staging-haos setting
+      # EN |   HA_SSH_KEY: $HAOS_SSH_KEY
+      # EN | was ignored in silence: the job received the production key,
+      # EN | announced "[OK] Private key is valid" - a valid key, simply not
+      # EN | the right one - and the appliance answered
+      # EN | "Permission denied (publickey)". Hence a separate name, which no
+      # EN | project variable claims.
+      # FR | Un job ne peut pas supplanter une variable de projet en la
+      # FR | redefinissant sous variables:. GitLab classe les reglages du
+      # FR | projet AU-DESSUS de tout ce qui est ecrit dans .gitlab-ci.yml,
+      # FR | si bien que deploy:staging-haos posant
+      # FR |   HA_SSH_KEY: $HAOS_SSH_KEY
+      # FR | etait ignore en silence : le job recevait la cle de production,
+      # FR | annoncait "[OK] Private key is valid" - une cle valide, mais pas
+      # FR | la bonne - et l appareil repondait
+      # FR | "Permission denied (publickey)". D ou un nom distinct, qu aucune
+      # FR | variable de projet ne revendique.
+      SSH_KEY_REF="${HA_SSH_KEY_OVERRIDE:-$HA_SSH_KEY}"
+      if [ -z "$SSH_KEY_REF" ]; then
         echo "[ERR] HA_SSH_KEY variable is missing."
         echo "      Settings > CI/CD > Variables: create it with the File type."
         exit 1
       fi
-      if [ -f "$HA_SSH_KEY" ]; then
+      if [ -f "$SSH_KEY_REF" ]; then
         # EN | File-type variable / FR | variable de type File
-        cp "$HA_SSH_KEY" ~/.ssh/id_ed25519
+        cp "$SSH_KEY_REF" ~/.ssh/id_ed25519
       else
-        printf '%s\n' "$HA_SSH_KEY" > ~/.ssh/id_ed25519
-        echo "[warn] HA_SSH_KEY is not a File-type variable - falling back to raw content."
+        printf '%s\n' "$SSH_KEY_REF" > ~/.ssh/id_ed25519
+        echo "[warn] the key is not a File-type variable - falling back to raw content."
       fi
       chmod 600 ~/.ssh/id_ed25519
       if ! ssh-keygen -y -f ~/.ssh/id_ed25519 </dev/null >/dev/null 2>&1; then
@@ -2346,7 +2366,7 @@ deploy:staging-haos:
     # FR | production n'est pas iso-prod. Les deux servent desormais 8123 et
     # FR | rien sur 80.
     HAOS_URL: "http://192.168.1.200:8123"
-    HA_SSH_KEY: $HAOS_SSH_KEY
+    HA_SSH_KEY_OVERRIDE: $HAOS_SSH_KEY
     # EN | No tag on master, so the reference is the branch build - the same
     # EN | string the pod staging writes into VSSP_VERSION, which is what
     # EN | sensor.vssp_deployed_version shows in the navigation rail.

@@ -299,6 +299,12 @@ La clé privée correspondante va dans GitLab sous `HAOS_SSH_KEY`, de type
 **File** et **protégée** — `master` est une branche protégée, une variable non
 protégée n'atteindrait jamais le job et la règle continuerait de le cacher.
 
+Le job la transmet sous le nom `HA_SSH_KEY_OVERRIDE`, et non `HA_SSH_KEY` :
+une variable de projet l'emporte sur tout ce qu'un job écrit sous
+`variables:`, si bien que redéfinir `HA_SSH_KEY` dans le job ne changeait
+rien et que l'appareil recevait la clé de production. L'échec est discret —
+`[OK] Private key is valid`, puis `Permission denied (publickey)`.
+
 ---
 
 ## 6. Tests de fumée

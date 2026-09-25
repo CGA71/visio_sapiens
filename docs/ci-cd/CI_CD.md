@@ -295,6 +295,12 @@ The matching private key goes into GitLab as `HAOS_SSH_KEY`, **File** type and
 **protected** — `master` is a protected branch, so an unprotected variable
 would never reach the job, and the rule would keep hiding it.
 
+The job passes it on as `HA_SSH_KEY_OVERRIDE`, not as `HA_SSH_KEY`: a project
+variable outranks anything a job writes under `variables:`, so redefining
+`HA_SSH_KEY` in the job changed nothing and the appliance was handed the
+production key. The failure is quiet — `[OK] Private key is valid`, then
+`Permission denied (publickey)`.
+
 ---
 
 ## 6. Smoke tests
