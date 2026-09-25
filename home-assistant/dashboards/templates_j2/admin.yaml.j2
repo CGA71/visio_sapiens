@@ -2226,77 +2226,80 @@ views:
           # FR | suivent, une douzaine de telechargements GitHub depassant
           # FR | les soixante secondes que Home Assistant accorde a une
           # FR | commande shell.
-          # EN | CHECK on its own row rather than paired with INSTALL: the
-          # EN | token card sits between them now, full width regardless of
-          # EN | how long a pasted token is - a grid column would have
-          # EN | squeezed the password field to half the view's width the
-          # EN | moment it needed to hold one. Reported: "en gardant la
-          # EN | largeur des 3 entités meme si le token etait plus large".
-          # FR | VERIFIER seule sur sa ligne plutot qu'appariee a INSTALLER :
-          # FR | la carte du jeton se place maintenant entre les deux,
-          # FR | pleine largeur quelle que soit la longueur du jeton colle -
-          # FR | une colonne de grille l'aurait reduite de moitie des qu'il
-          # FR | lui aurait fallu le contenir. Signale : "en gardant la
-          # FR | largeur des 3 entités meme si le token etait plus large".
-          - type: custom:button-card
-            template: vssp_admin_button
-            icon: mdi:magnify-scan
-            name: "{{ t('admin.deps_check') }}"
-            label: "{{ t('admin.deps_check_hint') }}"
-            tap_action:
-              action: call-service
-              service: script.vssp_deps_check
+          # EN | ONE ROW, THREE COLUMNS: CHECK, the token card, INSTALL -
+          # EN | not three stacked rows. Corrected after v1.0.11 split them
+          # EN | apart, which was not what was asked: "je dis tu mets home
+          # EN | assistant token entre check dependencies et install
+          # EN | dependencies vue qu'ils sont sur la meme ligne". The token
+          # EN | card keeps its own normal row width inside that column -
+          # EN | narrower than full page width, but not shrunk further to
+          # EN | fit the label text; the grid gives it the same share as
+          # EN | either button.
+          # FR | UNE SEULE LIGNE, TROIS COLONNES : VERIFIER, la carte du
+          # FR | jeton, INSTALLER - pas trois lignes empilees. Corrige apres
+          # FR | que v1.0.11 les ait separees, ce qui n'etait pas ce qui
+          # FR | etait demande. La carte du jeton garde la largeur normale
+          # FR | de ses lignes a l'interieur de cette colonne - plus etroite
+          # FR | que la pleine largeur de page, mais pas retrecie davantage
+          # FR | pour faire tenir le texte des libelles ; la grille lui
+          # FR | donne la meme part qu'a chaque bouton.
+          - type: grid
+            columns: 3
+            square: false
+            cards:
+              - type: custom:button-card
+                template: vssp_admin_button
+                icon: mdi:magnify-scan
+                name: "{{ t('admin.deps_check') }}"
+                label: "{{ t('admin.deps_check_hint') }}"
+                tap_action:
+                  action: call-service
+                  service: script.vssp_deps_check
 
-          - type: entities
-            title: "{{ t('admin.deps_token_title') }}"
-            card_mod:
-              style: |
-                ha-card {
-                  // EN | Shown only when the last check failed for lack of
-                  // EN | a credential - not for "5 missing", which is a
-                  // EN | different problem this field cannot fix. The same
-                  // EN | states[...] card_mod lookup already proven on the
-                  // EN | INFRASTRUCTURE card above, rather than an
-                  // EN | attribute-testing form of `type: conditional`
-                  // EN | this project has never used and could not verify
-                  // EN | here.
-                  // FR | Affichee seulement quand la derniere verification
-                  // FR | a echoue faute d'identifiant - pas pour « 5
-                  // FR | manquantes », un probleme different que ce champ
-                  // FR | ne peut pas corriger. Le meme lookup card_mod
-                  // FR | states[...] deja prouve sur la carte
-                  // FR | INFRASTRUCTURE ci-dessus, plutot qu'une forme de
-                  // FR | `type: conditional` testant un attribut, jamais
-                  // FR | utilisee dans ce projet et inverifiable d'ici.
-                  display: >
-                    [[[
-                      var st = states['sensor.vssp_dependencies_status'];
-                      var key = st && st.attributes && st.attributes.message_key;
-                      return (key === 'no_token' || key === 'ws_down') ? 'block' : 'none';
-                    ]]]
-                  --ha-color-form-background: rgba(16,27,39,0.85);
-                  background: var(--card-background-color, rgba(8,18,28,0.75)) !important;
-                  border: 1px solid rgba(255, 152, 0, 0.45) !important;
-                  border-radius: var(--ha-card-border-radius, 20px) !important;
-                }
-            entities:
-              - type: section
-                label: "{{ t('admin.deps_token_hint') }}"
-              - entity: input_text.vssp_ha_token
-                name: "{{ t('admin.deps_token_field') }}"
-              - type: call-service
-                name: "{{ t('admin.deps_token_save') }}"
-                icon: mdi:content-save-key-outline
-                service: script.vssp_save_token
+              - type: entities
+                title: "{{ t('admin.deps_token_title') }}"
+                card_mod:
+                  style: |
+                    ha-card {
+                      // EN | Shown only when the last check failed for lack
+                      // EN | of a credential - not for "5 missing", a
+                      // EN | different problem this field cannot fix. Same
+                      // EN | states[...] card_mod lookup already proven on
+                      // EN | the INFRASTRUCTURE card.
+                      // FR | Affichee seulement quand la derniere
+                      // FR | verification a echoue faute d'identifiant -
+                      // FR | pas pour « 5 manquantes », un probleme
+                      // FR | different. Meme lookup card_mod states[...]
+                      // FR | deja prouve sur la carte INFRASTRUCTURE.
+                      display: >
+                        [[[
+                          var st = states['sensor.vssp_dependencies_status'];
+                          var key = st && st.attributes && st.attributes.message_key;
+                          return (key === 'no_token' || key === 'ws_down') ? 'block' : 'none';
+                        ]]]
+                      --ha-color-form-background: rgba(16,27,39,0.85);
+                      background: var(--card-background-color, rgba(8,18,28,0.75)) !important;
+                      border: 1px solid rgba(255, 152, 0, 0.45) !important;
+                      border-radius: var(--ha-card-border-radius, 20px) !important;
+                    }
+                entities:
+                  - type: section
+                    label: "{{ t('admin.deps_token_hint') }}"
+                  - entity: input_text.vssp_ha_token
+                    name: "{{ t('admin.deps_token_field') }}"
+                  - type: call-service
+                    name: "{{ t('admin.deps_token_save') }}"
+                    icon: mdi:content-save-key-outline
+                    service: script.vssp_save_token
 
-          - type: custom:button-card
-            template: vssp_admin_button
-            icon: mdi:download-network-outline
-            name: "{{ t('admin.deps_install') }}"
-            label: "{{ t('admin.deps_install_hint') }}"
-            tap_action:
-              action: call-service
-              service: script.vssp_deps_install
+              - type: custom:button-card
+                template: vssp_admin_button
+                icon: mdi:download-network-outline
+                name: "{{ t('admin.deps_install') }}"
+                label: "{{ t('admin.deps_install_hint') }}"
+                tap_action:
+                  action: call-service
+                  service: script.vssp_deps_install
 
           # EN | MAINTENANCE. CHECK NOW matters more than it looks:
           # EN | integrations poll on their own schedule, so an empty screen
