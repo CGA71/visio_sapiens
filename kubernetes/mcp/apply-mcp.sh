@@ -25,7 +25,7 @@
 # EN |
 # EN |   HA_TOKEN=<long-lived token> \
 # EN |   MCP_API_TOKEN=<a long random string> \
-# EN |     sudo -E sh kubernetes/mcp/apply-mcp.sh
+# EN |     sh kubernetes/mcp/apply-mcp.sh
 # EN |
 # EN | Both tokens are read from the environment and never appear in a
 # EN | command line, a manifest or this script - the project's rule for
@@ -36,7 +36,7 @@
 # FR |
 # FR |   HA_TOKEN=<jeton longue duree> \
 # FR |   MCP_API_TOKEN=<une longue chaine aleatoire> \
-# FR |     sudo -E sh kubernetes/mcp/apply-mcp.sh
+# FR |     sh kubernetes/mcp/apply-mcp.sh
 # FR |
 # FR | Les deux jetons sont lus dans l environnement et n apparaissent
 # FR | jamais dans une ligne de commande, un manifeste ni ce script - la
@@ -54,7 +54,27 @@ say() { echo "[vssp-mcp] $*"; }
 die() { echo "[ERR] $*" >&2; exit 1; }
 
 command -v kubectl >/dev/null 2>&1 || die "kubectl not found"
-kubectl version >/dev/null 2>&1 || die "kubectl cannot reach the cluster (try sudo)"
+
+# EN | Same trap as apply-haos.sh hit for real: k3s ships its own kubectl
+# EN | wrapper which reads /etc/rancher/k3s/k3s.yaml first, a file only root
+# EN | can read, so an account with a perfectly good ~/.kube/config still
+# EN | gets "permission denied" on a file it never named. "try sudo" was the
+# EN | wrong advice - none of this needs root, it needs a readable config.
+# FR | Meme piege que celui rencontre pour de vrai par apply-haos.sh : k3s
+# FR | embarque son propre kubectl qui lit d abord /etc/rancher/k3s/k3s.yaml,
+# FR | un fichier que seul root peut lire, donc un compte avec un
+# FR | ~/.kube/config parfaitement valide obtient « permission denied » sur
+# FR | un fichier qu il n a jamais nomme. « try sudo » etait un mauvais
+# FR | conseil - rien ici ne demande root, cela demande une config lisible.
+if [ -z "$KUBECONFIG" ] && [ -r "$HOME/.kube/config" ]; then
+  export KUBECONFIG="$HOME/.kube/config"
+  say "using $KUBECONFIG"
+fi
+
+kubectl version >/dev/null 2>&1 || die "kubectl cannot reach the cluster.
+      Give yourself a readable copy of the k3s kubeconfig once:
+        sudo install -D -o \$USER -g \$USER -m 600 \
+          /etc/rancher/k3s/k3s.yaml \$HOME/.kube/config"
 [ -n "$HA_TOKEN" ] || die "HA_TOKEN is not set. There is no Supervisor on k3s, so a long-lived token is the only way in."
 
 # ---------------------------------------------------------------------------
@@ -147,6 +167,20 @@ fi
 kubectl rollout restart deployment/vssp-mcp -n "$NS"
 kubectl rollout status deployment/vssp-mcp -n "$NS" --timeout=180s
 
-NODE=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
+# EN | A node can carry more than one InternalIP - this one has an IPv4 and
+# EN | an IPv6 - and that jsonpath returns every match, space separated. The
+# EN | url printed at the end came out as
+# EN |   http://192.168.1.11 2a01:cb1c:...:1953:30123
+# EN | which is not an address anyone can paste. Take the first, and prefer
+# EN | the IPv4: it is what a browser on this LAN and the CI job both use.
+# FR | Un noeud peut porter plusieurs InternalIP - celui-ci a une IPv4 et une
+# FR | IPv6 - et ce jsonpath renvoie toutes les correspondances, separees par
+# FR | des espaces. L url affichee a la fin sortait sous la forme
+# FR |   http://192.168.1.11 2a01:cb1c:...:1953:30123
+# FR | qui n est une adresse collable par personne. Prendre la premiere, et
+# FR | preferer l IPv4 : c est celle qu utilisent le navigateur du LAN et le
+# FR | job CI.
+NODE=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}'        | tr ' ' '
+' | grep -m1 -E '^[0-9]+(\.[0-9]+){3}$'        || kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}' | awk '{print $1}')
 say "ready: http://${NODE:-<node-ip>}:30099/mcp"
 say "logs:  kubectl logs -n $NS deployment/vssp-mcp"

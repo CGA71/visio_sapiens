@@ -179,7 +179,21 @@ say "waiting for the VM to be ready"
 kubectl wait --for=condition=Ready vmi/haos -n "$NS" --timeout=600s \
   || say "[warn] the VM is not Ready yet - kubectl get vmi -n $NS"
 
-NODE=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}')
+# EN | A node can carry more than one InternalIP - this one has an IPv4 and
+# EN | an IPv6 - and that jsonpath returns every match, space separated. The
+# EN | url printed at the end came out as
+# EN |   http://192.168.1.11 2a01:cb1c:...:1953:30123
+# EN | which is not an address anyone can paste. Take the first, and prefer
+# EN | the IPv4: it is what a browser on this LAN and the CI job both use.
+# FR | Un noeud peut porter plusieurs InternalIP - celui-ci a une IPv4 et une
+# FR | IPv6 - et ce jsonpath renvoie toutes les correspondances, separees par
+# FR | des espaces. L url affichee a la fin sortait sous la forme
+# FR |   http://192.168.1.11 2a01:cb1c:...:1953:30123
+# FR | qui n est une adresse collable par personne. Prendre la premiere, et
+# FR | preferer l IPv4 : c est celle qu utilisent le navigateur du LAN et le
+# FR | job CI.
+NODE=$(kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}'        | tr ' ' '
+' | grep -m1 -E '^[0-9]+(\.[0-9]+){3}$'        || kubectl get nodes -o jsonpath='{.items[0].status.addresses[?(@.type=="InternalIP")].address}' | awk '{print $1}')
 echo
 say "Home Assistant OS is at  http://${NODE:-<node-ip>}:30123"
 say "First boot takes several minutes while the appliance unpacks itself."
