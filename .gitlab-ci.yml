@@ -1215,7 +1215,7 @@ deploy:staging:
         cp -r /config/.vssp_stage/vssp/. /config/vssp/
         rm -rf /config/.vssp_stage/vssp
         chmod +x /config/vssp/*.py
-        # EN | The MCP server's package. Home Assistant never imports it -
+        # EN | The MCP server package. Home Assistant never imports it -
         # EN | the container that serves it does, over the mapped config
         # EN | directory. Deployed here so a new version arrives with a
         # EN | deploy rather than an add-on rebuild. Replaced wholesale
@@ -1818,7 +1818,7 @@ deploy:production:
         cp -r $HA_CFG/.vssp_stage/vssp/. $HA_CFG/vssp/
         rm -rf $HA_CFG/.vssp_stage/vssp
         chmod +x $HA_CFG/vssp/*.py
-        # EN | The MCP server's package (identical to staging). Read by the
+        # EN | The MCP server package (identical to staging). Read by the
         # EN | vssp-mcp add-on through its read-only config mapping; Home
         # EN | Assistant itself never imports it.
         # FR | Le paquet du serveur MCP (identique au staging). Lu par
@@ -1912,15 +1912,24 @@ deploy:production:
     # FR | C est delibere — un coffre ne doit pas apparaitre et demarrer tout
     # FR | seul.
     - |
+      # EN | Every add-on under addons/, not a named one. vssp-mcp joined
+      # EN | vssp-vault here and a second hand-written copy of this block
+      # EN | would have been the third place to remember on the next one.
+      # FR | Chaque add-on sous addons/, pas un nomme. vssp-mcp a rejoint
+      # FR | vssp-vault ici et une seconde copie ecrite a la main de ce bloc
+      # FR | aurait ete le troisieme endroit a ne pas oublier au suivant.
+      ADDONS=$(cd addons && ls -d */ 2>/dev/null | tr -d /)
       if ssh ha "test -d /addons"; then
-        ssh ha "mkdir -p /addons/vssp-vault"
-        tar -C addons -czf - vssp-vault | ssh ha "tar xzf - -C /addons"
-        echo "[OK] add-on vssp-vault copied to /addons"
-        echo "     To pick it up: Settings > Add-ons > Add-on store >"
-        echo "     three dots > Check for updates, then install it."
+        for a in $ADDONS; do
+          ssh ha "mkdir -p /addons/$a"
+          tar -C addons -czf - "$a" | ssh ha "tar xzf - -C /addons"
+          echo "[OK] add-on $a copied to /addons"
+        done
+        echo "     To pick them up: Settings > Add-ons > Add-on store >"
+        echo "     three dots > Check for updates, then install."
       else
-        echo "[warn] /addons is not reachable over ssh - add-on not copied."
-        echo "       Copy addons/vssp-vault/ by hand (Samba share 'addons'),"
+        echo "[warn] /addons is not reachable over ssh - add-ons not copied."
+        echo "       Copy these by hand (Samba share 'addons'): $ADDONS"
         echo "       then Settings > Add-ons > Store > Check for updates."
       fi
     # --- EN | configuration.yaml patch: run inside the RUNNER (ruamel is
