@@ -170,40 +170,52 @@ SUPPORTED_LOCALES = ("en", "fr")
 PLUGINS = [
     ("button-card",
      "Every tile, button and panel of the interface.",
-     "Chaque tuile, bouton et panneau de l'interface."),
+     "Chaque tuile, bouton et panneau de l'interface.",
+     True),
     ("lovelace-card-mod",
      "The styling of the navigation rail and of the cards.",
-     "L'habillage du bandeau de navigation et des cartes."),
+     "L'habillage du bandeau de navigation et des cartes.",
+     True),
     ("lovelace-layout-card",
      "The page layouts (grid-layout, vertical-layout).",
-     "Les mises en page (grid-layout, vertical-layout)."),
+     "Les mises en page (grid-layout, vertical-layout).",
+     True),
     ("vertical-stack-in-card",
      "Panels stacked inside a single frame.",
-     "Les panneaux empiles dans un meme cadre."),
+     "Les panneaux empiles dans un meme cadre.",
+     False),
     ("apexcharts-card",
      "The energy and history graphs.",
-     "Les graphiques d'energie et d'historique."),
+     "Les graphiques d'energie et d'historique.",
+     False),
     ("mini-graph-card",
      "The compact curves of the room pages.",
-     "Les courbes compactes des pages de piece."),
+     "Les courbes compactes des pages de piece.",
+     False),
     ("config-template-card",
      "Cards whose configuration depends on a state.",
-     "Les cartes dont la configuration depend d'un etat."),
+     "Les cartes dont la configuration depend d'un etat.",
+     False),
     ("decluttering-card",
      "The shared card templates.",
-     "Les gabarits de cartes partages."),
+     "Les gabarits de cartes partages.",
+     False),
     ("lovelace-mushroom",
      "The vacuum panel of the entrance hall.",
-     "Le panneau du robot aspirateur de l'entree."),
+     "Le panneau du robot aspirateur de l'entree.",
+     False),
     ("simple-weather-card",
      "The weather cell of the header band.",
-     "La case meteo du bandeau d'en-tete."),
+     "La case meteo du bandeau d'en-tete.",
+     False),
     ("dynamic-weather-card",
      "The weather panel of the HOME dashboard.",
-     "Le panneau meteo du dashboard HOME."),
+     "Le panneau meteo du dashboard HOME.",
+     False),
     ("calendar-card-pro",
      "The agenda panel.",
-     "Le panneau agenda."),
+     "Le panneau agenda.",
+     False),
 ]
 
 # EN | Integrations are a different kind of dependency: HACS puts files in
@@ -217,7 +229,8 @@ PLUGINS = [
 INTEGRATIONS = [
     ("browser_mod",
      "The pop-ups of the ADMIN console (AI setup, confirmations).",
-     "Les fenetres de la console ADMIN (configuration IA, confirmations)."),
+     "Les fenetres de la console ADMIN (configuration IA, confirmations).",
+     True),
 ]
 
 # EN | CORE INTEGRATIONS, the blind spot this list closes. Everything above
@@ -246,21 +259,26 @@ CORE_INTEGRATIONS = [
      "The weather tile of the header band. Its config flow takes a zone, "
      "and the entity it creates is the one house.weather_entity names.",
      "La tuile meteo du bandeau. Son assistant prend une zone, et l entite "
-     "qu il cree est celle que nomme house.weather_entity."),
+     "qu il cree est celle que nomme house.weather_entity.",
+     False),
     ("meteo_france", "Meteo-France",
      "The forecast card at the bottom of HOME.",
-     "La carte de previsions en bas de HOME."),
+     "La carte de previsions en bas de HOME.",
+     False),
     ("systemmonitor", "System Monitor",
      "The processor and memory tiles. Its entities arrive disabled - the "
      "two the dashboard uses have to be enabled by hand.",
      "Les tuiles processeur et memoire. Ses entites arrivent desactivees - "
-     "les deux qu utilise le tableau de bord sont a activer a la main."),
+     "les deux qu utilise le tableau de bord sont a activer a la main.",
+     False),
     ("time_date", "Time & Date",
      "The clock of the header band (sensor.time).",
-     "L horloge du bandeau (sensor.time)."),
+     "L horloge du bandeau (sensor.time).",
+     False),
     ("local_calendar", "Local Calendar",
      "The calendar the header band reads.",
-     "Le calendrier que lit le bandeau."),
+     "Le calendrier que lit le bandeau.",
+     False),
 ]
 
 # EN | The fallback list, used only when config-fragment.yaml cannot be read
@@ -663,9 +681,24 @@ def run(args) -> int:
               "resources_mode": "unknown",
               "restart_required": False, "reload_required": False}
 
-    def row(kind, key, name, state, why="", detail=""):
+    def row(kind, key, name, state, why="", detail="", required=False):
+        # EN | required: the interface cannot be drawn at all without it.
+        # EN | button-card, card-mod and layout-card carry every tile, every
+        # EN | style and every view layout, and browser_mod carries the ADMIN
+        # EN | pop-ups; the rest feeds one card each, and a missing one costs
+        # EN | that card, not the screen. The report is ordered on this, so
+        # EN | CHECK DEPENDENCIES answers "what is stopping it from working"
+        # EN | before "what else could it have".
+        # FR | required : l interface ne peut pas etre dessinee du tout sans
+        # FR | elle. button-card, card-mod et layout-card portent chaque
+        # FR | tuile, chaque style et chaque mise en page, et browser_mod
+        # FR | porte les fenetres de la console ADMIN ; le reste alimente une
+        # FR | carte chacun, et un manque y coute cette carte, pas l ecran.
+        # FR | Le rapport est trie la-dessus, pour que VERIFIER LES
+        # FR | DEPENDANCES reponde « qu est-ce qui l empeche de marcher »
+        # FR | avant « que pourrait-il avoir en plus ».
         report["items"].append({"kind": kind, "key": key, "name": name,
-                                "state": state,
+                                "state": state, "required": bool(required),
                                 "state_label": label_of(state, locale),
                                 "why": why, "detail": detail})
 
@@ -740,30 +773,31 @@ def run(args) -> int:
             repos = []
             report["hacs"]["error"] = str(exc) or exc.__class__.__name__
 
-        wanted = ([("plugin", f, en, fr) for f, en, fr in PLUGINS]
-                  + [("integration", d, en, fr) for d, en, fr in INTEGRATIONS])
+        wanted = ([("plugin", f, en, fr, req) for f, en, fr, req in PLUGINS]
+                  + [("integration", d, en, fr, req)
+                     for d, en, fr, req in INTEGRATIONS])
 
-        for category, key, why_en, why_fr in wanted:
+        for category, key, why_en, why_fr, req in wanted:
             why = why_fr if locale == "fr" else why_en
             kind = "card" if category == "plugin" else "integration"
             if not report["hacs"]["available"]:
-                row(kind, key, key, "unknown", why, report["hacs"]["error"])
+                row(kind, key, key, "unknown", why, report["hacs"]["error"], req)
                 continue
             repo = find_repo(repos, category, key)
             if repo is None:
-                row(kind, key, key, "unknown", why)
+                row(kind, key, key, "unknown", why, "", req)
                 continue
             name = str(repo.get("name") or key)
             if repo.get("installed"):
                 row(kind, key, name, "ok", why,
-                    str(repo.get("installed_version") or ""))
+                    str(repo.get("installed_version") or ""), req)
                 continue
             if not install:
-                row(kind, key, name, "missing", why)
+                row(kind, key, name, "missing", why, "", req)
                 continue
             err = download(ws, repo)
             if err:
-                row(kind, key, name, "failed", why, err)
+                row(kind, key, name, "failed", why, err, req)
             elif category == "integration":
                 # EN | The files are down; Home Assistant loads a custom
                 # EN | component only at startup, so this one is not usable
@@ -775,11 +809,11 @@ def run(args) -> int:
                 # FR | l'ecran ne doit pas pretendre le contraire.
                 report["restart_required"] = True
                 row(kind, key, name, "restart", why,
-                    str(repo.get("available_version") or ""))
+                    str(repo.get("available_version") or ""), req)
             else:
                 report["reload_required"] = True
                 row(kind, key, name, "added", why,
-                    str(repo.get("available_version") or ""))
+                    str(repo.get("available_version") or ""), req)
             if install:
                 publish(True, "running")
 
@@ -795,14 +829,14 @@ def run(args) -> int:
         where = ("Parametres > Appareils et services > Ajouter une integration"
                  if locale == "fr" else
                  "Settings > Devices and services > Add integration")
-        for domain, name, why_en, why_fr in CORE_INTEGRATIONS:
+        for domain, name, why_en, why_fr, req in CORE_INTEGRATIONS:
             why = why_fr if locale == "fr" else why_en
             if domains is None:
-                row("integration", domain, name, "unknown", why)
+                row("integration", domain, name, "unknown", why, "", req)
             elif domain in domains:
-                row("integration", domain, name, "ok", why)
+                row("integration", domain, name, "ok", why, "", req)
             else:
-                row("integration", domain, name, "missing", why, where)
+                row("integration", domain, name, "missing", why, where, req)
 
         # ── EN | The Visio Sapiens resources ────────────────────────────
         # FR | Les ressources Visio Sapiens
@@ -837,16 +871,16 @@ def run(args) -> int:
                 # FR | deploiement qui n'est pas alle au bout, et enregistrer
                 # FR | une URL pour lui n'ajouterait qu'un 404 dans la
                 # FR | console du navigateur.
-                row("resource", url_base, name, "no_file", why, str(f))
+                row("resource", url_base, name, "no_file", why, str(f), True)
                 continue
             want = f"{url_base}?v={stamp(f)}"
             have = by_base.get(url_base)
             if have and str(have.get("url")) == want:
-                row("resource", url_base, name, "ok", why, want)
+                row("resource", url_base, name, "ok", why, want, True)
                 continue
             state = "stale" if have else "missing"
             if not install:
-                row("resource", url_base, name, state, why, want)
+                row("resource", url_base, name, state, why, want, True)
                 continue
             try:
                 if have:
@@ -857,7 +891,7 @@ def run(args) -> int:
                     ws.command({"type": "lovelace/resources/create",
                                 "res_type": res_type, "url": want})
                 report["reload_required"] = True
-                row("resource", url_base, name, "added", why, want)
+                row("resource", url_base, name, "added", why, want, True)
             except (WSError, OSError) as exc:
                 text = str(exc)
                 if "yaml" in text.lower() or "not supported" in text.lower():
@@ -906,6 +940,20 @@ def run(args) -> int:
         ws.close()
 
     report["running"] = False
+    # EN | ORDER MATTERS. The screen is read top to bottom, so what stops the
+    # EN | interface from being drawn at all comes first, and inside each of
+    # EN | those two groups what is missing comes before what is in place.
+    # EN | The ADMIN console renders the rows in this order within each
+    # EN | section, so no template change is needed to benefit from it.
+    # FR | L ORDRE COMPTE. L ecran se lit de haut en bas : ce qui empeche
+    # FR | l interface d etre dessinee vient donc en premier, et dans chacun
+    # FR | de ces deux groupes, ce qui manque passe avant ce qui est en
+    # FR | place. La console ADMIN affiche les lignes dans cet ordre au sein
+    # FR | de chaque section, aucune modification de gabarit n est donc
+    # FR | necessaire pour en profiter.
+    blocking_states = ("missing", "unknown", "stale", "failed", "no_file")
+    report["items"].sort(key=lambda i: (not i.get("required"),
+                                        i["state"] not in blocking_states))
     c = report["counts"]
     c["total"] = len(report["items"])
     missing = sum(1 for i in report["items"]
