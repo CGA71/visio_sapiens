@@ -431,7 +431,7 @@ admin:
   deps_check_hint: Lists what is missing, installs nothing
   deps_install: INSTALL DEPENDENCIES
   deps_install_hint: Downloads the cards through HACS and registers the resources
-  deps_token_title: HOME ASSISTANT TOKEN REQUIRED
+  deps_token_title: TOKEN REQUIRED
   deps_token_hint: >-
     No credential on this instance. Create a long-lived token (your
     profile, bottom left > Security > Long-lived access tokens > Create

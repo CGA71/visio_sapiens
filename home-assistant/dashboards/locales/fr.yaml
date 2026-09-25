@@ -303,7 +303,7 @@ admin:
   deps_check_hint: Liste ce qui manque, n'installe rien
   deps_install: INSTALLER LES DÉPENDANCES
   deps_install_hint: Télécharge les cartes via HACS et enregistre les ressources
-  deps_token_title: JETON API HOME ASSISTANT REQUIS
+  deps_token_title: JETON REQUIS
   deps_token_hint: >-
     Aucun identifiant sur cette instance. Créez un jeton longue durée
     (votre profil, en bas à gauche > Sécurité > Jetons d'accès longue

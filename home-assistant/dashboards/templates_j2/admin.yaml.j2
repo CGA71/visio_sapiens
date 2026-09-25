@@ -2243,6 +2243,35 @@ views:
           # FR | que la pleine largeur de page, mais pas retrecie davantage
           # FR | pour faire tenir le texte des libelles ; la grille lui
           # FR | donne la meme part qu'a chaque bouton.
+          # EN | COMPACTED — the card was reading much taller than the two
+          # EN | buttons beside it: a bold three-line paragraph, then the
+          # EN | field, then the save row. Reported against a screenshot of
+          # EN | this very row: "meme avec le token le visuel est comme
+          # EN | ceci" (the token card dwarfing CHECK/INSTALL).
+          # EN | The paragraph moves off the card entirely, into a
+          # EN | hover bubble on the (now short) title - a pure CSS
+          # EN | tooltip on .card-header, the same selector already used
+          # EN | on home.yaml.j2 / home_mobile.yaml.j2, so nothing new is
+          # EN | invented for it. The field sits right under the title with
+          # EN | its own icon, the save row is set smaller, and all three
+          # EN | cards of the row get the same min-height so the row reads
+          # EN | as one deliberate height rather than the buttons' bare
+          # EN | minimum.
+          # FR | RESSERRE — la carte se lisait bien plus haute que les deux
+          # FR | boutons a cote d'elle : un paragraphe en gras sur trois
+          # FR | lignes, puis le champ, puis la ligne d'enregistrement.
+          # FR | Signale contre une capture de cette ligne meme : "meme avec
+          # FR | le token le visuel est comme ceci" (la carte du jeton
+          # FR | ecrasant VERIFIER/INSTALLER).
+          # FR | Le paragraphe quitte entierement la carte, vers une bulle
+          # FR | au survol du titre (desormais court) - une bulle CSS pure
+          # FR | sur .card-header, le meme selecteur deja utilise sur
+          # FR | home.yaml.j2 / home_mobile.yaml.j2, donc rien de nouveau
+          # FR | n'est invente pour elle. Le champ se place juste sous le
+          # FR | titre avec sa propre icone, la ligne d'enregistrement est
+          # FR | reduite, et les trois cartes de la ligne recoivent la meme
+          # FR | hauteur minimale pour que la ligne se lise comme une
+          # FR | hauteur voulue plutot que le minimum brut des boutons.
           - type: grid
             columns: 3
             square: false
@@ -2255,6 +2284,9 @@ views:
                 tap_action:
                   action: call-service
                   service: script.vssp_deps_check
+                card_mod:
+                  style: |
+                    ha-card { min-height: 84px; }
 
               - type: entities
                 title: "{{ t('admin.deps_token_title') }}"
@@ -2277,16 +2309,63 @@ views:
                           var key = st && st.attributes && st.attributes.message_key;
                           return (key === 'no_token' || key === 'ws_down') ? 'block' : 'none';
                         ]]]
+                      min-height: 84px;
                       --ha-color-form-background: rgba(16,27,39,0.85);
                       background: var(--card-background-color, rgba(8,18,28,0.75)) !important;
                       border: 1px solid rgba(255, 152, 0, 0.45) !important;
                       border-radius: var(--ha-card-border-radius, 20px) !important;
                     }
+                    // EN | The hint paragraph, as a hover bubble instead of
+                    // EN | a visible row. cursor:help signals it without
+                    // EN | needing a second marker icon.
+                    // FR | Le paragraphe d'aide, en bulle au survol plutot
+                    // FR | qu'en ligne visible. cursor:help le signale sans
+                    // FR | avoir besoin d'une seconde icone de marqueur.
+                    .card-header {
+                      cursor: help;
+                      position: relative;
+                    }
+                    .card-header::after {
+                      content: '{{ t('admin.deps_token_hint') | js }}';
+                      position: absolute;
+                      top: 100%;
+                      left: 0;
+                      z-index: 20;
+                      width: 260px;
+                      max-width: 70vw;
+                      margin-top: 6px;
+                      padding: 10px 12px;
+                      background: rgba(8,18,28,0.97);
+                      color: #B8E8F5;
+                      border: 1px solid rgba(255,152,0,0.5);
+                      border-radius: 8px;
+                      font-size: calc(11px * var(--vssp-scale-label, 1));
+                      font-weight: 400;
+                      line-height: 1.4;
+                      white-space: normal;
+                      box-shadow: 0 4px 16px rgba(0,0,0,.4);
+                      opacity: 0;
+                      pointer-events: none;
+                      transition: opacity .15s ease;
+                    }
+                    .card-header:hover::after {
+                      opacity: 1;
+                    }
+                    // EN | The save row, deliberately smaller than the
+                    // EN | field above it - font-size is inherited, so
+                    // EN | setting it here reaches the row's own text even
+                    // EN | across its internal shadow root.
+                    // FR | La ligne d'enregistrement, volontairement plus
+                    // FR | petite que le champ au-dessus - font-size
+                    // FR | s'herite, donc le regler ici atteint le texte de
+                    // FR | la ligne meme a travers son shadow root interne.
+                    hui-call-service-row {
+                      font-size: calc(11px * var(--vssp-scale-label, 1));
+                    }
                 entities:
-                  - type: section
-                    label: "{{ t('admin.deps_token_hint') }}"
                   - entity: input_text.vssp_ha_token
                     name: "{{ t('admin.deps_token_field') }}"
+                    icon: mdi:key-variant
                   - type: call-service
                     name: "{{ t('admin.deps_token_save') }}"
                     icon: mdi:content-save-key-outline
@@ -2300,6 +2379,9 @@ views:
                 tap_action:
                   action: call-service
                   service: script.vssp_deps_install
+                card_mod:
+                  style: |
+                    ha-card { min-height: 84px; }
 
           # EN | MAINTENANCE. CHECK NOW matters more than it looks:
           # EN | integrations poll on their own schedule, so an empty screen
