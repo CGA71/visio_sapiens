@@ -49,9 +49,14 @@
 # EN |                    fragment was never merged, is caught here: Home
 # EN |                    Assistant answers such a url_path with the default
 # EN |                    panel, which is why a room "opens HOME".
-# EN |   2. entities    - every entity the served configs name exists.
-# EN |                    Placeholders that are knowingly absent everywhere
-# EN |                    are listed in the tolerated file and reported apart.
+# EN |   2. entities    - the Visio Sapiens entities the served configs
+# EN |                    name all exist. A missing one means a package did
+# EN |                    not load. Entities belonging to the HOUSE -
+# EN |                    cameras, a vacuum, plugs - are counted and listed
+# EN |                    but never fail: a house without a camera is not a
+# EN |                    broken deployment, and iso-environment means the
+# EN |                    control centre works, not that two houses own the
+# EN |                    same hardware.
 # EN |   3. resources   - every registered Lovelace resource answers 200. A
 # EN |                    stale stamp or a file renamed upstream shows up
 # EN |                    here, and it is the difference between a styled
@@ -70,10 +75,15 @@
 # FR |                    attrapee ici : Home Assistant repond a un tel
 # FR |                    url_path par le panneau par defaut, et c est
 # FR |                    pourquoi une piece « ouvre HOME ».
-# FR |   2. entites     - chaque entite nommee par les configurations servies
-# FR |                    existe. Les emplacements sciemment absents partout
-# FR |                    sont listes dans le fichier tolere et rapportes a
-# FR |                    part.
+# FR |   2. entites     - les entites Visio Sapiens nommees par les
+# FR |                    configurations servies existent toutes. Une
+# FR |                    absence signifie qu un package n a pas charge. Les
+# FR |                    entites de la MAISON - cameras, aspirateur, prises
+# FR |                    - sont comptees et listees mais n echouent jamais :
+# FR |                    une maison sans camera n est pas un deploiement
+# FR |                    casse, et iso-environnement veut dire que le centre
+# FR |                    de controle fonctionne, pas que deux maisons
+# FR |                    possedent le meme materiel.
 # FR |   3. ressources  - chaque ressource Lovelace enregistree repond 200.
 # FR |                    Un tampon perime ou un fichier renomme en amont
 # FR |                    apparait ici, et c est la difference entre une
@@ -323,15 +333,49 @@ def main() -> int:
             cited |= entities_in(cfg)
 
         # ── 2. EN | entities / FR | entites ────────────────────────────
+        # EN | TWO KINDS, AND ONLY ONE IS A DEFECT. An entity whose id
+        # EN | carries the vssp_ prefix belongs to the control centre: it
+        # EN | comes from a package this project deploys, and its absence
+        # EN | means a package did not load - the same release, the same
+        # EN | files, a broken instance. That fails.
+        # EN | Every other entity belongs to the house: cameras, a vacuum,
+        # EN | plugs, a doorbell. Deploy this project in a house that has no
+        # EN | camera and those ids will be missing forever, and nothing is
+        # EN | wrong. Iso-environment means the control centre works, not
+        # EN | that two houses own the same hardware. They are counted and
+        # EN | listed, never fatal.
+        # FR | DEUX ESPECES, UNE SEULE EST UN DEFAUT. Une entite dont
+        # FR | l identifiant porte le prefixe vssp_ appartient au centre de
+        # FR | controle : elle vient d un package que ce projet deploie, et
+        # FR | son absence signifie qu un package n a pas charge - meme
+        # FR | livraison, memes fichiers, instance cassee. Cela echoue.
+        # FR | Toute autre entite appartient a la maison : cameras,
+        # FR | aspirateur, prises, sonnette. Deployez ce projet dans une
+        # FR | maison sans camera et ces identifiants manqueront pour
+        # FR | toujours, sans que rien ne soit anormal. Iso-environnement
+        # FR | veut dire que le centre de controle fonctionne, pas que deux
+        # FR | maisons possedent le meme materiel. Elles sont comptees et
+        # FR | listees, jamais fatales.
         tolerated = load_tolerated(args.tolerated)
-        missing = sorted(cited - existing - tolerated)
+        absent = cited - existing - tolerated
+        product = sorted(e for e in absent if ".vssp_" in e)
+        house = sorted(e for e in absent if ".vssp_" not in e)
         skipped = sorted((cited - existing) & tolerated)
-        rep.add("2. ENTITIES", not missing,
-                f"{len(cited)} cited, {len(missing)} missing",
-                detail=", ".join(missing[:6]) + (" ..." if len(missing) > 6
+        rep.add("2. ENTITIES", not product,
+                f"control centre: {len(cited)} cited, {len(product)} missing",
+                detail=", ".join(product[:6]) + (" ..." if len(product) > 6
                                                  else ""),
-                fix="the card naming them will render empty or broken - "
-                    "add the integration, or list them as tolerated")
+                fix="a Visio Sapiens entity the dashboards name does not "
+                    "exist: a package did not load. Check the error log")
+        if house:
+            rep.add("2. ENTITIES", True,
+                    f"house and platform: {len(house)} not present here",
+                    detail=", ".join(house[:5]) + (" ..." if len(house) > 5
+                                                   else ""),
+                    fix="a device this house does not own, or a core "
+                        "integration not added yet - CHECK DEPENDENCIES "
+                        "lists the second kind",
+                    fatal=False)
         if skipped:
             rep.add("2. ENTITIES", True,
                     f"{len(skipped)} tolerated placeholder(s)",
