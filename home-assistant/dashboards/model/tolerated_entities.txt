@@ -43,3 +43,19 @@ sensor.vssp_revente_annee
 # EN | An older System Monitor entity id, still named by one card
 # FR | Un ancien identifiant du Moniteur systeme, encore nomme par une carte
 sensor.processor_use
+
+# EN | The SAFE screen's tiles. They come from the vssp-vault add-on, which a
+# EN | deployment copies into /addons and never installs: a house is free not
+# EN | to want a secrets vault, and the control centre draws perfectly without
+# EN | it. Install the add-on and unseal it (docs/platform/Unseal.md) and the
+# EN | four appear on their own.
+# FR | Les tuiles de l ecran COFFRE. Elles viennent de l add-on vssp-vault,
+# FR | qu un deploiement copie dans /addons sans jamais l installer : une
+# FR | maison a le droit de ne pas vouloir de coffre a secrets, et le centre
+# FR | de controle se dessine parfaitement sans lui. Installez l add-on et
+# FR | descellez-le (docs/platform/Unseal.fr.md) et les quatre apparaissent
+# FR | d elles-memes.
+sensor.vssp_vault_seal
+sensor.vssp_vault_accounts
+sensor.vssp_vault_apps
+sensor.vssp_vault_infra

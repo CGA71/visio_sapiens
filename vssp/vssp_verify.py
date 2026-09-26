@@ -250,6 +250,52 @@ def head(url: str, token: str, path: str) -> int:
         return 0
 
 
+# EN | The dashboards the PRODUCT declares, read from the static fragment.
+# EN | config-fragment.yaml is written by this project and holds HOME, CORE,
+# EN | ENERGY, their mobile variants, the preview and the ADMIN console:
+# EN | those are structure, and one of them without a file is a defect of the
+# EN | control centre. config-fragment-rooms.yaml is written from the house
+# EN | model and holds the rooms: those are CONTENT. A house declares a
+# EN | kitchen and later removes it; a stale room entry is untidy, it is not
+# EN | a broken product, and a release must never be blocked by it.
+# FR | Les dashboards que le PRODUIT declare, lus dans le fragment statique.
+# FR | config-fragment.yaml est ecrit par ce projet et contient HOME, CORE,
+# FR | ENERGY, leurs variantes mobiles, l apercu et la console ADMIN : c est
+# FR | de la structure, et l un d eux sans fichier est un defaut du centre de
+# FR | controle. config-fragment-rooms.yaml est ecrit depuis le modele de la
+# FR | maison et contient les pieces : c est du CONTENU. Une maison declare
+# FR | une cuisine puis la retire ; une entree de piece perimee est un
+# FR | desordre, pas un produit casse, et une livraison ne doit jamais etre
+# FR | bloquee par cela.
+FALLBACK_SYSTEM = {
+    "visio-sapiens", "visio-sapiens-m", "visio-sapiens-core",
+    "visio-sapiens-core-m", "visio-sapiens-energy", "visio-sapiens-energy-m",
+    "visio-sapiens-energy-preview", "visio-sapiens-admin",
+}
+
+
+def load_system(path: str) -> set:
+    """EN | The url_paths the static fragment declares, or the fallback set
+    EN | when it cannot be read - never an empty set, which would turn every
+    EN | dashboard into content and the check into decoration.
+    FR | Les url_path que declare le fragment statique, ou l ensemble de
+    FR | repli s il n est pas lisible - jamais un ensemble vide, qui ferait
+    FR | de chaque dashboard du contenu et de la verification une decoration."""
+    try:
+        import yaml
+
+        class Loader(yaml.SafeLoader):
+            pass
+
+        Loader.add_multi_constructor("!", lambda l, s, n: None)
+        data = yaml.load(Path(path).read_text(encoding="utf-8"), Loader=Loader)
+        boards = ((data or {}).get("lovelace") or {}).get("dashboards") or {}
+        keys = {str(k) for k in boards}
+        return keys or FALLBACK_SYSTEM
+    except Exception:                                    # noqa: BLE001
+        return FALLBACK_SYSTEM
+
+
 def load_tolerated(path: str) -> set:
     """EN | Entity ids known to be absent on every instance - placeholders a
     EN | dashboard keeps for an installation that does not exist yet, such as
@@ -282,6 +328,10 @@ def main() -> int:
                          "FR | lu quand HA_TOKEN n'est pas definie")
     ap.add_argument("--tolerated",
                     default="/config/dashboards/model/tolerated_entities.txt")
+    ap.add_argument("--fragment", default="/config/config-fragment.yaml",
+                    help="EN | the static fragment, which says which "
+                         "dashboards belong to the product rather than to "
+                         "the house")
     ap.add_argument("--expect-version", default="",
                     help="EN | fail when sensor.vssp_deployed_version differs")
     ap.add_argument("--theme", default="Visio Sapiens")
@@ -314,22 +364,28 @@ def main() -> int:
                 f"{len(mine)} Visio Sapiens dashboard(s) declared",
                 fix="config-fragment.yaml was never merged into "
                     "configuration.yaml - run vssp_apply_config.py")
+        system = load_system(args.fragment)
         cited: set = set()
         for b in mine:
-            url_path = b.get("url_path")
+            url_path = str(b.get("url_path") or "")
+            structural = url_path in system
             try:
                 cfg = ws.command({"type": "lovelace/config",
                                   "url_path": url_path}) or {}
             except (WSError, OSError) as exc:
-                rep.add("1. DASHBOARDS", False, str(url_path),
-                        detail=str(exc),
-                        fix="declared with no file behind it: generate the "
-                            "view, or remove the entry from the fragment")
+                rep.add("1. DASHBOARDS", False, url_path, detail=str(exc),
+                        fix=("declared with no file behind it - the control "
+                             "centre is incomplete"
+                             if structural else
+                             "a room declared in configuration.yaml that the "
+                             "house model no longer has: tidy it with "
+                             "--prune-dashboards, it blocks nothing"),
+                        fatal=structural)
                 continue
             views = cfg.get("views") or []
-            rep.add("1. DASHBOARDS", bool(views), str(url_path),
+            rep.add("1. DASHBOARDS", bool(views), url_path,
                     detail=f"{len(views)} view(s)",
-                    fix="serves an empty configuration")
+                    fix="serves an empty configuration", fatal=structural)
             cited |= entities_in(cfg)
 
         # ── 2. EN | entities / FR | entites ────────────────────────────

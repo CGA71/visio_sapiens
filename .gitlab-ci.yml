@@ -1549,6 +1549,26 @@ deploy:staging:
     # --- FR | comprise, depuis le jour de sa declaration. Le bouton APERCU
     # --- FR | ecrase ce fichier quand on s en sert ; le rendre ici veut
     # --- FR | seulement dire que le lien s ouvre toujours.
+    # --- EN | SELECT THE THEME. Generating it is not enough: the selection
+    # --- EN | is a preference, and production was measured with
+    # --- EN | default_theme = "default" - its users only saw the interface
+    # --- EN | because each had chosen the theme in their own profile, and a
+    # --- EN | browser never used there would have shown a bare page. The
+    # --- EN | automation in vssp_theme.yaml does this at start-up; a deploy
+    # --- EN | that reloads rather than restarts would not have triggered it.
+    # --- FR | SELECTIONNER LE THEME. Le generer ne suffit pas : la selection
+    # --- FR | est une preference, et la production a ete mesuree avec
+    # --- FR | default_theme = « default » - ses utilisateurs ne voyaient
+    # --- FR | l interface que parce que chacun avait choisi le theme dans son
+    # --- FR | profil, et un navigateur jamais utilise la-bas aurait affiche
+    # --- FR | une page nue. L automatisation de vssp_theme.yaml le fait au
+    # --- FR | demarrage ; un deploiement qui recharge sans redemarrer ne
+    # --- FR | l aurait pas declenchee.
+    - |
+      kubectl exec -n $K3S_NAMESPACE $HA_POD -c $K3S_CONTAINER -- sh -c '
+        python3 /config/vssp/vssp_prepare.py --theme-only --url http://localhost:8123
+      ' || echo "[warn] the theme could not be selected - dashboards may render unstyled"
+
     - |
       kubectl exec -n $K3S_NAMESPACE $HA_POD -c $K3S_CONTAINER -- sh -c '
         LOCALE=$(cat /config/VSSP_LOCALE 2>/dev/null || echo en)
@@ -2249,6 +2269,24 @@ deploy:staging:
     # FR | jamais $HA_CFG : cette variable porte le chemin de L HOTE
     # FR | (/homeassistant), qui n existe pas de l autre cote de
     # FR | `docker exec`.
+    # --- EN | SELECT THE THEME. Generating it is not enough: the selection
+    # --- EN | is a preference, and production was measured with
+    # --- EN | default_theme = "default" - its users only saw the interface
+    # --- EN | because each had chosen the theme in their own profile, and a
+    # --- EN | browser never used there would have shown a bare page. The
+    # --- EN | automation in vssp_theme.yaml does this at start-up; a deploy
+    # --- EN | that reloads rather than restarts would not have triggered it.
+    # --- FR | SELECTIONNER LE THEME. Le generer ne suffit pas : la selection
+    # --- FR | est une preference, et la production a ete mesuree avec
+    # --- FR | default_theme = « default » - ses utilisateurs ne voyaient
+    # --- FR | l interface que parce que chacun avait choisi le theme dans son
+    # --- FR | profil, et un navigateur jamais utilise la-bas aurait affiche
+    # --- FR | une page nue. L automatisation de vssp_theme.yaml le fait au
+    # --- FR | demarrage ; un deploiement qui recharge sans redemarrer ne
+    # --- FR | l aurait pas declenchee.
+    - |
+      ssh ha "docker exec homeassistant python3 /config/vssp/vssp_prepare.py --theme-only --url http://localhost:8123" || echo "[warn] the theme could not be selected"
+
     - |
       ssh ha "docker exec homeassistant sh -c '
         LOCALE=\$(cat /config/VSSP_LOCALE 2>/dev/null || echo en)
@@ -2677,7 +2715,6 @@ verify:staging:
     - .verify
     - .rules_staging
   needs: ["test:staging"]
-  allow_failure: true
   variables:
     TARGET_URL: $STAGING_URL
     HA_TOKEN: $HA_TOKEN_STAGING
@@ -2717,7 +2754,6 @@ verify:production:
     - .verify
     - .rules_tag
   needs: ["test:production"]
-  allow_failure: true
   variables:
     TARGET_URL: $PROD_URL
     HA_TOKEN: $HA_TOKEN_PROD

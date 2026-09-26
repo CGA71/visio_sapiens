@@ -27,6 +27,19 @@ Cette ligne traverse chacun des outils ci-dessous : `vssp_verify.py` échoue sur
 un `sensor.vssp_*` manquant et pardonne une `camera.*` absente, et le manifeste
 ne liste aucun appareil.
 
+La même ligne sépare **structure** et **contenu** après un déploiement :
+
+| Structure — un défaut, le pipeline échoue | Contenu — signalé, n'échoue jamais |
+|---|---|
+| HOME, CORE, ENERGY, ADMIN et leurs variantes mobiles servent une configuration | un tableau de pièce que le modèle de la maison ne déclare plus |
+| chaque `sensor.vssp_*` que nomment les écrans existe | une caméra, un aspirateur, une prise que cette maison ne possède pas |
+| chaque ressource enregistrée répond | les emplacements photovoltaïques, listés comme tolérés |
+| le thème est sélectionné, les cartes bloquantes installées | une carte optionnelle qui alimente une tuile |
+
+Quels tableaux de bord sont structurels n'est pas deviné : `vssp_verify.py` lit
+`config-fragment.yaml`, le fragment que ce projet écrit. Ce que déclare le
+modèle de la maison est du contenu par construction.
+
 ---
 
 ## 2. Le manifeste

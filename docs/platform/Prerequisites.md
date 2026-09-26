@@ -27,6 +27,19 @@ That line runs through every tool below: `vssp_verify.py` fails on a missing
 `sensor.vssp_*` and forgives a missing `camera.*`, and the manifest lists no
 device at all.
 
+The same line separates **structure** from **content** after a deployment:
+
+| Structure — a defect, the pipeline fails | Content — reported, never fails |
+|---|---|
+| HOME, CORE, ENERGY, ADMIN and their mobile variants serve a configuration | a room dashboard whose house model no longer declares it |
+| every `sensor.vssp_*` the screens name exists | a camera, a vacuum, a plug this house does not own |
+| every registered resource answers | the photovoltaic placeholders, listed as tolerated |
+| the theme is selected, the blocking cards installed | an optional card feeding one tile |
+
+Which dashboards are structural is not guessed: `vssp_verify.py` reads
+`config-fragment.yaml`, the fragment this project writes. What the house's own
+model declares is content by construction.
+
 ---
 
 ## 2. The manifest

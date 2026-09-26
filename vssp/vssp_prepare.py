@@ -154,6 +154,29 @@ def main() -> int:
                     help="EN | city or postcode for Meteo-France, which has "
                          "no instance-independent answer")
     ap.add_argument("--calendar", default="Visio Sapiens")
+    # EN | --theme-only is what a deployment runs. Selecting the theme is the
+    # EN | one preparation step a deploy must repeat every time: the theme is
+    # EN | regenerated at each release, and an instance where nobody selected
+    # EN | it renders every dashboard unstyled. Production was measured in
+    # EN | exactly that state - default_theme was "default", and its users
+    # EN | only saw the interface because each had picked the theme in their
+    # EN | own profile. A browser that had never been used there would have
+    # EN | shown a bare page.
+    # EN | It installs nothing, so a deployment can call it without deciding
+    # EN | anything on the owner's behalf.
+    # FR | --theme-only est ce qu execute un deploiement. Selectionner le
+    # FR | theme est la seule etape de preparation qu un deploiement doit
+    # FR | repeter a chaque fois : le theme est regenere a chaque livraison,
+    # FR | et une instance ou personne ne l a selectionne affiche tous ses
+    # FR | dashboards sans style. La production a ete mesuree exactement dans
+    # FR | cet etat - default_theme valait « default », et ses utilisateurs ne
+    # FR | voyaient l interface que parce que chacun avait choisi le theme
+    # FR | dans son profil. Un navigateur jamais utilise la-bas aurait affiche
+    # FR | une page nue.
+    # FR | Il n installe rien : un deploiement peut donc l appeler sans rien
+    # FR | decider a la place du proprietaire.
+    ap.add_argument("--theme-only", action="store_true",
+                    help="EN | select the theme and nothing else")
     args = ap.parse_args()
 
     man = vssp_manifest.load(args.manifest or None)
@@ -168,6 +191,16 @@ def main() -> int:
 
     failures = 0
     manual: list[str] = []
+
+    if args.theme_only:
+        try:
+            post(args.url, token, "/api/services/frontend/set_theme",
+                 {"name": args.theme})
+            print(f"  {GREEN}OK{RESET}   {args.theme} selected")
+            return 0
+        except OSError as exc:
+            print(f"  {RED}FAIL{RESET} set_theme  {DIM}{exc}{RESET}")
+            return 1
 
     # ── 1. EN | cards and HACS integrations / FR | cartes et integrations ──
     print("=== 1. CARDS AND RESOURCES ===")
