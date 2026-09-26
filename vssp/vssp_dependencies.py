@@ -168,51 +168,51 @@ SUPPORTED_LOCALES = ("en", "fr")
 # FR | demenage, ne se transforme en mauvais telechargement depuis ce
 # FR | fichier.
 PLUGINS = [
-    ("button-card",
+    ("custom-cards/button-card",
      "Every tile, button and panel of the interface.",
      "Chaque tuile, bouton et panneau de l'interface.",
      True),
-    ("lovelace-card-mod",
+    ("thomasloven/lovelace-card-mod",
      "The styling of the navigation rail and of the cards.",
      "L'habillage du bandeau de navigation et des cartes.",
      True),
-    ("lovelace-layout-card",
+    ("thomasloven/lovelace-layout-card",
      "The page layouts (grid-layout, vertical-layout).",
      "Les mises en page (grid-layout, vertical-layout).",
      True),
-    ("vertical-stack-in-card",
+    ("ofekashery/vertical-stack-in-card",
      "Panels stacked inside a single frame.",
      "Les panneaux empiles dans un meme cadre.",
      False),
-    ("apexcharts-card",
+    ("RomRider/apexcharts-card",
      "The energy and history graphs.",
      "Les graphiques d'energie et d'historique.",
      False),
-    ("mini-graph-card",
+    ("kalkih/mini-graph-card",
      "The compact curves of the room pages.",
      "Les courbes compactes des pages de piece.",
      False),
-    ("config-template-card",
+    ("iantrich/config-template-card",
      "Cards whose configuration depends on a state.",
      "Les cartes dont la configuration depend d'un etat.",
      False),
-    ("decluttering-card",
+    ("custom-cards/decluttering-card",
      "The shared card templates.",
      "Les gabarits de cartes partages.",
      False),
-    ("lovelace-mushroom",
+    ("piitaya/lovelace-mushroom",
      "The vacuum panel of the entrance hall.",
      "Le panneau du robot aspirateur de l'entree.",
      False),
-    ("simple-weather-card",
+    ("I-Simen-I/simple-weather-card",
      "The weather cell of the header band.",
      "La case meteo du bandeau d'en-tete.",
      False),
-    ("dynamic-weather-card",
+    ("teuchezh/dynamic-weather-card",
      "The weather panel of the HOME dashboard.",
      "Le panneau meteo du dashboard HOME.",
      False),
-    ("calendar-card-pro",
+    ("alexpfau/calendar-card-pro",
      "The agenda panel.",
      "Le panneau agenda.",
      False),
@@ -637,9 +637,33 @@ def find_repo(repos: list, category: str, needle: str) -> dict | None:
             if str(r.get("domain") or "").lower() == needle:
                 return r
             continue
-        full = str(r.get("full_name") or "").rstrip("/").split("/")[-1].lower()
+        full_name = str(r.get("full_name") or "").rstrip("/").lower()
+        # EN | OWNER/NAME WHEN IT IS GIVEN, and it now always is. Matching on
+        # EN | the last segment alone is ambiguous: kalkih/simple-weather-card
+        # EN | and I-Simen-I/simple-weather-card both end in
+        # EN | "simple-weather-card", and whichever came first in HACS's list
+        # EN | won. The pod runs the fork, whose artifact is
+        # EN | simple-weather-card.js and which understands animated_icons,
+        # EN | forecast_type and state_content; a fresh instance got the other
+        # EN | one, whose bundle ignores all three, so the header weather tile
+        # EN | rendered nothing at all. Measured on the appliance staging.
+        # FR | PROPRIETAIRE/NOM QUAND IL EST DONNE, et il l est desormais
+        # FR | toujours. Ne comparer que le dernier segment est ambigu :
+        # FR | kalkih/simple-weather-card et I-Simen-I/simple-weather-card
+        # FR | finissent tous deux par « simple-weather-card », et celui qui
+        # FR | arrivait en premier dans la liste de HACS gagnait. Le pod fait
+        # FR | tourner le fork, dont l artefact est simple-weather-card.js et
+        # FR | qui comprend animated_icons, forecast_type et state_content ;
+        # FR | une instance neuve recevait l autre, dont le bundle les ignore
+        # FR | tous les trois, si bien que la tuile meteo du bandeau ne
+        # FR | dessinait rien. Mesure sur la preproduction appareil.
+        if "/" in needle:
+            if full_name == needle:
+                return r
+            continue
+        folder = full_name.split("/")[-1]
         local = str(r.get("local_path") or "").rstrip("/").split("/")[-1].lower()
-        if needle in (full, local):
+        if needle in (folder, local):
             return r
     return None
 
@@ -784,6 +808,29 @@ def run(args) -> int:
                 row(kind, key, key, "unknown", why, report["hacs"]["error"], req)
                 continue
             repo = find_repo(repos, category, key)
+            if repo is None and install and "/" in key:
+                # EN | A fork is not in the HACS index. The interface needs
+                # EN | I-Simen-I/simple-weather-card, not the card of the same
+                # EN | folder name that HACS lists by default, so on a fresh
+                # EN | instance the repository has to be added before it can
+                # EN | be downloaded - which is what a person does by hand
+                # EN | under "Custom repositories". Only on install: a check
+                # EN | must never write anything.
+                # FR | Un fork n est pas dans l index HACS. L interface a
+                # FR | besoin de I-Simen-I/simple-weather-card, pas de la
+                # FR | carte de meme nom de dossier que HACS liste par
+                # FR | defaut : sur une instance neuve, il faut donc ajouter
+                # FR | le depot avant de pouvoir le telecharger - ce qu on
+                # FR | fait a la main sous « Depots personnalises ». En
+                # FR | installation seulement : une verification ne doit
+                # FR | jamais rien ecrire.
+                try:
+                    ws.command({"type": "hacs/repositories/add",
+                                "repository": key, "category": category})
+                    repos = ws.command({"type": "hacs/repositories/list"}) or []
+                    repo = find_repo(repos, category, key)
+                except (WSError, OSError) as exc:
+                    print(f"[warn] {key}: {exc}", file=sys.stderr)
             if repo is None:
                 row(kind, key, key, "unknown", why, "", req)
                 continue
