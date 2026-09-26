@@ -78,14 +78,31 @@
 # FR | le signaler, car cela voudrait dire que les regles ont ete vidangees
 # FR | et pas seulement reordonnees.
 ########################################################################
+# EN | TWO CALLERS, ONE SCRIPT. NetworkManager calls it with an interface
+# EN | and an event, and it must then do nothing unless br0 just came up.
+# EN | k3s calls it with no argument at all, from an ExecStartPost drop-in,
+# EN | because k3s rebuilds the FORWARD chain every time it starts - a host
+# EN | reboot is not the only way these rules disappear, and the dispatcher
+# EN | alone would lose the race whenever k3s started after br0 was already
+# EN | up. Called bare, it applies the rules and returns.
+# FR | DEUX APPELANTS, UN SCRIPT. NetworkManager l appelle avec une interface
+# FR | et un evenement : il ne doit alors rien faire sauf si br0 vient de
+# FR | monter. k3s l appelle sans aucun argument, depuis un drop-in
+# FR | ExecStartPost, parce que k3s reconstruit la chaine FORWARD a chaque
+# FR | demarrage - un redemarrage de l hote n est pas la seule facon de
+# FR | perdre ces regles, et le script d interface seul perdrait la course
+# FR | chaque fois que k3s demarre alors que br0 est deja monte. Appele nu,
+# FR | il pose les regles et rend la main.
 IFACE="$1"
 ACTION="$2"
 
-[ "$IFACE" = "br0" ] || exit 0
-case "$ACTION" in
-  up|dhcp4-change|dhcp6-change) ;;
-  *) exit 0 ;;
-esac
+if [ -n "$IFACE" ]; then
+  [ "$IFACE" = "br0" ] || exit 0
+  case "$ACTION" in
+    up|dhcp4-change|dhcp6-change) ;;
+    *) exit 0 ;;
+  esac
+fi
 
 # EN | -C tests for the rule first, so a second dispatcher run does not
 # EN | stack duplicates in the chain.

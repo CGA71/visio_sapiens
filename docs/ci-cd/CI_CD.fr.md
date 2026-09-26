@@ -272,6 +272,17 @@ pont sur la carte réseau inutilisée, et le script dispatcher de
 ce qui ressemble à un problème de DHCP et n'en est pas un. Les deux sont
 documentés dans `kubernetes/haos/haos-vm.yaml`.
 
+Installez cette règle avec `kubernetes/haos/install-br0-forward.sh`, une fois,
+en root. Il accroche le même script à deux endroits, et les deux sont
+nécessaires : une entrée dispatcher de NetworkManager, qui se déclenche quand
+`br0` monte et couvre donc un redémarrage, et un drop-in `ExecStartPost` sur
+`k3s.service`, qui se déclenche à chaque démarrage de k3s. Le second n'est pas
+une ceinture en plus des bretelles — k3s reconstruit la chaîne FORWARD à chaque
+démarrage, et un `systemctl restart k3s` ne fait bouger aucune interface : le
+dispatcher ne passe donc jamais. Mesuré à la dure : règles posées à la main le
+25 septembre, hôte redémarré le 26 à 23:34, appareil injoignable en IPv4 et
+répondant parfaitement en IPv6.
+
 **Prérequis côté appareil**, dans la VM et une seule fois. Installer l'add-on
 Terminal & SSH ne suffit pas à rendre ssh joignable : il arrive avec
 `"network": {"22/tcp": null}`, c'est-à-dire aucun port hôte. Et la CLI `ha` n'a

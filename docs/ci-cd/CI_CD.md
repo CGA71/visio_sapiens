@@ -268,6 +268,16 @@ IPv4 across it — k3s sets the FORWARD policy to `DROP`, and without that rule
 the VM gets a working IPv6 and no IPv4 at all, which looks like a DHCP problem
 and is not. Both are documented in `kubernetes/haos/haos-vm.yaml`.
 
+Install that rule with `kubernetes/haos/install-br0-forward.sh`, once, as root.
+It hangs the same script off two places, and both are needed: a NetworkManager
+dispatcher entry, which fires when `br0` comes up and so covers a reboot, and an
+`ExecStartPost` drop-in on `k3s.service`, which fires every time k3s starts.
+The second is not belt and braces — k3s rebuilds the FORWARD chain on every
+start, and a `systemctl restart k3s` moves no interface, so the dispatcher never
+runs. Measured the hard way: rules added by hand on 25 September, host rebooted
+on the 26th at 23:34, appliance unreachable on IPv4 and answering perfectly on
+IPv6.
+
 **Appliance prerequisites**, inside the VM and done once. Installing the
 Terminal & SSH add-on is not enough to make ssh reachable: it ships with
 `"network": {"22/tcp": null}`, that is, no host port at all. And the `ha` CLI
