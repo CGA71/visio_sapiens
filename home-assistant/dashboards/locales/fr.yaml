@@ -317,6 +317,8 @@ admin:
   repairs_key_units_changed: >-
     Une statistique a changé d'unité. Home Assistant doit savoir quelle unité
     garder avant de pouvoir l'enregistrer de nouveau.
+  deps_all_ok: Tout ce dont l'interface a besoin est en place
+  deps_blocking: bloquant
   deps_never_checked: Jamais vérifié — pressez VÉRIFIER LES DÉPENDANCES.
   deps_check: VÉRIFIER LES DÉPENDANCES
   deps_check_hint: Liste ce qui manque, n'installe rien

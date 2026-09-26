@@ -2225,20 +2225,39 @@ views:
                   border-radius: var(--ha-card-border-radius, 20px) !important;
                 }
 
-          - type: horizontal-stack
+          {# EN | The console's own button, not Home Assistant's. A plain
+             EN | `type: button` draws a tile with an oversized icon and
+             EN | nothing else on this screen looks like that - three of them
+             EN | in a row read as a warning rather than as actions.
+             FR | Le bouton de la console, pas celui de Home Assistant. Un
+             FR | simple `type: button` dessine une tuile a l icone
+             FR | surdimensionnee, et rien d autre sur cet ecran n y
+             FR | ressemble - trois d affilee se lisent comme une alerte
+             FR | plutot que comme des actions. #}
+          - type: grid
+            columns: 3
+            square: false
             cards:
-              - type: button
-                name: "{{ t('admin.repairs_check') }}"
+              - type: custom:button-card
+                template: vssp_admin_button
                 icon: mdi:wrench-outline
+                name: "{{ t('admin.repairs_check') }}"
                 tap_action:
-                  action: perform-action
-                  perform_action: script.vssp_repairs_check
-              - type: button
-                name: "{{ t('admin.repairs_open') }}"
+                  action: call-service
+                  service: script.vssp_repairs_check
+                card_mod:
+                  style: |
+                    ha-card { min-height: 64px; }
+              - type: custom:button-card
+                template: vssp_admin_button
                 icon: mdi:open-in-new
+                name: "{{ t('admin.repairs_open') }}"
                 tap_action:
                   action: navigate
                   navigation_path: /config/repairs
+                card_mod:
+                  style: |
+                    ha-card { min-height: 64px; }
               {# EN | The restart the deployment will never do for you: the
                  EN | pipeline restarts Home Assistant Core and nothing else,
                  EN | so a Supervisor issue asking for a system reboot
@@ -2248,14 +2267,20 @@ views:
                  FR | rien d autre, une correction du Superviseur reclamant un
                  FR | redemarrage systeme survit donc a chaque livraison
                  FR | jusqu a ce que quelqu un appuie ici. #}
-              - type: button
-                name: "{{ t('admin.repairs_reboot') }}"
+              - type: custom:button-card
+                template: vssp_admin_button
                 icon: mdi:restart-alert
+                name: "{{ t('admin.repairs_reboot') }}"
+                variables:
+                  danger: true
                 tap_action:
-                  action: perform-action
-                  perform_action: script.vssp_host_reboot
+                  action: call-service
+                  service: script.vssp_host_reboot
                   confirmation:
                     text: "{{ t('admin.repairs_reboot') }} ?"
+                card_mod:
+                  style: |
+                    ha-card { min-height: 64px; }
 
           - type: markdown
             title: "{{ t('admin.deps_title') }}"
@@ -2264,19 +2289,24 @@ views:
                 'card':        '{{ t('admin.deps_cards') | js }}',
                 'integration': '{{ t('admin.deps_integrations') | js }}',
                 'resource':    '{{ t('admin.deps_resources') | js }}' } {{ '%}' }}
+              {{ '{%' }} set all_ok = '{{ t('admin.deps_all_ok') | js }}' {{ '%}' }}
+              {{ '{%' }} set blocking_word = '{{ t('admin.deps_blocking') | js }}' {{ '%}' }}
               {%+ raw %}{% set items = state_attr('sensor.vssp_dependencies', 'items') or [] %}
               {% set note = state_attr('sensor.vssp_dependencies_status', 'message') %}
+              {% set bad = items | rejectattr('state', 'in', ['ok', 'added']) | list %}
               {% if not items %}
               _{% endraw +%}{{ t('admin.deps_never_checked') }}{%+ raw %}_
+              {% elif not bad %}
+              <ha-alert alert-type="success">{{ all_ok }} — {{ items | length }}</ha-alert>
               {% else %}
               {% if note %}**{{ note }}**
               {% endif %}
               {% for kind in ['card', 'integration', 'resource'] %}
-              {% set group = items | selectattr('kind', 'eq', kind) | list %}
+              {% set group = bad | selectattr('kind', 'eq', kind) | list %}
               {% if group %}
               **{{ kinds.get(kind, kind) }}**
               {% for r in group %}
-              - {% if r.state in ['ok', 'added'] %}○{% elif r.state in ['missing', 'unknown', 'stale', 'restart'] %}⬤{% elif r.state == 'legacy' %}·{% else %}⚠{% endif %} {{ r.name }} · _{{ r.state_label }}_
+              - ⬤ {{ r.name }} · _{{ r.state_label }}_{% if r.required %} · **{{ blocking_word }}**{% endif %}
                 {%- if r.why %} — {{ r.why }}{% endif %}
               {% endfor %}
               {% endif %}

@@ -444,6 +444,8 @@ admin:
   repairs_key_units_changed: >-
     A statistic changed unit. Home Assistant needs to be told which unit to
     keep before it can record it again.
+  deps_all_ok: Everything the interface needs is in place
+  deps_blocking: blocking
   deps_never_checked: Never checked — press CHECK DEPENDENCIES.
   deps_check: CHECK DEPENDENCIES
   deps_check_hint: Lists what is missing, installs nothing
