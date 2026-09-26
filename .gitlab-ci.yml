@@ -70,6 +70,22 @@
 stages:
   - validate
   - build
+  # EN | preflight sits between building a version and deploying it, and it
+  # EN | asks the TARGET, not the code: can this instance host the control
+  # EN | centre? A release that lands on an instance without HACS or without
+  # EN | button-card draws a blank screen and reports a green pipeline, and
+  # EN | the person in front of it concludes the version is broken. It is
+  # EN | not - the ground was not prepared. When it refuses, the prepare job
+  # EN | of the same stage prepares what can be prepared and names the rest.
+  # FR | preflight se place entre la construction d une version et son
+  # FR | deploiement, et il interroge la CIBLE, pas le code : cette instance
+  # FR | peut-elle heberger le centre de controle ? Une livraison qui
+  # FR | atterrit sur une instance sans HACS ou sans button-card dessine un
+  # FR | ecran blanc et annonce un pipeline vert, et la personne devant
+  # FR | conclut que la version est cassee. Elle ne l est pas - le terrain
+  # FR | n etait pas pret. Quand il refuse, le job prepare du meme etage
+  # FR | prepare ce qui peut l etre et nomme le reste.
+  - preflight
   - deploy
   - test
   - release
@@ -330,6 +346,36 @@ workflow:
 # FR | de dependances - et echoue quand une personne verrait quelque chose
 # FR | de casse.
 # ============================================================================
+.preflight:
+  image: alpine:latest
+  stage: preflight
+  script:
+    - apk add --no-cache python3 py3-yaml >/dev/null
+    - |
+      if [ -z "$HA_TOKEN" ]; then
+        echo "[ERR] Empty token - the target cannot be inspected."
+        exit 1
+      fi
+    - python3 vssp/vssp_preflight.py --url "$TARGET_URL"
+
+# EN | prepare is MANUAL and never runs on its own: it installs a dozen
+# EN | third-party repositories into someone's instance, which is a decision,
+# EN | not a side effect of pushing code. It is also the documented way to
+# EN | prepare an instance that has no pipeline at all - see
+# EN | docs/platform/Prerequisites.md.
+# FR | prepare est MANUEL et ne part jamais tout seul : il installe une
+# FR | douzaine de depots tiers dans l instance de quelqu un, ce qui est une
+# FR | decision, pas un effet de bord d un push. C est aussi la facon
+# FR | documentee de preparer une instance qui n a aucun pipeline - voir
+# FR | docs/platform/Prerequisites.md.
+.prepare:
+  image: alpine:latest
+  stage: preflight
+  when: manual
+  script:
+    - apk add --no-cache python3 py3-yaml >/dev/null
+    - python3 vssp/vssp_prepare.py --url "$TARGET_URL"
+
 .verify:
   image: alpine:latest
   stage: test
@@ -987,7 +1033,7 @@ deploy:staging:
   extends: .rules_staging
   stage: deploy
   image: bitnami/kubectl:latest
-  needs: ["build"]
+  needs: ["build", "preflight:staging"]
   environment:
     name: staging
     url: $STAGING_URL
@@ -2374,7 +2420,7 @@ deploy:production:
     # FR | tourne que sur un tag, donc rien d'une release taguee ne se
     # FR | comporte autrement qu'avant ce parametrage.
     VSSP_DEPLOY_REF: $CI_COMMIT_TAG
-  needs: ["build"]
+  needs: ["build", "preflight:production"]
   rules:
     - if: $CI_COMMIT_TAG
       when: manual
@@ -2420,7 +2466,18 @@ deploy:production:
 deploy:staging-haos:
   extends: [.ssh_bootstrap, .deploy_appliance]
   stage: deploy
-  needs: ["build"]
+  needs:
+    - "build"
+    # EN | optional: the job does not exist
+    # EN | until HA_TOKEN_HAOS does, and a needs
+    # EN | on a job that was never created is a
+    # EN | pipeline error.
+    # FR | optionnel : le job n existe pas tant
+    # FR | que HA_TOKEN_HAOS n existe pas, et un
+    # FR | needs vers un job jamais cree est une
+    # FR | erreur de pipeline.
+    - job: "preflight:staging-haos"
+      optional: true
   rules:
     - if: $CI_COMMIT_TAG
       when: never
@@ -2494,6 +2551,75 @@ test:staging:
 # FR | ancien ; faire rougir master pour cela aujourd hui n apprendrait qu a
 # FR | ignorer un pipeline rouge. Il avertit jusqu a ce que ce soit solde,
 # FR | et alors cette ligne disparait.
+preflight:staging:
+  extends:
+    - .preflight
+    - .rules_staging
+  needs: ["build"]
+  variables:
+    TARGET_URL: $STAGING_URL
+    HA_TOKEN: $HA_TOKEN_STAGING
+
+prepare:staging:
+  extends:
+    - .prepare
+    - .rules_staging
+  needs: ["build"]
+  variables:
+    TARGET_URL: $STAGING_URL
+    HA_TOKEN: $HA_TOKEN_STAGING
+
+# EN | The appliance staging has no token variable yet, so both of these ask
+# EN | for HA_TOKEN_HAOS and simply do not appear until it exists. The deploy
+# EN | needs them optionally for the same reason - a needs on a job that was
+# EN | never created is a pipeline error, not a skipped gate.
+# FR | La preproduction appareil n a pas encore de variable de jeton : ces
+# FR | deux jobs demandent donc HA_TOKEN_HAOS et n apparaissent pas tant
+# FR | qu elle n existe pas. Le deploiement les requiert en optionnel pour la
+# FR | meme raison - un needs vers un job jamais cree est une erreur de
+# FR | pipeline, pas une porte ignoree.
+preflight:staging-haos:
+  extends: .preflight
+  needs: ["build"]
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: never
+    - if: $CI_COMMIT_BRANCH == "master" && $HAOS_SSH_KEY && $HA_TOKEN_HAOS
+      when: on_success
+  variables:
+    TARGET_URL: $HAOS_URL
+    HA_TOKEN: $HA_TOKEN_HAOS
+
+prepare:staging-haos:
+  extends: .prepare
+  needs: ["build"]
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: never
+    - if: $CI_COMMIT_BRANCH == "master" && $HAOS_SSH_KEY && $HA_TOKEN_HAOS
+      when: manual
+  variables:
+    TARGET_URL: $HAOS_URL
+    HA_TOKEN: $HA_TOKEN_HAOS
+
+preflight:production:
+  extends:
+    - .preflight
+    - .rules_tag
+  needs: ["build"]
+  variables:
+    TARGET_URL: $PROD_URL
+    HA_TOKEN: $HA_TOKEN_PROD
+
+prepare:production:
+  extends:
+    - .prepare
+    - .rules_tag
+  needs: ["build"]
+  variables:
+    TARGET_URL: $PROD_URL
+    HA_TOKEN: $HA_TOKEN_PROD
+
 verify:staging:
   extends:
     - .verify

@@ -1,0 +1,167 @@
+# Visio Sapiens - what the control centre needs before a version is deployed
+# Visio Sapiens - ce dont le centre de controle a besoin avant qu une version
+#                 ne soit deployee
+#
+# EN | WHY THIS FILE EXISTS. The same release produced a working instance on
+# EN | the development pod and a blank screen on a freshly deployed Home
+# EN | Assistant OS. The code was identical - the generator and the templates
+# EN | matched byte for byte. What differed was everything the deployment had
+# EN | never owned: HACS and its cards, the resource registry, the selected
+# EN | theme, a long-lived token. That knowledge lived scattered across a
+# EN | Python list, a YAML fragment, the pipeline's comments and people's
+# EN | memory, so nothing could check it.
+# EN | It lives here now, and two programs read it: vssp_preflight.py, which
+# EN | refuses to deploy into an instance that cannot host the release, and
+# EN | vssp_dependencies.py, which reports and installs what is missing.
+# FR | POURQUOI CE FICHIER EXISTE. La meme livraison a produit une instance
+# FR | qui marche sur le pod de developpement et un ecran blanc sur un Home
+# FR | Assistant OS fraichement deploye. Le code etait identique - le
+# FR | generateur et les gabarits concordaient au bit pres. Ce qui differait,
+# FR | c etait tout ce que le deploiement n avait jamais possede : HACS et
+# FR | ses cartes, le registre des ressources, le theme selectionne, un jeton
+# FR | longue duree. Cette connaissance vivait eparpillee dans une liste
+# FR | Python, un fragment YAML, les commentaires du pipeline et la memoire
+# FR | des gens : rien ne pouvait donc la verifier.
+# FR | Elle vit ici desormais, et deux programmes la lisent :
+# FR | vssp_preflight.py, qui refuse de deployer dans une instance incapable
+# FR | d heberger la livraison, et vssp_dependencies.py, qui rapporte et
+# FR | installe ce qui manque.
+#
+# EN | THE LINE THIS FILE DRAWS. A prerequisite is what the CONTROL CENTRE
+# EN | needs in order to be drawn at all. It is never a connected device: a
+# EN | house with no camera, no plug and no room declared must still get a
+# EN | working Visio Sapiens. Cameras, vacuums and thermostats belong to the
+# EN | house and are configured afterwards, in the ADMIN console.
+# FR | LA LIGNE QUE CE FICHIER TRACE. Un prerequis est ce dont le CENTRE DE
+# FR | CONTROLE a besoin pour etre dessine, point. Ce n est jamais un
+# FR | appareil connecte : une maison sans camera, sans prise et sans piece
+# FR | declaree doit quand meme obtenir un Visio Sapiens qui fonctionne. Les
+# FR | cameras, aspirateurs et thermostats appartiennent a la maison et se
+# FR | configurent ensuite, dans la console ADMIN.
+
+# EN | The minimum Home Assistant this release is built against.
+# FR | Le Home Assistant minimum contre lequel cette livraison est construite.
+minimum_core: "2025.1.0"
+
+# EN | HACS itself. Without it not one card can ever be installed, so an
+# EN | instance without HACS cannot host this project - the deploy stops.
+# EN | Its GitHub authorization cannot be automated; it is a human step, once.
+# FR | HACS lui-meme. Sans lui, aucune carte ne pourra jamais etre installee :
+# FR | une instance sans HACS ne peut pas heberger ce projet - le deploiement
+# FR | s arrete. Son autorisation GitHub ne s automatise pas ; c est une
+# FR | etape humaine, une fois.
+hacs:
+  required: true
+  how_en: >-
+    Install the HACS integration, then authorize it with a GitHub account
+    (Settings > Devices and services > Add integration > HACS).
+  how_fr: >-
+    Installer l'integration HACS, puis l'autoriser avec un compte GitHub
+    (Parametres > Appareils et services > Ajouter une integration > HACS).
+
+# EN | The cards. blocking: true means the interface cannot be drawn without
+# EN | it - button-card carries every tile, card-mod every style, layout-card
+# EN | every view layout. The others feed one card each: their absence costs
+# EN | that card, not the screen, so they are reported and never block.
+# EN | Each is pinned to owner/name: two repositories can share a folder name,
+# EN | and a fresh instance once received kalkih/simple-weather-card where the
+# EN | interface expects the I-Simen-I fork, whose options it is written with.
+# FR | Les cartes. blocking: true signifie que l interface ne peut pas etre
+# FR | dessinee sans elle - button-card porte chaque tuile, card-mod chaque
+# FR | style, layout-card chaque mise en page. Les autres alimentent une carte
+# FR | chacune : leur absence coute cette carte, pas l ecran, elles sont donc
+# FR | signalees sans jamais bloquer.
+# FR | Chacune est epinglee en proprietaire/nom : deux depots peuvent partager
+# FR | un nom de dossier, et une instance neuve a recu un jour
+# FR | kalkih/simple-weather-card la ou l interface attend le fork I-Simen-I,
+# FR | avec les options duquel elle est ecrite.
+cards:
+  - repo: custom-cards/button-card
+    blocking: true
+    why_en: Every tile, button and panel of the interface.
+    why_fr: Chaque tuile, bouton et panneau de l'interface.
+  - repo: thomasloven/lovelace-card-mod
+    blocking: true
+    why_en: The styling of the navigation rail and of the cards.
+    why_fr: L'habillage du bandeau de navigation et des cartes.
+  - repo: thomasloven/lovelace-layout-card
+    blocking: true
+    why_en: The page layouts (grid-layout, vertical-layout).
+    why_fr: Les mises en page (grid-layout, vertical-layout).
+  - repo: ofekashery/vertical-stack-in-card
+    why_en: Stacked cards drawn as one.
+    why_fr: Les cartes empilees rendues comme une seule.
+  - repo: RomRider/apexcharts-card
+    why_en: The energy charts.
+    why_fr: Les graphiques d'energie.
+  - repo: kalkih/mini-graph-card
+    why_en: The small trend graphs.
+    why_fr: Les petits graphiques de tendance.
+  - repo: iantrich/config-template-card
+    why_en: The cards whose configuration is itself a template.
+    why_fr: Les cartes dont la configuration est elle-meme un template.
+  - repo: custom-cards/decluttering-card
+    why_en: The repeated card templates.
+    why_fr: Les gabarits de cartes repetees.
+  - repo: piitaya/lovelace-mushroom
+    why_en: The device tiles of the room screens.
+    why_fr: Les tuiles d'appareils des ecrans de pieces.
+  - repo: I-Simen-I/simple-weather-card
+    why_en: The weather tile of the header band.
+    why_fr: La tuile meteo du bandeau.
+  - repo: teuchezh/dynamic-weather-card
+    why_en: The forecast card of HOME.
+    why_fr: La carte de previsions de HOME.
+  - repo: alexpfau/calendar-card-pro
+    why_en: The calendar of the header band.
+    why_fr: Le calendrier du bandeau.
+
+# EN | HACS integrations, found by their domain because folder and repository
+# EN | names differ there (hass-browser_mod installs browser_mod).
+# FR | Integrations HACS, trouvees par leur domaine car dossier et nom de
+# FR | depot y different (hass-browser_mod installe browser_mod).
+integrations:
+  - domain: browser_mod
+    blocking: true
+    why_en: The pop-ups of the ADMIN console (AI setup, confirmations).
+    why_fr: Les fenetres de la console ADMIN (configuration IA, confirmations).
+
+# EN | Integrations Home Assistant ships itself. None of them blocks the
+# EN | interface: each feeds one tile, and a house that has not added them
+# EN | still gets a working control centre with that tile empty. They are
+# EN | listed so CHECK DEPENDENCIES can name them, because HACS knows nothing
+# EN | about them and the probe used to ask HACS and nothing else.
+# FR | Integrations livrees par Home Assistant. Aucune ne bloque l interface :
+# FR | chacune alimente une tuile, et une maison qui ne les a pas ajoutees
+# FR | obtient quand meme un centre de controle fonctionnel, cette tuile vide.
+# FR | Elles sont listees pour que VERIFIER LES DEPENDANCES puisse les nommer,
+# FR | car HACS n en sait rien et la sonde n interrogeait que HACS.
+core_integrations:
+  - domain: open_meteo
+    name: Open-Meteo
+    why_en: >-
+      The weather tile of the header band. Its config flow takes a zone, and
+      the entity it creates is the one house.weather_entity names.
+    why_fr: >-
+      La tuile meteo du bandeau. Son assistant prend une zone, et l'entite
+      qu'il cree est celle que nomme house.weather_entity.
+  - domain: meteo_france
+    name: Meteo-France
+    why_en: The forecast card at the bottom of HOME.
+    why_fr: La carte de previsions en bas de HOME.
+  - domain: systemmonitor
+    name: System Monitor
+    why_en: >-
+      The processor and memory tiles. Its entities arrive disabled - the two
+      the dashboard uses have to be enabled by hand.
+    why_fr: >-
+      Les tuiles processeur et memoire. Ses entites arrivent desactivees - les
+      deux qu'utilise le tableau de bord sont a activer a la main.
+  - domain: time_date
+    name: Time & Date
+    why_en: The clock of the header band (sensor.time).
+    why_fr: L'horloge du bandeau (sensor.time).
+  - domain: local_calendar
+    name: Local Calendar
+    why_en: The calendar the header band reads.
+    why_fr: Le calendrier que lit le bandeau.

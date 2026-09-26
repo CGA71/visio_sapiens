@@ -281,6 +281,42 @@ CORE_INTEGRATIONS = [
      False),
 ]
 
+# EN | THE MANIFEST WINS WHEN IT IS THERE. The three lists above are the
+# EN | fallback, kept so this script still works on an instance deployed
+# EN | before requirements.yaml existed. When the manifest is readable it
+# EN | replaces them, so the probe, the preflight that refuses a deployment
+# EN | and the provisioner that repairs one all read the same file - they
+# EN | used to each carry their own copy, and the console announced
+# EN | "18 of 18 in place" on an instance whose header band was empty.
+# FR | LE MANIFESTE L EMPORTE QUAND IL EST LA. Les trois listes ci-dessus
+# FR | sont le repli, conservees pour que ce script fonctionne encore sur une
+# FR | instance deployee avant l existence de requirements.yaml. Quand le
+# FR | manifeste est lisible il les remplace, si bien que la sonde, le
+# FR | preflight qui refuse un deploiement et le provisionneur qui repare
+# FR | lisent tous le meme fichier - chacun portait sa copie, et la console
+# FR | annoncait « 18 sur 18 en place » sur une instance au bandeau vide.
+try:
+    import vssp_manifest as _man
+
+    _MANIFEST = _man.load()
+    if _man.cards(_MANIFEST):
+        PLUGINS = [(repo, en, fr, blocking)
+                   for repo, blocking, en, fr in _man.cards(_MANIFEST)]
+    if _man.integrations(_MANIFEST):
+        INTEGRATIONS = [(domain, en, fr, blocking)
+                        for domain, blocking, en, fr
+                        in _man.integrations(_MANIFEST)]
+    if _man.core_integrations(_MANIFEST):
+        CORE_INTEGRATIONS = [(domain, name, en, fr, False)
+                             for domain, name, en, fr
+                             in _man.core_integrations(_MANIFEST)]
+except Exception:                                        # noqa: BLE001
+    # EN | A missing manifest is not an error here: the lists above answer.
+    # FR | Un manifeste absent n est pas une erreur ici : les listes
+    # FR | ci-dessus repondent.
+    pass
+
+
 # EN | The fallback list, used only when config-fragment.yaml cannot be read
 # EN | on the instance. The fragment is the real source: an asset added
 # EN | there is picked up here without touching this file.

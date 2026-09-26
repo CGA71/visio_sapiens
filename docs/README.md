@@ -39,6 +39,7 @@ setting the instance up, or when something below the interface is wrong.
 | [Backup_Retention](platform/Backup_Retention.md) | what writes backups, and what prunes them |
 | [mosquitto-k3s](platform/mosquitto-k3s.md) | installing the MQTT broker on k3s *(French only)* |
 | [MCP_Server](platform/MCP_Server.md) | reading a live instance from an AI client — an add-on on HAOS, a pod on k3s |
+| [Prerequisites](platform/Prerequisites.md) | what an instance must have before a version lands on it, and how to prepare one without a pipeline |
 
 ## `ci-cd/` — the pipeline
 
