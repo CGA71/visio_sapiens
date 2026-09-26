@@ -332,6 +332,10 @@ def main() -> int:
                     help="EN | the static fragment, which says which "
                          "dashboards belong to the product rather than to "
                          "the house")
+    ap.add_argument("--templates-dir", default="",
+                    help="EN | the template set this release ships: each "
+                         "dashboard says which set generated it, and HOME is "
+                         "protected from regeneration, so drift is silent")
     ap.add_argument("--expect-version", default="",
                     help="EN | fail when sensor.vssp_deployed_version differs")
     ap.add_argument("--theme", default="Visio Sapiens")
@@ -487,12 +491,64 @@ def main() -> int:
                     fix="without these nothing can be drawn - run INSTALL "
                         "DEPENDENCIES")
 
-        # ── 6. EN | version / FR | version ─────────────────────────────
+        # ── 6. EN | template drift / FR | derive des gabarits ──────────
+        # EN | HOME is protected from regeneration so a deployment never
+        # EN | erases what someone changed there. The cost is that a template
+        # EN | fix never reaches an instance that already has a HOME, and
+        # EN | nothing said so: three instances were measured running three
+        # EN | different HOME files from the same release, one drawing a
+        # EN | "Configuration error" box where the event log should be.
+        # EN | This reports, it does not fail: an old dashboard is a screen
+        # EN | to refresh with REGENERATE, not a broken release.
+        # FR | HOME est protege contre la regeneration pour qu un
+        # FR | deploiement n efface jamais ce que quelqu un y a change. Le
+        # FR | cout, c est qu une correction de gabarit n atteint jamais une
+        # FR | instance qui a deja un HOME, et rien ne le disait : trois
+        # FR | instances ont ete mesurees avec trois HOME differents issus de
+        # FR | la meme livraison, dont un dessinait un encadre « Erreur de
+        # FR | configuration » la ou doit etre le journal d evenements.
+        # FR | Ceci signale, sans echouer : un dashboard ancien est un ecran
+        # FR | a rafraichir avec REGENERER, pas une livraison cassee.
+        if args.templates_dir:
+            import vssp_manifest
+
+            expected = vssp_manifest.templates_digest(args.templates_dir)
+            stamps = {}
+            try:
+                req = urllib.request.Request(
+                    args.url.rstrip("/") + "/local/vssp/generated_stamps.json")
+                with urllib.request.urlopen(req, timeout=30) as resp:
+                    stamps = json.loads(resp.read().decode("utf-8"))
+            except (OSError, ValueError):
+                stamps = {}
+            boards = (stamps or {}).get("dashboards") or {}
+            if not expected:
+                rep.add("6. TEMPLATES", True, "template set unreadable",
+                        fatal=False)
+            elif not boards:
+                rep.add("6. TEMPLATES", True,
+                        "no dashboard is stamped yet",
+                        detail="generated before this release",
+                        fix="REGENERATE from the ADMIN console stamps them",
+                        fatal=False)
+            else:
+                stale = sorted(name for name, row in boards.items()
+                               if (row or {}).get("templates") != expected)
+                rep.add("6. TEMPLATES", not stale,
+                        f"{len(boards)} stamped, {len(stale)} from an older "
+                        f"template set",
+                        detail=", ".join(stale[:5]) + (" ..." if len(stale) > 5
+                                                       else ""),
+                        fix="REGENERATE them from the ADMIN console - HOME is "
+                            "protected, so a deploy will never do it for you",
+                        fatal=False)
+
+        # ── 7. EN | version / FR | version ─────────────────────────────
         if args.expect_version:
             live = next((e["state"] for e in states
                          if e["entity_id"] == "sensor.vssp_deployed_version"),
                         "")
-            rep.add("6. VERSION", live == args.expect_version,
+            rep.add("7. VERSION", live == args.expect_version,
                     f"expected {args.expect_version}", detail=f"live {live}",
                     fix="the instance is not running what was just deployed")
     finally:

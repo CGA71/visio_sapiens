@@ -1218,6 +1218,62 @@ def render_theme(model: dict, env: Environment, template_name: str,
     return True
 
 
+def stamp_generated(path, templates_dir: str, generated: list) -> None:
+    """EN | Record which template set each dashboard was generated from.
+    EN | HOME is protected from regeneration, so a template fix never reaches
+    EN | an instance that already has one - by design, to protect what
+    EN | someone changed there. The cost is silent drift: three instances
+    EN | were measured running three different HOME files, one with a logbook
+    EN | targeting nothing and drawing a "Configuration error" box, one with
+    EN | the card missing entirely, one correct. Same release. Nothing said
+    EN | so.
+    EN | This file is served under /local/vssp/, so vssp_verify.py can fetch
+    EN | it without a token and say plainly: HOME here was generated from an
+    EN | older template set, press REGENERATE HOME.
+    FR | Enregistre de quel jeu de gabarits chaque dashboard a ete genere.
+    FR | HOME est protege contre la regeneration : une correction de gabarit
+    FR | n atteint donc jamais une instance qui en a deja un - volontairement,
+    FR | pour proteger ce que quelqu un y a change. Le cout est une derive
+    FR | silencieuse : trois instances ont ete mesurees avec trois HOME
+    FR | differents, l un avec un logbook sans cible dessinant un encadre
+    FR | « Erreur de configuration », l un sans la carte du tout, l un
+    FR | correct. Meme livraison. Rien ne le disait.
+    FR | Ce fichier est servi sous /local/vssp/ : vssp_verify.py peut donc le
+    FR | recuperer sans jeton et dire clairement que le HOME de cette
+    FR | instance vient d un jeu de gabarits plus ancien, et qu il faut
+    FR | appuyer sur REGENERER HOME."""
+    if not path:
+        return
+    try:
+        sys.path.insert(0, str(Path(__file__).resolve().parent))
+        import vssp_manifest
+
+        digest = vssp_manifest.templates_digest(templates_dir)
+    except Exception:                                    # noqa: BLE001
+        return
+    if not digest:
+        return
+    target = Path(path)
+    data = {"templates": digest, "dashboards": {}}
+    try:
+        old = json.loads(target.read_text(encoding="utf-8"))
+        if isinstance(old, dict) and isinstance(old.get("dashboards"), dict):
+            data["dashboards"] = old["dashboards"]
+    except (OSError, ValueError):
+        pass
+    stamped_at = datetime.now().isoformat(timespec="seconds")
+    for row in generated:
+        name = Path(str(row.get("file") or "")).name
+        if name:
+            data["dashboards"][name] = {"templates": digest, "at": stamped_at}
+    try:
+        target.parent.mkdir(parents=True, exist_ok=True)
+        target.write_text(json.dumps(data, indent=2, ensure_ascii=False),
+                          encoding="utf-8")
+    except OSError as exc:
+        print(f"[warn] stamp not written: {exc}", file=sys.stderr)
+
+
 def write_status(path, status: dict) -> None:
     """
     EN | JSON report read by the admin console (served under /local/vssp/...).
@@ -1318,6 +1374,10 @@ def main() -> int:
                     help="Allow the rooms fragment to be emptied. Without it, "
                          "a run that declares no room refuses to delete "
                          "existing room declarations.")
+    ap.add_argument("--stamp-file",
+                    default="/config/www/vssp/generated_stamps.json",
+                    help="EN | where each dashboard records which template "
+                         "set it came from, served under /local/vssp/")
     ap.add_argument("--status-file", default=None,
                     help="Writes a JSON report (readable by the console at "
                          "/local/vssp/preview_status.json)")
@@ -1921,6 +1981,8 @@ def main() -> int:
     if args.preview:
         print("\n-> Preview available at /vssp-energy-preview/energy "
               "— your staging dashboards were not modified.")
+    if not args.dry_run and not args.preview:
+        stamp_generated(args.stamp_file, args.templates, status["generated"])
     write_status(args.status_file, status)
     return 0
 

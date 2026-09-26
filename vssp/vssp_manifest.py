@@ -104,3 +104,45 @@ def core_integrations(man: dict) -> list:
                         str(row.get("why_en") or ""),
                         str(row.get("why_fr") or "")))
     return out
+
+
+def templates_digest(directory: str) -> str:
+    """EN | One fingerprint for the whole template set, so a dashboard can
+    EN | say which set it was generated from.
+    EN | WHY IT IS NEEDED. HOME is protected from regeneration - by design,
+    EN | so a deployment never erases what someone changed there. The price
+    EN | is that a template fix never reaches an existing instance: three
+    EN | instances were measured running three different HOME files, one from
+    EN | months ago with a logbook targeting nothing (Home Assistant drew a
+    EN | "Configuration error" box), one generated in the single hour when
+    EN | the card was omitted entirely, and one correct. Same release, same
+    EN | code, three screens, and nothing anywhere said so.
+    EN | The partials count: _nav.j2 and _header.j2 are why two dashboards
+    EN | generated a week apart can differ without their own file changing.
+    FR | Une empreinte pour tout le jeu de gabarits, pour qu un dashboard
+    FR | puisse dire de quel jeu il a ete genere.
+    FR | POURQUOI C EST NECESSAIRE. HOME est protege contre la regeneration -
+    FR | volontairement, pour qu un deploiement n efface jamais ce que
+    FR | quelqu un y a change. Le prix, c est qu une correction de gabarit
+    FR | n atteint jamais une instance existante : trois instances ont ete
+    FR | mesurees avec trois HOME differents, l un vieux de plusieurs mois
+    FR | avec un logbook sans cible (Home Assistant dessinait un encadre
+    FR | « Erreur de configuration »), l un genere pendant l unique heure ou
+    FR | la carte etait omise, et l un correct. Meme livraison, meme code,
+    FR | trois ecrans, et rien nulle part ne le disait.
+    FR | Les partiels comptent : _nav.j2 et _header.j2 sont la raison pour
+    FR | laquelle deux dashboards generes a une semaine d ecart peuvent
+    FR | differer sans que leur propre fichier ait bouge."""
+    import hashlib
+
+    root = Path(directory)
+    if not root.is_dir():
+        return ""
+    digest = hashlib.sha1()
+    for path in sorted(root.rglob("*.j2"), key=lambda p: str(p).lower()):
+        digest.update(path.name.encode("utf-8"))
+        try:
+            digest.update(path.read_bytes())
+        except OSError:
+            return ""
+    return digest.hexdigest()[:12]
