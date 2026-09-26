@@ -2176,6 +2176,87 @@ views:
           # FR | les publie deja rendus dans la langue de l interface, de
           # FR | sorte que la ligne et le titre au-dessus d elle ne peuvent
           # FR | pas diverger.
+          {# EN | THE REPAIRS HOME ASSISTANT IS HOLDING. It raises them on
+             EN | its own - a statistic whose unit changed, an add-on wanting
+             EN | attention, a host waiting for a restart - and shows them on
+             EN | its settings page, which this console never read. Two were
+             EN | waiting on the appliance staging while its owner worked one
+             EN | menu away.
+             EN | The sentences come from our catalogue for the keys we know;
+             EN | anything else prints as "domain - key" and the button opens
+             EN | the page where Home Assistant writes it in full. Nothing is
+             EN | invented, because a wrong sentence about a repair is worse
+             EN | than a raw key.
+             FR | LES CORRECTIONS QUE TIENT HOME ASSISTANT. Il les leve tout
+             FR | seul - une statistique dont l unite a change, un add-on qui
+             FR | reclame de l attention, un hote qui attend un redemarrage -
+             FR | et les affiche sur sa page de reglages, que cette console ne
+             FR | lisait jamais. Deux attendaient sur la preproduction
+             FR | appareil pendant que son proprietaire travaillait un menu
+             FR | plus loin.
+             FR | Les phrases viennent de notre catalogue pour les cles
+             FR | connues ; tout le reste s affiche « domaine - cle » et le
+             FR | bouton ouvre la page ou Home Assistant l ecrit en entier.
+             FR | Rien n est invente : une phrase fausse sur une correction
+             FR | est pire qu une cle brute. #}
+          - type: markdown
+            title: "{{ t('admin.repairs_title') }}"
+            content: |
+              {{ '{%' }} set known = {
+                'issue_system_reboot_required': '{{ t('admin.repairs_key_issue_system_reboot_required') | js }}',
+                'units_changed': '{{ t('admin.repairs_key_units_changed') | js }}' } {{ '%}' }}
+              {{ '{%' }} set fixable = '{{ t('admin.repairs_fixable') | js }}' {{ '%}' }}
+              {{ '{%' }} set decide = '{{ t('admin.repairs_decide') | js }}' {{ '%}' }}
+              _{{ t('admin.repairs_sub') }}_
+              {%+ raw %}{% set items = state_attr('sensor.vssp_repairs', 'items') or [] %}
+              {% if not items %}
+              _{% endraw +%}{{ t('admin.repairs_empty') }}{%+ raw %}_
+              {% else %}
+              {% for r in items %}
+              - ⬤ {{ known.get(r.key, r.domain ~ ' · ' ~ r.key) }}
+                _{{ fixable if r.fixable else decide }}_
+              {% endfor %}
+              {% endif %}{% endraw +%}
+            card_mod:
+              style: |
+                ha-card {
+                  background: var(--card-background-color, rgba(8,18,28,0.75)) !important;
+                  border: 1px solid rgba(0, 229, 255, 0.28) !important;
+                  border-radius: var(--ha-card-border-radius, 20px) !important;
+                }
+
+          - type: horizontal-stack
+            cards:
+              - type: button
+                name: "{{ t('admin.repairs_check') }}"
+                icon: mdi:wrench-outline
+                tap_action:
+                  action: perform-action
+                  perform_action: script.vssp_repairs_check
+              - type: button
+                name: "{{ t('admin.repairs_open') }}"
+                icon: mdi:open-in-new
+                tap_action:
+                  action: navigate
+                  navigation_path: /config/repairs
+              {# EN | The restart the deployment will never do for you: the
+                 EN | pipeline restarts Home Assistant Core and nothing else,
+                 EN | so a Supervisor issue asking for a system reboot
+                 EN | survives every release until someone presses this.
+                 FR | Le redemarrage qu un deploiement ne fera jamais a votre
+                 FR | place : le pipeline redemarre Home Assistant Core et
+                 FR | rien d autre, une correction du Superviseur reclamant un
+                 FR | redemarrage systeme survit donc a chaque livraison
+                 FR | jusqu a ce que quelqu un appuie ici. #}
+              - type: button
+                name: "{{ t('admin.repairs_reboot') }}"
+                icon: mdi:restart-alert
+                tap_action:
+                  action: perform-action
+                  perform_action: script.vssp_host_reboot
+                  confirmation:
+                    text: "{{ t('admin.repairs_reboot') }} ?"
+
           - type: markdown
             title: "{{ t('admin.deps_title') }}"
             content: |

@@ -633,6 +633,55 @@ input_datetime:
 # FR | SCRIPTS — les deux actions groupees, et deux seulement
 # ═══════════════════════════════════════════════════════════════════════
 script:
+  # EN | Refresh the repairs list. The sensor re-reads its file every five
+  # EN | minutes; this is the press that does not wait.
+  # FR | Rafraichir la liste des corrections. Le capteur relit son fichier
+  # FR | toutes les cinq minutes ; ceci est la pression qui n attend pas.
+  vssp_repairs_check:
+    alias: "Visio Sapiens — Corrections : vérifier maintenant"
+    icon: mdi:wrench-outline
+    mode: single
+    sequence:
+      - action: shell_command.vssp_repairs_check
+      - action: homeassistant.update_entity
+        target:
+          entity_id: sensor.vssp_repairs
+
+  # EN | RESTART THE APPLIANCE. A deployment restarts Home Assistant Core and
+  # EN | nothing else - there is no `ha host reboot` anywhere in the deploy
+  # EN | path, deliberately. So a Supervisor issue saying the system needs a
+  # EN | reboot is never cleared by shipping a version, and the only way out
+  # EN | was Home Assistant's own settings pages. The control centre offers
+  # EN | it here, next to the issue that asks for it.
+  # EN | continue_on_error because hassio.host_reboot does not exist on an
+  # EN | instance without a Supervisor - the pod staging is a plain Core
+  # EN | container, and a button that throws there would be worse than one
+  # EN | that explains itself.
+  # FR | REDEMARRER L APPAREIL. Un deploiement redemarre Home Assistant Core
+  # FR | et rien d autre - il n y a aucun `ha host reboot` dans le chemin de
+  # FR | deploiement, volontairement. Une correction du Superviseur disant
+  # FR | que le systeme doit redemarrer n est donc jamais soldee par une
+  # FR | livraison, et la seule issue etait les pages de reglages de Home
+  # FR | Assistant. Le centre de controle l offre ici, a cote de la
+  # FR | correction qui le reclame.
+  # FR | continue_on_error parce que hassio.host_reboot n existe pas sur une
+  # FR | instance sans Superviseur - la preproduction en pod est un simple
+  # FR | conteneur Core, et un bouton qui y leve une erreur serait pire qu un
+  # FR | bouton qui s explique.
+  vssp_host_reboot:
+    alias: "Visio Sapiens — Redémarrer l'appareil"
+    icon: mdi:restart-alert
+    mode: single
+    sequence:
+      - action: persistent_notification.create
+        data:
+          title: "Visio Sapiens — Redémarrage"
+          message: >
+            L'appareil redémarre. Home Assistant sera injoignable une à deux
+            minutes.
+      - action: hassio.host_reboot
+        continue_on_error: true
+
   # EN | CHECK — ask every update entity to re-poll now. Integrations check
   # EN | on their own schedule (HACS roughly hourly), so without this the
   # EN | screen answers "up to date" from a cached answer that may be hours
@@ -1209,6 +1258,38 @@ command_line:
   # FR | execution le fichier n existe pas, et un capteur qui journalise une
   # FR | erreur toutes les cinq minutes sur une installation neuve
   # FR | parfaitement normale apprend a ignorer le journal.
+  # EN | THE REPAIRS HOME ASSISTANT IS HOLDING. It raises them by itself -
+  # EN | a statistic whose unit changed, an add-on wanting attention, a host
+  # EN | waiting for a restart - and shows them on its own settings page,
+  # EN | which the control centre never looked at. Two were waiting on the
+  # EN | appliance staging while its owner worked one menu away.
+  # EN | The state is the count, because that is what a badge shows. The
+  # EN | items carry a translation key rather than a sentence: Home Assistant
+  # EN | stores keys and renders them in its own frontend, so the screen
+  # EN | writes a sentence of ours for the keys we know and hands over for
+  # EN | the rest rather than inventing text.
+  # FR | LES CORRECTIONS QUE TIENT HOME ASSISTANT. Il les leve tout seul -
+  # FR | une statistique dont l unite a change, un add-on qui reclame de
+  # FR | l attention, un hote qui attend un redemarrage - et les affiche sur
+  # FR | sa page de reglages, que le centre de controle ne regardait jamais.
+  # FR | Deux attendaient sur la preproduction appareil pendant que son
+  # FR | proprietaire travaillait un menu plus loin.
+  # FR | L etat est le nombre, parce que c est ce qu affiche une pastille.
+  # FR | Les entrees portent une cle de traduction et non une phrase : Home
+  # FR | Assistant garde des cles et les rend dans son propre frontend ;
+  # FR | l ecran ecrit donc une phrase a nous pour les cles connues et passe
+  # FR | la main pour les autres, plutot que d inventer un texte.
+  - sensor:
+      name: "VSSP Repairs"
+      unique_id: vssp_repairs
+      command: "cat /config/www/vssp/repairs.json 2>/dev/null || echo '{}'"
+      command_timeout: 15
+      scan_interval: 300
+      value_template: "{{ value_json.count | default(0) | int(0) }}"
+      json_attributes:
+        - items
+        - at
+
   - sensor:
       name: "VSSP Dependencies"
       unique_id: vssp_dependencies
@@ -1244,6 +1325,11 @@ command_line:
         - generated
 
 shell_command:
+  vssp_repairs_check: >-
+    python3 /config/vssp/vssp_repairs.py
+    --url http://localhost:8123
+    --out /config/www/vssp/repairs.json
+
   # EN | THREE COMMANDS, and none of them takes anything a user typed.
   # EN | `--install` receives `component`, and the only caller that sets it
   # EN | is the script below, which passes a key out of the report the probe

@@ -426,6 +426,24 @@ admin:
   deps_cards: Lovelace cards (HACS)
   deps_integrations: Integrations (HACS)
   deps_resources: Visio Sapiens resources
+  repairs_title: HOME ASSISTANT REPAIRS
+  repairs_sub: >-
+    What Home Assistant has raised by itself and nobody has dealt with. It
+    writes these in its own catalogue, so the wording below is ours for the
+    ones we know and the raw key for the rest - the button opens the page
+    where it spells them out.
+  repairs_empty: Nothing to repair.
+  repairs_open: Open in Home Assistant
+  repairs_check: Check now
+  repairs_reboot: Restart the appliance
+  repairs_fixable: fixable there
+  repairs_decide: needs a decision
+  repairs_key_issue_system_reboot_required: >-
+    The system is waiting for a restart. A deployment restarts Home Assistant
+    Core and never the machine, so this one stays until you restart it.
+  repairs_key_units_changed: >-
+    A statistic changed unit. Home Assistant needs to be told which unit to
+    keep before it can record it again.
   deps_never_checked: Never checked — press CHECK DEPENDENCIES.
   deps_check: CHECK DEPENDENCIES
   deps_check_hint: Lists what is missing, installs nothing

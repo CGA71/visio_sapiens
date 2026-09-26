@@ -298,6 +298,25 @@ admin:
   deps_cards: Cartes Lovelace (HACS)
   deps_integrations: Intégrations (HACS)
   deps_resources: Ressources Visio Sapiens
+  repairs_title: CORRECTIONS HOME ASSISTANT
+  repairs_sub: >-
+    Ce que Home Assistant a levé de lui-même et que personne n'a traité. Il
+    les écrit dans son propre catalogue : les phrases ci-dessous sont les
+    nôtres pour celles que nous connaissons, la clé brute pour les autres — le
+    bouton ouvre la page où il les écrit en toutes lettres.
+  repairs_empty: Rien à corriger.
+  repairs_open: Ouvrir dans Home Assistant
+  repairs_check: Vérifier
+  repairs_reboot: Redémarrer l'appareil
+  repairs_fixable: réparable là-bas
+  repairs_decide: demande une décision
+  repairs_key_issue_system_reboot_required: >-
+    Le système attend un redémarrage. Un déploiement redémarre Home Assistant
+    Core et jamais la machine : celle-ci reste donc jusqu'à ce que vous la
+    redémarriez.
+  repairs_key_units_changed: >-
+    Une statistique a changé d'unité. Home Assistant doit savoir quelle unité
+    garder avant de pouvoir l'enregistrer de nouveau.
   deps_never_checked: Jamais vérifié — pressez VÉRIFIER LES DÉPENDANCES.
   deps_check: VÉRIFIER LES DÉPENDANCES
   deps_check_hint: Liste ce qui manque, n'installe rien
