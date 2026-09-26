@@ -1534,6 +1534,28 @@ deploy:staging:
     # FR | garde le prochain chargement de l editeur synchronise avec ce qui
     # FR | est reellement deploye. NON BLOQUANT, meme raisonnement que la
     # FR | regeneration des dashboards ci-dessus.
+    # --- EN | THE PREVIEW DASHBOARD, so its sidebar entry is not a dead
+    # --- EN | link. config-fragment.yaml declares visio-sapiens-energy-
+    # --- EN | preview with show_in_sidebar: true, and nothing ever wrote
+    # --- EN | energy_preview.yaml: the entry was present and broken on all
+    # --- EN | three environments, production included, since the day it was
+    # --- EN | declared. The PREVIEW button overwrites this file when it is
+    # --- EN | used; rendering it here only means the link always opens.
+    # --- FR | LE DASHBOARD D APERCU, pour que son entree de barre laterale
+    # --- FR | ne soit pas un lien mort. config-fragment.yaml declare
+    # --- FR | visio-sapiens-energy-preview avec show_in_sidebar: true, et
+    # --- FR | rien n ecrivait jamais energy_preview.yaml : l entree etait
+    # --- FR | presente et cassee sur les trois environnements, production
+    # --- FR | comprise, depuis le jour de sa declaration. Le bouton APERCU
+    # --- FR | ecrase ce fichier quand on s en sert ; le rendre ici veut
+    # --- FR | seulement dire que le lien s ouvre toujours.
+    - |
+      kubectl exec -n $K3S_NAMESPACE $HA_POD -c $K3S_CONTAINER -- sh -c '
+        LOCALE=$(cat /config/VSSP_LOCALE 2>/dev/null || echo en)
+        echo "[i] rendering the preview dashboard on the pod"
+        python3 /config/vssp/generate_dashboards.py --only energy --preview           --model /config/dashboards/model/house.yaml           --rooms /config/dashboards/model/house_rooms.yaml           --devices /config/dashboards/model/energy_devices.yaml           --templates /config/dashboards/templates_j2           --locales-dir /config/dashboards/locales           --locale "$LOCALE"           --out /config/dashboards/views
+      ' || echo "[warn] the preview dashboard was not rendered - its sidebar entry stays empty"
+
     - |
       kubectl exec -n $K3S_NAMESPACE $HA_POD -c $K3S_CONTAINER -- sh -c '
         LOCALE=$(cat /config/VSSP_LOCALE 2>/dev/null || echo en)
@@ -2265,6 +2287,36 @@ deploy:staging:
     # FR | l etape ci-dessus, cette reconstruction a donc le dessin du
     # FR | proprietaire sous la main - le bouton APPLIQUER de l editeur lance
     # FR | exactement cette commande.
+    - |
+    # --- EN | THE PREVIEW DASHBOARD, so its sidebar entry is not a dead
+    # --- EN | link. config-fragment.yaml declares visio-sapiens-energy-
+    # --- EN | preview with show_in_sidebar: true, and nothing ever wrote
+    # --- EN | energy_preview.yaml: the entry was present and broken on all
+    # --- EN | three environments, production included, since the day it was
+    # --- EN | declared. The PREVIEW button overwrites this file when it is
+    # --- EN | used; rendering it here only means the link always opens.
+    # --- FR | LE DASHBOARD D APERCU, pour que son entree de barre laterale
+    # --- FR | ne soit pas un lien mort. config-fragment.yaml declare
+    # --- FR | visio-sapiens-energy-preview avec show_in_sidebar: true, et
+    # --- FR | rien n ecrivait jamais energy_preview.yaml : l entree etait
+    # --- FR | presente et cassee sur les trois environnements, production
+    # --- FR | comprise, depuis le jour de sa declaration. Le bouton APERCU
+    # --- FR | ecrase ce fichier quand on s en sert ; le rendre ici veut
+    # --- FR | seulement dire que le lien s ouvre toujours.
+    - |
+      ssh ha "docker exec homeassistant sh -c '
+        LOCALE=\$(cat /config/VSSP_LOCALE 2>/dev/null || echo en)
+        echo \"[i] rendering the preview dashboard\"
+        python3 /config/vssp/generate_dashboards.py --only energy --preview \
+          --model /config/dashboards/model/house.yaml \
+          --rooms /config/dashboards/model/house_rooms.yaml \
+          --devices /config/dashboards/model/energy_devices.yaml \
+          --templates /config/dashboards/templates_j2 \
+          --locales-dir /config/dashboards/locales \
+          --locale \"\$LOCALE\" \
+          --out /config/dashboards/views
+      '" || echo "[warn] the preview dashboard was not rendered"
+
     - |
       ssh ha "docker exec homeassistant sh -c '
         LOCALE=\$(cat /config/VSSP_LOCALE 2>/dev/null || echo en)
