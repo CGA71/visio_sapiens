@@ -44,6 +44,35 @@ shell_command:
     --json-b64 "{{ content_b64 }}"
     --status-file /config/www/vssp/rooms_sync_status.json
 
+  # EN | WHY THIS EXISTS. Creating a room wrote house.yaml and regenerated
+  # EN | its two views, and stopped there. A room dashboard only exists once
+  # EN | config-fragment-rooms.yaml has been merged into configuration.yaml,
+  # EN | and that merge only ever happened at deploy time, inside the runner.
+  # EN | Between two deploys a new room therefore had a navigation entry, a
+  # EN | generated view, and no dashboard behind it: clicking it landed on
+  # EN | HOME, because Home Assistant falls back to the default panel when a
+  # EN | url_path does not exist. Reproduced on the appliance staging with
+  # EN | two rooms freshly added - both views generated, neither declared.
+  # EN | No pruning here. A deploy prunes what the fragments no longer
+  # EN | declare; adding a room must never take that decision.
+  # FR | POURQUOI CECI EXISTE. Creer une piece ecrivait house.yaml et
+  # FR | regenerait ses deux vues, puis s arretait la. Un dashboard de piece
+  # FR | n existe qu une fois config-fragment-rooms.yaml fusionne dans
+  # FR | configuration.yaml, et cette fusion n avait lieu qu au deploiement,
+  # FR | dans le runner. Entre deux deploiements, une nouvelle piece avait
+  # FR | donc une entree de navigation, une vue generee, et aucun dashboard
+  # FR | derriere : cliquer dessus menait a HOME, Home Assistant retombant
+  # FR | sur le panneau par defaut quand un url_path n existe pas. Reproduit
+  # FR | sur la preproduction appareil avec deux pieces fraichement ajoutees
+  # FR | - les deux vues generees, aucune declaree.
+  # FR | Aucun elagage ici. Un deploiement elague ce que les fragments ne
+  # FR | declarent plus ; l ajout d une piece ne doit jamais prendre cette
+  # FR | decision.
+  vssp_apply_rooms_config: >-
+    python3 /config/vssp/vssp_apply_config.py
+    --config /config/configuration.yaml
+    --fragment /config/config-fragment.yaml /config/config-fragment-rooms.yaml
+
 # ----------------------------------------------------------------------
 # EN | WEBHOOK — same reasoning as vssp_assign.yaml's: the form runs in an
 # EN | iframe with no access to `hass` or a Bearer token, so a local-only
@@ -124,6 +153,37 @@ automation:
                   # FR | change.
                   - action: shell_command.vssp_generate_dashboards
                   - action: shell_command.vssp_assign_prepare
+                  # EN | Then the merge, then a restart - in that order, and
+                  # EN | without it the room stays unreachable. Lovelace
+                  # EN | reads its dashboards once, at startup, so a new
+                  # EN | url_path cannot appear any other way.
+                  # FR | Puis la fusion, puis un redemarrage - dans cet
+                  # FR | ordre, et sans lui la piece reste injoignable.
+                  # FR | Lovelace lit ses dashboards une fois, au demarrage :
+                  # FR | un nouvel url_path ne peut apparaitre autrement.
+                  - action: shell_command.vssp_apply_rooms_config
+                    response_variable: merged
+                  - if:
+                      - condition: template
+                        value_template: "{{ merged.returncode == 0 }}"
+                    then:
+                      # EN | check_config first: one does not restart into a
+                      # EN | configuration.yaml that does not parse.
+                      # FR | check_config d abord : on ne redemarre pas dans
+                      # FR | un configuration.yaml qui ne se lit pas.
+                      - action: homeassistant.check_config
+                      - action: homeassistant.restart
+                    else:
+                      - action: persistent_notification.create
+                        data:
+                          title: "Visio Sapiens — configuration.yaml not patched"
+                          message: >
+                            The room was written and its views generated, but
+                            configuration.yaml could not be patched (exit code
+                            {{ merged.returncode }}), so the room dashboard
+                            does not exist yet and its navigation entry leads
+                            to HOME. See Settings > System > Logs for
+                            vssp_apply_config.py.
                 else:
                   - action: persistent_notification.create
                     data:
