@@ -305,6 +305,53 @@ workflow:
       echo "[i] Unavailable entities: $UNAVAIL"
 
 # ============================================================================
+# EN | .verify - WHAT A PERSON WOULD LOOK AT
+# EN | The smoke test above asks whether the API answers and whether two
+# EN | files are served. Both were green on a freshly deployed appliance
+# EN | whose every screen was blank: the theme had never been selected, no
+# EN | custom card existed because HACS was absent, and two rooms had a
+# EN | navigation entry with no dashboard behind them. Everything measured
+# EN | was true; the wrong things were measured.
+# EN | vssp_verify.py asks the instance what it actually serves - each
+# EN | dashboard's configuration, the entities those configurations name,
+# EN | the resource registry, the selected theme, the dependency report -
+# EN | and fails when a person would see something broken.
+# FR | .verify - CE QU UNE PERSONNE REGARDERAIT
+# FR | Le test de fumee ci-dessus demande si l API repond et si deux
+# FR | fichiers sont servis. Les deux etaient verts sur un appareil
+# FR | fraichement deploye dont tous les ecrans etaient blancs : le theme
+# FR | n avait jamais ete selectionne, aucune carte personnalisee n existait
+# FR | faute de HACS, et deux pieces avaient une entree de navigation sans
+# FR | dashboard derriere. Tout ce qui etait mesure etait vrai ; on mesurait
+# FR | les mauvaises choses.
+# FR | vssp_verify.py demande a l instance ce qu elle sert reellement - la
+# FR | configuration de chaque dashboard, les entites que ces configurations
+# FR | nomment, le registre des ressources, le theme selectionne, le rapport
+# FR | de dependances - et echoue quand une personne verrait quelque chose
+# FR | de casse.
+# ============================================================================
+.verify:
+  image: alpine:latest
+  stage: test
+  script:
+    - apk add --no-cache python3 >/dev/null
+    - |
+      if [ -z "$HA_TOKEN" ]; then
+        echo "[ERR] Empty token - nothing can be verified."
+        exit 1
+      fi
+    # EN | The token travels in the environment, never as an argument: an
+    # EN | argument is visible in the process list of the runner.
+    # FR | Le jeton voyage dans l environnement, jamais en argument : un
+    # FR | argument est visible dans la liste des processus du runner.
+    - python3 vssp/vssp_verify.py --url "$TARGET_URL" --tolerated home-assistant/dashboards/model/tolerated_entities.txt --expect-version "$VSSP_DEPLOY_REF" --json verify.json
+  artifacts:
+    when: always
+    expire_in: 1 week
+    paths:
+      - verify.json
+
+# ============================================================================
 # EN | 1. VALIDATE — branches AND tags
 # FR | 1. VALIDATE — branches ET tags
 # ============================================================================
@@ -2434,6 +2481,50 @@ test:staging:
     TARGET_URL: $STAGING_URL
     HA_TOKEN: $HA_TOKEN_STAGING
 
+# EN | allow_failure WHILE THE KNOWN GAPS ARE CLEARED. Its first run on the
+# EN | pod staging found nine dashboards declared with no file - the orphan
+# EN | room declarations nobody had decided on - and sensor.time missing.
+# EN | Those are real and they are old; failing master over them today would
+# EN | only teach everyone to ignore a red pipeline. It reports as a warning
+# EN | until they are cleared, and then this line goes.
+# FR | allow_failure LE TEMPS DE SOLDER LES ECARTS CONNUS. Son premier
+# FR | passage sur la preproduction en pod a trouve neuf dashboards declares
+# FR | sans fichier - les declarations de pieces orphelines que personne
+# FR | n avait tranchees - et sensor.time manquant. C est reel et c est
+# FR | ancien ; faire rougir master pour cela aujourd hui n apprendrait qu a
+# FR | ignorer un pipeline rouge. Il avertit jusqu a ce que ce soit solde,
+# FR | et alors cette ligne disparait.
+verify:staging:
+  extends:
+    - .verify
+    - .rules_staging
+  needs: ["test:staging"]
+  allow_failure: true
+  variables:
+    TARGET_URL: $STAGING_URL
+    HA_TOKEN: $HA_TOKEN_STAGING
+    VSSP_DEPLOY_REF: dev-$CI_COMMIT_SHORT_SHA
+
+# EN | The appliance staging has no token variable yet, so this job asks for
+# EN | HA_TOKEN_HAOS and simply does not appear until it exists - the same
+# EN | rule its deploy follows.
+# FR | La preproduction appareil n a pas encore de variable de jeton : ce job
+# FR | demande donc HA_TOKEN_HAOS et n apparait pas tant qu elle n existe pas
+# FR | - la meme regle que son deploiement.
+verify:staging-haos:
+  extends: .verify
+  needs: ["deploy:staging-haos"]
+  allow_failure: true
+  rules:
+    - if: $CI_COMMIT_TAG
+      when: never
+    - if: $CI_COMMIT_BRANCH == "master" && $HAOS_SSH_KEY && $HA_TOKEN_HAOS
+      when: on_success
+  variables:
+    TARGET_URL: $HAOS_URL
+    HA_TOKEN: $HA_TOKEN_HAOS
+    VSSP_DEPLOY_REF: dev-$CI_COMMIT_SHORT_SHA
+
 test:production:
   extends:
     - .smoke_test
@@ -2442,6 +2533,17 @@ test:production:
   variables:
     TARGET_URL: $PROD_URL
     HA_TOKEN: $HA_TOKEN_PROD
+
+verify:production:
+  extends:
+    - .verify
+    - .rules_tag
+  needs: ["test:production"]
+  allow_failure: true
+  variables:
+    TARGET_URL: $PROD_URL
+    HA_TOKEN: $HA_TOKEN_PROD
+    VSSP_DEPLOY_REF: $CI_COMMIT_TAG
 
 # ============================================================================
 # EN | 5. PRODUCTION ROLLBACK — manual

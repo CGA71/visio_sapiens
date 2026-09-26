@@ -1,0 +1,45 @@
+# Visio Sapiens - entities a dashboard names and no instance has
+# Visio Sapiens - entites nommees par un dashboard et qu aucune instance n a
+#
+# EN | vssp_verify.py fails on any entity a served dashboard names and the
+# EN | instance does not have, because such a card renders empty or broken
+# EN | and someone eventually reports it as "the interface is wrong".
+# EN | The lines below are the exception: places kept in the ENERGY screens
+# EN | for a photovoltaic installation that does not exist on any of the
+# EN | three environments - measured on the pod staging and on the appliance
+# EN | staging on 2026-09-26, absent from both.
+# EN | A line here is a promise that the blank is intended. Remove the line
+# EN | the day the installation exists, and the check will hold you to it.
+# FR | vssp_verify.py echoue sur toute entite nommee par un dashboard servi
+# FR | et que l instance n a pas, parce qu une telle carte s affiche vide ou
+# FR | cassee et que quelqu un finit par le signaler comme « l interface est
+# FR | fausse ».
+# FR | Les lignes ci-dessous sont l exception : des emplacements gardes dans
+# FR | les ecrans ENERGY pour une installation photovoltaique qui n existe
+# FR | sur aucun des trois environnements - mesure sur la preproduction en
+# FR | pod et sur la preproduction appareil le 26/09/2026, absente des deux.
+# FR | Une ligne ici est une promesse que le vide est voulu. Retirez la ligne
+# FR | le jour ou l installation existe, et la verification vous y tiendra.
+
+# EN | Photovoltaic production and grid export / FR | Production et revente
+binary_sensor.solar_inverter_running
+sensor.solar_power_production
+sensor.solar_energy_today
+sensor.solar_energy_this_month
+sensor.solar_energy_this_year
+sensor.grid_import_power
+sensor.grid_export_power
+sensor.grid_export_energy_today
+sensor.grid_export_energy_this_month
+
+# EN | The helpers and totals that only exist once a solar model is scanned
+# FR | Les aides et totaux qui n existent qu une fois un modele solaire scanne
+input_number.vssp_solar_capacity
+input_number.vssp_tarif_revente
+input_select.vssp_energy_period
+sensor.vssp_revente_mois
+sensor.vssp_revente_annee
+
+# EN | An older System Monitor entity id, still named by one card
+# FR | Un ancien identifiant du Moniteur systeme, encore nomme par une carte
+sensor.processor_use
