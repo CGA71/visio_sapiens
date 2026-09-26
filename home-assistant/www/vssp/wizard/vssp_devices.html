@@ -221,6 +221,8 @@ const I18N = {
     pending_sub: "Ce que Home Assistant a vu apparaître sur le réseau et qui n'est pas encore installé. Valider crée l'intégration et ses appareils ; ils apparaîtront ensuite dans ASSIGNATION DES APPAREILS pour recevoir une pièce.",
     pending_empty: "Rien en attente — aucun nouvel appareil ne s'est annoncé sur le réseau.",
     validate: "Valider",
+    add: "Ajouter",
+    setup_in_ha: "Configurer dans HA",
     ignore: "Ignorer",
     dismiss: "Rejeter",
     needs_form: "Configuration requise",
@@ -277,6 +279,8 @@ const I18N = {
     pending_sub: "What Home Assistant has seen appear on the network and has not installed yet. Validating creates the integration and its devices; they then show up in DEVICE ASSIGNMENT to be given a room.",
     pending_empty: "Nothing pending — no new device has announced itself on the network.",
     validate: "Validate",
+    add: "Add",
+    setup_in_ha: "Set up in HA",
     ignore: "Ignore",
     dismiss: "Dismiss",
     needs_form: "Setup required",
@@ -569,7 +573,51 @@ function flowHost(f){
 // FR | dessiner : il le dit et passe la main a HA plutot que de poster {} en
 // FR | esperant.
 function flowIsOneClick(f){
-  return (f.context || {}).confirm_only === true;
+  // EN | THE FLAG THIS USED TO READ DOES NOT EXIST. It asked for
+  // EN | context.confirm_only, and config_entries/flow/progress answers with
+  // EN | context, flow_id, handler and step_id - nothing else. The condition
+  // EN | was therefore always false and the action button was never drawn:
+  // EN | eight real discoveries showed nothing but Ignore and Dismiss.
+  // EN | step_id is what the payload does carry, and it is enough: a step
+  // EN | whose name ends in "confirm" is Home Assistant asking "shall I set
+  // EN | this up?" with no field to fill - zeroconf_confirm for a printer,
+  // EN | ssdp_confirm for a UPnP device, confirm for an Apple TV. A step
+  // EN | named link, user or oauth_discovery wants something from the person.
+  // FR | LE DRAPEAU QUE CECI LISAIT N EXISTE PAS. Il demandait
+  // FR | context.confirm_only, et config_entries/flow/progress repond avec
+  // FR | context, flow_id, handler et step_id - rien d autre. La condition
+  // FR | etait donc toujours fausse et le bouton d action n a jamais ete
+  // FR | dessine : huit decouvertes bien reelles n affichaient qu Ignorer et
+  // FR | Ecarter.
+  // FR | step_id, lui, est bien present, et il suffit : une etape dont le nom
+  // FR | finit par « confirm » est Home Assistant qui demande « je
+  // FR | l installe ? » sans aucun champ a remplir - zeroconf_confirm pour
+  // FR | une imprimante, ssdp_confirm pour un appareil UPnP, confirm pour une
+  // FR | Apple TV. Une etape nommee link, user ou oauth_discovery attend
+  // FR | quelque chose de la personne.
+  return /(^|_)confirm$/.test(String(f.step_id || ""));
+}
+
+function openInHa(handler){
+  // EN | The handover. This page is an iframe inside the ADMIN console and
+  // EN | Home Assistant serves both, so the top window can be sent straight
+  // EN | to the integration's own dialog, where the discovery is waiting.
+  // EN | Nothing is re-implemented: a Hue bridge wants its button pressed, a
+  // EN | Synology wants credentials, an Xbox sends you to a Microsoft login,
+  // EN | and Home Assistant already draws all three properly.
+  // FR | Le passage de main. Cette page est une iframe dans la console ADMIN
+  // FR | et Home Assistant sert les deux : on peut donc envoyer la fenetre du
+  // FR | haut directement sur le dialogue de l integration, la ou la
+  // FR | decouverte attend. Rien n est reimplemente : un pont Hue veut qu on
+  // FR | appuie sur son bouton, un Synology veut des identifiants, une Xbox
+  // FR | renvoie vers une connexion Microsoft, et Home Assistant dessine deja
+  // FR | correctement les trois.
+  try {
+    window.top.location.href =
+      "/config/integrations/dashboard/add?domain=" + encodeURIComponent(handler);
+  } catch (e) {
+    window.open("/config/integrations", "_blank");
+  }
 }
 
 function ageLabel(ts){
@@ -790,8 +838,8 @@ function renderPending(){
       </div>
       <div class="act">`
       + (one
-          ? `<button class="btn btn-sm" onclick="validateFlow('${esc(f.flow_id)}')">${esc(t("validate"))}</button>`
-          : "")
+          ? `<button class="btn btn-sm" onclick="validateFlow('${esc(f.flow_id)}')">${esc(t("add"))}</button>`
+          : `<button class="btn btn-sm" onclick="openInHa('${esc(f.handler)}')">${esc(t("setup_in_ha"))}</button>`)
       + `<button class="btn btn-sm btn-ghost" onclick="ignoreFlow('${esc(f.flow_id)}')">${esc(t("ignore"))}</button>
          <button class="btn btn-sm btn-ghost" onclick="dismissFlow('${esc(f.flow_id)}')">${esc(t("dismiss"))}</button>
       </div></div>`;
