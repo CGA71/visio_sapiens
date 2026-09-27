@@ -68,6 +68,7 @@ fi
 
 API_TOKEN="$(read_opt api_token)"
 HA_TOKEN_OPT="$(read_opt ha_token)"
+ALLOWED_ORIGINS="$(read_opt allowed_origins)"
 LOG_LEVEL="$(read_opt log_level)"
 [ -z "$LOG_LEVEL" ] && LOG_LEVEL="info"
 
@@ -76,6 +77,12 @@ export VSSP_DIR="$CFG/vssp"
 export VSSP_MCP_HOST="0.0.0.0"
 export VSSP_MCP_PORT="8099"
 export VSSP_MCP_TOKEN="$API_TOKEN"
+# EN | Normally empty: only a browser-based MCP client needs it, and
+# EN | nothing in this project is one. See _guard in server.py.
+# FR | Normalement vide : seul un client MCP dans un navigateur en a
+# FR | besoin, et rien dans ce projet n en est un. Voir _guard dans
+# FR | server.py.
+export VSSP_MCP_ALLOWED_ORIGINS="$ALLOWED_ORIGINS"
 
 # EN | Only exported when the operator actually set one. An empty HA_TOKEN
 # EN | in the environment is not the same as no HA_TOKEN: resolve_token

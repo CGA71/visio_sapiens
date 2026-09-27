@@ -25,7 +25,7 @@
 # FR | cote.
 ########################################################################
 name: Visio Sapiens MCP
-version: "1.0.0"
+version: "1.0.1"
 slug: vssp_mcp
 description: >-
   Model Context Protocol server for Visio Sapiens — lets an AI client read
@@ -98,9 +98,22 @@ options:
   # FR | Utilise seulement si la route Superviseur est refusee. Normalement
   # FR | laisse vide.
   ha_token: ""
+  # EN | Almost always left empty. A browser sends an Origin header
+  # EN | and a desktop or CLI MCP client does not, so an empty list
+  # EN | means "no web page may call this" - which is the DNS
+  # EN | rebinding defence. Fill it only for a browser-based client,
+  # EN | comma separated: https://example.local
+  # FR | Laisse vide dans presque tous les cas. Un navigateur envoie
+  # FR | un en-tete Origin, un client MCP de bureau ou en ligne de
+  # FR | commande non : une liste vide signifie donc « aucune page
+  # FR | web ne peut appeler ceci » - c est la protection contre le
+  # FR | rebinding DNS. A remplir seulement pour un client dans un
+  # FR | navigateur, separe par des virgules : https://exemple.local
+  allowed_origins: ""
   log_level: info
 
 schema:
   api_token: str?
   ha_token: str?
+  allowed_origins: str?
   log_level: list(debug|info|warning|error)

@@ -71,6 +71,7 @@ import os
 from typing import Any
 
 from mcp.server import MCPServer
+from mcp.server.transport_security import TransportSecuritySettings
 
 from . import ha
 
@@ -406,8 +407,8 @@ def find_entities(pattern: str, limit: int = 50) -> dict:
 # FR | sur la machine du client. Celui-ci tourne SUR L'INSTANCE - un add-on
 # FR | sur Home Assistant OS, un conteneur a cote du pod sur k3s - donc le
 # FR | client le joint par le reseau, et HTTP est le transport pour cela.
-def _guard(app, secret: str):
-    """EN | A shared secret in front of the whole app.
+def _guard(app, secret: str, allowed_origins: set):
+    """EN | A shared secret in front of the whole app, plus the Origin check.
 
     EN | Without this, a port on the home LAN is an unauthenticated window
     EN | onto every entity state in the house: the tools are read-only, but
@@ -425,21 +426,57 @@ def _guard(app, secret: str):
     FR | serveur d'autorisation, ce qui fait beaucoup de pieces mobiles
     FR | pour un foyer ; un bearer compare en temps constant est la reponse
     FR | proportionnee, et il est entierement saute quand aucun secret
-    FR | n'est configure, pour que le cas simple reste simple."""
+    FR | n'est configure, pour que le cas simple reste simple.
+
+    EN | THE ORIGIN CHECK LIVES HERE, and not in the SDK, for a measured
+    EN | reason. The SDK guards against DNS rebinding with an allow-list of
+    EN | Host values, and that list holds no wildcard; this server runs with
+    EN | host_network: false, so it cannot learn the LAN address a client
+    EN | will dial it on. Left at its default the SDK answered 421
+    EN | Misdirected Request to every request coming from the network -
+    EN | which is the only kind this server exists to serve - and its switch
+    EN | is all-or-nothing: turning the Host check off turns the Origin
+    EN | check off with it. So the Host check is dropped and the Origin
+    EN | check is kept here, where it is the part that was load-bearing: a
+    EN | browser always sends Origin, and a desktop or CLI MCP client never
+    EN | does. A page that rebinds a name to this address is therefore
+    EN | refused, while a real client passes, and neither gets in without
+    EN | the secret anyway.
+    FR | LA VERIFICATION D ORIGIN EST ICI, et pas dans le SDK, pour une
+    FR | raison mesuree. Le SDK se protege du rebinding DNS avec une liste
+    FR | blanche de valeurs de Host, et cette liste n accepte pas de joker ;
+    FR | ce serveur tourne en host_network: false, il ne peut donc pas
+    FR | connaitre l adresse LAN sur laquelle un client va l appeler. Laisse
+    FR | par defaut, le SDK repondait 421 Misdirected Request a toute
+    FR | requete venue du reseau - la seule sorte que ce serveur existe pour
+    FR | servir - et son interrupteur est tout ou rien : couper la
+    FR | verification de Host coupe celle d Origin avec elle. Le controle de
+    FR | Host est donc abandonne et celui d Origin conserve ici, ou il est
+    FR | la partie qui portait vraiment : un navigateur envoie toujours
+    FR | Origin, un client MCP de bureau ou en ligne de commande jamais. Une
+    FR | page qui reassocie un nom a cette adresse est donc refusee, un
+    FR | vrai client passe, et ni l un ni l autre n entre sans le secret."""
     import hmac
 
-    expected = f"Bearer {secret}"
+    expected = f"Bearer {secret}" if secret else ""
+
+    async def deny(send, status: int, body: bytes):
+        await send({"type": "http.response.start", "status": status,
+                    "headers": [(b"content-type", b"text/plain")]})
+        await send({"type": "http.response.body", "body": body})
 
     async def guarded(scope, receive, send):
         if scope["type"] == "http":
             headers = dict(scope.get("headers") or [])
-            offered = headers.get(b"authorization", b"").decode("latin-1")
-            if not hmac.compare_digest(offered, expected):
-                await send({"type": "http.response.start", "status": 401,
-                            "headers": [(b"content-type", b"text/plain")]})
-                await send({"type": "http.response.body",
-                            "body": b"unauthorized\n"})
+            origin = headers.get(b"origin", b"").decode("latin-1")
+            if origin and origin not in allowed_origins:
+                await deny(send, 403, b"origin not allowed\n")
                 return
+            if expected:
+                offered = headers.get(b"authorization", b"").decode("latin-1")
+                if not hmac.compare_digest(offered, expected):
+                    await deny(send, 401, b"unauthorized\n")
+                    return
         await app(scope, receive, send)
 
     return guarded
@@ -464,9 +501,32 @@ def main() -> None:
     except ha.HAError as exc:
         print(f"[vssp-mcp] NO ROUTE TO HOME ASSISTANT\n{exc}", flush=True)
 
-    app = mcp.streamable_http_app()
+    # EN | Only a browser-based MCP client would ever need an entry here;
+    # EN | nothing in this project is one, so the set is normally empty and
+    # EN | every request that carries an Origin is refused. See _guard.
+    # FR | Seul un client MCP dans un navigateur aurait besoin d une entree
+    # FR | ici ; rien dans ce projet n en est un, l ensemble est donc
+    # FR | normalement vide et toute requete portant un Origin est refusee.
+    # FR | Voir _guard.
+    allowed_origins = {o.strip() for o
+                       in os.environ.get("VSSP_MCP_ALLOWED_ORIGINS", "")
+                       .split(",") if o.strip()}
+
+    # EN | The SDK's Host allow-list is switched off and its Origin check
+    # EN | re-implemented in _guard - read the reason there before changing
+    # EN | this back. In short: the list holds no wildcard, this server
+    # EN | cannot know the address it is dialled on, and the default made it
+    # EN | answer 421 to the entire network.
+    # FR | La liste blanche de Host du SDK est desactivee et sa verification
+    # FR | d Origin reimplementee dans _guard - lire la raison la-bas avant
+    # FR | de revenir en arriere. En bref : la liste n accepte pas de joker,
+    # FR | ce serveur ne peut pas connaitre l adresse sur laquelle on
+    # FR | l appelle, et le defaut lui faisait repondre 421 a tout le reseau.
+    app = mcp.streamable_http_app(
+        transport_security=TransportSecuritySettings(
+            enable_dns_rebinding_protection=False))
+    app = _guard(app, secret, allowed_origins)
     if secret:
-        app = _guard(app, secret)
         print("[vssp-mcp] a shared secret is required on every request",
               flush=True)
     else:
