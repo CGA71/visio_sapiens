@@ -83,6 +83,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
 
+from mcp.server.mcpserver.exceptions import ToolError
+
 # EN | ONE WEBSOCKET CLIENT, NOT TWO. vssp/vssp_ws.py exists precisely
 # EN | because a second hand-rolled copy of RFC 6455 drifts in the worst
 # EN | possible way: quietly, and only on the instance nobody is looking
@@ -135,14 +137,40 @@ if _VSSP_DIR not in sys.path:
 import vssp_ws  # noqa: E402
 
 
-class HAError(RuntimeError):
+class HAError(RuntimeError, ToolError):
     """EN | Anything the caller could plausibly fix: no credential, wrong
     EN | URL, instance down, command refused. Raised with a sentence rather
     EN | than a traceback, because an MCP client shows it to a person.
     FR | Tout ce que l'appelant peut raisonnablement corriger : pas
     FR | d'identifiant, mauvaise URL, instance arretee, commande refusee.
     FR | Levee avec une phrase plutot qu'une trace, parce qu'un client MCP
-    FR | la montre a une personne."""
+    FR | la montre a une personne.
+
+    EN | AND IT ALSO INHERITS ToolError, which is the only reason the
+    EN | sentence above ever reaches anyone. The SDK divides failures in
+    EN | two: a ToolError is an anticipated one and keeps its own text after
+    EN | the "Error executing tool <name>" prefix, while everything else is
+    EN | a crash and is reported as that prefix alone, on purpose, so an
+    EN | unexpected exception leaks nothing. HAError was a plain
+    EN | RuntimeError, so every careful message here was replaced by
+    EN | "Error executing tool vssp_instance" - measured on 28 September
+    EN | 2026, when a revoked long-lived token on the k3s pod gave a client
+    EN | exactly that and nothing else, the real cause (HTTP 401) existing
+    EN | only in the pod log. "No room matches 'x'. Known rooms: ..." was
+    EN | being thrown away the same way.
+    FR | ET ELLE HERITE AUSSI DE ToolError, seule raison pour laquelle la
+    FR | phrase ci-dessus atteint jamais quiconque. Le SDK partage les
+    FR | echecs en deux : un ToolError est un echec prevu et conserve son
+    FR | texte apres le prefixe « Error executing tool <nom> », tandis que
+    FR | tout le reste est un plantage et n est rapporte que par ce prefixe,
+    FR | volontairement, pour qu une exception imprevue ne divulgue rien.
+    FR | HAError etait un simple RuntimeError : chaque message soigne d ici
+    FR | etait donc remplace par « Error executing tool vssp_instance » -
+    FR | mesure le 28 septembre 2026, quand un jeton longue duree revoque
+    FR | sur le pod k3s a donne exactement cela a un client, et rien
+    FR | d autre, la vraie cause (HTTP 401) n existant que dans le journal
+    FR | du pod. « No room matches 'x'. Known rooms: ... » etait jete de la
+    FR | meme facon."""
 
 
 # -- EN | The ways in / FR | Les voies d'entree ---------------------------
