@@ -91,16 +91,48 @@ kubectl version >/dev/null 2>&1 || die "kubectl cannot reach the cluster.
 # FR | car le serveur demarrerait parfaitement et n echouerait qu au premier
 # FR | appel d outil.
 # ---------------------------------------------------------------------------
-SVC=$(kubectl get svc -n "$NS" -l app=homeassistant \
-        -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
-[ -z "$SVC" ] && SVC=$(kubectl get svc -n "$NS" \
-        -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
-[ -z "$SVC" ] && die "no service found in namespace $NS - is this the right namespace?"
-
-PORT=$(kubectl get svc -n "$NS" "$SVC" \
-        -o jsonpath='{.spec.ports[0].port}' 2>/dev/null || echo 8123)
-HA_URL="http://$SVC.$NS.svc.cluster.local:$PORT"
-say "home assistant service: $SVC (port $PORT)"
+# EN | AND A POD IS NOT ALWAYS BEHIND A SERVICE. Measured on this cluster:
+# EN | Home Assistant runs with hostNetwork: true and has no Service at all,
+# EN | while the namespace holds two unrelated ones (code-server, mosquitto).
+# EN | The old blind fallback - "take the first Service you find" - would
+# EN | have pointed this server at code-server:8443 and started it happily,
+# EN | failing only at the first tool call, which is exactly the failure the
+# EN | comment above says it is avoiding. So: an explicit HA_URL wins, then a
+# EN | labelled Service, then a hostNetwork pod's own address, and otherwise
+# EN | this stops rather than guesses.
+# FR | ET UN POD N EST PAS TOUJOURS DERRIERE UN SERVICE. Mesure sur ce
+# FR | cluster : Home Assistant tourne en hostNetwork: true et n a aucun
+# FR | Service, alors que le namespace en porte deux sans rapport
+# FR | (code-server, mosquitto). L ancien repli aveugle - prendre le premier
+# FR | Service trouve - aurait pointe ce serveur sur code-server:8443 et
+# FR | l aurait demarre sans broncher, pour n echouer qu au premier appel
+# FR | d outil, c est-a-dire precisement la panne que le commentaire
+# FR | ci-dessus dit eviter. Donc : un HA_URL explicite d abord, puis un
+# FR | Service etiquete, puis l adresse propre d un pod hostNetwork, et
+# FR | sinon on s arrete au lieu de deviner.
+if [ -n "$HA_URL" ]; then
+  say "home assistant url:     $HA_URL (from the environment)"
+else
+  SVC=$(kubectl get svc -n "$NS" -l app=homeassistant \
+          -o jsonpath='{.items[0].metadata.name}' 2>/dev/null || true)
+  if [ -n "$SVC" ]; then
+    PORT=$(kubectl get svc -n "$NS" "$SVC" \
+            -o jsonpath='{.spec.ports[0].port}' 2>/dev/null || echo 8123)
+    HA_URL="http://$SVC.$NS.svc.cluster.local:$PORT"
+    say "home assistant service: $SVC (port $PORT)"
+  else
+    HOST_NET=$(kubectl get pod -n "$NS" -l app=homeassistant \
+            -o jsonpath='{.items[0].spec.hostNetwork}' 2>/dev/null || true)
+    POD_IP=$(kubectl get pod -n "$NS" -l app=homeassistant \
+            -o jsonpath='{.items[0].status.podIP}' 2>/dev/null || true)
+    if [ "$HOST_NET" = "true" ] && [ -n "$POD_IP" ]; then
+      HA_URL="http://$POD_IP:${HA_PORT:-8123}"
+      say "home assistant pod:     hostNetwork on $POD_IP (no Service, and none needed)"
+    else
+      die "no Service labelled app=homeassistant in namespace $NS and no hostNetwork pod to fall back on. Set HA_URL to the address this cluster reaches Home Assistant on, then run again."
+    fi
+  fi
+fi
 say "the server will read:   $HA_URL"
 
 # ---------------------------------------------------------------------------
@@ -142,10 +174,34 @@ if [ -z "$MCP_API_TOKEN" ]; then
   say "WARNING: MCP_API_TOKEN is empty - the endpoint will accept anyone on the LAN"
 fi
 
+# EN | WRITTEN THROUGH FILES, NOT --from-literal. A value passed as an
+# EN | argument is visible in this machine's process list for as long as
+# EN | kubectl runs, to every account on the host. This file used to do
+# EN | that with both tokens while the documentation beside it claimed they
+# EN | "never appear in a command line, a manifest or the script". Two 0600
+# EN | files in a private directory, removed on the way out, make that true.
+# EN | printf writes no trailing newline: --from-file takes the bytes as
+# EN | they are, and a stray newline would be part of the secret.
+# FR | ECRITS VIA DES FICHIERS, PAS --from-literal. Une valeur passee en
+# FR | argument est visible dans la liste des processus de cette machine
+# FR | aussi longtemps que kubectl tourne, pour tous les comptes de l hote.
+# FR | Ce fichier le faisait pour les deux jetons alors que la
+# FR | documentation a cote affirmait qu ils « n apparaissent jamais dans
+# FR | une ligne de commande, un manifeste ni le script ». Deux fichiers
+# FR | 0600 dans un repertoire prive, supprimes en sortant, rendent cela
+# FR | vrai. printf n ecrit pas de retour a la ligne final : --from-file
+# FR | prend les octets tels quels, et un retour a la ligne egare ferait
+# FR | partie du secret.
+SECRET_DIR=$(mktemp -d)
+trap 'rm -rf "$SECRET_DIR"' EXIT INT TERM
+chmod 700 "$SECRET_DIR"
+( umask 077; printf %s "$HA_TOKEN"      > "$SECRET_DIR/ha_token" )
+( umask 077; printf %s "$MCP_API_TOKEN" > "$SECRET_DIR/api_token" )
+
 say "writing Secret vssp-mcp"
 kubectl create secret generic vssp-mcp -n "$NS" \
-  --from-literal="ha_token=$HA_TOKEN" \
-  --from-literal="api_token=$MCP_API_TOKEN" \
+  --from-file="ha_token=$SECRET_DIR/ha_token" \
+  --from-file="api_token=$SECRET_DIR/api_token" \
   --dry-run=client -o yaml | kubectl apply $DRY -f -
 
 say "applying Deployment and Service"
