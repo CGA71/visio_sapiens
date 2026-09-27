@@ -73,18 +73,33 @@ d'entrée. Depuis un clone, sur l'hôte k3s :
 ```sh
 HA_TOKEN=<jeton longue durée> \
 MCP_API_TOKEN=<une longue chaîne aléatoire> \
-  sudo -E sh kubernetes/mcp/apply-mcp.sh
+  sh kubernetes/mcp/apply-mcp.sh
 ```
 
-Les deux jetons sont lus dans l'environnement et n'apparaissent jamais dans une
-ligne de commande, un manifeste ni le script. `--dry-run` montre ce qui
-changerait.
+**Pas de `sudo`.** Le script le dit lui-même et cela vaut d'être répété ici,
+car cette page prescrivait `sudo -E` : rien là-dedans ne demande root, cela
+demande une configuration de cluster lisible. Sur cet hôte, `kubectl` prend par
+défaut l'enveloppe de k3s, qui lit `/etc/rancher/k3s/k3s.yaml` — réservé à root
+— et l'erreur de permission qui suit invite précisément au mauvais correctif. Le
+script préfère `$HOME/.kube/config` quand `KUBECONFIG` n'est pas défini, et
+tourner sous un compte ordinaire garde les jetons hors d'un processus root.
 
-Le script trouve le service de Home Assistant plutôt que de supposer son nom,
-construit une ConfigMap depuis le dépôt (le paquet plus `vssp/vssp_ws.py`),
-écrit le Secret, applique le Deployment et le Service, et redémarre le rollout —
-parce que ni un changement de ConfigMap ni un changement de Secret n'atteint
-tout seul un pod en cours d'exécution.
+Les deux jetons sont lus dans l'environnement et n'apparaissent jamais dans une
+ligne de commande, un manifeste ni le script. Cette affirmation était fausse
+jusqu'au 28 septembre 2026 : le Secret était construit avec `--from-literal`, ce
+qui place une valeur dans la liste des processus de l'hôte aussi longtemps que
+`kubectl` tourne. Ils transitent maintenant par deux fichiers `0600` dans un
+répertoire privé, supprimés par un `trap`. `--dry-run` montre ce qui changerait,
+et mérite d'être lancé d'abord.
+
+Le script résout l'adresse de Home Assistant plutôt que de la supposer, dans un
+ordre qui ne peut pas se tromper : un `HA_URL` explicite, puis un Service
+étiqueté `app=homeassistant`, puis — mesuré sur ce cluster — l'adresse propre
+d'un pod `hostNetwork`, car Home Assistant y tourne en `hostNetwork: true` et
+n'a aucun Service. Il construit ensuite une ConfigMap depuis le dépôt (le paquet
+plus `vssp/vssp_ws.py`), écrit le Secret, applique le Deployment et le Service,
+et redémarre le rollout — parce que ni un changement de ConfigMap ni un
+changement de Secret n'atteint tout seul un pod en cours d'exécution.
 
 Aucune image privée n'est en jeu : ce GitLab n'a pas de registre de conteneurs,
 donc l'exécution utilise l'image publique `python:3.12-alpine` et un conteneur
@@ -234,9 +249,26 @@ Core `2026.9.3`, `Home Assistant OS / Supervised`,
 `infrastructure_layers_apply: false` — correct, un appareil n'a pas de k3s sous
 lui — et 107 entités Visio Sapiens.
 
-### Pas vérifié
+### Le pod k3s — 28 septembre 2026
 
-- **L'enveloppe k3s n'a jamais été démarrée.** `apply-mcp.sh` reste à lancer sur
-  l'hôte k3s, ce qui y demande `sudo`, et rien n'écoute sur `30099`. Le paquet se
-  déploie correctement dans `/config/vssp_mcp` sur les deux instances ; seule
-  cette enveloppe reste inéprouvée.
+La seconde enveloppe tourne aussi, et les deux répondent comme prévu :
+
+| | préproduction (pod k3s) | appareil (Home Assistant OS) |
+|---|---|---|
+| `route` | `long-lived token -> http://192.168.1.11:8123` | `supervisor proxy (add-on)` |
+| `installation` | `Core (container / k3s pod)` | `Home Assistant OS / Supervised` |
+| `has_supervisor` | `false` | `true` |
+| `infrastructure_layers_apply` | `true` | `false` |
+| Core | `2026.8.3` | `2026.9.3` |
+| entités Visio Sapiens | 110 | 107 |
+
+`infrastructure_layers_apply` est celui qui compte : un appareil n'a pas de k3s
+sous lui, et un client qui saute `vssp_instance` lui proposera une mise à niveau
+qui n'existe pas.
+
+Les cinq comportements de requête tiennent aussi sur `30099`, avec un ajout qui
+mérite d'être écrit — **chaque instance a son propre secret**, le jeton de
+l'appareil reçoit donc un `401` du pod. La fuite de l'un n'ouvre pas l'autre.
+
+Il ne reste rien de non vérifié : les deux enveloppes sont installées,
+démarrées, joignables depuis le LAN et authentifiées.

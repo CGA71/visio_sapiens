@@ -71,16 +71,32 @@ checkout, on the k3s host:
 ```sh
 HA_TOKEN=<long-lived token> \
 MCP_API_TOKEN=<a long random string> \
-  sudo -E sh kubernetes/mcp/apply-mcp.sh
+  sh kubernetes/mcp/apply-mcp.sh
 ```
 
-Both tokens are read from the environment and never appear in a command line,
-a manifest or the script. `--dry-run` shows what would change.
+**No `sudo`.** The script says so itself and it is worth repeating here,
+because this page used to prescribe `sudo -E`: nothing in it needs root, it
+needs a readable cluster config. `kubectl` on this host defaults to the k3s
+wrapper, which reads `/etc/rancher/k3s/k3s.yaml` — root-only — and the
+permission error that follows invites exactly the wrong fix. The script
+prefers `$HOME/.kube/config` when `KUBECONFIG` is unset, and running as a
+normal account keeps the tokens out of a root process.
 
-The script finds Home Assistant's service rather than assuming its name, builds
-a ConfigMap from the repository (the package plus `vssp/vssp_ws.py`), writes the
-Secret, applies the Deployment and Service, and restarts the rollout — because
-neither a ConfigMap nor a Secret change reaches a running pod on its own.
+Both tokens are read from the environment and never appear in a command line,
+a manifest or the script. That claim was false until 28 September 2026: the
+Secret was built with `--from-literal`, which puts a value in the host's
+process list for as long as `kubectl` runs. They now travel through two `0600`
+files in a private directory, removed by a trap. `--dry-run` shows what would
+change, and is worth running first.
+
+The script resolves Home Assistant's address rather than assuming it, in an
+order that cannot guess wrong: an explicit `HA_URL`, then a Service labelled
+`app=homeassistant`, then — measured on this cluster — a `hostNetwork` pod's
+own address, since Home Assistant runs with `hostNetwork: true` here and has
+no Service at all. It then builds a ConfigMap from the repository (the package
+plus `vssp/vssp_ws.py`), writes the Secret, applies the Deployment and
+Service, and restarts the rollout — because neither a ConfigMap nor a Secret
+change reaches a running pod on its own.
 
 No private image is involved: this GitLab has no container registry, so the
 runtime is the public `python:3.12-alpine` and an init container installs the
@@ -223,9 +239,26 @@ and the handshake itself: seven tools listed, `vssp_instance` returning Core
 false` — correct, an appliance has no k3s under it — and 107 Visio Sapiens
 entities.
 
-### Not verified
+### The k3s pod — 28 September 2026
 
-- **The k3s wrapper has never been started.** `apply-mcp.sh` still has to be run
-  on the k3s host, which needs `sudo` there, and nothing is listening on
-  `30099`. The package deploys correctly to `/config/vssp_mcp` on both
-  instances; only this envelope is untried.
+The second wrapper runs too, and the two answer as designed:
+
+| | staging (k3s pod) | appliance (Home Assistant OS) |
+|---|---|---|
+| `route` | `long-lived token -> http://192.168.1.11:8123` | `supervisor proxy (add-on)` |
+| `installation` | `Core (container / k3s pod)` | `Home Assistant OS / Supervised` |
+| `has_supervisor` | `false` | `true` |
+| `infrastructure_layers_apply` | `true` | `false` |
+| Core | `2026.8.3` | `2026.9.3` |
+| Visio Sapiens entities | 110 | 107 |
+
+`infrastructure_layers_apply` is the one that matters: an appliance has no k3s
+beneath it, and a client that skips `vssp_instance` will offer it an upgrade
+that does not exist.
+
+The five request outcomes hold on `30099` as well, with one addition worth
+stating — **each instance has its own secret**, so the appliance's token is
+answered with `401` by the pod. A leak of one does not open the other.
+
+Nothing is left unverified: both wrappers are installed, started, reachable
+across the LAN and authenticated.

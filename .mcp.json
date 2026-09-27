@@ -13,6 +13,13 @@
       "headers": {
         "Authorization": "Bearer ${VSSP_MCP_TOKEN}"
       }
+    },
+    "visio-sapiens-staging": {
+      "type": "http",
+      "url": "http://192.168.1.11:30099/mcp",
+      "headers": {
+        "Authorization": "Bearer ${VSSP_MCP_TOKEN_STAGING}"
+      }
     }
   }
 }
