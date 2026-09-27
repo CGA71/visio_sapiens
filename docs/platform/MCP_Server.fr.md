@@ -183,15 +183,60 @@ est une étape distincte.
   *commandes* de l'écran MISES À JOUR mêlées à ses comptes, et `vssp_room`
   répondait « Known rooms: » suivi de rien sur une maison sans zone.
 
+### L'add-on, sur l'appareil — 28 septembre 2026
+
+L'enveloppe Home Assistant OS est **installée, démarrée et répond**, sur la
+préproduction appareil à `192.168.1.200`. Deux points ont été tranchés, qu'un
+poste de travail ne pouvait pas trancher.
+
+**La route Superviseur fonctionne.** Le journal le dit en une ligne :
+
+```
+[vssp-mcp] home assistant route: supervisor proxy (add-on)
+```
+
+Aucun jeton longue durée, `ha_token` laissé vide. L'argument structurel a tenu :
+cette route authentifie les *add-ons*, et c'en est un — ce qui est précisément
+pourquoi elle avait échoué deux fois pour `vssp_dependencies.py`, un script qui
+tourne dans le conteneur de Core.
+
+**Et l'installer a révélé un défaut que rien auparavant ne pouvait voir.** Toute
+requête venue du LAN revenait en `421 Misdirected Request`. Les contrôles HTTP
+précédents avaient été faits depuis l'instance elle-même ; aucune poignée de
+main MCP n'avait jamais traversé le réseau.
+
+La cause est la protection contre le rebinding DNS du SDK. Elle valide l'en-tête
+`Host` contre une liste blanche vide par défaut et qui n'accepte aucun joker, et
+ce serveur tourne en `host_network: false` : il ne peut donc pas connaître
+l'adresse sur laquelle un client va l'appeler. Son interrupteur est tout ou
+rien : couper la vérification de `Host` coupe celle d'`Origin` avec elle.
+
+Le contrôle de `Host` est donc abandonné et celui d'`Origin` déplacé dans
+`_guard`, qui gardait déjà toute l'application pour le jeton. `Origin` est la
+partie qui portait vraiment : **un navigateur l'envoie toujours, un client MCP
+de bureau ou en ligne de commande jamais.** Une page qui réassocie un nom à
+cette adresse est refusée, un vrai client passe, et ni l'un ni l'autre n'entre
+sans le secret. L'option `allowed_origins` n'existe que pour un client dans un
+navigateur, et elle est vide.
+
+Mesuré depuis le LAN, add-on `1.0.1` :
+
+| Requête | Réponse |
+|---|---|
+| sans jeton | `401` |
+| mauvais jeton | `401` |
+| jeton tronqué | `401` |
+| bon jeton, `Origin: https://evil.example` | `403` |
+| bon jeton, sans `Origin` | `200` |
+
+et la poignée de main elle-même : sept outils listés, `vssp_instance` renvoyant
+Core `2026.9.3`, `Home Assistant OS / Supervised`,
+`infrastructure_layers_apply: false` — correct, un appareil n'a pas de k3s sous
+lui — et 107 entités Visio Sapiens.
+
 ### Pas vérifié
 
-- La **route Superviseur** sur un vrai add-on Home Assistant OS. C'est
-  invérifiable depuis un poste de travail. C'est pour cela que le serveur sonde
-  au lieu de supposer, et que `ha_token` existe en secours.
-- **Aucune des deux enveloppes n'a encore été démarrée.** Le paquet se déploie
-  correctement — `/config/vssp_mcp` arrive sur la préproduction, prouvé par le
-  passage du garde-fou « packagé mais jamais déployé » du pipeline — mais
-  l'add-on reste à installer depuis la boutique, et `apply-mcp.sh` reste à
-  lancer sur l'hôte k3s, ce qui y demande `sudo`. Tout ce qui est vérifié
-  ci-dessus l'a été en exécutant le même paquet directement contre les deux
-  instances.
+- **L'enveloppe k3s n'a jamais été démarrée.** `apply-mcp.sh` reste à lancer sur
+  l'hôte k3s, ce qui y demande `sudo`, et rien n'écoute sur `30099`. Le paquet se
+  déploie correctement dans `/config/vssp_mcp` sur les deux instances ; seule
+  cette enveloppe reste inéprouvée.

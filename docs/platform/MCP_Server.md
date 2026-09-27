@@ -175,14 +175,57 @@ its confirmation and its status sensor. Wiring those in is a separate step.
   *controls* mixed in with its counts, and `vssp_room` answered "Known rooms:"
   followed by nothing on a house with no areas.
 
+### The add-on, on the appliance — 28 September 2026
+
+The Home Assistant OS wrapper is **installed, started and answering**, on the
+appliance staging at `192.168.1.200`. Two things were settled that could not be
+settled from a workstation.
+
+**The Supervisor route works.** The log says it in one line:
+
+```
+[vssp-mcp] home assistant route: supervisor proxy (add-on)
+```
+
+No long-lived token, `ha_token` left empty. The structural argument held: the
+route authenticates *add-ons*, and this is one — which is why it had failed
+twice for `vssp_dependencies.py`, a script running inside Core's own container.
+
+**And installing it exposed a defect nothing before could see.** Every request
+from the LAN came back `421 Misdirected Request`. The earlier HTTP checks were
+made from the instance itself; no MCP handshake had ever crossed the network.
+
+The cause is the SDK's DNS-rebinding protection. It validates the `Host` header
+against an allow-list that is empty by default and accepts no wildcard, and
+this server runs with `host_network: false`, so it cannot learn the address a
+client will dial it on. Its switch is all-or-nothing: turning the `Host` check
+off turns the `Origin` check off with it.
+
+So the `Host` check is dropped and the `Origin` check moved into `_guard`, which
+already fronted the whole application for the bearer token. `Origin` is the part
+that was load-bearing: **a browser always sends it, a desktop or CLI MCP client
+never does.** A page that rebinds a name to this address is refused; a real
+client passes; neither gets in without the secret. The `allowed_origins` option
+exists only for a browser-based client and is empty.
+
+Measured across the LAN, add-on `1.0.1`:
+
+| Request | Answer |
+|---|---|
+| no token | `401` |
+| wrong token | `401` |
+| truncated token | `401` |
+| right token, `Origin: https://evil.example` | `403` |
+| right token, no `Origin` | `200` |
+
+and the handshake itself: seven tools listed, `vssp_instance` returning Core
+`2026.9.3`, `Home Assistant OS / Supervised`, `infrastructure_layers_apply:
+false` — correct, an appliance has no k3s under it — and 107 Visio Sapiens
+entities.
+
 ### Not verified
 
-- The **Supervisor route** on a real Home Assistant OS add-on. It cannot be,
-  from a workstation. That is why the server probes instead of assuming, and
-  why `ha_token` exists as a fallback.
-- **Neither wrapper has been started yet.** The package deploys correctly —
-  `/config/vssp_mcp` lands on staging, proven by the pipeline's own
-  "packaged but never deployed" guard passing — but the add-on still has to be
-  installed from the Add-on store, and `apply-mcp.sh` still has to be run on
-  the k3s host, which needs `sudo` there. Everything verified above was
-  verified by running the same package directly against both instances.
+- **The k3s wrapper has never been started.** `apply-mcp.sh` still has to be run
+  on the k3s host, which needs `sudo` there, and nothing is listening on
+  `30099`. The package deploys correctly to `/config/vssp_mcp` on both
+  instances; only this envelope is untried.
