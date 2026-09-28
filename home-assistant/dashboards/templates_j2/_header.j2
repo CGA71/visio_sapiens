@@ -97,7 +97,26 @@
    FR | l'ecran Google Calendar de la console ADMIN) > l'ancien defaut code
    FR | en dur, conserve pour qu'un modele anterieur a cette cle s'affiche
    FR | encore. #}
-{% set calendar_entity = calendar_entity | default(house.calendar_entity | default('calendar.calebar', true), true) %}
+{# EN | NO HARDCODED FALLBACK. This used to end in 'calendar.calebar',
+   EN | a calendar entity of one particular house, so every other
+   EN | instance - the k3s staging, the appliance, any fresh
+   EN | install - rendered calendar-card-pro against an entity that
+   EN | does not exist and drew a red "Calendar entity not found or
+   EN | improperly configured" box in the header of every single
+   EN | dashboard. Measured on the k3s staging, which has no
+   EN | calendar.* entity at all. Empty now, and the cell below says
+   EN | so in words instead of failing.
+   FR | PAS DE REPLI CODE EN DUR. Ceci finissait par
+   FR | 'calendar.calebar', entite calendrier d'une maison
+   FR | particuliere : toute autre instance - la preproduction k3s,
+   FR | l'appareil, une installation neuve - rendait
+   FR | calendar-card-pro contre une entite inexistante et
+   FR | dessinait un encadre rouge « Calendar entity not found or
+   FR | improperly configured » dans l'en-tete de chaque dashboard.
+   FR | Mesure sur la preproduction k3s, qui n'a aucune entite
+   FR | calendar.*. Vide desormais, et la case ci-dessous le dit en
+   FR | toutes lettres au lieu d'echouer. #}
+{% set calendar_entity = calendar_entity | default(house.calendar_entity | default('', true), true) %}
       - type: horizontal-stack
         view_layout:
           grid-area: header
@@ -266,6 +285,7 @@
              FR | dashboard genere via ce partial. Defilement interne
              FR | (overflow-y: auto) puisqu'une semaine d'evenements peut
              FR | depasser la ligne. #}
+{% if calendar_entity %}
           - type: custom:calendar-card-pro
             entities:
               - {{ calendar_entity }}
@@ -322,6 +342,24 @@
                   height: 100%;
                   overflow-y: auto;
                 }
+{% else %}
+
+          - type: markdown
+            content: >-
+              {{ t('header.calendar_none') }}
+            card_mod:
+              style: |
+                ha-card {
+                  background: rgba(16, 27, 39, 0.85);
+                  border: 1px solid rgba(0, 229, 255, 0.22);
+                  border-radius: var(--ha-card-border-radius, 20px);
+                  height: 100%;
+                  display: flex;
+                  align-items: center;
+                }
+                ha-card > * { padding: 10px 16px; }
+{% endif %}
+
 {% if regenerate_dashboard_service is defined %}
 
           {# EN | Cell 4 (optional): regenerate this dashboard, in place —

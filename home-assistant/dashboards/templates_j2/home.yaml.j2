@@ -162,7 +162,19 @@ views:
    FR | (model/house.yaml) sert de defaut en l'absence du flag. Lier un
    FR | compte Google change donc ce qu'affiche ce bandeau sans toucher a ce
    FR | template. #}
-{% set calendar_entity = house.calendar_entity | default('calendar.calebar', true) %}
+{# EN | SAME HARDCODED FALLBACK AS _header.j2 HAD, and this is the one
+   EN | that actually won: this line runs before the header partial is
+   EN | included, so it set calendar_entity for the header too. Clearing
+   EN | the fallback in _header.j2 alone changed nothing - proved on the
+   EN | k3s staging, where house.calendar_entity was empty and the header
+   EN | still rendered calendar.calebar.
+   FR | MEME REPLI CODE EN DUR QUE DANS _header.j2, et c'est celui-ci qui
+   FR | l'emportait : cette ligne s'execute avant l'inclusion du partial,
+   FR | elle posait donc calendar_entity pour le bandeau aussi. Vider le
+   FR | repli dans _header.j2 seul ne changeait rien - demontre sur la
+   FR | preproduction k3s, ou house.calendar_entity etait vide et le
+   FR | bandeau affichait quand meme calendar.calebar. #}
+{% set calendar_entity = house.calendar_entity | default('', true) %}
 {# EN | No regenerate_dashboard_service here on purpose: the header's
    EN | optional Cell 4 (mdi:refresh, calls script.vssp_regenerate_home_
    EN | dashboard) was removed from HOME per user request — use ADMIN's own

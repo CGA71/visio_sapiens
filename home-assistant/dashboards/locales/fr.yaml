@@ -95,6 +95,15 @@ slot:
 
 header:
   weather_unavailable: Météo indisponible
+  # FR | Affiche dans la case agenda quand cette maison n'a pas encore
+  # FR | d'entite calendrier. La case rendait calendar-card-pro contre
+  # FR | un repli code en dur qui n'existe que sur une installation,
+  # FR | donc toute autre instance dessinait un encadre rouge
+  # FR | « Calendar entity not found » dans l'en-tete de chaque
+  # FR | dashboard.
+  calendar_none: >-
+    Pas encore d'agenda. Ajoutez-en un depuis la console ADMIN, et les
+    événements de la semaine s'afficheront ici.
   weather_condition:
     clear-night: Nuit dégagée
     cloudy: Nuageux

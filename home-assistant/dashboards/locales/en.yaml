@@ -141,6 +141,14 @@ slot:
 # ----------------------------------------------------------------------
 header:
   weather_unavailable: Weather unavailable
+  # EN | Shown in the calendar cell when this house has no calendar
+  # EN | entity yet. The cell used to render calendar-card-pro against a
+  # EN | hardcoded fallback that exists on one install only, so every
+  # EN | other instance drew a red "Calendar entity not found" box in
+  # EN | the header of every dashboard.
+  calendar_none: >-
+    No calendar yet. Add one from the ADMIN console, and the week's
+    events appear here.
   # EN | One label per Home Assistant weather condition, keyed by the raw
   # EN | state (hyphens included). The weather cell of the header shows
   # EN | these instead of hass.localize, which follows the HA profile /

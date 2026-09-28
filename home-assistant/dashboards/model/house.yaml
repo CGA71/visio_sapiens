@@ -50,7 +50,7 @@ house:
   # FR | Google change le bandeau sans reecrire ce fichier — meme mecanique
   # FR | que locale/format ci-dessus. Cette valeur reste le defaut pour un
   # FR | lancement en ligne de commande simple.
-  calendar_entity: calendar.calebar
+  calendar_entity: ""
 
   # EN | alarm_control_panel.* entity behind the SECURITY panel on HOME —
   # EN | its three positions and its panic button. The default is the native
