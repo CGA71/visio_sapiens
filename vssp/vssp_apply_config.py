@@ -567,13 +567,42 @@ def main():
         if prune_dashboards(config, declared):
             changed = True
 
+    # EN | THE MARKER BELOW IS READ BY AN AUTOMATION, so it is a machine token
+    # EN | and not a sentence: "[VSSP] result=changed" or "result=unchanged".
+    # EN | The room-sync automation restarts Home Assistant after this merge,
+    # EN | because Lovelace only reads its dashboards at startup and a new
+    # EN | room's url_path cannot appear any other way. It used to decide that
+    # EN | on the exit code alone - and this script exits 0 both when it
+    # EN | rewrote configuration.yaml and when it found nothing to do. The
+    # EN | rooms wizard posts its structure on every connect, including a
+    # EN | plain page load, so opening that screen restarted the instance
+    # EN | every time: measured on the k3s staging on 28 September, two
+    # EN | restarts seven hours apart, each one at the exact second the page
+    # EN | was opened. The exit code still says whether the merge worked; this
+    # EN | line says whether it did anything.
+    # FR | LE MARQUEUR CI-DESSOUS EST LU PAR UNE AUTOMATISATION : c est donc un
+    # FR | jeton machine et pas une phrase — « [VSSP] result=changed » ou
+    # FR | « result=unchanged ». L automatisation de synchronisation des pieces
+    # FR | redemarre Home Assistant apres cette fusion, car Lovelace ne lit ses
+    # FR | dashboards qu au demarrage et le url_path d une piece nouvelle ne
+    # FR | peut apparaitre autrement. Elle en decidait sur le seul code de
+    # FR | sortie — or ce script sort en 0 aussi bien quand il a reecrit
+    # FR | configuration.yaml que quand il n a rien trouve a faire. Le
+    # FR | formulaire des pieces poste sa structure a chaque connexion, y
+    # FR | compris un simple chargement de page : ouvrir cet ecran redemarrait
+    # FR | donc l instance a chaque fois — mesure sur la preproduction k3s le
+    # FR | 28 septembre, deux redemarrages a sept heures d intervalle, chacun
+    # FR | a la seconde exacte de l ouverture de la page. Le code de sortie dit
+    # FR | toujours si la fusion a marche ; cette ligne dit si elle a agi.
     if not changed:
         print("[OK] configuration.yaml already compliant — no change.")
+        print("[VSSP] result=unchanged")
         return
 
     if args.dry_run:
         print("[i] --dry-run: merge result (not written):\n")
         y.dump(config, sys.stdout)
+        print("[VSSP] result=dryrun")
         return
 
     backup = _backup(args.config)
@@ -584,6 +613,7 @@ def main():
         y.dump(config, fh)
     os.replace(tmp, args.config)
     print(f"[OK] configuration.yaml updated: {args.config}")
+    print("[VSSP] result=changed")
 
 
 if __name__ == "__main__":

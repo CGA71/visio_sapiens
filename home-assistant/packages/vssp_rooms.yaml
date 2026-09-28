@@ -163,9 +163,49 @@ automation:
                   # FR | un nouvel url_path ne peut apparaitre autrement.
                   - action: shell_command.vssp_apply_rooms_config
                     response_variable: merged
+                  # EN | A SUCCESSFUL MERGE IS NOT A CHANGED ONE, and telling
+                  # EN | them apart is the whole of this condition.
+                  # EN | vssp_apply_config.py exits 0 both when it rewrote
+                  # EN | configuration.yaml and when it found nothing to do, so
+                  # EN | restarting on the exit code alone restarted on every
+                  # EN | sync. And the rooms wizard posts its structure on
+                  # EN | every connect - deliberately, so that rooms created
+                  # EN | before this sync existed are still caught - which
+                  # EN | includes a plain page load. Opening ROOMS & FLOORS
+                  # EN | therefore restarted the instance, every single time:
+                  # EN | measured on the k3s staging on 28 September, two
+                  # EN | restarts seven hours apart, each at the exact second
+                  # EN | the screen was opened, and the screen's own ten-second
+                  # EN | reconnect then posted again as soon as it came back.
+                  # EN | The restart itself stays: Lovelace reads its
+                  # EN | dashboards once, at startup, and a new room's url_path
+                  # EN | cannot appear any other way. It just no longer happens
+                  # EN | when nothing was added.
+                  # FR | UNE FUSION REUSSIE N EST PAS UNE FUSION QUI A CHANGE
+                  # FR | QUELQUE CHOSE, et distinguer les deux est tout l objet
+                  # FR | de cette condition. vssp_apply_config.py sort en 0
+                  # FR | aussi bien quand il a reecrit configuration.yaml que
+                  # FR | quand il n a rien trouve a faire : redemarrer sur le
+                  # FR | seul code de sortie redemarrait donc a chaque
+                  # FR | synchronisation. Or le formulaire des pieces poste sa
+                  # FR | structure a chaque connexion - volontairement, pour
+                  # FR | rattraper les pieces creees avant que cette synchro
+                  # FR | existe - ce qui inclut un simple chargement de page.
+                  # FR | Ouvrir PIECES & ETAGES redemarrait donc l instance, a
+                  # FR | tous les coups : mesure sur la preproduction k3s le 28
+                  # FR | septembre, deux redemarrages a sept heures d
+                  # FR | intervalle, chacun a la seconde exacte de l ouverture,
+                  # FR | et la reconnexion a dix secondes de l ecran reposait
+                  # FR | des que l instance revenait. Le redemarrage reste :
+                  # FR | Lovelace ne lit ses dashboards qu au demarrage et le
+                  # FR | url_path d une piece nouvelle ne peut apparaitre
+                  # FR | autrement. Il n a simplement plus lieu quand rien n a
+                  # FR | ete ajoute.
                   - if:
                       - condition: template
-                        value_template: "{{ merged.returncode == 0 }}"
+                        value_template: >-
+                          {{ merged.returncode == 0
+                             and 'result=changed' in (merged.stdout | default('')) }}
                     then:
                       # EN | check_config first: one does not restart into a
                       # EN | configuration.yaml that does not parse.
@@ -173,7 +213,19 @@ automation:
                       # FR | un configuration.yaml qui ne se lit pas.
                       - action: homeassistant.check_config
                       - action: homeassistant.restart
-                    else:
+                  # EN | Only a real failure is worth a notification. The third
+                  # EN | case - merged fine, nothing to change - is the normal
+                  # EN | outcome of every sync that adds no room, and it must
+                  # EN | stay silent: it is what a page load produces.
+                  # FR | Seul un vrai echec merite une notification. Le
+                  # FR | troisieme cas - fusion correcte, rien a changer - est
+                  # FR | l issue normale de toute synchro qui n ajoute aucune
+                  # FR | piece, et doit rester silencieux : c est ce que
+                  # FR | produit un chargement de page.
+                  - if:
+                      - condition: template
+                        value_template: "{{ merged.returncode != 0 }}"
+                    then:
                       - action: persistent_notification.create
                         data:
                           title: "Visio Sapiens — configuration.yaml not patched"
