@@ -500,6 +500,65 @@ def main() -> int:
     y.indent(mapping=2, sequence=4, offset=2)
     model = y.load(model_path.read_text(encoding="utf-8"))
 
+    # EN | AN EMPTY SYNC ONTO A POPULATED MODEL IS DATA LOSS, NOT A SYNC.
+    # EN | The rooms wizard builds its payload from Home Assistant's AREA
+    # EN | REGISTRY, and it posts on every connect - including a plain page
+    # EN | load. A house whose rooms live in house.yaml but were never
+    # EN | pushed to the registry ("Apply to Home Assistant" not pressed)
+    # EN | therefore posts zero rooms, and sync_rooms() faithfully removes
+    # EN | every room it was not sent.
+    # EN | Measured on the k3s staging, 28 September: house.yaml held
+    # EN | entrance_hall and kitchen with all their slots; opening
+    # EN | ROOMS & FLOORS at 09:24:22 backed it up and rewrote it with no
+    # EN | rooms at all, and the room fragment was regenerated empty behind
+    # EN | it. The backup is the only reason they came back.
+    # EN | The generator already refuses the mirror image of this - see
+    # EN | "Refusing to unlink every room" in generate_dashboards.py. This
+    # EN | is the same refusal, one step earlier, where the rooms actually
+    # EN | live.
+    # FR | UNE SYNCHRO VIDE SUR UN MODELE PEUPLE EST UNE PERTE DE DONNEES,
+    # FR | PAS UNE SYNCHRO. Le formulaire des pieces construit sa charge
+    # FR | utile depuis le REGISTRE DES ZONES de Home Assistant, et il poste
+    # FR | a chaque connexion - y compris un simple chargement de page. Une
+    # FR | maison dont les pieces vivent dans house.yaml mais n ont jamais
+    # FR | ete poussees vers le registre (« Apply to Home Assistant » pas
+    # FR | presse) poste donc zero piece, et sync_rooms() retire fidelement
+    # FR | chaque piece qu on ne lui a pas envoyee.
+    # FR | Mesure sur la preproduction k3s, le 28 septembre : house.yaml
+    # FR | tenait entrance_hall et kitchen avec tous leurs slots ; ouvrir
+    # FR | PIECES & ETAGES a 09:24:22 l a sauvegarde puis reecrit sans
+    # FR | aucune piece, et le fragment des pieces a ete regenere vide
+    # FR | derriere. La sauvegarde est la seule raison pour laquelle elles
+    # FR | sont revenues.
+    # FR | Le generateur refuse deja l image miroir de ceci - voir
+    # FR | « Refusing to unlink every room » dans generate_dashboards.py.
+    # FR | C est le meme refus, un cran plus tot, la ou les pieces vivent.
+    existing = [r for r in (model.get("rooms") or []) if isinstance(r, dict)]
+    if not incoming and existing:
+        names = ", ".join(str(r.get("id") or r.get("name")) for r in existing)
+        print("[REFUSED] the sync carries no room at all, and house.yaml "
+              f"holds {len(existing)}: {names}")
+        print("          Applying it would delete every one of them, so "
+              "nothing was written.")
+        print("          Home Assistant's area registry is empty. Press "
+              "APPLY TO HOME ASSISTANT in ROOMS & FLOORS to create the "
+              "areas there, and this sync will have something to carry.")
+        try:
+            sp = Path(args.status_file)
+            sp.parent.mkdir(parents=True, exist_ok=True)
+            sp.write_text(json.dumps({
+                "ok": False,
+                "message_key": "refused_empty_sync",
+                "message": ("The sync carried no room while house.yaml holds "
+                            f"{len(existing)}. Nothing was written. Press "
+                            "APPLY TO HOME ASSISTANT to create the areas."),
+                "rooms_in_model": len(existing),
+                "timestamp": _dt.datetime.now().isoformat(timespec="seconds"),
+            }, ensure_ascii=False, indent=2), encoding="utf-8")
+        except OSError:
+            pass
+        return 2
+
     summary = sync_rooms(model, incoming)
     status = {
         "ok": True,
