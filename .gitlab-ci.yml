@@ -2679,11 +2679,36 @@ prepare:staging:
 preflight:staging-haos:
   extends: .preflight
   needs: ["build"]
+  # EN | NO $HA_TOKEN_HAOS IN THIS RULE, and that is the whole point.
+  # EN | GitLab evaluates rules: when the pipeline is CREATED, before a job
+  # EN | is attached to an environment. HA_TOKEN_HAOS is scoped to the
+  # EN | staging-haos environment - every other variable in this project is
+  # EN | scoped to * - so it reads as empty at that moment and this job was
+  # EN | never created at all. Measured on pipeline 1093: deploy:staging-haos
+  # EN | was there, these three were not, and the variable had existed the
+  # EN | whole time. The environment: block below is what brings the scoped
+  # EN | variable in at RUN time, which is when it is actually needed. Widening
+  # EN | the variable to * would work too, and is the worse fix: it would hand
+  # EN | the appliance's token to every job in the project.
+  # FR | PAS DE $HA_TOKEN_HAOS DANS CETTE REGLE, et c'est tout l'objet.
+  # FR | GitLab evalue les rules: a la CREATION du pipeline, avant qu'un job
+  # FR | soit rattache a un environnement. HA_TOKEN_HAOS est limitee a
+  # FR | l'environnement staging-haos - toutes les autres variables du projet
+  # FR | sont en * - elle est donc lue comme vide a cet instant et ce job
+  # FR | n'etait jamais cree. Mesure sur le pipeline 1093 : deploy:staging-haos
+  # FR | etait la, ces trois-la non, et la variable existait depuis le debut.
+  # FR | Le bloc environment: ci-dessous est ce qui apporte la variable limitee
+  # FR | au moment de l'EXECUTION, c'est-a-dire quand on en a besoin. Elargir la
+  # FR | variable a * marcherait aussi, et c'est le moins bon correctif : cela
+  # FR | donnerait le jeton de l'appareil a tous les jobs du projet.
   rules:
     - if: $CI_COMMIT_TAG
       when: never
-    - if: $CI_COMMIT_BRANCH == "master" && $HAOS_SSH_KEY && $HA_TOKEN_HAOS
+    - if: $CI_COMMIT_BRANCH == "master" && $HAOS_SSH_KEY
       when: on_success
+  environment:
+    name: staging-haos
+    url: $HAOS_URL
   variables:
     TARGET_URL: $HAOS_URL
     HA_TOKEN: $HA_TOKEN_HAOS
@@ -2691,11 +2716,36 @@ preflight:staging-haos:
 prepare:staging-haos:
   extends: .prepare
   needs: ["build"]
+  # EN | NO $HA_TOKEN_HAOS IN THIS RULE, and that is the whole point.
+  # EN | GitLab evaluates rules: when the pipeline is CREATED, before a job
+  # EN | is attached to an environment. HA_TOKEN_HAOS is scoped to the
+  # EN | staging-haos environment - every other variable in this project is
+  # EN | scoped to * - so it reads as empty at that moment and this job was
+  # EN | never created at all. Measured on pipeline 1093: deploy:staging-haos
+  # EN | was there, these three were not, and the variable had existed the
+  # EN | whole time. The environment: block below is what brings the scoped
+  # EN | variable in at RUN time, which is when it is actually needed. Widening
+  # EN | the variable to * would work too, and is the worse fix: it would hand
+  # EN | the appliance's token to every job in the project.
+  # FR | PAS DE $HA_TOKEN_HAOS DANS CETTE REGLE, et c'est tout l'objet.
+  # FR | GitLab evalue les rules: a la CREATION du pipeline, avant qu'un job
+  # FR | soit rattache a un environnement. HA_TOKEN_HAOS est limitee a
+  # FR | l'environnement staging-haos - toutes les autres variables du projet
+  # FR | sont en * - elle est donc lue comme vide a cet instant et ce job
+  # FR | n'etait jamais cree. Mesure sur le pipeline 1093 : deploy:staging-haos
+  # FR | etait la, ces trois-la non, et la variable existait depuis le debut.
+  # FR | Le bloc environment: ci-dessous est ce qui apporte la variable limitee
+  # FR | au moment de l'EXECUTION, c'est-a-dire quand on en a besoin. Elargir la
+  # FR | variable a * marcherait aussi, et c'est le moins bon correctif : cela
+  # FR | donnerait le jeton de l'appareil a tous les jobs du projet.
   rules:
     - if: $CI_COMMIT_TAG
       when: never
-    - if: $CI_COMMIT_BRANCH == "master" && $HAOS_SSH_KEY && $HA_TOKEN_HAOS
+    - if: $CI_COMMIT_BRANCH == "master" && $HAOS_SSH_KEY
       when: manual
+  environment:
+    name: staging-haos
+    url: $HAOS_URL
   variables:
     TARGET_URL: $HAOS_URL
     HA_TOKEN: $HA_TOKEN_HAOS
@@ -2738,11 +2788,36 @@ verify:staging-haos:
   extends: .verify
   needs: ["deploy:staging-haos"]
   allow_failure: true
+  # EN | NO $HA_TOKEN_HAOS IN THIS RULE, and that is the whole point.
+  # EN | GitLab evaluates rules: when the pipeline is CREATED, before a job
+  # EN | is attached to an environment. HA_TOKEN_HAOS is scoped to the
+  # EN | staging-haos environment - every other variable in this project is
+  # EN | scoped to * - so it reads as empty at that moment and this job was
+  # EN | never created at all. Measured on pipeline 1093: deploy:staging-haos
+  # EN | was there, these three were not, and the variable had existed the
+  # EN | whole time. The environment: block below is what brings the scoped
+  # EN | variable in at RUN time, which is when it is actually needed. Widening
+  # EN | the variable to * would work too, and is the worse fix: it would hand
+  # EN | the appliance's token to every job in the project.
+  # FR | PAS DE $HA_TOKEN_HAOS DANS CETTE REGLE, et c'est tout l'objet.
+  # FR | GitLab evalue les rules: a la CREATION du pipeline, avant qu'un job
+  # FR | soit rattache a un environnement. HA_TOKEN_HAOS est limitee a
+  # FR | l'environnement staging-haos - toutes les autres variables du projet
+  # FR | sont en * - elle est donc lue comme vide a cet instant et ce job
+  # FR | n'etait jamais cree. Mesure sur le pipeline 1093 : deploy:staging-haos
+  # FR | etait la, ces trois-la non, et la variable existait depuis le debut.
+  # FR | Le bloc environment: ci-dessous est ce qui apporte la variable limitee
+  # FR | au moment de l'EXECUTION, c'est-a-dire quand on en a besoin. Elargir la
+  # FR | variable a * marcherait aussi, et c'est le moins bon correctif : cela
+  # FR | donnerait le jeton de l'appareil a tous les jobs du projet.
   rules:
     - if: $CI_COMMIT_TAG
       when: never
-    - if: $CI_COMMIT_BRANCH == "master" && $HAOS_SSH_KEY && $HA_TOKEN_HAOS
+    - if: $CI_COMMIT_BRANCH == "master" && $HAOS_SSH_KEY
       when: on_success
+  environment:
+    name: staging-haos
+    url: $HAOS_URL
   variables:
     TARGET_URL: $HAOS_URL
     HA_TOKEN: $HA_TOKEN_HAOS
