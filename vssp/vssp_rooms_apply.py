@@ -533,16 +533,35 @@ def main() -> int:
     # FR | Le generateur refuse deja l image miroir de ceci - voir
     # FR | « Refusing to unlink every room » dans generate_dashboards.py.
     # FR | C est le meme refus, un cran plus tot, la ou les pieces vivent.
+    # EN | AND THE REFUSAL ONLY APPLIES TO AN AUTOMATIC SYNC. The first
+    # EN | version of this guard refused every empty payload, which stopped
+    # EN | the page-load accident and also stopped a real deletion: an owner
+    # EN | who removed every room in the form found them gone from the form,
+    # EN | still in the navigation rail, and unremovable. The wizard now marks
+    # EN | the two Apply paths with deliberate: true, and only those may empty
+    # EN | the model. connect() and the Reload button do not set it.
+    # FR | ET LE REFUS NE VAUT QUE POUR UNE SYNCHRO AUTOMATIQUE. La premiere
+    # FR | version de ce garde-fou refusait toute charge vide, ce qui
+    # FR | empechait l accident au chargement et empechait aussi une vraie
+    # FR | suppression : un proprietaire qui retirait toutes les pieces dans
+    # FR | le formulaire les voyait disparaitre du formulaire, rester dans le
+    # FR | bandeau de navigation, et devenir impossibles a enlever. Le
+    # FR | formulaire marque desormais les deux chemins d Appliquer avec
+    # FR | deliberate: true, et eux seuls peuvent vider le modele. connect()
+    # FR | et le bouton Recharger ne le posent pas.
+    deliberate = bool(payload.get("deliberate"))
     existing = [r for r in (model.get("rooms") or []) if isinstance(r, dict)]
-    if not incoming and existing:
+    if not incoming and existing and not deliberate:
         names = ", ".join(str(r.get("id") or r.get("name")) for r in existing)
         print("[REFUSED] the sync carries no room at all, and house.yaml "
               f"holds {len(existing)}: {names}")
         print("          Applying it would delete every one of them, so "
               "nothing was written.")
-        print("          Home Assistant's area registry is empty. Press "
-              "APPLY TO HOME ASSISTANT in ROOMS & FLOORS to create the "
-              "areas there, and this sync will have something to carry.")
+        print("          Home Assistant's area registry is empty. Either "
+              "press APPLY TO HOME ASSISTANT in ROOMS & FLOORS to create the "
+              "areas there, or - if you really did mean to remove every room "
+              "- press APPLY again from the form, which marks the sync as "
+              "deliberate and is allowed to empty the model.")
         try:
             sp = Path(args.status_file)
             sp.parent.mkdir(parents=True, exist_ok=True)

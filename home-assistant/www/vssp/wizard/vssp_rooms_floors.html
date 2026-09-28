@@ -840,7 +840,7 @@ async function applyDiff(){
     // FR | session anterieure, avant que syncRoomsToModel() existe) —
     // FR | synchroniser malgre le retour anticipe ici.
     setBusy(true, t("busy_applying"));
-    state.notice = await syncRoomsBestEffort(t("diff_nothing_to_apply"), pendingSlotSets, pendingDefaultSlots);
+    state.notice = await syncRoomsBestEffort(t("diff_nothing_to_apply"), pendingSlotSets, pendingDefaultSlots, true);
     setBusy(false);
     return;
   }
@@ -904,7 +904,7 @@ async function applyDiff(){
     // FR | Best-effort : l ecriture dans le registre HA ci-dessus a deja
     // FR | reussi, et c est elle qui ne doit pas etre rapportee comme
     // FR | ratee — voir le commentaire de syncRoomsBestEffort().
-    state.notice = await syncRoomsBestEffort(t("notice_applied", {total: diff.total}), pendingSlotSets, pendingDefaultSlots);
+    state.notice = await syncRoomsBestEffort(t("notice_applied", {total: diff.total}), pendingSlotSets, pendingDefaultSlots, true);
   }catch(e){
     state.error = t("err_apply_failed", {msg: e.message});
   }finally{
@@ -1016,7 +1016,7 @@ function applyPendingLocalSlotSets(byName, byNameDefault){
     r._baseDefaultSlot = r.default_slot;
   }));
 }
-async function syncRoomsToModel(pendingSlotSetByName, pendingDefaultSlotByName){
+async function syncRoomsToModel(pendingSlotSetByName, pendingDefaultSlotByName, deliberate){
   const byName = pendingSlotSetByName || {};
   const byAreaId = currentSlotSetMap();
   const byNameDefault = pendingDefaultSlotByName || {};
@@ -1040,7 +1040,26 @@ async function syncRoomsToModel(pendingSlotSetByName, pendingDefaultSlotByName){
   // FR | d affirmer un placeholder. Le pod garde ses propres valeurs,
   // FR | reecrit le fichier de statut a partir d elles, et la lecture
   // FR | suivante ici recupere la verite.
+  // EN | DELIBERATE SAYS WHETHER A PERSON ASKED FOR THIS. The payload is
+  // EN | built from Home Assistant's area registry, and this function runs on
+  // EN | connect() too - a plain page load. An empty registry therefore posts
+  // EN | zero rooms either way, and the receiving script cannot tell "the
+  // EN | owner just deleted every room" from "nobody has pressed Apply yet".
+  // EN | It used to overwrite house.yaml in both cases (data loss on a page
+  // EN | load); it then refused both, which blocked a real deletion. The flag
+  // EN | is the difference: only the two Apply paths set it.
+  // FR | DELIBERATE DIT SI UNE PERSONNE L A DEMANDE. La charge utile est
+  // FR | construite depuis le registre des zones de Home Assistant, et cette
+  // FR | fonction tourne aussi sur connect() - un simple chargement de page.
+  // FR | Un registre vide poste donc zero piece dans les deux cas, et le
+  // FR | script destinataire ne peut pas distinguer « le proprietaire vient de
+  // FR | supprimer toutes les pieces » de « personne n a encore presse
+  // FR | Appliquer ». Il ecrasait house.yaml dans les deux cas (perte de
+  // FR | donnees au chargement) ; il a ensuite refuse les deux, ce qui
+  // FR | bloquait une vraie suppression. Le drapeau fait la difference : seuls
+  // FR | les deux chemins d Appliquer le posent.
   const payload = JSON.stringify({
+    deliberate: !!deliberate,
     rooms: state.ha.areas.map(a => {
       const room = {area_id: a.area_id, name: a.name};
       if (state.slotSetsKnown){
@@ -1190,9 +1209,9 @@ async function recoverSlotSetsAfterSync(){
 // FR | (computeDiff() renvoie 0), donc conditionner la synchronisation a
 // FR | diff.total ferait qu elle ne tourne jamais pour precisement les
 // FR | pieces qui en ont le plus besoin.
-async function syncRoomsBestEffort(baseNotice, pendingSlotSetByName, pendingDefaultSlotByName){
+async function syncRoomsBestEffort(baseNotice, pendingSlotSetByName, pendingDefaultSlotByName, deliberate){
   try {
-    await syncRoomsToModel(pendingSlotSetByName, pendingDefaultSlotByName);
+    await syncRoomsToModel(pendingSlotSetByName, pendingDefaultSlotByName, deliberate);
     return baseNotice;
   } catch (syncErr) {
     return baseNotice + "\n" + t("notice_sync_failed", {msg: syncErr.message});
