@@ -273,6 +273,30 @@ FALLBACK_SYSTEM = {
     "visio-sapiens-energy-preview", "visio-sapiens-admin",
 }
 
+# EN | DECLARED IS NOT THE SAME AS OWED. CORE, ENERGY, their mobile variants
+# EN | and the energy preview are created ON DEMAND: config-fragment.yaml
+# EN | declares them so the route exists, and the generator writes the file
+# EN | only when someone asks for that screen. A house that never opened
+# EN | ENERGY has no energy.yaml, and that is the product working as
+# EN | designed - not a defect, and never a reason to redden a pipeline.
+# EN | They are reported, because a route with no file behind it answers 404
+# EN | in a browser and that is worth knowing; they are not fatal.
+# EN | HOME and ADMIN stay structural: those two are the control centre, and
+# EN | one of them missing is a broken install.
+# FR | DECLARE N EST PAS DU. CORE, ENERGY, leurs variantes mobiles et
+# FR | l apercu energie sont crees A LA DEMANDE : le fragment les declare
+# FR | pour que la route existe, et le generateur n ecrit le fichier que
+# FR | lorsque quelqu un demande cet ecran. Une maison qui n a jamais ouvert
+# FR | ENERGY n a pas d energy.yaml, et c est le produit tel qu il est concu.
+# FR | Ils sont signales, parce qu une route sans fichier repond 404 dans un
+# FR | navigateur ; ils ne sont pas bloquants. HOME et ADMIN restent
+# FR | structurels : ces deux-la sont le centre de controle.
+ON_DEMAND = {
+    "visio-sapiens-core", "visio-sapiens-core-m",
+    "visio-sapiens-energy", "visio-sapiens-energy-m",
+    "visio-sapiens-energy-preview",
+}
+
 
 def load_system(path: str) -> set:
     """EN | The url_paths the static fragment declares, or the fallback set
@@ -372,19 +396,25 @@ def main() -> int:
         cited: set = set()
         for b in mine:
             url_path = str(b.get("url_path") or "")
-            structural = url_path in system
+            on_demand = url_path in ON_DEMAND
+            structural = url_path in system and not on_demand
             try:
                 cfg = ws.command({"type": "lovelace/config",
                                   "url_path": url_path}) or {}
             except (WSError, OSError) as exc:
+                if on_demand:
+                    fix = ("created on demand and not created yet - open it "
+                           "from the ADMIN console if you want the route to "
+                           "answer; nothing is broken")
+                elif structural:
+                    fix = ("declared with no file behind it - the control "
+                           "centre is incomplete")
+                else:
+                    fix = ("a room declared in configuration.yaml that the "
+                           "house model no longer has: tidy it with "
+                           "--prune-dashboards, it blocks nothing")
                 rep.add("1. DASHBOARDS", False, url_path, detail=str(exc),
-                        fix=("declared with no file behind it - the control "
-                             "centre is incomplete"
-                             if structural else
-                             "a room declared in configuration.yaml that the "
-                             "house model no longer has: tidy it with "
-                             "--prune-dashboards, it blocks nothing"),
-                        fatal=structural)
+                        fix=fix, fatal=structural)
                 continue
             views = cfg.get("views") or []
             rep.add("1. DASHBOARDS", bool(views), url_path,
