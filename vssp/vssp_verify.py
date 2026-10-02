@@ -291,6 +291,21 @@ FALLBACK_SYSTEM = {
 # FR | Ils sont signales, parce qu une route sans fichier repond 404 dans un
 # FR | navigateur ; ils ne sont pas bloquants. HOME et ADMIN restent
 # FR | structurels : ces deux-la sont le centre de controle.
+# EN | THE CONSOLE IS CHECKED FIRST, and on purpose. Every other screen of
+# EN | this product is created, regenerated and repaired from it - including
+# EN | the on-demand ones just above, whose advice is literally "open it from
+# EN | the ADMIN console". So a report that lists eight dashboards and buries
+# EN | the console somewhere in the middle has the order backwards: if the
+# EN | console is gone, nothing else in the list can be acted on, and that is
+# EN | the line a person must read first.
+# FR | LA CONSOLE EST VERIFIEE EN PREMIER, et volontairement. Tous les autres
+# FR | ecrans du produit sont crees, regeneres et repares depuis elle - y
+# FR | compris ceux a la demande ci-dessus, dont le conseil est justement
+# FR | « ouvrez-la depuis la console ADMIN ». Si la console a disparu, rien
+# FR | d autre dans la liste n est actionnable : c est la ligne qu une
+# FR | personne doit lire d abord.
+SETUP = "visio-sapiens-admin"
+
 ON_DEMAND = {
     "visio-sapiens-core", "visio-sapiens-core-m",
     "visio-sapiens-energy", "visio-sapiens-energy-m",
@@ -394,6 +409,19 @@ def main() -> int:
                     "configuration.yaml - run vssp_apply_config.py")
         system = load_system(args.fragment)
         cited: set = set()
+        # EN | the console first, then HOME, then the rest in a stable order
+        mine.sort(key=lambda b: (
+            0 if str(b.get("url_path") or "") == SETUP
+            else 1 if str(b.get("url_path") or "") in ("visio-sapiens",
+                                                       "visio-sapiens-m")
+            else 2,
+            str(b.get("url_path") or "")))
+        if not any(str(b.get("url_path") or "") == SETUP for b in mine):
+            rep.add("1. DASHBOARDS", False, SETUP,
+                    detail="not declared at all",
+                    fix="the console every other screen is created and "
+                        "repaired from - nothing else below can be acted on "
+                        "until it is back")
         for b in mine:
             url_path = str(b.get("url_path") or "")
             on_demand = url_path in ON_DEMAND
@@ -402,7 +430,11 @@ def main() -> int:
                 cfg = ws.command({"type": "lovelace/config",
                                   "url_path": url_path}) or {}
             except (WSError, OSError) as exc:
-                if on_demand:
+                if url_path == SETUP:
+                    fix = ("the console every other screen is created and "
+                           "repaired from - nothing else below can be acted "
+                           "on until it is back")
+                elif on_demand:
                     fix = ("created on demand and not created yet - open it "
                            "from the ADMIN console if you want the route to "
                            "answer; nothing is broken")
