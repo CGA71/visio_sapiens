@@ -425,7 +425,21 @@ def main() -> int:
         for b in mine:
             url_path = str(b.get("url_path") or "")
             on_demand = url_path in ON_DEMAND
-            structural = url_path in system and not on_demand
+            # EN | THE CONSOLE IS THE ONLY ONE THAT CAN FAIL THIS SECTION.
+            # EN | Every other screen - HOME, its mobile variant, the preview,
+            # EN | the on-demand ones, the rooms - is regenerated from the
+            # EN | console, so as long as the console answers, the rest is
+            # EN | repairable and a release must not be held for it. They are
+            # EN | still listed, and a missing one still prints its line and
+            # EN | its remedy; it just costs no exit code.
+            # FR | LA CONSOLE EST LA SEULE QUI PUISSE FAIRE ECHOUER CETTE
+            # FR | SECTION. Tous les autres ecrans - HOME, sa variante mobile,
+            # FR | l apercu, ceux a la demande, les pieces - se regenerent
+            # FR | depuis la console : tant qu elle repond, le reste est
+            # FR | reparable et une livraison ne doit pas etre retenue pour
+            # FR | cela. Ils restent listes, avec leur remede ; ils ne coutent
+            # FR | simplement aucun code de sortie.
+            structural = url_path == SETUP
             try:
                 cfg = ws.command({"type": "lovelace/config",
                                   "url_path": url_path}) or {}
@@ -438,9 +452,9 @@ def main() -> int:
                     fix = ("created on demand and not created yet - open it "
                            "from the ADMIN console if you want the route to "
                            "answer; nothing is broken")
-                elif structural:
-                    fix = ("declared with no file behind it - the control "
-                           "centre is incomplete")
+                elif url_path in system:
+                    fix = ("declared with no file behind it - REGENERATE it "
+                           "from the ADMIN console; it blocks nothing")
                 else:
                     fix = ("a room declared in configuration.yaml that the "
                            "house model no longer has: tidy it with "
