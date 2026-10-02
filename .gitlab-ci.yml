@@ -93,6 +93,36 @@ stages:
 variables:
   PACKAGE_NAME: visio-sapiens
 
+  # --- EN | Where the staging appliance answers -------------------------
+  # --- FR | Ou repond l'appareil de preproduction ------------------------
+  # EN | GLOBAL, and it has to be. It used to sit inside
+  # EN | deploy:staging-haos's own variables: block, where preflight and
+  # EN | prepare could not see it - job variables are not shared between
+  # EN | jobs. Both of them set TARGET_URL: $HAOS_URL, so both got an empty
+  # EN | string, and preflight died on `unknown url type: '/api/config'`.
+  # EN | deploy:staging-haos was skipped in consequence, which is why the
+  # EN | appliance stayed on dev-6e65bf50 from 26 September while master
+  # EN | moved on. Measured on pipeline 1097.
+  # FR | GLOBALE, et elle doit l'etre. Elle vivait dans le bloc variables:
+  # FR | de deploy:staging-haos, ou preflight et prepare ne pouvaient pas la
+  # FR | voir - les variables de job ne se partagent pas. Tous deux posent
+  # FR | TARGET_URL: $HAOS_URL et recevaient donc une chaine vide.
+  # EN | Not a secret, so it lives here rather than as one more variable
+  # EN | to create by hand. Port 8123 because the appliance was moved onto
+  # EN | it deliberately: a fresh Home Assistant OS on a qemu machine came
+  # EN | up serving on port 80, which production does not, and a staging
+  # EN | instance that does not answer where production answers is not
+  # EN | iso-prod. Both now serve 8123 and nothing on 80.
+  # FR | Ce n'est pas un secret, elle vit donc ici plutot que comme une
+  # FR | variable de plus a creer a la main. Port 8123 parce que l'appareil
+  # FR | y a ete deplace volontairement : un Home Assistant OS neuf sur une
+  # FR | machine qemu servait sur le port 80, ce que la production ne fait
+  # FR | pas, et une preproduction qui ne repond pas la ou repond la
+  # FR | production n'est pas iso-prod. Les deux servent desormais 8123 et
+  # FR | rien sur 80.
+  HAOS_URL: "http://192.168.1.200:8123"
+
+
   # --- EN | Interface language of the generated deliverable ----------------
   # --- FR | Langue d'interface du livrable genere ---------------------------
   # EN | English is the default and the source of truth. Set this to `fr` (in
@@ -2604,20 +2634,6 @@ deploy:staging-haos:
     # FR | Posee dans l'appareil avec la commande ci-dessus.
     HA_HOST: "192.168.1.200"
     HA_SSH_PORT: "22222"
-    # EN | Not a secret, so it lives here rather than as one more variable
-    # EN | to create by hand. Port 8123 because the appliance was moved onto
-    # EN | it deliberately: a fresh Home Assistant OS on a qemu machine came
-    # EN | up serving on port 80, which production does not, and a staging
-    # EN | instance that does not answer where production answers is not
-    # EN | iso-prod. Both now serve 8123 and nothing on 80.
-    # FR | Ce n'est pas un secret, elle vit donc ici plutot que comme une
-    # FR | variable de plus a creer a la main. Port 8123 parce que l'appareil
-    # FR | y a ete deplace volontairement : un Home Assistant OS neuf sur une
-    # FR | machine qemu servait sur le port 80, ce que la production ne fait
-    # FR | pas, et une preproduction qui ne repond pas la ou repond la
-    # FR | production n'est pas iso-prod. Les deux servent desormais 8123 et
-    # FR | rien sur 80.
-    HAOS_URL: "http://192.168.1.200:8123"
     HA_SSH_KEY_OVERRIDE: $HAOS_SSH_KEY
     # EN | No tag on master, so the reference is the branch build - the same
     # EN | string the pod staging writes into VSSP_VERSION, which is what
