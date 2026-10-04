@@ -176,6 +176,25 @@ function gotoAssign(){
   location.href = ASSIGN_URL + "?v=" + Date.now();
 }
 
+// EN | And the way BACK, which this screen did not have. The console walks
+// EN | three steps - structure, devices, dashboards - and from here the only
+// EN | way to add or correct a room was the ADMIN menu, which means leaving
+// EN | the flow and finding your way in again. Same mechanism as the two
+// EN | forward routes: this frame navigates ITSELF, never an ancestor, and
+// EN | carries a timestamp because the build's cache-busting rewrites *.yaml
+// EN | only.
+// FR | Et le chemin du RETOUR, que cet ecran n avait pas. La console se
+// FR | parcourt en trois etapes - structure, appareils, dashboards - et d ici
+// FR | le seul moyen d ajouter ou corriger une piece etait le menu ADMIN,
+// FR | c est-a-dire quitter le parcours et y revenir a tatons. Meme mecanique
+// FR | que les deux chemins avant : cette frame se navigue ELLE-MEME, jamais
+// FR | un ancetre, et porte un horodatage parce que le cache-busting du build
+// FR | ne reecrit que les *.yaml.
+const ROOMS_URL = "/local/vssp/wizard/vssp_rooms_floors.html";
+function gotoRooms(){
+  location.href = ROOMS_URL + "?v=" + Date.now();
+}
+
 // EN | A flow whose context.source is one of these was started by HA itself
 // EN | noticing something on the network — that is a "new device" in the
 // EN | sense meant here. `user` (someone adding an integration by hand) and
@@ -216,6 +235,7 @@ const I18N = {
     busy_validating: "Validation…",
     busy_removing: "Suppression…",
     reload: "Recharger",
+    back_rooms: "← Pièces & étages",
 
     pending_title: "EN ATTENTE DE VALIDATION",
     pending_sub: "Ce que Home Assistant a vu apparaître sur le réseau et qui n'est pas encore installé. Valider crée l'intégration et ses appareils ; ils apparaîtront ensuite dans ASSIGNATION DES APPAREILS pour recevoir une pièce.",
@@ -274,6 +294,7 @@ const I18N = {
     busy_validating: "Validating…",
     busy_removing: "Removing…",
     reload: "Reload",
+    back_rooms: "← Rooms & floors",
 
     pending_title: "WAITING FOR VALIDATION",
     pending_sub: "What Home Assistant has seen appear on the network and has not installed yet. Validating creates the integration and its devices; they then show up in DEVICE ASSIGNMENT to be given a room.",
@@ -965,6 +986,7 @@ function render(){
   }
 
   html += `<div class="bar">
+    <button class="btn btn-sm btn-ghost" onclick="gotoRooms()">${esc(t("back_rooms"))}</button>
     <button class="btn btn-sm btn-ghost" onclick="reload()" ${state.loading ? "disabled" : ""}>`
     + `${esc(state.loading ? state.busyLabel : t("reload"))}</button>
     <div class="spacer"></div></div>`;
