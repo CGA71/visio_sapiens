@@ -189,6 +189,16 @@
 -->
 <div id="step2view">
   <div class="bar">
+    <!-- EN | Back to the devices screen, which is the step before this one.
+         EN | The page already had a Back from its own step 3 to its step 2;
+         EN | what it had no way out of was the console's step 2 itself, so
+         EN | noticing a missing device or a missing room from here meant
+         EN | leaving through the ADMIN menu.
+         FR | Retour vers l ecran des appareils, l etape qui precede
+         FR | celle-ci. La page avait deja un Back de sa propre etape 3 vers
+         FR | sa 2 ; ce dont on ne pouvait pas sortir, c etait l etape 2 de la
+         FR | console elle-meme. -->
+    <button class="ghost" id="backToDevices">◀ Detected devices</button>
     <input type="text" id="filter" placeholder="Filter by name, entity or domain…">
     <select id="filterRoom"><option value="">— filter: room —</option></select>
     <select id="bulkRoom"><option value="">— assign to room —</option></select>
@@ -495,6 +505,21 @@ el('filterRoom').addEventListener('change', applyFilter);
 el('reload').addEventListener('click', load);
 el('next2to3').addEventListener('click', () => goToStep(3));
 el('back3to2').addEventListener('click', () => goToStep(2));
+
+// EN | Navigating this iframe's OWN location, never window.top: the ADMIN
+// EN | console embeds these wizards in a sandbox that grants no
+// EN | top-navigation, where moving an ancestor throws a SecurityError and
+// EN | silently does nothing. The timestamp is added at click time because
+// EN | the build's cache-busting rewrites *.yaml only, so a token frozen in
+// EN | this .html would be a permanently stale cache key.
+// FR | On navigue la location PROPRE de cette iframe, jamais window.top : la
+// FR | console encastre ces assistants dans une sandbox sans navigation du
+// FR | parent, ou deplacer un ancetre leve une SecurityError en silence.
+// FR | L horodatage est ajoute au clic parce que le cache-busting du build ne
+// FR | reecrit que les *.yaml.
+el('backToDevices').addEventListener('click', () => {
+  location.href = "/local/vssp/wizard/vssp_devices.html?v=" + Date.now();
+});
 
 // EN | Bulk assignment applies to the VISIBLE rows only. Filtering by
 // EN | "living" then assigning is how eighty entities become manageable, and
