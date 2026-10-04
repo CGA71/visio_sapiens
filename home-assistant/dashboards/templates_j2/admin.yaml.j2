@@ -477,7 +477,7 @@ views:
           # FR | indefiniment — ce qui est indiscernable de "le correctif n'a
           # FR | pas ete deploye" alors qu'il l'a ete.
           - type: iframe
-            url: /local/vssp/wizard/vssp_rooms_floors.html?v={{ build_stamp }}
+            url: /local/vssp/wizard/vssp_rooms_floors.html?v={{ build_stamp }}&lang={{ locale }}
             # EN | Same :host{flex:1 1 0} technique as the ASSIGN screen's
             # EN | iframe — see the comment there. This card is the last in
             # EN | a vertical-stack whose row is 1fr, so it grows to fill
@@ -539,7 +539,7 @@ views:
           # FR | webhook — voir l en-tete de vssp_devices.html pour pourquoi
           # FR | c est le bon compromis ici et le mauvais dans assign.html.
           - type: iframe
-            url: /local/vssp/wizard/vssp_devices.html?v={{ build_stamp }}
+            url: /local/vssp/wizard/vssp_devices.html?v={{ build_stamp }}&lang={{ locale }}
             card_mod:
               style: |
                 :host {

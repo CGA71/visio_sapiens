@@ -312,6 +312,8 @@ const I18N = {
     notice_rooms_removed_draft: "Pièces retirées du brouillon. Clique « Appliquer » pour les supprimer dans HA.",
     prompt_reset_header: "REPARTIR DE ZÉRO\n\n{floors} étage(s) et {areas} pièce(s) seront supprimés de Home Assistant.\n{ent} entité(s) perdront leur pièce (les entités et appareils ne sont pas supprimés).\n\nTape {word} pour confirmer :",
     reset_confirm_word: "SUPPRIMER",
+    floor_ground: "Rez-de-chaussée",
+    floor_nth: "Étage {n}",
     notice_reset_cancelled: "Réinitialisation annulée.",
     notice_draft_cleared: "Brouillon vidé. Clique « Appliquer » pour effacer la structure dans Home Assistant, puis reconstruis-la ci-dessous.",
     confirm_del_floor: "Retirer « {name} » et ses {n} pièce(s) ?",
@@ -414,6 +416,8 @@ const I18N = {
     editor_sub: "Add, rename, or remove floors and rooms. Changes are only sent to Home Assistant when you click \"Apply\".",
     editor_no_floors: "No floors. Start by adding one.",
     badge_level: "Lvl. {fi}",
+    floor_ground: "Ground Floor",
+    floor_nth: "Floor {n}",
     placeholder_floor_name: "Floor name",
     badge_existing: "existing",
     badge_new: "new",
@@ -1263,7 +1267,13 @@ function resetAll(){
 // ═══════════════════════════════════════════════════════════════════════════
 function addFloor(){
   const n = state.draft.floors.length;
-  state.draft.floors.push({floor_id:null, name: n===0 ? "Rez-de-chaussée" : `Étage ${n}`, level:n, rooms:[]});
+  // EN | Named in the interface's own language. It used to be French
+  // EN | whatever the console was set to, so an English house got a floor
+  // EN | called "Rez-de-chaussée" and had to rename it by hand.
+  // FR | Nomme dans la langue de l interface. C etait du francais quelle que
+  // FR | soit la langue de la console.
+  const fname = n === 0 ? t("floor_ground") : t("floor_nth", {n});
+  state.draft.floors.push({floor_id:null, name: fname, level:n, rooms:[]});
   render();
 }
 function delFloor(fi){
@@ -1681,6 +1691,20 @@ function renderDiff(){
 // ═══════════════════════════════════════════════════════════════════════════
 // BOOT
 // ═══════════════════════════════════════════════════════════════════════════
+// EN | THE LANGUAGE, BEFORE ANYTHING IS CONNECTED. loadLanguage() reads
+// EN | input_select.vssp_language over the websocket, which needs a token -
+// EN | so the very first screen, the one ASKING for that token, was French
+// EN | whatever the console was set to. The console passes ?lang= on the
+// EN | iframe url like it already does for the Google and AI wizards; this
+// EN | reads it, and the websocket still wins the moment it answers.
+// FR | LA LANGUE, AVANT TOUTE CONNEXION. loadLanguage() lit
+// FR | input_select.vssp_language par le websocket, qui exige un jeton - donc
+// FR | le tout premier ecran, celui qui DEMANDE ce jeton, etait en francais
+// FR | quelle que soit la langue de la console.
+try {
+  const q = new URLSearchParams(location.search).get("lang");
+  if (q) state.lang = (q === "en") ? "en" : "fr";
+} catch (_) { /* une url sans query n est pas une erreur */ }
 applyLang(state.lang);
 render();
 if (haSession() || state.token) connect();

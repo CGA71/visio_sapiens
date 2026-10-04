@@ -1006,7 +1006,20 @@ function render(){
 // FR | chaque navigation ferait de l ecran un mur de connexion plutot qu un
 // FR | panneau.
 // ═══════════════════════════════════════════════════════════════════════════
-applyLang("fr");
+// EN | Same reason as in vssp_rooms_floors.html: the language is read from
+// EN | input_select.vssp_language over the websocket, which needs a token, so
+// EN | the screen that ASKS for the token was French whatever the console was
+// EN | set to. The console passes ?lang= on the iframe url; the websocket
+// EN | still wins the moment it answers.
+// FR | Meme raison que dans vssp_rooms_floors.html : la langue vient du
+// FR | websocket, qui exige un jeton, donc l ecran qui DEMANDE ce jeton etait
+// FR | en francais quelle que soit la langue de la console.
+let startLang = "fr";
+try {
+  const q = new URLSearchParams(location.search).get("lang");
+  if (q === "en" || q === "fr") startLang = q;
+} catch (_) { /* une url sans query n est pas une erreur */ }
+applyLang(startLang);
 render();
 if (haSession() || state.token) connect();
 </script>
