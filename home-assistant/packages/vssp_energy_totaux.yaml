@@ -183,7 +183,15 @@ automation:
     action:
       - delay: "00:05:00"
       - service: shell_command.vssp_energy_sync
-      - service: shell_command.vssp_generate_dashboards
+      # EN | THE RULE: anything that adds, changes or removes ends by
+      # EN | rebuilding every dashboard that exists, HOME included - the
+      # EN | navigation rail is rendered INTO each file, so a model that
+      # EN | moved leaves every file that was not rewritten lying.
+      # FR | LA REGLE : tout ce qui ajoute, modifie ou supprime se termine
+      # FR | par la reconstruction de tous les dashboards existants, HOME
+      # FR | compris - le bandeau est rendu DANS chaque fichier, donc un
+      # FR | modele qui a bouge laisse mentir tout fichier non reecrit.
+      - service: shell_command.vssp_generate_dashboards_full
       # Pas de lovelace.reload : ce service n'existe pas. HA relit le
       # fichier YAML au prochain affichage du dashboard.
       - service: persistent_notification.create
