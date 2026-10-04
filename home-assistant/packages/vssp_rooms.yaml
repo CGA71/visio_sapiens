@@ -151,7 +151,34 @@ automation:
                   # FR | webhook ASSIGN appelle deja apres chaque
                   # FR | enregistrement reussi. Idempotent quand rien n a
                   # FR | change.
-                  - action: shell_command.vssp_generate_dashboards
+                  # EN | A DELIBERATE APPLY REBUILDS EVERY DASHBOARD THAT
+                  # EN | EXISTS, HOME INCLUDED. The navigation rail is
+                  # EN | rendered INTO each file, so adding or removing a room
+                  # EN | changes all of them - but the routine command
+                  # EN | protects home.yaml from being rewritten, which is
+                  # EN | right for a page load and wrong here. The result was
+                  # EN | a HOME listing neither the rooms nor CORE while every
+                  # EN | other screen listed them, its file eleven hours older
+                  # EN | than the views beside it. Nothing is resurrected: a
+                  # EN | dashboard created on demand and currently absent is
+                  # EN | left off by the generator either way.
+                  # FR | UN APPLIQUER DELIBERE RECONSTRUIT TOUS LES DASHBOARDS
+                  # FR | EXISTANTS, HOME COMPRIS. Le bandeau est rendu DANS
+                  # FR | chaque fichier : ajouter ou retirer une piece les
+                  # FR | change tous - mais la commande de routine protege
+                  # FR | home.yaml, ce qui est juste pour un chargement de
+                  # FR | page et faux ici. On obtenait un HOME ne listant ni
+                  # FR | les pieces ni CORE quand tous les autres ecrans les
+                  # FR | listaient. Rien n est ressuscite : un dashboard a la
+                  # FR | demande absent le reste de toute facon.
+                  - if:
+                      - condition: template
+                        value_template: >-
+                          {{ 'deliberate=yes' in (applied.stdout | default('')) }}
+                    then:
+                      - action: shell_command.vssp_generate_dashboards_full
+                    else:
+                      - action: shell_command.vssp_generate_dashboards
                   - action: shell_command.vssp_assign_prepare
                   # EN | Then the merge, then a restart - in that order, and
                   # EN | without it the room stays unreachable. Lovelace

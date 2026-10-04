@@ -347,6 +347,41 @@ shell_command:
     --out /config/dashboards/views
     --status-file /config/www/vssp/preview_status.json
 
+  # EN | THE SAME RUN, WITHOUT HOME'S PROTECTION. Adding or removing a room
+  # EN | changes the navigation rail, and the rail is rendered INTO every
+  # EN | dashboard file - including home.yaml, which the routine command
+  # EN | above deliberately never rewrites. The result was a HOME whose rail
+  # EN | listed neither the rooms nor CORE while every other screen did:
+  # EN | measured on the staging appliance, home.yaml eleven hours older than
+  # EN | every other view beside it.
+  # EN | This one is called by the ROOMS webhook on a deliberate Apply only.
+  # EN | A dashboard created on demand and currently absent stays absent -
+  # EN | the generator leaves it off unless it is named in --only - so this
+  # EN | rebuilds every dashboard that EXISTS and resurrects none.
+  # FR | LE MEME PASSAGE, SANS LA PROTECTION DE HOME. Ajouter ou retirer une
+  # FR | piece change le bandeau de navigation, et le bandeau est rendu DANS
+  # FR | chaque fichier de dashboard - y compris home.yaml, que la commande
+  # FR | de routine ci-dessus ne reecrit jamais, a dessein. On obtenait un
+  # FR | HOME dont le bandeau ne listait ni les pieces ni CORE quand tous les
+  # FR | autres ecrans les listaient.
+  # FR | Celle-ci n est appelee par le webhook PIECES que sur un Appliquer
+  # FR | delibere. Un dashboard a la demande absent le reste : cela reconstruit
+  # FR | tous les dashboards EXISTANTS et n en ressuscite aucun.
+  vssp_generate_dashboards_full: >-
+    python3 /config/vssp/generate_dashboards.py
+    --protect-existing ""
+    --locale {{ states('input_select.vssp_language') }}
+    --calendar-entity '{{ states('input_text.vssp_google_calendar_entity') }}'
+    --model /config/dashboards/model/house.yaml
+    --rooms /config/dashboards/model/house_rooms.yaml
+    --devices /config/dashboards/model/energy_devices.yaml
+    --design-model /config/dashboards/model/design_system.yaml
+    --templates /config/dashboards/templates_j2
+    --locales-dir /config/dashboards/locales
+    --rooms-fragment /config/config-fragment-rooms.yaml
+    --out /config/dashboards/views
+    --status-file /config/www/vssp/preview_status.json
+
   # Ecrit le jeton du helper dans un fichier protege, lu ensuite par
   # les scripts Python. A relancer si vous changez de jeton.
   vssp_write_token: >-
