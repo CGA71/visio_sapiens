@@ -438,11 +438,49 @@ views:
           # FR | entity id System Monitor plus tot. `name:` explicite par
           # FR | camera car le nom propre d'un canal NVR est typiquement
           # FR | « Channel 1 », pas « Garage ».
-{% set entrance_cameras = [
-  {'entity': 'camera.nvr_expanse_channel_1', 'name': 'Garage'},
-  {'entity': 'camera.nvr_expanse_channel_2', 'name': 'Jardin'},
-  {'entity': 'camera.nvr_expanse_channel_3', 'name': "Porte d'entrée"},
-] %}
+{# EN | A NOMENCLATURE, NOT A LIST. The three cameras used to be written
+   EN | here by hand, with a name each, because nothing usable had been
+   EN | assigned to this slot yet. Three hardcoded entity ids are three
+   EN | things to edit every time a channel moves, and they say nothing
+   EN | about a fourth camera.
+   EN | Every camera whose entity id carries the house's camera prefix is
+   EN | taken instead, from every slot of the room - the cameras are not
+   EN | required to sit in `security` for this to find them. The prefix is
+   EN | declared once, in house.camera_nomenclature, in the human form
+   EN | ("DS-CAM-"); it is slugified here the way Home Assistant slugifies
+   EN | a name into an entity id, lowercase with underscores.
+   EN | The displayed name is the rest of the id, which is the whole point
+   EN | of a nomenclature: camera.ds_cam_garage shows as "Garage", and
+   EN | naming the next one DS-CAM-Terrasse is all it takes to add it.
+   FR | UNE NOMENCLATURE, PAS UNE LISTE. Les trois cameras etaient ecrites
+   FR | ici a la main, avec un nom chacune, faute de quoi que ce soit
+   FR | d assigne a ce tableau. Trois identifiants en dur, ce sont trois
+   FR | choses a corriger des qu un canal bouge, et ils ne disent rien d une
+   FR | quatrieme camera.
+   FR | Sont prises desormais toutes les cameras dont l identifiant porte le
+   FR | prefixe declare par la maison, dans TOUS les tableaux de la piece -
+   FR | elles ne sont pas tenues d etre dans `security`. Le prefixe est
+   FR | declare une fois, dans house.camera_nomenclature, sous sa forme
+   FR | humaine (« DS-CAM- ») ; il est transforme ici comme Home Assistant
+   FR | transforme un nom en identifiant : minuscules et tirets bas.
+   FR | Le nom affiche est le reste de l identifiant, ce qui est tout
+   FR | l interet d une nomenclature : camera.ds_cam_garage s affiche
+   FR | « Garage », et nommer la suivante DS-CAM-Terrasse suffit a
+   FR | l ajouter. #}
+{% set cam_prefix = (house.camera_nomenclature | default('DS-CAM-', true))
+                     | lower | replace('-', '_') %}
+{% set cams = namespace(found=[], seen=[]) %}
+{% for slot in room.slots.values() %}
+{% for e in slot.by_domain.get('camera', []) %}
+{% set tail = e.split('.', 1)[1] | lower %}
+{% if tail.startswith(cam_prefix) and e not in cams.seen %}
+{% set cams.seen = cams.seen + [e] %}
+{% set label = tail[cam_prefix | length:] | replace('_', ' ') | trim | title %}
+{% set cams.found = cams.found + [{'entity': e, 'name': label or e}] %}
+{% endif %}
+{% endfor %}
+{% endfor %}
+{% set entrance_cameras = cams.found %}
 {% set ns = namespace(intercom=[], mosaic=[]) %}
 {% for c in entrance_cameras %}
 {% if 'interphone' in c.entity | lower or 'intercom' in c.entity | lower or 'portier' in c.entity | lower or 'doorbell' in c.entity | lower %}

@@ -36,6 +36,20 @@ house:
   # EN | "time_date" integration / FR | integration « time_date »
   time_entity: sensor.time
 
+  # EN | CAMERA NOMENCLATURE. Every camera whose entity id starts with this,
+  # EN | once slugified the way Home Assistant slugifies a name, is picked up
+  # EN | by the entrance's camera mosaic - from any slot of the room, and
+  # EN | with the rest of its id as its displayed name. Naming a camera
+  # EN | DS-CAM-Terrasse is therefore all it takes to add it to the screen;
+  # EN | nothing has to be edited here or in the template.
+  # FR | NOMENCLATURE DES CAMERAS. Toute camera dont l identifiant commence
+  # FR | par ceci, une fois transforme comme Home Assistant transforme un nom
+  # FR | en identifiant, est reprise par la mosaique de l entree - depuis
+  # FR | n importe quel tableau de la piece, et avec le reste de son
+  # FR | identifiant pour nom affiche. Nommer une camera DS-CAM-Terrasse
+  # FR | suffit donc a l ajouter a l ecran.
+  camera_nomenclature: "DS-CAM-"
+
   # EN | calendar.* entity shown in the header's agenda cell (_header.j2).
   # EN | The ADMIN console's GOOGLE CALENDAR screen overrides this at
   # EN | generate time (--calendar-entity, fed by
