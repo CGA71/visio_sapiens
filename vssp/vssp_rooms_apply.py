@@ -550,6 +550,32 @@ def main() -> int:
     # FR | deliberate: true, et eux seuls peuvent vider le modele. connect()
     # FR | et le bouton Recharger ne le posent pas.
     deliberate = bool(payload.get("deliberate"))
+
+    # EN | A MACHINE TOKEN, for the automation that calls this. Printed
+    # EN | HERE and not at the end: Home Assistant caps the stdout it
+    # EN | captures from a shell_command, and a token behind a
+    # EN | hundred-room summary is a token that can go missing - which
+    # EN | would silently stop the restart from ever happening. Only the two
+    # EN | Apply buttons send deliberate: true; connect() and reload() do not,
+    # EN | and a page load must never be able to restart Home Assistant.
+    # EN | It could, until now: opening ROOMS & FLOORS posts Home Assistant's
+    # EN | area registry to catch rooms created before this sync existed, so
+    # EN | on the staging appliance on 4 October a single page load took the
+    # EN | model from zero rooms to three, which added three dashboards to
+    # EN | configuration.yaml, which the merge reported as changed, which
+    # EN | restarted the instance four seconds later - in the middle of a
+    # EN | screen recording. The import stays; the restart it causes does not.
+    # FR | UN JETON MACHINE, pour l automatisation qui appelle ce script.
+    # FR | Seuls les deux boutons Appliquer envoient deliberate: true ;
+    # FR | connect() et reload() non, et un chargement de page ne doit jamais
+    # FR | pouvoir redemarrer Home Assistant. Il le pouvait : ouvrir PIECES &
+    # FR | ETAGES poste le registre des zones pour rattraper les pieces creees
+    # FR | avant que cette synchro existe, si bien que le 4 octobre sur
+    # FR | l appareil de preproduction un simple chargement a fait passer le
+    # FR | modele de zero a trois pieces, ajoute trois dashboards a
+    # FR | configuration.yaml, et redemarre l instance quatre secondes plus
+    # FR | tard - en plein enregistrement d ecran.
+    print(f"[VSSP] deliberate={'yes' if deliberate else 'no'}")
     existing = [r for r in (model.get("rooms") or []) if isinstance(r, dict)]
     if not incoming and existing and not deliberate:
         names = ", ".join(str(r.get("id") or r.get("name")) for r in existing)

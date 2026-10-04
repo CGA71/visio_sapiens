@@ -201,11 +201,40 @@ automation:
                   # FR | url_path d une piece nouvelle ne peut apparaitre
                   # FR | autrement. Il n a simplement plus lieu quand rien n a
                   # FR | ete ajoute.
+                  # EN | AND THE SYNC HAS TO HAVE BEEN DELIBERATE. Only the
+                  # EN | two Apply buttons send deliberate: true; connect() and
+                  # EN | reload() do not. Opening the screen posts Home
+                  # EN | Assistant's area registry on purpose - that is how
+                  # EN | rooms created before this sync existed are caught -
+                  # EN | and on the staging appliance on 4 October that import
+                  # EN | took the model from zero rooms to three in one write.
+                  # EN | Three new dashboards is a real change to
+                  # EN | configuration.yaml, so the result=changed gate was
+                  # EN | satisfied honestly, and the instance restarted four
+                  # EN | seconds after the page opened, in the middle of a
+                  # EN | screen recording. The gate was right and still not
+                  # EN | enough: a page load must never restart anything.
+                  # EN | The import stays. The restart now waits for someone
+                  # EN | to ask, and the notification below says it is waiting.
+                  # FR | ET LA SYNCHRO DOIT AVOIR ETE DELIBEREE. Seuls les deux
+                  # FR | boutons Appliquer envoient deliberate: true ; connect()
+                  # FR | et reload() non. Ouvrir l ecran poste le registre des
+                  # FR | zones a dessein - c est ainsi que sont rattrapees les
+                  # FR | pieces creees avant cette synchro - et le 4 octobre cet
+                  # FR | import a fait passer le modele de zero a trois pieces
+                  # FR | d un seul ecrit. Trois dashboards de plus est un vrai
+                  # FR | changement de configuration.yaml : le garde-fou
+                  # FR | result=changed etait donc satisfait honnetement, et
+                  # FR | l instance a redemarre quatre secondes apres
+                  # FR | l ouverture de la page, en plein enregistrement.
+                  # FR | L import reste. Le redemarrage attend desormais qu on
+                  # FR | le demande.
                   - if:
                       - condition: template
                         value_template: >-
                           {{ merged.returncode == 0
-                             and 'result=changed' in (merged.stdout | default('')) }}
+                             and 'result=changed' in (merged.stdout | default(''))
+                             and 'deliberate=yes' in (applied.stdout | default('')) }}
                     then:
                       # EN | check_config first: one does not restart into a
                       # EN | configuration.yaml that does not parse.
@@ -213,6 +242,34 @@ automation:
                       # FR | un configuration.yaml qui ne se lit pas.
                       - action: homeassistant.check_config
                       - action: homeassistant.restart
+                  # EN | Changed, but nobody asked for it: say so and stop.
+                  # EN | The rooms are in the model and their views are
+                  # EN | written; only Lovelace's dashboard registry is behind,
+                  # EN | and it reads configuration.yaml once, at startup.
+                  # FR | Change, mais personne ne l a demande : le dire et s en
+                  # FR | tenir la. Les pieces sont dans le modele et leurs vues
+                  # FR | sont ecrites ; seul le registre Lovelace est en
+                  # FR | retard, et il ne lit configuration.yaml qu au demarrage.
+                  - if:
+                      - condition: template
+                        value_template: >-
+                          {{ merged.returncode == 0
+                             and 'result=changed' in (merged.stdout | default(''))
+                             and 'deliberate=yes' not in (applied.stdout | default('')) }}
+                    then:
+                      - action: persistent_notification.create
+                        data:
+                          notification_id: vssp_rooms_restart_pending
+                          title: "Visio Sapiens — restart needed to publish the new rooms"
+                          message: >
+                            Opening ROOMS & FLOORS imported room(s) that Home
+                            Assistant already knew as areas, and
+                            configuration.yaml now declares a dashboard for
+                            each. Home Assistant reads that list only when it
+                            starts, so those rooms stay unreachable until the
+                            next restart. Nothing was restarted for you,
+                            because you only opened a page. Restart from the
+                            ADMIN console's UPDATES screen when it suits you.
                   # EN | Only a real failure is worth a notification. The third
                   # EN | case - merged fine, nothing to change - is the normal
                   # EN | outcome of every sync that adds no room, and it must
