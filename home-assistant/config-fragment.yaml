@@ -170,7 +170,21 @@ lovelace:
       mode: yaml
       title: __T:dashboard.main.title__
       icon: mdi:hexagon-outline
-      show_in_sidebar: true
+      # EN | OUT OF THE SIDEBAR, like every other mobile variant. It carries
+      # EN | the same title as the tablet HOME, so with both shown Home
+      # EN | Assistant listed two identical "HOME" entries and there was no
+      # EN | way to tell which was which. core-m and energy-m were already
+      # EN | false; this one was simply missed.
+      # EN | Nothing becomes unreachable: a phone arrives through the
+      # EN | navigation rail and the url, exactly as it does for CORE and
+      # EN | ENERGY on mobile.
+      # FR | HORS DE LA BARRE LATERALE, comme toutes les variantes mobiles.
+      # FR | Elle porte le meme titre que le HOME tablette : les deux
+      # FR | affichees, Home Assistant listait deux entrees « HOME »
+      # FR | identiques, impossible a distinguer. core-m et energy-m etaient
+      # FR | deja a false ; celle-ci avait ete oubliee. Rien ne devient
+      # FR | injoignable : un telephone y arrive par le bandeau et par l url.
+      show_in_sidebar: false
       filename: dashboards/views/home_mobile.yaml
     visio-sapiens-energy-m:
       mode: yaml
