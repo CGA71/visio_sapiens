@@ -121,6 +121,28 @@ views:
               # custom entity ids, confirmed by the user. Fixed ids now.
               # Two dedicated CPU/RAM bars (stacked), HDD dropped — same
               # layout as Case 2's production/consumption bars below.
+{# EN | WHERE THE TWO STATUS TILES LEAD. CORE and ENERGY are created on
+   EN | demand and can be deleted again from the console, so the tile cannot
+   EN | decide at render time where it goes: HOME is protected from
+   EN | regeneration, and a choice frozen here would still send you to a
+   EN | deleted dashboard months later - or never learn that you created one.
+   EN | The decision is therefore taken WHEN YOU TAP, from the presence
+   EN | sensor that watches the view file itself and refreshes every 30 s.
+   EN | The paths come from nav_system in house.yaml, which the generator
+   EN | passes whole - unlike `nav`, which it filters down to the dashboards
+   EN | that exist, and which would be empty here exactly when it matters.
+   FR | OU MENENT LES DEUX TUILES D ETAT. CORE et ENERGY sont crees a la
+   FR | demande et peuvent etre supprimes depuis la console : la tuile ne
+   FR | peut donc pas decider au rendu ou elle mene, HOME etant protege
+   FR | contre la regeneration. La decision est prise AU MOMENT DU CLIC,
+   FR | depuis le capteur de presence qui surveille le fichier de vue
+   FR | lui-meme et se rafraichit toutes les 30 s. Les chemins viennent de
+   FR | nav_system dans house.yaml, que le generateur passe entier - au
+   FR | contraire de `nav`, qu il filtre sur les dashboards existants et qui
+   FR | serait vide ici precisement quand cela compte. #}
+{% set _sysnav = (nav_system | default({})).after_rooms | default([]) %}
+{% set core_entry = (_sysnav | selectattr('id', 'equalto', 'core') | list | first) | default({}) %}
+{% set energy_entry = (_sysnav | selectattr('id', 'equalto', 'energy') | list | first) | default({}) %}
               - type: custom:button-card
                 show_icon: false
                 show_state: false
@@ -128,7 +150,22 @@ views:
                 name: "{{ t('home.kpi.system_status') }}"
                 entity: sensor.system_monitor_utilisation_du_processeur
                 tap_action:
-                  action: more-info
+                  # EN | navigate when the dashboard is there, the card's own
+                  # EN | popup when it is not. `=== 'on'` and not `!== 'off'`:
+                  # EN | right after a restart the command_line sensor is
+                  # EN | unknown for a few seconds, and a popup that always
+                  # EN | works beats a navigation to a page that may 404. The
+                  # EN | rail next door makes the opposite choice on purpose -
+                  # EN | there, the risk is an empty rail.
+                  # FR | naviguer quand le dashboard est la, popup de la carte
+                  # FR | sinon. `=== 'on'` et non `!== 'off'` : juste apres un
+                  # FR | redemarrage le capteur command_line est inconnu
+                  # FR | quelques secondes, et un popup qui marche toujours
+                  # FR | vaut mieux qu une navigation vers une page en 404.
+                  action: >
+                    [[[ const d = states['binary_sensor.vssp_dashboard_core_present'];
+                        return (d && d.state === 'on') ? 'navigate' : 'more-info'; ]]]
+                  navigation_path: {{ core_entry.path_mobile | default('/visio-sapiens-core-m/core', true) }}
                 custom_fields:
                   bars: >
                     [[[
@@ -186,7 +223,22 @@ views:
                 name: "{{ t('home.kpi.energy_status') }}"
                 entity: "{{ energy.totals.today }}"
                 tap_action:
-                  action: more-info
+                  # EN | navigate when the dashboard is there, the card's own
+                  # EN | popup when it is not. `=== 'on'` and not `!== 'off'`:
+                  # EN | right after a restart the command_line sensor is
+                  # EN | unknown for a few seconds, and a popup that always
+                  # EN | works beats a navigation to a page that may 404. The
+                  # EN | rail next door makes the opposite choice on purpose -
+                  # EN | there, the risk is an empty rail.
+                  # FR | naviguer quand le dashboard est la, popup de la carte
+                  # FR | sinon. `=== 'on'` et non `!== 'off'` : juste apres un
+                  # FR | redemarrage le capteur command_line est inconnu
+                  # FR | quelques secondes, et un popup qui marche toujours
+                  # FR | vaut mieux qu une navigation vers une page en 404.
+                  action: >
+                    [[[ const d = states['binary_sensor.vssp_dashboard_energy_present'];
+                        return (d && d.state === 'on') ? 'navigate' : 'more-info'; ]]]
+                  navigation_path: {{ energy_entry.path_mobile | default('/visio-sapiens-energy-m/energy', true) }}
                 custom_fields:
                   bars: >
                     [[[
