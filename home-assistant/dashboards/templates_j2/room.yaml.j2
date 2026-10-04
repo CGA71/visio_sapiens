@@ -467,16 +467,48 @@ views:
    FR | l interet d une nomenclature : camera.ds_cam_garage s affiche
    FR | « Garage », et nommer la suivante DS-CAM-Terrasse suffit a
    FR | l ajouter. #}
-{% set cam_prefix = (house.camera_nomenclature | default('DS-CAM-', true))
-                     | lower | replace('-', '_') %}
+{% set cam_human = (house.camera_nomenclature | default('DS-CAM-', true)) | lower %}
+{% set cam_slug = cam_human | replace('-', '_') %}
 {% set cams = namespace(found=[], seen=[]) %}
+{# EN | Source one: everything the discovery scan saw, assigned to a room or
+   EN | not. This is the one that matters - a camera called DS-CAM-Terrasse
+   EN | has to appear here the moment it exists, without anyone having to
+   EN | assign it to a slot first. Matched on the entity id, which Home
+   EN | Assistant slugifies to ds_cam_..., OR on the friendly name, which
+   EN | keeps the hyphens the nomenclature is written with. Either spelling
+   EN | finds it.
+   FR | Source une : tout ce que le scan de decouverte a vu, assigne a une
+   FR | piece ou non. C est celle qui compte - une camera nommee
+   FR | DS-CAM-Terrasse doit apparaitre des qu elle existe, sans que
+   FR | quiconque ait eu a l assigner a un tableau. Reconnue sur
+   FR | l identifiant, que Home Assistant transforme en ds_cam_..., OU sur le
+   FR | nom convivial, qui garde les tirets de la nomenclature. #}
+{% for e in discovered | default([]) %}
+{% set eid = e.entity_id | default('') %}
+{% set nice = e.name | default('') %}
+{% if eid.startswith('camera.')
+      and (eid.split('.', 1)[1] | lower).startswith(cam_slug)
+       or (eid.startswith('camera.') and (nice | lower).startswith(cam_human)) %}
+{% if eid not in cams.seen %}
+{% set cams.seen = cams.seen + [eid] %}
+{% set tail = nice[cam_human | length:] if (nice | lower).startswith(cam_human)
+              else (eid.split('.', 1)[1])[cam_slug | length:] %}
+{% set label = tail | replace('_', ' ') | replace('-', ' ') | trim | title %}
+{% set cams.found = cams.found + [{'entity': eid, 'name': label or nice or eid}] %}
+{% endif %}
+{% endif %}
+{% endfor %}
+{# EN | Source two: the room's own slots, so the screen still fills itself on
+   EN | an instance whose scan has never run. Same test, ids only.
+   FR | Source deux : les tableaux de la piece, pour que l ecran se remplisse
+   FR | quand meme sur une instance dont le scan n a jamais tourne. #}
 {% for slot in room.slots.values() %}
-{% for e in slot.by_domain.get('camera', []) %}
-{% set tail = e.split('.', 1)[1] | lower %}
-{% if tail.startswith(cam_prefix) and e not in cams.seen %}
-{% set cams.seen = cams.seen + [e] %}
-{% set label = tail[cam_prefix | length:] | replace('_', ' ') | trim | title %}
-{% set cams.found = cams.found + [{'entity': e, 'name': label or e}] %}
+{% for eid in slot.by_domain.get('camera', []) %}
+{% set tail = eid.split('.', 1)[1] | lower %}
+{% if tail.startswith(cam_slug) and eid not in cams.seen %}
+{% set cams.seen = cams.seen + [eid] %}
+{% set label = tail[cam_slug | length:] | replace('_', ' ') | trim | title %}
+{% set cams.found = cams.found + [{'entity': eid, 'name': label or eid}] %}
 {% endif %}
 {% endfor %}
 {% endfor %}

@@ -489,6 +489,47 @@ def normalise_slots(room: dict, slot_sets: dict) -> dict:
     return out
 
 
+def load_discovered(path: str) -> list:
+    """
+    EN | Every entity the discovery scan saw, flat, assigned or not.
+    EN | report.json groups entities by room and then by device class, with
+    EN | an __unassigned__ bucket for the ones no room claims. A template
+    EN | that wants to find entities by NAME rather than by assignment needs
+    EN | all of them in one list - the entrance's cameras are named to a
+    EN | nomenclature and are not required to sit in any slot.
+    EN | Absent, unreadable or malformed, this returns an empty list and the
+    EN | templates fall back to what the model holds. It is never an error:
+    EN | the scan is something the owner runs, not something a render owes.
+    FR | Toutes les entites vues par la decouverte, a plat, assignees ou non.
+    FR | report.json groupe par piece puis par classe d appareil, avec un
+    FR | compartiment __unassigned__ pour celles qu aucune piece ne reclame.
+    FR | Un template qui cherche des entites par NOM plutot que par
+    FR | assignation les veut toutes dans une liste - les cameras de l entree
+    FR | suivent une nomenclature et ne sont tenues d etre dans aucun
+    FR | tableau. Absent ou illisible, ceci rend une liste vide et les
+    FR | templates retombent sur ce que porte le modele : ce n est jamais une
+    FR | erreur, le scan est une chose que le proprietaire lance.
+    """
+    try:
+        data = json.loads(Path(path).read_text(encoding="utf-8"))
+    except (OSError, ValueError, TypeError):
+        return []
+    out, seen = [], set()
+    for room in (data or {}).values():
+        if not isinstance(room, dict):
+            continue
+        for bucket in (room.get("entities_by_device_class") or {}).values():
+            for ent in bucket or []:
+                if not isinstance(ent, dict):
+                    continue
+                eid = str(ent.get("entity_id") or "")
+                if eid and eid not in seen:
+                    seen.add(eid)
+                    out.append({"entity_id": eid,
+                                "name": str(ent.get("friendly_name") or "")})
+    return out
+
+
 def resolve_default_slot(requested: str | None, rendered: dict) -> str | None:
     """
     EN | Picks the slot that gets the privileged (1fr) band: the room's
@@ -1304,6 +1345,25 @@ def main() -> int:
                     help="Flat device list for the ENERGY dashboard "
                          "(maintained by vssp_energy_sync.py). Takes "
                          "precedence over flattening the rooms.")
+    # EN | Absolute, and on purpose: this file is written on the instance by
+    # EN | the console's DISCOVERY SCAN and has no counterpart in the
+    # EN | checkout, so a repo-relative default would resolve to nothing
+    # EN | everywhere. Same convention as --token-file in vssp_verify.py.
+    # EN | Not a flag on the twenty-three shell_commands that call this
+    # EN | script either: --locale was once added to one of them and
+    # EN | forgotten on the rest, and a default that is simply right on the
+    # EN | instance cannot be forgotten.
+    # FR | Absolu, et a dessein : ce fichier est ecrit sur l instance par le
+    # FR | SCAN DE DECOUVERTE de la console et n a pas d equivalent dans le
+    # FR | depot, donc un defaut relatif au depot ne resoudrait nulle part.
+    # FR | Et pas un drapeau sur les vingt-trois shell_command qui appellent
+    # FR | ce script : --locale a jadis ete ajoute a l un d eux et oublie sur
+    # FR | les autres, tandis qu un defaut juste sur l instance ne s oublie
+    # FR | pas.
+    ap.add_argument("--report", default="/config/vssp/report.json",
+                    help="Discovery report, read when present: lets a "
+                         "template find entities by name rather than by "
+                         "assignment. Absent is normal and never an error.")
     ap.add_argument("--design-model",
                     default="home-assistant/dashboards/model/design_system.yaml",
                     help="Design tokens (theme screen of the ADMIN console). "
@@ -1464,6 +1524,15 @@ def main() -> int:
     # FR | mesures de la maison. Deux sources possibles, dans cet ordre :
     # FR |   1. model/energy_devices.yaml — maintenu par vssp_energy_sync.py
     # FR |   2. sinon, aplatissement des rooms du modele / du wizard
+    # EN | Every entity the scan saw, for the templates that look entities
+    # EN | up by name. Empty when the report is absent, which is normal.
+    # FR | Toutes les entites vues par le scan, pour les templates qui
+    # FR | cherchent par nom. Vide quand le rapport est absent, ce qui est
+    # FR | normal.
+    model["discovered"] = load_discovered(args.report)
+    if model["discovered"]:
+        print(f"[i] discovery report: {len(model['discovered'])} entity(ies)")
+
     devices_path = Path(args.devices)
     if devices_path.exists():
         dev_doc = yaml.safe_load(devices_path.read_text(encoding="utf-8")) or {}
