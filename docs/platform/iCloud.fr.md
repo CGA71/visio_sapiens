@@ -105,13 +105,32 @@ Une fois validée, la session est de confiance pour **deux mois environ** et rie
 ne redemande — y compris chaque exécution d'`icloudpd`, qui la réutilise au lieu
 de recevoir un mot de passe.
 
-**ENVOYER UN NOUVEAU CODE** est un bouton qu'on presse en connaissance de cause :
-demander un nouveau code à Apple *annule celui qui est déjà sur votre téléphone*.
-Rien dans cette fonction ne réclame un code de lui-même, parce que le faire
-pendant l'appel même qui valide un code donne une invite sans fin — on tape un
-code, un nouveau est demandé, celui qu'on a tapé est périmé, et ainsi de suite.
-En HSA2, Apple envoie le code tout seul au moment de la connexion : celui qui
-arrive après ENREGISTRER & CONNECTER est donc celui à taper.
+Exactement deux choses demandent un code à Apple : **CONNECTER**, parce que se
+connecter est le moment où un code est censé arriver, et **ENVOYER UN NOUVEAU
+CODE**, qui n'existe que pour ça. Valider un code n'en demande jamais — le faire
+pendant l'appel même qui valide donne une invite sans fin : on tape un code, un
+nouveau est demandé, celui qu'on a tapé est périmé, et ainsi de suite.
+
+**ENVOYER UN NOUVEAU CODE** *annule celui qui est déjà sur votre téléphone* :
+ne le pressez que si le premier est perdu ou expiré.
+
+### Aucun code n'arrive
+
+Une session mémorisée n'est pas tout ou rien. Elle peut annoncer un compte lié
+tout en étant périmée dessous — après un changement de mot de passe Apple, par
+exemple — et comme la bibliothèque ne se réauthentifie alors jamais, Apple n'est
+sollicité de rien et aucun code ne part. Presser CONNECTER n'y change rien.
+
+**OUBLIER LA SESSION** est la sortie. Cela efface
+`/config/vssp/.icloud_session` et rien d'autre — le mot de passe reste — pour
+que le CONNECTER suivant soit une vraie connexion, suivie d'un code. Le bouton
+est dans le formulaire et, délibérément, aussi sur la console elle-même, où il
+continue de fonctionner si le formulaire intégré ne charge pas.
+
+Pour la même raison, l'étape de vérification est toujours à l'écran au lieu
+d'apparaître seulement quand l'état annonce qu'un code est requis : une étape
+joignable seulement parfois est une impasse dès que cet état est périmé ou
+faux.
 
 Le code est pris par la bibliothèque plutôt que par `icloudpd --auth-only` pour
 une raison pratique : icloudpd lit le code depuis une invite console ou une

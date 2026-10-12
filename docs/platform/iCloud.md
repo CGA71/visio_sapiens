@@ -97,12 +97,30 @@ Once validated, the session is trusted for **about two months** and nothing
 asks again — including every `icloudpd` run, which reuses it rather than being
 handed a password.
 
-**SEND A NEW CODE** is a button you press knowingly: asking Apple for a new
-code *voids the one already on your phone*. Nothing in this feature requests a
-code on its own, because doing so during the very call that validates a code is
-an endless prompt — type a code, a fresh one is requested, the typed one is now
-stale, repeat. With HSA2 Apple sends the code by itself when the sign-in
-happens, so the one that arrives after SAVE & CONNECT is the one to type.
+Exactly two things ask Apple for a code: **CONNECT**, because signing in is
+when a code is supposed to arrive, and **SEND A NEW CODE**, which exists for
+nothing else. Validating a code never asks for one — doing that during the very
+call that validates is an endless prompt: type a code, a fresh one is requested,
+the typed one is now stale, repeat.
+
+**SEND A NEW CODE** *voids the one already on your phone*, so press it only when
+the first is lost or expired.
+
+### No code arriving at all
+
+A stored session is not all-or-nothing. It can report a linked account while
+being stale underneath — after the Apple ID password is changed, for instance —
+and because the library then never re-authenticates, Apple is never asked for
+anything and no code is ever sent. No amount of pressing CONNECT helps.
+
+**FORGET SESSION** is the way out. It erases `/config/vssp/.icloud_session` and
+nothing else — the password stays — so the next CONNECT is a real sign-in and a
+code follows. The button is in the form and, deliberately, also on the console
+itself, where it keeps working if the embedded form fails to load.
+
+For the same reason the verification step is always on screen rather than
+appearing only while the status says a code is required: a step that is only
+sometimes reachable is a dead end the moment that status is stale or wrong.
 
 The code is taken by the library rather than by `icloudpd --auth-only` for one
 practical reason: icloudpd reads the code from a console prompt or a web UI and

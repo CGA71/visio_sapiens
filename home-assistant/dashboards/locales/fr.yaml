@@ -556,6 +556,12 @@ admin:
   google_apply_hint: Régénère HOME avec le calendrier sélectionné
   google_apply_confirm: Régénérer le dashboard HOME avec ce calendrier ? Le fichier actuel est sauvegardé avant écrasement.
   icloud_state: État de la liaison
+  icloud_connect: CONNECTER
+  icloud_connect_hint: Se reconnecte avec le mot de passe enregistré et demande un code à Apple
+  icloud_resend: ENVOYER UN NOUVEAU CODE
+  icloud_resend_hint: Annule le code déjà sur votre appareil et en envoie un autre
+  icloud_forget: OUBLIER LA SESSION
+  icloud_forget_hint: N'efface que la session enregistrée, pour que le prochain CONNECTER soit une vraie connexion
   icloud_message: Détail
   icloud_items: Éléments dans la photothèque
   icloud_pending: Pas encore transférés

@@ -697,6 +697,12 @@ admin:
   google_apply_hint: Regenerates HOME with the selected calendar
   google_apply_confirm: Regenerate the HOME dashboard with this calendar? The current file is backed up before being overwritten.
   icloud_state: Link state
+  icloud_connect: CONNECT
+  icloud_connect_hint: Signs in again with the stored password and asks Apple for a code
+  icloud_resend: SEND A NEW CODE
+  icloud_resend_hint: Voids the code already on your device and sends another
+  icloud_forget: FORGET SESSION
+  icloud_forget_hint: Erases the stored session only, so the next CONNECT is a real sign-in
   icloud_message: Detail
   icloud_items: Items in the library
   icloud_pending: Not yet transferred

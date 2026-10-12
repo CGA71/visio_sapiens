@@ -3464,6 +3464,61 @@ views:
                 tap_action:
                   action: call-service
                   service: script.vssp_icloud_grow
+          # EN | THE SIGN-IN RECOVERY ROW, and it is out here rather than in
+          # EN | the form on purpose. These three are what you reach for when
+          # EN | the account is stuck — and "stuck" has twice meant a screen
+          # EN | that could not be argued with from inside. A control that
+          # EN | only exists inside the iframe is gone the moment the iframe
+          # EN | fails to load, or the moment the status it keys off is not
+          # EN | the truth. These are Home Assistant buttons: they work
+          # EN | regardless.
+          # FR | LA RANGEE DE SECOURS DE LA CONNEXION, et elle est ici plutot
+          # FR | que dans le formulaire a dessein. Ces trois boutons sont ce
+          # FR | qu on cherche quand le compte est bloque — et « bloque » a
+          # FR | deux fois voulu dire un ecran avec lequel on ne pouvait pas
+          # FR | discuter de l interieur. Un controle qui n existe que dans
+          # FR | l iframe disparait des que celle-ci ne charge pas, ou des que
+          # FR | l etat dont il depend n est pas la verite. Ceux-la sont des
+          # FR | boutons Home Assistant : ils marchent quoi qu il arrive.
+          - type: grid
+            columns: 3
+            square: false
+            cards:
+              # EN | Re-signs in with the password already on disk, and asks
+              # EN | Apple for a code. Nothing to retype.
+              # FR | Rouvre une session avec le mot de passe deja sur disque,
+              # FR | et demande un code a Apple. Rien a retaper.
+              - type: custom:button-card
+                template: vssp_admin_button
+                icon: mdi:login-variant
+                name: "{{ t('admin.icloud_connect') }}"
+                label: "{{ t('admin.icloud_connect_hint') }}"
+                tap_action:
+                  action: call-service
+                  service: script.vssp_icloud_link
+              # EN | Voids the code already on the phone and sends another.
+              # FR | Annule le code deja sur le telephone et en envoie un autre.
+              - type: custom:button-card
+                template: vssp_admin_button
+                icon: mdi:message-badge-outline
+                name: "{{ t('admin.icloud_resend') }}"
+                label: "{{ t('admin.icloud_resend_hint') }}"
+                tap_action:
+                  action: call-service
+                  service: script.vssp_icloud_resend
+              # EN | The reset. Erases the stored session only — the password
+              # EN | stays — so the next CONNECT is a real sign-in.
+              # FR | La remise a zero. N efface que la session memorisee — le
+              # FR | mot de passe reste — pour que le CONNECTER suivant soit
+              # FR | une vraie connexion.
+              - type: custom:button-card
+                template: vssp_admin_button
+                icon: mdi:account-off-outline
+                name: "{{ t('admin.icloud_forget') }}"
+                label: "{{ t('admin.icloud_forget_hint') }}"
+                tap_action:
+                  action: call-service
+                  service: script.vssp_icloud_forget
           # EN | `lang` carries the GENERATED locale into the iframe, `v` is
           # EN | the cache-buster — same two reasons as every other embedded
           # EN | form in this console.

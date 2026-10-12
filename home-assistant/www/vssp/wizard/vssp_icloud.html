@@ -333,7 +333,23 @@
   </div>
 
   <!-- ============ 2 — the code ============ -->
-  <div class="step hidden" id="step2fa">
+  <!-- EN | ALWAYS VISIBLE, never hidden by state. It used to appear only
+       EN | while the status file said `awaiting_2fa`, which reads as tidy
+       EN | until the status file is stale or wrong — and then the one control
+       EN | that could unstick the account is the one thing not on screen.
+       EN | That is exactly how a cached session saying "linked" left no way
+       EN | to ask for a code. A step that is only sometimes reachable is a
+       EN | dead end the moment the state it keys off is not the truth.
+       FR | TOUJOURS VISIBLE, jamais masquee par l etat. Elle n apparaissait
+       FR | que tant que le fichier d etat disait `awaiting_2fa`, ce qui
+       FR | passe pour du rangement jusqu a ce que ce fichier soit perime ou
+       FR | faux — et alors le seul controle capable de debloquer le compte
+       FR | est justement celui qui n est pas a l ecran. C est exactement
+       FR | ainsi qu une session en cache annoncant « liee » n a laisse aucun
+       FR | moyen de reclamer un code. Une etape joignable seulement parfois
+       FR | est une impasse des que l etat dont elle depend n est pas la
+       FR | verite. -->
+  <div class="step" id="step2fa">
     <div class="step-title"><span class="step-num">2</span>
       <span data-i18n="s2_title">Verification code</span></div>
     <p class="hint" data-i18n="s2_hint">
@@ -362,7 +378,24 @@
            FR | connexion, y compris la connexion faite pour valider un code —
            FR | ce qui reclamait un code indefiniment. -->
       <button id="btnResend" class="ghost" data-i18n="btn_resend">Send a new code</button>
+      <!-- EN | The reset. When a cached session claims the account is linked
+           EN | while Apple disagrees - after a password change, or when the
+           EN | session is half valid - nothing else gets out of it: the
+           EN | library never re-authenticates, so no code is ever sent.
+           EN | Erasing the session makes the next CONNECT a real sign-in.
+           FR | La remise a zero. Quand une session en cache pretend que le
+           FR | compte est lie alors qu Apple n est pas d accord - apres un
+           FR | changement de mot de passe, ou quand la session n est qu a
+           FR | demi valide - rien d autre n en sort : la bibliotheque ne se
+           FR | reauthentifie jamais, donc aucun code ne part. Effacer la
+           FR | session fait du CONNECTER suivant une vraie connexion. -->
+      <button id="btnForget" class="ghost" data-i18n="btn_forget">Forget the session</button>
     </div>
+    <p class="hint" data-i18n="s2_stuck">
+      No code arriving? Press FORGET THE SESSION, then SAVE &amp; CONNECT
+      again — a stored session can report a linked account without ever
+      asking Apple for anything.
+    </p>
   </div>
 
   <!-- ============ 3 — storage ============ -->
@@ -506,6 +539,13 @@ const I18N = {
     lbl_code: 'Code',
     btn_code: 'Validate',
     btn_resend: 'Send a new code',
+    btn_forget: 'Forget the session',
+    s2_stuck: 'No code arriving? Press FORGET THE SESSION, then SAVE &amp; ' +
+              'CONNECT again — a stored session can report a linked ' +
+              'account without ever asking Apple for anything.',
+    m_session_forgotten: 'Session erased ({removed} file(s)). Press CONNECT: ' +
+                         'the next sign-in is a real one, and Apple will send ' +
+                         'a code.',
 
     s3_title: 'Destination',
     s3_hint: 'Where the files land. A partition or a NAS share added in ' +
@@ -657,6 +697,13 @@ const I18N = {
     lbl_code: 'Code',
     btn_code: 'Valider',
     btn_resend: 'Envoyer un nouveau code',
+    btn_forget: 'Oublier la session',
+    s2_stuck: 'Aucun code n’arrive ? Pressez OUBLIER LA SESSION, puis ' +
+              'ENREGISTRER &amp; CONNECTER — une session mémorisée peut ' +
+              'annoncer un compte lié sans jamais rien demander à Apple.',
+    m_session_forgotten: 'Session effacée ({removed} fichier(s)). Pressez ' +
+                         'CONNECTER : la prochaine connexion sera une vraie, ' +
+                         'et Apple enverra un code.',
 
     s3_title: 'Destination',
     s3_hint: 'Où atterrissent les fichiers. Une partition ou un partage NAS ' +
@@ -911,8 +958,6 @@ async function refreshStatus() {
   setState(CLASS_OF[d.state] !== undefined ? CLASS_OF[d.state] : '',
            d.state || 'not_configured', localise(d));
 
-  $('step2fa').classList.toggle('hidden', d.state !== 'awaiting_2fa');
-
   $('tPhotos').textContent = d.photos !== undefined ? d.photos : '—';
   $('tVideos').textContent = d.videos !== undefined ? d.videos : '—';
   $('tSize').innerHTML = d.size_human
@@ -1067,6 +1112,12 @@ $('btnResend').addEventListener('click', async () => {
   await post({ action: 'resend' });
   $('code').value = '';
   setTimeout(refreshStatus, 4000);
+});
+
+$('btnForget').addEventListener('click', async () => {
+  await post({ action: 'forget' });
+  $('code').value = '';
+  setTimeout(refreshStatus, 3000);
 });
 
 $('btnDest').addEventListener('click', async () => {

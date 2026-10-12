@@ -247,6 +247,21 @@ shell_command:
   # FR | fasse, parce que chaque demande annule le code deja entre les mains
   # FR | de l utilisateur — la raison pour laquelle la premiere version de cet
   # FR | ecran reclamait un code indefiniment.
+  # EN | Erases the stored session, nothing else — the password file stays.
+  # EN | The way out of a cached session that answers "linked" without ever
+  # EN | re-authenticating, which is how a changed Apple password, or a
+  # EN | half-valid session, can leave the screen with no code arriving and
+  # EN | no step 2 to ask from.
+  # FR | Efface la session memorisee, rien d autre — le fichier du mot de
+  # FR | passe reste. La sortie d une session en cache qui repond « liee »
+  # FR | sans jamais se reauthentifier, ce qui est la facon dont un mot de
+  # FR | passe Apple change, ou une session a demi valide, peut laisser
+  # FR | l ecran sans code qui arrive et sans etape 2 pour en reclamer.
+  vssp_icloud_forget: >-
+    python3 /config/vssp/vssp_icloud.py
+    --action forget
+    --locale {{ states('input_select.vssp_language') }}
+
   vssp_icloud_resend: >-
     python3 /config/vssp/vssp_icloud.py
     --action resend
@@ -530,6 +545,21 @@ script:
       - action: shell_command.vssp_icloud_resend
       - action: script.vssp_icloud_refresh_sensors
 
+  # EN | The reset. Not destructive of anything but a cookie, and the only
+  # EN | action on this screen that can unstick every bad state at once, so
+  # EN | it carries no confirmation — asking twice would only slow down the
+  # EN | person already stuck.
+  # FR | La remise a zero. Ne detruit rien d autre qu un cookie, et c est la
+  # FR | seule action de cet ecran capable de debloquer tous les mauvais
+  # FR | etats d un coup : elle ne porte donc aucune confirmation — demander
+  # FR | deux fois ne ferait que ralentir la personne deja bloquee.
+  vssp_icloud_forget:
+    alias: "Visio Sapiens — iCloud : oublier la session"
+    mode: single
+    sequence:
+      - action: shell_command.vssp_icloud_forget
+      - action: script.vssp_icloud_refresh_sensors
+
   vssp_icloud_scan:
     alias: "Visio Sapiens — iCloud : analyser la photothèque"
     mode: single
@@ -729,7 +759,7 @@ automation:
               - condition: template
                 value_template: >-
                   {{ trigger.json.action | default('')
-                     in ['scan', 'bulk', 'purge', 'status', 'install', 'resend'] }}
+                     in ['scan', 'bulk', 'purge', 'status', 'install', 'resend', 'forget'] }}
             sequence:
               - choose:
                   - conditions: "{{ trigger.json.action == 'scan' }}"
@@ -747,6 +777,9 @@ automation:
                   - conditions: "{{ trigger.json.action == 'resend' }}"
                     sequence:
                       - action: script.vssp_icloud_resend
+                  - conditions: "{{ trigger.json.action == 'forget' }}"
+                    sequence:
+                      - action: script.vssp_icloud_forget
                 default:
                   - action: script.vssp_icloud_status
 

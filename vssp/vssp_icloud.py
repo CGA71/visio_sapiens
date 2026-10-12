@@ -265,6 +265,12 @@ MESSAGES = {
               "pressez ENVOYER UN NOUVEAU CODE, puis saisissez celui qui "
               "arrive.",
     },
+    "session_forgotten": {
+        "en": "Session erased ({removed} file(s)). Press CONNECT: the next "
+              "sign-in is a real one, and Apple will send a code.",
+        "fr": "Session effacee ({removed} fichier(s)). Pressez CONNECTER : la "
+              "prochaine connexion sera une vraie, et Apple enverra un code.",
+    },
     "code_resent": {
         "en": "A new code is on its way to your trusted devices. Any earlier "
               "code is now void.",
@@ -759,7 +765,7 @@ class Lock:
 # EN | iCLOUD SESSION
 # FR | SESSION iCLOUD
 # ===========================================================================
-def connect(args, locale: str):
+def connect(args, locale: str, push_code: bool = False):
     """EN | Open a session from the stored credentials. Returns
     EN | (api, engine, state, payload-extra): state is 'linked',
     EN | 'awaiting_2fa' or an error state, and api is None unless the session
@@ -777,8 +783,17 @@ def connect(args, locale: str):
     EN | The call was never needed either: with HSA2, Apple sends the code on
     EN | its own when the authentication happens - requires_2fa being true
     EN | MEANS a code has just been sent. Asking again only invalidates it.
-    EN | Pushing a fresh code is now an explicit action a person chooses
-    EN | (--action resend), never a side effect of connecting.
+    EN | Pushing a fresh code is now a decision of the CALLER, through
+    EN | push_code, and the default is not to. Only two callers pass True:
+    EN | `link`, where authenticating is the whole point and a code is what
+    EN | the person is waiting for, and `resend`, which exists for nothing
+    EN | else. `code` - the one that validates - passes False, and that is
+    EN | the whole fix.
+    EN | The first attempt at this removed the push everywhere, including
+    EN | from `link`, which traded the loop for the opposite failure: a
+    EN | cached session answers requires_2fa without re-authenticating, so
+    EN | Apple sends nothing and no code ever arrives. A person pressing
+    EN | CONNECT must get a code.
     FR | Ouvre une session depuis les identifiants memorises. Renvoie
     FR | (api, moteur, etat, complement) : l etat vaut 'linked',
     FR | 'awaiting_2fa' ou un etat d erreur, et api est None sauf si la
@@ -839,6 +854,11 @@ def connect(args, locale: str):
                                           detail=str(exc)[:200])
 
     if getattr(api, "requires_2fa", False):
+        if push_code:
+            try:
+                api.request_2fa_code()
+            except Exception:  # noqa: BLE001 - a push failure is not fatal
+                pass             # here; the screen still offers SEND A NEW CODE
         return api, engine, "awaiting_2fa", say("awaiting_2fa", locale)
 
     return api, engine, "linked", say("linked", locale, account=account,
@@ -858,7 +878,14 @@ def engine_facts(args, engine) -> dict:
 
 
 def do_link(args, locale: str) -> dict:
-    api, engine, state, extra = connect(args, locale)
+    # EN | push_code=True: this is the button a person presses to sign in, and
+    # EN | a code is exactly what they are waiting for. The validate path is
+    # EN | the one that must never push - see connect().
+    # FR | push_code=True : c est le bouton qu une personne presse pour se
+    # FR | connecter, et un code est precisement ce qu elle attend. C est le
+    # FR | chemin de validation qui ne doit jamais en demander - voir
+    # FR | connect().
+    api, engine, state, extra = connect(args, locale, push_code=True)
     payload = {**stated(state, locale), **extra,
                "account": (args.apple_id or "").strip(),
                **engine_facts(args, engine)}
@@ -951,6 +978,58 @@ def do_code(args, locale: str) -> dict:
             "account": account,
             "trusted": trusted,
             **engine_facts(args, engine)}
+
+
+def do_forget(args, locale: str) -> dict:
+    """EN | Erase the stored session and start over. This is the way out of
+    EN | every state the two previous attempts at the 2FA flow could strand a
+    EN | person in, and it needed to exist from the start.
+    EN |
+    EN | A cached session is not all-or-nothing. It can answer requires_2fa
+    EN | while being valid enough that the library never re-authenticates -
+    EN | so Apple is never asked for anything and no code is ever sent. It
+    EN | can also go on reporting a linked account after the Apple ID
+    EN | password has been changed underneath it. Neither state can be
+    EN | argued with from the outside; both end the moment the session files
+    EN | are gone and the next CONNECT is a real sign-in.
+    EN |
+    EN | The password file is deliberately left alone: forgetting the session
+    EN | is not forgetting the account, and making a person retype their
+    EN | Apple password to clear a cookie would be its own small cruelty.
+    FR | Efface la session memorisee et repart de zero. C est la sortie de
+    FR | chacun des etats dans lesquels les deux tentatives precedentes sur
+    FR | le flux 2FA pouvaient enfermer quelqu un, et cela aurait du exister
+    FR | des le depart.
+    FR |
+    FR | Une session en cache n est pas tout ou rien. Elle peut repondre
+    FR | requires_2fa tout en etant assez valide pour que la bibliotheque ne
+    FR | se reauthentifie jamais - Apple n est alors sollicite de rien et
+    FR | aucun code ne part. Elle peut aussi continuer d annoncer un compte
+    FR | lie apres que le mot de passe de l identifiant Apple a ete change
+    FR | dessous. Ni l un ni l autre ne se discute de l exterieur ; les deux
+    FR | cessent des que les fichiers de session ont disparu et que le
+    FR | CONNECTER suivant est une vraie connexion.
+    FR |
+    FR | Le fichier du mot de passe est volontairement epargne : oublier la
+    FR | session n est pas oublier le compte, et faire retaper son mot de
+    FR | passe Apple a quelqu un pour vider un cookie serait une petite
+    FR | cruaute gratuite."""
+    removed = 0
+    session = Path(args.session_dir)
+    if session.is_dir():
+        for item in session.iterdir():
+            try:
+                if item.is_dir():
+                    shutil.rmtree(item)
+                else:
+                    item.unlink()
+                removed += 1
+            except OSError:
+                pass
+    return {**stated("not_configured", locale),
+            **say("session_forgotten", locale, removed=removed),
+            "forgotten": removed,
+            **engine_facts(args, None)}
 
 
 def do_resend(args, locale: str) -> dict:
@@ -2005,7 +2084,7 @@ def main() -> int:
     ap.add_argument("--action", required=True,
                     choices=("status", "link", "code", "scan", "page",
                              "transfer", "bulk", "release", "reconcile",
-                             "purge", "storage", "grow", "resend"))
+                             "purge", "storage", "grow", "resend", "forget"))
     ap.add_argument("--apple-id", default="")
     ap.add_argument("--password-file", default="/config/vssp/.icloud_password")
     # EN | The session directory is shared with the icloudpd command on
@@ -2101,6 +2180,8 @@ def main() -> int:
             payload = do_code(args, locale)
         elif args.action == "resend":
             payload = do_resend(args, locale)
+        elif args.action == "forget":
+            payload = do_forget(args, locale)
         elif args.action == "scan":
             payload = do_scan(args, locale, status_path)
         elif args.action == "page":
