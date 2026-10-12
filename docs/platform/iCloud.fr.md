@@ -93,6 +93,14 @@ Une fois validée, la session est de confiance pour **deux mois environ** et rie
 ne redemande — y compris chaque exécution d'`icloudpd`, qui la réutilise au lieu
 de recevoir un mot de passe.
 
+**ENVOYER UN NOUVEAU CODE** est un bouton qu'on presse en connaissance de cause :
+demander un nouveau code à Apple *annule celui qui est déjà sur votre téléphone*.
+Rien dans cette fonction ne réclame un code de lui-même, parce que le faire
+pendant l'appel même qui valide un code donne une invite sans fin — on tape un
+code, un nouveau est demandé, celui qu'on a tapé est périmé, et ainsi de suite.
+En HSA2, Apple envoie le code tout seul au moment de la connexion : celui qui
+arrive après ENREGISTRER & CONNECTER est donc celui à taper.
+
 Le code est pris par la bibliothèque plutôt que par `icloudpd --auth-only` pour
 une raison pratique : icloudpd lit le code depuis une invite console ou une
 interface web et n'a aucun drapeau pour s'en voir confier un, alors que la
@@ -215,7 +223,7 @@ conteneur — est repris plutôt que laissé à bloquer l'écran.
 | Symptôme | Cause |
 |---|---|
 | *Moteur absent* | `icloudpd` n'est pas installé, ou une mise à jour du cœur l'a effacé. Pressez INSTALLER LE MOTEUR. |
-| *Code requis* revient à chaque fois | `trust_session()` a été refusé. Revalidez le code ; si cela persiste, vérifiez que l'identifiant Apple n'a pas la Protection avancée des données activée. |
+| *Code requis* revient à chaque fois | Trois causes distinctes, et le message dit désormais laquelle : le code a été **refusé** (il est à usage unique — pressez ENVOYER UN NOUVEAU CODE et tapez celui qui arrive) ; le code a été **accepté mais la session n'est pas devenue de confiance** (vérifiez que `/config/vssp/.icloud_session` survit aux redémarrages, et que l'identifiant Apple n'a pas la Protection avancée des données) ; ou le **répertoire de session n'est pas inscriptible**, auquel cas chaque exécution démarre une nouvelle session et chaque code est périmé en arrivant. |
 | Le bouton de masse est grisé | la **commande** `icloudpd` manque bien que le module soit là — seul le sélecteur marche. Pressez INSTALLER LE MOTEUR. |
 | *icloudpd s'est arrêté avec le code … : session expirée* | la session de confiance a vieilli. Reconnectez-vous à l'étape 1 ; aucun mot de passe n'atteint la ligne de commande d'icloudpd. |
 | Rien n'a été retiré d'iCloud | aucun des éléments cochés n'est au registre avec une taille concordante sur disque. Transférez-les d'abord. |

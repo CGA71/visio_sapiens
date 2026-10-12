@@ -348,7 +348,21 @@
                autocomplete="one-time-code">
       </div>
     </div>
-    <button id="btnCode" data-i18n="btn_code">Validate</button>
+    <div class="actions">
+      <button id="btnCode" data-i18n="btn_code">Validate</button>
+      <!-- EN | Asking for a new code VOIDS the one already on the user's
+           EN | phone, so it is a button they press knowingly, never something
+           EN | that happens on its own. The first version of this screen
+           EN | pushed a code on every connection, including the connection
+           EN | made to validate a code — which asked for a code forever.
+           FR | Demander un nouveau code ANNULE celui qui est deja sur le
+           FR | telephone : c est donc un bouton qu on presse en connaissance
+           FR | de cause, jamais quelque chose qui se produit tout seul. La
+           FR | premiere version de cet ecran poussait un code a chaque
+           FR | connexion, y compris la connexion faite pour valider un code —
+           FR | ce qui reclamait un code indefiniment. -->
+      <button id="btnResend" class="ghost" data-i18n="btn_resend">Send a new code</button>
+    </div>
   </div>
 
   <!-- ============ 3 — storage ============ -->
@@ -491,6 +505,7 @@ const I18N = {
              'ask again.',
     lbl_code: 'Code',
     btn_code: 'Validate',
+    btn_resend: 'Send a new code',
 
     s3_title: 'Destination',
     s3_hint: 'Where the files land. A partition or a NAS share added in ' +
@@ -573,7 +588,17 @@ const I18N = {
     m_login_failed: 'Apple refused the sign-in: {detail}',
     m_awaiting_2fa: 'Apple sent a code to your trusted devices. Enter it to ' +
                     'finish linking.',
-    m_code_rejected: 'Apple rejected that code. Ask for a new one and try again.',
+    m_code_rejected: 'Apple rejected that code. It is single-use and ' +
+                     'short-lived — press SEND A NEW CODE, then enter ' +
+                     'the one that arrives.',
+    m_code_resent: 'A new code is on its way to your trusted devices. Any ' +
+                   'earlier code is now void.',
+    m_code_not_trusted: 'The code was accepted but Apple did not mark the ' +
+                        'session as trusted, so it will ask again. Check that ' +
+                        '{path} persists across restarts. ({detail})',
+    m_session_unwritable: 'The session directory {path} cannot be written to, ' +
+                          'so every run starts a new session and every code is ' +
+                          'already stale: {detail}',
     m_linked: 'Linked to {account} through {engine}.',
     m_scan_running: 'Scanning the library: {done} items indexed.',
     m_scan_done: '{photos} photo(s) and {videos} video(s) indexed, {size} in all.',
@@ -631,6 +656,7 @@ const I18N = {
              'confiance pour deux mois environ et rien ici ne redemandera.',
     lbl_code: 'Code',
     btn_code: 'Valider',
+    btn_resend: 'Envoyer un nouveau code',
 
     s3_title: 'Destination',
     s3_hint: 'Où atterrissent les fichiers. Une partition ou un partage NAS ' +
@@ -715,8 +741,18 @@ const I18N = {
     m_login_failed: 'Apple a refusé la connexion : {detail}',
     m_awaiting_2fa: 'Apple a envoyé un code vers vos appareils de confiance. ' +
                     'Saisissez-le pour terminer la liaison.',
-    m_code_rejected: 'Apple a refusé ce code. Demandez-en un nouveau et ' +
-                     'réessayez.',
+    m_code_rejected: 'Apple a refusé ce code. Il est à usage unique et ' +
+                     'éphémère — pressez ENVOYER UN NOUVEAU CODE, puis ' +
+                     'saisissez celui qui arrive.',
+    m_code_resent: 'Un nouveau code part vers vos appareils de confiance. ' +
+                   'Tout code précédent est désormais caduc.',
+    m_code_not_trusted: 'Le code a été accepté mais Apple n’a pas marqué ' +
+                        'la session comme de confiance : elle redemandera. ' +
+                        'Vérifiez que {path} survit aux redémarrages. ({detail})',
+    m_session_unwritable: 'Le répertoire de session {path} n’est pas ' +
+                          'accessible en écriture : chaque exécution démarre ' +
+                          'donc une nouvelle session et chaque code est déjà ' +
+                          'périmé : {detail}',
     m_linked: 'Lié à {account} via {engine}.',
     m_scan_running: 'Analyse de la photothèque : {done} éléments indexés.',
     m_scan_done: '{photos} photo(s) et {videos} vidéo(s) indexées, {size} au ' +
@@ -1024,6 +1060,12 @@ $('btnCode').addEventListener('click', async () => {
   const code = $('code').value.replace(/\D/g, '');
   if (code.length < 4) { $('stateMsg').textContent = t('err_code'); return; }
   if (await post({ code: code })) $('code').value = '';
+  setTimeout(refreshStatus, 4000);
+});
+
+$('btnResend').addEventListener('click', async () => {
+  await post({ action: 'resend' });
+  $('code').value = '';
   setTimeout(refreshStatus, 4000);
 });
 

@@ -259,8 +259,41 @@ MESSAGES = {
               "Saisissez-le pour terminer la liaison.",
     },
     "code_rejected": {
-        "en": "Apple rejected that code. Ask for a new one and try again.",
-        "fr": "Apple a refuse ce code. Demandez-en un nouveau et reessayez.",
+        "en": "Apple rejected that code. It is single-use and short-lived - "
+              "press SEND A NEW CODE, then enter the one that arrives.",
+        "fr": "Apple a refuse ce code. Il est a usage unique et ephemere - "
+              "pressez ENVOYER UN NOUVEAU CODE, puis saisissez celui qui "
+              "arrive.",
+    },
+    "code_resent": {
+        "en": "A new code is on its way to your trusted devices. Any earlier "
+              "code is now void.",
+        "fr": "Un nouveau code part vers vos appareils de confiance. Tout "
+              "code precedent est desormais caduc.",
+    },
+    # EN | The code was right and Apple still will not trust the session. The
+    # EN | user cannot tell that apart from a refused code - both end in the
+    # EN | same prompt - so it gets its own sentence, naming the directory the
+    # EN | session should have been written to.
+    # FR | Le code etait bon et Apple refuse quand meme de faire confiance a
+    # FR | la session. L utilisateur ne peut pas distinguer cela d un code
+    # FR | refuse - les deux finissent sur la meme invite - d ou une phrase a
+    # FR | part, qui nomme le repertoire ou la session aurait du etre ecrite.
+    "code_not_trusted": {
+        "en": "The code was accepted but Apple did not mark the session as "
+              "trusted, so it will ask again. Check that {path} persists "
+              "across restarts. ({detail})",
+        "fr": "Le code a ete accepte mais Apple n a pas marque la session "
+              "comme de confiance : elle redemandera. Verifiez que {path} "
+              "survit aux redemarrages. ({detail})",
+    },
+    "session_unwritable": {
+        "en": "The session directory {path} cannot be written to, so every "
+              "run starts a new session and every code is already stale: "
+              "{detail}",
+        "fr": "Le repertoire de session {path} n est pas accessible en "
+              "ecriture : chaque execution demarre donc une nouvelle session "
+              "et chaque code est deja perime : {detail}",
     },
     "linked": {
         "en": "Linked to {account} through {engine}.",
@@ -731,10 +764,42 @@ def connect(args, locale: str):
     EN | (api, engine, state, payload-extra): state is 'linked',
     EN | 'awaiting_2fa' or an error state, and api is None unless the session
     EN | is usable.
+    EN |
+    EN | THIS FUNCTION NEVER ASKS APPLE FOR A CODE, and that is the whole
+    EN | point of the comment. It used to call request_2fa_code() whenever it
+    EN | saw requires_2fa, which read as a courtesy - push a code while the
+    EN | user is looking at the field that wants one. It was in fact an
+    EN | endless loop. Every action goes through connect(), including the one
+    EN | that VALIDATES a code: the user typed code A, connect() asked Apple
+    EN | for code B, Apple invalidated A, and the validation of A was refused.
+    EN | The screen asked again, the user read the newly arrived B, typed it,
+    EN | and connect() asked for C. Forever.
+    EN | The call was never needed either: with HSA2, Apple sends the code on
+    EN | its own when the authentication happens - requires_2fa being true
+    EN | MEANS a code has just been sent. Asking again only invalidates it.
+    EN | Pushing a fresh code is now an explicit action a person chooses
+    EN | (--action resend), never a side effect of connecting.
     FR | Ouvre une session depuis les identifiants memorises. Renvoie
     FR | (api, moteur, etat, complement) : l etat vaut 'linked',
     FR | 'awaiting_2fa' ou un etat d erreur, et api est None sauf si la
-    FR | session est utilisable."""
+    FR | session est utilisable.
+    FR |
+    FR | CETTE FONCTION NE DEMANDE JAMAIS DE CODE A APPLE, et c est tout le
+    FR | propos de ce commentaire. Elle appelait request_2fa_code() des
+    FR | qu elle voyait requires_2fa, ce qui passait pour une attention -
+    FR | pousser un code pendant que l utilisateur regarde le champ qui en
+    FR | reclame un. C etait en realite une boucle sans fin. Toute action
+    FR | passe par connect(), y compris celle qui VALIDE un code :
+    FR | l utilisateur tapait le code A, connect() demandait le code B a
+    FR | Apple, Apple invalidait A, et la validation de A etait refusee.
+    FR | L ecran redemandait, l utilisateur lisait le B qui venait
+    FR | d arriver, le tapait, et connect() demandait C. Indefiniment.
+    FR | L appel n a jamais ete necessaire non plus : en HSA2, Apple envoie
+    FR | le code de lui-meme au moment de l authentification - requires_2fa
+    FR | vrai SIGNIFIE qu un code vient d etre envoye. En redemander un ne
+    FR | fait que l invalider. Pousser un nouveau code est desormais une
+    FR | action explicite qu une personne choisit (--action resend), jamais
+    FR | un effet de bord de la connexion."""
     engines = available_engines()
     if not engines:
         return None, None, "no_library", say("no_library", locale)
@@ -745,12 +810,27 @@ def connect(args, locale: str):
     if not account or not password:
         return None, engine, "not_configured", say("no_credentials", locale)
 
+    # EN | A cookie directory that cannot be written is the OTHER way this
+    # EN | ends in an endless code prompt: every run would then start a brand
+    # EN | new session, so the code issued for the previous one is always
+    # EN | stale. Checked and named, rather than left to look like Apple
+    # EN | refusing good codes.
+    # FR | Un repertoire de cookies non inscriptible est l AUTRE facon de
+    # FR | finir sur une demande de code sans fin : chaque execution
+    # FR | demarrerait alors une session neuve, et le code emis pour la
+    # FR | precedente serait toujours perime. Verifie et nomme, plutot que
+    # FR | laisse a ressembler a un Apple qui refuse de bons codes.
     cookies = Path(args.session_dir)
     try:
         cookies.mkdir(parents=True, exist_ok=True)
         os.chmod(cookies, 0o700)
-    except OSError:
-        pass
+        probe = cookies / ".vssp_write_test"
+        probe.write_text("", encoding="utf-8")
+        probe.unlink()
+    except OSError as exc:
+        return None, engine, "error", say("session_unwritable", locale,
+                                          path=str(cookies),
+                                          detail=str(exc)[:120])
 
     try:
         api = engine.connect(account, password, cookies)
@@ -759,15 +839,6 @@ def connect(args, locale: str):
                                           detail=str(exc)[:200])
 
     if getattr(api, "requires_2fa", False):
-        # EN | Ask Apple to push a code now, so the user sees it appear while
-        # EN | they are looking at the screen that asks for it.
-        # FR | Demander a Apple de pousser un code maintenant, pour que
-        # FR | l utilisateur le voie arriver pendant qu il regarde l ecran qui
-        # FR | le reclame.
-        try:
-            api.request_2fa_code()
-        except Exception:  # noqa: BLE001 - a push failure is not fatal here
-            pass
         return api, engine, "awaiting_2fa", say("awaiting_2fa", locale)
 
     return api, engine, "linked", say("linked", locale, account=account,
@@ -836,10 +907,23 @@ def do_code(args, locale: str) -> dict:
                 **say("code_rejected", locale),
                 **engine_facts(args, engine)}
 
+    # EN | TRUSTING THE SESSION IS THE POINT, not a flourish after it. A code
+    # EN | that validates without the session becoming trusted leaves the next
+    # EN | run facing requires_2fa again - which is the same endless prompt
+    # EN | from the user's side, whatever its cause. So the outcome is read
+    # EN | back and reported rather than assumed, and a failure to trust is
+    # EN | said out loud instead of swallowed.
+    # FR | RENDRE LA SESSION DE CONFIANCE EST LE BUT, pas une fioriture qui
+    # FR | suit. Un code qui se valide sans que la session devienne de
+    # FR | confiance laisse l execution suivante face a requires_2fa - c est,
+    # FR | vu de l utilisateur, la meme demande sans fin, quelle qu en soit la
+    # FR | cause. Le resultat est donc relu et rapporte plutot que suppose, et
+    # FR | un echec a faire confiance est dit tout haut au lieu d etre avale.
+    trust_error = ""
     try:
         api.trust_session()
-    except Exception:  # noqa: BLE001 - a refused trust only costs a re-ask
-        pass
+    except Exception as exc:  # noqa: BLE001
+        trust_error = str(exc)[:160]
 
     # EN | Spent. Leaving a used code on disk serves nothing and would be
     # EN | replayed by the next run that finds it.
@@ -850,11 +934,47 @@ def do_code(args, locale: str) -> dict:
     except OSError:
         pass
 
+    trusted = bool(getattr(api, "is_trusted_session", False))
+    still_asking = bool(getattr(api, "requires_2fa", False))
+    account = (args.apple_id or "").strip()
+
+    if still_asking or (not trusted and trust_error):
+        return {**stated("awaiting_2fa", locale),
+                **say("code_not_trusted", locale,
+                      path=str(Path(args.session_dir)),
+                      detail=trust_error or "the session is still untrusted"),
+                "account": account, "trusted": trusted,
+                **engine_facts(args, engine)}
+
     return {**stated("linked", locale),
-            **say("linked", locale, account=(args.apple_id or "").strip(),
-                  engine=engine.name),
-            "account": (args.apple_id or "").strip(),
-            "trusted": bool(getattr(api, "is_trusted_session", False)),
+            **say("linked", locale, account=account, engine=engine.name),
+            "account": account,
+            "trusted": trusted,
+            **engine_facts(args, engine)}
+
+
+def do_resend(args, locale: str) -> dict:
+    """EN | Ask Apple for a NEW verification code, on purpose. This is the
+    EN | only place in this program that calls request_2fa_code(), because
+    EN | each call invalidates whatever code is already in the user's hand -
+    EN | see the comment on connect() for the loop that caused.
+    FR | Demander a Apple un NOUVEAU code de verification, exprès. C est le
+    FR | seul endroit de ce programme qui appelle request_2fa_code(), parce
+    FR | que chaque appel invalide le code deja entre les mains de
+    FR | l utilisateur - voir le commentaire de connect() pour la boucle que
+    FR | cela a provoquee."""
+    api, engine, state, extra = connect(args, locale)
+    if api is None:
+        return {**stated(state, locale), **extra, **engine_facts(args, engine)}
+
+    try:
+        api.request_2fa_code()
+    except Exception as exc:  # noqa: BLE001
+        return {**stated("awaiting_2fa", locale),
+                **say("login_failed", locale, detail=str(exc)[:200]),
+                **engine_facts(args, engine)}
+
+    return {**stated("awaiting_2fa", locale), **say("code_resent", locale),
             **engine_facts(args, engine)}
 
 
@@ -1885,7 +2005,7 @@ def main() -> int:
     ap.add_argument("--action", required=True,
                     choices=("status", "link", "code", "scan", "page",
                              "transfer", "bulk", "release", "reconcile",
-                             "purge", "storage", "grow"))
+                             "purge", "storage", "grow", "resend"))
     ap.add_argument("--apple-id", default="")
     ap.add_argument("--password-file", default="/config/vssp/.icloud_password")
     # EN | The session directory is shared with the icloudpd command on
@@ -1979,6 +2099,8 @@ def main() -> int:
             payload = do_link(args, locale)
         elif args.action == "code":
             payload = do_code(args, locale)
+        elif args.action == "resend":
+            payload = do_resend(args, locale)
         elif args.action == "scan":
             payload = do_scan(args, locale, status_path)
         elif args.action == "page":

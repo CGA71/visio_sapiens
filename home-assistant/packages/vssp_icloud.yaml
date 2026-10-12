@@ -221,6 +221,20 @@ shell_command:
     --host-path '{{ states('input_text.vssp_icloud_host_path') }}'
     --locale {{ states('input_select.vssp_language') }}
 
+  # EN | Asks Apple for a NEW code. The only command here that does, because
+  # EN | each request voids whatever code is already in the user's hand — the
+  # EN | reason the first version of this screen asked for a code forever.
+  # FR | Demande un NOUVEAU code a Apple. La seule commande d ici qui le
+  # FR | fasse, parce que chaque demande annule le code deja entre les mains
+  # FR | de l utilisateur — la raison pour laquelle la premiere version de cet
+  # FR | ecran reclamait un code indefiniment.
+  vssp_icloud_resend: >-
+    python3 /config/vssp/vssp_icloud.py
+    --action resend
+    --apple-id '{{ states('input_text.vssp_icloud_apple_id') }}'
+    --dest '{{ states('input_text.vssp_icloud_dest') }}'
+    --locale {{ states('input_select.vssp_language') }}
+
   vssp_icloud_scan: >-
     python3 /config/vssp/vssp_icloud.py
     --action scan --background
@@ -488,6 +502,13 @@ script:
           value: ""
       - action: script.vssp_icloud_refresh_sensors
 
+  vssp_icloud_resend:
+    alias: "Visio Sapiens — iCloud : envoyer un nouveau code"
+    mode: single
+    sequence:
+      - action: shell_command.vssp_icloud_resend
+      - action: script.vssp_icloud_refresh_sensors
+
   vssp_icloud_scan:
     alias: "Visio Sapiens — iCloud : analyser la photothèque"
     mode: single
@@ -682,7 +703,7 @@ automation:
               - condition: template
                 value_template: >-
                   {{ trigger.json.action | default('')
-                     in ['scan', 'bulk', 'purge', 'status', 'install'] }}
+                     in ['scan', 'bulk', 'purge', 'status', 'install', 'resend'] }}
             sequence:
               - choose:
                   - conditions: "{{ trigger.json.action == 'scan' }}"
@@ -697,6 +718,9 @@ automation:
                   - conditions: "{{ trigger.json.action == 'install' }}"
                     sequence:
                       - action: script.vssp_icloud_install
+                  - conditions: "{{ trigger.json.action == 'resend' }}"
+                    sequence:
+                      - action: script.vssp_icloud_resend
                 default:
                   - action: script.vssp_icloud_status
 

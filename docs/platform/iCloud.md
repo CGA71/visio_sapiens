@@ -86,6 +86,13 @@ Once validated, the session is trusted for **about two months** and nothing
 asks again — including every `icloudpd` run, which reuses it rather than being
 handed a password.
 
+**SEND A NEW CODE** is a button you press knowingly: asking Apple for a new
+code *voids the one already on your phone*. Nothing in this feature requests a
+code on its own, because doing so during the very call that validates a code is
+an endless prompt — type a code, a fresh one is requested, the typed one is now
+stale, repeat. With HSA2 Apple sends the code by itself when the sign-in
+happens, so the one that arrives after SAVE & CONNECT is the one to type.
+
 The code is taken by the library rather than by `icloudpd --auth-only` for one
 practical reason: icloudpd reads the code from a console prompt or a web UI and
 has no flag to be handed one, while the library has `validate_2fa_code()`. The
@@ -201,7 +208,7 @@ to block the screen.
 | Symptom | Cause |
 |---|---|
 | *Engine missing* | `icloudpd` is not installed, or a core update wiped it. Press INSTALL ENGINE. |
-| *Code required* returns every time | `trust_session()` was refused. Validate the code again; if it persists, check the Apple ID has no Advanced Data Protection enabled. |
+| *Code required* returns every time | Three distinct causes, and the message now names which: the code was **rejected** (it is single-use — press SEND A NEW CODE and type the one that arrives); the code was **accepted but the session was not trusted** (check `/config/vssp/.icloud_session` survives restarts, and that the Apple ID has no Advanced Data Protection); or the **session directory is not writable**, so every run starts a new session and every code is stale on arrival. |
 | The bulk button is greyed out | the `icloudpd` **command** is missing although the module is present — only the picker works. Press INSTALL ENGINE. |
 | *icloudpd stopped with code …: session expired* | the trusted session aged out. Sign in again in step 1; no password reaches icloudpd's command line. |
 | Nothing was removed from iCloud | none of the ticked items is in the ledger with a matching size on disk. Transfer them first. |
