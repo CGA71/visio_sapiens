@@ -516,6 +516,20 @@ script:
       - action: shell_command.vssp_icloud_code
       - action: script.vssp_icloud_refresh_sensors
 
+  # EN | Asks Apple for a NEW code, which voids the one already on the
+  # EN | user's phone. Nothing calls this on its own - see the comment on
+  # EN | connect() in vssp_icloud.py for the endless prompt that caused.
+  # FR | Demande un NOUVEAU code a Apple, ce qui annule celui qui est deja
+  # FR | sur le telephone de l utilisateur. Rien ne l appelle de lui-meme -
+  # FR | voir le commentaire de connect() dans vssp_icloud.py pour l invite
+  # FR | sans fin que cela avait provoquee.
+  vssp_icloud_resend:
+    alias: "Visio Sapiens — iCloud : envoyer un nouveau code"
+    mode: single
+    sequence:
+      - action: shell_command.vssp_icloud_resend
+      - action: script.vssp_icloud_refresh_sensors
+
   vssp_icloud_scan:
     alias: "Visio Sapiens — iCloud : analyser la photothèque"
     mode: single
