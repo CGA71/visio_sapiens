@@ -91,6 +91,7 @@
   ('assign',     'mdi:transit-connection-variant', 'assign'),
   ('energy',     'mdi:lightning-bolt',    'energy'),
   ('calendar',   'mdi:calendar-account',  'calendar'),
+  ('icloud',     'mdi:apple-icloud',      'icloud'),
   ('theme',      'mdi:palette',           'theme'),
   ('dashboards', 'mdi:view-dashboard-variant', 'dashboards'),
   ('updates',    'mdi:package-up',         'updates'),
@@ -3266,6 +3267,216 @@ views:
                 :host {
                   flex: 1 1 0;
                   min-height: 520px;
+                }
+                ha-card {
+                  background: transparent !important;
+                  border: none !important;
+                  box-shadow: none !important;
+                  overflow: hidden;
+                  height: 100%;
+                }
+{% elif screen == 'icloud' %}
+          # EN | iCLOUD PHOTOS — move a photo library onto storage this house
+          # EN | owns, and only then free the copy that sits in iCloud. Same
+          # EN | iframe + webhook pattern as CALENDAR and ASSIGN: the picker
+          # EN | lives in vssp_icloud.html, posts to webhook `vssp_icloud`
+          # EN | (packages/vssp_icloud.yaml), and vssp_icloud.py does the real
+          # EN | work against Apple.
+          # EN |
+          # EN | WHAT THIS SCREEN CANNOT REMOVE — the 2FA code. Apple sends it
+          # EN | to a trusted device; no form can read it from there, exactly
+          # EN | as the Google consent click cannot be signed on the owner's
+          # EN | behalf. Everything around it is automated, and the trusted
+          # EN | session then lasts about two months.
+          # EN |
+          # EN | The status rows sit OUTSIDE the iframe on purpose: they are
+          # EN | Home Assistant entities (command_line sensors reading
+          # EN | icloud_status.json), so a scan or a transfer started here
+          # EN | keeps reporting after the form is closed — which matters far
+          # EN | more here than on CALENDAR, because these operations run for
+          # EN | hours.
+          # FR | PHOTOS iCLOUD — deplacer une photothèque vers un stockage que
+          # FR | cette maison possede, et ne liberer qu ensuite la copie qui
+          # FR | dort dans iCloud. Meme patron iframe + webhook que CALENDRIER
+          # FR | et ASSIGN : le selecteur vit dans vssp_icloud.html, poste
+          # FR | vers le webhook `vssp_icloud` (packages/vssp_icloud.yaml), et
+          # FR | vssp_icloud.py fait le vrai travail contre Apple.
+          # FR |
+          # FR | CE QUE CET ECRAN NE PEUT PAS SUPPRIMER — le code 2FA. Apple
+          # FR | l envoie vers un appareil de confiance ; aucun formulaire ne
+          # FR | peut l y lire, exactement comme le clic de consentement
+          # FR | Google ne peut pas etre signe a la place du proprietaire.
+          # FR | Tout ce qui l entoure est automatise, et la session de
+          # FR | confiance dure ensuite deux mois environ.
+          # FR |
+          # FR | Les lignes d etat sont VOLONTAIREMENT hors de l iframe : ce
+          # FR | sont des entites Home Assistant (capteurs command_line qui
+          # FR | lisent icloud_status.json), donc un scan ou un transfert
+          # FR | lance ici continue de rendre compte apres la fermeture du
+          # FR | formulaire — ce qui compte bien plus ici que sur CALENDRIER,
+          # FR | parce que ces operations durent des heures.
+          - type: entities
+            entities:
+              - entity: sensor.vssp_icloud_state
+                name: "{{ t('admin.icloud_state') }}"
+              - entity: sensor.vssp_icloud_message
+                name: "{{ t('admin.icloud_message') }}"
+              - type: divider
+              - entity: sensor.vssp_icloud_items
+                name: "{{ t('admin.icloud_items') }}"
+              - entity: sensor.vssp_icloud_pending
+                name: "{{ t('admin.icloud_pending') }}"
+              - entity: sensor.vssp_icloud_size
+                name: "{{ t('admin.icloud_size') }}"
+              - entity: sensor.vssp_icloud_free_space
+                name: "{{ t('admin.icloud_free') }}"
+              - entity: sensor.vssp_icloud_destination
+                name: "{{ t('admin.icloud_destination') }}"
+            card_mod:
+              style: |
+                ha-card {
+                  background: var(--card-background-color, rgba(8,18,28,0.75)) !important;
+                  border: 1px solid rgba(0, 229, 255, 0.28) !important;
+                  border-radius: var(--ha-card-border-radius, 20px) !important;
+                }
+          # EN | THE THREE SWITCHES THAT DECIDE WHAT A BULK RUN DOES. They sit
+          # EN | out here rather than in the form because one of them —
+          # EN | FREE iCLOUD — is the only irreversible setting in this
+          # EN | feature, and a setting that deletes photos belongs in the
+          # EN | console's own state, where it is visible, logged and
+          # EN | survives the iframe.
+          # FR | LES TROIS REGLAGES QUI DECIDENT DE CE QUE FAIT UN TRANSFERT DE
+          # FR | MASSE. Ils sont ici plutot que dans le formulaire parce que
+          # FR | l un d eux — LIBERER iCLOUD — est le seul reglage
+          # FR | irreversible de cette fonction, et qu un reglage qui supprime
+          # FR | des photos appartient a l etat de la console, ou il est
+          # FR | visible, journalise et survit a l iframe.
+          - type: entities
+            entities:
+              - entity: input_boolean.vssp_icloud_free_after_bulk
+                name: "{{ t('admin.icloud_free_switch') }}"
+              - entity: input_number.vssp_icloud_keep_days
+                name: "{{ t('admin.icloud_keep_days') }}"
+              - entity: input_boolean.vssp_icloud_skip_videos
+                name: "{{ t('admin.icloud_skip_videos') }}"
+            card_mod:
+              style: |
+                ha-card {
+                  background: var(--card-background-color, rgba(8,18,28,0.75)) !important;
+                  border: 1px solid rgba(255, 167, 38, 0.30) !important;
+                  border-radius: var(--ha-card-border-radius, 20px) !important;
+                }
+          - type: grid
+            columns: 3
+            square: false
+            cards:
+              # EN | One `pip install icloudpd` brings both the command and
+              # EN | the module the picker imports. Offered as a button rather
+              # EN | than demanded by the deploy, because a house that never
+              # EN | opens this screen should not carry the dependency.
+              # FR | Un seul `pip install icloudpd` apporte a la fois la
+              # FR | commande et le module qu importe le selecteur. Propose en
+              # FR | bouton plutot qu exige par le deploiement, parce qu une
+              # FR | maison qui n ouvre jamais cet ecran n a pas a porter la
+              # FR | dependance.
+              - type: custom:button-card
+                template: vssp_admin_button
+                icon: mdi:package-down
+                name: "{{ t('admin.icloud_install') }}"
+                label: "{{ t('admin.icloud_install_hint') }}"
+                tap_action:
+                  action: call-service
+                  service: script.vssp_icloud_install
+              # EN | Reads the whole library into the local index. No photo is
+              # EN | downloaded — this is what the counters and the picker are
+              # EN | built from.
+              # FR | Lit toute la photothèque vers l index local. Aucune photo
+              # FR | n est telechargee — c est de la que viennent les
+              # FR | compteurs et le selecteur.
+              - type: custom:button-card
+                template: vssp_admin_button
+                icon: mdi:cloud-search-outline
+                name: "{{ t('admin.icloud_scan') }}"
+                label: "{{ t('admin.icloud_scan_hint') }}"
+                tap_action:
+                  action: call-service
+                  service: script.vssp_icloud_scan
+              # EN | The icloudpd command, on everything not already stored.
+              # EN | Confirmed because the FREE iCLOUD switch above may turn
+              # EN | this into a deletion — the confirmation says so rather
+              # EN | than assuming the switch was noticed.
+              # FR | La commande icloudpd, sur tout ce qui n est pas deja
+              # FR | stocke. Confirme parce que l interrupteur LIBERER iCLOUD
+              # FR | ci-dessus peut en faire une suppression — la confirmation
+              # FR | le dit plutot que de supposer l interrupteur remarque.
+              - type: custom:button-card
+                template: vssp_admin_button
+                icon: mdi:cloud-download-outline
+                name: "{{ t('admin.icloud_bulk') }}"
+                label: "{{ t('admin.icloud_bulk_hint') }}"
+                confirmation:
+                  text: "{{ t('admin.icloud_bulk_confirm') }}"
+                tap_action:
+                  action: call-service
+                  service: script.vssp_icloud_bulk
+          - type: grid
+            columns: 3
+            square: false
+            cards:
+              - type: custom:button-card
+                template: vssp_admin_button
+                icon: mdi:refresh
+                name: "{{ t('admin.icloud_refresh') }}"
+                label: "{{ t('admin.icloud_refresh_hint') }}"
+                tap_action:
+                  action: call-service
+                  service: script.vssp_icloud_status
+              # EN | Home Assistant serves /local without authentication, so
+              # EN | the cached thumbnails get their own eraser rather than
+              # EN | being left to age out.
+              # FR | Home Assistant sert /local sans authentification : les
+              # FR | miniatures en cache ont donc leur propre gomme plutot que
+              # FR | d etre laissees a vieillir.
+              - type: custom:button-card
+                template: vssp_admin_button
+                icon: mdi:image-off-outline
+                name: "{{ t('admin.icloud_purge') }}"
+                label: "{{ t('admin.icloud_purge_hint') }}"
+                tap_action:
+                  action: call-service
+                  service: script.vssp_icloud_purge
+              # EN | Grows the logical volume behind the destination, on the
+              # EN | Ubuntu host, by the amount the form holds. Growing only —
+              # EN | see the GROW section of vssp_icloud.py for why shrinking
+              # EN | is not offered at all.
+              # FR | Agrandit le volume logique derriere la destination, sur
+              # FR | l hote Ubuntu, de la quantite que porte le formulaire.
+              # FR | Agrandissement seul — voir la section GROW de
+              # FR | vssp_icloud.py pour la raison pour laquelle retrecir
+              # FR | n est pas propose du tout.
+              - type: custom:button-card
+                template: vssp_admin_button
+                icon: mdi:resize
+                name: "{{ t('admin.icloud_grow') }}"
+                label: "{{ t('admin.icloud_grow_hint') }}"
+                confirmation:
+                  text: "{{ t('admin.icloud_grow_confirm') }}"
+                tap_action:
+                  action: call-service
+                  service: script.vssp_icloud_grow
+          # EN | `lang` carries the GENERATED locale into the iframe, `v` is
+          # EN | the cache-buster — same two reasons as every other embedded
+          # EN | form in this console.
+          # FR | `lang` transmet la locale GENEREE a l iframe, `v` est
+          # FR | l anti-cache — memes deux raisons que pour chaque autre
+          # FR | formulaire integre de cette console.
+          - type: iframe
+            url: /local/vssp/wizard/vssp_icloud.html?v={{ build_stamp }}&lang={{ locale }}
+            card_mod:
+              style: |
+                :host {
+                  flex: 1 1 0;
+                  min-height: 760px;
                 }
                 ha-card {
                   background: transparent !important;

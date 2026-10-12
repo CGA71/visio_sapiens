@@ -555,6 +555,30 @@ admin:
   google_apply: APPLIQUER AU BANDEAU
   google_apply_hint: Régénère HOME avec le calendrier sélectionné
   google_apply_confirm: Régénérer le dashboard HOME avec ce calendrier ? Le fichier actuel est sauvegardé avant écrasement.
+  icloud_state: État de la liaison
+  icloud_message: Détail
+  icloud_items: Éléments dans la photothèque
+  icloud_pending: Pas encore transférés
+  icloud_size: Taille de la photothèque
+  icloud_free: Libre sur la destination
+  icloud_destination: Destination
+  icloud_free_switch: Libérer iCloud après un transfert de masse
+  icloud_keep_days: Jours conservés dans iCloud
+  icloud_skip_videos: Ignorer les vidéos
+  icloud_install: INSTALLER LE MOTEUR
+  icloud_install_hint: Ajoute icloudpd, qui apporte à la fois le téléchargeur et le module du sélecteur
+  icloud_scan: ANALYSER LA PHOTOTHÈQUE
+  icloud_scan_hint: Indexe chaque photo et vidéo sans en télécharger aucune
+  icloud_bulk: TOUT TRANSFÉRER
+  icloud_bulk_hint: Confie à icloudpd tout ce qui n'est pas déjà stocké ici
+  icloud_bulk_confirm: Lancer le transfert de masse ? Si LIBÉRER iCLOUD est actif, tout ce qui dépasse les jours conservés sera aussi supprimé d'iCloud une fois stocké ici.
+  icloud_refresh: RAFRAÎCHIR
+  icloud_refresh_hint: Relit les compteurs et la destination sans appeler Apple
+  icloud_purge: EFFACER LES MINIATURES
+  icloud_purge_hint: Vide les miniatures en cache, qui sont servies sans authentification
+  icloud_grow: AGRANDIR LE VOLUME
+  icloud_grow_hint: Ajoute la quantité déclarée au volume derrière la destination
+  icloud_grow_confirm: Agrandir de la quantité déclarée le volume derrière la destination ? L'agrandissement se fait à chaud et conserve les données ; il ne se rattrape pas d'ici.
   restore_theme_reference: RESTAURER LA RÉFÉRENCE
   restore_theme_reference_hint: Réinitialise chaque couleur/forme à la valeur d'usine
   restore_theme_reference_confirm: Réinitialiser la charte graphique à sa référence d'usine ? Une sauvegarde du design_system.yaml actuel est conservée, et le thème se recharge à chaud.
@@ -643,6 +667,8 @@ adminmenu:
     energy_hint: Créer ou mettre à jour le parc mesuré et le tableau électrique
     calendar: CALENDRIER GOOGLE
     calendar_hint: Configurer l'intégration Google Calendar et le calendrier du bandeau
+    icloud: PHOTOS iCLOUD
+    icloud_hint: Déplacer une photothèque iCloud vers un stockage qui vous appartient, puis libérer iCloud
     theme: TEMPLATE GRAPHIQUE
     theme_hint: Importer ou exporter la charte graphique CSS
     dashboards: DASHBOARDS

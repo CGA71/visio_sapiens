@@ -1,0 +1,778 @@
+########################################################################
+# Visio Sapiens — iCLOUD PHOTOS (ADMIN console screen)
+#
+# EN | Brings an iCloud photo library onto storage you own — a partition on
+# EN | the Ubuntu host, or a NAS share — and only then offers to free the
+# EN | copy that sits in iCloud. The console screen shows how many photos
+# EN | and videos there are, how much they weigh, what is left on the
+# EN | destination, and a grid of thumbnails to pick from.
+# FR | Amene une photothèque iCloud vers un stockage qui vous appartient —
+# FR | une partition de l hote Ubuntu, ou un partage NAS — et ne propose
+# FR | qu ensuite de liberer la copie qui dort dans iCloud. L ecran de la
+# FR | console affiche combien il y a de photos et de videos, ce qu elles
+# FR | pesent, ce qu il reste sur la destination, et une grille de
+# FR | miniatures dans laquelle choisir.
+#
+# EN | THE ENGINE IS icloudpd. One `pip install icloudpd` delivers both the
+# EN | command (the hardened bulk downloader, and the only thing that knows
+# EN | how to free iCloud in the same pass) and the pyicloud_ipd module it
+# EN | vendors (per-asset access, which the command line cannot express).
+# EN | vssp_icloud.py uses both and shares ONE trusted session between them.
+# EN | See the header of vssp/vssp_icloud.py for the full reasoning.
+# FR | LE MOTEUR EST icloudpd. Un seul `pip install icloudpd` livre a la
+# FR | fois la commande (le telechargeur de masse durci, et la seule chose
+# FR | qui sache liberer iCloud dans la meme passe) et le module
+# FR | pyicloud_ipd qu il vendore (acces element par element, que la ligne de
+# FR | commande ne sait pas exprimer). vssp_icloud.py se sert des deux et
+# FR | partage UNE session de confiance entre eux. Voir l en-tete de
+# FR | vssp/vssp_icloud.py pour le raisonnement complet.
+#
+# EN | BEFORE DEPLOYING — check for duplicate keys. Home Assistant refuses to
+# EN | start when two packages define the same key:
+# FR | AVANT DE DEPLOYER — verifier les cles en double. Home Assistant refuse
+# FR | de demarrer quand deux packages definissent la meme cle :
+#
+#   grep -n "vssp_icloud" home-assistant/packages/*.yaml
+#
+# EN | Depends on: vssp/vssp_icloud.py, www/vssp/wizard/vssp_icloud.html
+# FR | Depend de : vssp/vssp_icloud.py, www/vssp/wizard/vssp_icloud.html
+########################################################################
+
+# --------------------------------------------------------------------
+# EN | HELPERS — what the form stores
+# FR | HELPERS — ce que le formulaire memorise
+# --------------------------------------------------------------------
+input_text:
+  # EN | An Apple ID is an email address, not a secret — same reasoning as
+  # EN | the Google OAuth client id next door: it may travel on a command
+  # EN | line. The password beside it may not.
+  # FR | Un identifiant Apple est une adresse e-mail, pas un secret — meme
+  # FR | raisonnement que l id client OAuth Google d a cote : il peut voyager
+  # FR | en ligne de commande. Le mot de passe a cote, non.
+  vssp_icloud_apple_id:
+    name: "Visio Sapiens — iCloud : identifiant Apple"
+    max: 255
+
+  # EN | Never reaches a command line. Written to a 0600 file by
+  # EN | shell_command.vssp_write_icloud_password and read from there — the
+  # EN | same convention as vssp_ha_token, the chatbot keys and the Google
+  # EN | client secret.
+  # EN | And it must be the REAL Apple ID password: Apple's app-specific
+  # EN | passwords only open the published CalDAV/IMAP services, and the
+  # EN | photo library is not one of them.
+  # FR | N atteint jamais une ligne de commande. Ecrit dans un fichier 0600
+  # FR | par shell_command.vssp_write_icloud_password et relu de la — meme
+  # FR | convention que vssp_ha_token, les cles du chatbot et le secret
+  # FR | client Google.
+  # FR | Et ce doit etre le VRAI mot de passe de l identifiant Apple : les
+  # FR | mots de passe d application d Apple n ouvrent que les services
+  # FR | publies CalDAV/IMAP, et la photothèque n en fait pas partie.
+  vssp_icloud_password:
+    name: "Visio Sapiens — iCloud : mot de passe"
+    mode: password
+    max: 255
+
+  # EN | The six digits Apple pushes to a trusted device. Same file
+  # EN | treatment as the password although it is short-lived and
+  # EN | single-use: an argv is readable by every process on the box for as
+  # EN | long as the command runs, and the convention costs nothing.
+  # FR | Les six chiffres qu Apple pousse vers un appareil de confiance. Meme
+  # FR | traitement par fichier que le mot de passe bien qu il soit ephemere
+  # FR | et a usage unique : un argv est lisible par tout processus de la
+  # FR | machine le temps de la commande, et la convention ne coute rien.
+  vssp_icloud_code:
+    name: "Visio Sapiens — iCloud : code de verification"
+    mode: password
+    max: 10
+
+  # EN | The destination as HOME ASSISTANT sees it. /media is Home
+  # EN | Assistant's own mount point for added storage, so a partition or a
+  # EN | NAS share added in Settings > System > Storage lands under it and
+  # EN | needs no further plumbing.
+  # FR | La destination telle que HOME ASSISTANT la voit. /media est le point
+  # FR | de montage propre a Home Assistant pour le stockage ajoute : une
+  # FR | partition ou un partage NAS ajoute dans Parametres > Systeme >
+  # FR | Stockage atterrit dessous et n exige aucune autre plomberie.
+  vssp_icloud_dest:
+    name: "Visio Sapiens — iCloud : destination"
+    initial: "/media/icloud"
+    max: 255
+
+  # EN | The SAME place as the Ubuntu host sees it. Only the resize needs
+  # EN | this, and only this can supply it: a bind mount hides its own
+  # EN | origin, so the container cannot deduce which host path — and
+  # EN | therefore which logical volume — is underneath it.
+  # EN | Left empty when the destination is a NAS: there is nothing on the
+  # EN | host to grow.
+  # FR | Le MEME endroit vu par l hote Ubuntu. Seul le redimensionnement en a
+  # FR | besoin, et seul lui peut le fournir : un bind mount masque sa propre
+  # FR | origine, donc le conteneur ne peut pas deduire quel chemin de
+  # FR | l hote — et donc quel volume logique — se trouve dessous.
+  # FR | Laisse vide quand la destination est un NAS : il n y a rien a
+  # FR | agrandir sur l hote.
+  vssp_icloud_host_path:
+    name: "Visio Sapiens — iCloud : chemin cote hote"
+    max: 255
+
+  # EN | How much to add, in the shape lvextend takes: +50G, +1.5T. The
+  # EN | script refuses anything else, and refuses every negative value by
+  # EN | name — see the GROW section of vssp_icloud.py for why shrinking is
+  # EN | not offered at all.
+  # FR | Combien ajouter, dans la forme que prend lvextend : +50G, +1.5T. Le
+  # FR | script refuse tout le reste, et refuse nommement toute valeur
+  # FR | negative — voir la section GROW de vssp_icloud.py pour la raison
+  # FR | pour laquelle retrecir n est pas propose du tout.
+  vssp_icloud_grow:
+    name: "Visio Sapiens — iCloud : agrandir de"
+    initial: "+50G"
+    max: 16
+
+input_boolean:
+  # EN | THE ONE IRREVERSIBLE SWITCH. On, a bulk run hands icloudpd
+  # EN | --keep-icloud-recent-days, which deletes in iCloud what it has just
+  # EN | stored locally. Off by default, and the console asks again before
+  # EN | the run starts.
+  # FR | LE SEUL INTERRUPTEUR IRREVERSIBLE. Actif, une execution de masse
+  # FR | passe --keep-icloud-recent-days a icloudpd, qui supprime dans iCloud
+  # FR | ce qu il vient de stocker en local. Inactif par defaut, et la
+  # FR | console redemande confirmation avant de lancer.
+  vssp_icloud_free_after_bulk:
+    name: "Visio Sapiens — iCloud : liberer iCloud apres transfert"
+    icon: mdi:cloud-off-outline
+    initial: false
+
+  vssp_icloud_skip_videos:
+    name: "Visio Sapiens — iCloud : ignorer les videos"
+    icon: mdi:video-off-outline
+    initial: false
+
+input_number:
+  # EN | What --keep-icloud-recent-days protects. 30 days is the default
+  # EN | because it is roughly the window in which people still reach for a
+  # EN | photo on their phone; 0 means keep nothing in iCloud.
+  # FR | Ce que protege --keep-icloud-recent-days. 30 jours par defaut parce
+  # FR | que c est a peu pres la fenetre dans laquelle on va encore chercher
+  # FR | une photo sur son telephone ; 0 veut dire ne rien garder dans
+  # FR | iCloud.
+  vssp_icloud_keep_days:
+    name: "Visio Sapiens — iCloud : jours conserves dans iCloud"
+    min: 0
+    max: 365
+    step: 1
+    initial: 30
+    mode: box
+
+# --------------------------------------------------------------------
+# EN | COMMANDS
+# FR | COMMANDES
+# --------------------------------------------------------------------
+# EN | EVERY LONG ACTION CARRIES --background. A shell_command is killed at
+# EN | 60 seconds; a library scan or a 4 GB video transfer is not a
+# EN | 60-second job. --background makes vssp_icloud.py relaunch itself
+# EN | detached and return at once, then report through the status file that
+# EN | the sensors below and the wizard page both poll.
+# FR | TOUTE ACTION LONGUE PORTE --background. Un shell_command est tue a 60
+# FR | secondes ; un scan de photothèque ou le transfert d une video de 4 Go
+# FR | n est pas un travail de 60 secondes. --background fait que
+# FR | vssp_icloud.py se relance detache et rend la main tout de suite, puis
+# FR | rend compte par le fichier d etat qu interrogent a la fois les
+# FR | capteurs ci-dessous et la page wizard.
+shell_command:
+  # EN | Secret -> protected file. Same shape as vssp_write_token.
+  # FR | Secret -> fichier protege. Meme forme que vssp_write_token.
+  vssp_write_icloud_password: >-
+    sh -c "mkdir -p /config/vssp &&
+    printf '%s' '{{ states('input_text.vssp_icloud_password') }}'
+    > /config/vssp/.icloud_password &&
+    chmod 600 /config/vssp/.icloud_password"
+
+  vssp_write_icloud_code: >-
+    sh -c "mkdir -p /config/vssp &&
+    printf '%s' '{{ states('input_text.vssp_icloud_code') }}'
+    > /config/vssp/.icloud_code &&
+    chmod 600 /config/vssp/.icloud_code"
+
+  # EN | The engine. Non-blocking by design: an instance without it still
+  # EN | draws the screen, which then says what is missing and offers this
+  # EN | button — the same treatment paramiko gets in the deploy jobs.
+  # FR | Le moteur. Volontairement non bloquant : une instance sans lui
+  # FR | dessine quand meme l ecran, qui dit alors ce qui manque et propose
+  # FR | ce bouton — le meme traitement que paramiko dans les jobs de
+  # FR | deploiement.
+  vssp_icloud_install: >-
+    sh -c "pip install icloudpd --quiet --break-system-packages 2>/dev/null
+    || pip install icloudpd --quiet 2>/dev/null || true;
+    python3 -c 'import pyicloud_ipd' && echo '[OK] icloudpd installed'
+    || echo '[ERR] icloudpd could not be installed'"
+
+  vssp_icloud_link: >-
+    python3 /config/vssp/vssp_icloud.py
+    --action link
+    --apple-id '{{ states('input_text.vssp_icloud_apple_id') }}'
+    --dest '{{ states('input_text.vssp_icloud_dest') }}'
+    --host-path '{{ states('input_text.vssp_icloud_host_path') }}'
+    --locale {{ states('input_select.vssp_language') }}
+
+  vssp_icloud_code: >-
+    python3 /config/vssp/vssp_icloud.py
+    --action code
+    --apple-id '{{ states('input_text.vssp_icloud_apple_id') }}'
+    --dest '{{ states('input_text.vssp_icloud_dest') }}'
+    --host-path '{{ states('input_text.vssp_icloud_host_path') }}'
+    --locale {{ states('input_select.vssp_language') }}
+
+  vssp_icloud_scan: >-
+    python3 /config/vssp/vssp_icloud.py
+    --action scan --background
+    --apple-id '{{ states('input_text.vssp_icloud_apple_id') }}'
+    --dest '{{ states('input_text.vssp_icloud_dest') }}'
+    --host-path '{{ states('input_text.vssp_icloud_host_path') }}'
+    --locale {{ states('input_select.vssp_language') }}
+
+  # EN | The picker's own call. offset/limit/filter arrive as service-call
+  # EN | variables from the automation below, not from a helper: they change
+  # EN | on every scroll, and a helper would turn browsing into a write to
+  # EN | the state machine each time.
+  # FR | L appel propre au selecteur. offset/limit/filter arrivent en
+  # FR | variables d appel de service depuis l automatisation ci-dessous, pas
+  # FR | d un helper : ils changent a chaque defilement, et un helper
+  # FR | transformerait le feuilletage en une ecriture dans la machine
+  # FR | d etats a chaque fois.
+  vssp_icloud_page: >-
+    python3 /config/vssp/vssp_icloud.py
+    --action page
+    --apple-id '{{ states('input_text.vssp_icloud_apple_id') }}'
+    --dest '{{ states('input_text.vssp_icloud_dest') }}'
+    --offset {{ offset | default(0) | int }}
+    --limit {{ limit | default(60) | int }}
+    --filter {{ filter | default('all') }}
+    --locale {{ states('input_select.vssp_language') }}
+
+  # EN | The hand-picked transfer. The payload is base64 for the same reason
+  # EN | vssp_assign_apply.py takes its own that way: a list of asset ids is
+  # EN | far longer than the 255 characters an input_text holds.
+  # FR | Le transfert au cas par cas. Le payload est en base64 pour la meme
+  # FR | raison que celui de vssp_assign_apply.py : une liste d ids depasse
+  # FR | de loin les 255 caracteres d un input_text.
+  vssp_icloud_transfer: >-
+    python3 /config/vssp/vssp_icloud.py
+    --action transfer --background
+    --apple-id '{{ states('input_text.vssp_icloud_apple_id') }}'
+    --dest '{{ states('input_text.vssp_icloud_dest') }}'
+    --host-path '{{ states('input_text.vssp_icloud_host_path') }}'
+    --json-b64 "{{ content_b64 }}"
+    --locale {{ states('input_select.vssp_language') }}
+
+  # EN | The bulk transfer — the icloudpd command itself. --free-icloud-days
+  # EN | is only ever a real number when the switch above is on; -1 means
+  # EN | "touch nothing in iCloud", which is the default.
+  # FR | Le transfert en masse — la commande icloudpd elle-meme.
+  # FR | --free-icloud-days n est un vrai nombre que si l interrupteur
+  # FR | ci-dessus est actif ; -1 veut dire « ne rien toucher dans iCloud »,
+  # FR | et c est le defaut.
+  vssp_icloud_bulk: >-
+    python3 /config/vssp/vssp_icloud.py
+    --action bulk --background
+    --apple-id '{{ states('input_text.vssp_icloud_apple_id') }}'
+    --dest '{{ states('input_text.vssp_icloud_dest') }}'
+    --host-path '{{ states('input_text.vssp_icloud_host_path') }}'
+    {% if is_state('input_boolean.vssp_icloud_skip_videos', 'on') %}--skip-videos{% endif %}
+    --free-icloud-days
+    {%- if is_state('input_boolean.vssp_icloud_free_after_bulk', 'on') %}
+    {{ states('input_number.vssp_icloud_keep_days') | int(30) }}
+    {%- else %} -1
+    {%- endif %}
+    --locale {{ states('input_select.vssp_language') }}
+
+  vssp_icloud_release: >-
+    python3 /config/vssp/vssp_icloud.py
+    --action release --background
+    --apple-id '{{ states('input_text.vssp_icloud_apple_id') }}'
+    --dest '{{ states('input_text.vssp_icloud_dest') }}'
+    --json-b64 "{{ content_b64 }}"
+    --locale {{ states('input_select.vssp_language') }}
+
+  vssp_icloud_purge: >-
+    python3 /config/vssp/vssp_icloud.py
+    --action purge
+    --locale {{ states('input_select.vssp_language') }}
+
+  vssp_icloud_status: >-
+    python3 /config/vssp/vssp_icloud.py
+    --action status
+    --apple-id '{{ states('input_text.vssp_icloud_apple_id') }}'
+    --dest '{{ states('input_text.vssp_icloud_dest') }}'
+    --host-path '{{ states('input_text.vssp_icloud_host_path') }}'
+    --locale {{ states('input_select.vssp_language') }}
+
+  # EN | The resize. Reaches the Ubuntu host over the SSH transport of
+  # EN | vssp_infra_updates.py, with the credentials already in the safe as
+  # EN | `host_ssh` — so a SEALED Vault answers "the safe is shut" here too,
+  # EN | which is the honest message rather than a confusing LVM error.
+  # FR | Le redimensionnement. Joint l hote Ubuntu par le transport SSH de
+  # FR | vssp_infra_updates.py, avec les identifiants deja presents dans le
+  # FR | coffre sous `host_ssh` — un Vault SCELLE repond donc « le coffre est
+  # FR | ferme » ici aussi, ce qui est le message honnete plutot qu une
+  # FR | erreur LVM deroutante.
+  vssp_icloud_grow: >-
+    python3 /config/vssp/vssp_icloud.py
+    --action grow
+    --dest '{{ states('input_text.vssp_icloud_dest') }}'
+    --host-path '{{ states('input_text.vssp_icloud_host_path') }}'
+    --size '{{ states('input_text.vssp_icloud_grow') }}'
+    --locale {{ states('input_select.vssp_language') }}
+
+# --------------------------------------------------------------------
+# EN | STATE READ BACK INTO THE CONSOLE
+# FR | ETAT RELU PAR LA CONSOLE
+# --------------------------------------------------------------------
+# EN | Parsed with python3 rather than grep, for the same reason as the
+# EN | Google sensors: a message holding a quote or a comma must not be able
+# EN | to corrupt the reading.
+# EN | LANGUAGE — these rows sit under labels the generator translated, so
+# EN | what they DISPLAY follows the same language. The script already
+# EN | rendered `state_label` and `message` in --locale; the fallback for a
+# EN | missing status file is chosen from input_select.vssp_language here,
+# EN | written without accents because it travels through a shell.
+# FR | Analyse avec python3 plutot que grep, pour la meme raison que les
+# FR | capteurs Google : un message portant une apostrophe ou une virgule ne
+# FR | doit pas pouvoir corrompre la lecture.
+# FR | LANGUE — ces lignes vivent sous des libelles traduits par le
+# FR | generateur : ce qu elles AFFICHENT suit donc la meme langue. Le script
+# FR | a deja rendu `state_label` et `message` dans --locale ; le repli en
+# FR | l absence de fichier d etat est choisi ici depuis
+# FR | input_select.vssp_language, ecrit sans accents car il passe par un
+# FR | shell.
+command_line:
+  - sensor:
+      name: "VSSP iCloud State"
+      unique_id: vssp_icloud_state
+      command: >-
+        python3 -c "import json;d=json.load(open('/config/www/vssp/icloud_status.json'));print(d.get('state_label') or d.get('state',''))"
+        2>/dev/null ||
+        echo "{{ 'Non configure' if states('input_select.vssp_language') == 'fr' else 'Not configured' }}"
+      scan_interval: 30
+
+  - sensor:
+      name: "VSSP iCloud Message"
+      unique_id: vssp_icloud_message
+      command: >-
+        python3 -c "import json;print(json.load(open('/config/www/vssp/icloud_status.json')).get('message','')[:250])"
+        2>/dev/null ||
+        echo "{{ 'Aucune photothèque iCloud liee.' if states('input_select.vssp_language') == 'fr' else 'No iCloud library linked yet.' }}"
+      scan_interval: 30
+
+  # EN | No unit_of_measurement on the three counters: it is not templatable,
+  # EN | so any word here would be frozen in ONE language next to a label
+  # EN | translated into the other. The row labels already say what the
+  # EN | numbers count. Same decision, same reason, as sensor.vssp_google_calendars.
+  # FR | Pas d unit_of_measurement sur les trois compteurs : elle n est pas
+  # FR | templatable, donc tout mot ici serait fige dans UNE langue a cote
+  # FR | d un libelle traduit dans l autre. Les libelles de ligne disent deja
+  # FR | ce que comptent les nombres. Meme decision, meme raison, que
+  # FR | sensor.vssp_google_calendars.
+  - sensor:
+      name: "VSSP iCloud Items"
+      unique_id: vssp_icloud_items
+      command: >-
+        python3 -c "import json;print(json.load(open('/config/www/vssp/icloud_status.json')).get('items',0))"
+        2>/dev/null || echo 0
+      scan_interval: 60
+
+  - sensor:
+      name: "VSSP iCloud Pending"
+      unique_id: vssp_icloud_pending
+      command: >-
+        python3 -c "import json;print(json.load(open('/config/www/vssp/icloud_status.json')).get('pending_items',0))"
+        2>/dev/null || echo 0
+      scan_interval: 60
+
+  # EN | Gigabytes, as a number with a real unit — this one IS a measurement
+  # EN | and GB is the same word in both languages, so the objection above
+  # EN | does not apply.
+  # FR | Gigaoctets, en nombre avec une vraie unite — celle-ci EST une mesure
+  # FR | et GB s ecrit pareil dans les deux langues, l objection ci-dessus ne
+  # FR | s applique donc pas.
+  - sensor:
+      name: "VSSP iCloud Size"
+      unique_id: vssp_icloud_size
+      unit_of_measurement: "GB"
+      state_class: measurement
+      command: >-
+        python3 -c "import json;print(round(json.load(open('/config/www/vssp/icloud_status.json')).get('bytes',0)/1073741824,1))"
+        2>/dev/null || echo 0
+      scan_interval: 60
+
+  - sensor:
+      name: "VSSP iCloud Free Space"
+      unique_id: vssp_icloud_free_space
+      unit_of_measurement: "GB"
+      state_class: measurement
+      command: >-
+        python3 -c "import json;print(round(json.load(open('/config/www/vssp/icloud_status.json')).get('storage',{}).get('free',0)/1073741824,1))"
+        2>/dev/null || echo 0
+      scan_interval: 60
+
+  - sensor:
+      name: "VSSP iCloud Destination"
+      unique_id: vssp_icloud_destination
+      command: >-
+        python3 -c "import json;d=json.load(open('/config/www/vssp/icloud_status.json')).get('storage',{});print((d.get('message') or d.get('dest') or '')[:250])"
+        2>/dev/null ||
+        echo "{{ 'Destination inconnue.' if states('input_select.vssp_language') == 'fr' else 'Destination unknown.' }}"
+      scan_interval: 60
+
+# --------------------------------------------------------------------
+# EN | SCRIPTS — what the ADMIN buttons call
+# FR | SCRIPTS — ce qu appellent les boutons de l ADMIN
+# --------------------------------------------------------------------
+script:
+  # EN | Refreshing the seven sensors is the tail of every script here, so it
+  # EN | lives once and is called, rather than being copied seven times.
+  # FR | Rafraichir les sept capteurs est la queue de chaque script d ici :
+  # FR | cela vit donc une fois et s appelle, plutot que d etre recopie sept
+  # FR | fois.
+  vssp_icloud_refresh_sensors:
+    alias: "Visio Sapiens — iCloud : rafraichir les capteurs"
+    mode: single
+    sequence:
+      - action: homeassistant.update_entity
+        target:
+          entity_id:
+            - sensor.vssp_icloud_state
+            - sensor.vssp_icloud_message
+            - sensor.vssp_icloud_items
+            - sensor.vssp_icloud_pending
+            - sensor.vssp_icloud_size
+            - sensor.vssp_icloud_free_space
+            - sensor.vssp_icloud_destination
+
+  vssp_icloud_install:
+    alias: "Visio Sapiens — iCloud : installer le moteur"
+    mode: single
+    sequence:
+      - action: shell_command.vssp_icloud_install
+      - action: shell_command.vssp_icloud_status
+      - action: script.vssp_icloud_refresh_sensors
+
+  # EN | Saving the password and signing in are one gesture: a stored
+  # EN | password that was never used to open a session tells nobody
+  # EN | anything.
+  # FR | Enregistrer le mot de passe et se connecter ne font qu un geste : un
+  # FR | mot de passe memorise qui n a jamais servi a ouvrir une session
+  # FR | n apprend rien a personne.
+  vssp_icloud_link:
+    alias: "Visio Sapiens — iCloud : connecter"
+    mode: single
+    sequence:
+      - action: shell_command.vssp_write_icloud_password
+      - action: shell_command.vssp_icloud_link
+      - action: script.vssp_icloud_refresh_sensors
+
+  vssp_icloud_code:
+    alias: "Visio Sapiens — iCloud : valider le code"
+    mode: single
+    sequence:
+      - action: shell_command.vssp_write_icloud_code
+      - action: shell_command.vssp_icloud_code
+      # EN | The helper is cleared as soon as the code has been handed over.
+      # EN | It is single-use, and leaving it in the state machine would put
+      # EN | it in the recorder database for ten days.
+      # FR | Le helper est vide des que le code a ete transmis. Il est a usage
+      # FR | unique, et le laisser dans la machine d etats le mettrait dans la
+      # FR | base du recorder pour dix jours.
+      - action: input_text.set_value
+        target:
+          entity_id: input_text.vssp_icloud_code
+        data:
+          value: ""
+      - action: script.vssp_icloud_refresh_sensors
+
+  vssp_icloud_scan:
+    alias: "Visio Sapiens — iCloud : analyser la photothèque"
+    mode: single
+    sequence:
+      - action: shell_command.vssp_icloud_scan
+      - action: script.vssp_icloud_refresh_sensors
+
+  vssp_icloud_bulk:
+    alias: "Visio Sapiens — iCloud : transferer tout ce qui manque"
+    mode: single
+    sequence:
+      - action: shell_command.vssp_icloud_bulk
+      - action: script.vssp_icloud_refresh_sensors
+
+  vssp_icloud_purge:
+    alias: "Visio Sapiens — iCloud : effacer les miniatures"
+    mode: single
+    sequence:
+      - action: shell_command.vssp_icloud_purge
+      - action: script.vssp_icloud_refresh_sensors
+
+  vssp_icloud_status:
+    alias: "Visio Sapiens — iCloud : rafraichir l etat"
+    mode: single
+    sequence:
+      - action: shell_command.vssp_icloud_status
+      - action: script.vssp_icloud_refresh_sensors
+
+  vssp_icloud_grow:
+    alias: "Visio Sapiens — iCloud : agrandir le volume"
+    mode: single
+    sequence:
+      - action: shell_command.vssp_icloud_grow
+      - action: shell_command.vssp_icloud_status
+      - action: script.vssp_icloud_refresh_sensors
+
+# --------------------------------------------------------------------
+# EN | FORM INTAKE — the wizard page posts here
+# FR | RECEPTION DU FORMULAIRE — la page wizard poste ici
+# --------------------------------------------------------------------
+# EN | Same reasoning as vssp_google.yaml and vssp_assign.yaml: the page
+# EN | lives in an iframe, cannot reach the parent's `hass` object, and a
+# EN | REST call would need a Bearer token that has no business in a
+# EN | browser. A webhook needs none, and local_only: true keeps it on the
+# EN | LAN.
+# EN | mode: queued, not single — a webhook automation in mode: single
+# EN | silently DROPS a trigger that arrives while a previous run is still
+# EN | executing, yet the endpoint still answers 200, so the browser shows
+# EN | its success notice either way. This page fires from several call
+# EN | sites (paging, filtering, transferring) in quick succession, which is
+# EN | exactly the shape that loses an edit to a race.
+# FR | Meme raisonnement que vssp_google.yaml et vssp_assign.yaml : la page
+# FR | vit dans une iframe, ne peut pas atteindre l objet `hass` du parent,
+# FR | et un appel REST exigerait un jeton Bearer qui n a rien a faire dans
+# FR | un navigateur. Un webhook n en exige aucun, et local_only: true le
+# FR | maintient sur le reseau local.
+# FR | mode: queued, pas single — une automatisation webhook en mode: single
+# FR | REJETTE en silence un declenchement arrivant pendant qu une execution
+# FR | precedente tourne, pourtant le point d entree repond quand meme 200 :
+# FR | le navigateur affiche donc son avis de succes dans les deux cas. Cette
+# FR | page tire depuis plusieurs points d appel (pagination, filtrage,
+# FR | transfert) en succession rapide, ce qui est exactement la forme qui
+# FR | perd une modification dans une course.
+automation:
+  - alias: "Visio Sapiens — Receive iCloud command"
+    id: vssp_receive_icloud
+    mode: queued
+    max: 10
+    triggers:
+      - trigger: webhook
+        webhook_id: vssp_icloud
+        local_only: true
+        allowed_methods:
+          - POST
+    actions:
+      - choose:
+          # EN | SHAPE 1 — credentials. Handled first and on its own, because
+          # EN | every other shape must be able to arrive without carrying a
+          # EN | password: routing a page request through this branch would
+          # EN | overwrite the stored password with whatever placeholder the
+          # EN | page happened to send. Same trap, same fix, as the Google
+          # EN | form's calendar-pick branch.
+          # FR | FORME 1 — identifiants. Traitee en premier et seule, parce
+          # FR | que toutes les autres formes doivent pouvoir arriver sans
+          # FR | porter de mot de passe : faire passer une demande de page par
+          # FR | cette branche remplacerait le mot de passe memorise par le
+          # FR | bouche-trou que la page aurait envoye. Meme piege, meme
+          # FR | correctif, que la branche choix-du-calendrier du formulaire
+          # FR | Google.
+          - conditions:
+              - condition: template
+                value_template: >-
+                  {{ trigger.json.apple_id is defined
+                     and (trigger.json.apple_id | trim | regex_search('^[^@\s]+@[^@\s]+\.[^@\s]+$'))
+                     and (trigger.json.password | default('') | trim) != '' }}
+            sequence:
+              - action: input_text.set_value
+                target:
+                  entity_id: input_text.vssp_icloud_apple_id
+                data:
+                  value: "{{ trigger.json.apple_id | trim | truncate(255, True, '') }}"
+              - action: input_text.set_value
+                target:
+                  entity_id: input_text.vssp_icloud_password
+                data:
+                  value: "{{ trigger.json.password | trim | truncate(255, True, '') }}"
+              - action: script.vssp_icloud_link
+
+          # EN | SHAPE 2 — the 2FA code. Digits only: anything else is a
+          # EN | paste accident, and sending it to Apple only burns an
+          # EN | attempt.
+          # FR | FORME 2 — le code 2FA. Chiffres uniquement : tout le reste
+          # FR | est un accident de copier-coller, et l envoyer a Apple ne
+          # FR | fait que consommer une tentative.
+          - conditions:
+              - condition: template
+                value_template: >-
+                  {{ trigger.json.code is defined
+                     and (trigger.json.code | trim | regex_match('^\d{4,8}$')) }}
+            sequence:
+              - action: input_text.set_value
+                target:
+                  entity_id: input_text.vssp_icloud_code
+                data:
+                  value: "{{ trigger.json.code | trim }}"
+              - action: script.vssp_icloud_code
+
+          # EN | SHAPE 3 — where the files go. Both paths are declared
+          # EN | together because they describe ONE place seen from two
+          # EN | sides, and a host path that no longer matches its
+          # EN | destination is worse than none at all: it would point the
+          # EN | resize at somebody else's volume.
+          # FR | FORME 3 — ou vont les fichiers. Les deux chemins sont
+          # FR | declares ensemble parce qu ils decrivent UN endroit vu de
+          # FR | deux cotes, et un chemin cote hote qui ne correspond plus a
+          # FR | sa destination est pire qu absent : il pointerait le
+          # FR | redimensionnement vers le volume de quelqu un d autre.
+          - conditions:
+              - condition: template
+                value_template: >-
+                  {{ trigger.json.dest is defined
+                     and (trigger.json.dest | trim | regex_match('^/[A-Za-z0-9/._-]*$')) }}
+            sequence:
+              - action: input_text.set_value
+                target:
+                  entity_id: input_text.vssp_icloud_dest
+                data:
+                  value: "{{ trigger.json.dest | trim | truncate(255, True, '') }}"
+              - action: input_text.set_value
+                target:
+                  entity_id: input_text.vssp_icloud_host_path
+                data:
+                  value: >-
+                    {{ (trigger.json.host_path | default('') | trim
+                        | regex_findall('^/[A-Za-z0-9/._-]*$') | first
+                        | default('')) | truncate(255, True, '') }}
+              - action: shell_command.vssp_icloud_status
+              - action: script.vssp_icloud_refresh_sensors
+
+          # EN | SHAPE 4 — browsing. The only shape that is not a change of
+          # EN | state: it reads one page of the library and writes a file
+          # EN | the page then fetches.
+          # FR | FORME 4 — feuilletage. La seule forme qui ne change aucun
+          # FR | etat : elle lit une page de la photothèque et ecrit un
+          # FR | fichier que la page va ensuite chercher.
+          - conditions:
+              - condition: template
+                value_template: "{{ trigger.json.action | default('') == 'page' }}"
+            sequence:
+              - action: shell_command.vssp_icloud_page
+                data:
+                  offset: "{{ trigger.json.offset | default(0) | int }}"
+                  limit: "{{ trigger.json.limit | default(60) | int }}"
+                  filter: >-
+                    {{ trigger.json.filter | default('all')
+                       | regex_findall('^(all|photo|video|pending|stored)$')
+                       | first | default('all') }}
+
+          # EN | SHAPE 5 — the verbs that carry no payload at all. They are
+          # EN | grouped rather than given a branch each because they differ
+          # EN | only by which script they call, and a `choose` with one
+          # EN | branch per verb would be seven copies of the same condition.
+          # EN | The map is explicit, so an unknown verb falls through to the
+          # EN | rejection notice instead of being passed to a shell.
+          # FR | FORME 5 — les verbes qui ne portent aucun payload. Ils sont
+          # FR | regroupes plutot que dotes d une branche chacun parce qu ils
+          # FR | ne different que par le script appele, et qu un `choose` avec
+          # FR | une branche par verbe serait sept copies de la meme
+          # FR | condition. La table est explicite : un verbe inconnu tombe
+          # FR | donc dans l avis de refus au lieu d atteindre un shell.
+          - conditions:
+              - condition: template
+                value_template: >-
+                  {{ trigger.json.action | default('')
+                     in ['scan', 'bulk', 'purge', 'status', 'install'] }}
+            sequence:
+              - choose:
+                  - conditions: "{{ trigger.json.action == 'scan' }}"
+                    sequence:
+                      - action: script.vssp_icloud_scan
+                  - conditions: "{{ trigger.json.action == 'bulk' }}"
+                    sequence:
+                      - action: script.vssp_icloud_bulk
+                  - conditions: "{{ trigger.json.action == 'purge' }}"
+                    sequence:
+                      - action: script.vssp_icloud_purge
+                  - conditions: "{{ trigger.json.action == 'install' }}"
+                    sequence:
+                      - action: script.vssp_icloud_install
+                default:
+                  - action: script.vssp_icloud_status
+
+          # EN | SHAPE 6 — transfer the picked items.
+          # FR | FORME 6 — transferer les elements choisis.
+          - conditions:
+              - condition: template
+                value_template: >-
+                  {{ trigger.json.action | default('') == 'transfer'
+                     and (trigger.json.content_b64 | default('') | trim) != '' }}
+            sequence:
+              - action: shell_command.vssp_icloud_transfer
+                data:
+                  content_b64: "{{ trigger.json.content_b64 }}"
+              - action: script.vssp_icloud_refresh_sensors
+
+          # EN | SHAPE 7 — remove the picked items from iCloud. The script
+          # EN | verifies every one of them against the ledger and the disk
+          # EN | before deleting anything, so a mistaken tick here costs a
+          # EN | skipped item, not a lost photo.
+          # FR | FORME 7 — retirer d iCloud les elements choisis. Le script
+          # FR | verifie chacun d eux contre le registre et le disque avant de
+          # FR | supprimer quoi que ce soit : une case cochee par erreur coute
+          # FR | donc un element ignore, pas une photo perdue.
+          - conditions:
+              - condition: template
+                value_template: >-
+                  {{ trigger.json.action | default('') == 'release'
+                     and (trigger.json.content_b64 | default('') | trim) != '' }}
+            sequence:
+              - action: shell_command.vssp_icloud_release
+                data:
+                  content_b64: "{{ trigger.json.content_b64 }}"
+              - action: script.vssp_icloud_refresh_sensors
+
+          # EN | SHAPE 8 — how much to add to the volume. The script refuses
+          # EN | anything that is not a growth in lvextend's own notation, so
+          # EN | this only has to keep obvious nonsense out of the helper.
+          # FR | FORME 8 — combien ajouter au volume. Le script refuse tout ce
+          # FR | qui n est pas un agrandissement dans la notation propre a
+          # FR | lvextend : ceci n a donc qu a garder les absurdites evidentes
+          # FR | hors du helper.
+          - conditions:
+              - condition: template
+                value_template: >-
+                  {{ trigger.json.grow is defined
+                     and (trigger.json.grow | trim | regex_match('^\+\d{1,5}(\.\d{1,2})?[MGT]$')) }}
+            sequence:
+              - action: input_text.set_value
+                target:
+                  entity_id: input_text.vssp_icloud_grow
+                data:
+                  value: "{{ trigger.json.grow | trim }}"
+
+        # EN | Rejection notice — a Home Assistant notification, outside the
+        # EN | console and its generated labels, so it follows the same
+        # EN | selector rather than being hardcoded in one language.
+        # FR | Avis de refus — une notification Home Assistant, hors de la
+        # FR | console et de ses libelles generes : elle suit donc le meme
+        # FR | selecteur plutot que d etre figee dans une langue.
+        default:
+          - action: persistent_notification.create
+            data:
+              title: >-
+                {%- if states('input_select.vssp_language') == 'fr' -%}
+                Visio Sapiens — Commande iCloud refusée
+                {%- else -%}
+                Visio Sapiens — iCloud command rejected
+                {%- endif -%}
+              message: >-
+                {%- if states('input_select.vssp_language') == 'fr' -%}
+                La requête ne correspond à aucune forme attendue (identifiants,
+                code à 6 chiffres, destination, page, transfert, libération ou
+                agrandissement). Rien n'a été fait.
+                {%- else -%}
+                The request matched no expected shape (credentials, 6-digit
+                code, destination, page, transfer, release or grow). Nothing
+                was done.
+                {%- endif -%}

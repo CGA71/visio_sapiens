@@ -696,6 +696,30 @@ admin:
   google_apply: APPLY TO HEADER
   google_apply_hint: Regenerates HOME with the selected calendar
   google_apply_confirm: Regenerate the HOME dashboard with this calendar? The current file is backed up before being overwritten.
+  icloud_state: Link state
+  icloud_message: Detail
+  icloud_items: Items in the library
+  icloud_pending: Not yet transferred
+  icloud_size: Library size
+  icloud_free: Free on the destination
+  icloud_destination: Destination
+  icloud_free_switch: Free iCloud after a bulk transfer
+  icloud_keep_days: Days kept in iCloud
+  icloud_skip_videos: Skip videos
+  icloud_install: INSTALL ENGINE
+  icloud_install_hint: Adds icloudpd, which brings both the downloader and the module the picker uses
+  icloud_scan: SCAN LIBRARY
+  icloud_scan_hint: Indexes every photo and video without downloading any of them
+  icloud_bulk: TRANSFER EVERYTHING
+  icloud_bulk_hint: Hands the job to icloudpd for everything not already stored here
+  icloud_bulk_confirm: Start the bulk transfer? If FREE iCLOUD is on, everything older than the kept days will also be deleted from iCloud once it is stored here.
+  icloud_refresh: REFRESH
+  icloud_refresh_hint: Re-reads the counters and the destination without calling Apple
+  icloud_purge: ERASE THUMBNAILS
+  icloud_purge_hint: Clears the cached thumbnails, which are served without authentication
+  icloud_grow: GROW VOLUME
+  icloud_grow_hint: Adds the declared amount to the volume behind the destination
+  icloud_grow_confirm: Grow the volume behind the destination by the declared amount? Growing is online and keeps the data; it cannot be undone from here.
   restore_theme_reference: RESTORE REFERENCE
   restore_theme_reference_hint: Reset every color/shape token to the factory default
   restore_theme_reference_confirm: Reset the design system to its factory reference? A backup of the current design_system.yaml is kept, and the theme reloads live.
@@ -809,6 +833,8 @@ adminmenu:
     energy_hint: Create or update the measured fleet and the breaker panel
     calendar: GOOGLE CALENDAR
     calendar_hint: Set up the Google Calendar integration and the header calendar
+    icloud: iCLOUD PHOTOS
+    icloud_hint: Move an iCloud photo library onto storage you own, then free iCloud
     theme: GRAPHIC TEMPLATE
     theme_hint: Import or export the CSS design system
     dashboards: DASHBOARDS
