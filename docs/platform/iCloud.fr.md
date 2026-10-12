@@ -77,10 +77,22 @@ indisponible.
 d'application d'Apple n'ouvrent que les services publiés CalDAV/IMAP ; la
 photothèque n'en fait pas partie.
 
-Le mot de passe ne voyage jamais en ligne de commande. Il est écrit dans
-`/config/vssp/.icloud_password` en mode 0600 par
-`shell_command.vssp_write_icloud_password` et relu de là — même convention que
-`vssp_ha_token`, les clés du chatbot et le secret client Google.
+**Le mot de passe ne devient jamais une entité Home Assistant**, et c'est un
+écart délibéré avec la façon dont le secret client Google d'à côté est traité.
+Un `input_text` en `mode: password` ne fait que masquer la boîte dans
+l'interface : la valeur, elle, vit dans la machine d'états, est écrite dans la
+base du recorder, est diffusée par websocket à tout frontend connecté, et est
+lisible par n'importe quel utilisateur Home Assistant et n'importe quelle
+intégration. Un identifiant client OAuth Google le tolère — il est la moitié
+d'une paire publique. Un mot de passe d'identifiant Apple ouvre les photos, les
+sauvegardes, Localiser et le compte lui-même.
+
+Il va donc du formulaire au webhook puis à un fichier 0600,
+`/config/vssp/.icloud_password`, confié à l'écrivain en variable d'appel de
+service, sans jamais entrer dans la machine d'états. Il est enveloppé en base64
+au passage — non pour le secret mais pour le quoting : la valeur est interpolée
+dans une commande shell entre apostrophes, et un mot de passe contenant une
+apostrophe, un backtick ou `$(…)` serait sinon livré au shell comme du code.
 
 ### La seule étape non automatisable
 

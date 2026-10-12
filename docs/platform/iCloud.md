@@ -71,10 +71,21 @@ has it, the grid works and the bulk button explains why it is unavailable.
 **Use the real Apple ID password.** Apple's app-specific passwords only open
 the published CalDAV/IMAP services; the photo library is not one of them.
 
-The password never travels on a command line. It is written to
-`/config/vssp/.icloud_password` with mode 0600 by
-`shell_command.vssp_write_icloud_password` and read from there — the same
-convention as `vssp_ha_token`, the chatbot keys and the Google client secret.
+**The password never becomes a Home Assistant entity**, and that is a
+deliberate departure from how the Google client secret next door is handled.
+An `input_text` with `mode: password` only masks the box in the UI: the value
+itself lives in the state machine, is written to the recorder database, is
+broadcast over the websocket to every connected frontend, and is readable by
+any Home Assistant user and any integration. A Google OAuth client id tolerates
+that — it is half of a public pair. An Apple ID password opens photos, backups,
+Find My and the account itself.
+
+So it goes from the form to the webhook to a 0600 file at
+`/config/vssp/.icloud_password`, handed to the writer as a service-call
+variable, without ever entering the state machine. It is base64-wrapped on the
+way through — not for secrecy but for quoting: the value is interpolated into a
+shell command inside single quotes, and a password containing an apostrophe,
+a backtick or `$(…)` would otherwise be handed to the shell as code.
 
 ### The one step that cannot be automated
 

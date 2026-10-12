@@ -53,37 +53,36 @@ input_text:
     name: "Visio Sapiens — iCloud : identifiant Apple"
     max: 255
 
-  # EN | Never reaches a command line. Written to a 0600 file by
-  # EN | shell_command.vssp_write_icloud_password and read from there — the
-  # EN | same convention as vssp_ha_token, the chatbot keys and the Google
-  # EN | client secret.
-  # EN | And it must be the REAL Apple ID password: Apple's app-specific
-  # EN | passwords only open the published CalDAV/IMAP services, and the
-  # EN | photo library is not one of them.
-  # FR | N atteint jamais une ligne de commande. Ecrit dans un fichier 0600
-  # FR | par shell_command.vssp_write_icloud_password et relu de la — meme
-  # FR | convention que vssp_ha_token, les cles du chatbot et le secret
-  # FR | client Google.
-  # FR | Et ce doit etre le VRAI mot de passe de l identifiant Apple : les
-  # FR | mots de passe d application d Apple n ouvrent que les services
-  # FR | publies CalDAV/IMAP, et la photothèque n en fait pas partie.
-  vssp_icloud_password:
-    name: "Visio Sapiens — iCloud : mot de passe"
-    mode: password
-    max: 255
-
-  # EN | The six digits Apple pushes to a trusted device. Same file
-  # EN | treatment as the password although it is short-lived and
-  # EN | single-use: an argv is readable by every process on the box for as
-  # EN | long as the command runs, and the convention costs nothing.
-  # FR | Les six chiffres qu Apple pousse vers un appareil de confiance. Meme
-  # FR | traitement par fichier que le mot de passe bien qu il soit ephemere
-  # FR | et a usage unique : un argv est lisible par tout processus de la
-  # FR | machine le temps de la commande, et la convention ne coute rien.
-  vssp_icloud_code:
-    name: "Visio Sapiens — iCloud : code de verification"
-    mode: password
-    max: 10
+  # EN | THERE IS NO HELPER FOR THE PASSWORD, AND THAT IS THE POINT.
+  # EN | An input_text is not a safe place for an Apple ID password. `mode:
+  # EN | password` only masks the box in the UI: the value itself lives in the
+  # EN | state machine, is written to the recorder database, is broadcast over
+  # EN | the websocket to every connected frontend, and is readable by any
+  # EN | Home Assistant user and any integration. The Google client secret
+  # EN | next door accepts that because it is half of a public OAuth pair; an
+  # EN | Apple ID password opens photos, backups, Find My and the account
+  # EN | itself, and must not sit there for ten days of history.
+  # EN | So the password never becomes an entity. The wizard posts it to the
+  # EN | webhook, the automation hands it straight to
+  # EN | shell_command.vssp_write_icloud_password as a service-call variable,
+  # EN | and it reaches disk as a 0600 file without ever entering the state
+  # EN | machine. The same is done for the verification code.
+  # FR | IL N Y A AUCUN HELPER POUR LE MOT DE PASSE, ET C EST LE PROPOS.
+  # FR | Un input_text n est pas un endroit sur pour un mot de passe
+  # FR | d identifiant Apple. `mode: password` ne fait que masquer la boite
+  # FR | dans l interface : la valeur, elle, vit dans la machine d etats, est
+  # FR | ecrite dans la base du recorder, est diffusee par websocket a tout
+  # FR | frontend connecte, et est lisible par n importe quel utilisateur Home
+  # FR | Assistant et n importe quelle integration. Le secret client Google
+  # FR | d a cote l accepte parce qu il est la moitie d une paire OAuth
+  # FR | publique ; un mot de passe d identifiant Apple ouvre les photos, les
+  # FR | sauvegardes, Localiser et le compte lui-meme, et n a pas a y rester
+  # FR | dix jours d historique.
+  # FR | Le mot de passe ne devient donc jamais une entite. L assistant le
+  # FR | poste au webhook, l automatisation le confie directement a
+  # FR | shell_command.vssp_write_icloud_password en variable d appel de
+  # FR | service, et il atteint le disque en fichier 0600 sans jamais entrer
+  # FR | dans la machine d etats. Idem pour le code de verification.
 
   # EN | The destination as HOME ASSISTANT sees it. /media is Home
   # EN | Assistant's own mount point for added storage, so a partition or a
@@ -180,16 +179,36 @@ input_number:
 shell_command:
   # EN | Secret -> protected file. Same shape as vssp_write_token.
   # FR | Secret -> fichier protege. Meme forme que vssp_write_token.
+  # EN | BASE64 ON THE WAY THROUGH, and not for obscurity — for quoting. The
+  # EN | value is interpolated into a shell command inside single quotes, so a
+  # EN | password containing an apostrophe would close the quote and hand the
+  # EN | rest of itself to the shell as code. Base64 output is only
+  # EN | [A-Za-z0-9+/=], which no shell can read as anything but a word.
+  # EN | It also keeps the cleartext out of the rendered command line: what
+  # EN | appears in `ps` for the few milliseconds this runs is the encoding,
+  # EN | not the password. That is obfuscation, not protection, and the real
+  # EN | protection is the 0600 file it lands in.
+  # FR | BASE64 AU PASSAGE, et pas pour l obscurite — pour le quoting. La
+  # FR | valeur est interpolee dans une commande shell entre apostrophes : un
+  # FR | mot de passe contenant une apostrophe fermerait donc la quote et
+  # FR | livrerait le reste de lui-meme au shell comme du code. Une sortie
+  # FR | base64 ne contient que [A-Za-z0-9+/=], qu aucun shell ne peut lire
+  # FR | autrement que comme un mot.
+  # FR | Cela garde aussi le clair hors de la ligne de commande rendue : ce
+  # FR | qui apparait dans `ps` pendant les quelques millisecondes de
+  # FR | l execution est l encodage, pas le mot de passe. C est de
+  # FR | l obfuscation, pas de la protection ; la vraie protection est le
+  # FR | fichier 0600 ou il atterrit.
   vssp_write_icloud_password: >-
     sh -c "mkdir -p /config/vssp &&
-    printf '%s' '{{ states('input_text.vssp_icloud_password') }}'
-    > /config/vssp/.icloud_password &&
+    umask 077 &&
+    printf '%s' '{{ secret_b64 }}' | base64 -d > /config/vssp/.icloud_password &&
     chmod 600 /config/vssp/.icloud_password"
 
   vssp_write_icloud_code: >-
     sh -c "mkdir -p /config/vssp &&
-    printf '%s' '{{ states('input_text.vssp_icloud_code') }}'
-    > /config/vssp/.icloud_code &&
+    umask 077 &&
+    printf '%s' '{{ code_b64 }}' | base64 -d > /config/vssp/.icloud_code &&
     chmod 600 /config/vssp/.icloud_code"
 
   # EN | The engine. Non-blocking by design: an instance without it still
@@ -475,11 +494,18 @@ script:
   # FR | Enregistrer le mot de passe et se connecter ne font qu un geste : un
   # FR | mot de passe memorise qui n a jamais servi a ouvrir une session
   # FR | n apprend rien a personne.
+  # EN | Re-opens a session from the password ALREADY on disk. It writes
+  # EN | nothing: the secret arrives through the webhook, which hands it to
+  # EN | the writer itself. A console button therefore reconnects without any
+  # EN | credential passing through the state machine.
+  # FR | Rouvre une session depuis le mot de passe DEJA sur disque. Il
+  # FR | n ecrit rien : le secret arrive par le webhook, qui le confie
+  # FR | lui-meme a l ecrivain. Un bouton de la console reconnecte donc sans
+  # FR | qu aucun identifiant traverse la machine d etats.
   vssp_icloud_link:
     alias: "Visio Sapiens — iCloud : connecter"
     mode: single
     sequence:
-      - action: shell_command.vssp_write_icloud_password
       - action: shell_command.vssp_icloud_link
       - action: script.vssp_icloud_refresh_sensors
 
@@ -487,26 +513,7 @@ script:
     alias: "Visio Sapiens — iCloud : valider le code"
     mode: single
     sequence:
-      - action: shell_command.vssp_write_icloud_code
       - action: shell_command.vssp_icloud_code
-      # EN | The helper is cleared as soon as the code has been handed over.
-      # EN | It is single-use, and leaving it in the state machine would put
-      # EN | it in the recorder database for ten days.
-      # FR | Le helper est vide des que le code a ete transmis. Il est a usage
-      # FR | unique, et le laisser dans la machine d etats le mettrait dans la
-      # FR | base du recorder pour dix jours.
-      - action: input_text.set_value
-        target:
-          entity_id: input_text.vssp_icloud_code
-        data:
-          value: ""
-      - action: script.vssp_icloud_refresh_sensors
-
-  vssp_icloud_resend:
-    alias: "Visio Sapiens — iCloud : envoyer un nouveau code"
-    mode: single
-    sequence:
-      - action: shell_command.vssp_icloud_resend
       - action: script.vssp_icloud_refresh_sensors
 
   vssp_icloud_scan:
@@ -605,16 +612,23 @@ automation:
                      and (trigger.json.apple_id | trim | regex_search('^[^@\s]+@[^@\s]+\.[^@\s]+$'))
                      and (trigger.json.password | default('') | trim) != '' }}
             sequence:
+              # EN | The Apple ID is an email address and becomes an entity;
+              # EN | the password does not, and goes straight to its 0600
+              # EN | file. base64_encode because the value is interpolated into a
+              # EN | shell command - see the writer for the full reason.
+              # FR | L identifiant Apple est une adresse e-mail et devient une
+              # FR | entite ; le mot de passe, non, et file droit vers son
+              # FR | fichier 0600. base64_encode parce que la valeur est interpolee
+              # FR | dans une commande shell - voir l ecrivain pour la raison
+              # FR | complete.
               - action: input_text.set_value
                 target:
                   entity_id: input_text.vssp_icloud_apple_id
                 data:
                   value: "{{ trigger.json.apple_id | trim | truncate(255, True, '') }}"
-              - action: input_text.set_value
-                target:
-                  entity_id: input_text.vssp_icloud_password
+              - action: shell_command.vssp_write_icloud_password
                 data:
-                  value: "{{ trigger.json.password | trim | truncate(255, True, '') }}"
+                  secret_b64: "{{ trigger.json.password | trim | base64_encode }}"
               - action: script.vssp_icloud_link
 
           # EN | SHAPE 2 — the 2FA code. Digits only: anything else is a
@@ -629,11 +643,9 @@ automation:
                   {{ trigger.json.code is defined
                      and (trigger.json.code | trim | regex_match('^\d{4,8}$')) }}
             sequence:
-              - action: input_text.set_value
-                target:
-                  entity_id: input_text.vssp_icloud_code
+              - action: shell_command.vssp_write_icloud_code
                 data:
-                  value: "{{ trigger.json.code | trim }}"
+                  code_b64: "{{ trigger.json.code | trim | base64_encode }}"
               - action: script.vssp_icloud_code
 
           # EN | SHAPE 3 — where the files go. Both paths are declared
