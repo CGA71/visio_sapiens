@@ -214,6 +214,7 @@ import secrets
 import shutil
 import subprocess
 import sys
+import time
 from datetime import datetime
 from pathlib import Path
 
@@ -589,9 +590,44 @@ class Engine:
     def connect(self, account: str, password: str, cookie_dir: Path):
         raise NotImplementedError
 
-    def assets(self, api):
+    def assets(self, api, retries: int = 0, delay: float = 10.0):
         """EN | Iterate every asset of the main library.
-        FR | Parcourt chaque element de la photothèque principale."""
+        EN |
+        EN | RETRY WHILE APPLE IS INDEXING, because Apple itself says to. The
+        EN | library index is rebuilt per session and the answer flaps:
+        EN | measured on a live account, one connection reported 1730 assets
+        EN | ready and the next, in the same minute, answered "not finished
+        EN | indexing". Giving up on the first refusal is what turned a
+        EN | transient wait into an empty grid and a failed transfer - and
+        EN | into an evening of looking for a fault in the sign-in.
+        EN | The caller chooses how long to wait, because the budget differs:
+        EN | a page request runs inside a shell_command and dies at 60
+        EN | seconds, while a scan or a transfer is detached and can afford
+        EN | minutes.
+        FR | REESSAYER PENDANT QU APPLE INDEXE, parce qu Apple lui-meme le
+        FR | demande. L index de la photothèque est reconstruit par session et
+        FR | la reponse papillonne : mesure sur un compte reel, une connexion
+        FR | a annonce 1730 elements prets et la suivante, dans la meme
+        FR | minute, a repondu « not finished indexing ». Abandonner au
+        FR | premier refus est ce qui a transforme une attente passagere en
+        FR | grille vide et en transfert echoue - et en une soiree a chercher
+        FR | une panne dans la connexion.
+        FR | L appelant choisit la duree d attente, car le budget differe :
+        FR | une demande de page tourne dans un shell_command et meurt a 60
+        FR | secondes, tandis qu un scan ou un transfert est detache et peut
+        FR | s offrir des minutes."""
+        attempt = 0
+        while True:
+            try:
+                return self._album(api)
+            except Exception as exc:  # noqa: BLE001
+                kind, _detail = photo_fault(exc)
+                if kind != "indexing" or attempt >= retries:
+                    raise
+                attempt += 1
+                time.sleep(delay)
+
+    def _album(self, api):
         photos = api.photos
         attempts = (
             lambda: photos.all,
@@ -1405,7 +1441,7 @@ def do_scan(args, locale: str, status_path: Path) -> dict:
     done = 0
 
     try:
-        album = engine.assets(api)
+        album = engine.assets(api, args.photo_retries, args.photo_retry_delay)
         total_hint = engine.count(album)
         for photo in album:
             try:
@@ -1531,7 +1567,7 @@ def do_page(args, locale: str) -> dict:
                     "matching": matching}
         try:
             thumbs_dir.mkdir(parents=True, exist_ok=True)
-            for photo in engine.assets(api):
+            for photo in engine.assets(api, args.photo_retries, args.photo_retry_delay):
                 if photo.id not in missing:
                     continue
                 dest = missing[photo.id]
@@ -1733,7 +1769,7 @@ def do_transfer(args, locale: str, status_path: Path) -> dict:
     thumbs_dir = Path(args.thumbs_dir)
 
     try:
-        for photo in engine.assets(api):
+        for photo in engine.assets(api, args.photo_retries, args.photo_retry_delay):
             if photo.id not in wanted:
                 continue
             row = index.get(photo.id) or asset_row(photo)
@@ -2104,7 +2140,7 @@ def do_release(args, locale: str) -> dict:
     done = 0
     freed = 0
     try:
-        for photo in engine.assets(api):
+        for photo in engine.assets(api, args.photo_retries, args.photo_retry_delay):
             if photo.id not in verified:
                 continue
             try:
@@ -2498,6 +2534,17 @@ def main() -> int:
     ap.add_argument("--offset", type=int, default=0)
     ap.add_argument("--limit", type=int, default=60)
     ap.add_argument("--filter", default="all")
+    # EN | How long to keep asking while Apple reports the library as still
+    # EN | indexing. A page request lives inside a shell_command and is killed
+    # EN | at 60 seconds, so its budget is deliberately small; scan, transfer
+    # EN | and release run detached and are given minutes by their callers.
+    # FR | Combien de temps continuer a demander pendant qu Apple annonce la
+    # FR | photothèque en cours d indexation. Une demande de page vit dans un
+    # FR | shell_command tue a 60 secondes : son budget est donc volontairement
+    # FR | petit ; scan, transfert et liberation tournent detaches et leurs
+    # FR | appelants leur accordent des minutes.
+    ap.add_argument("--photo-retries", type=int, default=3)
+    ap.add_argument("--photo-retry-delay", type=float, default=10.0)
     ap.add_argument("--json-b64", default="")
     ap.add_argument("--skip-videos", action="store_true")
     ap.add_argument("--skip-photos", action="store_true")
@@ -2579,14 +2626,42 @@ def main() -> int:
         lock.release()
 
     payload["generated"] = datetime.now().isoformat(timespec="seconds")
-    save_json(out_path, payload)
+
+    def as_status(body: dict) -> dict:
+        """EN | Everything the console and the form read lives in ONE file, so
+        EN | whatever action wrote it last must leave the whole picture - not
+        EN | just its own result. A transfer used to write a summary with no
+        EN | `storage` and no `account` in it, and the form then showed an
+        EN | empty destination and a blank free-space tile until some other
+        EN | action happened to put them back. The fields are filled in here,
+        EN | at the one place that writes that file, rather than remembered
+        EN | separately by each of the nine actions.
+        FR | Tout ce que lisent la console et le formulaire vit dans UN
+        FR | fichier : l action qui l ecrit en dernier doit donc y laisser
+        FR | l image complete, pas seulement son propre resultat. Un transfert
+        FR | y ecrivait un resume sans `storage` ni `account`, et le
+        FR | formulaire affichait alors une destination vide et une tuile
+        FR | d espace libre blanche jusqu a ce qu une autre action les y
+        FR | remette. Les champs sont completes ici, a l unique endroit qui
+        FR | ecrit ce fichier, plutot que retenus separement par chacune des
+        FR | neuf actions."""
+        filled = dict(body)
+        filled.setdefault("account", (args.apple_id or "").strip())
+        if "storage" not in filled:
+            try:
+                filled["storage"] = do_storage(args, locale)
+            except Exception:  # noqa: BLE001 - a status file beats none
+                pass
+        return filled
+
+    save_json(out_path, payload if args.action == "page" else as_status(payload))
     # EN | A page refresh must also leave the summary current, or the console
     # EN | counters freeze while the user browses thumbnails.
     # FR | Un rafraichissement de page doit aussi laisser le resume a jour,
     # FR | sinon les compteurs de la console gelent pendant que
     # FR | l utilisateur feuillette les miniatures.
     if args.action in ("transfer", "bulk", "release", "scan", "grow"):
-        save_json(status_path, payload)
+        save_json(status_path, as_status(payload))
     print(json.dumps(payload, ensure_ascii=False))
     return 0 if payload.get("state") != "error" else 1
 

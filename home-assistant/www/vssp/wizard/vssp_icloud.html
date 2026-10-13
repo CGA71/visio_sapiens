@@ -1232,7 +1232,31 @@ $('btnScan').addEventListener('click', async () => {
   setTimeout(refreshStatus, 5000);
 });
 
-$('btnRefresh').addEventListener('click', refreshStatus);
+/* EN | REFRESH HAS TO ASK THE INSTANCE, not just re-read the file. It was
+   EN | wired straight to refreshStatus(), which only re-fetches
+   EN | icloud_status.json - so pressing it after anything interesting showed
+   EN | the same stale sentence again, which is the opposite of what the word
+   EN | promises. It now asks the instance to regenerate the file, then
+   EN | watches for the timestamp to move.
+   FR | RAFRAICHIR DOIT INTERROGER L INSTANCE, pas seulement relire le
+   FR | fichier. Le bouton etait cable directement sur refreshStatus(), qui ne
+   FR | fait que recharger icloud_status.json - le presser apres quoi que ce
+   FR | soit d interessant reaffichait donc la meme phrase perimee, ce qui est
+   FR | l inverse de ce que le mot promet. Il demande maintenant a l instance
+   FR | de regenerer le fichier, puis guette le deplacement de l horodatage. */
+$('btnRefresh').addEventListener('click', async () => {
+  const before = (await readJson(STATUS_URL) || {}).generated || '';
+  if (!await post({ action: 'status' })) return;
+  let tries = 0;
+  const timer = setInterval(async () => {
+    tries += 1;
+    const d = await readJson(STATUS_URL);
+    if ((d && d.generated && d.generated !== before) || tries > 15) {
+      clearInterval(timer);
+      await refreshStatus();
+    }
+  }, 1500);
+});
 
 $('btnPrev').addEventListener('click', () => {
   offset = Math.max(0, offset - LIMIT);

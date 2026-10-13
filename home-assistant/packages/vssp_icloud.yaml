@@ -275,6 +275,7 @@ shell_command:
     --apple-id '{{ states('input_text.vssp_icloud_apple_id') }}'
     --dest '{{ states('input_text.vssp_icloud_dest') }}'
     --host-path '{{ states('input_text.vssp_icloud_host_path') }}'
+    --photo-retries 12 --photo-retry-delay 20
     --locale {{ states('input_select.vssp_language') }}
 
   # EN | The picker's own call. offset/limit/filter arrive as service-call
@@ -309,6 +310,7 @@ shell_command:
     --dest '{{ states('input_text.vssp_icloud_dest') }}'
     --host-path '{{ states('input_text.vssp_icloud_host_path') }}'
     --json-b64 "{{ content_b64 }}"
+    --photo-retries 12 --photo-retry-delay 20
     --locale {{ states('input_select.vssp_language') }}
 
   # EN | The bulk transfer — the icloudpd command itself. --free-icloud-days
@@ -338,6 +340,7 @@ shell_command:
     --apple-id '{{ states('input_text.vssp_icloud_apple_id') }}'
     --dest '{{ states('input_text.vssp_icloud_dest') }}'
     --json-b64 "{{ content_b64 }}"
+    --photo-retries 12 --photo-retry-delay 20
     --locale {{ states('input_select.vssp_language') }}
 
   vssp_icloud_purge: >-
