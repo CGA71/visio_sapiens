@@ -827,6 +827,67 @@ def thumb_name(salt: bytes, photo_id: str) -> str:
                     hashlib.sha256).hexdigest()[:32] + ".jpg"
 
 
+def write_download(result, target: Path) -> int:
+    """EN | Write whatever an engine's download() handed back, and return the
+    EN | size on disk.
+    EN |
+    EN | THE SHAPE IS NOT THE SAME ACROSS LIBRARIES OR VERSIONS, and assuming
+    EN | one cost this feature an entire evening. pyicloud 2.6.5 returns
+    EN | plain `bytes`; older pyicloud and pyicloud_ipd return a streaming
+    EN | requests.Response, which is read through `.raw` or `.iter_content`.
+    EN | The first version of this file did `shutil.copyfileobj(resp.raw, f)`
+    EN | because the documentation called the return value a raw binary
+    EN | stream. Against the live library every single item raised
+    EN | AttributeError: 'bytes' object has no attribute 'raw' - and the
+    EN | transfer loop, which swallowed per-item exceptions into a counter,
+    EN | reported it as "3 failure(s)" and nothing more. Every other
+    EN | explanation chased that evening - the 2FA loop, the stale session,
+    EN | the indexing wait - was real but secondary; this was the one that
+    EN | made a transfer impossible.
+    EN | So the shape is no longer assumed. Each form is accepted, and an
+    EN | unknown one says what it was instead of being silently counted.
+    FR | Ecrire ce que le download() d un moteur a rendu, et renvoyer la
+    FR | taille sur disque.
+    FR |
+    FR | LA FORME N EST PAS LA MEME D UNE BIBLIOTHEQUE OU D UNE VERSION A
+    FR | L AUTRE, et en supposer une a coute une soiree entiere a cette
+    FR | fonction. pyicloud 2.6.5 renvoie des `bytes` bruts ; les pyicloud
+    FR | plus anciens et pyicloud_ipd renvoient une requests.Response en
+    FR | flux, qui se lit par `.raw` ou `.iter_content`. La premiere version
+    FR | de ce fichier faisait `shutil.copyfileobj(resp.raw, f)` parce que la
+    FR | documentation appelait la valeur de retour un flux binaire brut.
+    FR | Contre la vraie photothèque, chaque element levait AttributeError:
+    FR | 'bytes' object has no attribute 'raw' - et la boucle de transfert,
+    FR | qui avalait les exceptions par element dans un compteur, rapportait
+    FR | « 3 echec(s) » et rien d autre. Toutes les autres explications
+    FR | poursuivies ce soir-la - la boucle 2FA, la session perimee,
+    FR | l attente d indexation - etaient reelles mais secondaires ; c est
+    FR | celle-ci qui rendait un transfert impossible.
+    FR | La forme n est donc plus supposee. Chaque forme est acceptee, et une
+    FR | forme inconnue dit ce qu elle etait au lieu d etre comptee en
+    FR | silence."""
+    if isinstance(result, (bytes, bytearray, memoryview)):
+        target.write_bytes(bytes(result))
+    elif getattr(result, "raw", None) is not None:
+        with open(target, "wb") as handle:
+            shutil.copyfileobj(result.raw, handle)
+    elif hasattr(result, "iter_content"):
+        with open(target, "wb") as handle:
+            for chunk in result.iter_content(chunk_size=1 << 20):
+                if chunk:
+                    handle.write(chunk)
+    elif hasattr(result, "read"):
+        with open(target, "wb") as handle:
+            shutil.copyfileobj(result, handle)
+    elif getattr(result, "content", None) is not None:
+        target.write_bytes(result.content)
+    else:
+        raise TypeError(
+            f"download() returned {type(result).__name__}, which this "
+            f"program does not know how to write")
+    return target.stat().st_size
+
+
 def safe_component(value: str, fallback: str) -> str:
     """EN | A filename from Apple, made safe for a POSIX path: no separator,
     EN | no leading dot, never empty.
@@ -1075,14 +1136,37 @@ def connect(args, locale: str, push_code: bool = False):
     # FR | lequel cette fonction existe repond-il reellement - et une session
     # FR | qui y echoue est nommee perimee, avec le remede, au lieu d etre
     # FR | appelee liee.
-    try:
-        _ = api.photos
-    except Exception as exc:  # noqa: BLE001 - any refusal means unusable
-        kind, detail = photo_fault(exc)
-        if kind == "indexing":
-            return api, engine, "indexing", say("indexing", locale)
-        return api, engine, "stale_session", say("stale_session", locale,
-                                                 detail=detail)
+    # EN | THE PROBE MUST BE AS PATIENT AS THE WORK, or it is worse than no
+    # EN | probe at all. The first version asked once: every caller goes
+    # EN | through connect(), so a single "still indexing" answer here made
+    # EN | do_page, do_scan and do_transfer return before they ever reached
+    # EN | the retry loop in assets(). The two fixes cancelled each other,
+    # EN | and the grid stayed empty with four minutes of patience sitting
+    # EN | unused one function away.
+    # FR | LA SONDE DOIT ETRE AUSSI PATIENTE QUE LE TRAVAIL, sinon elle vaut
+    # FR | moins que pas de sonde du tout. La premiere version demandait une
+    # FR | fois : or tout appelant passe par connect(), donc une seule reponse
+    # FR | « encore en indexation » ici faisait sortir do_page, do_scan et
+    # FR | do_transfer avant meme d atteindre la boucle de reessai
+    # FR | d assets(). Les deux correctifs s annulaient, et la grille restait
+    # FR | vide avec quatre minutes de patience inutilisees une fonction plus
+    # FR | loin.
+    retries = int(getattr(args, "photo_retries", 0) or 0)
+    delay = float(getattr(args, "photo_retry_delay", 10.0) or 10.0)
+    attempt = 0
+    while True:
+        try:
+            _ = api.photos
+            break
+        except Exception as exc:  # noqa: BLE001 - any refusal means unusable
+            kind, detail = photo_fault(exc)
+            if kind != "indexing":
+                return api, engine, "stale_session", say("stale_session",
+                                                         locale, detail=detail)
+            if attempt >= retries:
+                return api, engine, "indexing", say("indexing", locale)
+            attempt += 1
+            time.sleep(delay)
 
     return api, engine, "linked", say("linked", locale, account=account,
                                       engine=engine.name)
@@ -1572,9 +1656,7 @@ def do_page(args, locale: str) -> dict:
                     continue
                 dest = missing[photo.id]
                 try:
-                    response = engine.download(photo, "thumb")
-                    with open(dest, "wb") as handle:
-                        shutil.copyfileobj(response.raw, handle)
+                    write_download(engine.download(photo, "thumb"), dest)
                     fetched += 1
                 except Exception:  # noqa: BLE001 - a missing thumb is a hole
                     try:                                  # in the grid, not a
@@ -1784,9 +1866,7 @@ def do_transfer(args, locale: str, status_path: Path) -> dict:
                 # FR | pour qu un telechargement interrompu ne puisse jamais
                 # FR | passer pour un fichier stocke aupres de l etape de
                 # FR | liberation.
-                response = engine.download(photo, "original")
-                with open(partial, "wb") as handle:
-                    shutil.copyfileobj(response.raw, handle)
+                write_download(engine.download(photo, "original"), partial)
                 partial.replace(target)
                 on_disk = target.stat().st_size
                 written += on_disk
