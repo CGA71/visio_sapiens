@@ -271,6 +271,14 @@ MESSAGES = {
         "fr": "Session effacee ({removed} fichier(s)). Pressez CONNECTER : la "
               "prochaine connexion sera une vraie, et Apple enverra un code.",
     },
+    "already_linked": {
+        "en": "{account} is already connected and Apple trusts this session, "
+              "so there is no code to wait for. Nothing to do here - go to "
+              "the destination and the library below.",
+        "fr": "{account} est deja connecte et Apple fait confiance a cette "
+              "session : il n y a aucun code a attendre. Rien a faire ici - "
+              "passez a la destination et a la photothèque plus bas.",
+    },
     "code_resent": {
         "en": "A new code is on its way to your trusted devices. Any earlier "
               "code is now void.",
@@ -976,6 +984,20 @@ def do_code(args, locale: str) -> dict:
     # FR | unique, ce qui rend l exposition faible - pas nulle, et la
     # FR | convention ne coute rien. --code reste accepte pour un lancement a
     # FR | la main depuis un terminal.
+    # EN | Same guard as do_resend: validating a code against a session Apple
+    # EN | has already trusted does not fail usefully, it just produces a
+    # EN | confusing refusal on an account that is fine.
+    # FR | Meme garde que do_resend : valider un code contre une session
+    # FR | qu Apple a deja accordee n echoue pas utilement, cela produit juste
+    # FR | un refus deroutant sur un compte qui va bien.
+    if not getattr(api, "requires_2fa", False):
+        return {**stated("linked", locale),
+                **say("already_linked", locale,
+                      account=(args.apple_id or "").strip()),
+                "account": (args.apple_id or "").strip(),
+                "trusted": bool(getattr(api, "is_trusted_session", False)),
+                **engine_facts(args, engine)}
+
     code = re.sub(r"\D", "", args.code or read_text_file(Path(args.code_file)))
     if not code:
         return {**stated("awaiting_2fa", locale), **say("awaiting_2fa", locale),
@@ -1104,6 +1126,33 @@ def do_resend(args, locale: str) -> dict:
     api, engine, state, extra = connect(args, locale)
     if api is None:
         return {**stated(state, locale), **extra, **engine_facts(args, engine)}
+
+    # EN | ASK APPLE FIRST WHETHER A CODE IS EVEN WANTED. This used to push
+    # EN | unconditionally and then report `awaiting_2fa` unconditionally,
+    # EN | which on a session Apple has already trusted is simply false: the
+    # EN | push is a no-op, no code is sent - correctly - and the screen goes
+    # EN | on saying "code required, one is on its way" to somebody who is
+    # EN | fully connected. They then wait for a code that has no reason to
+    # EN | exist, which is indistinguishable from the feature being broken.
+    # EN | The state reported here is now the one the library reports, never
+    # EN | the one this function hoped for.
+    # FR | DEMANDER D ABORD A APPLE SI UN CODE EST SEULEMENT SOUHAITE. Cette
+    # FR | fonction poussait inconditionnellement puis annoncait
+    # FR | `awaiting_2fa` inconditionnellement, ce qui, sur une session
+    # FR | qu Apple a deja accordee, est simplement faux : la demande ne fait
+    # FR | rien, aucun code n est envoye - a juste titre - et l ecran continue
+    # FR | d annoncer « code requis, un nouveau arrive » a quelqu un de
+    # FR | parfaitement connecte. Cette personne attend alors un code qui n a
+    # FR | aucune raison d exister, ce qui ne se distingue pas d une fonction
+    # FR | en panne. L etat rapporte ici est desormais celui que rapporte la
+    # FR | bibliotheque, jamais celui que cette fonction esperait.
+    if not getattr(api, "requires_2fa", False):
+        return {**stated("linked", locale),
+                **say("already_linked", locale,
+                      account=(args.apple_id or "").strip()),
+                "account": (args.apple_id or "").strip(),
+                "trusted": bool(getattr(api, "is_trusted_session", False)),
+                **engine_facts(args, engine)}
 
     try:
         api.request_2fa_code()
