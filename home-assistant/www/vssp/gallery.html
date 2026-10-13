@@ -64,7 +64,33 @@
      FR | Trois rangees : une barre fine, la scene qui prend tout le reste, la
      FR | pellicule a hauteur fixe. Seule la scene grandit : la bande n est
      FR | donc jamais poussee hors d un ecran court. */
-  body { display: grid; grid-template-rows: auto 1fr auto; height: 100%; }
+  /* EN | `minmax(0, 1fr)` on the column, not the implicit `auto`, and
+     EN | min-width: 0 on the rows that hold a scroller. A grid item defaults
+     EN | to min-width: auto, which means "at least as wide as my content" -
+     EN | and the filmstrip's content is forty 92-pixel columns. Measured on
+     EN | the live page: the strip reported a client width of 3953px instead
+     EN | of scrolling, stretched the bar beneath it to match, and put SAVE
+     EN | THE SELECTION at x=3746 - present, enabled, and three screens to
+     EN | the right of anything a person can see. overflow-x: auto cannot
+     EN | help while the element is allowed to be that wide; it only scrolls
+     EN | what exceeds a bounded box, and nothing bounded it.
+     FR | `minmax(0, 1fr)` sur la colonne, pas l `auto` implicite, et
+     FR | min-width: 0 sur les rangees qui portent un defilement. Un element
+     FR | de grille vaut min-width: auto par defaut, c est-a-dire « au moins
+     FR | aussi large que mon contenu » - et le contenu de la pellicule fait
+     FR | quarante colonnes de 92 pixels. Mesure sur la page en direct : la
+     FR | bande annoncait une largeur client de 3953px au lieu de defiler,
+     FR | etirait la barre en dessous d autant, et plaçait SAUVEGARDER LA
+     FR | SELECTION a x=3746 - present, actif, et trois ecrans a droite de ce
+     FR | qu un humain peut voir. overflow-x: auto n y peut rien tant que
+     FR | l element a le droit d etre aussi large ; il ne fait defiler que ce
+     FR | qui depasse d une boite bornee, et rien ne la bornait. */
+  body {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto 1fr auto;
+    height: 100%;
+  }
 
   .bar {
     display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
@@ -104,7 +130,7 @@
 
   /* ---- the stage ---------------------------------------------------- */
   .stage {
-    position: relative; min-height: 0;
+    position: relative; min-height: 0; min-width: 0; overflow: hidden;
     display: grid; place-items: center; padding: 12px;
   }
   .stage img, .stage video {
@@ -144,8 +170,10 @@
   .caption .tick { color: var(--green); }
 
   /* ---- the filmstrip ------------------------------------------------- */
-  .strip-wrap { border-top: 1px solid var(--line-soft); padding: 8px 14px 10px; }
+  .strip-wrap { border-top: 1px solid var(--line-soft); padding: 8px 14px 10px;
+               min-width: 0; }
   .strip {
+    min-width: 0;
     display: grid; grid-auto-flow: column; grid-auto-columns: 92px; gap: 7px;
     overflow-x: auto; overflow-y: hidden; padding-bottom: 6px;
     scroll-snap-type: x proximity;
@@ -188,9 +216,25 @@
   }
   .cell.picked .pick { background: var(--cyan); }
 
+  /* EN | The message gets its own line, and the buttons never share one with
+     EN | it. On a first run the bar read [prev][next][select][clear] and
+     EN | nothing else: the message claimed the rest of the row and pushed
+     EN | SAVE THE SELECTION - the only action this screen exists for - past
+     EN | the bottom edge. A primary action that a long sentence can hide is
+     EN | not laid out, it is lucky.
+     FR | Le message a sa propre ligne, et les boutons n en partagent jamais
+     FR | une avec lui. Au premier essai la barre affichait
+     FR | [precedent][suivant][selectionner][effacer] et rien d autre : le
+     FR | message reclamait le reste de la rangee et poussait SAUVEGARDER LA
+     FR | SELECTION - la seule action pour laquelle cet ecran existe - sous
+     FR | le bord inferieur. Une action principale qu une phrase longue peut
+     FR | masquer n est pas mise en page, elle est chanceuse. */
   .strip-bar { display: flex; align-items: center; gap: 9px; flex-wrap: wrap;
                margin-top: 8px; }
-  .msg { color: var(--muted); font-size: 11px; flex: 1 1 240px; }
+  .strip-bar .grow { flex: 1 1 auto; }
+  #save { font-weight: 600; }
+  .msg { color: var(--muted); font-size: 11px; margin-top: 6px;
+         min-height: 15px; line-height: 1.4; }
   .msg.err { color: var(--red); }
   .msg.warn { color: var(--amber); }
 </style>
@@ -223,9 +267,10 @@
     <button id="next" class="ghost" data-i18n="next">Next</button>
     <button id="pickPage" class="ghost" data-i18n="pick_page">Select page</button>
     <button id="clear" class="ghost" data-i18n="clear">Clear</button>
-    <span class="msg" id="msg"></span>
+    <span class="grow"></span>
     <button id="save" data-i18n="save">Save the selection</button>
   </div>
+  <div class="msg" id="msg"></div>
 </div>
 
 <script>
