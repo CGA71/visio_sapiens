@@ -134,6 +134,21 @@ lovelace:
     # FR | deplacement : il protege un DASHBOARD, ce qu une vue a l interieur
     # FR | d un autre dashboard ne peut jamais etre.
     # FR | `show_in_sidebar: false` — le bandeau Visio Sapiens est l entree.
+    # EN | GALLERY — the iCloud viewer, created on demand from the ADMIN
+    # EN | console. Declared here unconditionally like core/energy: the
+    # EN | declaration is harmless when the file is absent, and the nav rail
+    # EN | is what hides the entry (see _nav.j2's presence map).
+    # FR | GALERIE — la visionneuse iCloud, creee a la demande depuis la
+    # FR | console ADMIN. Declaree ici sans condition comme core/energy : la
+    # FR | declaration est inoffensive quand le fichier manque, et c est le
+    # FR | bandeau de navigation qui masque l entree (voir la table de
+    # FR | presence de _nav.j2).
+    visio-sapiens-gallery:
+      mode: yaml
+      title: __T:dashboard.gallery.title__
+      icon: mdi:image-multiple
+      show_in_sidebar: false
+      filename: dashboards/views/gallery.yaml
     visio-sapiens-admin:
       mode: yaml
       title: __T:adminmenu.title__

@@ -1,0 +1,544 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Visio Sapiens — Gallery</title>
+<!--
+  EN | Served as /local/vssp/gallery.html, embedded full-height by the
+  EN | GALLERY dashboard (gallery.yaml.j2). It is a VIEWER, where the iCLOUD
+  EN | screen of the ADMIN console is a SETUP form: this page never asks for
+  EN | a password, never signs anything in, and shows nothing until the
+  EN | library has been linked and scanned over there.
+  EN |
+  EN | It talks to the same bridge through the same webhook (`vssp_icloud`,
+  EN | packages/vssp_icloud.yaml) and reads the same files, so there is one
+  EN | iCloud implementation and two faces on it. Nothing here duplicates
+  EN | the engine.
+  EN |
+  EN | SHAPE — the picture on top, the filmstrip underneath, because that is
+  EN | the order the eye wants: you look at one thing and choose among many.
+  EN | The strip is the selector, the stage is the confirmation, and the
+  EN | only action is SAVE THE SELECTION.
+  FR | Servi comme /local/vssp/gallery.html, integre pleine hauteur par le
+  FR | dashboard GALERIE (gallery.yaml.j2). C est une VISIONNEUSE, la ou
+  FR | l ecran iCLOUD de la console ADMIN est un formulaire de CONFIGURATION :
+  FR | cette page ne demande jamais de mot de passe, ne connecte rien, et
+  FR | n affiche rien tant que la photothèque n a pas ete liee et analysee
+  FR | la-bas.
+  FR |
+  FR | Elle parle au meme pont par le meme webhook (`vssp_icloud`,
+  FR | packages/vssp_icloud.yaml) et lit les memes fichiers : il y a donc une
+  FR | seule implementation iCloud et deux visages dessus. Rien ici ne
+  FR | duplique le moteur.
+  FR |
+  FR | FORME — l image en haut, la pellicule en dessous, parce que c est
+  FR | l ordre que veut l oeil : on regarde une chose et on choisit parmi
+  FR | beaucoup. La bande est le selecteur, la scene est la confirmation, et
+  FR | la seule action est SAUVEGARDER LA SELECTION.
+-->
+<style>
+  :root {
+    --bg: #050b12;
+    --panel: rgba(8,18,28,0.75);
+    --line: rgba(0,229,255,0.28);
+    --line-soft: rgba(0,229,255,0.12);
+    --cyan: #00E5FF;
+    --green: #00FFC3;
+    --amber: #FFA726;
+    --red: #FF4D6D;
+    --text: #DCEEF6;
+    --muted: #8FB6C9;
+    --dim: #56707E;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: var(--bg); color: var(--text);
+    font-family: -apple-system, Roboto, "Helvetica Neue", sans-serif;
+    font-size: 13px;
+  }
+  /* EN | Three rows: a thin bar, the stage taking everything left, the
+     EN | filmstrip at a fixed height. The stage is the only thing that grows,
+     EN | so the strip never gets pushed off a short screen.
+     FR | Trois rangees : une barre fine, la scene qui prend tout le reste, la
+     FR | pellicule a hauteur fixe. Seule la scene grandit : la bande n est
+     FR | donc jamais poussee hors d un ecran court. */
+  body { display: grid; grid-template-rows: auto 1fr auto; height: 100%; }
+
+  .bar {
+    display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+    padding: 9px 14px; border-bottom: 1px solid var(--line-soft);
+  }
+  .bar .dot {
+    width: 8px; height: 8px; border-radius: 50%; background: var(--cyan);
+    box-shadow: 0 0 8px var(--cyan); flex: none;
+  }
+  h1 {
+    font-family: Orbitron, sans-serif; font-size: 12px; letter-spacing: 2px;
+    color: var(--cyan); margin: 0; text-transform: uppercase;
+  }
+  .counts { color: var(--muted); font-size: 11px; }
+  .counts b { color: var(--text); font-weight: 600; }
+  .spacer { flex: 1 1 auto; }
+
+  .chip {
+    padding: 4px 11px; border-radius: 999px; font-size: 10px;
+    letter-spacing: 1px; text-transform: uppercase; cursor: pointer;
+    border: 1px solid var(--line-soft); color: var(--muted);
+    background: transparent; user-select: none;
+  }
+  .chip.on { color: var(--cyan); border-color: var(--line);
+             background: rgba(0,229,255,.1); }
+
+  button {
+    padding: 7px 13px; font-size: 11px; letter-spacing: 1px;
+    text-transform: uppercase; font-family: inherit; cursor: pointer;
+    background: rgba(0,229,255,.08); color: var(--cyan);
+    border: 1px solid var(--line); border-radius: 8px;
+  }
+  button:hover:not(:disabled) { background: rgba(0,229,255,.16); }
+  button:disabled { opacity: .35; cursor: not-allowed; }
+  button.ghost { color: var(--muted); border-color: var(--line-soft);
+                 background: transparent; }
+
+  /* ---- the stage ---------------------------------------------------- */
+  .stage {
+    position: relative; min-height: 0;
+    display: grid; place-items: center; padding: 12px;
+  }
+  .stage img, .stage video {
+    max-width: 100%; max-height: 100%;
+    object-fit: contain; border-radius: 10px;
+    border: 1px solid var(--line-soft); background: #000;
+  }
+  /* EN | A document has no picture to show, so it is given a plain card that
+     EN | names it. Better than an empty stage or a broken image icon.
+     FR | Un document n a pas d image a montrer : il recoit donc une carte
+     FR | sobre qui le nomme. Mieux qu une scene vide ou une icone cassee. */
+  .doc {
+    display: grid; place-items: center; gap: 10px; text-align: center;
+    padding: 30px 40px; border-radius: 12px;
+    border: 1px dashed var(--line); background: var(--panel);
+    color: var(--muted);
+  }
+  .doc .glyph { font-size: 44px; color: var(--cyan); }
+  .doc .name { color: var(--text); font-size: 14px; word-break: break-all; }
+
+  .stage .empty { color: var(--dim); font-size: 12px; text-align: center;
+                  line-height: 1.7; max-width: 440px; }
+  .stage .loading {
+    position: absolute; top: 12px; left: 50%; transform: translateX(-50%);
+    font-size: 10px; letter-spacing: 1px; text-transform: uppercase;
+    color: var(--cyan); background: rgba(0,0,0,.6);
+    padding: 4px 11px; border-radius: 999px;
+  }
+
+  .caption {
+    position: absolute; left: 14px; right: 14px; bottom: 6px;
+    display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap;
+    font-size: 11px; color: var(--muted);
+    text-shadow: 0 1px 6px #000;
+  }
+  .caption .name { color: var(--text); font-size: 12px; }
+  .caption .tick { color: var(--green); }
+
+  /* ---- the filmstrip ------------------------------------------------- */
+  .strip-wrap { border-top: 1px solid var(--line-soft); padding: 8px 14px 10px; }
+  .strip {
+    display: grid; grid-auto-flow: column; grid-auto-columns: 92px; gap: 7px;
+    overflow-x: auto; overflow-y: hidden; padding-bottom: 6px;
+    scroll-snap-type: x proximity;
+  }
+  .cell {
+    position: relative; aspect-ratio: 1/1; border-radius: 7px;
+    overflow: hidden; cursor: pointer; scroll-snap-align: start;
+    border: 1px solid var(--line-soft); background: rgba(255,255,255,.03);
+  }
+  .cell img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .cell .ph { width: 100%; height: 100%; display: grid; place-items: center;
+              color: var(--dim); font-size: 19px; }
+  .cell .kind {
+    position: absolute; top: 4px; left: 4px; font-size: 9px;
+    padding: 1px 4px; border-radius: 4px; background: rgba(0,0,0,.6);
+    color: var(--cyan);
+  }
+  .cell .stored {
+    position: absolute; top: 4px; right: 4px; width: 14px; height: 14px;
+    border-radius: 50%; background: rgba(0,255,195,.9); color: #05140f;
+    font-size: 10px; display: grid; place-items: center; font-weight: 700;
+  }
+  /* EN | Two different marks, deliberately: `showing` is where you are,
+     EN | `picked` is what you chose. Conflating them would make the viewer
+     EN | unusable - you could not look at something without selecting it.
+     FR | Deux marques distinctes, a dessein : `showing` est ou vous etes,
+     FR | `picked` est ce que vous avez choisi. Les confondre rendrait la
+     FR | visionneuse inutilisable - on ne pourrait rien regarder sans le
+     FR | selectionner. */
+  .cell.showing { border-color: var(--cyan); box-shadow: 0 0 0 2px var(--cyan); }
+  .cell.picked::after {
+    content: '✓'; position: absolute; inset: 0;
+    background: rgba(0,229,255,.28); color: #04222b;
+    display: grid; place-items: center; font-size: 22px; font-weight: 700;
+  }
+  .pick {
+    position: absolute; bottom: 4px; right: 4px; width: 16px; height: 16px;
+    border-radius: 4px; border: 1px solid var(--cyan);
+    background: rgba(0,0,0,.55); z-index: 2;
+  }
+  .cell.picked .pick { background: var(--cyan); }
+
+  .strip-bar { display: flex; align-items: center; gap: 9px; flex-wrap: wrap;
+               margin-top: 8px; }
+  .msg { color: var(--muted); font-size: 11px; flex: 1 1 240px; }
+  .msg.err { color: var(--red); }
+  .msg.warn { color: var(--amber); }
+</style>
+</head>
+<body>
+
+<div class="bar">
+  <span class="dot"></span>
+  <h1 data-i18n="title">Gallery</h1>
+  <span class="counts" id="counts">—</span>
+  <span class="spacer"></span>
+  <span class="chip on" data-filter="all"     data-i18n="f_all">All</span>
+  <span class="chip"    data-filter="pending" data-i18n="f_pending">Not saved</span>
+  <span class="chip"    data-filter="stored"  data-i18n="f_stored">Saved</span>
+  <span class="chip"    data-filter="photo"   data-i18n="f_photo">Photos</span>
+  <span class="chip"    data-filter="video"   data-i18n="f_video">Videos</span>
+</div>
+
+<div class="stage" id="stage">
+  <div class="empty" id="stageEmpty" data-i18n="empty">
+    Nothing to show yet. Link and scan the library in the ADMIN console,
+    iCLOUD PHOTOS.
+  </div>
+</div>
+
+<div class="strip-wrap">
+  <div class="strip" id="strip"></div>
+  <div class="strip-bar">
+    <button id="prev" class="ghost" data-i18n="prev">Previous</button>
+    <button id="next" class="ghost" data-i18n="next">Next</button>
+    <button id="pickPage" class="ghost" data-i18n="pick_page">Select page</button>
+    <button id="clear" class="ghost" data-i18n="clear">Clear</button>
+    <span class="msg" id="msg"></span>
+    <button id="save" data-i18n="save">Save the selection</button>
+  </div>
+</div>
+
+<script>
+const I18N = {
+  en: {
+    doc_title: 'Visio Sapiens — Gallery',
+    title: 'Gallery',
+    f_all: 'All', f_pending: 'Not saved', f_stored: 'Saved',
+    f_photo: 'Photos', f_video: 'Videos',
+    empty: 'Nothing to show yet. Link and scan the library in the ADMIN ' +
+           'console, iCLOUD PHOTOS.',
+    prev: 'Previous', next: 'Next',
+    pick_page: 'Select page', clear: 'Clear',
+    save: 'Save the selection',
+    counts: '{shown} of {total} · {picked} selected',
+    loading: 'Loading…',
+    doc_hint: 'No preview for this kind of file - it can still be saved.',
+    saving: 'Sending the selection…',
+    saved: 'Transfer started for {n} item(s). The ADMIN console reports ' +
+           'progress.',
+    nothing: 'Nothing is selected.',
+    post_failed: 'Could not reach Home Assistant ({msg}).',
+    stored_tick: 'already saved',
+    st_indexing: 'Apple is still indexing the library - this clears on its ' +
+                 'own, try again in a few minutes.',
+    st_not_linked: 'The library is not linked. Open the ADMIN console, ' +
+                   'iCLOUD PHOTOS.',
+    st_error: 'The library could not be read: {detail}'
+  },
+  fr: {
+    doc_title: 'Visio Sapiens — Galerie',
+    title: 'Galerie',
+    f_all: 'Tout', f_pending: 'Non sauvegardés', f_stored: 'Sauvegardés',
+    f_photo: 'Photos', f_video: 'Vidéos',
+    empty: 'Rien à afficher pour l’instant. Liez et analysez la photothèque ' +
+           'dans la console ADMIN, PHOTOS iCLOUD.',
+    prev: 'Précédent', next: 'Suivant',
+    pick_page: 'Sélectionner la page', clear: 'Effacer',
+    save: 'Sauvegarder la sélection',
+    counts: '{shown} sur {total} · {picked} sélectionné(s)',
+    loading: 'Chargement…',
+    doc_hint: 'Pas d’aperçu pour ce type de fichier — il peut quand même ' +
+              'être sauvegardé.',
+    saving: 'Envoi de la sélection…',
+    saved: 'Transfert lancé pour {n} élément(s). La console ADMIN rend ' +
+           'compte de l’avancement.',
+    nothing: 'Aucune sélection.',
+    post_failed: 'Home Assistant est injoignable ({msg}).',
+    stored_tick: 'déjà sauvegardé',
+    st_indexing: 'Apple indexe encore la photothèque — cela se résout tout ' +
+                 'seul, réessayez dans quelques minutes.',
+    st_not_linked: 'La photothèque n’est pas liée. Ouvrez la console ADMIN, ' +
+                   'PHOTOS iCLOUD.',
+    st_error: 'La photothèque n’a pas pu être lue : {detail}'
+  }
+};
+
+const LANG = (function () {
+  const asked = (new URLSearchParams(location.search).get('lang') || '').toLowerCase();
+  const guess = asked || (navigator.language || 'en').toLowerCase();
+  return guess.slice(0, 2) === 'fr' ? 'fr' : 'en';
+})();
+function t(k, v) {
+  let s = (I18N[LANG] && I18N[LANG][k]) || I18N.en[k] || k;
+  if (v) Object.keys(v).forEach(x => { s = s.split('{' + x + '}').join(v[x]); });
+  return s;
+}
+const $ = id => document.getElementById(id);
+
+const WEBHOOK = '/api/webhook/vssp_icloud';
+const PAGE_URL = '/local/vssp/icloud_page.json';
+const PREVIEW_URL = '/local/vssp/icloud_preview.json';
+const STATUS_URL = '/local/vssp/icloud_status.json';
+const LIMIT = 40;
+
+let items = [], picked = new Set(), showing = null;
+let offset = 0, matching = 0, filter = 'all';
+let pageStamp = '', previewStamp = '';
+
+document.documentElement.lang = LANG;
+document.title = t('doc_title');
+document.querySelectorAll('[data-i18n]').forEach(el => {
+  el.textContent = t(el.dataset.i18n);
+});
+
+async function post(body) {
+  try {
+    const r = await fetch(WEBHOOK, { method: 'POST',
+      headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) });
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    return true;
+  } catch (e) {
+    say(t('post_failed', { msg: e.message }), 'err');
+    return false;
+  }
+}
+async function readJson(url) {
+  try {
+    const r = await fetch(url + '?t=' + Date.now(), { cache: 'no-store' });
+    return r.ok ? await r.json() : null;
+  } catch (e) { return null; }
+}
+function say(text, cls) { const m = $('msg'); m.textContent = text || ''; m.className = 'msg ' + (cls || ''); }
+
+function refreshCounts() {
+  $('counts').textContent = t('counts', {
+    shown: items.length ? (offset + 1) + '–' + (offset + items.length) : 0,
+    total: matching, picked: picked.size
+  });
+}
+
+/* ---- the stage ---------------------------------------------------- */
+function clearStage() { $('stage').innerHTML = ''; }
+
+function showDocument(item) {
+  clearStage();
+  const box = document.createElement('div');
+  box.className = 'doc';
+  const glyph = document.createElement('div');
+  glyph.className = 'glyph';
+  glyph.textContent = '🗎';
+  const name = document.createElement('div');
+  name.className = 'name';
+  name.textContent = item.filename || '';           // from Apple, never innerHTML
+  const hint = document.createElement('div');
+  hint.textContent = t('doc_hint');
+  box.append(glyph, name, hint);
+  $('stage').appendChild(box);
+  addCaption(item);
+}
+
+function addCaption(item) {
+  const cap = document.createElement('div');
+  cap.className = 'caption';
+  const n = document.createElement('span');
+  n.className = 'name';
+  n.textContent = item.filename || '';
+  const meta = document.createElement('span');
+  meta.textContent = [item.size_human, (item.created || '').slice(0, 10)]
+                       .filter(Boolean).join(' · ');
+  cap.append(n, meta);
+  if (item.stored) {
+    const tick = document.createElement('span');
+    tick.className = 'tick';
+    tick.textContent = '✓ ' + t('stored_tick');
+    cap.appendChild(tick);
+  }
+  $('stage').appendChild(cap);
+}
+
+/* EN | A view costs one download, so it is asked for per click and then
+   EN | polled - the webhook returns long before the picture exists.
+   FR | Une vue coute un telechargement : elle est donc demandee au clic puis
+   FR | attendue - le webhook rend la main bien avant que l image existe. */
+async function show(item) {
+  showing = item.id;
+  [...document.querySelectorAll('.cell')].forEach(c =>
+    c.classList.toggle('showing', c.dataset.id === item.id));
+
+  clearStage();
+  const flag = document.createElement('div');
+  flag.className = 'loading';
+  flag.textContent = t('loading');
+  $('stage').appendChild(flag);
+  addCaption(item);
+
+  const before = previewStamp;
+  if (!await post({ action: 'preview', id: item.id })) return;
+
+  for (let i = 0; i < 40; i++) {
+    await new Promise(r => setTimeout(r, 1500));
+    const d = await readJson(PREVIEW_URL);
+    if (!d || !d.generated || d.generated === before) continue;
+    previewStamp = d.generated;
+    if (d.id !== item.id) return;                 // a later click won
+    if (d.state === 'indexing') { say(t('st_indexing'), 'warn'); return; }
+    if (!d.view) { showDocument(item); return; }
+
+    clearStage();
+    const media = item.kind === 'video'
+      ? Object.assign(document.createElement('video'),
+                      { src: d.view, controls: true, playsInline: true })
+      : Object.assign(document.createElement('img'), { src: d.view, alt: '' });
+    $('stage').appendChild(media);
+    addCaption(item);
+    return;
+  }
+}
+
+/* ---- the filmstrip -------------------------------------------------- */
+function render() {
+  const strip = $('strip');
+  strip.innerHTML = '';
+  items.forEach(item => {
+    const cell = document.createElement('div');
+    cell.className = 'cell' + (picked.has(item.id) ? ' picked' : '')
+                            + (showing === item.id ? ' showing' : '');
+    cell.dataset.id = item.id;
+    cell.title = item.filename || '';
+
+    if (item.thumb) {
+      const img = document.createElement('img');
+      img.src = item.thumb; img.loading = 'lazy'; img.alt = '';
+      cell.appendChild(img);
+    } else {
+      const ph = document.createElement('div');
+      ph.className = 'ph';
+      ph.textContent = item.kind === 'video' ? '▶' : '▤';
+      cell.appendChild(ph);
+    }
+    if (item.kind === 'video') {
+      const k = document.createElement('span');
+      k.className = 'kind'; k.textContent = '▶';
+      cell.appendChild(k);
+    }
+    if (item.stored) {
+      const s = document.createElement('span');
+      s.className = 'stored'; s.textContent = '✓';
+      cell.appendChild(s);
+    }
+
+    /* EN | The checkbox picks; the rest of the cell views. One click can
+       EN | only mean one of the two, and a gallery where looking selects is
+       EN | a gallery you cannot browse.
+       FR | La case coche ; le reste de la cellule affiche. Un clic ne peut
+       FR | vouloir dire qu une seule des deux choses, et une galerie ou
+       FR | regarder selectionne est une galerie qu on ne peut pas
+       FR | parcourir. */
+    const box = document.createElement('span');
+    box.className = 'pick';
+    box.addEventListener('click', ev => {
+      ev.stopPropagation();
+      picked.has(item.id) ? picked.delete(item.id) : picked.add(item.id);
+      cell.classList.toggle('picked');
+      refreshCounts();
+    });
+    cell.appendChild(box);
+
+    cell.addEventListener('click', () => show(item));
+    strip.appendChild(cell);
+  });
+  refreshCounts();
+}
+
+async function loadPage() {
+  say(t('loading'));
+  const before = pageStamp;
+  if (!await post({ action: 'page', offset, limit: LIMIT, filter })) return;
+
+  for (let i = 0; i < 60; i++) {
+    await new Promise(r => setTimeout(r, 2000));
+    const d = await readJson(PAGE_URL);
+    if (!d || !d.generated || d.generated === before) continue;
+    pageStamp = d.generated;
+    matching = d.matching || 0;
+    items = d.items || [];
+
+    if (!items.length) {
+      if (d.state === 'indexing') say(t('st_indexing'), 'warn');
+      else if (d.state && d.state !== 'linked')
+        say(d.state === 'not_configured' ? t('st_not_linked')
+                                         : t('st_error', { detail: d.message || d.state }), 'err');
+      else say('');
+      render();
+      $('stage').innerHTML = '';
+      const e = document.createElement('div');
+      e.className = 'empty'; e.textContent = t('empty');
+      $('stage').appendChild(e);
+      return;
+    }
+    say('');
+    render();
+    show(items[0]);
+    return;
+  }
+  say(t('st_indexing'), 'warn');
+}
+
+/* ---- wiring --------------------------------------------------------- */
+document.querySelectorAll('.chip').forEach(chip => {
+  chip.addEventListener('click', () => {
+    document.querySelectorAll('.chip').forEach(c => c.classList.remove('on'));
+    chip.classList.add('on');
+    filter = chip.dataset.filter;
+    offset = 0;
+    loadPage();
+  });
+});
+$('prev').addEventListener('click', () => {
+  offset = Math.max(0, offset - LIMIT); loadPage();
+});
+$('next').addEventListener('click', () => {
+  if (offset + LIMIT < matching) { offset += LIMIT; loadPage(); }
+});
+$('pickPage').addEventListener('click', () => {
+  items.forEach(i => picked.add(i.id)); render();
+});
+$('clear').addEventListener('click', () => { picked.clear(); render(); });
+
+$('save').addEventListener('click', async () => {
+  if (!picked.size) { say(t('nothing'), 'warn'); return; }
+  const bytes = new TextEncoder().encode(JSON.stringify({ ids: [...picked] }));
+  let binary = '';
+  for (let i = 0; i < bytes.length; i++) binary += String.fromCharCode(bytes[i]);
+  say(t('saving'));
+  if (await post({ action: 'transfer', content_b64: btoa(binary) })) {
+    say(t('saved', { n: picked.size }));
+    picked.clear();
+    render();
+  }
+});
+
+loadPage();
+</script>
+</body>
+</html>

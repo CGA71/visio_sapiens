@@ -199,6 +199,16 @@ command_line:
       # « probleme ». Un device_class: problem inverserait le sens.
       scan_interval: 30
 
+  - binary_sensor:
+      name: "VSSP Dashboard Gallery Present"
+      unique_id: vssp_dashboard_gallery_present
+      command: >-
+        test -s /config/dashboards/views/gallery.yaml
+        && echo ON || echo OFF
+      payload_on: "ON"
+      payload_off: "OFF"
+      scan_interval: 30
+
   # Nombre d'appareils REELLEMENT ecrits dans le modele. A comparer a
   # sensor.vssp_appareils_mesures (ce que HA expose) : un ecart entre
   # les deux signifie que le sync n'a pas abouti.
@@ -558,6 +568,51 @@ shell_command:
   vssp_delete_core: >-
     rm -f /config/dashboards/views/core.yaml
     /config/dashboards/views/core_mobile.yaml
+
+  # EN | GALLERY — the iCloud viewer. Same four commands as CORE, because it
+  # EN | is the same kind of thing: an on-demand system dashboard that the
+  # EN | console creates, regenerates, backs up and deletes.
+  # FR | GALERIE — la visionneuse iCloud. Memes quatre commandes que CORE,
+  # FR | parce que c est la meme sorte de chose : un dashboard systeme a la
+  # FR | demande que la console cree, regenere, sauvegarde et supprime.
+  vssp_create_gallery: >-
+    python3 /config/vssp/generate_dashboards.py
+    --locale {{ states('input_select.vssp_language') }}
+    --calendar-entity '{{ states('input_text.vssp_google_calendar_entity') }}'
+    --only gallery --if-missing
+    --model /config/dashboards/model/house.yaml
+    --rooms /config/dashboards/model/house_rooms.yaml
+    --devices /config/dashboards/model/energy_devices.yaml
+    --design-model /config/dashboards/model/design_system.yaml
+    --templates /config/dashboards/templates_j2
+    --locales-dir /config/dashboards/locales
+    --rooms-fragment /config/config-fragment-rooms.yaml
+    --out /config/dashboards/views
+    --status-file /config/www/vssp/preview_status.json
+
+  vssp_regenerate_gallery: >-
+    python3 /config/vssp/generate_dashboards.py
+    --locale {{ states('input_select.vssp_language') }}
+    --calendar-entity '{{ states('input_text.vssp_google_calendar_entity') }}'
+    --only gallery
+    --model /config/dashboards/model/house.yaml
+    --rooms /config/dashboards/model/house_rooms.yaml
+    --devices /config/dashboards/model/energy_devices.yaml
+    --design-model /config/dashboards/model/design_system.yaml
+    --templates /config/dashboards/templates_j2
+    --locales-dir /config/dashboards/locales
+    --rooms-fragment /config/config-fragment-rooms.yaml
+    --out /config/dashboards/views
+    --status-file /config/www/vssp/preview_status.json
+
+  vssp_backup_gallery: >-
+    sh -c "mkdir -p /config/vssp/backups &&
+    [ -f /config/dashboards/views/gallery.yaml ] &&
+    cp /config/dashboards/views/gallery.yaml
+    /config/vssp/backups/gallery_$(date +%Y%m%d_%H%M%S).yaml || true"
+
+  vssp_delete_gallery: >-
+    rm -f /config/dashboards/views/gallery.yaml
 
   # --locale : voir la note sur vssp_generate_dashboards plus haut.
   vssp_create_energy: >-
@@ -1084,6 +1139,59 @@ script:
   # Bouton CREER LE DASHBOARD CORE du panneau ADMIN. Idempotent
   # (--if-missing) : CORE n'est jamais destine a une edition manuelle,
   # contrairement a HOME, donc rien n'a besoin d'etre protege ici.
+  vssp_create_gallery_dashboard:
+    alias: "Visio Sapiens — Créer le dashboard GALERIE"
+    sequence:
+      - service: shell_command.vssp_create_gallery
+      - service: homeassistant.update_entity
+        target:
+          entity_id: binary_sensor.vssp_dashboard_gallery_present
+      - service: persistent_notification.create
+        data:
+          title: "Visio Sapiens — Dashboard GALERIE"
+          message: >
+            {% if is_state('binary_sensor.vssp_dashboard_gallery_present', 'on') %}
+              Dashboard GALERIE disponible sur /visio-sapiens-gallery/gallery.
+              Rafraichissez l'onglet (Ctrl+Maj+R) pour le voir. La
+              photothèque se lie et s'analyse dans la console ADMIN, écran
+              PHOTOS iCLOUD.
+            {% else %}
+              La génération a échoué. Consultez
+              /config/www/vssp/preview_status.json pour le détail.
+            {% endif %}
+
+  vssp_regenerate_gallery_dashboard:
+    alias: "Visio Sapiens — Régénérer le dashboard GALERIE"
+    sequence:
+      - service: shell_command.vssp_backup_gallery
+      - service: shell_command.vssp_regenerate_gallery
+      - service: homeassistant.update_entity
+        target:
+          entity_id: binary_sensor.vssp_dashboard_gallery_present
+      - service: persistent_notification.create
+        data:
+          title: "Visio Sapiens — Dashboard GALERIE régénéré"
+          message: >
+            Une sauvegarde de la version précédente a été conservée dans
+            /config/vssp/backups/. Rafraichissez l'onglet (Ctrl+Maj+R).
+
+  vssp_deactivate_gallery_dashboard:
+    alias: "Visio Sapiens — Désactiver le dashboard GALERIE"
+    sequence:
+      - service: shell_command.vssp_backup_gallery
+      - service: shell_command.vssp_delete_gallery
+      - service: homeassistant.update_entity
+        target:
+          entity_id: binary_sensor.vssp_dashboard_gallery_present
+      - service: persistent_notification.create
+        data:
+          title: "Visio Sapiens — Dashboard GALERIE désactivé"
+          message: >
+            Une sauvegarde a été conservée dans /config/vssp/backups/. Rien
+            de ce qui est déjà transféré n'est touché : le dashboard n'est
+            qu'une visionneuse. Seul le bouton CRÉER GALERIE le fait
+            revenir.
+
   vssp_create_core_dashboard:
     alias: "Visio Sapiens — Créer le dashboard CORE"
     sequence:

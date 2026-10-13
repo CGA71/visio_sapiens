@@ -1694,6 +1694,88 @@ def do_page(args, locale: str) -> dict:
             "fetched": fetched}
 
 
+def do_preview(args, locale: str) -> dict:
+    """EN | Fetch ONE asset at viewing size and hand back its URL.
+    EN |
+    EN | The picker needs 112-pixel thumbnails; a gallery needs the picture
+    EN | itself. Fetching the medium version of every item in a page to serve
+    EN | the one being looked at would cost sixty downloads for one view, so
+    EN | the large copy is fetched per item, on the click that asks for it.
+    EN | It lands next to the thumbnails, under the same unguessable naming
+    EN | and the same purge - see the privacy note at the top of this file -
+    EN | with `-v` appended so a view never overwrites the thumbnail the grid
+    EN | is still showing.
+    EN | `original` is deliberately NOT what is served: a 48-megapixel HEIC
+    EN | is not a web preview, and the browser would be asked to decode a
+    EN | format it may not support at all. The medium version is what Apple
+    EN | publishes for exactly this.
+    FR | Charger UN element a taille de visionnage et renvoyer son URL.
+    FR |
+    FR | Le selecteur a besoin de miniatures de 112 pixels ; une galerie a
+    FR | besoin de l image elle-meme. Charger la version moyenne de chaque
+    FR | element d une page pour servir celui qu on regarde couterait
+    FR | soixante telechargements pour une vue : la grande copie est donc
+    FR | chargee element par element, au clic qui la demande. Elle atterrit a
+    FR | cote des miniatures, sous le meme nommage indevinable et la meme
+    FR | purge - voir la note de confidentialite en tete de fichier - avec
+    FR | `-v` ajoute pour qu une vue n ecrase jamais la miniature que la
+    FR | grille affiche encore.
+    FR | `original` n est volontairement PAS ce qui est servi : un HEIC de 48
+    FR | megapixels n est pas un apercu web, et on demanderait au navigateur
+    FR | de decoder un format qu il ne supporte peut-etre pas du tout. La
+    FR | version moyenne est ce qu Apple publie exactement pour cela."""
+    asset_id = (args.id or "").strip()
+    if not asset_id:
+        return {**stated("linked", locale), **say("nothing_selected", locale)}
+
+    index = load_json(Path(args.index_file), {})
+    row = index.get(asset_id) or {}
+    salt = thumb_salt(Path(args.salt_file))
+    name = thumb_name(salt, asset_id).replace(".jpg", "-v.jpg")
+    thumbs_dir = Path(args.thumbs_dir)
+    dest = thumbs_dir / name
+
+    if not dest.exists():
+        api, engine, state, extra = connect(args, locale)
+        if api is None or state != "linked":
+            return {**stated(state, locale), **extra, "id": asset_id}
+        try:
+            thumbs_dir.mkdir(parents=True, exist_ok=True)
+            found = False
+            for photo in engine.assets(api, args.photo_retries,
+                                       args.photo_retry_delay):
+                if photo.id != asset_id:
+                    continue
+                found = True
+                # EN | medium first, then whatever the asset actually has.
+                # FR | moyenne d abord, puis ce que l element possede.
+                for version in ("medium", "thumb", "original"):
+                    try:
+                        write_download(engine.download(photo, version), dest)
+                        break
+                    except Exception:  # noqa: BLE001 - try the next size
+                        continue
+                break
+            if not found:
+                return {**stated("linked", locale),
+                        **say("nothing_selected", locale), "id": asset_id}
+        except Exception as exc:  # noqa: BLE001
+            kind, detail = photo_fault(exc)
+            return {**(stated("indexing", locale) if kind == "indexing"
+                       else stated("error", locale)),
+                    **(say("indexing", locale) if kind == "indexing"
+                       else say("failure", locale, detail=detail)),
+                    "id": asset_id}
+
+    return {**stated("linked", locale),
+            "id": asset_id,
+            "filename": row.get("filename"),
+            "kind": row.get("kind"),
+            "size_human": human(int(row.get("size") or 0)),
+            "created": row.get("created"),
+            "view": f"{args.thumbs_url}/{name}" if dest.exists() else ""}
+
+
 def do_purge(args, locale: str) -> dict:
     """EN | Erase every materialised thumbnail. Offered as a button because
     EN | the directory is served without authentication.
@@ -2572,7 +2654,8 @@ def main() -> int:
     ap.add_argument("--action", required=True,
                     choices=("status", "link", "code", "scan", "page",
                              "transfer", "bulk", "release", "reconcile",
-                             "purge", "storage", "grow", "resend", "forget"))
+                             "purge", "storage", "grow", "resend", "forget",
+                             "preview"))
     ap.add_argument("--apple-id", default="")
     ap.add_argument("--password-file", default="/config/vssp/.icloud_password")
     # EN | The session directory is shared with the icloudpd command on
@@ -2583,6 +2666,8 @@ def main() -> int:
     # FR | --cookie-directory passe a icloudpd signifierait deux connexions.
     ap.add_argument("--session-dir", default="/config/vssp/.icloud_session")
     ap.add_argument("--code", default="")
+    ap.add_argument("--id", default="",
+                    help="EN | the one asset --action preview fetches")
     ap.add_argument("--code-file", default="/config/vssp/.icloud_code")
     ap.add_argument("--index-file", default="/config/vssp/icloud_index.json")
     ap.add_argument("--ledger-file", default="/config/vssp/icloud_ledger.json")
@@ -2592,6 +2677,8 @@ def main() -> int:
     ap.add_argument("--status-file",
                     default="/config/www/vssp/icloud_status.json")
     ap.add_argument("--page-file", default="/config/www/vssp/icloud_page.json")
+    ap.add_argument("--preview-file",
+                    default="/config/www/vssp/icloud_preview.json")
     ap.add_argument("--thumbs-dir", default="/config/www/vssp/icloud/thumbs")
     ap.add_argument("--thumbs-url", default="/local/vssp/icloud/thumbs")
     ap.add_argument("--icloudpd", default="",
@@ -2651,7 +2738,19 @@ def main() -> int:
     # FR | `page` ecrit son propre fichier, pour que le selecteur lise une
     # FR | page sans faire clignoter le fichier d etat sous les capteurs de
     # FR | la console.
-    out_path = Path(args.page_file) if args.action == "page" else status_path
+    # EN | `page` and `preview` write their own files: browsing a gallery
+    # EN | must not make the console's counters flicker, and a preview is
+    # EN | read by one <img> tag, not by the sensors.
+    # FR | `page` et `preview` ecrivent leurs propres fichiers : feuilleter
+    # FR | une galerie ne doit pas faire clignoter les compteurs de la
+    # FR | console, et un apercu est lu par une balise <img>, pas par les
+    # FR | capteurs.
+    if args.action == "page":
+        out_path = Path(args.page_file)
+    elif args.action == "preview":
+        out_path = Path(args.preview_file)
+    else:
+        out_path = status_path
 
     if args.background and args.action in LONG_ACTIONS:
         save_json(status_path,
@@ -2693,6 +2792,8 @@ def main() -> int:
             payload = do_release(args, locale)
         elif args.action == "reconcile":
             payload = {"reconciled": reconcile_ledger(args)}
+        elif args.action == "preview":
+            payload = do_preview(args, locale)
         elif args.action == "purge":
             payload = do_purge(args, locale)
         elif args.action == "storage":
@@ -2734,7 +2835,8 @@ def main() -> int:
                 pass
         return filled
 
-    save_json(out_path, payload if args.action == "page" else as_status(payload))
+    save_json(out_path, payload if args.action in ("page", "preview")
+              else as_status(payload))
     # EN | A page refresh must also leave the summary current, or the console
     # EN | counters freeze while the user browses thumbnails.
     # FR | Un rafraichissement de page doit aussi laisser le resume a jour,

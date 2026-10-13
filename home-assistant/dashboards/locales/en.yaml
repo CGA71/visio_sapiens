@@ -212,6 +212,8 @@ format:
 dashboard:
   main:
     title: Visio-Sapiens
+  gallery:
+    title: Gallery
   core:
     title: Core System
   computer:
@@ -243,6 +245,9 @@ nav:
 # FR | En-tetes de page — le grand titre et sa ligne de sous-titre.
 # ----------------------------------------------------------------------
 page:
+  gallery:
+    name: GALLERY
+    subtitle: iCloud photos and videos, and what to keep
   home:
     name: HOME
     subtitle: Home Sweet Home
@@ -696,6 +701,9 @@ admin:
   google_apply: APPLY TO HEADER
   google_apply_hint: Regenerates HOME with the selected calendar
   google_apply_confirm: Regenerate the HOME dashboard with this calendar? The current file is backed up before being overwritten.
+  regenerate_gallery_confirm: Regenerate the GALLERY dashboard? The current file is backed up before being overwritten.
+  create_gallery_confirm: Create the GALLERY dashboard? It shows the iCloud library and sends a selection to your storage; linking the account stays in the iCLOUD PHOTOS screen.
+  deactivate_gallery_confirm: Deactivate the GALLERY dashboard? Nothing already transferred is touched - this is only a viewer. A backup is kept, and only CREATE GALLERY brings it back.
   icloud_state: Link state
   icloud_connect: CONNECT
   icloud_connect_hint: Signs in again with the stored password and asks Apple for a code

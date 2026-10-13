@@ -143,6 +143,21 @@ nav_system:
       icon: mdi:lightning-bolt
       path: /visio-sapiens-energy/energy
       path_mobile: /visio-sapiens-energy-m/energy
+    - id: gallery
+      name: GALLERY
+      label: "iCloud gallery"
+      icon: mdi:image-multiple
+      path: /visio-sapiens-gallery/gallery
+      # EN | No mobile variant: the viewer is a wide stage with a filmstrip
+      # EN | under it, and there is no gallery_mobile.yaml.j2 to point at. A
+      # EN | path to a file nothing generates is a dead tile, so the phone
+      # EN | rail is sent to the same desktop dashboard instead.
+      # FR | Pas de variante mobile : la visionneuse est une scene large avec
+      # FR | une pellicule dessous, et il n existe aucun gallery_mobile.yaml.j2
+      # FR | vers quoi pointer. Un chemin vers un fichier que rien ne genere
+      # FR | est une tuile morte : le bandeau du telephone renvoie donc vers
+      # FR | le meme dashboard.
+      path_mobile: /visio-sapiens-gallery/gallery
     - id: admin
       name: ADMIN
       label: "Admin console"

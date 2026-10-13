@@ -303,6 +303,21 @@ shell_command:
   # FR | Le transfert au cas par cas. Le payload est en base64 pour la meme
   # FR | raison que celui de vssp_assign_apply.py : une liste d ids depasse
   # FR | de loin les 255 caracteres d un input_text.
+  # EN | One asset at viewing size, for the GALLERY dashboard's stage. Not
+  # EN | detached: it is one download and the viewer is waiting for it, so a
+  # EN | few seconds inside the shell_command's 60 is the right trade.
+  # FR | Un element a taille de visionnage, pour la scene du dashboard
+  # FR | GALERIE. Non detache : c est un seul telechargement et la
+  # FR | visionneuse l attend, donc quelques secondes dans les 60 du
+  # FR | shell_command sont le bon compromis.
+  vssp_icloud_preview: >-
+    python3 /config/vssp/vssp_icloud.py
+    --action preview
+    --apple-id '{{ states('input_text.vssp_icloud_apple_id') }}'
+    --dest '{{ states('input_text.vssp_icloud_dest') }}'
+    --id '{{ asset_id }}'
+    --locale {{ states('input_select.vssp_language') }}
+
   vssp_icloud_transfer: >-
     python3 /config/vssp/vssp_icloud.py
     --action transfer --background
@@ -786,8 +801,30 @@ automation:
                 default:
                   - action: script.vssp_icloud_status
 
-          # EN | SHAPE 6 — transfer the picked items.
-          # FR | FORME 6 — transferer les elements choisis.
+          # EN | SHAPE 6 — show one asset. Its own branch rather than one of
+          # EN | the bare verbs above, because it carries an id, and that id
+          # EN | reaches a command line: it is matched against the shape Apple
+          # EN | actually uses (uppercase hex with dashes, plus the few older
+          # EN | record names) instead of being quoted and hoped for.
+          # FR | FORME 6 — afficher un element. Sa propre branche plutot qu un
+          # FR | des verbes nus ci-dessus, parce qu elle porte un id, et que
+          # FR | cet id atteint une ligne de commande : il est confronte a la
+          # FR | forme qu Apple emploie reellement (hexadecimal majuscule a
+          # FR | tirets, plus les quelques anciens noms d enregistrement)
+          # FR | plutot que quote en esperant.
+          - conditions:
+              - condition: template
+                value_template: >-
+                  {{ trigger.json.action | default('') == 'preview'
+                     and (trigger.json.id | default('') | trim
+                          | regex_match('^[A-Za-z0-9/+=._-]{4,120}$')) }}
+            sequence:
+              - action: shell_command.vssp_icloud_preview
+                data:
+                  asset_id: "{{ trigger.json.id | trim }}"
+
+          # EN | SHAPE 7 — transfer the picked items.
+          # FR | FORME 7 — transferer les elements choisis.
           - conditions:
               - condition: template
                 value_template: >-
@@ -799,11 +836,11 @@ automation:
                   content_b64: "{{ trigger.json.content_b64 }}"
               - action: script.vssp_icloud_refresh_sensors
 
-          # EN | SHAPE 7 — remove the picked items from iCloud. The script
+          # EN | SHAPE 8 — remove the picked items from iCloud. The script
           # EN | verifies every one of them against the ledger and the disk
           # EN | before deleting anything, so a mistaken tick here costs a
           # EN | skipped item, not a lost photo.
-          # FR | FORME 7 — retirer d iCloud les elements choisis. Le script
+          # FR | FORME 8 — retirer d iCloud les elements choisis. Le script
           # FR | verifie chacun d eux contre le registre et le disque avant de
           # FR | supprimer quoi que ce soit : une case cochee par erreur coute
           # FR | donc un element ignore, pas une photo perdue.
@@ -818,10 +855,10 @@ automation:
                   content_b64: "{{ trigger.json.content_b64 }}"
               - action: script.vssp_icloud_refresh_sensors
 
-          # EN | SHAPE 8 — how much to add to the volume. The script refuses
+          # EN | SHAPE 9 — how much to add to the volume. The script refuses
           # EN | anything that is not a growth in lvextend's own notation, so
           # EN | this only has to keep obvious nonsense out of the helper.
-          # FR | FORME 8 — combien ajouter au volume. Le script refuse tout ce
+          # FR | FORME 9 — combien ajouter au volume. Le script refuse tout ce
           # FR | qui n est pas un agrandissement dans la notation propre a
           # FR | lvextend : ceci n a donc qu a garder les absurdites evidentes
           # FR | hors du helper.

@@ -1,0 +1,154 @@
+{#
+   Visio Sapiens - Neural Home Interface for Home Assistant
+   Copyright (C) 2026 Expanse IT <expanse-it@outlook.fr>
+
+   SPDX-License-Identifier: GPL-2.0-or-later
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   MA 02110-1301 USA.
+#}
+########################################################################
+# Visio Sapiens — GALLERY Dashboard
+#
+# EN | *** GENERATED FILE — DO NOT EDIT BY HAND ***
+# EN | Source: gallery.yaml.j2 + model/house.yaml + locales/<code>.yaml
+# EN | Regenerate with: python3 generate_dashboards.py
+# FR | *** FICHIER GENERE — NE PAS EDITER A LA MAIN ***
+# FR | Source : gallery.yaml.j2 + model/house.yaml + locales/<code>.yaml
+# FR | Regenerer avec : python3 generate_dashboards.py
+#
+# EN | AN ON-DEMAND DASHBOARD, like ENERGY and CORE: it is created and
+# EN | removed from the DASHBOARDS screen of the ADMIN console, its nav entry
+# EN | is conditional on its file existing, and a house that does not use
+# EN | iCloud never has to carry it.
+# FR | UN DASHBOARD A LA DEMANDE, comme ENERGY et CORE : il se cree et se
+# FR | supprime depuis l ecran DASHBOARDS de la console ADMIN, son entree de
+# FR | bandeau depend de l existence de son fichier, et une maison qui
+# FR | n utilise pas iCloud n a jamais a le porter.
+#
+# EN | WHY IT IS ONE IFRAME AND NOT A WALL OF CARDS. What this screen does —
+# EN | show a picture at full size, scroll a filmstrip under it, tick items,
+# EN | play a video — is not a thing Lovelace cards express. A picture-entity
+# EN | card shows one fixed entity; there is no card that takes a list of
+# EN | remote assets and lets you browse it. The viewer is therefore a page
+# EN | (www/vssp/gallery.html) and this dashboard is its frame, exactly as
+# EN | the ADMIN console frames its wizards. The header and the nav rail are
+# EN | the shared partials, so GALLERY looks and navigates like every other
+# EN | dashboard of the house.
+# FR | POURQUOI UNE SEULE IFRAME ET PAS UN MUR DE CARTES. Ce que fait cet
+# FR | ecran — afficher une image en grand, derouler une pellicule dessous,
+# FR | cocher des elements, lire une video — n est pas une chose que les
+# FR | cartes Lovelace savent exprimer. Une carte picture-entity montre une
+# FR | entite figee ; aucune carte ne prend une liste d elements distants et
+# FR | ne laisse les parcourir. La visionneuse est donc une page
+# FR | (www/vssp/gallery.html) et ce dashboard en est le cadre, exactement
+# FR | comme la console ADMIN encadre ses assistants. Le bandeau et le
+# FR | bandeau de navigation sont les partials partages : GALERIE se regarde
+# FR | et se parcourt donc comme tout autre dashboard de la maison.
+#
+# EN | IT READS, IT DOES NOT CONFIGURE. Linking the account, entering the
+# EN | verification code and choosing the destination all live in the iCLOUD
+# EN | screen of the ADMIN console. This dashboard shows what is there and
+# EN | sends a selection to the same bridge — nothing else. A viewer that
+# EN | could also ask for an Apple password would be a second place to get
+# EN | that wrong.
+# FR | IL LIT, IL NE CONFIGURE PAS. Lier le compte, saisir le code de
+# FR | verification et choisir la destination vivent tous dans l ecran
+# FR | iCLOUD de la console ADMIN. Ce dashboard montre ce qui s y trouve et
+# FR | envoie une selection au meme pont — rien d autre. Une visionneuse
+# FR | capable de reclamer en plus un mot de passe Apple serait un second
+# FR | endroit ou se tromper la-dessus.
+########################################################################
+
+title: {{ t('page.gallery.name') }}
+theme: {{ house.theme }}
+
+# EN | Without these includes every custom:button-card shows "Configuration
+# EN | error" — the vssp_* templates live in that shared file. Path is
+# EN | relative to dashboards/views/.
+# FR | Sans ces includes, chaque custom:button-card affiche « Erreur de
+# FR | configuration » — les templates vssp_* vivent dans ce fichier
+# FR | partage. Chemin relatif a dashboards/views/.
+button_card_templates: !include ../templates/button_card_templates.yaml
+decluttering_templates: !include ../templates/decluttering_templates.yaml
+
+views:
+  - title: {{ t('page.gallery.name') }}
+    path: gallery
+    subview: false
+    type: custom:grid-layout
+    layout:
+      grid-template-columns: max-content 1fr 1fr 1fr 1fr 1fr
+      # EN | 1fr on the body row, not auto: the viewer is a full-height
+      # EN | iframe, and `auto` would size the row to the iframe's own
+      # EN | declared height and strand it above a dead strip of page
+      # EN | background — the same trap the ADMIN screens hit and fixed.
+      # FR | 1fr sur la ligne du corps, pas auto : la visionneuse est une
+      # FR | iframe pleine hauteur, et `auto` dimensionnerait la ligne selon
+      # FR | la hauteur declaree de l iframe, l echouant au-dessus d une
+      # FR | bande morte de fond de page — le piege meme qu ont rencontre et
+      # FR | corrige les ecrans ADMIN.
+      grid-template-rows: auto 1fr
+      grid-template-areas: |
+        "nav header header header header header"
+        "nav content content content content content"
+      margin: 12px
+      grid-gap: 14px 14px
+    cards:
+      # ═══════════════════════════════════════════════════════════════
+      # EN | HEADER BAND — shared partial, identical on every dashboard
+      # FR | BANDEAU HORIZONTAL — partial partage, identique partout
+      # ═══════════════════════════════════════════════════════════════
+{% set page_title = t('page.gallery.name') %}
+{% set page_subtitle = t('page.gallery.subtitle') %}
+{% set page_path = '/visio-sapiens-gallery/gallery' %}
+{% include '_header.j2' %}
+
+      # ═══════════════════════════════════════════════════════════════
+      # EN | NAVIGATION RAIL — shared partial, dynamic
+      # FR | BANDEAU DE NAVIGATION — partial partage, dynamique
+      # ═══════════════════════════════════════════════════════════════
+{% include '_nav.j2' %}
+
+      # ═══════════════════════════════════════════════════════════════
+      # EN | THE VIEWER
+      # FR | LA VISIONNEUSE
+      # ═══════════════════════════════════════════════════════════════
+      # EN | `lang` carries the GENERATED locale into the page, `v` is the
+      # EN | cache-buster — the same two reasons as every other embedded page
+      # EN | in this project (an iframe without `v` served a stale page for a
+      # EN | whole session once; see Troubleshooting).
+      # FR | `lang` transmet la locale GENEREE a la page, `v` est l anti-cache
+      # FR | — memes deux raisons que pour toute autre page integree de ce
+      # FR | projet (une iframe sans `v` a servi une page perimee toute une
+      # FR | session ; voir Troubleshooting).
+      - type: iframe
+        view_layout:
+          grid-area: content
+        url: /local/vssp/gallery.html?v={{ build_stamp }}&lang={{ locale }}
+        card_mod:
+          style: |
+            :host {
+              flex: 1 1 0;
+              min-height: 640px;
+              height: 100%;
+            }
+            ha-card {
+              background: transparent !important;
+              border: none !important;
+              box-shadow: none !important;
+              overflow: hidden;
+              height: 100%;
+            }

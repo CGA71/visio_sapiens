@@ -82,6 +82,11 @@ SYSTEM_DASHBOARDS = [
     ("home",   "home.yaml.j2",   "home.yaml",   {"active_nav": "home"}),
     ("core",   "core.yaml.j2",   "core.yaml",   {"active_nav": "core"}),
     ("energy", "energy.yaml.j2", "energy.yaml", {"active_nav": "energy"}),
+    # EN | GALLERY — the iCloud viewer. On demand like core/energy: a house
+    # EN | that does not use iCloud never carries it.
+    # FR | GALERIE — la visionneuse iCloud. A la demande comme core/energy :
+    # FR | une maison qui n utilise pas iCloud ne la porte jamais.
+    ("gallery", "gallery.yaml.j2", "gallery.yaml", {"active_nav": "gallery"}),
     ("admin",  "admin.yaml.j2",  "admin.yaml",  {"active_nav": "admin"}),
 ]
 
@@ -98,7 +103,7 @@ SYSTEM_DASHBOARDS = [
 # FR | est deliberement EXCLU de cet ensemble : c est le seul chemin de
 # FR | retour vers la console, il ne doit jamais pouvoir disparaitre du
 # FR | bandeau.
-OPTIONAL_SYSTEM_NAV_IDS = {"home", "core", "energy"}
+OPTIONAL_SYSTEM_NAV_IDS = {"home", "core", "energy", "gallery"}
 
 # EN | HOME is the one system dashboard meant for manual Lovelace editing
 # EN | after creation — it must never be silently overwritten by a caller

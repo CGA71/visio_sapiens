@@ -134,6 +134,8 @@ format:
   tablet: Tablette
 
 dashboard:
+  gallery:
+    title: Galerie
   main:
     title: Visio-Sapiens
   core:
@@ -154,6 +156,9 @@ nav:
   admin: ADMIN
 
 page:
+  gallery:
+    name: GALERIE
+    subtitle: Photos et vidéos iCloud, et ce qu'on garde
   home:
     name: ACCUEIL
     subtitle: Home Sweet Home
@@ -555,6 +560,9 @@ admin:
   google_apply: APPLIQUER AU BANDEAU
   google_apply_hint: Régénère HOME avec le calendrier sélectionné
   google_apply_confirm: Régénérer le dashboard HOME avec ce calendrier ? Le fichier actuel est sauvegardé avant écrasement.
+  regenerate_gallery_confirm: Régénérer le dashboard GALERIE ? Le fichier actuel est sauvegardé avant écrasement.
+  create_gallery_confirm: Créer le dashboard GALERIE ? Il affiche la photothèque iCloud et envoie une sélection vers votre stockage ; la liaison du compte reste dans l'écran PHOTOS iCLOUD.
+  deactivate_gallery_confirm: Désactiver le dashboard GALERIE ? Rien de ce qui est déjà transféré n'est touché - ce n'est qu'une visionneuse. Une sauvegarde est conservée, et seul CRÉER GALERIE le fait revenir.
   icloud_state: État de la liaison
   icloud_connect: CONNECTER
   icloud_connect_hint: Se reconnecte avec le mot de passe enregistré et demande un code à Apple

@@ -194,7 +194,8 @@
    FR | bandeau. #}
 {% set presence = {'home': 'binary_sensor.vssp_dashboard_home_present',
                    'energy': 'binary_sensor.vssp_dashboard_energy_present',
-                   'core': 'binary_sensor.vssp_dashboard_core_present'} %}
+                   'core': 'binary_sensor.vssp_dashboard_core_present',
+                   'gallery': 'binary_sensor.vssp_dashboard_gallery_present'} %}
 {% for item in nav %}
 {% if item.id in presence %}
           - type: conditional
