@@ -114,7 +114,19 @@ nouveau est demandé, celui qu'on a tapé est périmé, et ainsi de suite.
 **ENVOYER UN NOUVEAU CODE** *annule celui qui est déjà sur votre téléphone* :
 ne le pressez que si le premier est perdu ou expiré.
 
-### Aucun code n'arrive
+### « Aucun code n'arrive » n'est en général pas une panne
+
+Apple envoie un code quand une connexion en a réellement besoin. Une fois la
+session de confiance, CONNECTER répond `linked` immédiatement et rien n'est
+envoyé — c'est la fonction qui marche, pas qui échoue. L'étape de vérification
+dit dans laquelle des deux situations vous êtes, au lieu de laisser un champ
+vide qui invite à attendre.
+
+Un code manque vraiment seulement quand l'étape annonce qu'on en attend un et
+que rien n'arrive. Alors :
+
+### Aucun code n'arrive alors qu'on en attend un
+
 
 Une session mémorisée n'est pas tout ou rien. Elle peut annoncer un compte lié
 tout en étant périmée dessous — après un changement de mot de passe Apple, par
@@ -260,4 +272,6 @@ conteneur — est repris plutôt que laissé à bloquer l'écran.
 | Rien n'a été retiré d'iCloud | aucun des éléments cochés n'est au registre avec une taille concordante sur disque. Transférez-les d'abord. |
 | *pas un volume logique LVM* | la destination n'est pas sur LVM, ou le chemin côté hôte est faux. Vérifiez `findmnt --target <chemin hôte>` sur l'hôte. |
 | Le redimensionnement dit que le coffre est fermé | Vault se rescelle à chaque redémarrage par conception — voir [Descellement](Unseal.fr.md). |
+| *n'est pas un stockage monté* | la destination aboutit au système de fichiers du conteneur. Il est inscriptible et vaste, et un redémarrage de pod ou une mise à jour du cœur le jette — les deux chemins de transfert le refusent donc. Ajoutez la partition ou le partage NAS dans Paramètres > Système > Stockage. |
+| TOUT TRANSFÉRER est grisé alors qu'icloudpd est installé | la commande est là mais `pyicloud_ipd` n'est pas importable : le sélecteur tourne donc sur `pyicloud` tout court, et icloudpd ne sait pas lire la session avec laquelle cet écran s'est connecté. Le sélecteur fonctionne quand même. Réinstallez avec `pip install icloudpd` dans l'interpréteur qu'utilise Home Assistant, et vérifiez `python3 -c "import pyicloud_ipd"`. |
 | La grille est vide | aucun index. Pressez ANALYSER LA PHOTOTHÈQUE ; la première passe sur une grande photothèque prend du temps et rend compte au fur et à mesure. |

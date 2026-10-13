@@ -391,6 +391,7 @@
            FR | session fait du CONNECTER suivant une vraie connexion. -->
       <button id="btnForget" class="ghost" data-i18n="btn_forget">Forget the session</button>
     </div>
+    <p class="hint" id="s2state" style="color:var(--green)"></p>
     <p class="hint" data-i18n="s2_stuck">
       No code arriving? Press FORGET THE SESSION, then SAVE &amp; CONNECT
       again — a stored session can report a linked account without ever
@@ -543,6 +544,20 @@ const I18N = {
     s2_stuck: 'No code arriving? Press FORGET THE SESSION, then SAVE &amp; ' +
               'CONNECT again — a stored session can report a linked ' +
               'account without ever asking Apple for anything.',
+    s2_linked: 'Already connected — no code is expected. Apple only ' +
+               'sends one when a sign-in actually needs it, so nothing ' +
+               'arriving here is the normal case, not a failure.',
+    s2_waiting: 'Enter the code Apple sent to your trusted devices.',
+    m_storage_ephemeral: '{dest} is not mounted storage — it is the ' +
+                         'container’s own filesystem ({fstype}), which a ' +
+                         'restart or a core update wipes. Add the partition or ' +
+                         'the NAS share in Settings > System > Storage before ' +
+                         'transferring anything.',
+    m_bulk_no_shared_session: 'The icloudpd command is installed but its ' +
+                              'library (pyicloud_ipd) is not importable, so it ' +
+                              'cannot read the session this screen signed in ' +
+                              'with. The picker works; a bulk run would be ' +
+                              'refused by Apple.',
     m_session_forgotten: 'Session erased ({removed} file(s)). Press CONNECT: ' +
                          'the next sign-in is a real one, and Apple will send ' +
                          'a code.',
@@ -701,6 +716,24 @@ const I18N = {
     s2_stuck: 'Aucun code n’arrive ? Pressez OUBLIER LA SESSION, puis ' +
               'ENREGISTRER &amp; CONNECTER — une session mémorisée peut ' +
               'annoncer un compte lié sans jamais rien demander à Apple.',
+    s2_linked: 'Déjà connecté — aucun code n’est attendu. Apple ' +
+               'n’en envoie un que lorsqu’une connexion en a ' +
+               'réellement besoin : ne rien recevoir ici est le cas normal, ' +
+               'pas une panne.',
+    s2_waiting: 'Saisissez le code qu’Apple a envoyé vers vos appareils ' +
+                'de confiance.',
+    m_storage_ephemeral: '{dest} n’est pas un stockage monté — ' +
+                         'c’est le système de fichiers du conteneur ' +
+                         '({fstype}), qu’un redémarrage ou une mise à ' +
+                         'jour du cœur efface. Ajoutez la partition ou le ' +
+                         'partage NAS dans Paramètres > Système > Stockage ' +
+                         'avant de transférer quoi que ce soit.',
+    m_bulk_no_shared_session: 'La commande icloudpd est installée mais sa ' +
+                              'bibliothèque (pyicloud_ipd) n’est pas ' +
+                              'importable : elle ne peut donc pas lire la ' +
+                              'session avec laquelle cet écran s’est ' +
+                              'connecté. Le sélecteur fonctionne ; un ' +
+                              'transfert de masse serait refusé par Apple.',
     m_session_forgotten: 'Session effacée ({removed} fichier(s)). Pressez ' +
                          'CONNECTER : la prochaine connexion sera une vraie, ' +
                          'et Apple enverra un code.',
@@ -957,6 +990,19 @@ async function refreshStatus() {
 
   setState(CLASS_OF[d.state] !== undefined ? CLASS_OF[d.state] : '',
            d.state || 'not_configured', localise(d));
+
+  /* EN | The verification step stays on screen in every state, so it has to
+     EN | say WHICH state - otherwise an empty code box in a linked account
+     EN | reads as "a code should be coming" and the person waits for one that
+     EN | is correctly never sent.
+     FR | L etape de verification reste a l ecran dans tous les etats : elle
+     FR | doit donc dire LEQUEL - sinon un champ code vide sur un compte lie
+     FR | se lit comme « un code devrait arriver » et la personne attend un
+     FR | code qui, a juste titre, ne partira jamais. */
+  const linked = d.state === 'linked';
+  $('s2state').textContent = t(linked ? 's2_linked' : 's2_waiting');
+  $('s2state').style.color = linked ? 'var(--green)' : 'var(--amber)';
+  $('btnCode').disabled = linked;
 
   $('tPhotos').textContent = d.photos !== undefined ? d.photos : '—';
   $('tVideos').textContent = d.videos !== undefined ? d.videos : '—';

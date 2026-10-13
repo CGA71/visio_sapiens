@@ -382,6 +382,28 @@ MESSAGES = {
         "en": "{free} free of {total} on {fstype} - {used_pct}% used.",
         "fr": "{free} libres sur {total} en {fstype} - {used_pct}% utilises.",
     },
+    "storage_ephemeral": {
+        "en": "{dest} is not mounted storage - it is the container's own "
+              "filesystem ({fstype}), which a restart or a core update wipes. "
+              "Add the partition or the NAS share in Settings > System > "
+              "Storage before transferring anything.",
+        "fr": "{dest} n est pas un stockage monte - c est le systeme de "
+              "fichiers du conteneur ({fstype}), qu un redemarrage ou une "
+              "mise a jour du coeur efface. Ajoutez la partition ou le "
+              "partage NAS dans Parametres > Systeme > Stockage avant de "
+              "transferer quoi que ce soit.",
+    },
+    "bulk_no_shared_session": {
+        "en": "The icloudpd command is installed but its library "
+              "(pyicloud_ipd) is not importable, so it cannot read the "
+              "session this screen signed in with. The picker works; a bulk "
+              "run would be refused by Apple.",
+        "fr": "La commande icloudpd est installee mais sa bibliotheque "
+              "(pyicloud_ipd) n est pas importable : elle ne peut donc pas "
+              "lire la session avec laquelle cet ecran s est connecte. Le "
+              "selecteur fonctionne ; un transfert de masse serait refuse "
+              "par Apple.",
+    },
     "storage_network": {
         "en": "{free} free of {total} on a network share ({fstype}) - resize "
               "it on the NAS itself.",
@@ -867,14 +889,51 @@ def connect(args, locale: str, push_code: bool = False):
 
 def engine_facts(args, engine) -> dict:
     """EN | What the screen needs to say about its own plumbing: which engine
-    EN | answered, and whether the bulk command exists next to it.
+    EN | answered, and whether a bulk run could really work.
+    EN |
+    EN | `bulk_available` USED TO MEAN "the icloudpd binary is on disk", and
+    EN | that was not the same question. A bulk run also needs the trusted
+    EN | session, and icloudpd only finds one it recognises when the session
+    EN | was written by ITS library, pyicloud_ipd. On an instance where the
+    EN | command is installed but that module is not importable - which is
+    EN | exactly what `pip install icloudpd` produced here - the picker runs
+    EN | on plain pyicloud, the session on disk is pyicloud's, and pressing
+    EN | TRANSFER EVERYTHING would meet an authentication failure rather than
+    EN | a download. A button that is lit and cannot work is worse than one
+    EN | that explains itself.
     FR | Ce que l ecran doit dire de sa propre plomberie : quel moteur a
-    FR | repondu, et si la commande de masse existe a cote."""
+    FR | repondu, et si un transfert de masse pourrait reellement aboutir.
+    FR |
+    FR | `bulk_available` VOULAIT DIRE « le binaire icloudpd est sur le
+    FR | disque », et ce n etait pas la meme question. Un transfert de masse a
+    FR | aussi besoin de la session de confiance, et icloudpd n en reconnait
+    FR | une que si elle a ete ecrite par SA bibliotheque, pyicloud_ipd. Sur
+    FR | une instance ou la commande est installee mais ou ce module n est pas
+    FR | importable - exactement ce qu a produit `pip install icloudpd` ici -
+    FR | le selecteur tourne sur pyicloud tout court, la session sur disque
+    FR | est celle de pyicloud, et presser TOUT TRANSFERER rencontrerait un
+    FR | echec d authentification plutot qu un telechargement. Un bouton
+    FR | allume qui ne peut pas fonctionner vaut moins qu un bouton qui
+    FR | s explique."""
     command = icloudpd_command(args.icloudpd)
+    # EN | Callers that have no session in hand (bulk, forget) pass None; the
+    # EN | engine that WOULD answer is still the honest thing to report, and
+    # EN | it is what decides whether the session on disk is icloudpd's.
+    # FR | Les appelants sans session en main (masse, oubli) passent None ; le
+    # FR | moteur qui REPONDRAIT reste la chose honnete a rapporter, et c est
+    # FR | lui qui decide si la session sur disque est celle d icloudpd.
+    found = available_engines()
+    if engine is None and found:
+        engine = found[0]
+    shares_session = bool(engine) and engine.name == "icloudpd"
     return {"engine": engine.name if engine else "",
-            "engines": [e.name for e in available_engines()],
+            "engines": [e.name for e in found],
             "icloudpd": command,
-            "bulk_available": bool(command)}
+            "bulk_available": bool(command) and shares_session,
+            # EN | Told apart so the screen can say WHICH half is missing.
+            # FR | Distingues pour que l ecran dise QUELLE moitie manque.
+            "bulk_command": bool(command),
+            "bulk_shares_session": shares_session}
 
 
 def do_link(args, locale: str) -> dict:
@@ -1390,19 +1449,43 @@ def destination_path(dest_root: Path, row: dict) -> Path:
     return candidate
 
 
-def writable(dest_root: Path, locale: str):
+def writable(dest_root: Path, locale: str, args=None):
     """EN | True, or the payload that says why not.
-    FR | Vrai, ou la charge utile qui dit pourquoi non."""
+    EN |
+    EN | Writable is not the same as SAFE, and both transfer paths ask for
+    EN | both. The container's own filesystem is writable, roomy and
+    EN | disposable: a library transferred there vanishes with the next pod
+    EN | restart while the ledger goes on claiming it is stored - and the
+    EN | ledger is what authorises deleting the originals from iCloud. That
+    EN | is the one failure this whole feature exists to prevent, so an
+    EN | unmounted destination is refused here rather than reported later.
+    FR | Inscriptible n est pas la meme chose que SUR, et les deux chemins de
+    FR | transfert exigent les deux. Le systeme de fichiers du conteneur est
+    FR | inscriptible, vaste et jetable : une photothèque qu on y transfere
+    FR | disparait au redemarrage suivant du pod tandis que le registre
+    FR | continue d affirmer qu elle est stockee - et c est le registre qui
+    FR | autorise la suppression des originaux dans iCloud. C est l unique
+    FR | echec que toute cette fonction existe pour empecher : une
+    FR | destination non montee est donc refusee ici, pas signalee apres."""
     try:
         dest_root.mkdir(parents=True, exist_ok=True)
         probe = dest_root / ".vssp_write_test"
         probe.write_text("", encoding="utf-8")
         probe.unlink()
-        return True, None
     except OSError as exc:
         return False, {**stated("error", locale),
                        **say("dest_unwritable", locale, dest=str(dest_root),
                              detail=str(exc)[:120])}
+
+    if args is not None:
+        storage = do_storage(args, locale)
+        if storage.get("ephemeral"):
+            return False, {**stated("error", locale),
+                           **{k: v for k, v in storage.items()
+                              if k in ("message", "message_key",
+                                       "message_vars")},
+                           "storage": storage}
+    return True, None
 
 
 def do_transfer(args, locale: str, status_path: Path) -> dict:
@@ -1421,7 +1504,7 @@ def do_transfer(args, locale: str, status_path: Path) -> dict:
         return {**stated("linked", locale), **say("nothing_selected", locale)}
 
     dest_root = Path(args.dest)
-    ok, refusal = writable(dest_root, locale)
+    ok, refusal = writable(dest_root, locale, args)
     if not ok:
         return refusal
 
@@ -1551,10 +1634,20 @@ def do_bulk(args, locale: str, status_path: Path) -> dict:
     FR | compteur pour un humain qui regarde un ecran, pas une comptabilite :
     FR | le registre ci-dessous est reconstruit depuis les fichiers reellement
     FR | arrives."""
-    command = icloudpd_command(args.icloudpd)
-    if not command:
+    facts = engine_facts(args, None)
+    if not facts["bulk_command"]:
         return {**stated("error", locale), **say("bulk_unavailable", locale),
-                **engine_facts(args, None)}
+                **facts}
+    # EN | The command is there but the session on disk is not one it can
+    # EN | read - see engine_facts(). Refused here with the reason, rather
+    # EN | than handed to icloudpd to fail against Apple.
+    # FR | La commande est la mais la session sur disque n est pas une qu elle
+    # FR | sait lire - voir engine_facts(). Refuse ici avec la raison, plutot
+    # FR | que confie a icloudpd pour echouer contre Apple.
+    if not facts["bulk_shares_session"]:
+        return {**stated("error", locale),
+                **say("bulk_no_shared_session", locale), **facts}
+    command = facts["icloudpd"]
 
     account = (args.apple_id or "").strip()
     if not account:
@@ -1562,7 +1655,7 @@ def do_bulk(args, locale: str, status_path: Path) -> dict:
                 **say("no_credentials", locale)}
 
     dest_root = Path(args.dest)
-    ok, refusal = writable(dest_root, locale)
+    ok, refusal = writable(dest_root, locale, args)
     if not ok:
         return refusal
 
@@ -1874,9 +1967,43 @@ def do_storage(args, locale: str) -> dict:
                    # FR | fichiers local. Un NAS s agrandit sur le NAS.
                    growable=bool(args.host_path) and not network)
 
-    key = "storage_network" if network else "storage_local"
+    # EN | THE DESTINATION IS NOT REAL STORAGE UNTIL SOMETHING IS MOUNTED ON
+    # EN | IT. A path that resolves to the container's own root filesystem is
+    # EN | not a partition and not a NAS: it is the writable layer of the
+    # EN | image, which a pod restart or a core update throws away. It reports
+    # EN | hundreds of free gigabytes and accepts every write, which is
+    # EN | precisely what makes it dangerous - a 10 GB library would transfer
+    # EN | perfectly and then be gone, with the ledger still claiming it is
+    # EN | stored, and RELEASE would then have been authorised to free iCloud.
+    # EN | Named here, loudly, rather than discovered afterwards.
+    # FR | LA DESTINATION N EST PAS UN VRAI STOCKAGE TANT QUE RIEN N Y EST
+    # FR | MONTE. Un chemin qui aboutit au systeme de fichiers racine du
+    # FR | conteneur n est ni une partition ni un NAS : c est la couche
+    # FR | inscriptible de l image, que le redemarrage d un pod ou une mise a
+    # FR | jour du coeur jette. Elle annonce des centaines de gigaoctets
+    # FR | libres et accepte toutes les ecritures, ce qui est precisement ce
+    # FR | qui la rend dangereuse - une photothèque de 10 Go s y transfererait
+    # FR | parfaitement puis disparaitrait, le registre continuant d affirmer
+    # FR | qu elle est stockee, et LIBERER aurait alors ete autorise a vider
+    # FR | iCloud. Nomme ici, fort, plutot que decouvert apres coup.
+    ephemeral = (not network) and (point in ("", "/")
+                                   or fstype in ("overlay", "overlayfs", "tmpfs"))
+    payload["ephemeral"] = ephemeral
+
+    if ephemeral:
+        key = "storage_ephemeral"
+    elif network:
+        key = "storage_network"
+    else:
+        key = "storage_local"
     payload.update(**say(key, locale, free=human(free), total=human(total),
-                         fstype=fstype or "?", used_pct=used_pct))
+                         fstype=fstype or "?", used_pct=used_pct,
+                         dest=str(dest)))
+    # EN | Growing a filesystem that is not a volume makes no sense either.
+    # FR | Agrandir un systeme de fichiers qui n est pas un volume n a pas de
+    # FR | sens non plus.
+    if ephemeral:
+        payload["growable"] = False
     return payload
 
 

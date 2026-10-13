@@ -106,7 +106,18 @@ the typed one is now stale, repeat.
 **SEND A NEW CODE** *voids the one already on your phone*, so press it only when
 the first is lost or expired.
 
-### No code arriving at all
+### "No code is arriving" is usually not a fault
+
+Apple sends a code when a sign-in actually needs one. Once the session is
+trusted, CONNECT returns `linked` immediately and nothing is sent — that is the
+feature working, not failing. The verification step says which of the two
+situations you are in rather than leaving an empty box that invites you to wait.
+
+A code is genuinely missing only when the step says one is expected and none
+turns up. Then:
+
+### No code arriving when one is expected
+
 
 A stored session is not all-or-nothing. It can report a linked account while
 being stale underneath — after the Apple ID password is changed, for instance —
@@ -243,4 +254,6 @@ to block the screen.
 | Nothing was removed from iCloud | none of the ticked items is in the ledger with a matching size on disk. Transfer them first. |
 | *not an LVM logical volume* | the destination is not on LVM, or the host path is wrong. Check `findmnt --target <host path>` on the host. |
 | The resize says the safe is shut | Vault reseals on every restart by design — see [Unseal](Unseal.md). |
+| *is not mounted storage* | the destination resolves to the container's own filesystem. It is writable and roomy, and a pod restart or a core update throws it away — so both transfer paths refuse it. Add the partition or the NAS share in Settings > System > Storage. |
+| TRANSFER EVERYTHING is greyed out although icloudpd is installed | the command is there but `pyicloud_ipd` is not importable, so the picker runs on plain `pyicloud` and icloudpd cannot read the session this screen signed in with. The picker still works. Reinstall with `pip install icloudpd` into the same interpreter Home Assistant uses, and check `python3 -c "import pyicloud_ipd"`. |
 | The grid is empty | no index yet. Press SCAN LIBRARY; the first pass on a large library takes a while and reports as it goes. |
