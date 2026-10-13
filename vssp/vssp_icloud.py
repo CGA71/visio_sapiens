@@ -271,6 +271,43 @@ MESSAGES = {
         "fr": "Session effacee ({removed} fichier(s)). Pressez CONNECTER : la "
               "prochaine connexion sera une vraie, et Apple enverra un code.",
     },
+    # EN | The session Apple will not use. Named apart from every other
+    # EN | failure because its cure is unique and counter-intuitive: not a
+    # EN | new password, not a new code - a forced forget, so the next
+    # EN | sign-in is a real one and Apple is asked for a code at last.
+    # FR | La session dont Apple ne veut pas. Nommee a part de tout autre
+    # FR | echec parce que son remede est unique et contre-intuitif : ni un
+    # FR | nouveau mot de passe, ni un nouveau code - un oubli force, pour
+    # FR | que la connexion suivante soit une vraie et qu Apple soit enfin
+    # FR | sollicite pour un code.
+    # EN | Not a failure: Apple is rebuilding the library index for this
+    # EN | session and will finish on its own. The one thing NOT to do is
+    # EN | sign in again, which restarts the wait - so this message says to
+    # EN | wait, and says nothing about forgetting the session.
+    # FR | Pas une panne : Apple reconstruit l index de la photothèque pour
+    # FR | cette session et finira tout seul. La seule chose a NE PAS faire
+    # FR | est de se reconnecter, ce qui relance l attente - ce message dit
+    # FR | donc d attendre, et ne dit rien d un oubli de session.
+    "indexing": {
+        "en": "Connected. Apple is still indexing the photo library for this "
+              "session - it finishes on its own, usually within a few "
+              "minutes. Wait, then press REFRESH. Do not sign in again: that "
+              "restarts the indexing.",
+        "fr": "Connecte. Apple indexe encore la photothèque pour cette "
+              "session - cela se termine tout seul, en general en quelques "
+              "minutes. Attendez, puis pressez RAFRAICHIR. Ne vous "
+              "reconnectez pas : cela relance l indexation.",
+    },
+    "stale_session": {
+        "en": "The stored session is accepted for sign-in but refused by the "
+              "photo service, so nothing can be read or transferred. Press "
+              "FORGET SESSION then CONNECT: the next sign-in is a real one "
+              "and Apple will send a code. ({detail})",
+        "fr": "La session memorisee est acceptee a la connexion mais refusee "
+              "par le service photo : rien ne peut etre lu ni transfere. "
+              "Pressez OUBLIER LA SESSION puis CONNECTER : la prochaine "
+              "connexion sera une vraie et Apple enverra un code. ({detail})",
+    },
     "already_linked": {
         "en": "{account} is already connected and Apple trusts this session, "
               "so there is no code to wait for. Nothing to do here - go to "
@@ -335,6 +372,12 @@ MESSAGES = {
               "{failed} failure(s).",
         "fr": "{done} element(s) transfere(s), {size} ecrits vers {dest}. "
               "{failed} echec(s).",
+    },
+    "transfer_failed": {
+        "en": "Nothing was transferred: all {failed} item(s) failed the same "
+              "way - {detail}",
+        "fr": "Rien n a ete transfere : les {failed} element(s) ont tous "
+              "echoue de la meme facon - {detail}",
     },
     "nothing_selected": {
         "en": "Nothing selected.",
@@ -460,6 +503,26 @@ STATE_LABELS = {
     "no_library": {"en": "Engine missing", "fr": "Moteur absent"},
     "not_configured": {"en": "Not configured", "fr": "Non configure"},
     "awaiting_2fa": {"en": "Code required", "fr": "Code requis"},
+    # EN | Not a failure: Apple is rebuilding the library index for this
+    # EN | session and will finish on its own. The one thing NOT to do is
+    # EN | sign in again, which restarts the wait - so this message says to
+    # EN | wait, and says nothing about forgetting the session.
+    # FR | Pas une panne : Apple reconstruit l index de la photothèque pour
+    # FR | cette session et finira tout seul. La seule chose a NE PAS faire
+    # FR | est de se reconnecter, ce qui relance l attente - ce message dit
+    # FR | donc d attendre, et ne dit rien d un oubli de session.
+    "indexing": {
+        "en": "Connected. Apple is still indexing the photo library for this "
+              "session - it finishes on its own, usually within a few "
+              "minutes. Wait, then press REFRESH. Do not sign in again: that "
+              "restarts the indexing.",
+        "fr": "Connecte. Apple indexe encore la photothèque pour cette "
+              "session - cela se termine tout seul, en general en quelques "
+              "minutes. Attendez, puis pressez RAFRAICHIR. Ne vous "
+              "reconnectez pas : cela relance l indexation.",
+    },
+    "stale_session": {"en": "Session refused", "fr": "Session refusee"},
+    "indexing": {"en": "Apple is indexing", "fr": "Indexation Apple"},
     "linked": {"en": "Linked", "fr": "Lie"},
     "scanning": {"en": "Scanning", "fr": "Analyse en cours"},
     "transferring": {"en": "Transferring", "fr": "Transfert en cours"},
@@ -795,6 +858,58 @@ class Lock:
 # EN | iCLOUD SESSION
 # FR | SESSION iCLOUD
 # ===========================================================================
+def photo_fault(exc) -> tuple:
+    """EN | Say what really went wrong behind the photo service, by walking
+    EN | the cause chain the library throws away.
+    EN |
+    EN | pyicloud raises PyiCloudServiceUnavailable("Photos service not
+    EN | available") `from` whatever actually happened, and the outer
+    EN | sentence is the same for every cause. One of those causes is not a
+    EN | fault at all: Apple answers
+    EN |     "iCloud Photo Library not finished indexing. Please try again in
+    EN |      a few minutes."
+    EN | while it rebuilds the library index for a session - a wait, not a
+    EN | breakage, and it resolves on its own.
+    EN | Flattening that into "service not available" is what sent a whole
+    EN | evening into chasing the sign-in: the account was connected, the
+    EN | password was right, the session was trusted, and the one sentence
+    EN | saying "wait a few minutes" was being swallowed. Worse, the advice
+    EN | the screen gave instead - forget the session and sign in again -
+    EN | restarts Apple's indexing, so following it made the wait longer
+    EN | every time.
+    FR | Dire ce qui a reellement echoue derriere le service photo, en
+    FR | remontant la chaine de causes que la bibliotheque jette.
+    FR |
+    FR | pyicloud leve PyiCloudServiceUnavailable(« Photos service not
+    FR | available ») `from` ce qui s est vraiment produit, et la phrase
+    FR | exterieure est la meme pour toutes les causes. L une d elles n est
+    FR | pas une panne du tout : Apple repond
+    FR |     « iCloud Photo Library not finished indexing. Please try again
+    FR |      in a few minutes. »
+    FR | pendant qu il reconstruit l index de la photothèque pour une
+    FR | session - une attente, pas une casse, et cela se resout tout seul.
+    FR | Aplatir cela en « service indisponible » est ce qui a envoye une
+    FR | soiree entiere a poursuivre la connexion : le compte etait
+    FR | connecte, le mot de passe bon, la session de confiance, et l unique
+    FR | phrase disant « attendez quelques minutes » etait avalee. Pire, le
+    FR | conseil que l ecran donnait a la place - oublier la session et se
+    FR | reconnecter - relance l indexation d Apple : le suivre allongeait
+    FR | donc l attente a chaque fois."""
+    chain = []
+    cur = exc
+    for _ in range(5):
+        if cur is None:
+            break
+        name = type(cur).__name__
+        text = str(cur)
+        chain.append(f"{name}: {text}")
+        if ("not finished indexing" in text.lower()
+                or name == "PyiCloudServiceNotActivatedException"):
+            return "indexing", text[:200]
+        cur = cur.__cause__ or cur.__context__
+    return "unavailable", " <- ".join(chain)[:200]
+
+
 def connect(args, locale: str, push_code: bool = False):
     """EN | Open a session from the stored credentials. Returns
     EN | (api, engine, state, payload-extra): state is 'linked',
@@ -890,6 +1005,48 @@ def connect(args, locale: str, push_code: bool = False):
             except Exception:  # noqa: BLE001 - a push failure is not fatal
                 pass             # here; the screen still offers SEND A NEW CODE
         return api, engine, "awaiting_2fa", say("awaiting_2fa", locale)
+
+    # EN | TRUSTED IS NOT THE SAME AS USABLE, and believing otherwise cost a
+    # EN | whole evening. A stored session can come back with requires_2fa
+    # EN | False and is_trusted_session True while the Photos web service
+    # EN | refuses it outright - the cookie jar carries enough to skip the
+    # EN | 2FA challenge and not enough to open photos, which announces
+    # EN | itself as "Missing X-APPLE-WEBAUTH-HSA-LOGIN cookie" and then as
+    # EN | "Photos service not available" at the first transfer.
+    # EN | Reporting that session as linked is the worst possible answer: the
+    # EN | screen says the account is connected, CONNECT asks Apple for
+    # EN | nothing because no 2FA is required, so no code ever arrives, and
+    # EN | every explanation on screen is true and useless. The person is
+    # EN | told they are fine while nothing works.
+    # EN | So the question asked here is the one that matters - does the
+    # EN | service this feature exists for actually answer - and a session
+    # EN | that fails it is named stale, with the cure, instead of being
+    # EN | called linked.
+    # FR | DE CONFIANCE N EST PAS LA MEME CHOSE QU UTILISABLE, et avoir cru
+    # FR | le contraire a coute une soiree entiere. Une session memorisee
+    # FR | peut revenir avec requires_2fa a False et is_trusted_session a
+    # FR | True alors que le service web Photos la refuse net - le pot de
+    # FR | cookies porte assez pour sauter le defi 2FA et pas assez pour
+    # FR | ouvrir les photos, ce qui s annonce par « Missing
+    # FR | X-APPLE-WEBAUTH-HSA-LOGIN cookie » puis par « Photos service not
+    # FR | available » au premier transfert.
+    # FR | Rapporter cette session comme liee est la pire reponse possible :
+    # FR | l ecran dit que le compte est connecte, CONNECTER ne demande rien
+    # FR | a Apple puisque aucun 2FA n est requis, donc aucun code n arrive
+    # FR | jamais, et chaque explication a l ecran est vraie et inutile. On
+    # FR | annonce a la personne que tout va bien pendant que rien ne marche.
+    # FR | La question posee ici est donc celle qui compte - le service pour
+    # FR | lequel cette fonction existe repond-il reellement - et une session
+    # FR | qui y echoue est nommee perimee, avec le remede, au lieu d etre
+    # FR | appelee liee.
+    try:
+        _ = api.photos
+    except Exception as exc:  # noqa: BLE001 - any refusal means unusable
+        kind, detail = photo_fault(exc)
+        if kind == "indexing":
+            return api, engine, "indexing", say("indexing", locale)
+        return api, engine, "stale_session", say("stale_session", locale,
+                                                 detail=detail)
 
     return api, engine, "linked", say("linked", locale, account=account,
                                       engine=engine.name)
@@ -1268,8 +1425,10 @@ def do_scan(args, locale: str, status_path: Path) -> dict:
                            "generated": datetime.now().isoformat(timespec="seconds")})
     except Exception as exc:  # noqa: BLE001
         save_json(index_path, index)
-        return {**stated("error", locale),
-                **say("failure", locale, detail=str(exc)[:200]),
+        kind, detail = photo_fault(exc)
+        return {**stated("indexing" if kind == "indexing" else "error", locale),
+                **(say("indexing", locale) if kind == "indexing"
+                   else say("failure", locale, detail=detail)),
                 **engine_facts(args, engine)}
 
     # EN | An asset that vanished from iCloud since the last scan - deleted
@@ -1568,6 +1727,7 @@ def do_transfer(args, locale: str, status_path: Path) -> dict:
     done = 0
     failed = 0
     written = 0
+    first_fault = None
     total = len(wanted)
     salt = thumb_salt(Path(args.salt_file))
     thumbs_dir = Path(args.thumbs_dir)
@@ -1614,8 +1774,23 @@ def do_transfer(args, locale: str, status_path: Path) -> dict:
                     (thumbs_dir / thumb_name(salt, photo.id)).unlink()
                 except OSError:
                     pass
-            except Exception:  # noqa: BLE001 - one item, not the batch
+            except Exception as exc:  # noqa: BLE001 - one item, not the batch
                 failed += 1
+                # EN | KEEP THE FIRST REASON. A counter that says "3
+                # EN | failure(s)" and nothing else is not a report: it was
+                # EN | what hid, for an evening, that every single item was
+                # EN | failing on the same sentence from Apple. One item may
+                # EN | fail for its own reason without ending the batch, but
+                # EN | the batch must carry at least one of them back.
+                # FR | GARDER LA PREMIERE RAISON. Un compteur qui annonce
+                # FR | « 3 echec(s) » et rien d autre n est pas un rapport :
+                # FR | c est lui qui a masque, une soiree durant, que chaque
+                # FR | element echouait sur la meme phrase d Apple. Un
+                # FR | element peut echouer pour sa propre raison sans
+                # FR | interrompre le lot, mais le lot doit en rapporter au
+                # FR | moins une.
+                if not first_fault:
+                    first_fault = photo_fault(exc)
                 try:
                     partial.unlink()
                 except OSError:
@@ -1637,10 +1812,31 @@ def do_transfer(args, locale: str, status_path: Path) -> dict:
 
     save_json(ledger_path, ledger)
     summary = index_summary(index, args, locale)
+    # EN | Nothing moved and every item failed the same way: report THAT,
+    # EN | not a tally. An all-failed batch during Apple's indexing is a
+    # EN | wait, and saying so is the difference between "try again in a few
+    # EN | minutes" and an evening spent re-authenticating.
+    # FR | Rien n a bouge et tous les elements ont echoue pareil : rapporter
+    # FR | CELA, pas un decompte. Un lot entierement en echec pendant
+    # FR | l indexation d Apple est une attente, et le dire fait la
+    # FR | difference entre « reessayez dans quelques minutes » et une
+    # FR | soiree passee a se reconnecter.
+    if done == 0 and first_fault:
+        kind, detail = first_fault
+        summary.update(**stated("indexing" if kind == "indexing" else "error",
+                                locale),
+                       **(say("indexing", locale) if kind == "indexing"
+                          else say("transfer_failed", locale, failed=failed,
+                                   detail=detail)),
+                       transferred=0, failed=failed, written=0,
+                       **engine_facts(args, engine))
+        return summary
+
     summary.update(**say("transfer_done", locale, done=done,
                          size=human(written), dest=str(dest_root),
                          failed=failed),
                    transferred=done, failed=failed, written=written,
+                   fault=(first_fault[1] if first_fault else ""),
                    **engine_facts(args, engine))
     return summary
 

@@ -612,6 +612,8 @@ const I18N = {
     st_no_library: 'Engine missing',
     st_not_configured: 'Not configured',
     st_awaiting_2fa: 'Code required',
+    st_stale_session: 'Session refused',
+    st_indexing: 'Apple is indexing',
     st_linked: 'Linked',
     st_scanning: 'Scanning',
     st_transferring: 'Transferring',
@@ -646,6 +648,17 @@ const I18N = {
     m_code_rejected: 'Apple rejected that code. It is single-use and ' +
                      'short-lived — press SEND A NEW CODE, then enter ' +
                      'the one that arrives.',
+    m_indexing: 'Connected. Apple is still indexing the photo library for ' +
+                'this session — it finishes on its own, usually within a ' +
+                'few minutes. Wait, then press REFRESH. Do not sign in again: ' +
+                'that restarts the indexing.',
+    m_transfer_failed: 'Nothing was transferred: all {failed} item(s) failed ' +
+                       'the same way — {detail}',
+    m_stale_session: 'The stored session is accepted for sign-in but ' +
+                     'refused by the photo service, so nothing can be read ' +
+                     'or transferred. Press FORGET SESSION then CONNECT: the ' +
+                     'next sign-in is a real one and Apple will send a code. ' +
+                     '({detail})',
     m_already_linked: '{account} is already connected and Apple trusts this ' +
                       'session, so there is no code to wait for. Nothing to ' +
                       'do here — go to the destination and the library ' +
@@ -795,6 +808,8 @@ const I18N = {
     st_no_library: 'Moteur absent',
     st_not_configured: 'Non configuré',
     st_awaiting_2fa: 'Code requis',
+    st_stale_session: 'Session refusée',
+    st_indexing: 'Indexation Apple',
     st_linked: 'Lié',
     st_scanning: 'Analyse en cours',
     st_transferring: 'Transfert en cours',
@@ -828,6 +843,17 @@ const I18N = {
     m_code_rejected: 'Apple a refusé ce code. Il est à usage unique et ' +
                      'éphémère — pressez ENVOYER UN NOUVEAU CODE, puis ' +
                      'saisissez celui qui arrive.',
+    m_indexing: 'Connecté. Apple indexe encore la photothèque pour cette ' +
+                'session — cela se termine tout seul, en général en ' +
+                'quelques minutes. Attendez, puis pressez RAFRAÎCHIR. Ne vous ' +
+                'reconnectez pas : cela relance l’indexation.',
+    m_transfer_failed: 'Rien n’a été transféré : les {failed} élément(s) ' +
+                       'ont tous échoué de la même façon — {detail}',
+    m_stale_session: 'La session mémorisée est acceptée à la connexion mais ' +
+                     'refusée par le service photo : rien ne peut être lu ni ' +
+                     'transféré. Pressez OUBLIER LA SESSION puis CONNECTER : ' +
+                     'la prochaine connexion sera une vraie et Apple enverra ' +
+                     'un code. ({detail})',
     m_already_linked: '{account} est déjà connecté et Apple fait confiance à ' +
                       'cette session : il n’y a aucun code à attendre. ' +
                       'Rien à faire ici — passez à la destination et à ' +
@@ -955,7 +981,8 @@ function localise(payload) {
 
 const CLASS_OF = {
   linked: 'ok', scanning: 'warn', transferring: 'warn',
-  awaiting_2fa: 'warn', not_configured: '', no_library: 'err', error: 'err'
+  awaiting_2fa: 'warn', stale_session: 'err', indexing: 'warn',
+  not_configured: '', no_library: 'err', error: 'err'
 };
 
 async function post(body) {
@@ -1007,7 +1034,7 @@ async function refreshStatus() {
      FR | doit donc dire LEQUEL - sinon un champ code vide sur un compte lie
      FR | se lit comme « un code devrait arriver » et la personne attend un
      FR | code qui, a juste titre, ne partira jamais. */
-  const linked = d.state === 'linked';
+  const linked = d.state === 'linked' || d.state === 'indexing';
   $('s2state').textContent = t(linked ? 's2_linked' : 's2_waiting');
   $('s2state').style.color = linked ? 'var(--green)' : 'var(--amber)';
   $('btnCode').disabled = linked;
