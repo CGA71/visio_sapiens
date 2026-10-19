@@ -1,0 +1,375 @@
+{#
+   Visio Sapiens - Neural Home Interface for Home Assistant
+   Copyright (C) 2026 Expanse IT <expanse-it@outlook.fr>
+
+   SPDX-License-Identifier: GPL-2.0-or-later
+
+   This program is free software; you can redistribute it and/or modify
+   it under the terms of the GNU General Public License as published by
+   the Free Software Foundation; either version 2 of the License, or
+   (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston,
+   MA 02110-1301 USA.
+#}
+{#
+  EN | ONE CARD FOR ONE ROLE, in the `media` and `audio` slots.
+  EN |
+  EN | TWO KINDS OF ABSENCE, and telling them apart is the whole reason this
+  EN | partial exists.
+  EN |   - A role DECLARED WITHOUT AN ENTITY - the console nobody has wired
+  EN |     up yet - still draws its card, at full size, greyed, saying "not
+  EN |     connected". Decided at GENERATE time, because the model knows.
+  EN |   - A role whose entity is there but does NOT SUPPORT a control - the
+  EN |     amplifier that publishes no sound_mode_list - draws the control
+  EN |     greyed, saying "not available". Decided at RENDER time, in the
+  EN |     browser, by reading the live attributes.
+  EN |
+  EN | That second one is why the capability checks are button-card `[[[ ]]]`
+  EN | templates rather than Jinja. Jinja runs once, when the dashboard is
+  EN | written; the attributes it would read are whatever the amplifier
+  EN | happened to publish that minute. Reading them in the browser means the
+  EN | day the integration finally exposes the sound modes, they appear on
+  EN | their own - no regeneration, no edit here. The same card serves the
+  EN | poor integration and the rich one.
+  EN |
+  EN | WHAT THIS PARTIAL NEVER DOES: hide something. A missing device and a
+  EN | missing capability both keep their space. The layout of a living room
+  EN | is settled the day it is declared, and connecting hardware later only
+  EN | fills it in.
+  FR | UNE CARTE POUR UN ROLE, dans les tableaux `media` et `audio`.
+  FR |
+  FR | DEUX SORTES D ABSENCE, et les distinguer est toute la raison d etre de
+  FR | ce partial.
+  FR |   - Un role DECLARE SANS ENTITE - la console que personne n a encore
+  FR |     branchee - dessine quand meme sa carte, pleine taille, grisee, avec
+  FR |     la mention « non connecte ». Decide a la GENERATION, parce que le
+  FR |     modele le sait.
+  FR |   - Un role dont l entite existe mais NE SUPPORTE PAS une commande -
+  FR |     l ampli qui ne publie aucun sound_mode_list - dessine la commande
+  FR |     grisee, avec « non disponible ». Decide au RENDU, dans le
+  FR |     navigateur, en lisant les attributs vivants.
+  FR |
+  FR | Ce second cas est la raison pour laquelle les tests de capacite sont
+  FR | des templates button-card `[[[ ]]]` et non du Jinja. Jinja ne tourne
+  FR | qu une fois, a l ecriture du dashboard ; les attributs qu il lirait
+  FR | seraient ceux que l ampli publiait cette minute-la. Les lire dans le
+  FR | navigateur fait que le jour ou l integration expose enfin les modes
+  FR | sonores, ils apparaissent seuls - sans regeneration ni retouche ici.
+  FR | La meme carte sert l integration pauvre et la riche.
+  FR |
+  FR | CE QUE CE PARTIAL NE FAIT JAMAIS : masquer quelque chose. Un appareil
+  FR | absent et une capacite absente gardent tous deux leur place. La mise en
+  FR | page d un salon est arretee le jour ou on la declare, et brancher du
+  FR | materiel ensuite ne fait que la remplir.
+#}
+
+{# ------------------------------------------------------------------ #}
+{# EN | The card frame: title, state line, then whatever the role needs #}
+{# FR | Le cadre de la carte : titre, ligne d etat, puis le role        #}
+{# ------------------------------------------------------------------ #}
+{% macro tile(role, label, icon, locale) %}
+{% set connected = role.entity | length > 0 %}
+                    - type: custom:button-card
+                      template: vssp_panel
+                      show_icon: false
+                      show_name: false
+                      show_label: false
+                      styles:
+                        card:
+                          - padding: 10px 12px
+                          {% if not connected %}
+                          {# EN | Greyed, not hidden, and not interactive:
+                             EN | the card is a promise of where the device
+                             EN | will be, so it must not look clickable.
+                             FR | Grisee, pas masquee, et non interactive :
+                             FR | la carte promet ou l appareil sera, elle ne
+                             FR | doit donc pas avoir l air cliquable. #}
+                          - opacity: 0.45
+                          - cursor: default
+                          {% endif %}
+                        grid:
+                          - grid-template-areas: '"body"'
+                        custom_fields:
+                          body:
+                            - width: 100%
+                      tap_action:
+                        action: none
+                      custom_fields:
+                        body:
+                          card:
+                            type: vertical-stack
+                            cards:
+                              - type: custom:button-card
+                                template: vssp_subsection_title
+                                icon: {{ icon }}
+                                name: "{{ label }}"
+{% if not connected %}
+                              - type: custom:button-card
+                                show_icon: false
+                                show_state: false
+                                name: "{{ t('slot.not_connected') }}"
+                                tap_action:
+                                  action: none
+                                styles:
+                                  card:
+                                    - background: transparent
+                                    - box-shadow: none
+                                    - border: none
+                                    - padding: 14px 4px
+                                    - cursor: default
+                                  name:
+                                    - font-size: calc(12px * var(--vssp-scale-label, 1))
+                                    - color: rgba(143,182,201,0.75)
+                                    - letter-spacing: 1px
+                                    - text-transform: uppercase
+{% else %}
+{{ caller() }}
+{% endif %}
+{% endmacro %}
+
+
+{# ------------------------------------------------------------------ #}
+{# EN | A row of chips driven by a live attribute list (source_list).   #}
+{# EN | `only` keeps the chips whose name matches one of the declared   #}
+{# EN | values, so the TV shows four apps and three inputs in two tidy  #}
+{# EN | rows rather than one pile of everything webOS reports.          #}
+{# FR | Une rangee de pastilles pilotee par une liste d attributs vivante #}
+{# FR | (source_list). `only` ne garde que les pastilles dont le nom     #}
+{# FR | figure parmi les valeurs declarees : la TV montre donc quatre    #}
+{# FR | applications et trois entrees en deux rangees nettes plutot qu un #}
+{# FR | tas de tout ce que webOS rapporte.                               #}
+{# ------------------------------------------------------------------ #}
+{% macro source_chips(entity, only, title, locale) %}
+                              - type: custom:button-card
+                                template: vssp_subsection_title
+                                name: "{{ title }}"
+                                styles:
+                                  card:
+                                    - padding-top: 6px
+{% if only %}
+                              - type: grid
+                                columns: {{ 4 if only | length > 3 else only | length }}
+                                square: false
+                                cards:
+{% for value in only %}
+                                  - type: custom:button-card
+                                    entity: {{ entity }}
+                                    name: "{{ value }}"
+                                    show_icon: false
+                                    show_state: false
+                                    {# EN | Lit when this is the current
+                                       EN | source, and greyed out entirely
+                                       EN | when the entity does not offer it
+                                       EN | - a button that cannot work must
+                                       EN | say so rather than fail on press.
+                                       FR | Allumee quand c est la source
+                                       FR | courante, et grisee entierement
+                                       FR | quand l entite ne la propose pas -
+                                       FR | un bouton qui ne peut pas marcher
+                                       FR | doit le dire plutot qu echouer au
+                                       FR | clic. #}
+                                    styles:
+                                      card:
+                                        - padding: 7px 4px
+                                        - border-radius: 10px
+                                        - font-size: calc(11px * var(--vssp-scale-label, 1))
+                                        - background: >
+                                            [[[
+                                              const l = entity.attributes.source_list || [];
+                                              if (!l.includes("{{ value }}")) return "rgba(255,255,255,.03)";
+                                              return entity.attributes.source === "{{ value }}"
+                                                ? "rgba(0,229,255,.18)" : "rgba(0,0,0,.25)";
+                                            ]]]
+                                        - border: >
+                                            [[[
+                                              const l = entity.attributes.source_list || [];
+                                              if (!l.includes("{{ value }}")) return "1px solid rgba(255,255,255,.06)";
+                                              return entity.attributes.source === "{{ value }}"
+                                                ? "1px solid #00E5FF" : "1px solid rgba(0,229,255,.18)";
+                                            ]]]
+                                        - opacity: >
+                                            [[[
+                                              const l = entity.attributes.source_list || [];
+                                              return l.includes("{{ value }}") ? "1" : "0.35";
+                                            ]]]
+                                      name:
+                                        - color: "#DCEEF6"
+                                    tap_action:
+                                      action: call-service
+                                      service: media_player.select_source
+                                      service_data:
+                                        entity_id: {{ entity }}
+                                        source: "{{ value }}"
+{% endfor %}
+{% endif %}
+{% endmacro %}
+
+
+{# ------------------------------------------------------------------ #}
+{# EN | Power + volume, the two controls every AV device supports.     #}
+{# FR | Marche/arret + volume, les deux commandes que tout appareil AV  #}
+{# FR | supporte.                                                       #}
+{# ------------------------------------------------------------------ #}
+{% macro transport(entity, locale) %}
+                              - type: grid
+                                columns: 4
+                                square: false
+                                cards:
+                                  - type: custom:button-card
+                                    entity: {{ entity }}
+                                    icon: mdi:power
+                                    show_name: false
+                                    show_state: false
+                                    size: 20px
+                                    styles:
+                                      card:
+                                        - padding: 8px
+                                        - border-radius: 10px
+                                        - background: rgba(0,0,0,.25)
+                                        - border: 1px solid rgba(0,229,255,.18)
+                                      icon:
+                                        - color: >
+                                            [[[ return entity.state === "off"
+                                                  ? "rgba(143,182,201,.6)" : "#00FFC3"; ]]]
+                                    tap_action:
+                                      action: call-service
+                                      service: media_player.toggle
+                                      service_data:
+                                        entity_id: {{ entity }}
+                                  - type: custom:button-card
+                                    entity: {{ entity }}
+                                    icon: mdi:volume-minus
+                                    show_name: false
+                                    show_state: false
+                                    size: 20px
+                                    styles:
+                                      card:
+                                        - padding: 8px
+                                        - border-radius: 10px
+                                        - background: rgba(0,0,0,.25)
+                                        - border: 1px solid rgba(0,229,255,.18)
+                                    tap_action:
+                                      action: call-service
+                                      service: media_player.volume_down
+                                      service_data:
+                                        entity_id: {{ entity }}
+                                  - type: custom:button-card
+                                    entity: {{ entity }}
+                                    icon: mdi:volume-plus
+                                    show_name: false
+                                    show_state: false
+                                    size: 20px
+                                    styles:
+                                      card:
+                                        - padding: 8px
+                                        - border-radius: 10px
+                                        - background: rgba(0,0,0,.25)
+                                        - border: 1px solid rgba(0,229,255,.18)
+                                    tap_action:
+                                      action: call-service
+                                      service: media_player.volume_up
+                                      service_data:
+                                        entity_id: {{ entity }}
+                                  - type: custom:button-card
+                                    entity: {{ entity }}
+                                    icon: mdi:volume-off
+                                    show_name: false
+                                    show_state: false
+                                    size: 20px
+                                    styles:
+                                      card:
+                                        - padding: 8px
+                                        - border-radius: 10px
+                                        - background: rgba(0,0,0,.25)
+                                        - border: 1px solid rgba(0,229,255,.18)
+                                      icon:
+                                        - color: >
+                                            [[[ return entity.attributes.is_volume_muted
+                                                  ? "#FF4D6D" : "rgba(143,182,201,.8)"; ]]]
+                                    tap_action:
+                                      action: call-service
+                                      service: media_player.volume_mute
+                                      service_data:
+                                        entity_id: {{ entity }}
+                                        is_volume_muted: >
+                                          [[[ return !entity.attributes.is_volume_muted; ]]]
+{% endmacro %}
+
+
+{# ------------------------------------------------------------------ #}
+{# EN | The sound format row. The ONE control in this room with no      #}
+{# EN | equivalent elsewhere in the project, and the one most likely to #}
+{# EN | be missing: it exists only if the integration publishes         #}
+{# EN | sound_mode_list. Rendered either way, and it says which.        #}
+{# FR | La rangee du format sonore. LA commande de cette piece qui n a  #}
+{# FR | aucun equivalent ailleurs dans le projet, et la plus susceptible #}
+{# FR | de manquer : elle n existe que si l integration publie           #}
+{# FR | sound_mode_list. Rendue dans les deux cas, et elle dit lequel.   #}
+{# ------------------------------------------------------------------ #}
+{% macro sound_mode(entity, locale) %}
+                              - type: custom:button-card
+                                template: vssp_subsection_title
+                                name: "{{ t('slot.media_sound_mode') }}"
+                                styles:
+                                  card:
+                                    - padding-top: 6px
+                              - type: custom:button-card
+                                entity: {{ entity }}
+                                show_icon: false
+                                show_state: false
+                                name: >
+                                  [[[
+                                    const modes = entity.attributes.sound_mode_list;
+                                    if (!modes || !modes.length) return "{{ t('slot.not_available') }}";
+                                    return entity.attributes.sound_mode || "—";
+                                  ]]]
+                                styles:
+                                  card:
+                                    - padding: 9px 12px
+                                    - border-radius: 10px
+                                    - background: >
+                                        [[[
+                                          const m = entity.attributes.sound_mode_list;
+                                          return (m && m.length) ? "rgba(0,0,0,.25)" : "rgba(255,255,255,.03)";
+                                        ]]]
+                                    - border: >
+                                        [[[
+                                          const m = entity.attributes.sound_mode_list;
+                                          return (m && m.length) ? "1px solid rgba(0,229,255,.18)"
+                                                                 : "1px solid rgba(255,255,255,.06)";
+                                        ]]]
+                                    - cursor: >
+                                        [[[
+                                          const m = entity.attributes.sound_mode_list;
+                                          return (m && m.length) ? "pointer" : "default";
+                                        ]]]
+                                  name:
+                                    - font-size: calc(12px * var(--vssp-scale-value, 1))
+                                    - color: >
+                                        [[[
+                                          const m = entity.attributes.sound_mode_list;
+                                          return (m && m.length) ? "#00E5FF" : "rgba(143,182,201,0.6)";
+                                        ]]]
+                                    - letter-spacing: 1px
+                                {# EN | more-info is the right target: Home
+                                   EN | Assistant's own dialog already lists
+                                   EN | sound modes when they exist, and
+                                   EN | reimplementing that picker here would
+                                   EN | be a second thing to keep correct.
+                                   FR | more-info est la bonne cible : la
+                                   FR | boite de dialogue de Home Assistant
+                                   FR | liste deja les modes sonores quand ils
+                                   FR | existent, et reimplementer ce
+                                   FR | selecteur ici serait une seconde chose
+                                   FR | a maintenir juste. #}
+                                tap_action:
+                                  action: more-info
+{% endmacro %}

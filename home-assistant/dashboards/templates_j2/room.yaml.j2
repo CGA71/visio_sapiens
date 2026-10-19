@@ -301,6 +301,118 @@ views:
                   - width: 100%
                   - height: 100%
 
+{% elif slot_id in ['media', 'audio'] %}
+          # EN | ROLE-BASED SLOTS. One card per declared role, in the order
+          # EN | SLOT_ROLES fixes — not the order of a dict, and not an
+          # EN | alphabetical sort: the TV comes before the amplifier because
+          # EN | that is the order a person reaches for them.
+          # EN | A role declared without an entity still gets its card, at
+          # EN | full size, greyed. See _media_tile.j2 for why the two kinds
+          # EN | of absence are kept apart.
+          # FR | TABLEAUX A ROLES. Une carte par role declare, dans l ordre
+          # FR | que fixe SLOT_ROLES — pas l ordre d un dictionnaire, et pas
+          # FR | un tri alphabetique : la TV passe avant l ampli parce que
+          # FR | c est l ordre dans lequel on les cherche.
+          # FR | Un role declare sans entite recoit quand meme sa carte,
+          # FR | pleine taille, grisee. Voir _media_tile.j2 pour la raison de
+          # FR | distinguer les deux sortes d absence.
+{# EN | `with context`, unlike the schedule partial next door: these macros
+   EN | call t() for every label they draw, and an imported macro does not
+   EN | inherit the caller's context unless told to. Without it the render
+   EN | dies on "'t' is undefined" at the first translated string.
+   FR | `with context`, contrairement au partial de planification d a cote :
+   FR | ces macros appellent t() pour chaque libelle qu elles dessinent, et
+   FR | une macro importee n herite pas du contexte de l appelant sans qu on
+   FR | le demande. Sans cela le rendu meurt sur « 't' is undefined » a la
+   FR | premiere chaine traduite. #}
+{% import '_media_tile.j2' as mt with context %}
+          - type: custom:button-card
+            show_icon: false
+            show_name: false
+            show_state: false
+            tap_action:
+              action: none
+            styles:
+              grid:
+                - grid-template-areas: '"list"'
+              card:
+                - background: transparent
+                - box-shadow: none
+                - border: none
+                - border-radius: 0
+                - padding: 0
+                - cursor: default
+              custom_fields:
+                list:
+                  - display: block
+                  - width: 100%
+                  - height: {{ '320px' if format != 'mobile' else '260px' }}
+                  - overflow-y: auto
+                  - overflow-x: hidden
+                  - padding-right: 4px
+                  - scrollbar-width: thin
+                  - scrollbar-color: rgba(0, 229, 255, 0.35) rgba(0, 229, 255, 0.06)
+            custom_fields:
+              list:
+                card:
+                  type: vertical-stack
+                  cards:
+{% for role_id, role in (slot.roles or {}).items() %}
+{% set label = role.label or t('slot.role_' ~ role_id) %}
+{% set icon = {'tv': 'mdi:television', 'amplifier': 'mdi:audio-video',
+               'console': 'mdi:gamepad-variant',
+               'streamer': 'mdi:music-circle-outline'}.get(role_id, 'mdi:play-box') %}
+{% call mt.tile(role, label, icon, locale) %}
+{% if role_id == 'tv' %}
+{{ mt.transport(role.entity, locale) }}
+{{ mt.source_chips(role.entity, role.apps, t('slot.media_apps'), locale) }}
+{{ mt.source_chips(role.entity, role.inputs, t('slot.media_inputs'), locale) }}
+{% elif role_id == 'amplifier' %}
+{{ mt.transport(role.entity, locale) }}
+{{ mt.source_chips(role.entity, role.inputs, t('slot.media_source'), locale) }}
+{{ mt.sound_mode(role.entity, locale) }}
+{% elif role_id == 'console' %}
+                              # EN | No transport: a console is not driven
+                              # EN | from a wall tablet, it is WATCHED from
+                              # EN | one. What matters is whether it is
+                              # EN | playing a game or reading a disc, and
+                              # EN | the media_player says so by itself.
+                              # FR | Pas de transport : une console ne se
+                              # FR | pilote pas depuis une tablette murale,
+                              # FR | elle s y REGARDE. Ce qui compte est de
+                              # FR | savoir si elle joue ou lit un disque, et
+                              # FR | le media_player le dit tout seul.
+                              - type: custom:button-card
+                                entity: {{ role.entity }}
+                                show_icon: false
+                                show_state: false
+                                name: >
+                                  [[[
+                                    if (entity.state === "off" || entity.state === "standby")
+                                      return "{{ t('slot.console_idle') }}";
+                                    return entity.attributes.media_title
+                                        || entity.attributes.source
+                                        || "{{ t('slot.console_playing') }}";
+                                  ]]]
+                                styles:
+                                  card:
+                                    - padding: 10px 12px
+                                    - border-radius: 10px
+                                    - background: rgba(0,0,0,.25)
+                                    - border: 1px solid rgba(0,229,255,.18)
+                                  name:
+                                    - font-size: calc(12px * var(--vssp-scale-value, 1))
+                                    - color: "#00E5FF"
+                                tap_action:
+                                  action: more-info
+{% elif role_id == 'streamer' %}
+                              - type: media-control
+                                entity: {{ role.entity }}
+{{ mt.source_chips(role.entity, role.outputs, t('slot.media_output'), locale) }}
+{% endif %}
+{% endcall %}
+{% endfor %}
+
 {% elif slot_id in ['appliances', 'sensors'] %}
           # EN | LINE BY LINE, WITH A SCROLLBAR. Shared with `sensors` — same
           # EN | idiom, this block has no appliances-specific content, it

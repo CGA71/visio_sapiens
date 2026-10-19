@@ -83,6 +83,23 @@ room:
 # FR | Jamais traduite.
 # ----------------------------------------------------------------------
 slot:
+  media: Media
+  audio: Audio
+  role_tv: TV
+  role_amplifier: Amplifier
+  role_console: Console
+  role_streamer: Streaming
+  not_connected: Not connected
+  not_available: Not available
+  media_apps: Apps
+  media_inputs: Inputs
+  media_source: Source
+  media_sound_mode: Sound format
+  media_volume: Volume
+  media_output: Output
+  console_playing: Playing
+  console_disc: Disc
+  console_idle: Idle
   sensors: Sensors
   switches: Switches
   appliances: Devices

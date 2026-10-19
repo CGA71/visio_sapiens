@@ -210,6 +210,23 @@ slot_sets:
   # EN | Two slots only, for a corridor or a landing.
   # FR | Deux tableaux seulement, pour un couloir ou un palier.
   minimal:  [switches, security]
+  # EN | Living room / lounge / TV room — one and the same thing. Its AV
+  # EN | stack lives in the two ROLE-BASED slots, `media` and `audio`: a TV,
+  # EN | an amplifier and a console are all media_player entities, so a flat
+  # EN | list could not tell them apart, and a list of toggle rows would say
+  # EN | nothing useful about any of them.
+  # EN | `appliances`, `security` and `infrastructure` are deliberately out
+  # EN | of the set — a living room has no alarm of its own and no rack, and
+  # EN | its devices are already in `media`.
+  # FR | Salon / sejour / salle TV — une seule et meme chose. Son ensemble
+  # FR | audio-video vit dans les deux tableaux A ROLES, `media` et `audio` :
+  # FR | une TV, un ampli et une console sont tous des entites media_player,
+  # FR | donc une liste plate ne saurait pas les distinguer, et une liste de
+  # FR | lignes a bascule ne dirait rien d utile d aucun des trois.
+  # FR | `appliances`, `security` et `infrastructure` sont volontairement hors
+  # FR | du jeu — un salon n a ni alarme propre ni baie technique, et ses
+  # FR | appareils sont deja dans `media`.
+  living_room: [media, audio, sensors, switches]
   # EN | Named after the room TYPE (room_icons `computer`), not after any
   # EN | one room's own id — a slot set is a reusable preset, not something
   # EN | tied to a specific room instance (the `computer_room` room below is

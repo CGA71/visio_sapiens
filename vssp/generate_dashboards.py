@@ -192,12 +192,49 @@ def template_for(tpl_name: str, target_format: str) -> str:
 # FR | de grid-area CSS et de nom de section dans le template — les trois
 # FR | doivent etre la meme chaine. Jamais traduit ; seuls les libelles
 # FR | slot.<id> le sont.
-SLOTS = ["sensors", "switches", "appliances", "security", "infrastructure"]
+# EN | `media` and `audio` are ROLE-BASED, the other five are LIST-BASED.
+# EN | The five hold "a list of devices you switch"; a living room's AV stack
+# EN | does not fit that shape. A TV, an amplifier and a console are all
+# EN | media_player entities, so nothing in the entity says which is which,
+# EN | and a scrolling list of toggle rows is useless for all three. Their
+# EN | raw value in house.yaml is therefore a dict of named roles rather than
+# EN | a list - see normalise_slots().
+# FR | `media` et `audio` sont A ROLES, les cinq autres sont A LISTE. Les
+# FR | cinq portent « une liste d appareils qu on bascule » ; l ensemble
+# FR | audio-video d un salon n entre pas dans cette forme. Une TV, un ampli
+# FR | et une console sont tous des entites media_player : rien dans
+# FR | l entite ne dit laquelle est laquelle, et une liste defilante de
+# FR | lignes a bascule ne sert aucune des trois. Leur valeur brute dans
+# FR | house.yaml est donc un dictionnaire de roles nommes plutot qu une
+# FR | liste - voir normalise_slots().
+ROLE_SLOTS = {"media", "audio"}
+
+# EN | The roles each role-based slot accepts, in render order. A role not
+# EN | listed here is ignored rather than drawn somewhere unplanned.
+# FR | Les roles que chaque tableau a roles accepte, dans l ordre de rendu.
+# FR | Un role absent d ici est ignore plutot que dessine quelque part
+# FR | d imprevu.
+SLOT_ROLES = {
+    "media": ["tv", "amplifier", "console"],
+    "audio": ["streamer"],
+}
+
+SLOTS = ["sensors", "switches", "media", "audio", "appliances", "security",
+         "infrastructure"]
 
 # EN | Slot sets. `default` applies unless the room says otherwise.
 # FR | Jeux de tableaux. `default` s'applique sauf mention contraire.
 DEFAULT_SLOT_SETS = {
     "default":       ["sensors", "switches", "appliances", "security"],
+    # EN | Living room / lounge / TV room - one and the same. The AV stack
+    # EN | lives in `media` and `audio`; appliances, security and
+    # EN | infrastructure are OUT of the set, which means "never" rather than
+    # EN | "not yet": they collapse and the neighbours expand.
+    # FR | Salon / sejour / salle TV - une seule et meme chose. L ensemble
+    # FR | audio-video vit dans `media` et `audio` ; appliances, security et
+    # FR | infrastructure sont HORS du jeu, ce qui veut dire « jamais » et non
+    # FR | « pas encore » : ils s effondrent et les voisins s etendent.
+    "living_room":   ["media", "audio", "sensors", "switches"],
     "toilet":        ["sensors", "switches"],
     "garden":        ["sensors", "switches", "appliances", "security"],
     "utility":       ["sensors", "switches", "appliances", "security"],
@@ -277,6 +314,40 @@ DEFAULT_SLOT_SETS = {
 # FR | cette carte ; la reactiver suppose de choisir un vrai tableau (plutot
 # FR | haut) ET de fournir/confirmer un vrai actif pour house.filler_animation.
 FILLER_PRIORITY = []
+
+# EN | Slots that render EVEN WHEN EMPTY, per slot set. This used to be one
+# EN | hardcoded test for `entrance`, whose `switches` and `security` draw a
+# EN | camera mosaic and an intercom from the physical room rather than from
+# EN | assigned devices - so a device count of zero said nothing about
+# EN | whether they belonged on screen.
+# EN | `living_room` joins for a different reason, and the better one: its
+# EN | lights and its two shutters are DECLARED before they are wired, and a
+# EN | room whose layout rearranges itself the day an electrician finishes is
+# EN | a room nobody can design against. The empty panel says "not yet",
+# EN | which is the whole distinction this project draws against "never" -
+# EN | and "never" is already expressed, by leaving the slot out of the set.
+# EN | Written as a map rather than a second `or sid in (...)`: a third slot
+# EN | set will need the same, and three hardcoded tests in one return
+# EN | statement is how that function stops being readable.
+# FR | Tableaux qui se rendent MEME VIDES, par jeu de tableaux. C etait un
+# FR | test code en dur pour `entrance`, dont `switches` et `security`
+# FR | dessinent une mosaique de cameras et un interphone depuis la piece
+# FR | physique plutot que depuis des appareils assignes - un compte
+# FR | d appareils a zero ne disait donc rien sur leur place a l ecran.
+# FR | `living_room` les rejoint pour une autre raison, meilleure : ses
+# FR | lumieres et ses deux volets sont DECLARES avant d etre cables, et une
+# FR | piece dont la mise en page se reorganise le jour ou un electricien
+# FR | termine est une piece contre laquelle personne ne peut concevoir. Le
+# FR | panneau vide dit « pas encore », ce qui est toute la distinction que
+# FR | ce projet trace face a « jamais » - et « jamais » s exprime deja, en
+# FR | laissant le tableau hors du jeu.
+# FR | Ecrit en table plutot qu en un second `or sid in (...)` : un
+# FR | troisieme jeu aura le meme besoin, et trois tests codes en dur dans un
+# FR | seul return est la facon dont cette fonction cesse d etre lisible.
+ALWAYS_RENDERED = {
+    "entrance":    ("switches", "security"),
+    "living_room": ("switches",),
+}
 
 T_PLACEHOLDER = re.compile(r"__T:[A-Za-z0-9_.]+__")
 
@@ -452,9 +523,58 @@ def normalise_slots(room: dict, slot_sets: dict) -> dict:
         if slot_id not in candidates:
             continue
         value = raw.get(slot_id)
-        entities = list(value or [])
-        entry = {"id": slot_id, "entities": entities,
-                 "state": "filled" if entities else "empty"}
+
+        if slot_id in ROLE_SLOTS:
+            # EN | A ROLE-BASED SLOT. The raw value is a dict keyed by role,
+            # EN | and a role may be declared with NO entity at all - that is
+            # EN | the point. "Not connected yet" has to occupy exactly the
+            # EN | space it will occupy once connected, or plugging the
+            # EN | amplifier in next month redraws the room.
+            # EN | So `state` is filled as soon as a role is DECLARED, never
+            # EN | mind whether it resolves to an entity. `entities` carries
+            # EN | only the ones that do, because everything downstream that
+            # EN | reads it - the layout weights, the camera sweep, the
+            # EN | verifier - is asking "what real entities does this room
+            # EN | name?", and a role without one names nothing.
+            # FR | UN TABLEAU A ROLES. La valeur brute est un dictionnaire
+            # FR | indexe par role, et un role peut etre declare SANS aucune
+            # FR | entite - c est tout le propos. « Pas encore connecte » doit
+            # FR | occuper exactement la place qu il occupera une fois
+            # FR | connecte, sinon brancher l ampli le mois prochain redessine
+            # FR | la piece.
+            # FR | `state` vaut donc filled des qu un role est DECLARE, peu
+            # FR | importe qu il se resolve en entite. `entities` ne porte que
+            # FR | celles qui se resolvent, parce que tout ce qui le lit en
+            # FR | aval - les poids de la grille, le balayage des cameras, le
+            # FR | verificateur - demande « quelles entites reelles cette
+            # FR | piece nomme-t-elle ? », et un role sans entite n en nomme
+            # FR | aucune.
+            declared = value if isinstance(value, dict) else {}
+            roles = {}
+            for role in SLOT_ROLES.get(slot_id, []):
+                spec = declared.get(role)
+                if spec is None:
+                    continue
+                if isinstance(spec, str):          # shorthand: role: entity_id
+                    spec = {"entity": spec}
+                if not isinstance(spec, dict):
+                    continue
+                roles[role] = {
+                    "id": role,
+                    "entity": str(spec.get("entity") or "").strip(),
+                    "remote": str(spec.get("remote") or "").strip(),
+                    "label": str(spec.get("label") or "").strip(),
+                    "apps": list(spec.get("apps") or []),
+                    "inputs": list(spec.get("inputs") or []),
+                    "outputs": list(spec.get("outputs") or []),
+                }
+            entities = [r["entity"] for r in roles.values() if r["entity"]]
+            entry = {"id": slot_id, "entities": entities, "roles": roles,
+                     "state": "filled" if roles else "empty"}
+        else:
+            entities = list(value or [])
+            entry = {"id": slot_id, "entities": entities, "roles": {},
+                     "state": "filled" if entities else "empty"}
 
         # EN | Entities grouped by Home Assistant domain, order preserved.
         # EN | The `security` slot needs this: an alarm state, an intercom
@@ -586,10 +706,10 @@ def rendered_slots(slots: dict, slot_set: str) -> dict:
     FR | la panne « zone de grille inexistante, panneau silencieusement non
     FR | affiche » que l'ancien validate_layouts() existait pour attraper.
     """
-    exempt = slot_set == "entrance"
+    always = ALWAYS_RENDERED.get(slot_set, ())
     return {
         sid: s for sid, s in slots.items()
-        if s["state"] != "empty" or (exempt and sid in ("switches", "security"))
+        if s["state"] != "empty" or sid in always
     }
 
 
