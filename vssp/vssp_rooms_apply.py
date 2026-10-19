@@ -207,6 +207,16 @@ SLOT_SET_KEYWORDS = [
     ("utility",  ["garage", "cellar", "cave", "laundry", "buanderie", "technical", "technique"]),
     ("entrance", ["entrance", "entree", "hall", "vestibule"]),
     ("minimal",  ["corridor", "couloir", "landing", "palier", "roof", "toit"]),
+    # EN | Living room / lounge / TV room / snug — one and the same room,
+    # EN | and the names people actually type for it. Last before the
+    # EN | implicit "default" fallback, so a name matching nothing above
+    # EN | still lands here rather than on a generic set.
+    # FR | Salon / sejour / salle TV / living — une seule et meme piece, et
+    # FR | les noms qu on tape reellement pour elle. En dernier avant le
+    # FR | repli implicite « default », pour qu un nom ne correspondant a
+    # FR | rien plus haut atterrisse ici plutot que sur un jeu generique.
+    ("living_room", ["living", "salon", "sejour", "lounge", "tv room",
+                     "salle tv", "media room"]),
 ]
 
 # EN | Every slot_set a room can legitimately carry — same identifiers as
@@ -221,7 +231,8 @@ SLOT_SET_KEYWORDS = [
 # FR | sont deja l un avec l autre. Protege le champ `slot_set` recu : un
 # FR | payload venant d un onglet compromis ou perime ne doit jamais ecrire
 # FR | une valeur absurde directement dans house.yaml.
-KNOWN_SLOT_SETS = {"default", "toilet", "garden", "utility", "entrance", "minimal", "computer"}
+KNOWN_SLOT_SETS = {"default", "toilet", "garden", "utility", "entrance",
+                   "minimal", "computer", "living_room"}
 
 # EN | Same idea, for `default_slot` — same identifiers as SLOTS in
 # EN | generate_dashboards.py. Empty string is valid (means "let
@@ -231,7 +242,8 @@ KNOWN_SLOT_SETS = {"default", "toilet", "garden", "utility", "entrance", "minima
 # FR | dans generate_dashboards.py. Chaine vide valide (signifie « laisser
 # FR | resolve_default_slot() choisir automatiquement »), contrairement a
 # FR | KNOWN_SLOT_SETS qui a toujours besoin d une vraie valeur.
-KNOWN_SLOTS = {"sensors", "switches", "appliances", "security", "infrastructure"}
+KNOWN_SLOTS = {"sensors", "switches", "media", "audio", "appliances",
+               "security", "infrastructure"}
 
 
 def normalize(s: str) -> str:

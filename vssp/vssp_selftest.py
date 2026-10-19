@@ -164,6 +164,41 @@ def main() -> int:
               not missing_slots,
               "ajouter les tableaux manquants a DEFAULT_SLOTS dans vssp_rooms_floors.html",
               f"absents du selecteur : {missing_slots}")
+
+        # EN | THE FOURTH COPY, and the one that fails worst. vssp_rooms_apply.py
+        # EN | guards the incoming slot_set against a whitelist so a stale or
+        # EN | hostile browser tab cannot write nonsense into house.yaml - a
+        # EN | good guard. But an unknown value is dropped SILENTLY: the
+        # EN | webhook answers 200, the wizard shows the choice as applied,
+        # EN | the status file reports no change, and house.yaml quietly keeps
+        # EN | the old set. Measured end to end: the browser posted
+        # EN | slot_set "living_room" and the model stayed "default", with
+        # EN | nothing anywhere saying a value had been refused.
+        # FR | LA QUATRIEME COPIE, et celle qui echoue le plus mal.
+        # FR | vssp_rooms_apply.py protege le slot_set recu par une liste
+        # FR | blanche pour qu un onglet perime ou hostile ne puisse pas ecrire
+        # FR | n importe quoi dans house.yaml - bonne garde. Mais une valeur
+        # FR | inconnue est rejetee EN SILENCE : le webhook repond 200,
+        # FR | l assistant affiche le choix comme applique, le fichier de
+        # FR | statut n annonce aucun changement, et house.yaml garde
+        # FR | tranquillement l ancien jeu. Mesure de bout en bout : le
+        # FR | navigateur a poste slot_set « living_room » et le modele est
+        # FR | reste « default », sans que rien nulle part ne dise qu une
+        # FR | valeur avait ete refusee.
+        apply_py = VSSP / "vssp_rooms_apply.py"
+        if not apply_py.exists():
+            apply_py = repo / "vssp" / "vssp_rooms_apply.py"
+        _apply = _load(apply_py, "_vssp_apply")
+        unknown_sets = sorted(set(_gen.DEFAULT_SLOT_SETS) - set(_apply.KNOWN_SLOT_SETS))
+        check("the apply script accepts every slot set",
+              not unknown_sets,
+              "ajouter les jeux manquants a KNOWN_SLOT_SETS dans vssp_rooms_apply.py",
+              f"rejetes en silence : {unknown_sets}")
+        unknown_slots = sorted(set(_gen.SLOTS) - set(_apply.KNOWN_SLOTS))
+        check("the apply script accepts every slot",
+              not unknown_slots,
+              "ajouter les tableaux manquants a KNOWN_SLOTS dans vssp_rooms_apply.py",
+              f"rejetes en silence : {unknown_slots}")
     except Exception as exc:  # noqa: BLE001 - a selftest never crashes the run
         print(f"  {WARN} comparaison impossible : {exc}")
 

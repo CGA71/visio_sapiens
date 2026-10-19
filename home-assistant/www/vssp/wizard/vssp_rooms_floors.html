@@ -909,7 +909,13 @@ async function applyDiff(){
 
     localStorage.setItem(LS_COLORS, JSON.stringify(state.colors));
     await loadRegistry();
-    applyPendingLocalSlotSets(pendingSlotSets, pendingDefaultSlots);
+    // EN | The same flag the webhook below branches on: stamp the new
+    // EN | baseline only if these two fields are really going to be sent.
+    // FR | Le drapeau meme sur lequel s aiguille le webhook ci-dessous :
+    // FR | ne poser la nouvelle reference que si ces deux champs vont
+    // FR | reellement partir.
+    applyPendingLocalSlotSets(pendingSlotSets, pendingDefaultSlots,
+                              pendingSlotSetsKnown);
     state.slotSetsKnown = pendingSlotSetsKnown;
     saveHouse();
     // EN | Best-effort: the HA registry write above already succeeded and
@@ -1020,14 +1026,51 @@ function currentDefaultSlotByName(){
 // FR | qu'il l'a ete, simplement pas encore reflete a l'ecran. La confirmation
 // FR | reelle vient toujours de applyDraftSlotSets() relisant le fichier de
 // FR | statut au prochain connect()/reload().
-function applyPendingLocalSlotSets(byName, byNameDefault){
+// EN | `asserted` says whether the webhook this run is about to send WILL
+// EN | actually carry slot_set and default_slot — it is the same flag
+// EN | syncRoomsToModel() branches on. Showing the choice and declaring it
+// EN | the new baseline are two different claims, and only the second needs
+// EN | the values to have really left the browser.
+// EN | Stamping the baseline unconditionally was a trap that closed behind
+// EN | the user. On a first-ever setup the flag is false, so the webhook
+// EN | omitted both fields and the pod created the room with its own
+// EN | `default` — while this function had already recorded the chosen value
+// EN | as the baseline. From that moment the diff was empty forever: the
+// EN | screen showed `living_room`, house.yaml held `default`, Apply had
+// EN | nothing to do, and no sequence of actions in this form could ever
+// EN | resync them. Measured end to end on staging, twice.
+// EN | Keeping the value visible while leaving the baseline alone is what
+// EN | keeps the change PENDING, so the next Apply - by which time the
+// EN | status file exists and the flag is true - sends it for real.
+// FR | `asserted` dit si le webhook que cette execution va envoyer portera
+// FR | REELLEMENT slot_set et default_slot — c est le drapeau meme sur
+// FR | lequel s aiguille syncRoomsToModel(). Afficher le choix et le
+// FR | declarer nouvelle reference sont deux affirmations differentes, et
+// FR | seule la seconde exige que les valeurs aient vraiment quitte le
+// FR | navigateur.
+// FR | Poser la reference sans condition etait un piege qui se refermait sur
+// FR | l utilisateur. A une premiere installation le drapeau est faux : le
+// FR | webhook omettait donc les deux champs et le pod creait la piece avec
+// FR | son propre `default` — alors que cette fonction avait deja enregistre
+// FR | la valeur choisie comme reference. Des cet instant la difference
+// FR | etait vide pour toujours : l ecran affichait `living_room`,
+// FR | house.yaml gardait `default`, Appliquer n avait plus rien a faire, et
+// FR | aucune suite d actions dans ce formulaire ne pouvait les resynchroniser.
+// FR | Mesure de bout en bout sur staging, deux fois.
+// FR | Garder la valeur visible tout en laissant la reference tranquille est
+// FR | ce qui maintient le changement EN ATTENTE, pour que l Appliquer
+// FR | suivant — quand le fichier de statut existe et que le drapeau est
+// FR | vrai — l envoie pour de bon.
+function applyPendingLocalSlotSets(byName, byNameDefault, asserted){
   state.draft.floors.forEach(f => f.rooms.forEach(r => {
     const name = r.name.trim();
     if (!name) return;
     if (name in byName) r.slot_set = byName[name];
     if (name in byNameDefault) r.default_slot = byNameDefault[name];
-    r._baseSlotSet = r.slot_set;
-    r._baseDefaultSlot = r.default_slot;
+    if (asserted){
+      r._baseSlotSet = r.slot_set;
+      r._baseDefaultSlot = r.default_slot;
+    }
   }));
 }
 async function syncRoomsToModel(pendingSlotSetByName, pendingDefaultSlotByName, deliberate){
