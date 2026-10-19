@@ -563,6 +563,23 @@ def normalise_slots(room: dict, slot_sets: dict) -> dict:
                     "id": role,
                     "entity": str(spec.get("entity") or "").strip(),
                     "remote": str(spec.get("remote") or "").strip(),
+                    # EN | How to WAKE this device, when its own entity
+                    # EN | cannot. A webOS television advertises TURN_OFF and
+                    # EN | not TURN_ON: the set is asleep, nothing is
+                    # EN | listening, and only a magic packet reaches it. Home
+                    # EN | Assistant exposes that as a separate
+                    # EN | button.wake_on_lan_<mac> entity, which the webostv
+                    # EN | media_player knows nothing about - so the model has
+                    # EN | to tie the two together, because nothing else can.
+                    # FR | Comment REVEILLER cet appareil quand sa propre
+                    # FR | entite ne le peut pas. Un televiseur webOS annonce
+                    # FR | TURN_OFF et pas TURN_ON : le poste dort, rien
+                    # FR | n ecoute, et seul un paquet magique l atteint. Home
+                    # FR | Assistant l expose en entite distincte
+                    # FR | button.wake_on_lan_<mac>, dont le media_player
+                    # FR | webostv ignore tout - c est donc au modele de lier
+                    # FR | les deux, parce que rien d autre ne le peut.
+                    "wake": str(spec.get("wake") or "").strip(),
                     "label": str(spec.get("label") or "").strip(),
                     "apps": list(spec.get("apps") or []),
                     "inputs": list(spec.get("inputs") or []),

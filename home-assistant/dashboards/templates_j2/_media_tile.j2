@@ -218,11 +218,94 @@
 {# FR | Marche/arret + volume, les deux commandes que tout appareil AV  #}
 {# FR | supporte.                                                       #}
 {# ------------------------------------------------------------------ #}
-{% macro transport(entity, locale) %}
+{% macro transport(entity, locale, wake='') %}
                               - type: grid
                                 columns: 4
                                 square: false
                                 cards:
+{% if wake %}
+                                  {# EN | TWO BUTTONS IN ONE CELL, and exactly
+                                     EN | one of them is ever on screen. Off
+                                     EN | and on are not two states of one
+                                     EN | action here: switching the set off
+                                     EN | is media_player.turn_off, waking it
+                                     EN | is a magic packet sent to a
+                                     EN | different entity entirely, because
+                                     EN | a sleeping television has nothing
+                                     EN | listening on the network.
+                                     EN | They are nested in a one-column grid
+                                     EN | rather than left as siblings, so the
+                                     EN | hidden one does not take its place
+                                     EN | out of the row and shuffle the three
+                                     EN | volume buttons along by one.
+                                     FR | DEUX BOUTONS DANS UNE CASE, et un
+                                     FR | seul est jamais a l ecran. Eteint et
+                                     FR | allume ne sont pas ici deux etats
+                                     FR | d une meme action : eteindre le
+                                     FR | poste est media_player.turn_off, le
+                                     FR | reveiller est un paquet magique
+                                     FR | envoye a une tout autre entite,
+                                     FR | parce qu un televiseur endormi n a
+                                     FR | rien qui ecoute sur le reseau.
+                                     FR | Ils sont imbriques dans une grille a
+                                     FR | une colonne plutot que laisses
+                                     FR | freres, pour que celui qui est
+                                     FR | masque n emporte pas sa place hors
+                                     FR | de la rangee et ne decale pas les
+                                     FR | trois boutons de volume d un cran. #}
+                                  - type: grid
+                                    columns: 1
+                                    square: false
+                                    cards:
+                                      - type: conditional
+                                        conditions:
+                                          - entity: {{ entity }}
+                                            state_not: "off"
+                                        card:
+                                          type: custom:button-card
+                                          entity: {{ entity }}
+                                          icon: mdi:power
+                                          show_name: false
+                                          show_state: false
+                                          size: 20px
+                                          styles:
+                                            card:
+                                              - padding: 8px
+                                              - border-radius: 10px
+                                              - background: rgba(0,0,0,.25)
+                                              - border: 1px solid rgba(0,229,255,.18)
+                                            icon:
+                                              - color: "#00FFC3"
+                                          tap_action:
+                                            action: call-service
+                                            service: media_player.turn_off
+                                            service_data:
+                                              entity_id: {{ entity }}
+                                      - type: conditional
+                                        conditions:
+                                          - entity: {{ entity }}
+                                            state: "off"
+                                        card:
+                                          type: custom:button-card
+                                          entity: {{ wake }}
+                                          icon: mdi:power
+                                          show_name: false
+                                          show_state: false
+                                          size: 20px
+                                          styles:
+                                            card:
+                                              - padding: 8px
+                                              - border-radius: 10px
+                                              - background: rgba(0,0,0,.25)
+                                              - border: 1px solid rgba(0,229,255,.18)
+                                            icon:
+                                              - color: "rgba(143,182,201,.6)"
+                                          tap_action:
+                                            action: call-service
+                                            service: button.press
+                                            service_data:
+                                              entity_id: {{ wake }}
+{% else %}
                                   - type: custom:button-card
                                     entity: {{ entity }}
                                     icon: mdi:power
@@ -263,6 +346,7 @@
                                       service: media_player.toggle
                                       service_data:
                                         entity_id: {{ entity }}
+{% endif %}
                                   - type: custom:button-card
                                     entity: {{ entity }}
                                     icon: mdi:volume-minus

@@ -364,7 +364,7 @@ views:
                'streamer': 'mdi:music-circle-outline'}.get(role_id, 'mdi:play-box') %}
 {% call mt.tile(role, label, icon, locale) %}
 {% if role_id == 'tv' %}
-{{ mt.transport(role.entity, locale) }}
+{{ mt.transport(role.entity, locale, role.wake) }}
 {{ mt.source_chips(role.entity, role.apps, t('slot.media_apps'), locale) }}
 {{ mt.source_chips(role.entity, role.inputs, t('slot.media_inputs'), locale) }}
 {{ mt.sound_outputs(role.entity, role.sound_outputs, locale) }}

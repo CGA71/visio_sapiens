@@ -4,6 +4,8 @@
 > traduit en paire EN/FR comme les autres documents de `docs/dashboards/`.
 > Rien de ce qui suit n'est encore écrit dans le générateur.
 >
+> **v8** — le Wake-on-LAN existe, en entite bouton separee : le bouton
+> d alimentation de la TV appelle donc deux choses selon son etat.
 > **v7** — la LG EST sur staging, je l'avais manquee : `media_player.`
 > `lg_webos_tv_oled55b9pla`, allumee, 21 sources. Section 3 corrigee.
 > **v6** — attributs réels lus par l'API (2867 entités). Trois corrections,
@@ -98,10 +100,13 @@ Deux details qui changent le gabarit :
 
 - **les entrees s'ecrivent `HDMI 1` avec une espace, et il n'y a pas de
   HDMI 2** — un libelle approximatif aurait donne une pastille morte ;
-- **la TV n'annonce pas `TURN_ON`**, seulement `TURN_OFF`. webOS ne sait pas
-  se reveiller sans Wake-on-LAN configure avec la MAC du poste. Le bouton
-  d'alimentation se grise donc tout seul quand elle est eteinte, et
-  s'allumera le jour ou WoL sera pose — sans rien changer ici.
+- **la TV n'annonce pas `TURN_ON`**, seulement `TURN_OFF` — et pourtant le
+  Wake-on-LAN *est* configure. Il vit en entite separee,
+  `button.wake_on_lan_64_95_6c_3d_03_94`, dont le media_player webostv ignore
+  tout. Le bouton d alimentation de la carte appelle donc **deux choses
+  differentes selon l etat** : `media_player.turn_off` quand la TV est
+  allumee, `button.press` sur le bouton WoL quand elle dort. Le role porte
+  un champ `wake:` pour les lier, parce que rien d autre ne le peut.
 
 Elle expose aussi `sound_output` (`tv_external_speaker` en ce moment, donc le
 Marantz) et le domaine `webostv` offre trois services : `select_sound_output`,
