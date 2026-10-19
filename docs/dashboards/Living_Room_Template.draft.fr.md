@@ -1,9 +1,11 @@
-# LIVING ROOM — gabarit de référence (DRAFT v5)
+# LIVING ROOM — gabarit de référence (DRAFT v6)
 
 > **Brouillon de travail**, corrigé au fil des échanges. Il sera figé et
 > traduit en paire EN/FR comme les autres documents de `docs/dashboards/`.
 > Rien de ce qui suit n'est encore écrit dans le générateur.
 >
+> **v6** — attributs réels lus par l'API (2867 entités). Trois corrections,
+> dont une bonne nouvelle : **les modes sonores du Marantz existent** (§5).
 > **v5** — cible arrêtée : **staging k3s (192.168.1.11)**. Inventaire refait
 > sur la bonne instance (§3). Question d'activation ouverte en §10.
 > **v4** — capteurs arrêtés (les trois, point de rosée compris).
@@ -65,31 +67,41 @@ sont la même chose ; un seul jeu les couvre, et `room_icons.living_room`
 
 ## 3. Cible et inventaire réel
 
-**Cible arrêtée : le premier staging, k3s, 192.168.1.11.** Le second staging
-(HAOS, 192.168.1.200) sera déployé ensuite — le gabarit étant le même, il n'y
-a rien à refaire pour lui le moment venu.
+**Cible : le premier staging, k3s, 192.168.1.11.** Les attributs ci-dessous
+sont lus par l'API Home Assistant, pas supposés.
 
-Inventaire mesuré sur cette instance :
-
-| Rôle | Entité retenue | État |
+| Rôle | Entité | Ce qu'elle sait faire |
 |---|---|---|
-| `tv` | `media_player.salon_2_salon_2` + `remote.salon_2_salon_2` | **vivante** (`off`, donc joignable). Attention : ici c'est le couple *(2)* qui vit — `media_player.salon`, `salon_2` et `tv_salon` sont tous `unavailable` |
-| `amplifier` | `media_player.marantz_nr1711` | **vivante** (`idle`) |
-| `streamer` | `media_player.marantz_nr1711_2` | `off` — à confirmer que c'est bien le HEOS |
-| `sensors` | `gw3000a_temperature_3` · `humidity_3` · `dewpoint_3` | **vivants** : 22,1 °C · 62 % · 14,5 °C |
-| `console` | aucune | **absent** |
-| lumières salon | aucune | le Hue couvre bureau et jardin |
-| volets ×2 | aucune `cover.` | **absent** |
+| `amplifier` | **`media_player.marantz_nr1711_2`** | `device_class: receiver` · TURN_ON/OFF · SELECT_SOURCE (13) · **SELECT_SOUND_MODE (23)** · VOLUME_STEP · VOLUME_MUTE |
+| `streamer` | **`media_player.marantz_nr1711`** | HEOS intégré · `idle` · BROWSE_MEDIA · PLAY_MEDIA · SELECT_SOURCE (11) · pas de modes sonores |
+| `sensors` | `gw3000a_temperature_3` · `humidity_3` · `dewpoint_3` | 22,1 °C · 62 % · 14,5 °C — vivants |
+| `tv` | **aucune** | voir ci-dessous |
+| `console` | aucune | — |
+| lumières, volets | aucune | — |
 
-### Ménage préalable
+### La TV n'est pas sur cette instance
 
-Cette instance porte un historique : **cinq** entités Marantz (`_1` à `_5`,
-dont trois mortes), trois « Salon » morts, et d'anciens appareils — RX-V475,
-XBOXONE, YAS_109, Samsung 7 Series, Décodeur TV UHD, CineHome-Denon ×3.
+C'est la correction la plus lourde. Sur staging :
 
-Ce n'est pas bloquant : le gabarit pointe des entités nommées, pas « tous les
-media_player ». Mais le formulaire d'assignation, lui, proposera les vingt —
-d'où l'intérêt de supprimer les entités mortes avant d'assigner.
+- `media_player.salon_2_salon_2` est **`unavailable`**, et son profil —
+  TURN_ON/OFF + BROWSE_MEDIA + PLAY_MEDIA, **aucun SELECT_SOURCE, aucune
+  source** — est celui d'un **Google Cast**, pas d'un webOS LG ;
+- `remote.salon_2_salon_2` est `unavailable`, sans `activity_list` ;
+- le seul téléviseur réel de l'instance est un **Samsung 7 Series (43)**
+  (`device_class: tv`, sources `TV` et `HDMI`).
+
+**Aucune entité webOS LG n'existe ici.** Sur l'instance maison, en revanche,
+`remote.salon_salon` est `on` — la LG y est vivante.
+
+Conséquence : sur la cible choisie, la carte TV s'affichera « non connecté ».
+Ce n'est pas un défaut du gabarit, c'est ce qu'il est conçu pour faire — mais
+il faut le savoir avant de regarder l'écran.
+
+### Doublons à nettoyer
+
+Trois entités `receiver` identiques (`_2`, `_4`, `_5`), toutes avec 23 modes
+sonores ; `_4` a une source de plus (`SOURCE`). Ce sont trois entrées de
+configuration `denonavr` pour le même appareil. J'ai retenu `_2`.
 
 ## 4. Rôles et capacités
 
@@ -147,54 +159,38 @@ aujourd'hui ; seules les données arrivent.
 
 ---
 
-## 5. Le Marantz NR1711 — faut-il écrire une intégration ?
+## 5. Le Marantz NR1711 — n'écrivez pas d'intégration
 
-Votre question, et ma recommandation : **pas tout de suite, et probablement
-pas une intégration complète.**
+**Les modes sonores existent déjà.** L'entité `media_player.marantz_nr1711_2`
+publie `SELECT_SOUND_MODE` et **23 modes** :
 
-### Ce qui est établi
+```
+MUSIC · MOVIE · GAME · AUTO · STANDARD · VIRTUAL · MATRIX · ROCK ARENA
+JAZZ CLUB · VIDEO GAME · MONO MOVIE · SUPER STADIUM · CLASSIC CONCERT
+WIDE SCREEN · DIRECT · PURE DIRECT · DOLBY DIGITAL · DTS SURROUND
+AURO3D · AURO2DSURR · MCH STEREO · STEREO · ALL ZONE STEREO
+```
 
-- Le NR1711 est couvert par l'intégration officielle **`denonavr`** (Denon et
-  Marantz partagent le même protocole). Elle expose normalement `source_list`
-  **et** `sound_mode_list` — exactement ce qui vous manque.
-- Elle exige l'accès aux ports **23, 8080 et 60006 (TCP)** sur l'ampli. Un
-  VLAN ou un pare-feu qui en bloque un donne précisément une entité pauvre.
-- Le NR1711 a des tickets ouverts spécifiques (entité qui passe
-  `unavailable`).
-- Des intégrations communautaires vont déjà plus loin (Audyssey, volume par
-  canal, modes sonores réels).
+et **13 sources** : 8K, AUX, Blu-ray, Bluetooth, CD, Decodeur UHD, Game,
+HEOS Music, MBox Meson Ref, PS4, Phono, TV Audio, Tuner.
 
-### Dans quel ordre regarder
+### Pourquoi vous ne les voyiez pas
 
-1. ~~D'où vient l'entité ?~~ **Répondu : `denonavr`.** L'hypothèse la plus
-   simple — une mauvaise intégration — est donc écartée.
-2. **Reste les ports.** `denonavr` a besoin de **23, 8080 et 60006 (TCP)**
-   vers l'ampli. S'il en manque un, l'entité se réduit exactement à ce que
-   vous décrivez : marche/arrêt et volume, sans `source_list` ni
-   `sound_mode_list`. C'est maintenant l'hypothèse n°1.
-3. Vérification en une ligne, depuis un terminal du réseau :
-   `for p in 23 8080 60006; do nc -z -w2 <ip-ampli> $p && echo "$p ouvert" || echo "$p FERMÉ"; done`
-4. Vérifier aussi que l'ampli n'est pas en **veille réseau réduite** : au
-   repos, certains NR1711 ne répondent plus que sur une partie du protocole.
-5. Seulement si tout est ouvert et que les listes manquent encore, construire.
+Le NR1711 crée **deux entités de natures différentes**, et celle sans suffixe
+est la plus pauvre :
 
-### Et si on doit construire
+| Entité | Nature | Ce qu'elle offre |
+|---|---|---|
+| `marantz_nr1711` | **HEOS**, le lecteur réseau intégré | lecture, navigation, volume — *pas de marche/arrêt, pas de modes* |
+| `marantz_nr1711_2` | **denonavr**, l'ampli lui-même | marche/arrêt, sources, **modes sonores** |
 
-Je déconseille une **intégration Home Assistant complète** : c'est une
-surface importante à posséder et à maintenir à chaque version de HA, pour un
-seul appareil.
+Vous regardiez la première. Ce n'était pas une intégration pauvre, c'était la
+mauvaise entité — et cela ferme la question : **aucun pont `vssp_marantz.py`
+n'est nécessaire**, aucun port à ouvrir, aucune intégration à écrire.
 
-La forme juste dans ce projet est celle qu'il emploie déjà partout —
-`vssp_icloud.py`, `vssp_energy_sync.py` : un **pont** `vssp_marantz.py` qui
-parle à l'API HTTP de l'ampli (`/goform/…`) et publie ce qui manque sous
-forme de `input_select` + `shell_command`. Une centaine de lignes, le même
-patron que le reste, et le gabarit sait déjà afficher des `input_select`.
-
-**Point important pour la conception : le gabarit ne dépend d'aucune des
-trois issues.** Grâce aux capacités (§4), il rend les modes sonores s'ils
-existent — d'où qu'ils viennent — et les grise sinon.
-
----
+Les deux servent, et le gabarit les emploie toutes les deux : la HEOS devient
+le rôle `streamer` du tableau `audio` (son état `idle` est bien celui d'un
+lecteur), la denonavr devient le rôle `amplifier`.
 
 ## 6. Mise en page
 
