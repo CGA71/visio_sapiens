@@ -78,7 +78,8 @@ except ImportError:
 
 # EN | Canonical slot order, same list as generate_dashboards.py.
 # FR | Ordre canonique des tableaux, meme liste que generate_dashboards.py.
-SLOTS = ["sensors", "switches", "appliances", "security", "infrastructure"]
+SLOTS = ["sensors", "switches", "media", "audio", "appliances", "security",
+         "infrastructure"]
 
 DEFAULT_SLOT_SETS = {
     "default":       ["sensors", "switches", "appliances", "security"],
@@ -87,6 +88,15 @@ DEFAULT_SLOT_SETS = {
     "utility":       ["sensors", "switches", "appliances", "security"],
     "entrance":      ["switches", "security"],
     "minimal":       ["switches", "security"],
+    # EN | Living room / lounge / TV room. Its `media` and `audio` panels are
+    # EN | ROLE-BASED: assigning to them means saying WHICH role an entity
+    # EN | plays (the TV, the amplifier, the console), not just dropping it
+    # EN | in a list - see normalise_slots() in generate_dashboards.py.
+    # FR | Salon / sejour / salle TV. Ses panneaux `media` et `audio` sont A
+    # FR | ROLES : y assigner veut dire dire QUEL role joue une entite (la
+    # FR | TV, l ampli, la console), pas seulement la deposer dans une liste
+    # FR | - voir normalise_slots() dans generate_dashboards.py.
+    "living_room":   ["media", "audio", "sensors", "switches"],
     # EN | Named after the room TYPE (room_icons/locales `computer`), not
     # EN | after any one room's own id — a slot set is a reusable preset,
     # EN | the same way `toilet`/`garden`/`entrance` are, not something tied

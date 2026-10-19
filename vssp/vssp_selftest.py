@@ -87,6 +87,86 @@ def main() -> int:
           + ("" if devices.exists() else
              f"  {DIM}(absent — normal tant que le sync n'a pas tourné){RESET}"))
 
+    # EN | THE THREE HAND-KEPT COPIES. The slot list and the slot sets are
+    # EN | written out three times - in generate_dashboards.py, in
+    # EN | vssp_assign_prepare.py, and as JavaScript constants in the ROOMS &
+    # EN | FLOORS wizard - and the comment above each one says they are kept
+    # EN | in sync by hand. That is exactly what failed the day `living_room`
+    # EN | was added: the generator knew the set, the wizard did not offer it,
+    # EN | and the only symptom was a template missing from a dropdown, with
+    # EN | nothing anywhere saying why. A drift that silent has to be checked
+    # EN | rather than remembered.
+    # FR | LES TROIS COPIES TENUES A LA MAIN. La liste des tableaux et les
+    # FR | jeux de tableaux sont ecrits trois fois - dans
+    # FR | generate_dashboards.py, dans vssp_assign_prepare.py, et en
+    # FR | constantes JavaScript dans l assistant PIECES & ETAGES - et le
+    # FR | commentaire au-dessus de chacune dit qu elles sont tenues a jour a
+    # FR | la main. C est precisement ce qui a lache le jour ou `living_room`
+    # FR | est arrive : le generateur connaissait le jeu, l assistant ne le
+    # FR | proposait pas, et le seul symptome etait un gabarit absent d une
+    # FR | liste deroulante, sans que rien nulle part dise pourquoi. Une
+    # FR | derive aussi silencieuse se verifie, elle ne se retient pas.
+    print("\n═══ 1bis. TABLEAUX ET JEUX — LES TROIS COPIES ═══")
+    try:
+        import re as _re
+
+        def _load(path, name):
+            spec = importlib.util.spec_from_file_location(name, path)
+            mod = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(mod)
+            return mod
+
+        # EN | On an instance these live under /config; in the repository
+        # EN | they sit in two different trees. The check is worth running in
+        # EN | both places - on the pod it proves what was deployed, in CI it
+        # EN | catches the drift before anyone deploys it - so it resolves
+        # EN | whichever layout it finds rather than being instance-only.
+        # FR | Sur une instance ils vivent sous /config ; dans le depot ils
+        # FR | sont dans deux arbres differents. La verification vaut aux deux
+        # FR | endroits - sur le pod elle prouve ce qui a ete deploye, en CI
+        # FR | elle attrape la derive avant que quiconque la deploie - elle
+        # FR | resout donc la disposition qu elle trouve plutot que d etre
+        # FR | reservee a l instance.
+        repo = Path(__file__).resolve().parent.parent
+        gen_py = gen if gen.exists() else repo / "vssp" / "generate_dashboards.py"
+        prep_py = VSSP / "vssp_assign_prepare.py"
+        if not prep_py.exists():
+            prep_py = repo / "vssp" / "vssp_assign_prepare.py"
+        wiz_html = DASH.parent / "www" / "vssp" / "wizard" / "vssp_rooms_floors.html"
+        if not wiz_html.exists():
+            wiz_html = (repo / "home-assistant" / "www" / "vssp" / "wizard"
+                        / "vssp_rooms_floors.html")
+
+        _gen = _load(gen_py, "_vssp_gen")
+        _prep = _load(prep_py, "_vssp_prep")
+        wiz = wiz_html.read_text(encoding="utf-8")
+
+        def _js_list(const):
+            m = _re.search(const + r"\s*=\s*\[([^\]]*)\]", wiz)
+            return [x.strip().strip('"\'') for x in m.group(1).split(",") if x.strip()] if m else []
+
+        wiz_sets, wiz_slots = _js_list("SLOT_SETS"), _js_list("DEFAULT_SLOTS")
+        check("generator and assign-preparer agree on SLOTS",
+              list(_gen.SLOTS) == list(_prep.SLOTS),
+              "aligner SLOTS dans vssp_assign_prepare.py sur generate_dashboards.py",
+              f"{_gen.SLOTS} vs {_prep.SLOTS}")
+        check("generator and assign-preparer agree on the slot sets",
+              _gen.DEFAULT_SLOT_SETS == _prep.DEFAULT_SLOT_SETS,
+              "aligner DEFAULT_SLOT_SETS dans vssp_assign_prepare.py",
+              f"{sorted(set(_gen.DEFAULT_SLOT_SETS) ^ set(_prep.DEFAULT_SLOT_SETS))}")
+        missing_sets = sorted(set(_gen.DEFAULT_SLOT_SETS) - set(wiz_sets))
+        check("the ROOMS wizard offers every slot set",
+              not missing_sets,
+              "ajouter les jeux manquants a SLOT_SETS dans vssp_rooms_floors.html",
+              f"absents du selecteur : {missing_sets}")
+        missing_slots = sorted(set(_gen.SLOTS) - set(wiz_slots))
+        check("the ROOMS wizard offers every slot",
+              not missing_slots,
+              "ajouter les tableaux manquants a DEFAULT_SLOTS dans vssp_rooms_floors.html",
+              f"absents du selecteur : {missing_slots}")
+    except Exception as exc:  # noqa: BLE001 - a selftest never crashes the run
+        print(f"  {WARN} comparaison impossible : {exc}")
+
     print("\n═══ 2. DÉPENDANCES PYTHON ═══")
     check("jinja2", importlib.util.find_spec("jinja2") is not None,
           "pip install jinja2 --break-system-packages")

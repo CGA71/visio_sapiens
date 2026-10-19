@@ -226,7 +226,7 @@ const ROOMS_STATUS_URL = "/local/vssp/rooms_sync_status.json";
 // FR | Memes identifiants que DEFAULT_SLOT_SETS dans
 // FR | generate_dashboards.py / vssp_assign_prepare.py — tenus a jour a la
 // FR | main, comme ces deux-la le sont deja l un avec l autre.
-const SLOT_SETS = ["default", "toilet", "garden", "utility", "entrance", "minimal", "computer"];
+const SLOT_SETS = ["default", "toilet", "garden", "utility", "entrance", "minimal", "computer", "living_room"];
 // EN | Same identifiers as SLOTS in generate_dashboards.py — the five
 // EN | possible panels. `default_slot` picks which one gets the privileged
 // EN | (1fr, most of the screen) band on that room's dashboard; empty means
@@ -236,7 +236,17 @@ const SLOT_SETS = ["default", "toilet", "garden", "utility", "entrance", "minima
 // FR | privilegiee (1fr, la majorite de l'ecran) sur le dashboard de cette
 // FR | piece ; vide signifie « laisser le generateur choisir le plus charge »
 // FR | (resolve_default_slot()).
-const DEFAULT_SLOTS = ["sensors", "switches", "appliances", "security", "infrastructure"];
+// EN | `media` and `audio` are the two ROLE-BASED panels (see SLOTS in
+// EN | generate_dashboards.py). They only apply to the `living_room` set,
+// EN | but they belong in this list all the same: `default_slot` names
+// EN | which panel gets the privileged band, and a living room wants that
+// EN | band to be `media`.
+// FR | `media` et `audio` sont les deux panneaux A ROLES (voir SLOTS dans
+// FR | generate_dashboards.py). Ils ne valent que pour le jeu
+// FR | `living_room`, mais ils ont quand meme leur place dans cette liste :
+// FR | `default_slot` nomme le panneau qui recoit la bande privilegiee, et
+// FR | un salon veut que ce soit `media`.
+const DEFAULT_SLOTS = ["sensors", "switches", "media", "audio", "appliances", "security", "infrastructure"];
 
 // Domaines considérés comme « appareils assignables » en phase 2.
 // Le même filtre est appliqué ici pour compter ce que contient chaque pièce.
