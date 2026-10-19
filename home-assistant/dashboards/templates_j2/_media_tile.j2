@@ -239,6 +239,25 @@
                                         - color: >
                                             [[[ return entity.state === "off"
                                                   ? "rgba(143,182,201,.6)" : "#00FFC3"; ]]]
+                                    {# EN | A TV that cannot be woken must not offer a button
+                                       EN | that pretends it can. webOS advertises TURN_OFF and
+                                       EN | NOT TURN_ON unless Wake-on-LAN is configured with the
+                                       EN | set MAC address, so while it is off the toggle would
+                                       EN | raise "not supported" the moment it is pressed.
+                                       EN | Greyed at render time from the live feature bitmask:
+                                       EN | the day WoL is set up, it lights on its own.
+                                       FR | Une TV qu on ne peut pas reveiller ne doit pas offrir
+                                       FR | un bouton qui pretend le contraire. webOS annonce
+                                       FR | TURN_OFF et PAS TURN_ON tant que le Wake-on-LAN n est
+                                       FR | pas configure avec la MAC du televiseur : eteinte, la
+                                       FR | bascule leverait « non supporte » des qu on la presse.
+                                       FR | Grisee au rendu depuis le masque de capacites vivant :
+                                       FR | le jour ou WoL est pose, elle s allume d elle-meme. #}
+                                        - opacity: >
+                                            [[[
+                                              const f = entity.attributes.supported_features || 0;
+                                              return (entity.state === "off" && !(f & 128)) ? "0.3" : "1";
+                                            ]]]
                                     tap_action:
                                       action: call-service
                                       service: media_player.toggle
@@ -359,7 +378,7 @@
                                           return (m && m.length) ? "#00E5FF" : "rgba(143,182,201,0.6)";
                                         ]]]
                                     - letter-spacing: 1px
-                                {# EN | more-info is the right target: Home
+                                {# EN | more-info is the right target here: Home
                                    EN | Assistant's own dialog already lists
                                    EN | sound modes when they exist, and
                                    EN | reimplementing that picker here would
@@ -372,4 +391,65 @@
                                    FR | a maintenir juste. #}
                                 tap_action:
                                   action: more-info
+{% endmacro %}
+
+{# ------------------------------------------------------------------ #}
+{# EN | WHERE THE TELEVISION SOUND COMES OUT. Not a media_player        #}
+{# EN | control at all: webOS exposes it as its own attribute,          #}
+{# EN | `sound_output`, switched with webostv.select_sound_output.      #}
+{# EN | This is the honest answer to "choose the speaker" in a living   #}
+{# EN | room whose amplifier is fed by the television: the set decides  #}
+{# EN | whether it plays through itself or through the Marantz, and     #}
+{# EN | nothing on the amplifier side can report that choice.           #}
+{# EN | The values are machine tokens (tv_external_speaker), so each one #}
+{# EN | carries the words to print beside it.                           #}
+{# FR | OU SORT LE SON DU TELEVISEUR. Pas une commande media_player du  #}
+{# FR | tout : webOS l expose comme son propre attribut, `sound_output`, #}
+{# FR | bascule par webostv.select_sound_output.                        #}
+{# FR | C est la reponse honnete a « choisir l enceinte » dans un salon #}
+{# FR | dont l ampli est alimente par le televiseur : c est le poste qui #}
+{# FR | decide s il joue par lui-meme ou par le Marantz, et rien du cote #}
+{# FR | de l ampli ne peut rapporter ce choix.                          #}
+{# FR | Les valeurs sont des jetons machine (tv_external_speaker) :      #}
+{# FR | chacune porte donc les mots a afficher a cote.                   #}
+{# ------------------------------------------------------------------ #}
+{% macro sound_outputs(entity, values, locale) %}
+{% if values %}
+                              - type: custom:button-card
+                                template: vssp_subsection_title
+                                name: "{{ t('slot.media_output') }}"
+                                styles:
+                                  card:
+                                    - padding-top: 6px
+                              - type: grid
+                                columns: {{ 3 if values | length > 2 else values | length }}
+                                square: false
+                                cards:
+{% for value in values %}
+                                  - type: custom:button-card
+                                    entity: {{ entity }}
+                                    name: "{{ value.label }}"
+                                    show_icon: false
+                                    show_state: false
+                                    styles:
+                                      card:
+                                        - padding: 7px 4px
+                                        - border-radius: 10px
+                                        - font-size: calc(11px * var(--vssp-scale-label, 1))
+                                        - background: >
+                                            [[[ return entity.attributes.sound_output === "{{ value.id }}"
+                                                  ? "rgba(0,229,255,.18)" : "rgba(0,0,0,.25)"; ]]]
+                                        - border: >
+                                            [[[ return entity.attributes.sound_output === "{{ value.id }}"
+                                                  ? "1px solid #00E5FF" : "1px solid rgba(0,229,255,.18)"; ]]]
+                                      name:
+                                        - color: "#DCEEF6"
+                                    tap_action:
+                                      action: call-service
+                                      service: webostv.select_sound_output
+                                      service_data:
+                                        entity_id: {{ entity }}
+                                        sound_output: "{{ value.id }}"
+{% endfor %}
+{% endif %}
 {% endmacro %}

@@ -1,9 +1,11 @@
-# LIVING ROOM — gabarit de référence (DRAFT v6)
+# LIVING ROOM — gabarit de référence (DRAFT v7)
 
 > **Brouillon de travail**, corrigé au fil des échanges. Il sera figé et
 > traduit en paire EN/FR comme les autres documents de `docs/dashboards/`.
 > Rien de ce qui suit n'est encore écrit dans le générateur.
 >
+> **v7** — la LG EST sur staging, je l'avais manquee : `media_player.`
+> `lg_webos_tv_oled55b9pla`, allumee, 21 sources. Section 3 corrigee.
 > **v6** — attributs réels lus par l'API (2867 entités). Trois corrections,
 > dont une bonne nouvelle : **les modes sonores du Marantz existent** (§5).
 > **v5** — cible arrêtée : **staging k3s (192.168.1.11)**. Inventaire refait
@@ -79,23 +81,36 @@ sont lus par l'API Home Assistant, pas supposés.
 | `console` | aucune | — |
 | lumières, volets | aucune | — |
 
-### La TV n'est pas sur cette instance
+### La TV, trouvee a la deuxieme recherche
 
-C'est la correction la plus lourde. Sur staging :
+`media_player.lg_webos_tv_oled55b9pla` — **allumee**, `device_class: tv`,
+`SELECT_SOURCE` avec **21 sources** ou applications et entrees cohabitent,
+exactement comme vous l'aviez decrit :
 
-- `media_player.salon_2_salon_2` est **`unavailable`**, et son profil —
-  TURN_ON/OFF + BROWSE_MEDIA + PLAY_MEDIA, **aucun SELECT_SOURCE, aucune
-  source** — est celui d'un **Google Cast**, pas d'un webOS LG ;
-- `remote.salon_2_salon_2` est `unavailable`, sans `activity_list` ;
-- le seul téléviseur réel de l'instance est un **Samsung 7 Series (43)**
-  (`device_class: tv`, sources `TV` et `HDMI`).
+```
+Netflix · Prime Video · Disney+ · Apple TV · YouTube · Twitch · Live TV
+LG Content Store · Navigateur Web · Musique · Photo & Video · Pathe Home
+Smarters VPN Player · LG Streaming Week · GALERIE · Amazon Alexa
+Tableau de bord Maison · DVD Player · HDMI 1 · HDMI 3 · HDMI 4
+```
 
-**Aucune entité webOS LG n'existe ici.** Sur l'instance maison, en revanche,
-`remote.salon_salon` est `on` — la LG y est vivante.
+Deux details qui changent le gabarit :
 
-Conséquence : sur la cible choisie, la carte TV s'affichera « non connecté ».
-Ce n'est pas un défaut du gabarit, c'est ce qu'il est conçu pour faire — mais
-il faut le savoir avant de regarder l'écran.
+- **les entrees s'ecrivent `HDMI 1` avec une espace, et il n'y a pas de
+  HDMI 2** — un libelle approximatif aurait donne une pastille morte ;
+- **la TV n'annonce pas `TURN_ON`**, seulement `TURN_OFF`. webOS ne sait pas
+  se reveiller sans Wake-on-LAN configure avec la MAC du poste. Le bouton
+  d'alimentation se grise donc tout seul quand elle est eteinte, et
+  s'allumera le jour ou WoL sera pose — sans rien changer ici.
+
+Elle expose aussi `sound_output` (`tv_external_speaker` en ce moment, donc le
+Marantz) et le domaine `webostv` offre trois services : `select_sound_output`,
+`button` (pave directionnel) et `command`.
+
+**C'est la vraie reponse a « choisir la sortie enceinte/Marantz ».** Ce n'est
+pas une commande de l'ampli : c'est le televiseur qui decide s'il joue par
+lui-meme ou par le Marantz, et rien du cote de l'ampli ne peut le rapporter.
+La carte TV porte donc une rangee SORTIE : TV · Marantz · Optique.
 
 ### Doublons à nettoyer
 

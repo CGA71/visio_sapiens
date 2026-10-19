@@ -567,6 +567,24 @@ def normalise_slots(room: dict, slot_sets: dict) -> dict:
                     "apps": list(spec.get("apps") or []),
                     "inputs": list(spec.get("inputs") or []),
                     "outputs": list(spec.get("outputs") or []),
+                    # EN | [{id, label}] for the television's own sound
+                    # EN | output. webOS values are machine tokens
+                    # EN | (tv_external_speaker) that must never reach a
+                    # EN | screen, so each one carries the words to print.
+                    # EN | A bare string is accepted and used as both.
+                    # FR | [{id, label}] pour la sortie son propre au
+                    # FR | televiseur. Les valeurs webOS sont des jetons
+                    # FR | machine (tv_external_speaker) qui ne doivent jamais
+                    # FR | atteindre un ecran : chacune porte donc les mots a
+                    # FR | afficher. Une chaine nue est acceptee et sert aux
+                    # FR | deux.
+                    "sound_outputs": [
+                        ({"id": str(o.get("id") or "").strip(),
+                          "label": str(o.get("label") or o.get("id") or "").strip()}
+                         if isinstance(o, dict)
+                         else {"id": str(o).strip(), "label": str(o).strip()})
+                        for o in (spec.get("sound_outputs") or [])
+                    ],
                 }
             entities = [r["entity"] for r in roles.values() if r["entity"]]
             entry = {"id": slot_id, "entities": entities, "roles": roles,

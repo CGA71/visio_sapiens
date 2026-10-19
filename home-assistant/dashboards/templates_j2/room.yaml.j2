@@ -367,6 +367,7 @@ views:
 {{ mt.transport(role.entity, locale) }}
 {{ mt.source_chips(role.entity, role.apps, t('slot.media_apps'), locale) }}
 {{ mt.source_chips(role.entity, role.inputs, t('slot.media_inputs'), locale) }}
+{{ mt.sound_outputs(role.entity, role.sound_outputs, locale) }}
 {% elif role_id == 'amplifier' %}
 {{ mt.transport(role.entity, locale) }}
 {{ mt.source_chips(role.entity, role.inputs, t('slot.media_source'), locale) }}
